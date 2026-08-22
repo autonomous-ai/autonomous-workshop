@@ -862,8 +862,11 @@ def _handle_simulated(step):
             _agent_body("bob-engine-writer"),
             playtest.build_engine_prompt(slug, _home()),
         ])
+        # 80 turns: writing+testing an engine is a real coding session —
+        # g0001 starved at the default 40 (2026-08-23), and a starved cap
+        # re-bought is the same wall (text2cad receipt).
         result = agents.run_agent("bob-engine-writer", prompt,
-                                  max_minutes=35,
+                                  max_minutes=35, max_turns=80,
                                   cwd=_game_dir(slug))
         cost += result.cost_usd
         if not os.path.exists(engine_path):
@@ -1088,7 +1091,8 @@ def _handle_built(step):
         "{\"<filename>\": \"<file content>\"}}." % slug,
     ])
     result = agents.run_agent("bob-builder", prompt, cwd=gdir,
-                              max_minutes=45)  # CAD builds are the longest stage
+                              max_minutes=45,   # CAD builds are the longest stage
+                              max_turns=100)    # and the most tool-call heavy
     reply = _extract_json(result.text)
     parts_dir = os.path.join(gdir, "parts")
     if isinstance(reply, dict) and isinstance(reply.get("parts"), dict):

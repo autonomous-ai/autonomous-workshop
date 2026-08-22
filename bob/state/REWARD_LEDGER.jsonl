@@ -30,3 +30,5 @@
 {"at": "2026-08-22T18:48:32.270056+00:00", "components": {}, "cost_usd": 1.113897, "delta": 0.0, "kind": "iteration", "notes": "kept spark 1/5: Fence", "score": 0.0, "slug": "g0004", "stage": "sparked"}
 {"at": "2026-08-22T18:51:16.257277+00:00", "components": {}, "cost_usd": 0.520054, "delta": 0.0, "kind": "iteration", "notes": "novelty FAIL (margin=near)", "score": 0.0, "slug": "g0004", "stage": "researched"}
 {"at": "2026-08-22T18:51:21.447785+00:00", "components": {}, "cost_usd": 0.0, "delta": 0.0, "kind": "iteration", "notes": "bandit picked arm hidden-mechanism (lane invention)", "score": 0.0, "slug": "g0005", "stage": "spark_new"}
+{"at": "2026-08-22T19:01:01.186708+00:00", "components": {}, "cost_usd": 1.327328, "delta": 0.0, "kind": "iteration", "notes": "kept spark 1/5: Kick", "score": 0.0, "slug": "g0005", "stage": "sparked"}
+{"at": "2026-08-22T19:02:08.442101+00:00", "components": {}, "cost_usd": 0.0, "delta": 0.0, "kind": "iteration", "notes": "sim PASS (n=1000): all floors clear", "score": 0.0, "slug": "g0003", "stage": "simulated"}

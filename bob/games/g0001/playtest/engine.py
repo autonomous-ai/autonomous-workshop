@@ -253,8 +253,8 @@ SLANTS = {13: (5, 12), 15: (9, 12), 17: (8, 15),
 #: Move-list caps (A20). Tuned so a full simmetrics battery — probe, 1000-game
 #: main batch, ladder and mirrors at every rung — finishes inside its wall
 #: budget; the lookahead rung costs O(branching^2) per decision.
-MAX_GEN_NODES = 14
-MAX_PLACE_SCAN = 40
+MAX_GEN_NODES = 12
+MAX_PLACE_SCAN = 32
 MAX_PLACE_MOVES = 8
 MAX_HUB_SCAN = 12
 MAX_HUB_MOVES = 2
@@ -285,6 +285,33 @@ def _build_offsets():
 
 
 OFFSETS = _build_offsets()
+
+#: Dockable columns/rows, precomputed (ruling A3) — a list index beats four
+#: comparisons in the candidate loop, which runs ~700 times per turn.
+DOCK_EDGE = tuple(
+    (1 <= v <= DOCK_DEPTH) or (GRID + 1 - DOCK_DEPTH <= v <= GRID)
+    for v in range(GRID + 2))
+
+#: (dc, dr, teeth) for every gear still in the tray, flattened per driving
+#: tooth count and cached by tray-availability mask. Turning the two-level
+#: (tooth count x offset) loop into one flat loop is the single hottest
+#: saving in move generation.
+_FLAT = {}
+
+
+def _flat_offsets(ti, mask):
+    key = (ti, mask)
+    got = _FLAT.get(key)
+    if got is None:
+        out = []
+        for k in range(6):
+            if mask & (1 << k):
+                tg = TEETH[k]
+                for dc, dr in OFFSETS[(ti + tg) >> 1]:
+                    out.append((dc, dr, tg))
+        got = tuple(out)
+        _FLAT[key] = got
+    return got
 
 #: Exact dial arithmetic without fractions: one revolution = DEN units.
 #: lcm(11,13,17,19,23,29) * 6, the 6 covering every hub speed denominator
@@ -364,33 +391,41 @@ def _analyze(nc, nr, nt, npart, nhub, hubs, edges):
         while stack:
             i = stack.pop()
             pi = par[i]
+            qi = 1 - pi
+            mi = mn[i]
+            di = md[i]
+            hi = hc[i]
+            si = dist[i]
+            par_i = parent[i]
             for j in edges[i]:
                 if par[j] < 0:
-                    par[j] = 1 - pi
-                    mn[j] = mn[i]
-                    md[j] = md[i]
-                    hc[j] = hc[i]
-                    dist[j] = dist[i] + 1
+                    par[j] = qi
+                    mn[j] = mi
+                    md[j] = di
+                    hc[j] = hi
+                    dist[j] = si + 1
                     parent[j] = i
-                    phub[j] = False
                     stack.append(j)
-                elif parent[i] != j and par[j] == pi:
+                elif par_i != j and par[j] == pi:
                     jam = True          # odd ring, RULES.md §9
-                elif any_hub and parent[i] != j and not jam:
+                elif any_hub and par_i != j and not jam:
                     if _cycle_has_hub(i, j, parent, phub):
                         jam = True      # ring through a hub, RULES.md §9
             p = npart[i]
             if p >= 0:
-                num, dn, flip = HUB_CONTENTS[hubs[nhub[i]][2]][:3]
+                content = HUB_CONTENTS[hubs[nhub[i]][2]]
+                num = content[0]
+                dn = content[1]
+                flip = content[2]
                 if par[p] < 0:
                     par[p] = pi ^ (1 if flip else 0)
-                    g = mn[i] * num
-                    k = md[i] * dn
+                    g = mi * num
+                    k = di * dn
                     f = math.gcd(g, k)
                     mn[p] = g // f
                     md[p] = k // f
-                    hc[p] = hc[i] + 1
-                    dist[p] = dist[i]
+                    hc[p] = hi + 1
+                    dist[p] = si
                     parent[p] = i
                     phub[p] = True
                     stack.append(p)
@@ -504,8 +539,7 @@ def _remove(b, drop):
 
 def _dockable(col, row):
     """RULES.md §3.6 / §5d, ruling A3."""
-    return (col <= DOCK_DEPTH or col > GRID + 1 - DOCK_DEPTH
-            or row <= DOCK_DEPTH or row > GRID + 1 - DOCK_DEPTH)
+    return DOCK_EDGE[col] or DOCK_EDGE[row]
 
 
 def _fit(b, col, row, teeth):
@@ -573,22 +607,47 @@ def _gen_moves(s):
     n_nodes = len(nc)
     seat = s.to_move
 
+    # Candidates are generated off parts already on the plate (§5a: a new
+    # part must mesh something already down), so the search never touches
+    # the 6,561-hole field — only the <=12 offsets at each mesh distance.
+    if n_nodes <= MAX_GEN_NODES:
+        gen = range(n_nodes)
+    else:
+        gen = [(k * n_nodes) // MAX_GEN_NODES for k in range(MAX_GEN_NODES)]
+
     # --- 5a Place a gear -------------------------------------------------
-    avail = [TEETH[k] for k in range(6) if s.tray[k] > 0]
-    cands = set()
-    for i in range(n_nodes):
+    mask = 0
+    tray = s.tray
+    for k in range(6):
+        if tray[k] > 0:
+            mask |= 1 << k
+    hole_cands = []
+    dock_cands = []
+    dock_seen = set()
+    for i in gen:
         ci = nc[i]
         ri = nr[i]
-        ti = nt[i]
-        for tg in avail:
-            for dc, dr in OFFSETS[(ti + tg) >> 1]:
-                c = ci + dc
-                r = ri + dr
-                if 1 <= c <= GRID and 1 <= r <= GRID and (c, r) not in occ:
-                    cands.add((c, r, tg))
-    hole_cands = sorted(cands)
+        for dc, dr, tg in _flat_offsets(nt[i], mask):
+            c = ci + dc
+            if c < 1 or c > GRID:
+                continue
+            r = ri + dr
+            if r < 1 or r > GRID:
+                continue
+            hole = (c, r)
+            if hole in occ:
+                continue
+            hole_cands.append((c, r, tg))
+            if (DOCK_EDGE[c] or DOCK_EDGE[r]) and hole not in dock_seen:
+                dock_seen.add(hole)
+                dock_cands.append(hole)
     placements = []
-    for c, r, tg in _stride(hole_cands, MAX_PLACE_SCAN):
+    scanned = set()
+    for cand in _stride(hole_cands, MAX_PLACE_SCAN):
+        if cand in scanned:
+            continue        # a hole two parts can both mesh, generated twice
+        scanned.add(cand)
+        c, r, tg = cand
         meshes = _fit(b, c, r, tg)
         if not meshes:
             continue
@@ -599,31 +658,33 @@ def _gen_moves(s):
 
     # --- 5b Draw and place a hub ----------------------------------------
     if s.mag:
-        hcands = set()
-        for i in range(n_nodes):
+        hseen = set()
+        hcands = []
+        for i in gen:
             ci = nc[i]
             ri = nr[i]
             for dc, dr in OFFSETS[(nt[i] + HUB_TEETH) >> 1]:
                 ca = ci + dc
-                ra = ri + dr
-                if not (1 <= ca <= GRID and 1 <= ra <= GRID):
+                if ca < 1 or ca > GRID:
                     continue
-                if (ca, ra) in occ:
+                ra = ri + dr
+                if ra < 1 or ra > GRID or (ca, ra) in occ:
                     continue
                 for ec, er in ((HUB_SPAN, 0), (-HUB_SPAN, 0),
                                (0, HUB_SPAN), (0, -HUB_SPAN)):
                     cb = ca + ec
+                    if cb < 1 or cb > GRID:
+                        continue
                     rb = ra + er
-                    if not (1 <= cb <= GRID and 1 <= rb <= GRID):
+                    if rb < 1 or rb > GRID or (cb, rb) in occ:
                         continue
-                    if (cb, rb) in occ:
-                        continue
-                    if (ca, ra) < (cb, rb):
-                        hcands.add((ca, ra, cb, rb))
-                    else:
-                        hcands.add((cb, rb, ca, ra))
+                    key = ((ca, ra, cb, rb) if (ca, ra) < (cb, rb)
+                           else (cb, rb, ca, ra))
+                    if key not in hseen:
+                        hseen.add(key)
+                        hcands.append(key)
         hubs = []
-        for c1, r1, c2, r2 in _stride(sorted(hcands), MAX_HUB_SCAN):
+        for c1, r1, c2, r2 in _stride(hcands, MAX_HUB_SCAN):
             if _hub_ok(s, c1, r1, c2, r2):
                 hubs.append(("hub", c1, r1, c2, r2))
         moves.extend(_stride(hubs, MAX_HUB_MOVES))
@@ -639,22 +700,21 @@ def _gen_moves(s):
         moves.extend(_stride(sorted(pulls), MAX_PULL_MOVES))
 
     # --- 5d Re-dock ------------------------------------------------------
-    taken = set()
+    blocked = set()
     for k in range(s.n):
-        if k != seat:
-            taken.add((s.dials[k][D_COL], s.dials[k][D_ROW]))
-    mine = (s.dials[seat][D_COL], s.dials[seat][D_ROW])
-    rc = set()
+        blocked.add((s.dials[k][D_COL], s.dials[k][D_ROW]))
     for i in range(1, n_nodes):
-        if b[B_NH][i] < 0 and _dockable(nc[i], nr[i]):
-            rc.add((nc[i], nr[i]))
-    for c, r, _tg in hole_cands:
-        if _dockable(c, r):
-            rc.add((c, r))
-    rc.discard(mine)
-    rc -= taken
-    moves.extend(("redock", c, r) for c, r in _stride(sorted(rc),
-                                                      MAX_REDOCK_MOVES))
+        if b[B_NH][i] < 0:
+            c = nc[i]
+            r = nr[i]
+            if (c <= DOCK_DEPTH or c >= GRID + 2 - DOCK_DEPTH
+                    or r <= DOCK_DEPTH or r >= GRID + 2 - DOCK_DEPTH):
+                if (c, r) not in dock_seen:
+                    dock_seen.add((c, r))
+                    dock_cands.append((c, r))
+    free = [h for h in dock_cands if h not in blocked]
+    moves.extend(("redock", c, r)
+                 for c, r in _stride(free, MAX_REDOCK_MOVES))
 
     # --- 5e Pass, forced only -------------------------------------------
     if not moves:
@@ -675,6 +735,10 @@ def _hub_ok(s, c1, r1, c2, r2):
         return False
     if not m1 and not m2:
         return False
+    if len(m1) + len(m2) < 2 and not b[B_HUBS]:
+        # One mesh edge and no hub already down: no ring can close (§9) and
+        # no run can reach two hubs (§5b), so skip the full re-analysis.
+        return True
     nb = _add_hub(b, c1, r1, c2, r2, s.mag[0], m1, m2)
     if nb[B_JAM]:
         return False
@@ -704,7 +768,7 @@ def _scores(s):
     par = b[B_PAR]
     nc = b[B_NC]
     nr = b[B_NR]
-    live = [i for i in range(len(nc)) if par[i] >= 0]
+    live = None
     out = []
     for k in range(s.n):
         d = s.dials[k]
@@ -713,6 +777,8 @@ def _scores(s):
         if i >= 0 and par[i] >= 0 and not d[D_FRZ]:
             v += W_RATE * (_rate_units(b, i) / float(DEN))
         elif not d[D_FRZ]:
+            if live is None:
+                live = [j for j in range(len(nc)) if par[j] >= 0]
             # Not wired up yet: reward the train getting nearer the hole, so a
             # two-placement bend shows progress on its FIRST gear, not only on
             # its second (a step-only score reads as flat to the instruments).
