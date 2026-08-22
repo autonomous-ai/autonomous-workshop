@@ -1,5 +1,5 @@
-# Bob CI — the deterministic gate for the harness itself.
-# Runs on 3.9 because that is the Mac's system python (the real runtime;
+# Inventor CI — deterministic gates for each self-contained harness.
+# Bob runs on 3.9 because that is the Mac's system python (the real runtime;
 # CONTRACTS.md pins 3.9-compatible stdlib only) and 3.12 so a future OS
 # bump is a non-event. BOB_MOCK_AGENTS=1 keeps every test off the network
 # and away from the real `claude` CLI (CONTRACTS.md sec 5).
@@ -8,7 +8,7 @@
 # (inventors/). GitHub only reads workflows from <root>/.github/workflows,
 # so promote this file there; `working-directory: bob` below already
 # assumes the root checkout.
-name: bob-ci
+name: inventors-ci
 
 on:
   push:
@@ -33,3 +33,34 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: unit tests (stdlib unittest only, no pytest)
         run: python -m unittest discover -s tests -v
+
+  alice-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    defaults:
+      run:
+        working-directory: alice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: install Alice package
+        run: python -m pip install .
+      - name: unit tests (warnings are errors)
+        env:
+          PYTHONWARNINGS: error
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+      - name: installed CLI smoke test
+        env:
+          PYTHONWARNINGS: error
+        run: |
+          runtime="$RUNNER_TEMP/alice-smoke-${{ matrix.python-version }}"
+          alice --root "$runtime" init
+          alice --root "$runtime" learning-init
+          alice --root "$runtime" eval
+          alice --root "$runtime" doctor

@@ -1,0 +1,100 @@
+{
+  "runtime": {
+    "database": "var/alice.sqlite3",
+    "poll_seconds": 30,
+    "lease_seconds": 900,
+    "max_attempts": 3,
+    "max_active_candidates": 3,
+    "effect_mode": "dry-run"
+  },
+  "objective": {
+    "auto_publish_when_eligible": true
+  },
+  "agents": {
+    "provider": "fixture",
+    "command": [],
+    "timeout_seconds": 900,
+    "model_allowed_environment": ["PATH", "LANG", "LC_ALL", "TMPDIR"],
+    "codex": {
+      "binary": "codex",
+      "home": "var/codex-home",
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "timeout_seconds": 600,
+      "startup_timeout_seconds": 30,
+      "shutdown_grace_seconds": 10,
+      "max_output_bytes": 200000
+    }
+  },
+  "adapters": {
+    "page_builder": {
+      "enabled": false,
+      "workspace": "",
+      "operator_command": [],
+      "diagnostic_design_id": "",
+      "base_url": "https://panda-social-api.autonomous.ai/api/v1",
+      "token_env": "ALICE_FACTORY_TOKEN",
+      "allowed_project_hosts": [],
+      "allowed_environment": [
+        "PATH",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+        "PANDA_OWNER_ID",
+        "PANDA_BACKEND_DIR",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "PANDA_APP_URL"
+      ],
+      "timeout_seconds": 3600,
+      "readback_timeout_seconds": 180
+    },
+    "vibe": {
+      "enabled": false,
+      "base_url": "https://panda-social-api.autonomous.ai/api/v1",
+      "token_env": "ALICE_FACTORY_TOKEN",
+      "timeout_seconds": 180,
+      "poll_interval_seconds": 5,
+      "max_job_polls": 4320,
+      "max_page_polls": 360
+    },
+    "library_command": [],
+    "history_command": [],
+    "research_command": [],
+    "rules_validator_command": [],
+    "digital_playtest_command": [],
+    "human_playtest_command": [],
+    "cad_command": [],
+    "market_validation_command": [],
+    "outcomes_command": [],
+    "factory_order_command": [],
+    "print_fulfillment_command": [],
+    "command_allowed_environment": {},
+    "required_live_capabilities": []
+  },
+  "learning": {
+    "seed": 617,
+    "minimum_external_trials": 3,
+    "exploration_probability": 0.15,
+    "actions": [
+      "simplify_rules",
+      "rebalance_resources",
+      "increase_player_agency",
+      "reduce_downtime",
+      "clarify_teach",
+      "change_setup",
+      "strengthen_social_tension",
+      "mechanism_pivot",
+      "kill_candidate"
+    ]
+  },
+  "quality": {
+    "minimum_dimension": 0.65,
+    "minimum_quality": 0.72,
+    "minimum_confidence": 0.7,
+    "minimum_blind_groups": 3,
+    "minimum_games_per_group": 2,
+    "minimum_print_yield": 0.95,
+    "minimum_gross_margin": 0.5
+  }
+}

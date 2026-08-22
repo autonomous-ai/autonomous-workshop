@@ -1,0 +1,110 @@
+{
+  "policy": {
+    "allowed_access": [
+      "owned_copy",
+      "licensed_ebook",
+      "publisher_or_author_copy",
+      "library_loan",
+      "public_domain",
+      "legally_available_excerpt"
+    ],
+    "store_verbatim_text": false,
+    "required_note_fields": [
+      "source_id",
+      "edition",
+      "page_or_location",
+      "claim",
+      "author_evidence",
+      "scope_conditions",
+      "counterexamples",
+      "design_hypothesis",
+      "experiment_id"
+    ]
+  },
+  "seed_queue": [
+    {
+      "id": "wallis-everybody-wins",
+      "title": "Everybody Wins: Four Decades of the Greatest Board Games Ever Made",
+      "authors": ["James Wallis"],
+      "lens": ["modern history", "culture", "landmark games"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "du-sautoy-around-world-eighty-games",
+      "title": "Around the World in Eighty Games",
+      "authors": ["Marcus du Sautoy"],
+      "lens": ["mathematics", "world history", "culture"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "livingstone-board-games-100-moves",
+      "title": "Board Games in 100 Moves",
+      "authors": ["Ian Livingstone", "James Wallis"],
+      "lens": ["visual history", "milestone games"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "engelstein-gametek",
+      "title": "GameTek: The Math and Science of Gaming",
+      "authors": ["Geoff Engelstein"],
+      "lens": ["probability", "psychology", "game science"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "koster-theory-of-fun",
+      "title": "A Theory of Fun for Game Design",
+      "authors": ["Raph Koster"],
+      "lens": ["learning", "pattern recognition", "fun"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "elias-garfield-gutschera-characteristics",
+      "title": "Characteristics of Games",
+      "authors": ["George Skaff Elias", "Richard Garfield", "K. Robert Gutschera"],
+      "lens": ["analytic framework", "game characteristics", "experience"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "engelstein-shalev-building-blocks",
+      "title": "Building Blocks of Tabletop Game Design: An Encyclopedia of Mechanisms",
+      "authors": ["Geoffrey Engelstein", "Isaac Shalev"],
+      "lens": ["mechanism taxonomy", "design vocabulary"],
+      "status": "acquisition_required"
+    },
+    {
+      "id": "schell-art-of-game-design",
+      "title": "The Art of Game Design: A Book of Lenses",
+      "authors": ["Jesse Schell"],
+      "lens": ["design lenses", "iteration", "player experience"],
+      "status": "discovery_candidate"
+    },
+    {
+      "id": "salen-zimmerman-rules-of-play",
+      "title": "Rules of Play: Game Design Fundamentals",
+      "authors": ["Katie Salen Tekinbas", "Eric Zimmerman"],
+      "lens": ["systems", "meaningful play", "culture"],
+      "status": "discovery_candidate"
+    },
+    {
+      "id": "costikyan-uncertainty-in-games",
+      "title": "Uncertainty in Games",
+      "authors": ["Greg Costikyan"],
+      "lens": ["uncertainty", "agency", "tension"],
+      "status": "discovery_candidate"
+    },
+    {
+      "id": "woods-eurogames",
+      "title": "Eurogames: The Design, Culture and Play of Modern European Board Games",
+      "authors": ["Stewart Woods"],
+      "lens": ["modern culture", "players", "design history"],
+      "status": "discovery_candidate"
+    },
+    {
+      "id": "peterson-playing-at-the-world",
+      "title": "Playing at the World",
+      "authors": ["Jon Peterson"],
+      "lens": ["role-playing history", "simulation", "wargames"],
+      "status": "discovery_candidate"
+    }
+  ]
+}

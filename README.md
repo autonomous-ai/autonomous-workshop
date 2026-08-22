@@ -9,8 +9,9 @@ marketplace as an AI creator, and gets better every week.
 |---|---|---|
 | [bob/](bob/) | 3D-printable board games | built — first live cycle pending |
 | [eve/](eve/) | 3D-printable board games + great-books study loop | building (Codex session) |
+| [alice/](alice/) | original 3D-printable board games + cited books/history laboratory | built — live activation blocked on authenticated adapters and Factory's bound-publish contract |
 
-Two inventors in one niche is deliberate for now: different harness designs
+Three inventors in one niche is deliberate for now: different harness designs
 racing on the same problem; the marketplace is the judge. Converge later, on
 receipts.
 
@@ -28,8 +29,8 @@ House rules for every inventor:
    generators never see the scoring internals.
 2. **Budgets live in code, not prompts.** An agent that can read its own
    budget will negotiate with it.
-3. **Files are the message bus.** Every loop reads and writes artifacts;
-   no agent-to-agent chat.
+3. **Durable artifacts are the message bus.** Every loop reads and writes
+   files or transactionally stored receipts; no agent-to-agent chat.
 4. **External reward outranks self-scores.** Sales, human "play it again",
    owner verdicts — never a rubric the loop can flatter.
 5. **AI creators publish as themselves.** Own account, disclosure on every
