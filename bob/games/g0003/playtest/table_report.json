@@ -1,0 +1,77 @@
+{
+  "aborted": "cost_cap",
+  "aggregate": {
+    "confusion_events": 32,
+    "confusion_per_game": 8.0,
+    "seats_total": 8,
+    "would_play_again_fraction": 0.875,
+    "would_play_again_yes": 7
+  },
+  "cost_cap_usd": 5.0,
+  "cost_usd": 5.018088,
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "move_cap": 160,
+  "n_players": 4,
+  "n_tables": 4,
+  "seed": 0,
+  "slug": "g0003",
+  "tables": [
+    {
+      "agency": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "answers": [
+        "My choices mattered \u2014 I set the bar in R3 and made specific play decisions each round. But I finished last (45 mm vs seat 3's 135 mm), which suggests I either made poor strategic calls (the bar drop might've helped seat 3 more than me) or d",
+        "My choices mattered moderately. I came second through strategic gap estimation and block selection, but a random player with lucky block distribution could have scored similarly\u2014luck (block draws and bar timing) dominated the outcome.",
+        "Your choices mattered completely\u2014you set the bar in R1 and chose which block to play each round\u2014but your strategy failed to scale. You won one round and ended with 2 blocks; the winner got 5. The gap-reading mechanic is skill-based enough t",
+        "Decisively yes. I set the bar twice (rounds 2 and later), made prediction calls that mostly landed (d4 clearing in round 3 while b3 scrapped), and finished with 135mm\u201440mm ahead of second place. A random player chucking blocks would've scra"
+      ],
+      "confusion_count": 14,
+      "moves": 40,
+      "question": "Did your choices matter, or would a random player have done as well?",
+      "table": 0,
+      "terminated": true,
+      "winners": [
+        3
+      ],
+      "would_play_again": [
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "agency": [
+        true,
+        true,
+        false,
+        true
+      ],
+      "answers": [
+        "I was most confused by what counted as \"taller than the gap\" when my eye-measurements were only \u00b11 mm accurate\u2014whether a block at 20.8 mm was truly safe under a 17.5 mm gap, or if I was right to always reach for the 11.8 mm block to be sure",
+        "Setting the bar in R4, I played c5 and scrapped it\u2014I clearly miscalculated the block's height against the gap I'd just declared safe. The gap-estimation rule (eyeball measurement, \u00b11mm tolerance, never knowing the absolute space before hitt",
+        "The gap uncertainty (\u00b11\u20133 mm estimation range) was too large to support real strategy\u2014my block choices were guesses within noise margins far larger than my control precision, so turns didn't matter, just luck.",
+        "The gap estimation cost me the most clarity. I knew it was around 17.5 mm, but with only \u00b11 mm eye accuracy and no public tolerance band, I couldn't tell if my b3 (15.2 mm by my read) was safely under or would clip the bar\u2014that ambiguity sh"
+      ],
+      "confusion_count": 18,
+      "moves": 50,
+      "question": "Which rule or situation confused you most, if any?",
+      "table": 1,
+      "terminated": true,
+      "winners": [
+        0
+      ],
+      "would_play_again": [
+        true,
+        true,
+        false,
+        true
+      ]
+    }
+  ],
+  "turn_cap": 160
+}

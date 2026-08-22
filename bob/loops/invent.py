@@ -1077,17 +1077,27 @@ def _handle_briefed(step):
         _agent_body("bob-brief-writer"),
         "## idea.json\n%s" % json.dumps(idea, indent=2, sort_keys=True),
         "## bill.json\n%s" % json.dumps(bill, indent=2, sort_keys=True),
-        "## Output contract\nReply with JSON only: {\"brief_md\": <the "
-        "complete parts brief, markdown>} — or plain markdown.",
+        "## Output contract\nWrite the complete parts brief to ./brief.md "
+        "(you have tools; save early, refine after). If you cannot write "
+        "files, reply with JSON {\"brief_md\": ...} or plain markdown.",
     ])
-    result = agents.run_agent("bob-brief-writer", prompt)
-    reply = _extract_json(result.text)
+    # Files + 35-min wall: the brief-writer starved the 15-min chat default
+    # twice on g0003 (2026-08-23) — same wound as the rules-writer, same
+    # medicine (artifacts over replies; partial progress survives a kill).
+    result = agents.run_agent("bob-brief-writer", prompt, cwd=gdir,
+                              max_minutes=35)
     brief = None
-    if isinstance(reply, dict) and isinstance(reply.get("brief_md"), str):
-        brief = reply["brief_md"]
-    elif result.text and result.text.strip():
-        brief = result.text  # plain-markdown fallback: the artifact matters,
-        # the envelope does not
+    brief_path = os.path.join(gdir, "brief.md")
+    if os.path.exists(brief_path) and os.path.getsize(brief_path) > 100:
+        with open(brief_path) as handle:
+            brief = handle.read()
+    if brief is None:
+        reply = _extract_json(result.text)
+        if isinstance(reply, dict) and isinstance(reply.get("brief_md"), str):
+            brief = reply["brief_md"]
+        elif result.text and result.text.strip():
+            brief = result.text  # plain-markdown fallback: the artifact
+            # matters, the envelope does not
     if not brief or not brief.strip():
         _ledger_row(slug, "briefed", result.cost_usd,
                     "brief-writer returned nothing — will re-run")

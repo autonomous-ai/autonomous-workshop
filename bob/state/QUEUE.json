@@ -14,9 +14,8 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T22:47:06.368746+00:00",
-        "holder": "invent",
-        "id": "77a03da257c14ff5bfdd1170d5b6c618"
+        "expires": null,
+        "holder": null
       },
       "log": [
         {
@@ -108,6 +107,12 @@
           "from": "ruled",
           "note": "rules written; gate next",
           "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-22T22:05:08.921403+00:00",
+          "from": "rules_gated",
+          "note": "killed (rework budget exhausted): rework budget exhausted: rules lens: R1 dominant-strategy/first-player-tempo: Setup step 6 docks in reverse turn order so the first player docks LAST, with full information on every other player's clamp, then also takes the first build+crank of the game. Evidence: \"the last player in turn order clamps their Dial Unit first; the first player clamps last\" and the stated rationale \"the first player gets the first build and the first crank, so the last player gets first pick of the plate.\" This only balances tempo if picking last actually costs something, but the rules elsewhere say the plate has no real scarcity: \"the gear supply (40) and the plate (6400 holes) are far larger than any count needs.\" With no scarcity, docking last is pure upside (best-informed pick, zero opportunity cost) stacked on top of moving first \u2014 the two advantages compound instead of offsetting, worst at 2p where one player sees the other's single clamp before choosing their own. Disposition: rework \u2014 reordering setup or adding real scarcity to docking is a mechanic change, not a wording fix.; R2 length-honesty: The rules' own pace estimate is already at the edge of plausible per-decision time, before accounting for the calculation load each placement actually requires. Evidence: \"Expect 26 to 34 turns of the handle, at roughly a minute a turn including the placement hunt: 25 to 35 minutes.\" Each placement requires computing a mesh number (M = (teeth+teeth)/2), then hunting an 80x80 grid for a hole at exactly that straight-line or one-of-six-slant distance from an existing part, while also checking the foul zone (M to M+3) and loop/jam legality by hand. A full minute is plausible only if players have memorized the slant table; a first table is likely to run well past it. Disposition: rework \u2014 this is a property of the placement rule's search space, not fixable by rewording the estimate.; R3 clarify: Overview claims \"You never add anything up. You crank, and the machine tells you what you built,\" which a cold reader will take as a blanket no-arithmetic promise, but \u00a75a's core legality check is arithmetic every single turn: \"M = (my teeth + their teeth) \u00f7 2, counted in holes,\" plus counting distance d and mesh-count parity by hand. Disposition: clarify \u2014 narrow the claim to dial movement (which genuinely needs no addition) rather than the whole game.; R4 clarify: \"dead gear\" is used in \u00a75a's meshing rule (\"the Drive Gear counts, a hub end counts, a dead gear counts\") before the document ever explains what a dead gear is \u2014 that only comes later in \u00a75c (\"Parts left with no live path back to the handle simply stop turning\"). A first-time reader hits the term with nothing to resolve it against. Disposition: clarify \u2014 move or forward-reference the definition.",
+          "to": "killed"
         }
       ],
       "reward": {
@@ -115,7 +120,7 @@
         "latest": 0.0
       },
       "slug": "g0001",
-      "state": "rules_gated",
+      "state": "killed",
       "title": "Crank"
     },
     "g0002": {
@@ -131,7 +136,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-22T22:50:14.101510+00:00",
+        "holder": "invent",
+        "id": "5d8eab24cd054b4aac31ae552ee164f9"
+      },
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -228,7 +237,7 @@
     },
     "g0003": {
       "budgets": {
-        "clarify_used": 0,
+        "clarify_used": 1,
         "repair_used": 0,
         "rework_used": 0
       },
@@ -239,11 +248,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T22:38:19.734341+00:00",
-        "holder": "invent",
-        "id": "2df16be544684cdf8cd243d771d8fa5b"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -304,6 +309,30 @@
           "from": "parked",
           "note": "human unpark: 1-table sample was not a verdict; seats now Haiku, aborted-short runs retry",
           "to": "tabled"
+        },
+        {
+          "at": "2026-08-22T22:16:04.491078+00:00",
+          "from": "tabled",
+          "note": "tables pass: would-play-again 0.88",
+          "to": "briefed"
+        },
+        {
+          "at": "2026-08-23T23:59:00+00:00",
+          "from": "briefed",
+          "note": "owner clarify: rulebook rewritten wording-only (reader misses 10->3), mech hash unchanged",
+          "to": "briefed"
+        },
+        {
+          "at": "2026-08-22T22:46:06.019294+00:00",
+          "from": "briefed",
+          "note": "parked: crashed 2 times in a row at briefed: AgentError: Agent 'bob-brief-writer' overran its 15-minute wall ceiling and was killed (SIGTERM then SIGKILL after 5.0s grace). Retry once with a smaller task or a bigger ceiling \u2014 a ceiling that binds is the real constraint, not a safety limit.",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-24T00:05:00+00:00",
+          "from": "parked",
+          "note": "human unpark: brief-writer 15-min chat default starved twice; now files+35min",
+          "to": "briefed"
         }
       ],
       "reward": {
@@ -311,7 +340,7 @@
         "latest": 0.0
       },
       "slug": "g0003",
-      "state": "tabled",
+      "state": "briefed",
       "title": "Clearance"
     },
     "g0004": {
@@ -373,8 +402,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": null,
-        "holder": null
+        "expires": "2026-08-22T23:31:06.181122+00:00",
+        "holder": "invent",
+        "id": "26ce9188a8d74fb28800676e3c9247d1"
       },
       "log": [
         {

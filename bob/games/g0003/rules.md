@@ -20,7 +20,7 @@ Every component is a printed physical object. Nothing is a card, a chit, or an a
 |---|---|---|---|---|
 | `column_screw` | **Detent screw** ⭐ | 1 | ⌀16 × 118 (2.0 mm pitch thread; ⌀44 × 14 knob integral at top; detent crown of 4 ramped notches on the collar at its base) | **THE LOAD-BEARING MECHANISM.** One quarter-turn = one *click* = exactly 0.5 mm of bar travel, felt and heard but not seen. The whole game is that a click is a countable, repeatable, invisible unit of height. |
 | `detent_leaf` | Detent leaf spring | 1 | 34 × 12 × 4 | Printed cantilever with a rounded nub; snaps into `gantry_base` and rides the screw's detent crown. Replaceable so the click can be re-tuned by reprinting one small part. |
-| `gantry_base` | Gantry base | 1 | 220 × 110 × 12 | Flat top face is the **runway** — the datum every bar height is measured from. Carries both post sockets, the detent leaf socket, a scrap well at the rear, and the setter's ritual reminder embossed on the front skirt. |
+| `gantry_base` | Gantry base | 1 | 220 × 110 × 12 | Flat top face is the **runway** — the datum every bar height is measured from. Carries both post sockets, the detent leaf socket, a scrap well at the rear (100 × 40 mm open-top corral, walled to 10 mm above the runway), and the setter's ritual reminder embossed on the front skirt. |
 | `post_guide` | Guide post | 1 | ⌀12 × 112 | Smooth post opposite the screw. Stops the yoke from rotating so turning the knob raises and lowers it. |
 | `yoke` | Bar yoke | 1 | 170 × 24 × 16 (bridge), with two end brackets that drop to bar height | Rides the screw. The bridge sits high, clear of the lane; the two end brackets carry the V-saddles that the bar rests in, leaving a **130 mm clear lane** with nothing in it but the bar. |
 | `bar_rod` | The bar | 1 | ⌀8 × 158 (hollow, ≤6 g) | Lies loose in the two saddles. It is not fastened. If a block touches it, it rocks or rolls visibly — that is the bust detector, and it needs no judge. |
@@ -38,6 +38,8 @@ Three rules for whoever prints this:
 
 Everything prints on a 256 mm bed. Total: 44 parts, roughly 350 g of filament.
 
+**The scrap well.** It is a corral, not a bin — scrapped blocks (up to 26 of the game's 30 in a long, thorough game) sit loose and can pile up. If it fills, keep stacking; loose blocks piled above the 10 mm wall are still out of the game exactly the same as ones inside it. Nothing ever comes back out of the scrap well during play.
+
 ---
 
 ## 3. Setup
@@ -46,10 +48,12 @@ Everything prints on a 256 mm bed. Total: 44 parts, roughly 350 g of filament.
 2. Fit the **guide post**, the **detent leaf**, and the **detent screw** into the base. Hang the **yoke** on both posts and lay the **bar** loose in its two saddles. Never fasten the bar.
 3. **Turn the knob up until the screw stops.** That hard top stop is the starting gap: 33.0 mm, just above the tallest block that can exist. Do not count anything; the stop does it for you. The bottom stop, 31 clicks below, is 17.5 mm.
 4. Give each player a **stock rail** and a **commit cup**.
-5. The **first setter** is the player who most recently used a ruler or tape measure for real. If nobody remembers, the youngest player.
+5. The **first setter** is the player who most recently used a ruler or tape measure for real. If nobody remembers, **or** if two or more players claim this and cannot agree who is more recent, the first setter is the youngest player at the table instead — that fallback is final and needs no further argument.
 6. Starting with the player to the first setter's left and going clockwise, each player picks one **set** of six blocks and stands it in their rail. The first setter picks last. Unused sets go back in the box.
 7. You may pick up, stand together and compare **your own** blocks whenever you like, all game. You may **never** touch another player's blocks, and you may never hold any block against the gantry.
 8. The first setter takes the **knob hood**. Play begins.
+
+The knob hood belongs to whoever is setter — it is a duty tool, not a keepsake. Every time the setter changes (§4), the outgoing setter hands the hood directly to the new setter before that round's Set.
 
 ---
 
@@ -84,18 +88,18 @@ The bar therefore ends **2, 4, or 6 clicks lower** than it started — 1.0, 2.0,
 - The bar never goes up on balance and never goes above where it started, so the top stop can never be hit during a Set.
 - **If the screw hits the bottom stop during the Set**, the setter stops immediately, leaves the bar sitting on the stop, lifts the hood and says **"Bottom."** The bar stays at 17.5 mm for this round, and **this round is the last round of the game.**
 - Anyone may check a "Bottom" call after the round by trying to turn the knob down. If it turns, the call was false and the caller loses their whole score line.
-- **If the setter loses count or the screw jams**, they say so and start a fresh eight-click Set from wherever the bar now stands. They still know the total drop; the table still does not.
+- **If the setter loses count or the screw jams**, they say so, then turn the knob back up by exactly the clicks already turned this Set — undoing this attempt entirely and returning the bar to the height it had at the start of the round — and start a full fresh eight-click Set from there. This is a do-over, not an addition: the round's total drop is still exactly 2, 4, or 6 clicks below where the bar stood at the start of the round, never more. They still know the total drop; the table still does not.
 
 ### 5.2 The Commit (all players, mandatory, simultaneous)
 
 Every player with at least one block in their rail **must** commit exactly one.
 
-Hold your cup above your rail. Somebody counts *three, two, one, commit* — and on "commit" every player, at the same instant, takes one block from their rail and puts it on the table under their cup. Watch your own rail while you do it.
+Hold your cup above your rail. **The player to the setter's left calls the count** — *three, two, one, commit* — since the setter already has private information about the gap and should not also control the cadence of the Commit. On "commit," every player, at the same instant, takes one block from their rail and puts it on the table under their cup. Watch your own rail while you do it.
 
 - Once your cup is down, your choice is final.
 - The empty pocket in your rail is public. Everyone can see **which** block you took. Nobody knows **how tall** it is.
 - If anyone thinks the commits were not simultaneous, every player lifts their cup, returns their block to the rail, and the count is run again.
-- **If you expose your block early**, you must put it back and commit the shortest block remaining in your rail instead.
+- **"Early" means before every player's cup is down** — anywhere from picking up your block to the instant the last cup lands. If your block becomes visible to the table at any point in that window (dropped, held up, set down uncovered), you must put it back and commit the shortest block remaining in your rail instead. Once all cups are down, the Commit is complete and nothing that happens next counts as early — that's the Reveal (§5.3).
 
 ### 5.3 The Reveal
 
@@ -113,7 +117,7 @@ Stand your block flat on the runway in front of the gantry and push it, with one
 
 - **Clears** — the block passes fully out the far side and **the bar does not move.** Set it in front of you; it is still in the running for the round.
 - **Scrapped** — the bar rocks, rolls, lifts or falls at any moment during the pass. The block is out of the game permanently and goes in the scrap well at the back of the base. Replace the bar in its saddles.
-- **Failed execution.** If you lift, tilt, rock or reverse the block: **scrapped**, exactly as if it had touched. If you push it into a bracket or off the side of the runway without touching the bar, no harm — put it back at the start and push again.
+- **Failed execution.** This is about what **you** do to the block: if you lift, tilt, rock or reverse it yourself, it is **scrapped**, exactly as if it had touched. A block that wobbles or chatters on its own — because its bottom face isn't quite flat — while you keep pushing it flat, single-direction, without lifting, tilting, rocking or reversing it, is not a failed execution; it is judged purely on whether the bar moves, like any other push (see Clears/Scrapped above). If you push it into a bracket or off the side of the runway without touching the bar, no harm — put it back at the start and push again. (A block that wobbles so badly it won't reliably stand square should be reprinted before play — see §8.)
 - **Gantry knocked.** If the gantry itself is shoved or slides, that block is **scrapped**. Slide the gantry back into place; the bar height is unchanged, because the screw holds its setting.
 - **Outside interference.** If the bar is disturbed by a bump, a sneeze, or a sleeve while no block is under it, replace the bar and carry on. Nothing is scrapped.
 
@@ -126,6 +130,8 @@ You may use this on **your own stock at any time**, and on **revealed blocks aft
 ### 5.6 The Take (scoring the round)
 
 Among the blocks that **cleared**, the **tallest** wins the round. Use the fingernail test if it is close.
+
+**With three or more cleared blocks:** fingernail-test any two, keep the taller one (or, if tied, either — see the tie ruling below) standing, and test it against the next block; keep going until every cleared block has been tested against the current tallest. This always gives one clean answer: every block's height comes from the same fixed 0.5 mm ladder (§2), so any two blocks are either exactly tied (same rung) or at least 0.5 mm apart — well clear of what the fingernail test can feel — and a sequence of pairwise tests on a fixed grid like that can never contradict itself.
 
 The winner takes, into their score line:
 
@@ -141,7 +147,7 @@ Lay your score line on the table in front of you: blocks on their sides, butted 
 
 ### 5.7 Salvage (optional, only with an empty rail)
 
-If your rail is empty at the end of The Take and the game is not over, you may **take the shortest block out of your own score line and put it back in your rail.** That block is yours to play again; your line gets shorter by exactly that much.
+If your rail is empty at the end of The Take, you may **take the shortest block out of your own score line and put it back in your rail.** That block is yours to play again; your line gets shorter by exactly that much. This includes the Take of the Bottom round itself — that Take still happens, in full, before the game ends (§6) — though salvaging there buys you nothing, since no further round follows it to spend the block on.
 
 You may decline and simply sit out the remaining rounds with your line intact — sometimes that is the right call. If your rail *and* your line are both empty, you are out of the game and cannot score again.
 
@@ -151,7 +157,7 @@ You may decline and simply sit out the remaining rounds with your line intact �
 
 **The game ends at the end of the round in which the setter says "Bottom"** — the round played with the bar sitting on its bottom stop at 17.5 mm.
 
-That ending is reachable and forced. The bar starts 31 clicks above the bottom stop and every single Set moves it 2, 4, or 6 clicks down; it never moves up on balance. Even if every setter for the whole game chooses the smallest drop, the bar is on the stop within 15 rounds; at the most common drop it is 8 or 9 rounds; at the largest, 6. There is no way to stall, because The Set is mandatory and always descends.
+That ending is reachable and forced. The bar starts 31 clicks above the bottom stop and every single Set moves it 2, 4, or 6 clicks down; it never moves up on balance. Even if every setter for the whole game chooses the smallest drop (2 clicks), the bar is on the stop within 16 rounds — 31 clicks needs 16 rounds of 2, since 15 rounds only gets you 30; at the most common drop it is 8 or 9 rounds; at the largest, 6. There is no way to stall, because The Set is mandatory and always descends.
 
 The Bottom round is worth playing hard: with the bar at 17.5 mm, only your stubbiest blocks get through, most of the table gets scrapped, and the winner sweeps the tallest wreck into their line on top of their own win.
 
