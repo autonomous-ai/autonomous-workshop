@@ -39,7 +39,11 @@ fi
 
 # mtime portable across macOS (BSD stat) and Linux (GNU stat, for CI).
 mtime() {
-    stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null
+    if stat -c %Y "$1" >/dev/null 2>&1; then
+        stat -c %Y "$1"
+    else
+        stat -f %m "$1"
+    fi
 }
 
 # Fire-and-forget Telegram DM via raw curl (text2cad pattern, ~30s timeout).
