@@ -12,14 +12,12 @@ own budget. Two safeguards from vibe-ideas are kept:
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import socket
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 STAGES = [
@@ -82,7 +80,7 @@ class Queue:
         return json.loads(self.path.read_text())
 
     def _save(self, games: list) -> None:
-        with open(self.lock_path, "w") as lk:
+        with open(self.lock_path, "w"):
             pass  # (locking contract handled by callers needing mutual exclusion)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(games, indent=2))

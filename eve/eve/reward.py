@@ -23,7 +23,6 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from . import queue as queue_mod
@@ -151,7 +150,6 @@ class RewardLedger:
         as lost *opportunity*; negative penalties count as *spent*. Both tell
         improve.py where the dominant loss lives.
         """
-        slugs = self._slugs()
         loss = {}
         for e in self._entries:
             loss.setdefault(e.component, {"fired": 0, "discounted": 0.0})

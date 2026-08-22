@@ -1,0 +1,35 @@
+# Bob CI — the deterministic gate for the harness itself.
+# Runs on 3.9 because that is the Mac's system python (the real runtime;
+# CONTRACTS.md pins 3.9-compatible stdlib only) and 3.12 so a future OS
+# bump is a non-event. BOB_MOCK_AGENTS=1 keeps every test off the network
+# and away from the real `claude` CLI (CONTRACTS.md sec 5).
+#
+# NOTE for the integrator: the git repo root is one level ABOVE bob/
+# (inventors/). GitHub only reads workflows from <root>/.github/workflows,
+# so promote this file there; `working-directory: bob` below already
+# assumes the root checkout.
+name: bob-ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    env:
+      BOB_MOCK_AGENTS: "1"
+    defaults:
+      run:
+        working-directory: bob
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: unit tests (stdlib unittest only, no pytest)
+        run: python -m unittest discover -s tests -v

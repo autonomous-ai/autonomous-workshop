@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from .journal import open_journal
@@ -156,3 +155,46 @@ def add_mechanic(cfg, slug: str, *, name: str, space: str, cost: str,
     }
     save(cfg, corpus)
     (journal or open_journal(cfg)).append("corpus_mechanic", slug=slug, name=name)
+
+
+# --- ownership seeding (the 10 catalog games) -----------------------------
+# The storefront already carries ten designed games (GYRE, TRUE-MEASURE,
+# SLUICE, PLUMB, INTERLOCK, SPIRULINE, CATENARY, THE ESCAPEMENT, VEX, and
+# THE ORACLE). Eve must never re-invent any of them, so the *distinctive*
+# mechanic/theme tokens of each are marked owned up front. Ownership is what
+# the novelty gate measures an idea against: once owned, an overlapping
+# mechanic or theme is off the table (see gates.novelty_gate), which is what
+# makes "never existed before" mechanically true rather than aspirational.
+#
+# The tokens are deliberately kept to each game's most distinctive axes, not
+# generic words, because the novelty gate rejects on any exact token overlap.
+CATALOG_OWNED = [
+    # (mechanic, theme) — one row per catalog game
+    ("gears",      "orbits"),       # GYRE — geared orbits, gravity
+    ("pantograph", "linkage"),      # TRUE-MEASURE — pantograph linkage
+    ("watershed",  "dams"),         # SLUICE — real 3D watershed tiles
+    ("counterweight", "swivel"),    # PLUMB — counterweighted swivel
+    ("interlock",  "clutch"),       # INTERLOCK — male/female edge adjacency
+    ("spiruline",  "spiral"),       # SPIRULINE — Archimedean spiral
+    ("tension",    "chain"),        # CATENARY — printed chain tension
+    ("escapement", "ratchet"),      # THE ESCAPEMENT — ratchet countdown
+    ("flip",       "topology"),     # VEX — flippable topology tiles
+    ("ballfall",   "blackbox"),     # THE ORACLE — hidden chaotic ball-fall
+]
+
+
+def seed_owned(cfg, journal=None) -> list[dict]:
+    """Idempotently mark every catalog game's distinctive axes as owned.
+
+    This is Loop A's hand-off from the human storefront: the corpus DB is the
+    only writer of `owned`, and it can safely be re-run at any time (own() is
+    a no-op when a token is already present). Returns the rows it ensured.
+    """
+    from .journal import open_journal
+    journal = journal or open_journal(cfg)
+    done = []
+    for mechanic, theme in CATALOG_OWNED:
+        own(cfg, mechanic=mechanic, theme=theme, journal=journal)
+        done.append({"mechanic": mechanic, "theme": theme})
+    open_journal(cfg).append("corpus_seed_owned", n=len(CATALOG_OWNED))
+    return done

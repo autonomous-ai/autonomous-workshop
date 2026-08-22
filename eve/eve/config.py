@@ -67,8 +67,15 @@ class Config:
     # --- tooling flags ---------------------------------------------------
     claude_cli: str = "claude"
     telegram_configured: bool = False
-    panda_configured: bool = False
     playtest_configured: bool = False
+
+    # --- Vibe / Panda store publish (see publish.py) -----------------------
+    store_base_url: str = "https://api.autonomous.ai"
+    store_upload_base: str = "http://localhost:8090"   # admindash for /uploads
+    store_upload_token: str = ""    # admindash bearer (uploads -> CDN)
+    store_bearer: str = ""          # platform bearer token (API calls)
+    panda_owner_id: str = ""        # 24-hex owner id for imported designs
+    store_configured: bool = False
 
     @classmethod
     def load(cls) -> "Config":
@@ -90,7 +97,12 @@ class Config:
         c.repair_budget = int(os.environ.get("EVE_REPAIR_BUDGET", c.repair_budget))
         c.rework_budget = int(os.environ.get("EVE_REWORK_BUDGET", c.rework_budget))
         c.telegram_configured = bool(os.environ.get("EVE_TELEGRAM_TOKEN"))
-        c.panda_configured = bool(os.environ.get("PANDA_OWNER_ID") and os.environ.get("PANDA_BACKEND_DIR"))
+        c.store_base_url = os.environ.get("EVE_STORE_BASE_URL", c.store_base_url)
+        c.store_upload_base = os.environ.get("EVE_STORE_UPLOAD_BASE", c.store_upload_base)
+        c.store_upload_token = os.environ.get("ADMIN_TOKEN", "").strip()
+        c.store_bearer = os.environ.get("EVE_STORE_BEARER", "").strip()
+        c.panda_owner_id = os.environ.get("PANDA_OWNER_ID", "").strip()
+        c.store_configured = bool(c.store_bearer)
         c.playtest_configured = bool(
             os.environ.get("PLAYTEST_BASE_URL")
             and os.environ.get("PLAYTEST_API_KEY")

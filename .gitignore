@@ -1,0 +1,22 @@
+# local env + creds
+.env
+*.pem
+*.key
+**/state/panda-auth.json
+
+# runtime noise (state that matters — QUEUE, ledger, bandit, DAYBOOK — IS committed)
+**/state/transcripts/
+**/state/logs/
+**/state/bgg_cache/
+**/state/.lock
+**/state/.daybook.lock
+**/state/.tick-budget.json
+**/state/.tg-offset
+
+# python
+__pycache__/
+*.pyc
+.venv*/
+
+# macOS
+.DS_Store
