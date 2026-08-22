@@ -258,7 +258,7 @@ def _cover_candidates(game_dir: Path) -> list[Path]:
     return cands[:5]
 
 
-def import_design(cfg, game, *, status: str = "public", journal=None) -> dict:
+def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
     """POST the finished game folder to the store's /designs/import endpoint.
 
     Returns a result dict with the platform response (project_url etc.). Taps
@@ -329,7 +329,7 @@ def import_design(cfg, game, *, status: str = "public", journal=None) -> dict:
     return {"ok": True, "info": info}
 
 
-def publish_to_store(cfg, game, *, status: str = "public", journal=None) -> dict:
+def publish_to_store(cfg, game, *, status: str = "draft", journal=None) -> dict:
     """Full store publish for one game: catalog writeup + import. Public entry
     point (claimable by a graduation marker)."""
     result = publish(game, cfg=cfg, journal=journal)

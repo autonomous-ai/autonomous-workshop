@@ -158,8 +158,9 @@ One game at a time, advanced one stage per meta-loop step. Stages:
    asks to play again**, first against real LLM-players, ultimately against
    humans in the org's `PLAYTEST.md` protocol (≥3 groups). No fun-pass, no
    publish — this is where Eve refuses to ship a "tuned" but un-fun game.
-8. **Publish** — a game that passed every gate auto-publishes to the
-   site/storefront with its rules, renders, and measured COGS; a sale starts
+8. **Publish** — a game that passed every gate publishes to the
+   site/storefront as a **draft** (one-click human review flips it live); with its
+   rules, renders, and measured COGS; a sale starts
    print-and-ship. The 3D-printable body (fits the real bed, watertight,
    cheap COGS) is a gate, not a hope: the printed game *is* the product.
 

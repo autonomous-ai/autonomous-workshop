@@ -103,7 +103,7 @@ def cmd_publish(args):
         print("refusing: %s is %s, not 'ship'" % (args.slug, game.stage))
         return 1
     cfg = _cfg()
-    result = publish.publish_to_store(cfg, game, status="public")
+    result = publish.publish_to_store(cfg, game, status="draft")
     print(json.dumps(result, indent=2, default=str))
     return 0
 

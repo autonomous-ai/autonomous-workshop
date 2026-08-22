@@ -13,11 +13,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T13:46:26.851346+00:00",
-        "holder": "invent",
-        "id": "3ac2174bd91c4089a4cdd47e1122a2d6"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T09:25:21.568786+00:00",
@@ -36,6 +32,18 @@
           "from": "researched",
           "note": "novelty pass, margin=far",
           "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T14:01:29.423211+00:00",
+          "from": "ruled",
+          "note": "parked: crashed 2 times in a row at ruled: AgentError: Agent 'bob-rules-writer' overran its 15-minute wall ceiling and was killed (SIGTERM then SIGKILL after 5.0s grace). Retry once with a smaller task or a bigger ceiling \u2014 a ceiling that binds is the real constraint, not a safety limit.",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-22T16:30:00+00:00",
+          "from": "parked",
+          "note": "human unpark: rules-writer 15-min ceiling was the bug, raised to 35; budgets untouched",
+          "to": "ruled"
         }
       ],
       "reward": {
@@ -45,6 +53,57 @@
       "slug": "g0001",
       "state": "ruled",
       "title": "Crank"
+    },
+    "g0002": {
+      "budgets": {
+        "clarify_used": 0,
+        "repair_used": 0,
+        "rework_used": 0
+      },
+      "created": "2026-08-22T14:31:29.804089+00:00",
+      "direction": {
+        "family": "asymmetric-machine",
+        "lane": "invention",
+        "players": "2-4",
+        "weight": "light"
+      },
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
+      "log": [
+        {
+          "at": "2026-08-22T14:31:29.804089+00:00",
+          "from": null,
+          "note": "sparked",
+          "to": "sparked"
+        },
+        {
+          "at": "2026-08-22T15:07:02.436936+00:00",
+          "from": "sparked",
+          "note": "spark chosen: Re-Pin (triage kept 1 of 5)",
+          "to": "researched"
+        },
+        {
+          "at": "2026-08-22T15:38:39.918602+00:00",
+          "from": "researched",
+          "note": "novelty pass, margin=near",
+          "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T16:19:32.181505+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        }
+      ],
+      "reward": {
+        "history": [],
+        "latest": 0.0
+      },
+      "slug": "g0002",
+      "state": "rules_gated",
+      "title": "Re-Pin"
     }
   },
   "version": 2

@@ -622,7 +622,10 @@ def _handle_ruled(step):
         "\"components\": <same names/qty as bill>}}."
         % idea.get("players", "2-4"),
     ])
-    result = agents.run_agent("bob-rules-writer", prompt)
+    # 35-min wall: Opus + extended thinking writing a full rulebook blew the
+    # 15-min default twice on g0001 (2026-08-22) and the crash counter parked
+    # a healthy game. A ceiling that binds is the real constraint.
+    result = agents.run_agent("bob-rules-writer", prompt, max_minutes=35)
     reply = _extract_json(result.text)
     if not isinstance(reply, dict) or not isinstance(reply.get("rules_md"), str) \
             or not reply.get("rules_md").strip() \
@@ -844,6 +847,7 @@ def _handle_simulated(step):
             playtest.build_engine_prompt(slug, _home()),
         ])
         result = agents.run_agent("bob-engine-writer", prompt,
+                                  max_minutes=35,
                                   cwd=_game_dir(slug))
         cost += result.cost_usd
         if not os.path.exists(engine_path):
@@ -1055,7 +1059,8 @@ def _handle_built(step):
         "If you cannot write files, reply with JSON: {\"parts\": "
         "{\"<filename>\": \"<file content>\"}}." % slug,
     ])
-    result = agents.run_agent("bob-builder", prompt, cwd=gdir)
+    result = agents.run_agent("bob-builder", prompt, cwd=gdir,
+                              max_minutes=45)  # CAD builds are the longest stage
     reply = _extract_json(result.text)
     parts_dir = os.path.join(gdir, "parts")
     if isinstance(reply, dict) and isinstance(reply.get("parts"), dict):
