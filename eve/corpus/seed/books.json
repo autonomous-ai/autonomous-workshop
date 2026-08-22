@@ -1,0 +1,60 @@
+{
+  "reading_list": [
+    {
+      "title": "Everybody Wins: Four Decades of the Greatest Board Games Ever Made",
+      "author": "James Wallis",
+      "category": "history",
+      "why": "Cultural impact and the stories behind landmark modern hobby games.",
+      "status": "unread",
+      "order": 1
+    },
+    {
+      "title": "Around the World in Eighty Games",
+      "author": "Marcus du Sautoy",
+      "category": "history",
+      "why": "Mathematical and historical tour through classic and modern tabletop games.",
+      "status": "unread",
+      "order": 2
+    },
+    {
+      "title": "Board Games in 100 Moves",
+      "author": "Ian Livingstone",
+      "category": "history",
+      "why": "How milestone games shaped the tabletop landscape.",
+      "status": "unread",
+      "order": 3
+    },
+    {
+      "title": "GameTek: The Math and Science of Gaming",
+      "author": "Geoff Engelstein",
+      "category": "science",
+      "why": "Probability, psychology, and design theory behind how games work.",
+      "status": "unread",
+      "order": 4
+    },
+    {
+      "title": "A Theory of Fun for Game Design",
+      "author": "Raph Koster",
+      "category": "science",
+      "why": "Why humans play games and what makes mechanics engaging.",
+      "status": "unread",
+      "order": 5
+    },
+    {
+      "title": "Characteristics of Games",
+      "author": "George Skaff Elias, Richard Garfield, K. Robert Gutschera",
+      "category": "science",
+      "why": "Core traits that define and separate different game experiences.",
+      "status": "unread",
+      "order": 6
+    },
+    {
+      "title": "Building Blocks of Tabletop Game Design",
+      "author": "Daniel Solis",
+      "category": "science",
+      "why": "A structural encyclopedia of game mechanics.",
+      "status": "unread",
+      "order": 7
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "mechanics": {
+    "trick_taking": {"name": "Trick-taking", "space": "each hand one winner per trick; bidding sets the contract", "cost": "cheap", "audience": "family/casual", "examples": ["Whist", "Bridge", "Spades"]},
+    "auction": {"name": "Auction/bidding", "space": "price discovery for contested resources", "cost": "cheap", "audience": "midweight", "examples": ["Modern Art", "Ra", "For Sale"]},
+    "set_collection": {"name": "Set collection", "space": "completing groups from a common draw", "cost": "cheap", "audience": "casual", "examples": ["Ticket to Ride", "Rummy", "Sushi Go"]},
+    "worker_placement": {"name": "Worker placement", "space": "limited action slots raced each round", "cost": "expensive to print (many pieces)", "audience": "midweight/strategy", "examples": ["Agricola", "Stone Age", "Viticulture"]},
+    "deck_building": {"name": "Deck building", "space": "the table of cards is the game; grows each turn", "cost": "cards only (weak for FDM)", "audience": "midweight", "examples": ["Dominion", "Star Realms"]},
+    "drafting": {"name": "Drafting", "space": "players select from a passing hand; signal + deny", "cost": "cheap", "audience": "casual/mid", "examples": ["7 Wonders", "Sushi Go"]},
+    "area_majority": {"name": "Area majority", "space": "claiming influence over contested regions", "cost": "mid", "audience": "midweight", "examples": ["El Grande", "Small World"]},
+    "tile_laying": {"name": "Tile laying", "space": "growing a shared map that changes what is possible", "cost": "great for FDM (tiles)", "audience": "family", "examples": ["Carcassonne"]},
+    "push_your_luck": {"name": "Push your luck", "space": "deciding when to stop bidding your position", "cost": "cheap", "audience": "casual", "examples": ["Can't Stop", "Incan Gold", "Dungeon Roll"]},
+    "pattern_building": {"name": "Pattern building", "space": "arranging pieces into a cue that scores", "cost": "cheap", "audience": "family", "examples": ["Blokus", "Azul", "Qwirkle"]},
+    "negotiation": {"name": "Negotiation", "space": "players striking deals; social, hard to balance", "cost": "cheap but risky", "audience": "party", "examples": ["Chinatown", "Cosmic Encounter"]},
+    "simultaneous_selection": {"name": "Simultaneous action selection", "space": "commit without knowing rivals", "cost": "cheap", "audience": "casual", "examples": ["Rock Paper Scissors", "Citadels"]},
+    "memory": {"name": "Memory", "space": "information hidden in plain view", "cost": "cheap", "audience": "family", "examples": ["Memory", "Hanabi"]},
+    "deduction": {"name": "Deduction", "space": "narrowing a hidden truth through questions", "cost": "cheap", "audience": "midweight", "examples": ["Clue", "Sleuth", "Mastermind"]},
+    "race": {"name": "Race", "space": "first to a goal, usually to the end of a track", "cost": "cheap", "audience": "family", "examples": ["Camel Up", "Formula D"]}
+  },
+  "themes": [
+    "space", "fantasy", "ocean", "farming", "railways", "civilization",
+    "ancient", "city building", "cooking", "gardening", "exploration",
+    "war", "science", "moon", "sea", "desert", "ice", "underwater"
+  ],
+  "saturated": {
+    "mechanics": ["trick_taking", "set_collection", "worker_placement", "tile_laying", "area_majority", "deck_building", "drafting", "auction"],
+    "themes": ["space", "fantasy", "farming", "railways", "civilization", "ocean"]
+  },
+  "novelty_axes": [
+    "new mechanic combination (like X plus Y no one has joined)",
+    "new spatial/structural form made possible by 3D printing (mechanism as product)",
+    "a novel way for the board/mechanism itself to produce the decision",
+    "an unowned theme married to a real mechanism (not a themed skin)"
+  ]
+}
