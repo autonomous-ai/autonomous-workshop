@@ -349,8 +349,26 @@ def _handle_sparked(step):
     lane = _lane(game)
     cost = 0.0
 
+    taste = ""
+    taste_path = os.path.join(_home(), "knowledge", "TASTE.md")
+    if os.path.exists(taste_path):
+        with open(taste_path) as handle:
+            taste = handle.read()[:4000]
+    cards = []
+    cards_dir = os.path.join(_home(), "corpus", "cards")
+    if os.path.isdir(cards_dir):
+        for name in sorted(os.listdir(cards_dir))[:3]:
+            try:
+                with open(os.path.join(cards_dir, name)) as handle:
+                    cards.append("### %s\n%s" % (name, handle.read()[:2500]))
+            except OSError:
+                continue
     prompt = "\n\n".join([
         _agent_body("bob-ideator"),
+        "## The owner's taste (knowledge/TASTE.md — outranks everything)\n%s"
+        % _fenced(taste or "(empty)", "TASTE.md"),
+        "## Corpus cards (what the scholar loops have learned so far)\n%s"
+        % _fenced("\n\n".join(cards) or "(no cards yet)", "corpus cards"),
         "## Your arm for this call\n%s\nlane: %s"
         % (json.dumps(direction, indent=2, sort_keys=True), lane),
         "## Output contract\nReply with a JSON array of exactly %d spark "
@@ -504,26 +522,50 @@ def _handle_researched(step):
                          "(advance parked -> sparked) or kill")
         return
     sha = _idea_sha(slug)
+    # The judge argues against NAMED comps, never from recall: the harness
+    # builds the evidence pack (BGG search + corpus hits) FIRST and hands it
+    # over. g0001's first six runs got no pack and no web permission — six
+    # UNKNOWNs at ~$0.25 each with no way to ever do better.
+    try:
+        from harness import novelty
+        evidence = novelty.build_novelty_evidence(slug)
+    except Exception as exc:  # noqa: BLE001 — evidence is input, not a gate
+        evidence = {"warning": "evidence builder failed: %s" % exc}
     prompt = "\n\n".join([
         _agent_body("bob-novelty-judge"),
         "## The idea (games/%s/idea.json)\n%s"
         % (slug, _fenced(json.dumps(idea, indent=2, sort_keys=True),
                          "idea.json")),
+        "## Evidence pack (BGG search + corpus hits, built by the harness)\n%s"
+        % _fenced(json.dumps(evidence, indent=2, sort_keys=True)[:8000],
+                  "novelty_evidence.json"),
         "## Output contract\nReply with JSON only: {\"pass\": true|false, "
         "\"evidence_url\": <URL you actually opened, or null>, "
         "\"nearest\": [up to 3 named nearest neighbors], "
         "\"margin\": \"far\"|\"medium\"|\"near\", \"notes\": \"...\"}. "
         "\"UNKNOWN\" for pass is legal if you cannot verdict.",
     ])
-    result = agents.run_agent("bob-novelty-judge", prompt)
+    result = agents.run_agent("bob-novelty-judge", prompt,
+                              tools="WebSearch,WebFetch")
     verdict = _extract_json(result.text)
     if not isinstance(verdict, dict) or "pass" not in verdict \
             or str(verdict.get("pass")).upper() == "UNKNOWN":
-        # Unknown is a legal verdict: drop the dimension to re-run, never
-        # silently pass (docs/REWARD.md judge discipline).
+        # Unknown is a legal verdict — but an UNBOUNDED unknown is a $0.25/
+        # tick leak (g0001 burned six laps before this bound existed). Two
+        # UNKNOWNs on the same evidence = the judge cannot verdict; park
+        # for a human instead of paying for a third identical answer.
+        with queue.transaction() as q:
+            entry = q["games"].get(slug) or {}
+            entry["novelty_unknowns"] = int(entry.get("novelty_unknowns", 0)) + 1
+            unknowns = entry["novelty_unknowns"]
         _ledger_row(slug, "researched", result.cost_usd,
-                    "novelty verdict UNKNOWN/unparseable — will re-run")
-        queue.release(slug)
+                    "novelty verdict UNKNOWN/unparseable (%d/2)" % unknowns)
+        if unknowns >= 2:
+            queue.park(slug, "novelty judge returned UNKNOWN twice — human "
+                             "call needed (check WebSearch permission + the "
+                             "evidence pack in review/novelty_evidence.json)")
+        else:
+            queue.release(slug)
         return
     record = {
         "idea_sha": sha,
@@ -637,7 +679,24 @@ def _rules_lint(slug, sha):
         if name and name.lower() not in lowered:
             problems.append("bill component %r never mentioned in rules.md"
                             % name)
-    record = {"idea_sha": sha, "lint_pass": not problems, "problems": problems}
+    # text2game-lineage lints, WARNINGS for now (graduate to blockers once
+    # the rules-writer contract carries them): unbound language is "the
+    # single check that separates a GDD from a wish list", and a shopper
+    # remembers ONE object — exactly one bill part should be flagged
+    # "signature": true (Monopoly's little metal dog still sells the box).
+    warnings = []
+    unbound = re.findall(r"\b(some|several|a few|enough|roughly|"
+                         r"approximately|plenty)\b", lowered)
+    if unbound:
+        warnings.append("unbound language in rules (%s) — every rule "
+                        "carries a number (text2game consistency lint)"
+                        % ", ".join(sorted(set(unbound))[:4]))
+    sigs = [b for b in bill if isinstance(b, dict) and b.get("signature")]
+    if len(sigs) != 1:
+        warnings.append("%d signature parts (want exactly 1 — the one "
+                        "object a shopper remembers)" % len(sigs))
+    record = {"idea_sha": sha, "lint_pass": not problems,
+              "problems": problems, "warnings": warnings}
     _write_json(os.path.join(gdir, "review", "rules_lint.json"), record)
     return record
 
@@ -1033,8 +1092,40 @@ def _handle_build_gated(step):
     for name in files:
         if os.path.getsize(os.path.join(parts_dir, name)) == 0:
             problems.append("parts/%s is empty" % name)
+    # Mesh half of G6, via the vendored cad skill (peterat617/text-to-3d,
+    # the toolchain that built Arrows Across The River): check_mesh per STL
+    # — watertight, bed fit, overhangs. Needs the .venv-cad interpreter
+    # (BOB_CAD_PY); absent, the gate records the skip as a WARNING and the
+    # build lens carries the load. A skipped check is never a silent pass.
+    mesh_warnings = []
+    mesh_checked = False
+    cad_py = os.environ.get("BOB_CAD_PY", "").strip()
+    check_mesh = os.path.join(_home(), "skills", "cad", "scripts", "check_mesh")
+    stls = [f for f in files if f.lower().endswith(".stl")]
+    if cad_py and os.path.isfile(check_mesh) and stls:
+        import subprocess as _sp
+        mesh_checked = True
+        for name in stls:
+            try:
+                r = _sp.run([cad_py, check_mesh,
+                             os.path.join(parts_dir, name),
+                             "--bed", "220x220x250"],
+                            capture_output=True, text=True, timeout=300)
+                if r.returncode != 0:
+                    problems.append("check_mesh FAIL parts/%s: %s"
+                                    % (name, (r.stdout + r.stderr)[-200:]))
+            except Exception as exc:  # noqa: BLE001 — a dead venv is a skip, not a crash
+                mesh_checked = False
+                mesh_warnings.append("check_mesh errored (%s) — mesh checks "
+                                     "incomplete" % exc.__class__.__name__)
+                break
+    elif stls:
+        mesh_warnings.append("mesh checks SKIPPED — set BOB_CAD_PY to a "
+                             "python>=3.10 venv with cadgen==0.4.19 "
+                             "(skills/PROVENANCE.md)")
     if problems:
         record = {"idea_sha": sha, "build_pass": False,
+                  "mesh_checked": mesh_checked, "warnings": mesh_warnings,
                   "survives_as_cardboard": None, "issues": problems}
         _write_json(os.path.join(gdir, "review", "build_gate.json"), record)
         _ledger_row(slug, "build_gated", 0.0,

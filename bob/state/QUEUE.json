@@ -14,8 +14,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": null,
-        "holder": null
+        "expires": "2026-08-22T13:46:26.851346+00:00",
+        "holder": "invent",
+        "id": "3ac2174bd91c4089a4cdd47e1122a2d6"
       },
       "log": [
         {
@@ -29,6 +30,12 @@
           "from": "sparked",
           "note": "spark chosen: Crank (triage kept 1 of 5)",
           "to": "researched"
+        },
+        {
+          "at": "2026-08-22T12:57:03.394626+00:00",
+          "from": "researched",
+          "note": "novelty pass, margin=far",
+          "to": "ruled"
         }
       ],
       "reward": {
@@ -36,7 +43,7 @@
         "latest": 0.0
       },
       "slug": "g0001",
-      "state": "researched",
+      "state": "ruled",
       "title": "Crank"
     }
   },

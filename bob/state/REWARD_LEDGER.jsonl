@@ -6,3 +6,4 @@
 {"at": "2026-08-22T11:29:43.353202+00:00", "components": {}, "cost_usd": 0.272489, "delta": 0.0, "kind": "iteration", "notes": "novelty verdict UNKNOWN/unparseable \u2014 will re-run", "score": 0.0, "slug": "g0001", "stage": "researched"}
 {"at": "2026-08-22T12:00:38.081281+00:00", "components": {}, "cost_usd": 0.255953, "delta": 0.0, "kind": "iteration", "notes": "novelty verdict UNKNOWN/unparseable \u2014 will re-run", "score": 0.0, "slug": "g0001", "stage": "researched"}
 {"at": "2026-08-22T12:31:26.522388+00:00", "components": {}, "cost_usd": 0.123534, "delta": 0.0, "kind": "iteration", "notes": "novelty verdict UNKNOWN/unparseable \u2014 will re-run", "score": 0.0, "slug": "g0001", "stage": "researched"}
+{"at": "2026-08-22T12:57:03.393960+00:00", "components": {}, "cost_usd": 0.361982, "delta": 0.0, "kind": "iteration", "notes": "novelty PASS (margin=far)", "score": 0.0, "slug": "g0001", "stage": "researched"}

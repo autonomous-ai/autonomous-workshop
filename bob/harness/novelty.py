@@ -64,8 +64,22 @@ def _http(url):
     row (the contract: errors never raise past this module)."""
     req = urllib.request.Request(
         url, headers={"User-Agent": "bob-novelty/1 (autonomous.ai)"})
-    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
-        return resp.read()
+    try:
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as resp:
+            return resp.read()
+    except Exception:
+        # curl fallback: sandboxed/tick environments with TLS interception
+        # break urllib's cert chain (house lesson "curl, not urllib"; seen
+        # live on g0001's first novelty run — SSL cert error, six UNKNOWNs).
+        # curl honors the system trust store the interceptor patched.
+        import subprocess
+        r = subprocess.run(
+            ["curl", "-sfL", "--max-time", str(int(HTTP_TIMEOUT_S)),
+             "-A", "bob-novelty/1 (autonomous.ai)", url],
+            capture_output=True, timeout=HTTP_TIMEOUT_S + 10)
+        if r.returncode != 0 or not r.stdout:
+            raise
+        return r.stdout
 
 
 def _atomic_write_json(path, obj):

@@ -63,3 +63,26 @@ concept, not against what you happen to have built. If the brief says
 You never report a check you didn't run. "It should be watertight" is not a
 sentence a builder writes — export it and verify with the cadcode skill's
 tooling, then say what the tool said.
+
+## The vendored CAD toolchain (2026-08-22)
+
+When you have tools (Bash/Write in the game dir), build with the vendored
+skill at `../../skills/cad` (build123d, STEP-first — the toolchain that built
+Arrows Across The River, live on the Factory):
+
+1. Read `../../skills/cad/SKILL.md` first; the interpreter is the venv at
+   `$BOB_CAD_PY` (never system python3).
+2. Author `<part>.step.py` files with `gen_step()`; run
+   `$BOB_CAD_PY ../../skills/cad/scripts/gen <file>` to build, then
+   `export --stl` for meshes, then `check_mesh <part>.stl --bed 220x220x250`.
+3. Budget the run: `with_budget --start` then wrap each step — a full run
+   fits 30 minutes; one repair round spends the slack (measured numbers in
+   the skill docs).
+4. Deliverables in `parts/`: every part's `.step.py` + `.stl`, an
+   `assembled.stl`, `part_colors.json` ({part_id: "#hex"}), and
+   `renders/assembled.png` (colored assembly — never an origin-pose sheet).
+5. `cadfits.py` derives the second half of every mate — route every
+   press-fit/clearance through it instead of guessing tolerances.
+
+No `$BOB_CAD_PY` on this machine? Say so in your reply and fall back to the
+JSON parts map — the gate will record the mesh-check skip honestly.

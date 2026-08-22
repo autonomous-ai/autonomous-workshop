@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""Printability check for an exported STL: watertight, winding, volume, size.
+
+The mesh half of the print gate, and the sibling of `check_fit`. `check_fit`
+builds `part_*.step.py` and reads the STEP source; this reads the STL that
+actually goes to the slicer, so the pair is also what catches a stale export --
+a source at `min(Z) == 0` beside an artifact that is not. `inspect validate`
+answers a third question again: whether the STEP solid is sound.
+
+Unlike its siblings it takes a file, not a project directory, because a project
+exports one STL per printable part and each is sliced on its own.
+
+    python skills/cad/scripts/check_mesh <part.stl> --bed 256x256x256
+"""
+
+import argparse
+import struct
+import sys
+from collections import defaultdict
+
+import numpy as np
+
+
+def load_stl(path):
+    """Return (N, 3, 3) triangle vertex array from a binary or ASCII STL."""
+    with open(path, "rb") as fh:
+        head = fh.read(84)
+        if head[:5] == b"solid" and b"facet" in fh.read(512):
+            fh.seek(0)
+            verts = [
+                [float(x) for x in line.split()[1:4]]
+                for line in fh.read().decode("utf-8", "replace").splitlines()
+                if line.strip().startswith("vertex")
+            ]
+            return np.asarray(verts, dtype=np.float64).reshape(-1, 3, 3)
+        count = struct.unpack("<I", head[80:84])[0]
+        raw = np.frombuffer(fh.read(count * 50), dtype=np.uint8)
+    if raw.size != count * 50:
+        sys.exit(f"truncated STL: header claims {count} triangles")
+    tri = raw.reshape(count, 50)[:, 12:48].copy().view("<f4")
+    return tri.reshape(count, 3, 3).astype(np.float64)
+
+
+def weld(tris, tol=1e-6):
+    """Snap vertices to a tolerance grid and return (verts, faces)."""
+    flat = tris.reshape(-1, 3)
+    keys = np.round(flat / tol).astype(np.int64)
+    _, first, inverse = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    return flat[first], inverse.reshape(-1, 3)
+
+
+def shells(faces, n_verts):
+    """Count connected components over the face adjacency graph."""
+    parent = list(range(n_verts))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    for a, b, c in faces:
+        for x, y in ((a, b), (b, c)):
+            ra, rb = find(x), find(y)
+            if ra != rb:
+                parent[ra] = rb
+    return len({find(v) for v in faces.reshape(-1)})
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("stl")
+    ap.add_argument("--bed", default="256x256x256", help="printer bed WxDxH in mm")
+    ap.add_argument("--min-feature", type=float, default=0.8,
+                    help="mm; triangles smaller than this are only reported, not failed")
+    args = ap.parse_args()
+
+    tris = load_stl(args.stl)
+    verts, faces = weld(tris)
+
+    checks = []          # (status, label, detail); status in {PASS, WARN, FAIL}
+    def check(status, label, detail):
+        checks.append((status, label, detail))
+
+    # --- degenerate triangles -------------------------------------------------
+    # Tessellation routinely emits a few zero-area slivers; they carry no
+    # geometry, so drop them before the topology counts rather than letting
+    # them fake open edges.
+    e1 = verts[faces[:, 1]] - verts[faces[:, 0]]
+    e2 = verts[faces[:, 2]] - verts[faces[:, 0]]
+    area = 0.5 * np.linalg.norm(np.cross(e1, e2), axis=1)
+    degenerate = int((area <= 1e-12).sum())
+    faces = faces[area > 1e-12]
+    area = area[area > 1e-12]
+    check("WARN" if degenerate else "PASS", "degenerate triangles",
+          f"{degenerate} zero-area (dropped; slicers ignore these)")
+
+    # --- manifold + consistent winding ---------------------------------------
+    counts = defaultdict(int)
+    signed = defaultdict(int)
+    for a, b, c in faces:
+        for x, y in ((a, b), (b, c), (c, a)):
+            key = (x, y) if x < y else (y, x)
+            counts[key] += 1
+            signed[key] += 1 if x < y else -1
+    boundary = sum(1 for v in counts.values() if v == 1)
+    nonmanifold = sum(1 for v in counts.values() if v > 2)
+    flipped = sum(1 for k, v in signed.items() if counts[k] == 2 and v != 0)
+    check("PASS" if boundary == 0 else "FAIL", "watertight (no open edges)",
+          f"{boundary} boundary edges")
+    check("PASS" if nonmanifold == 0 else "WARN", "manifold",
+          f"{nonmanifold} edges shared by >2 faces"
+          + (" (normal where assembly bodies touch)" if nonmanifold else ""))
+    check("PASS" if flipped == 0 else "FAIL", "consistent winding",
+          f"{flipped} edges with flipped neighbours")
+
+    # --- volume / orientation -------------------------------------------------
+    v0, v1, v2 = verts[faces[:, 0]], verts[faces[:, 1]], verts[faces[:, 2]]
+    volume = float(np.einsum("ij,ij->i", v0, np.cross(v1, v2)).sum() / 6.0)
+    check("PASS" if volume > 0 else "FAIL", "positive volume (normals point out)",
+          f"{volume / 1000:.2f} cm3")
+
+    # --- shells ---------------------------------------------------------------
+    n_shells = shells(faces, len(verts))
+    check("PASS", "connected shells",
+          f"{n_shells} (>1 = separate bodies; check they touch, not float)")
+
+    # --- size vs bed ----------------------------------------------------------
+    lo, hi = verts.min(axis=0), verts.max(axis=0)
+    size = hi - lo
+    bed = [float(x) for x in args.bed.lower().split("x")]
+    fits = all(s <= b for s, b in zip(sorted(size[:2], reverse=True),
+                                      sorted(bed[:2], reverse=True))) and size[2] <= bed[2]
+    check("PASS" if fits else "FAIL", f"fits {args.bed} bed",
+          "x".join(f"{s:.1f}" for s in size) + " mm")
+
+    # --- tiny features (report only) ------------------------------------------
+    tiny = int((area < args.min_feature ** 2).sum())
+    check("PASS", "small triangles",
+          f"{tiny} under {args.min_feature} mm edge scale (thin walls / nozzle limit)")
+
+    print(f"{args.stl}: {len(faces)} triangles, {len(verts)} vertices")
+    hard_fail = False
+    for status, label, detail in checks:
+        print(f"  {status}  {label:34s} {detail}")
+        hard_fail |= status == "FAIL"
+    print("RESULT:", "NOT PRINTABLE AS-IS" if hard_fail else "printable")
+    return 1 if hard_fail else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

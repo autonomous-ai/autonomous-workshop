@@ -324,7 +324,8 @@ def _tick_budget_remaining():
         return None
 
 
-def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=40):
+def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None,
+              max_turns=40, tools=None):
     """Run one headless claude call; return AgentResult or raise.
 
     When a tick budget is open (harness.timebudget.open_run), max_minutes
@@ -365,6 +366,13 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
         # Tools only when there is a workspace to use them in; pure judge
         # calls stay tool-less (REWARD.md: judges read artifacts only).
         argv += ["--allowedTools", CWD_TOOLS]
+    elif tools:
+        # A judge may still need a NAMED tool set — the novelty judge's
+        # whole evidence rule ("a kill needs a URL you actually opened")
+        # was dead on the first live game because headless calls carry no
+        # web permission at all (g0001, 2026-08-22: six UNKNOWNs, $1.50,
+        # zero URLs opened). Explicit names only, never the cwd toolbox.
+        argv += ["--allowedTools", tools]
 
     proc = subprocess.Popen(
         argv,

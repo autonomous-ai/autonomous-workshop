@@ -1,0 +1,443 @@
+#!/usr/bin/env python3
+"""Run a CAD project through a sequential quick or final workflow.
+
+The runner removes orchestration overhead, not validation.  It batches explicit
+generation targets, runs inspect JSONL in one process, and keeps every geometry
+consumer sequential so the single-request warm daemon never becomes a hidden
+queue.
+
+    python skills/cad/scripts/verify_project <project-dir> --quick
+    python skills/cad/scripts/verify_project <project-dir> --fresh --exports
+    python skills/cad/scripts/verify_project <project-dir> --dry-run
+
+Final mode (the default) runs layout, multi-target generation with STEP writes,
+refs + validate for every entry, assembly interference, print fit, a
+local measure/check_fit.py when present, and motion when a manifest is present.
+--exports additionally writes the assembly GLB and per-part STLs from the fresh
+STEP files, then checks meshes.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Sequence
+
+
+SCRIPTS_DIR = Path(__file__).resolve().parent
+ENTRY_SUFFIX = ".step.py"
+PART_PREFIX = "part_"
+DEFAULT_PREVIEW_TOLERANCE = 0.1
+DEFAULT_BED = (220.0, 220.0, 220.0)
+BED_DECLARATION = re.compile(
+    r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
+)
+
+
+def _path_arg(path: Path, cwd: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(cwd).as_posix()
+    except ValueError:
+        return str(resolved)
+
+
+def _resolve_inside_project(raw: str | None, project: Path, cwd: Path) -> Path | None:
+    if raw is None:
+        return None
+    candidate = Path(raw)
+    if not candidate.is_absolute():
+        from_cwd = (cwd / candidate).resolve()
+        candidate = from_cwd if from_cwd.exists() else (project / candidate).resolve()
+    else:
+        candidate = candidate.resolve()
+    try:
+        candidate.relative_to(project)
+    except ValueError as exc:
+        raise ValueError(f"path must stay inside {project}: {candidate}") from exc
+    return candidate
+
+
+def _discover_entries(project: Path, assembly_arg: str | None, cwd: Path) -> tuple[Path, list[Path]]:
+    entries = sorted(project.glob(f"*{ENTRY_SUFFIX}"))
+    part_entries = [path for path in entries if path.name.startswith(PART_PREFIX)]
+    if assembly_arg:
+        assembly = _resolve_inside_project(assembly_arg, project, cwd)
+        if assembly is None or not assembly.is_file():
+            raise ValueError(f"assembly entry does not exist: {assembly_arg}")
+    else:
+        assemblies = [path for path in entries if not path.name.startswith(PART_PREFIX)]
+        if len(assemblies) != 1:
+            names = ", ".join(path.name for path in assemblies) or "none"
+            raise ValueError(
+                f"expected one combined entry in {project}, found {len(assemblies)} ({names}); "
+                "pass --assembly explicitly"
+            )
+        assembly = assemblies[0]
+    if assembly.suffix != ".py" or not assembly.name.endswith(ENTRY_SUFFIX):
+        raise ValueError(f"assembly must be a *{ENTRY_SUFFIX} entry: {assembly}")
+    return assembly, part_entries
+
+
+def _parse_bed(raw: str) -> tuple[float, float, float]:
+    parts = [item.strip() for item in re.split(r"[x×]", raw.lower())]
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError("bed must be WxDxH, for example 220x220x220")
+    try:
+        values = tuple(float(item) for item in parts)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("bed dimensions must be numbers") from exc
+    if any(value <= 0 for value in values):
+        raise argparse.ArgumentTypeError("bed dimensions must be positive")
+    return values  # type: ignore[return-value]
+
+
+def _declared_bed(project: Path) -> tuple[float, float, float] | None:
+    for path in (project / "README.md", *sorted(project.glob("*_spec.md"))):
+        if not path.is_file():
+            continue
+        match = BED_DECLARATION.search(path.read_text(encoding="utf-8", errors="replace"))
+        if match:
+            return tuple(  # type: ignore[return-value]
+                float(match.group(index)) for index in range(1, 4)
+            )
+    return None
+
+
+def _command_label(args: Sequence[str]) -> str:
+    if len(args) > 1 and Path(args[0]).name.startswith("python"):
+        return Path(args[1]).name
+    return Path(args[0]).name
+
+
+class Runner:
+    def __init__(self, *, cwd: Path, dry_run: bool, verbose: bool) -> None:
+        self.cwd = cwd
+        self.dry_run = dry_run
+        self.verbose = verbose
+
+    def command(
+        self,
+        argv: Sequence[str | Path],
+        *,
+        warm: bool = False,
+        env_extra: dict[str, str] | None = None,
+    ) -> int:
+        args = [str(item) for item in argv]
+        print(f"[verify_project] {shlex.join(args)}", flush=True)
+        if self.dry_run:
+            return 0
+        env = dict(os.environ)
+        if warm:
+            env["CADGEN_WARM"] = "1"
+        if env_extra:
+            env.update(env_extra)
+        started = time.perf_counter()
+        return_code = subprocess.run(args, cwd=self.cwd, env=env, check=False).returncode
+        print(
+            f"[verify_project] {_command_label(args)}: rc={return_code} "
+            f"in {time.perf_counter() - started:.2f}s",
+            flush=True,
+        )
+        return return_code
+
+    def inspect_batch(self, requests: list[dict[str, object]]) -> int:
+        argv = [sys.executable, str(SCRIPTS_DIR / "inspect"), "batch"]
+        print(f"[verify_project] {shlex.join(argv)}  # {len(requests)} JSONL request(s)", flush=True)
+        if self.dry_run:
+            for request in requests:
+                print(json.dumps(request, separators=(",", ":")))
+            return 0
+        payload = "".join(json.dumps(request, separators=(",", ":")) + "\n" for request in requests)
+        env = dict(os.environ)
+        # Batch owns stdin and is itself the long-lived inspect process.  Do not
+        # ask the no-stdin daemon protocol to carry it.
+        env.pop("CADGEN_WARM", None)
+        started = time.perf_counter()
+        completed = subprocess.run(
+            argv,
+            cwd=self.cwd,
+            env=env,
+            input=payload,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if completed.stderr:
+            print(completed.stderr, file=sys.stderr, end="")
+        failed = completed.returncode != 0
+        response_count = 0
+        for line in completed.stdout.splitlines():
+            if not line.strip():
+                continue
+            response_count += 1
+            try:
+                response = json.loads(line)
+            except ValueError:
+                print(line)
+                failed = True
+                continue
+            response_ok = isinstance(response, dict) and bool(response.get("ok"))
+            if self.verbose or not response_ok:
+                print(line)
+            else:
+                print(f"[verify_project] inspect {response.get('id', response_count)}: ok")
+            if not response_ok:
+                failed = True
+        if response_count != len(requests):
+            print(
+                f"verify_project: inspect batch returned {response_count} response(s), "
+                f"expected {len(requests)}",
+                file=sys.stderr,
+            )
+            failed = True
+        print(
+            f"[verify_project] inspect batch: rc={1 if failed else 0} "
+            f"in {time.perf_counter() - started:.2f}s",
+            flush=True,
+        )
+        return 1 if failed else 0
+
+
+def _step_for_entry(entry: Path) -> Path:
+    return entry.with_suffix("")
+
+
+def _stl_for_entry(entry: Path) -> Path:
+    return _step_for_entry(entry).with_suffix(".stl")
+
+
+def _run_or_stop(runner: Runner, argv: Sequence[str | Path], **kwargs) -> bool:
+    return runner.command(argv, **kwargs) == 0
+
+
+def _quick(
+    runner: Runner,
+    assembly: Path,
+    *,
+    preview_tolerance: float,
+) -> int:
+    assembly_arg = _path_arg(assembly, runner.cwd)
+    if not _run_or_stop(
+        runner,
+        [
+            sys.executable,
+            SCRIPTS_DIR / "gen",
+            assembly_arg,
+            "--mesh-tolerance",
+            str(preview_tolerance),
+            "--json",
+        ],
+        warm=True,
+    ):
+        return 1
+    return 0
+
+
+def _final(
+    runner: Runner,
+    project: Path,
+    assembly: Path,
+    parts: list[Path],
+    *,
+    motion_manifest: Path | None,
+    exports: bool,
+    strict_fit: bool,
+    bed: tuple[float, float, float],
+) -> int:
+    entries = [assembly, *parts]
+    entry_args = [_path_arg(path, runner.cwd) for path in entries]
+    if not _run_or_stop(
+        runner,
+        [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
+        warm=True,
+    ):
+        return 1
+
+    requests: list[dict[str, object]] = []
+    for index, entry in enumerate(entry_args):
+        label = "assembly" if index == 0 else Path(entry).name.removesuffix(ENTRY_SUFFIX)
+        requests.extend(
+            [
+                {
+                    "id": f"refs:{label}",
+                    "argv": ["refs", entry, "--facts", "--planes", "--positioning"],
+                },
+                {"id": f"validate:{label}", "argv": ["validate", entry]},
+            ]
+        )
+    requests.append(
+        {
+            "id": "interfere:assembly",
+            "argv": ["interfere", entry_args[0]],
+        }
+    )
+    if runner.inspect_batch(requests) != 0:
+        return 1
+
+    if parts:
+        fit_args: list[str | Path] = [
+            sys.executable,
+            SCRIPTS_DIR / "check_fit",
+            _path_arg(project, runner.cwd),
+            "--bed",
+            str(bed[0]),
+            str(bed[1]),
+        ]
+        if strict_fit:
+            fit_args.append("--strict")
+        if not _run_or_stop(runner, fit_args):
+            return 1
+
+    local_audit = project / "measure" / "check_fit.py"
+    if local_audit.is_file():
+        current_pythonpath = os.environ.get("PYTHONPATH", "")
+        project_pythonpath = str(project)
+        if current_pythonpath:
+            project_pythonpath += os.pathsep + current_pythonpath
+        if not _run_or_stop(
+            runner,
+            [sys.executable, _path_arg(local_audit, runner.cwd)],
+            env_extra={"PYTHONPATH": project_pythonpath},
+        ):
+            return 1
+
+    if motion_manifest is not None:
+        if not motion_manifest.is_file():
+            print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
+            return 2
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_motion",
+                _path_arg(project, runner.cwd),
+                "--manifest",
+                _path_arg(motion_manifest, runner.cwd),
+            ],
+        ):
+            return 1
+
+    if exports:
+        assembly_step = _step_for_entry(assembly)
+        if not _run_or_stop(
+            runner,
+            [sys.executable, SCRIPTS_DIR / "export", _path_arg(assembly_step, runner.cwd), "--glb", "--json"],
+            warm=True,
+        ):
+            return 1
+        for part in parts:
+            part_step = _step_for_entry(part)
+            if not _run_or_stop(
+                runner,
+                [sys.executable, SCRIPTS_DIR / "export", _path_arg(part_step, runner.cwd), "--stl", "--json"],
+                warm=True,
+            ):
+                return 1
+            if not _run_or_stop(
+                runner,
+                [
+                    sys.executable,
+                    SCRIPTS_DIR / "check_mesh",
+                    _path_arg(_stl_for_entry(part), runner.cwd),
+                    "--bed",
+                    f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
+                ],
+            ):
+                return 1
+
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("project", help="project directory containing *.step.py entries")
+    parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
+    parser.add_argument("--quick", action="store_true", help="combined-entry preview generation only")
+    parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
+    parser.add_argument("--exports", action="store_true", help="final mode: write GLB/STLs from fresh STEP files and check meshes")
+    parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
+    parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
+    parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
+    parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
+    parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
+    parser.add_argument("--verbose", action="store_true", help="print complete successful inspect JSON responses")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    cwd = Path.cwd().resolve()
+    project = (cwd / args.project).resolve() if not Path(args.project).is_absolute() else Path(args.project).resolve()
+    if not project.is_dir():
+        parser.error(f"project is not a directory: {project}")
+    try:
+        project.relative_to(cwd)
+    except ValueError:
+        parser.error(f"project must be inside the command cwd: {project}")
+    if args.preview_tolerance <= 0:
+        parser.error("--preview-tolerance must be positive")
+    if args.quick and args.exports:
+        parser.error("--exports is a final-mode option and cannot be combined with --quick")
+    if args.quick and args.strict_fit:
+        parser.error("--strict-fit is a final-mode option and cannot be combined with --quick")
+    try:
+        assembly, parts = _discover_entries(project, args.assembly, cwd)
+        explicit_motion = _resolve_inside_project(args.motion_manifest, project, cwd)
+    except ValueError as exc:
+        parser.error(str(exc))
+
+    motion_manifest = explicit_motion
+    if motion_manifest is None and (project / "measure" / "motion.json").is_file():
+        motion_manifest = project / "measure" / "motion.json"
+
+    bed = args.bed or _declared_bed(project) or DEFAULT_BED
+    runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
+    workflow_started = time.perf_counter()
+    if runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)]) != 0:
+        return 1
+
+    cache = project / "__cadgen__"
+    if args.fresh and cache.exists():
+        print(f"[verify_project] delete cache {cache}", flush=True)
+        if not args.dry_run:
+            shutil.rmtree(cache)
+
+    if args.quick:
+        result = _quick(
+            runner,
+            assembly,
+            preview_tolerance=float(args.preview_tolerance),
+        )
+        mode = "quick"
+    else:
+        result = _final(
+            runner,
+            project,
+            assembly,
+            parts,
+            motion_manifest=motion_manifest,
+            exports=bool(args.exports),
+            strict_fit=bool(args.strict_fit),
+            bed=bed,
+        )
+        mode = "final"
+    print(
+        f"[verify_project] {mode} workflow: rc={result} "
+        f"in {time.perf_counter() - workflow_started:.2f}s",
+        flush=True,
+    )
+    return result
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

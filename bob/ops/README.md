@@ -54,3 +54,18 @@ no environment). Without them the watchdog still runs and shouts to
 workflow file must live at the *git repo root* (`inventors/.github/workflows/`)
 for GitHub to pick it up; the copy here is the source of truth the integrator
 promotes.
+
+## The CAD venv (build stage + mesh gate)
+
+The vendored `skills/cad` toolchain (see `skills/PROVENANCE.md`) needs
+Python ≥3.10 with `cadgen==0.4.19`:
+
+```bash
+/Users/d/miniconda/bin/python3.12 -m venv .venv-cad
+.venv-cad/bin/pip install cadgen==0.4.19
+echo "BOB_CAD_PY=$PWD/.venv-cad/bin/python" >> .env
+```
+
+Without `BOB_CAD_PY` the pipeline still runs: the builder falls back to the
+JSON parts map and the build gate records "mesh checks SKIPPED" as a warning
+— never a silent pass.
