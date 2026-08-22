@@ -11,6 +11,7 @@ from typing import Any, Mapping, Sequence
 
 from .adapters import COMMAND_ADAPTER_CONTRACT_VERSION, CommandAdapter
 from .codex_provider import CodexAppServerProvider
+from .cad_validation import PrinterCalibrationProfile, PrinterTarget
 from .config import DEFAULT_EVAL_PATH, default_runtime_root, load_config, resolve_runtime_paths
 from .engine import AliceEngine
 from .evals import run_release_policy_suite
@@ -23,6 +24,7 @@ from .page_builder import (
 from .policy import release_policy_from_config
 from .providers import CommandAgentProvider, FixtureAgentProvider
 from .store import DurableStore
+from .text2game_adapter import Text2GamePhysicalAdapter
 from .transitions import TransitionEvidence, advance_with_evidence
 from .vibe_pipeline import (
     ALICE_REVISION_BOUND_RELEASE_CAPABILITIES,
@@ -271,13 +273,30 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.count <= 0:
                 raise SystemExit("--count must be positive")
             completed: list[dict[str, Any]] = []
+            tick_succeeded = True
             for _ in range(args.count):
                 task = engine.work_once()
                 if task is None:
                     break
-                completed.append({"id": task.id, "kind": task.kind, "state": task.state})
+                quarantined = engine._task_is_quarantined(task.id)
+                completed.append(
+                    {
+                        "id": task.id,
+                        "kind": task.kind,
+                        "state": task.state,
+                        "quarantined": quarantined,
+                    }
+                )
+                if task.state != "succeeded" or quarantined:
+                    tick_succeeded = False
+                    break
+            # A quarantine discovered while schedule() replayed an older
+            # succeeded result is also unhealthy even when this invocation was
+            # otherwise idle.  It remains loud until explicitly reconciled.
+            if store.list_experiences(kind="task.result_quarantined", limit=1):
+                tick_succeeded = False
             print(json.dumps({"tasks": completed, "status": store.task_counts()}, indent=2))
-            return 0
+            return 0 if tick_succeeded else 3
         if args.command == "run":
             engine.run_forever(poll_seconds=args.poll_seconds)
             return 0
@@ -768,6 +787,54 @@ def _adapters(
                 timeout_seconds=1_800,
                 allowed_environment=command_environment.get(name, ()),
             )
+    text2game = values.get("text2game", {})
+    if isinstance(text2game, Mapping) and text2game.get("enabled") is True:
+        if config["runtime"]["effect_mode"] == "dry-run":
+            raise SystemExit(
+                "adapters.text2game runs CAD/model phases and requires "
+                "runtime.effect_mode='draft' or 'live'"
+            )
+        if "cad" in result:
+            raise SystemExit(
+                "adapters.text2game and adapters.cad_command cannot both own CAD"
+            )
+        calibration_path = Path(str(text2game["calibration_profile"]))
+        profile_raw = _read_small_json_object(
+            calibration_path, "adapters.text2game.calibration_profile"
+        )
+        try:
+            profile = PrinterCalibrationProfile.from_mapping(profile_raw)
+            target = PrinterTarget.from_mapping(text2game["printer_target"])
+        except (TypeError, ValueError) as exc:
+            raise SystemExit(f"invalid text2game printer calibration: {exc}") from exc
+        environment = {
+            name: os.environ[name]
+            for name in text2game["allowed_environment"]
+            if name in os.environ
+        }
+        result["cad"] = Text2GamePhysicalAdapter(
+            Path(str(text2game["repo"])),
+            str(text2game["commit"]),
+            Path(str(text2game["work_root"])),
+            Path(str(text2game["vibe_workspace"])),
+            [str(item) for item in text2game["command"]],
+            profile,
+            target,
+            store,
+            text2cad_repo=Path(str(text2game["text2cad_repo"])),
+            text2cad_commit=str(text2game["text2cad_commit"]),
+            cad_python=Path(str(text2game["cad_python"])),
+            slicer_binary=Path(str(text2game["slicer_binary"])),
+            slicer_profile=Path(str(text2game["slicer_profile"])),
+            codex_binary=Path(str(text2game["codex_binary"])),
+            codex_home=Path(str(text2game["codex_home"])),
+            git_binary=Path(str(text2game["git_binary"])),
+            timeout_seconds=float(text2game["timeout_seconds"]),
+            max_output_bytes=int(text2game["max_output_bytes"]),
+            max_stderr_bytes=int(text2game["max_stderr_bytes"]),
+            shutdown_grace_seconds=float(text2game["shutdown_grace_seconds"]),
+            environment=environment,
+        )
     page_builder = values.get("page_builder", {})
     if isinstance(page_builder, Mapping) and page_builder.get("enabled") is True:
         if config["runtime"]["effect_mode"] == "dry-run":
@@ -786,6 +853,15 @@ def _adapters(
                 "adapters.page_builder.operator_command must invoke the existing "
                 "vibe-ideas board-game/tools/publish.py entry point"
             )
+        if (
+            isinstance(text2game, Mapping)
+            and text2game.get("enabled") is True
+            and Path(workspace).resolve()
+            != Path(str(text2game["vibe_workspace"])).resolve()
+        ):
+            raise SystemExit(
+                "text2game export and page_builder must use the same Vibe workspace"
+            )
         readback_transport = VibeHttpClient.from_environment(
             str(page_builder["base_url"]),
             str(page_builder["token_env"]),
@@ -803,6 +879,21 @@ def _adapters(
             store,
             timeout_seconds=int(page_builder["timeout_seconds"]),
             diagnostic_design_id=str(page_builder["diagnostic_design_id"]),
+            diagnostic_owner_id=str(page_builder["diagnostic_owner_id"]),
+            workspace_commit=str(page_builder["workspace_commit"]),
+            interpreter_sha256=str(page_builder["interpreter_sha256"]),
+            operator_sha256=str(page_builder["operator_sha256"]),
+            operator_dependency_sha256=dict(
+                page_builder["operator_dependency_sha256"]
+            ),
+            publishdesign_sha256=str(page_builder["publishdesign_sha256"]),
+            publishdesign_preflight_receipt=Path(
+                str(page_builder["publishdesign_preflight_receipt"])
+            ),
+            publishdesign_preflight_sha256=str(
+                page_builder["publishdesign_preflight_sha256"]
+            ),
+            git_binary=Path(str(page_builder["git_binary"])),
             allowed_environment=page_builder["allowed_environment"],
         )
     vibe = values.get("vibe", {})
@@ -826,6 +917,22 @@ def _adapters(
         )
         result["publishing_pipeline"] = VibePublishingAdapter(pipeline)
     return result
+
+
+def _read_small_json_object(path: Path, label: str) -> Mapping[str, Any]:
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise SystemExit(f"{label} is unavailable") from exc
+    if path.is_symlink() or not path.is_file() or metadata.st_size > 1_048_576:
+        raise SystemExit(f"{label} must be a small non-symlink regular JSON file")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"{label} is not valid JSON") from exc
+    if not isinstance(value, Mapping):
+        raise SystemExit(f"{label} must contain a JSON object")
+    return value
 
 
 def _seed_market_signals(

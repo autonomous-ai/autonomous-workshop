@@ -29,8 +29,10 @@ flowchart TD
   C --> V["Existing rich-page private-draft operator"]
   V --> P2["Exact-history prototype + production run"]
   P2 --> M["Safety, IP, market, economics"]
-  M --> G{"Pinned publish policy"}
-  G -->|pass| F["Normal Vibe publish"]
+  M --> G{"Pinned draft policy"}
+  G -->|pass| DRAFT["Complete private Factory draft"]
+  DRAFT --> REVIEW["Dee one-click review and public flip"]
+  REVIEW --> F["Public Factory product"]
   F --> W["Existing rich product-page observer"]
   G -->|repair| L["Learning policy"]
   G -->|kill| A["Archive with evidence"]
@@ -65,6 +67,22 @@ An always-on service is a sequence of recoverable sessions:
   important fact exists only in a model context window.
 - Agents receive the smallest cited context required for one job. An archivist
   compacts knowledge, but never edits history.
+- The text2game CAD adapter verifies clean text2game and text2cad checkouts at
+  exact pinned commits and pins every external executable/profile by path and
+  bytes. It copies only an explicit reviewed text2game runtime allowlist and
+  the selected text2cad gate/CAD-skill subtree into a private operation
+  directory; publishers and credential-like backups are excluded. It stages
+  Alice's exact accepted rules, components, and mechanisms, and runs the pinned
+  deterministic `consistency.py` before any model process starts.
+- Text2game phases 1, 2, and 3 run separately across durable `sending` fences.
+  Its model lane is forced to Codex with `workspace-write` scoped to that
+  operation copy; Claude fallback, shared vault exchange, messaging, and both
+  legacy publishers are disabled. The shared source checkout and its `out/`
+  directory are never a runtime workspace.
+- The service derives its outer tick deadline from the enabled inner adapters.
+  A text2game CAD tick is budgeted for all three configured phase deadlines,
+  orderly shutdowns, and validation/export overhead; an operator override may
+  lengthen that bound but cannot undercut it.
 
 ## Organization
 
@@ -139,10 +157,12 @@ may schedule and ingest this work; she may not simulate it.
 
 ### 6. Physical loop — after human evidence
 
-The industrial designer improves legibility and delight, then the CAD builder
-uses the verified Vibe/text-to-3D interface. DFM checks layout, fit, clearances,
-motion/interference where relevant, mesh integrity, component count, assembly,
-cycle time, print yield, packaging, and landed cost. Alice then calls the
+The industrial designer improves legibility and delight, then the connected
+text2game adapter runs its three pinned phases in an isolated operation copy and
+exports the accepted result to the verified Vibe workspace. DFM checks layout,
+fit, calibrated clearances, motion/interference where relevant, mesh integrity,
+component count, assembly, slice success, packaging, and the evidence still
+open for a physical operator. Alice then calls the
 existing `vibe-ideas` `board-game/tools/publish.py <slug>` operator—not a new
 page generator—to create a private rich-page draft from that exact production
 workspace. The adapter rereads the draft as its owner and hashes every accepted
@@ -156,24 +176,28 @@ project hash, design id, history id, and project URL.
 The merchant checks the exact offer and economics; safety/IP reviews the exact
 production packet. The policy engine makes the eligibility decision. The
 publisher hashes rules, assets, CAD, BOM, evidence, price, and disclosures into
-one immutable packet. Release authorization and packet construction are fenced
-to `live` and require current factory capabilities; `dry-run` cannot produce an
-apparently releasable packet. After the missing backend contract is deployed,
-`live` Alice invokes the supported Vibe public flip used by manually vibed
-products, reusing the exact private draft design/history that was hash-checked,
-printed, and reviewed. One atomic write must compare that exact history/project
-and complete rich page, apply the reviewed SKU, price, and USD currency, and
-echo the packet and policy hashes. Alice never regenerates the product after
-the print gate. The deployed downstream observer may enrich the public Factory
-page further. Alice does not recreate either the draft page builder or that
-downstream merchandising system.
+one immutable packet. In the current product boundary, `draft` Alice creates and
+verifies the complete private Factory page, then stops. Dee reviews that exact
+draft and uses the existing one-click public control. Alice never regenerates
+the product after the print gate.
+
+Automatic public release is a later, separate `live` capability. After the
+missing backend contract is deployed and Dee explicitly enables it, `live`
+Alice may invoke the supported Vibe public flip used by manually vibed products,
+reusing the exact private draft design/history that was hash-checked, printed,
+and reviewed. One atomic write must compare that exact history/project and
+complete rich page, apply the reviewed SKU, price, and USD currency, and echo
+the packet and policy hashes. The deployed downstream observer may enrich the
+public Factory page further. Alice does not recreate either the draft page
+builder or that downstream merchandising system.
 
 Alice persists the operation before each remote write, never retries an
 ambiguous create/publish response, and reconciles by reading the design back.
-After publication it polls the anonymous Factory design record until the page
-contract is complete and the exact price is visible. Only then does the
-candidate reach `page_ready`; a final receipt-bound transition marks it
-`published`. There is no per-game human publish approval.
+For the later automatic path, Alice polls the anonymous Factory design record
+until the page contract is complete and the exact price is visible. Only then
+does the candidate reach `page_ready`; a final receipt-bound transition marks it
+`published`. Until that path is explicitly activated, every game has Dee's
+one-click public approval.
 
 ### 8. Future print-on-demand order loop — live only
 
@@ -219,9 +243,16 @@ inferred from a prose claim; it requires typed evidence and a transition event.
 
 ## Isolation and authority
 
-- Agents cannot access publishing or payment credentials.
+- Alice never forwards or copies publishing or payment credentials into model
+  workspaces. Deployment must also use a credential-clean service host; the
+  model sandbox is not a substitute for host-level secret isolation.
 - Tool runners hold credentials outside the model sandbox and expose narrow
   JSON contracts.
+- Alice's ordinary Codex app-server tasks use the pinned read-only sandbox.
+  Text2game is the narrow exception: its internal Codex subprocess receives
+  `workspace-write` for a source-pinned per-operation copy so it can produce
+  CAD without writing the shared checkout, while fallback to text2game's
+  host-capable Claude lane is forced off.
 - Same-model generator/evaluator context is never used as release evidence.
 - Human records require source identity, consent/provenance metadata, time, and
   a unique trial id.

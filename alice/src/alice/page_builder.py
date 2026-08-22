@@ -20,10 +20,13 @@ ambiguous earlier effect, never silently adopted as the current candidate.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
 import re
+import stat
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -43,6 +46,9 @@ from .store import DurableStore, StateConflictError
 
 PAGE_BUILDER_OPERATION = "physical.create_rich_draft"
 PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION = "alice.page-builder.v1"
+REQUIRED_RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"
+REQUIRED_ALICE_DRAFT_HANDOFF_CONTRACT = "alice-text2game-export-v1"
+PUBLISHDESIGN_PREFLIGHT_SCHEMA_VERSION = "alice.publishdesign-preflight.v1"
 SIDECAR_SCHEMA_VERSION = 1
 _SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -50,6 +56,34 @@ _SKIP_DIRS = frozenset({"__pycache__", ".git", ".claude", ".idea", ".vscode"})
 _SKIP_NAMES = frozenset({".DS_Store"})
 _SKIP_SUFFIXES = frozenset({".pyc", ".pyo"})
 _PROVENANCE_NAME = "alice-provenance.json"
+_TEXT2GAME_EXPORT_RECEIPT = ".alice-text2game-export.json"
+_TEXT2GAME_IDEA_COPY = "_text2game/vibe-idea.json"
+_TEXT2GAME_REPOSITORY = "https://github.com/nohope88/text2game"
+_COMMIT = re.compile(r"^[0-9a-f]{40}$")
+_OWNER_ID = re.compile(r"^[0-9a-f]{24}$")
+_OPERATOR_DEPENDENCIES = (
+    "animation_gate.py",
+    "journal.py",
+    "telegram.py",
+)
+_PUBLISHDESIGN_PREFLIGHT_FIELDS = frozenset(
+    {
+        "schema_version",
+        "workspace_commit",
+        "interpreter_sha256",
+        "operator_sha256",
+        "operator_dependency_sha256",
+        "publishdesign_sha256",
+        "diagnostic_owner_id",
+        "backend_dir",
+        "backend_go_mod_sha256",
+        "backend_env_sha256",
+        "gcs_credentials",
+        "gcs_credentials_sha256",
+        "dry_run",
+    }
+)
+_MAX_PUBLISHDESIGN_PREFLIGHT_BYTES = 1 << 20
 PRINTABLE_CAD_SUFFIXES = frozenset({".3mf", ".obj", ".stl"})
 
 
@@ -57,8 +91,257 @@ class PageBuilderError(AdapterError):
     """The existing draft operator or its receipt failed a deterministic check."""
 
 
+class PublishDesignPreflightError(PageBuilderError):
+    """The accountable manual publishdesign dry-run receipt is not proven."""
+
+
 class AmbiguousPageBuilderEffect(RuntimeError):
     """A draft write may have happened, so automatic retry is unsafe."""
+
+
+def _configured_sha256(value: Any, label: str) -> str:
+    if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
+        raise ValueError(f"{label} must be a lowercase 64-hex SHA-256")
+    return value
+
+
+def _regular_file_sha256(
+    path: Path,
+    label: str,
+    *,
+    executable: bool = False,
+    reject_symlink: bool = True,
+) -> str:
+    """Hash one stable regular file without following an unreviewed link."""
+
+    try:
+        configured_metadata = path.lstat()
+        if reject_symlink and stat.S_ISLNK(configured_metadata.st_mode):
+            raise ValueError(f"{label} must not be a symlink")
+        target = path.resolve(strict=True)
+        before = target.stat()
+        if not stat.S_ISREG(before.st_mode) or before.st_size <= 0:
+            raise ValueError(f"{label} must be a non-empty regular file")
+        if executable and not os.access(target, os.X_OK):
+            raise ValueError(f"{label} must be executable")
+        digest = hashlib.sha256()
+        with target.open("rb") as handle:
+            while True:
+                chunk = handle.read(1 << 20)
+                if not chunk:
+                    break
+                digest.update(chunk)
+        after = target.stat()
+    except ValueError:
+        raise
+    except OSError as exc:
+        raise ValueError(f"{label} is unavailable: {type(exc).__name__}") from exc
+    if (
+        before.st_dev,
+        before.st_ino,
+        before.st_size,
+        before.st_mtime_ns,
+        before.st_mode,
+    ) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_size,
+        after.st_mtime_ns,
+        after.st_mode,
+    ):
+        raise ValueError(f"{label} changed while it was being hashed")
+    return digest.hexdigest()
+
+
+def build_publishdesign_preflight_receipt(
+    *,
+    workspace_commit: str,
+    interpreter_sha256: str,
+    operator_sha256: str,
+    operator_dependency_sha256: Mapping[str, str],
+    publishdesign_sha256: str,
+    diagnostic_owner_id: str,
+    backend_dir: str | Path,
+    backend_go_mod_sha256: str,
+    backend_env_sha256: str,
+    gcs_credentials: str | Path,
+    gcs_credentials_sha256: str,
+    dry_run: Mapping[str, Any],
+) -> bytes:
+    """Build canonical manual evidence from captured publishdesign dry-run JSON.
+
+    This helper is pure: callers supply reviewed paths and already-computed
+    hashes. It never opens a local file or invokes the credential-bearing
+    helper.
+    """
+
+    if not isinstance(workspace_commit, str) or _COMMIT.fullmatch(
+        workspace_commit
+    ) is None:
+        raise ValueError("workspace_commit must be a lowercase 40-hex commit")
+    hashes = {
+        "interpreter_sha256": interpreter_sha256,
+        "operator_sha256": operator_sha256,
+        "publishdesign_sha256": publishdesign_sha256,
+        "backend_go_mod_sha256": backend_go_mod_sha256,
+        "backend_env_sha256": backend_env_sha256,
+        "gcs_credentials_sha256": gcs_credentials_sha256,
+    }
+    normalized_hashes = {
+        name: _configured_sha256(value, name) for name, value in hashes.items()
+    }
+    if not isinstance(operator_dependency_sha256, Mapping) or set(
+        operator_dependency_sha256
+    ) != set(_OPERATOR_DEPENDENCIES):
+        raise ValueError(
+            "operator_dependency_sha256 must contain exactly: "
+            + ", ".join(_OPERATOR_DEPENDENCIES)
+        )
+    dependency_hashes = {
+        name: _configured_sha256(
+            operator_dependency_sha256[name],
+            f"operator_dependency_sha256[{name!r}]",
+        )
+        for name in _OPERATOR_DEPENDENCIES
+    }
+    if (
+        not isinstance(diagnostic_owner_id, str)
+        or _OWNER_ID.fullmatch(diagnostic_owner_id) is None
+    ):
+        raise ValueError("diagnostic_owner_id must be a lowercase 24-hex owner id")
+
+    def exact_absolute_path(value: str | Path, label: str) -> str:
+        path = Path(value)
+        rendered = str(path)
+        if (
+            not rendered
+            or not path.is_absolute()
+            or os.path.normpath(rendered) != rendered
+        ):
+            raise ValueError(f"{label} must be a normalized absolute path")
+        return rendered
+
+    backend = exact_absolute_path(backend_dir, "backend_dir")
+    credentials = exact_absolute_path(gcs_credentials, "gcs_credentials")
+    if not isinstance(dry_run, Mapping):
+        raise ValueError("dry_run must be a captured JSON object")
+    normalized_dry_run = dict(dry_run)
+    dry_run_zip = normalized_dry_run.get("zip")
+    zip_bytes = normalized_dry_run.get("zip_bytes")
+    thumbs = normalized_dry_run.get("thumbs")
+    thumb_paths = thumbs.split(",") if isinstance(thumbs, str) else []
+    if (
+        normalized_dry_run.get("dry_run") is not True
+        or normalized_dry_run.get("mode") != "import"
+        or normalized_dry_run.get("owner") != diagnostic_owner_id
+        or not isinstance(normalized_dry_run.get("owner_name"), str)
+        or not normalized_dry_run["owner_name"].strip()
+        or normalized_dry_run.get("status") != "draft"
+        or not isinstance(normalized_dry_run.get("db"), str)
+        or not normalized_dry_run["db"].strip()
+        or not isinstance(normalized_dry_run.get("bucket"), str)
+        or not normalized_dry_run["bucket"].strip()
+        or not isinstance(dry_run_zip, str)
+        or not Path(dry_run_zip).is_absolute()
+        or os.path.normpath(dry_run_zip) != dry_run_zip
+        or isinstance(zip_bytes, bool)
+        or not isinstance(zip_bytes, int)
+        or zip_bytes <= 0
+        or not thumb_paths
+        or any(
+            not path
+            or not Path(path).is_absolute()
+            or os.path.normpath(path) != path
+            for path in thumb_paths
+        )
+    ):
+        raise ValueError(
+            "dry_run must prove an exact first-import owner, archive, draft status, "
+            "database, and bucket"
+        )
+    document = {
+        "schema_version": PUBLISHDESIGN_PREFLIGHT_SCHEMA_VERSION,
+        "workspace_commit": workspace_commit,
+        "interpreter_sha256": normalized_hashes["interpreter_sha256"],
+        "operator_sha256": normalized_hashes["operator_sha256"],
+        "operator_dependency_sha256": dict(sorted(dependency_hashes.items())),
+        "publishdesign_sha256": normalized_hashes["publishdesign_sha256"],
+        "diagnostic_owner_id": diagnostic_owner_id,
+        "backend_dir": backend,
+        "backend_go_mod_sha256": normalized_hashes["backend_go_mod_sha256"],
+        "backend_env_sha256": normalized_hashes["backend_env_sha256"],
+        "gcs_credentials": credentials,
+        "gcs_credentials_sha256": normalized_hashes[
+            "gcs_credentials_sha256"
+        ],
+        "dry_run": normalized_dry_run,
+    }
+    return _canonical_document(document)
+
+
+def _validated_operator_source_sha256(path: Path) -> str:
+    """Verify the audited Vibe operator's static exact-rules declaration."""
+
+    try:
+        before = path.lstat()
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError("rich-page operator must be a regular non-symlink file")
+        source = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise ValueError(f"cannot read rich-page operator: {type(exc).__name__}") from exc
+    if (
+        before.st_dev,
+        before.st_ino,
+        before.st_size,
+        before.st_mtime_ns,
+        before.st_mode,
+    ) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_size,
+        after.st_mtime_ns,
+        after.st_mode,
+    ):
+        raise ValueError("rich-page operator changed while it was being hashed")
+    if not source or len(source) > (1 << 20):
+        raise ValueError("rich-page operator source must be 1..1048576 bytes")
+    try:
+        tree = ast.parse(source, filename=str(path))
+    except (SyntaxError, ValueError) as exc:
+        raise ValueError("rich-page operator source is not valid Python") from exc
+
+    required = {
+        "RULES_ARCHIVE_CONTRACT": REQUIRED_RULES_ARCHIVE_CONTRACT,
+        "ALICE_DRAFT_HANDOFF_CONTRACT": REQUIRED_ALICE_DRAFT_HANDOFF_CONTRACT,
+    }
+    declarations: dict[str, list[object]] = {name: [] for name in required}
+    for statement in tree.body:
+        if isinstance(statement, ast.Assign):
+            if (
+                len(statement.targets) == 1
+                and isinstance(statement.targets[0], ast.Name)
+                and statement.targets[0].id in required
+            ):
+                declarations[statement.targets[0].id].append(statement.value)
+        elif (
+            isinstance(statement, ast.AnnAssign)
+            and isinstance(statement.target, ast.Name)
+            and statement.target.id in required
+        ):
+            declarations[statement.target.id].append(statement.value)
+    for name, expected in required.items():
+        values = declarations[name]
+        if len(values) != 1:
+            raise ValueError(
+                f"rich-page operator must declare {name} exactly once"
+            )
+        declaration = values[0]
+        if not isinstance(declaration, ast.Constant) or declaration.value != expected:
+            raise ValueError(
+                f"rich-page operator does not guarantee {expected}"
+            )
+    return hashlib.sha256(source).hexdigest()
 
 
 class DraftReadback(Protocol):
@@ -178,6 +461,186 @@ class ProjectSnapshot:
     project_sha256: str
 
 
+def _verify_text2game_export_handoff(
+    *,
+    idea_dir: Path,
+    project: Path,
+    snapshot: ProjectSnapshot,
+    artifact_hashes: Mapping[str, str],
+    cad: Mapping[str, Any],
+    dfm: Mapping[str, Any],
+    candidate_id: str,
+    candidate_version: int,
+    candidate_content_sha256: str,
+    production_slug: str,
+    rules_sha256: str,
+    rules_file_sha256: str,
+) -> dict[str, Any]:
+    """Bind Vibe's root idea file to an immutable text2game export receipt."""
+
+    receipt_path = idea_dir / _TEXT2GAME_EXPORT_RECEIPT
+    lineage_keys = {
+        "vibe_idea_sha256",
+        "text2game_source_artifact_hashes",
+        "text2game_source_artifact_hashes_sha256",
+        "text2game_export_receipt_sha256",
+        "text2game_source_snapshot_sha256",
+        "text2game_repo_url",
+        "text2game_repo_commit",
+    }
+    declares_text2game = any(
+        any(key in content for key in lineage_keys) for content in (cad, dfm)
+    )
+    if not receipt_path.exists() and not receipt_path.is_symlink():
+        if declares_text2game:
+            raise PageBuilderError(
+                "CAD/DFM declare text2game lineage but its export receipt is missing"
+            )
+        return {}
+    if receipt_path.is_symlink() or not receipt_path.is_file():
+        raise PageBuilderError("text2game export receipt must be a regular file")
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = _load_object(receipt_path, "text2game export receipt")
+    canonical_receipt = _canonical_document(receipt)
+    if receipt_bytes != canonical_receipt:
+        raise PageBuilderError("text2game export receipt is not canonical")
+    expected_keys = {
+        "schema_version",
+        "kind",
+        "candidate_id",
+        "candidate_version",
+        "candidate_content_sha256",
+        "production_slug",
+        "rules_sha256",
+        "rules_file_sha256",
+        "idea_sha256",
+        "project_sha256",
+        "artifact_hashes",
+        "source_artifact_hashes",
+        "source_artifact_hashes_sha256",
+        "source_snapshot_sha256",
+        "source_repo_url",
+        "source_repo_commit",
+        "handoff",
+    }
+    if set(receipt) != expected_keys:
+        raise PageBuilderError("text2game export receipt fields are not exact")
+    if (
+        receipt.get("schema_version") != 1
+        or receipt.get("kind") != "alice.text2game-export-receipt"
+        or receipt.get("candidate_id") != candidate_id
+        or isinstance(receipt.get("candidate_version"), bool)
+        or not isinstance(receipt.get("candidate_version"), int)
+        or receipt.get("candidate_version") != candidate_version
+        or receipt.get("candidate_content_sha256") != candidate_content_sha256
+        or receipt.get("production_slug") != production_slug
+        or receipt.get("rules_sha256") != rules_sha256
+        or receipt.get("rules_file_sha256") != rules_file_sha256
+        or receipt.get("project_sha256") != snapshot.project_sha256
+        or receipt.get("source_repo_url") != _TEXT2GAME_REPOSITORY
+        or _COMMIT.fullmatch(str(receipt.get("source_repo_commit", ""))) is None
+    ):
+        raise PageBuilderError("text2game export receipt identity does not match")
+    expected_handoff = {
+        "vibe_queue_transition_required": False,
+        "vibe_queue_transition_performed": False,
+        "publisher_invoked": False,
+        "publisher_exact_rules_passthrough_required": True,
+        "publisher_rules_archive_contract": REQUIRED_RULES_ARCHIVE_CONTRACT,
+        "publisher_alice_draft_handoff_contract": (
+            REQUIRED_ALICE_DRAFT_HANDOFF_CONTRACT
+        ),
+    }
+    if receipt.get("handoff") != expected_handoff:
+        raise PageBuilderError("text2game export handoff contract is not exact")
+
+    snapshot_hashes = {
+        str(item["path"]): str(item["sha256"]) for item in snapshot.files
+    }
+    if receipt.get("artifact_hashes") != snapshot_hashes:
+        raise PageBuilderError("text2game receipt does not bind the current project")
+    if dict(artifact_hashes) != snapshot_hashes:
+        raise PageBuilderError(
+            "CAD/DFM artifact hashes must contain the complete text2game export"
+        )
+
+    source_hashes_raw = receipt.get("source_artifact_hashes")
+    if not isinstance(source_hashes_raw, Mapping) or not source_hashes_raw:
+        raise PageBuilderError("text2game source artifact hashes are missing")
+    source_hashes: dict[str, str] = {}
+    for relative, digest in source_hashes_raw.items():
+        if not isinstance(relative, str) or not relative:
+            raise PageBuilderError("text2game source artifact path is invalid")
+        path = PurePosixPath(relative)
+        if (
+            path.is_absolute()
+            or ".." in path.parts
+            or "." in path.parts
+            or str(path) != relative
+        ):
+            raise PageBuilderError("text2game source artifact path is unsafe")
+        source_hashes[relative] = _require_sha256(
+            digest, f"text2game source artifact {relative!r}"
+        )
+    source_hashes_sha256 = hashlib.sha256(
+        json.dumps(
+            source_hashes,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    if receipt.get("source_artifact_hashes_sha256") != source_hashes_sha256:
+        raise PageBuilderError("text2game source artifact manifest hash is wrong")
+
+    idea_path = idea_dir / "idea.json"
+    idea_copy = project / _TEXT2GAME_IDEA_COPY
+    for label, path in (("root idea.json", idea_path), ("project idea copy", idea_copy)):
+        if path.is_symlink() or not path.is_file():
+            raise PageBuilderError(f"text2game {label} must be a regular file")
+    idea_bytes = idea_path.read_bytes()
+    if not idea_bytes or idea_copy.read_bytes() != idea_bytes:
+        raise PageBuilderError(
+            "Vibe root idea.json is not the exact reviewed in-project idea copy"
+        )
+    _load_object(idea_path, "Vibe root idea.json")
+    idea_sha256 = hashlib.sha256(idea_bytes).hexdigest()
+    if receipt.get("idea_sha256") != idea_sha256:
+        raise PageBuilderError("Vibe idea.json does not match its export hash")
+
+    export_receipt_sha256 = hashlib.sha256(
+        canonical_receipt
+    ).hexdigest()
+    source_snapshot_sha256 = _require_sha256(
+        receipt.get("source_snapshot_sha256"),
+        "text2game source_snapshot_sha256",
+    )
+    lineage = {
+        "candidate_id": candidate_id,
+        "candidate_version": candidate_version,
+        "vibe_idea_sha256": idea_sha256,
+        "text2game_source_artifact_hashes": source_hashes,
+        "text2game_source_artifact_hashes_sha256": source_hashes_sha256,
+        "text2game_export_receipt_sha256": export_receipt_sha256,
+        "text2game_source_snapshot_sha256": source_snapshot_sha256,
+        "text2game_repo_url": _TEXT2GAME_REPOSITORY,
+        "text2game_repo_commit": receipt["source_repo_commit"],
+    }
+    for source, content in (("physical.cad", cad), ("physical.dfm", dfm)):
+        for key, expected in lineage.items():
+            if content.get(key) != expected:
+                raise PageBuilderError(f"{source} {key} mismatch")
+    return {
+        "receipt_sha256": export_receipt_sha256,
+        "vibe_idea_sha256": idea_sha256,
+        "source_artifact_hashes_sha256": source_hashes_sha256,
+        "source_snapshot_sha256": source_snapshot_sha256,
+        "source_repo_url": _TEXT2GAME_REPOSITORY,
+        "source_repo_commit": receipt["source_repo_commit"],
+    }
+
+
 class PageBuilderAdapter:
     """Run the existing private-draft page builder against one exact workspace.
 
@@ -192,6 +655,8 @@ class PageBuilderAdapter:
         "private_rich_page_draft",
         "exact_history_handoff",
         "project_hash_bound_draft",
+        "exact_project_rules_archive",
+        "alice_export_private_draft_gate",
     )
 
     def __init__(
@@ -201,6 +666,15 @@ class PageBuilderAdapter:
         readback: DraftReadback,
         store: DurableStore,
         *,
+        workspace_commit: str,
+        interpreter_sha256: str,
+        operator_sha256: str,
+        operator_dependency_sha256: Mapping[str, str],
+        publishdesign_sha256: str,
+        publishdesign_preflight_receipt: str | Path,
+        publishdesign_preflight_sha256: str,
+        git_binary: str | Path,
+        diagnostic_owner_id: str,
         timeout_seconds: int = 3_600,
         maximum_stdout_bytes: int = 1 << 20,
         maximum_stderr_bytes: int = 1 << 16,
@@ -222,6 +696,52 @@ class PageBuilderAdapter:
         self.workspace = configured_workspace.resolve()
         if not self.workspace.is_dir():
             raise ValueError(f"page-builder workspace does not exist: {self.workspace}")
+        if not isinstance(workspace_commit, str) or _COMMIT.fullmatch(
+            workspace_commit
+        ) is None:
+            raise ValueError("workspace_commit must be a lowercase 40-hex commit")
+        self.workspace_commit = workspace_commit
+        self.interpreter_sha256 = _configured_sha256(
+            interpreter_sha256, "interpreter_sha256"
+        )
+        self.operator_sha256 = _configured_sha256(
+            operator_sha256, "operator_sha256"
+        )
+        self.publishdesign_sha256 = _configured_sha256(
+            publishdesign_sha256, "publishdesign_sha256"
+        )
+        self.publishdesign_preflight_sha256 = _configured_sha256(
+            publishdesign_preflight_sha256,
+            "publishdesign_preflight_sha256",
+        )
+        configured_preflight_receipt = Path(
+            publishdesign_preflight_receipt
+        ).expanduser()
+        if not configured_preflight_receipt.is_absolute():
+            raise ValueError("publishdesign_preflight_receipt must be an absolute path")
+        self.publishdesign_preflight_receipt = configured_preflight_receipt
+        if not isinstance(operator_dependency_sha256, Mapping) or set(
+            operator_dependency_sha256
+        ) != set(_OPERATOR_DEPENDENCIES):
+            raise ValueError(
+                "operator_dependency_sha256 must contain exactly: "
+                + ", ".join(_OPERATOR_DEPENDENCIES)
+            )
+        self.operator_dependency_sha256 = {
+            name: _configured_sha256(
+                operator_dependency_sha256[name],
+                f"operator_dependency_sha256[{name!r}]",
+            )
+            for name in _OPERATOR_DEPENDENCIES
+        }
+        if (
+            not isinstance(diagnostic_owner_id, str)
+            or _OWNER_ID.fullmatch(diagnostic_owner_id) is None
+        ):
+            raise ValueError(
+                "diagnostic_owner_id must be a lowercase 24-hex owner id"
+            )
+        self.diagnostic_owner_id = diagnostic_owner_id
         if len(operator_command) != 2 or any(
             not isinstance(value, str) or not value for value in operator_command
         ):
@@ -237,6 +757,9 @@ class PageBuilderAdapter:
             raise ValueError(
                 f"existing rich-page operator is missing: {expected_operator}"
             )
+        operator_source_sha256 = _validated_operator_source_sha256(expected_operator)
+        if operator_source_sha256 != self.operator_sha256:
+            raise ValueError("page-builder publish.py does not match operator_sha256")
         interpreter = Path(operator_command[0]).expanduser()
         configured_operator = Path(operator_command[1]).expanduser()
         configured_expected_operator = (
@@ -247,12 +770,16 @@ class PageBuilderAdapter:
                 "page-builder operator command must use absolute interpreter "
                 "and publish.py paths"
             )
-        resolved_interpreter = interpreter.resolve()
-        if not resolved_interpreter.is_file() or not os.access(
-            resolved_interpreter, os.X_OK
-        ):
+        actual_interpreter_sha256 = _regular_file_sha256(
+            interpreter,
+            "page-builder interpreter",
+            executable=True,
+            reject_symlink=False,
+        )
+        resolved_interpreter = interpreter.resolve(strict=True)
+        if actual_interpreter_sha256 != self.interpreter_sha256:
             raise ValueError(
-                f"page-builder interpreter is missing or not executable: {interpreter}"
+                "page-builder interpreter does not match interpreter_sha256"
             )
         if (
             configured_operator.is_symlink()
@@ -269,6 +796,39 @@ class PageBuilderAdapter:
         )
         self._resolved_interpreter = resolved_interpreter
         self._expected_operator = expected_operator
+        self._operator_dependency_paths = {
+            name: expected_operator.parent / name for name in _OPERATOR_DEPENDENCIES
+        }
+        for name, dependency in self._operator_dependency_paths.items():
+            actual = _regular_file_sha256(
+                dependency,
+                f"page-builder operator dependency {name}",
+            )
+            if actual != self.operator_dependency_sha256[name]:
+                raise ValueError(
+                    f"page-builder operator dependency {name} does not match its SHA-256"
+                )
+        self._publishdesign = expected_operator.parent / "bin" / "publishdesign"
+        actual_publishdesign_sha256 = _regular_file_sha256(
+            self._publishdesign,
+            "page-builder publishdesign",
+            executable=True,
+        )
+        if actual_publishdesign_sha256 != self.publishdesign_sha256:
+            raise ValueError(
+                "page-builder publishdesign does not match publishdesign_sha256"
+            )
+        configured_git = Path(git_binary).expanduser()
+        if not configured_git.is_absolute():
+            raise ValueError("git_binary must be an absolute path")
+        self._git_sha256 = _regular_file_sha256(
+            configured_git,
+            "page-builder git_binary",
+            executable=True,
+            reject_symlink=False,
+        )
+        self.git_binary = configured_git
+        self._resolved_git_binary = configured_git.resolve(strict=True)
         if isinstance(timeout_seconds, bool) or timeout_seconds <= 0:
             raise ValueError("page-builder timeout_seconds must be positive")
         self.timeout_seconds = int(timeout_seconds)
@@ -289,11 +849,461 @@ class PageBuilderAdapter:
         self.shutdown_grace_seconds = float(shutdown_grace_seconds)
         self.readback = readback
         self.store = store
-        self.diagnostic_design_id = str(diagnostic_design_id).strip()
+        if not isinstance(diagnostic_design_id, str):
+            raise ValueError("diagnostic_design_id must be a string")
+        self.diagnostic_design_id = diagnostic_design_id.strip()
         self.environment = {
             name: os.environ[name]
             for name in allowed_environment
             if name in os.environ
+        }
+        try:
+            self._assert_interpreter_isolation_support()
+            self._assert_workspace_integrity()
+        except PageBuilderError as exc:
+            raise ValueError(str(exc)) from exc
+
+    def _assert_interpreter_isolation_support(self) -> None:
+        """Prove the reviewed interpreter accepts Alice's fixed isolation flags."""
+
+        try:
+            with tempfile.TemporaryDirectory(
+                prefix="alice-page-builder-probe-"
+            ) as pycache:
+                script = (
+                    "import sys;"
+                    "raise SystemExit(0 if "
+                    "sys.flags.isolated == 1 and "
+                    "sys.flags.dont_write_bytecode == 1 and "
+                    "sys.flags.no_site == 1 and "
+                    "sys.pycache_prefix == sys.argv[1] else 9)"
+                )
+                result = run_bounded_process(
+                    (
+                        str(self._resolved_interpreter),
+                        "-I",
+                        "-B",
+                        "-S",
+                        "-X",
+                        f"pycache_prefix={pycache}",
+                        "-c",
+                        script,
+                        pycache,
+                    ),
+                    input_bytes=b"",
+                    timeout_seconds=min(30, self.timeout_seconds),
+                    stdout_limit_bytes=4_096,
+                    stderr_limit_bytes=16_384,
+                    shutdown_grace_seconds=self.shutdown_grace_seconds,
+                    env={"LANG": "C", "LC_ALL": "C"},
+                )
+        except (BoundedProcessTimeout, BoundedProcessOutputLimit, OSError) as exc:
+            raise PageBuilderError(
+                "page-builder interpreter isolation probe failed"
+            ) from exc
+        if result.returncode != 0 or result.stdout:
+            raise PageBuilderError(
+                "page-builder interpreter does not support the required isolation flags"
+            )
+
+    def _assert_git_binary_integrity(self) -> None:
+        try:
+            target = self.git_binary.resolve(strict=True)
+            actual = _regular_file_sha256(
+                self.git_binary,
+                "page-builder git_binary",
+                executable=True,
+                reject_symlink=False,
+            )
+        except ValueError as exc:
+            raise PageBuilderError(str(exc)) from exc
+        if target != self._resolved_git_binary or actual != self._git_sha256:
+            raise PageBuilderError("page-builder pinned git executable changed")
+
+    def _git(self, *arguments: str, stdout_limit: int = 4 << 20) -> bytes:
+        self._assert_git_binary_integrity()
+        environment = {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+        }
+        if "TMPDIR" in os.environ:
+            environment["TMPDIR"] = os.environ["TMPDIR"]
+        try:
+            result = run_bounded_process(
+                (
+                    str(self._resolved_git_binary),
+                    "--no-replace-objects",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    "core.untrackedCache=false",
+                    "-C",
+                    str(self.workspace),
+                    *arguments,
+                ),
+                input_bytes=b"",
+                timeout_seconds=min(60, self.timeout_seconds),
+                stdout_limit_bytes=stdout_limit,
+                stderr_limit_bytes=65_536,
+                shutdown_grace_seconds=self.shutdown_grace_seconds,
+                env=environment,
+            )
+        except (BoundedProcessTimeout, BoundedProcessOutputLimit, OSError) as exc:
+            raise PageBuilderError(
+                f"page-builder Vibe git inspection failed ({type(exc).__name__})"
+            ) from exc
+        if result.returncode != 0:
+            raise PageBuilderError(
+                "page-builder Vibe git inspection failed; "
+                f"stderr_sha256={result.stderr_sha256}"
+            )
+        return result.stdout
+
+    def _assert_execution_integrity(self) -> None:
+        try:
+            interpreter = Path(self.operator_command[0])
+            if interpreter.resolve(strict=True) != self._resolved_interpreter:
+                raise ValueError("page-builder interpreter target changed")
+            if _regular_file_sha256(
+                interpreter,
+                "page-builder interpreter",
+                executable=True,
+                reject_symlink=False,
+            ) != self.interpreter_sha256:
+                raise ValueError("page-builder interpreter bytes changed")
+
+            configured_operator = Path(self.operator_command[1])
+            if (
+                configured_operator.is_symlink()
+                or configured_operator.resolve(strict=True) != self._expected_operator
+            ):
+                raise ValueError("page-builder publish.py target changed")
+            source_sha256 = _validated_operator_source_sha256(configured_operator)
+            if source_sha256 != self.operator_sha256:
+                raise ValueError("page-builder publish.py source changed")
+
+            for name, dependency in self._operator_dependency_paths.items():
+                if _regular_file_sha256(
+                    dependency,
+                    f"page-builder operator dependency {name}",
+                ) != self.operator_dependency_sha256[name]:
+                    raise ValueError(
+                        f"page-builder operator dependency {name} changed"
+                    )
+            if _regular_file_sha256(
+                self._publishdesign,
+                "page-builder publishdesign",
+                executable=True,
+            ) != self.publishdesign_sha256:
+                raise ValueError("page-builder publishdesign bytes changed")
+        except (OSError, ValueError) as exc:
+            raise PageBuilderError(str(exc)) from exc
+
+    def _assert_local_dependencies(self) -> None:
+        """Require the explicit local backend inputs publish.py will consume."""
+
+        workspace_env = self.workspace / ".env"
+        if workspace_env.exists() or workspace_env.is_symlink():
+            raise PageBuilderError(
+                "page-builder workspace .env is forbidden; configure explicit inputs"
+            )
+        owner_id = self.environment.get("PANDA_OWNER_ID")
+        if owner_id != self.diagnostic_owner_id:
+            raise PageBuilderError(
+                "PANDA_OWNER_ID must exactly match diagnostic_owner_id"
+            )
+        backend_value = self.environment.get("PANDA_BACKEND_DIR", "")
+        backend = Path(backend_value).expanduser()
+        if not backend_value or not backend.is_absolute():
+            raise PageBuilderError("PANDA_BACKEND_DIR must be an explicit absolute path")
+        try:
+            backend_metadata = backend.lstat()
+        except OSError as exc:
+            raise PageBuilderError("PANDA_BACKEND_DIR is unavailable") from exc
+        if not stat.S_ISDIR(backend_metadata.st_mode) or backend.is_symlink():
+            raise PageBuilderError(
+                "PANDA_BACKEND_DIR must be a real non-symlink directory"
+            )
+        for name in ("go.mod", ".env"):
+            dependency = backend / name
+            try:
+                metadata = dependency.lstat()
+            except OSError as exc:
+                raise PageBuilderError(
+                    f"PANDA_BACKEND_DIR is missing required {name}"
+                ) from exc
+            if (
+                not stat.S_ISREG(metadata.st_mode)
+                or stat.S_ISLNK(metadata.st_mode)
+                or metadata.st_size <= 0
+                or not os.access(dependency, os.R_OK)
+                or (
+                    name == ".env"
+                    and (
+                        metadata.st_uid != os.geteuid()
+                        or stat.S_IMODE(metadata.st_mode) & 0o077
+                    )
+                )
+            ):
+                raise PageBuilderError(
+                    f"PANDA_BACKEND_DIR {name} must be a readable"
+                    + (" owner-only" if name == ".env" else "")
+                    + " regular file"
+                )
+
+        credential_value = self.environment.get(
+            "GOOGLE_APPLICATION_CREDENTIALS", ""
+        )
+        credential = Path(credential_value).expanduser()
+        if not credential_value or not credential.is_absolute():
+            raise PageBuilderError(
+                "GOOGLE_APPLICATION_CREDENTIALS must be an explicit absolute path"
+            )
+        try:
+            credential_metadata = credential.lstat()
+        except OSError as exc:
+            raise PageBuilderError(
+                "GOOGLE_APPLICATION_CREDENTIALS is unavailable"
+            ) from exc
+        if (
+            not stat.S_ISREG(credential_metadata.st_mode)
+            or stat.S_ISLNK(credential_metadata.st_mode)
+            or credential_metadata.st_size <= 0
+            or credential_metadata.st_uid != os.geteuid()
+            or stat.S_IMODE(credential_metadata.st_mode) & 0o077
+            or not os.access(credential, os.R_OK)
+        ):
+            raise PageBuilderError(
+                "GOOGLE_APPLICATION_CREDENTIALS must be a readable owner-only "
+                "non-symlink regular file"
+            )
+
+    def _assert_publishdesign_preflight_receipt(self) -> None:
+        """Rebind accountable manual dry-run evidence to every local byte pin."""
+
+        path = self.publishdesign_preflight_receipt
+        try:
+            before = path.lstat()
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or stat.S_ISLNK(before.st_mode)
+                or before.st_size <= 0
+                or before.st_size > _MAX_PUBLISHDESIGN_PREFLIGHT_BYTES
+                or before.st_uid != os.geteuid()
+                or stat.S_IMODE(before.st_mode) & 0o077
+                or not os.access(path, os.R_OK)
+            ):
+                raise PublishDesignPreflightError(
+                    "publishdesign preflight receipt must be an owner-only "
+                    "non-symlink regular file of 1..1048576 bytes"
+                )
+            raw = path.read_bytes()
+            after = path.lstat()
+        except PublishDesignPreflightError:
+            raise
+        except OSError as exc:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt is unavailable"
+            ) from exc
+        if (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_mode,
+            before.st_uid,
+        ) != (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_mode,
+            after.st_uid,
+        ):
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt changed while being read"
+            )
+        if hashlib.sha256(raw).hexdigest() != self.publishdesign_preflight_sha256:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt SHA-256 does not match configuration"
+            )
+
+        def reject_constant(value: str) -> None:
+            raise ValueError(f"non-finite JSON constant {value!r}")
+
+        try:
+            receipt = json.loads(
+                raw.decode("utf-8", errors="strict"),
+                parse_constant=reject_constant,
+            )
+        except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt is not strict JSON"
+            ) from exc
+        if not isinstance(receipt, Mapping) or set(receipt) != set(
+            _PUBLISHDESIGN_PREFLIGHT_FIELDS
+        ):
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt top-level fields are not exact"
+            )
+        try:
+            canonical = build_publishdesign_preflight_receipt(
+                workspace_commit=receipt["workspace_commit"],
+                interpreter_sha256=receipt["interpreter_sha256"],
+                operator_sha256=receipt["operator_sha256"],
+                operator_dependency_sha256=receipt[
+                    "operator_dependency_sha256"
+                ],
+                publishdesign_sha256=receipt["publishdesign_sha256"],
+                diagnostic_owner_id=receipt["diagnostic_owner_id"],
+                backend_dir=receipt["backend_dir"],
+                backend_go_mod_sha256=receipt["backend_go_mod_sha256"],
+                backend_env_sha256=receipt["backend_env_sha256"],
+                gcs_credentials=receipt["gcs_credentials"],
+                gcs_credentials_sha256=receipt["gcs_credentials_sha256"],
+                dry_run=receipt["dry_run"],
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt values are invalid"
+            ) from exc
+        if raw != canonical:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight receipt is not canonical"
+            )
+
+        try:
+            backend = Path(self.environment["PANDA_BACKEND_DIR"]).resolve(
+                strict=True
+            )
+            credentials = Path(
+                self.environment["GOOGLE_APPLICATION_CREDENTIALS"]
+            ).resolve(strict=True)
+        except (KeyError, OSError) as exc:
+            raise PublishDesignPreflightError(
+                "publishdesign preflight local paths are unavailable"
+            ) from exc
+        try:
+            current_bindings: dict[str, Any] = {
+                "schema_version": PUBLISHDESIGN_PREFLIGHT_SCHEMA_VERSION,
+                "workspace_commit": self.workspace_commit,
+                "interpreter_sha256": _regular_file_sha256(
+                    Path(self.operator_command[0]),
+                    "page-builder interpreter",
+                    executable=True,
+                    reject_symlink=False,
+                ),
+                "operator_sha256": _validated_operator_source_sha256(
+                    self._expected_operator
+                ),
+                "operator_dependency_sha256": {
+                    name: _regular_file_sha256(
+                        dependency,
+                        f"page-builder operator dependency {name}",
+                    )
+                    for name, dependency in self._operator_dependency_paths.items()
+                },
+                "publishdesign_sha256": _regular_file_sha256(
+                    self._publishdesign,
+                    "page-builder publishdesign",
+                    executable=True,
+                ),
+                "diagnostic_owner_id": self.diagnostic_owner_id,
+                "backend_dir": str(backend),
+                "backend_go_mod_sha256": _regular_file_sha256(
+                    backend / "go.mod", "PANDA backend go.mod"
+                ),
+                "backend_env_sha256": _regular_file_sha256(
+                    backend / ".env", "PANDA backend .env"
+                ),
+                "gcs_credentials": str(credentials),
+                "gcs_credentials_sha256": _regular_file_sha256(
+                    credentials, "GCS credentials"
+                ),
+            }
+        except ValueError as exc:
+            raise PublishDesignPreflightError(str(exc)) from exc
+        for key, expected in current_bindings.items():
+            if receipt.get(key) != expected:
+                raise PublishDesignPreflightError(
+                    f"publishdesign preflight receipt {key} does not match local state"
+                )
+
+    def _assert_workspace_integrity(self) -> None:
+        self._assert_execution_integrity()
+        self._assert_local_dependencies()
+        try:
+            top_level = self._git("rev-parse", "--show-toplevel").decode(
+                "utf-8", errors="strict"
+            ).strip()
+        except UnicodeError as exc:
+            raise PageBuilderError("page-builder Vibe git root is not UTF-8") from exc
+        if not top_level or Path(top_level).resolve() != self.workspace:
+            raise PageBuilderError("page-builder workspace is not the pinned Git root")
+        if self._git("for-each-ref", "--format=%(refname)", "refs/replace/").strip():
+            raise PageBuilderError("page-builder workspace has active Git replace refs")
+        try:
+            head = self._git("rev-parse", "--verify", "HEAD^{commit}").decode(
+                "ascii", errors="strict"
+            ).strip()
+        except UnicodeError as exc:
+            raise PageBuilderError("page-builder workspace HEAD is malformed") from exc
+        if head != self.workspace_commit:
+            raise PageBuilderError("page-builder workspace HEAD is not workspace_commit")
+        tracked_flags = self._git("ls-files", "-v", "-z")
+        if any(
+            entry and not entry.startswith(b"H ")
+            for entry in tracked_flags.split(b"\0")
+        ):
+            raise PageBuilderError(
+                "page-builder workspace has hidden or nonstandard tracked-file state"
+            )
+        try:
+            tracked_tools = {
+                path.decode("utf-8", errors="strict")
+                for path in self._git(
+                    "ls-files", "-z", "--", "board-game/tools"
+                ).split(b"\0")
+                if path
+            }
+        except UnicodeError as exc:
+            raise PageBuilderError("page-builder tracked tool path is not UTF-8") from exc
+        allowed_untracked = self._publishdesign.relative_to(self.workspace).as_posix()
+        for path in self._expected_operator.parent.rglob("*"):
+            if path.is_dir() and not path.is_symlink():
+                continue
+            relative = path.relative_to(self.workspace).as_posix()
+            if relative not in tracked_tools and relative != allowed_untracked:
+                raise PageBuilderError(
+                    f"page-builder tools contain an unreviewed untracked file: {relative}"
+                )
+        status = self._git(
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=no",
+            "--ignore-submodules=none",
+        )
+        if status:
+            raise PageBuilderError("page-builder workspace has tracked drift")
+        self._assert_publishdesign_preflight_receipt()
+
+    def _execution_binding(self) -> dict[str, Any]:
+        return {
+            "workspace_commit": self.workspace_commit,
+            "interpreter_sha256": self.interpreter_sha256,
+            "operator_sha256": self.operator_sha256,
+            "operator_dependency_sha256": dict(
+                sorted(self.operator_dependency_sha256.items())
+            ),
+            "publishdesign_sha256": self.publishdesign_sha256,
+            "publishdesign_preflight_sha256": (
+                self.publishdesign_preflight_sha256
+            ),
         }
 
     def diagnostics(self) -> dict[str, Any]:
@@ -309,6 +1319,26 @@ class PageBuilderAdapter:
                 "reason": "diagnostic_design_id_missing",
             }
         try:
+            self._assert_workspace_integrity()
+        except PublishDesignPreflightError:
+            return {
+                "adapter": "page_builder",
+                "ready": False,
+                "authenticated": False,
+                "contract_version": PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION,
+                "capabilities": [],
+                "reason": "publishdesign_dry_run_not_proven",
+            }
+        except PageBuilderError:
+            return {
+                "adapter": "page_builder",
+                "ready": False,
+                "authenticated": False,
+                "contract_version": PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION,
+                "capabilities": [],
+                "reason": "workspace_integrity_failed",
+            }
+        try:
             design = self.readback.get_design(self.diagnostic_design_id)
         except Exception as exc:
             return {
@@ -319,18 +1349,45 @@ class PageBuilderAdapter:
                 "capabilities": [],
                 "reason": f"authenticated_read_failed:{type(exc).__name__}",
             }
-        identity = (
-            design.get("id") == self.diagnostic_design_id
-            or design.get("slug") == self.diagnostic_design_id
-        ) if isinstance(design, Mapping) else False
-        if not identity:
+        checks = (
+            (
+                isinstance(design, Mapping)
+                and (
+                    design.get("id") == self.diagnostic_design_id
+                    or design.get("slug") == self.diagnostic_design_id
+                ),
+                "diagnostic_design_identity_mismatch",
+            ),
+            (
+                isinstance(design, Mapping) and design.get("status") == "draft",
+                "diagnostic_design_not_private_draft",
+            ),
+            (
+                isinstance(design, Mapping)
+                and design.get("owner_id") == self.diagnostic_owner_id,
+                "diagnostic_design_owner_mismatch",
+            ),
+            (
+                isinstance(design, Mapping)
+                and isinstance(design.get("current_history_id"), str)
+                and bool(str(design.get("current_history_id")).strip()),
+                "diagnostic_design_history_missing",
+            ),
+            (
+                isinstance(design, Mapping)
+                and design.get("published_history_id") in (None, ""),
+                "diagnostic_design_has_published_history",
+            ),
+        )
+        failed_reason = next((reason for passed, reason in checks if not passed), "")
+        if failed_reason:
             return {
                 "adapter": "page_builder",
                 "ready": False,
-                "authenticated": True,
+                "authenticated": False,
                 "contract_version": PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION,
                 "capabilities": [],
-                "reason": "diagnostic_design_identity_mismatch",
+                "reason": failed_reason,
             }
         return {
             "adapter": "page_builder",
@@ -339,6 +1396,8 @@ class PageBuilderAdapter:
             "contract_version": PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION,
             "capabilities": sorted(self.capabilities),
             "diagnostic_design_id": self.diagnostic_design_id,
+            "diagnostic_owner_id": self.diagnostic_owner_id,
+            "workspace_commit": self.workspace_commit,
         }
 
     def invoke(self, operation: str, payload: dict[str, Any]) -> AdapterReceipt:
@@ -346,6 +1405,7 @@ class PageBuilderAdapter:
             raise PageBuilderError(
                 f"page-builder only accepts {PAGE_BUILDER_OPERATION!r}, got {operation!r}"
             )
+        self._assert_workspace_integrity()
         input_sha256 = adapter_input_sha256(operation, payload)
         candidate_id, candidate_version = _candidate_binding(payload)
         candidate_content_sha256 = _require_sha256(
@@ -410,6 +1470,20 @@ class PageBuilderAdapter:
             raise PageBuilderError(
                 "physical.dfm did not review the current production workspace"
             )
+        text2game_binding = _verify_text2game_export_handoff(
+            idea_dir=idea_dir,
+            project=project,
+            snapshot=snapshot,
+            artifact_hashes=expected_artifacts,
+            cad=cad,
+            dfm=dfm,
+            candidate_id=candidate_id,
+            candidate_version=candidate_version,
+            candidate_content_sha256=candidate_content_sha256,
+            production_slug=slug,
+            rules_sha256=rules_sha256,
+            rules_file_sha256=rules_file_sha256,
+        )
 
         operation_key = (
             f"alice:rich-draft:{candidate_id}:v{candidate_version}:"
@@ -418,6 +1492,7 @@ class PageBuilderAdapter:
         published_path = idea_dir / "published.json"
         sidecar_path = idea_dir / ".alice-rich-draft.json"
         provenance_path = project / _PROVENANCE_NAME
+        execution_binding = self._execution_binding()
         provenance = {
             "schema_version": SIDECAR_SCHEMA_VERSION,
             "operation_key": operation_key,
@@ -430,7 +1505,10 @@ class PageBuilderAdapter:
             "production_slug": slug,
             "project_sha256": snapshot.project_sha256,
             "artifact_hashes": dict(sorted(expected_artifacts.items())),
+            "vibe_execution": execution_binding,
         }
+        if text2game_binding:
+            provenance["text2game_export"] = text2game_binding
         provenance_bytes = _canonical_document(provenance)
         started = time.monotonic()
 
@@ -451,6 +1529,8 @@ class PageBuilderAdapter:
                     candidate_content_sha256=candidate_content_sha256,
                     rules_sha256=rules_sha256,
                     rules_file_sha256=rules_file_sha256,
+                    text2game_binding=text2game_binding,
+                    execution_binding=execution_binding,
                 )
                 normalized = self._verify_remote(
                     receipt,
@@ -465,6 +1545,7 @@ class PageBuilderAdapter:
                     candidate_content_sha256=candidate_content_sha256,
                     rules_sha256=rules_sha256,
                     rules_file_sha256=rules_file_sha256,
+                    text2game_binding=text2game_binding,
                 )
             except AmbiguousPageBuilderEffect:
                 raise
@@ -480,15 +1561,11 @@ class PageBuilderAdapter:
                 "that draft and create .alice-rich-draft.json before retrying"
             )
 
-        if Path(self.operator_command[0]).resolve() != self._resolved_interpreter:
-            raise PageBuilderError("page-builder interpreter target changed after startup")
-        configured_operator = Path(self.operator_command[1])
-        if (
-            configured_operator.is_symlink()
-            or configured_operator.resolve() != self._expected_operator
-        ):
-            raise PageBuilderError("page-builder publish.py target changed after startup")
+        self._assert_workspace_integrity()
         _write_exact_file(provenance_path, provenance_bytes)
+        # Recheck after the last local preparation and immediately before the
+        # durable single-writer fence that permits the remote import.
+        self._assert_workspace_integrity()
 
         effect_claim_key = f"alice.effect:rich-draft:{operation_key}"
         try:
@@ -501,6 +1578,7 @@ class PageBuilderAdapter:
                     "candidate_id": candidate_id,
                     "candidate_version": candidate_version,
                     "project_sha256": snapshot.project_sha256,
+                    "vibe_execution": execution_binding,
                     "status": "sending",
                 },
                 None,
@@ -515,18 +1593,47 @@ class PageBuilderAdapter:
         env["ALICE_OPERATION_KEY"] = operation_key
         env["ALICE_INPUT_SHA256"] = input_sha256
         env["ALICE_PROJECT_SHA256"] = snapshot.project_sha256
-        command = [*self.operator_command, slug]
+        for name in tuple(env):
+            if (
+                name.startswith(("DYLD_", "PYTHON"))
+                or name in {"BASH_ENV", "ENV", "LD_PRELOAD"}
+            ):
+                env.pop(name)
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
+        env["PYTHONNOUSERSITE"] = "1"
+        # publish.py calls telegram.load_env(), whose setdefault semantics
+        # otherwise rehydrate messaging credentials from the workspace .env.
+        # Explicit empty values keep this private-draft effect single-purpose
+        # and prevent telegram.py from launching its unpinned curl helper.
+        env["TELEGRAM_BOT_TOKEN"] = ""
+        env["TELEGRAM_CHAT_DM"] = ""
+        env["TELEGRAM_CHAT_JOURNAL"] = ""
+        env["TELEGRAM_CHAT_ID"] = ""
         try:
-            run = run_bounded_process(
-                command,
-                input_bytes=b"",
-                cwd=self.workspace,
-                env=env,
-                timeout_seconds=self.timeout_seconds,
-                stdout_limit_bytes=self.maximum_stdout_bytes,
-                stderr_limit_bytes=self.maximum_stderr_bytes,
-                shutdown_grace_seconds=self.shutdown_grace_seconds,
-            )
+            with tempfile.TemporaryDirectory(
+                prefix="alice-page-builder-pycache-"
+            ) as pycache:
+                env["PYTHONPYCACHEPREFIX"] = pycache
+                command = [
+                    str(self._resolved_interpreter),
+                    "-I",
+                    "-B",
+                    "-S",
+                    "-X",
+                    f"pycache_prefix={pycache}",
+                    str(self._expected_operator),
+                    slug,
+                ]
+                run = run_bounded_process(
+                    command,
+                    input_bytes=b"",
+                    cwd=self.workspace,
+                    env=env,
+                    timeout_seconds=self.timeout_seconds,
+                    stdout_limit_bytes=self.maximum_stdout_bytes,
+                    stderr_limit_bytes=self.maximum_stderr_bytes,
+                    shutdown_grace_seconds=self.shutdown_grace_seconds,
+                )
         except BoundedProcessTimeout as exc:
             raise AmbiguousPageBuilderEffect(
                 f"rich-page draft operator timed out after {self.timeout_seconds}s; "
@@ -580,6 +1687,7 @@ class PageBuilderAdapter:
                 candidate_content_sha256=candidate_content_sha256,
                 rules_sha256=rules_sha256,
                 rules_file_sha256=rules_file_sha256,
+                text2game_binding=text2game_binding,
             )
         except AmbiguousPageBuilderEffect:
             raise
@@ -609,6 +1717,7 @@ class PageBuilderAdapter:
         candidate_content_sha256: str,
         rules_sha256: str,
         rules_file_sha256: str,
+        text2game_binding: Mapping[str, Any],
     ) -> dict[str, Any]:
         design_id = _nonempty(receipt.get("design_id") or receipt.get("id"), "design_id")
         remote_slug = _nonempty(receipt.get("slug"), "slug")
@@ -632,6 +1741,8 @@ class PageBuilderAdapter:
             raise PageBuilderError("backend draft slug does not match operator receipt")
         if remote.get("status") != "draft":
             raise PageBuilderError("rich-page handoff must remain a private draft")
+        if remote.get("owner_id") != self.diagnostic_owner_id:
+            raise PageBuilderError("backend draft owner does not match configured owner")
         if remote.get("current_history_id") != history_id:
             raise PageBuilderError("backend draft head is not the imported history")
         if remote.get("published_history_id") not in (None, ""):
@@ -683,7 +1794,7 @@ class PageBuilderAdapter:
         # The local slug names the production workspace; the remote slug can be
         # collision-suffixed by Panda.  Preserve both instead of pretending the
         # remote canonical URL stayed identical.
-        return {
+        normalized = {
             "schema_version": SIDECAR_SCHEMA_VERSION,
             "operation_key": operation_key,
             "input_sha256": input_sha256,
@@ -701,6 +1812,7 @@ class PageBuilderAdapter:
             "project_sha256": project.project_sha256,
             "artifact_manifest_sha256": project.project_sha256,
             "artifact_hashes": dict(sorted(artifact_hashes.items())),
+            "vibe_execution": self._execution_binding(),
             "provenance_sha256": provenance_sha256,
             "project_files": [dict(item) for item in project.files],
             "rich_page": {
@@ -712,6 +1824,9 @@ class PageBuilderAdapter:
             "receipt_source": "authenticated_backend_readback",
             "pipeline_run_id": history_id,
         }
+        if text2game_binding:
+            normalized["text2game_export"] = dict(text2game_binding)
+        return normalized
 
 
 def snapshot_project(project: str | Path) -> ProjectSnapshot:
@@ -932,6 +2047,8 @@ def _verify_sidecar_binding(
     candidate_content_sha256: str,
     rules_sha256: str,
     rules_file_sha256: str,
+    text2game_binding: Mapping[str, Any],
+    execution_binding: Mapping[str, Any],
 ) -> None:
     expected = {
         "schema_version": SIDECAR_SCHEMA_VERSION,
@@ -943,16 +2060,26 @@ def _verify_sidecar_binding(
         "candidate_content_sha256": candidate_content_sha256,
         "rules_sha256": rules_sha256,
         "rules_file_sha256": rules_file_sha256,
+        "vibe_execution": dict(execution_binding),
     }
     for key, value in expected.items():
         if receipt.get(key) != value:
             raise PageBuilderError(f"existing rich-draft sidecar {key} mismatch")
+    if text2game_binding:
+        if receipt.get("text2game_export") != dict(text2game_binding):
+            raise PageBuilderError(
+                "existing rich-draft sidecar text2game export mismatch"
+            )
+    elif "text2game_export" in receipt:
+        raise PageBuilderError(
+            "existing rich-draft sidecar has unexpected text2game lineage"
+        )
 
 
 def _load_object(path: Path, label: str) -> Mapping[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise PageBuilderError(f"{label} is unreadable: {path}") from exc
     if not isinstance(value, Mapping):
         raise PageBuilderError(f"{label} must contain a JSON object")
@@ -1039,11 +2166,14 @@ __all__ = [
     "DraftReadback",
     "PAGE_BUILDER_OPERATION",
     "PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION",
+    "PUBLISHDESIGN_PREFLIGHT_SCHEMA_VERSION",
     "PRINTABLE_CAD_SUFFIXES",
     "PageBuilderAdapter",
     "PageBuilderError",
     "PageBuilderReadback",
     "ProjectSnapshot",
+    "PublishDesignPreflightError",
+    "build_publishdesign_preflight_receipt",
     "is_printable_cad_artifact_path",
     "snapshot_project",
     "validate_printable_artifact_hashes",

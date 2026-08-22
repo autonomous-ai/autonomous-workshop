@@ -1,19 +1,23 @@
 import json
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from alice.cli import (
     ADAPTER_DIAGNOSTICS_CONTRACT_VERSION,
     PROVIDER_DIAGNOSTICS_CONTRACT_VERSION,
+    _adapters,
     _readiness,
     main,
 )
-from alice.config import load_config
+from alice.config import load_config, resolve_runtime_paths
 from alice.policy import release_policy_from_config
+from alice.store import DurableStore
 
 
 class DiagnosticProvider:
@@ -62,6 +66,184 @@ def diagnostic_engine(config, adapters):
 
 
 class CLITests(unittest.TestCase):
+    @staticmethod
+    def calibration_profile() -> dict[str, object]:
+        return {
+            "profile_id": "printer-profile-1",
+            "revision": 1,
+            "printer_id": "printer-1",
+            "nozzle_diameter_mm": 0.4,
+            "layer_height_mm": 0.2,
+            "material": "PETG",
+            "calibration_evidence_sha256": "a" * 64,
+            "assembled_fits": [
+                {"name": "sliding", "per_side_clearance_mm": 0.2}
+            ],
+            "print_in_place_fits": [
+                {
+                    "name": "hinge",
+                    "xy_gap_mm": 0.3,
+                    "z_gap_mm": 0.4,
+                    "bottom_relief_mm": 0.2,
+                }
+            ],
+        }
+
+    @staticmethod
+    def printer_target() -> dict[str, object]:
+        return {
+            "profile_id": "printer-profile-1",
+            "profile_revision": 1,
+            "printer_id": "printer-1",
+            "nozzle_diameter_mm": 0.4,
+            "layer_height_mm": 0.2,
+            "material": "PETG",
+        }
+
+    def test_enabled_text2game_owns_cad_with_pinned_calibration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = root / "profile.json"
+            profile.write_text(json.dumps(self.calibration_profile()), encoding="utf-8")
+            config = resolve_runtime_paths(load_config(), root)
+            config["runtime"]["effect_mode"] = "draft"
+            config["adapters"]["text2game"].update(
+                {
+                    "enabled": True,
+                    "repo": str(root / "text2game"),
+                    "commit": "b" * 40,
+                    "vibe_workspace": str(root / "vibe"),
+                    "command": [sys.executable],
+                    "text2cad_repo": str(root / "text2cad"),
+                    "text2cad_commit": "c" * 40,
+                    "cad_python": sys.executable,
+                    "slicer_binary": str(root / "slicer"),
+                    "slicer_profile": str(root / "slicer.ini"),
+                    "codex_binary": str(root / "codex"),
+                    "codex_home": str(root / "codex-home"),
+                    "git_binary": str(root / "git"),
+                    "calibration_profile": str(profile),
+                    "printer_target": self.printer_target(),
+                }
+            )
+            sentinel = object()
+            with patch(
+                "alice.cli.Text2GamePhysicalAdapter", return_value=sentinel
+            ) as constructor:
+                adapters = _adapters(config, object())
+
+            self.assertIs(adapters["cad"], sentinel)
+            self.assertEqual(constructor.call_args.args[1], "b" * 40)
+            self.assertEqual(constructor.call_args.args[4], [sys.executable])
+            self.assertEqual(
+                constructor.call_args.kwargs["text2cad_commit"], "c" * 40
+            )
+            self.assertEqual(
+                constructor.call_args.kwargs["git_binary"], root / "git"
+            )
+
+    def test_text2game_cannot_run_in_dry_run(self) -> None:
+        config = load_config()
+        config["adapters"]["text2game"]["enabled"] = True
+
+        with self.assertRaisesRegex(SystemExit, "effect_mode='draft' or 'live'"):
+            _adapters(config, object())
+
+    def test_page_builder_receives_reviewed_source_and_binary_pins(self) -> None:
+        config = load_config()
+        config["runtime"]["effect_mode"] = "draft"
+        page = config["adapters"]["page_builder"]
+        page.update(
+            {
+                "enabled": True,
+                "workspace": "/srv/vibe",
+                "workspace_commit": "a" * 40,
+                "operator_command": [
+                    "/srv/vibe/.venv/bin/python",
+                    "/srv/vibe/board-game/tools/publish.py",
+                ],
+                "interpreter_sha256": "b" * 64,
+                "operator_sha256": "c" * 64,
+                "operator_dependency_sha256": {
+                    "animation_gate.py": "d" * 64,
+                    "journal.py": "e" * 64,
+                    "telegram.py": "f" * 64,
+                },
+                "publishdesign_sha256": "1" * 64,
+                "publishdesign_preflight_receipt": "/secure/page-builder-preflight.json",
+                "publishdesign_preflight_sha256": "3" * 64,
+                "git_binary": "/usr/bin/git",
+                "diagnostic_design_id": "private-diagnostic-draft",
+                "diagnostic_owner_id": "2" * 24,
+                "allowed_project_hosts": ["cdn.example.invalid"],
+            }
+        )
+        sentinel = object()
+        with patch(
+            "alice.cli.VibeHttpClient.from_environment",
+            return_value=SimpleNamespace(get_design=lambda _design_id: {}),
+        ), patch("alice.cli.PageBuilderAdapter", return_value=sentinel) as constructor:
+            adapters = _adapters(config, object())
+
+        self.assertIs(adapters["page_builder"], sentinel)
+        self.assertEqual(constructor.call_args.kwargs["workspace_commit"], "a" * 40)
+        self.assertEqual(constructor.call_args.kwargs["interpreter_sha256"], "b" * 64)
+        self.assertEqual(
+            constructor.call_args.kwargs["publishdesign_preflight_sha256"],
+            "3" * 64,
+        )
+        self.assertEqual(
+            constructor.call_args.kwargs["operator_dependency_sha256"]["telegram.py"],
+            "f" * 64,
+        )
+        self.assertEqual(constructor.call_args.kwargs["git_binary"], Path("/usr/bin/git"))
+
+    def test_tick_exit_code_distinguishes_idle_success_and_failed_work(self) -> None:
+        cases = (
+            (None, False, 0),
+            (SimpleNamespace(id="ok", kind="work", state="succeeded"), False, 0),
+            (SimpleNamespace(id="quarantine", kind="work", state="succeeded"), True, 3),
+            (SimpleNamespace(id="retry", kind="work", state="queued"), False, 3),
+            (SimpleNamespace(id="bad", kind="work", state="failed"), False, 3),
+        )
+        for task, quarantined, expected in cases:
+            with self.subTest(state=None if task is None else task.state):
+                engine = SimpleNamespace(
+                    work_once=lambda: task,
+                    _task_is_quarantined=lambda _task_id: quarantined,
+                )
+                with tempfile.TemporaryDirectory() as directory, patch(
+                    "alice.cli._engine", return_value=engine
+                ), patch(
+                    "alice.cli._readiness",
+                    return_value={"ready_for_mode": True, "missing_for_mode": []},
+                ), redirect_stdout(StringIO()):
+                    self.assertEqual(
+                        main(["--root", directory, "tick", "--count", "1"]),
+                        expected,
+                    )
+
+    def test_idle_tick_is_unhealthy_while_historical_quarantine_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, redirect_stdout(StringIO()):
+            self.assertEqual(main(["--root", directory, "init"]), 0)
+            with DurableStore(Path(directory) / "var" / "alice.sqlite3") as store:
+                store.add_experience(
+                    "task.result_quarantined",
+                    {"task_id": "old-task"},
+                    idempotency_key="old-quarantine",
+                )
+            engine = SimpleNamespace(
+                work_once=lambda: None,
+                _task_is_quarantined=lambda _task_id: False,
+            )
+            with patch("alice.cli._engine", return_value=engine), patch(
+                "alice.cli._readiness",
+                return_value={"ready_for_mode": True, "missing_for_mode": []},
+            ):
+                self.assertEqual(
+                    main(["--root", directory, "tick", "--count", "1"]), 3
+                )
+
     def test_init_and_status_in_isolated_root(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = StringIO()

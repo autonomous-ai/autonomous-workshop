@@ -1,0 +1,509 @@
+diff --git a/board-game/tools/publish.py b/board-game/tools/publish.py
+index 73cc073..b7eb39c 100644
+--- a/board-game/tools/publish.py
++++ b/board-game/tools/publish.py
+@@ -15,8 +15,8 @@ design public.
+ 
+ What it refuses to publish, and why:
+ 
+-  * a game whose queue state is not `shipped` — publishing is downstream of
+-    the owner's gate, never a substitute for it (`--force` overrides);
++  * a game whose queue state is not `shipped`, unless Alice supplies an exact,
++    hash-bound text2game export for a private draft (`--force` overrides);
+   * a game whose `gate.json` is missing or failed — the same invariant
+     `audit.py` enforces on shipped ideas: nothing reaches the world unmeasured;
+   * a game already in `published.json` — re-running is a no-op, so this is
+@@ -54,6 +54,7 @@ through godotenv, so there is exactly one copy of those values.
+ from __future__ import annotations
+ 
+ import argparse
++import hashlib
+ import json
+ import os
+ import re
+@@ -61,7 +62,7 @@ import subprocess
+ import sys
+ import zipfile
+ from datetime import datetime, timezone
+-from pathlib import Path
++from pathlib import Path, PurePosixPath
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parent))
+ import journal  # noqa: E402
+@@ -92,6 +93,10 @@ MAX_DESC = 900  # the API allows 2000; a store blurb has no business being longe
+ # so the packer below treats these as hard walls.
+ BLOCK_MIN, BLOCK_MAX, MAX_BLOCKS = 180, 400, 10
+ RULES_FILE = "RULES.md"
++RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"
++ALICE_DRAFT_HANDOFF_CONTRACT = "alice-text2game-export-v1"
++ALICE_EXPORT_RECEIPT = ".alice-text2game-export.json"
++ALICE_RUNTIME_PROVENANCE = "alice-provenance.json"
+ RULES_POINTER = f"The complete rules ship with the files as {RULES_FILE}."
+ # Spent on the page's last slot when the walkthrough had to stop early. A block
+ # body has a 180-rune floor, so this cannot be a one-line footnote.
+@@ -127,14 +132,188 @@ def credentials(backend: Path) -> str:
+     return str(path.resolve())
+ 
+ 
+-def queue_state(slug: str) -> str:
++def queue_state(slug: str, *, missing_ok: bool = False) -> str:
+     data = json.loads(QUEUE.read_text(encoding="utf-8"))
+     item = data.get("ideas", {}).get(slug)
+     if item is None:
++        if missing_ok:
++            return "missing"
+         fail(f"{slug} is not in the queue")
+     return item["state"]
+ 
+ 
++def _project_manifest(project: Path) -> tuple[list[dict], str]:
++    """Recompute Alice's exact project manifest without runtime provenance."""
++    files = []
++    for path in sorted(project.rglob("*")):
++        relative = path.relative_to(project)
++        if path.is_symlink():
++            raise ValueError(f"project contains symlink: {relative.as_posix()}")
++        if path.is_dir() or any(part in SKIP_DIRS for part in relative.parts):
++            continue
++        if not path.is_file():
++            raise ValueError(f"project contains non-file: {relative.as_posix()}")
++        if path.name in SKIP_NAMES or path.suffix in SKIP_SUFFIXES:
++            continue
++        if relative.as_posix() == ALICE_RUNTIME_PROVENANCE:
++            continue
++        raw = path.read_bytes()
++        files.append({
++            "path": relative.as_posix(),
++            "sha256": hashlib.sha256(raw).hexdigest(),
++            "bytes": len(raw),
++        })
++    encoded = json.dumps(
++        files, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
++        allow_nan=False,
++    ).encode("utf-8")
++    return files, hashlib.sha256(encoded).hexdigest()
++
++
++def alice_private_draft_authorized(project: Path, slug: str) -> tuple[bool, str]:
++    """Accept Alice's reviewed evidence gate without claiming owner shipment."""
++    receipt_path = project.parent / ALICE_EXPORT_RECEIPT
++    if receipt_path.is_symlink() or not receipt_path.is_file():
++        return False, "exact Alice export receipt is missing"
++    operation_key = os.environ.get("ALICE_OPERATION_KEY", "")
++    input_sha256 = os.environ.get("ALICE_INPUT_SHA256", "")
++    project_sha256 = os.environ.get("ALICE_PROJECT_SHA256", "")
++    if not operation_key.startswith("alice:rich-draft:"):
++        return False, "Alice operation key is missing"
++    if re.fullmatch(r"[0-9a-f]{64}", input_sha256) is None:
++        return False, "Alice input hash is missing"
++    if re.fullmatch(r"[0-9a-f]{64}", project_sha256) is None:
++        return False, "Alice project hash is missing"
++    try:
++        receipt_bytes = receipt_path.read_bytes()
++        receipt = json.loads(receipt_bytes.decode("utf-8"))
++        files, actual_project_sha256 = _project_manifest(project)
++    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
++        return False, f"Alice export could not be verified: {type(exc).__name__}"
++    if not isinstance(receipt, dict):
++        return False, "Alice export receipt is not an object"
++    canonical_receipt = (
++        json.dumps(
++            receipt, indent=2, sort_keys=True, ensure_ascii=False,
++            allow_nan=False,
++        ) + "\n"
++    ).encode("utf-8")
++    if receipt_bytes != canonical_receipt:
++        return False, "Alice export receipt is not canonical"
++    if set(receipt) != {
++        "schema_version",
++        "kind",
++        "candidate_id",
++        "candidate_version",
++        "candidate_content_sha256",
++        "production_slug",
++        "rules_sha256",
++        "rules_file_sha256",
++        "idea_sha256",
++        "project_sha256",
++        "artifact_hashes",
++        "source_artifact_hashes",
++        "source_artifact_hashes_sha256",
++        "source_snapshot_sha256",
++        "source_repo_url",
++        "source_repo_commit",
++        "handoff",
++    }:
++        return False, "Alice export receipt fields are not exact"
++    for key in (
++        "candidate_content_sha256",
++        "rules_sha256",
++        "rules_file_sha256",
++        "source_snapshot_sha256",
++    ):
++        if re.fullmatch(r"[0-9a-f]{64}", str(receipt.get(key, ""))) is None:
++            return False, f"Alice export has invalid {key}"
++    if (
++        receipt.get("schema_version") != 1
++        or receipt.get("kind") != "alice.text2game-export-receipt"
++        or receipt.get("production_slug") != slug
++        or receipt.get("source_repo_url")
++        != "https://github.com/nohope88/text2game"
++        or re.fullmatch(r"[0-9a-f]{40}", str(receipt.get("source_repo_commit", "")))
++        is None
++        or not isinstance(receipt.get("candidate_id"), str)
++        or not receipt["candidate_id"].strip()
++        or isinstance(receipt.get("candidate_version"), bool)
++        or not isinstance(receipt.get("candidate_version"), int)
++        or receipt["candidate_version"] < 1
++    ):
++        return False, "Alice export identity is malformed"
++    handoff = receipt.get("handoff")
++    if not isinstance(handoff, dict) or handoff != {
++        "publisher_alice_draft_handoff_contract": ALICE_DRAFT_HANDOFF_CONTRACT,
++        "publisher_exact_rules_passthrough_required": True,
++        "publisher_invoked": False,
++        "publisher_rules_archive_contract": RULES_ARCHIVE_CONTRACT,
++        "vibe_queue_transition_performed": False,
++        "vibe_queue_transition_required": False,
++    }:
++        return False, "Alice export handoff flags are not exact"
++    artifact_hashes = {
++        str(item["path"]): str(item["sha256"])
++        for item in files
++    }
++    if receipt.get("artifact_hashes") != artifact_hashes:
++        return False, "Alice export artifact map does not match the project"
++    if (
++        receipt.get("project_sha256") != actual_project_sha256
++        or project_sha256 != actual_project_sha256
++    ):
++        return False, "Alice export project hash does not match the project"
++    rules = project / RULES_FILE
++    if (
++        rules.is_symlink()
++        or not rules.is_file()
++        or hashlib.sha256(rules.read_bytes()).hexdigest()
++        != receipt.get("rules_file_sha256")
++    ):
++        return False, "Alice export rules file does not match the receipt"
++    idea = project.parent / "idea.json"
++    idea_copy = project / "_text2game" / "vibe-idea.json"
++    if (
++        idea.is_symlink()
++        or idea_copy.is_symlink()
++        or not idea.is_file()
++        or not idea_copy.is_file()
++    ):
++        return False, "Alice export Vibe idea files are missing"
++    idea_bytes = idea.read_bytes()
++    if (
++        not idea_bytes
++        or idea_copy.read_bytes() != idea_bytes
++        or hashlib.sha256(idea_bytes).hexdigest() != receipt.get("idea_sha256")
++    ):
++        return False, "Alice export Vibe idea bytes do not match"
++    source_hashes = receipt.get("source_artifact_hashes")
++    if not isinstance(source_hashes, dict) or not source_hashes:
++        return False, "Alice export source artifact map is missing"
++    for relative, digest in source_hashes.items():
++        path = PurePosixPath(relative) if isinstance(relative, str) else None
++        if (
++            path is None
++            or not relative
++            or path.is_absolute()
++            or ".." in path.parts
++            or "." in path.parts
++            or str(path) != relative
++            or re.fullmatch(r"[0-9a-f]{64}", str(digest)) is None
++        ):
++            return False, "Alice export source artifact map is malformed"
++    source_hashes_sha256 = hashlib.sha256(
++        json.dumps(
++            source_hashes, sort_keys=True, separators=(",", ":"),
++            ensure_ascii=False, allow_nan=False,
++        ).encode("utf-8")
++    ).hexdigest()
++    if receipt.get("source_artifact_hashes_sha256") != source_hashes_sha256:
++        return False, "Alice export source artifact manifest hash is wrong"
++    return True, "exact Alice private-draft handoff"
++
++
+ def gate_passed(project: Path) -> tuple[bool, str]:
+     gate = project / "gate.json"
+     if not gate.is_file():
+@@ -327,11 +506,19 @@ def covers(project: Path, slug: str) -> list[Path]:
+     return sorted(review.glob("*.png"))[:MAX_THUMBS]
+ 
+ 
+-def build_zip(project: Path, slug: str, dest: Path, rules: str = "") -> tuple[int, int]:
++def build_zip(
++        project: Path, slug: str, dest: Path,
++        fallback_rules: str = "") -> tuple[int, int]:
+     """Zip the project folder wrapped in one directory named after the slug —
+     the layout findDesignFolder expects, and the folder name detectPrimarySTL
+-    ranks the assembled STL against. `rules` is written in as RULES.md: the
+-    files someone downloads have to include how the game is played.
++    ranks the assembled STL against.
++
++    A project-owned ``RULES.md`` is authoritative and must be preserved
++    byte-for-byte. Alice binds that file before this operator runs; replacing
++    it with prose regenerated from ``idea.json`` would upload a different game
++    from the one that passed review. Older Vibe workspaces did not carry the
++    file, so ``fallback_rules`` remains a compatibility path for those projects
++    only. The archive always contains exactly one rules file.
+ 
+     `build/` is dropped when the root already carries the same assembled STL:
+     the builder writes both, so shipping it doubles the snapshot AND leaves two
+@@ -341,6 +528,15 @@ def build_zip(project: Path, slug: str, dest: Path, rules: str = "") -> tuple[in
+     skip_dirs = set(SKIP_DIRS)
+     if (project / f"{slug}.stl").is_file() and (project / "build" / f"{slug}.stl").is_file():
+         skip_dirs.add("build")
++    project_rules = project / RULES_FILE
++    if project_rules.is_symlink():
++        fail(f"{slug}: {RULES_FILE} must be a regular project file, "
++             "not a symlink")
++    has_project_rules = project_rules.is_file()
++    if has_project_rules and not project_rules.read_bytes():
++        fail(f"{slug}: {RULES_FILE} is empty")
++    if not has_project_rules and not fallback_rules.strip():
++        fail(f"{slug}: no project {RULES_FILE} and no legacy rules fallback")
+     files = 0
+     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+         for path in sorted(project.rglob("*")):
+@@ -350,8 +546,8 @@ def build_zip(project: Path, slug: str, dest: Path, rules: str = "") -> tuple[in
+                 continue
+             zf.write(path, f"{slug}/{path.relative_to(project).as_posix()}")
+             files += 1
+-        if rules:
+-            zf.writestr(f"{slug}/{RULES_FILE}", rules)
++        if not has_project_rules:
++            zf.writestr(f"{slug}/{RULES_FILE}", fallback_rules)
+             files += 1
+     return files, dest.stat().st_size
+ 
+@@ -374,10 +570,17 @@ def publish(slug: str, dry_run: bool, force: bool, mode: str = "import") -> int:
+     if mode != "import" and not prior:
+         fail(f"{slug} has no published.json — publish it first")
+ 
+-    state = queue_state(slug)
++    alice_handoff, alice_handoff_reason = alice_private_draft_authorized(
++        project, slug
++    )
++    state = queue_state(slug, missing_ok=True)
+     if state != "shipped" and not force:
+-        fail(f"{slug} is {state}, not shipped — the owner's gate 2 comes first "
+-             f"(--force to override)")
++        if mode == "import" and alice_handoff:
++            print(f"publish: {slug} — {alice_handoff_reason}")
++        else:
++            fail(f"{slug} is {state}, not shipped — the owner's gate 2 comes "
++                 f"first; Alice handoff rejected: {alice_handoff_reason} "
++                 f"(--force to override)")
+     ok, why = gate_passed(project)
+     if not ok and not force:
+         fail(f"{slug}: {why} (--force to override)")
+@@ -402,7 +605,12 @@ def publish(slug: str, dry_run: bool, force: bool, mode: str = "import") -> int:
+     cmd = [str(BIN), "-owner", os.environ["PANDA_OWNER_ID"], "-content", str(page_file)]
+     archive = REPO_ROOT / "board-game" / f".publish-{slug}.zip"
+     if mode != "page":
+-        count, size = build_zip(project, slug, archive, rules=rules_markdown(idea))
++        count, size = build_zip(
++            project,
++            slug,
++            archive,
++            fallback_rules=rules_markdown(idea),
++        )
+         cmd += ["-zip", str(archive), "-thumbs", ",".join(str(p) for p in thumbs)]
+         print(f"publish: {slug} — {count} files, {size >> 20}MB zipped, "
+               f"{len(thumbs)} covers")
+diff --git a/board-game/tools/test_publish.py b/board-game/tools/test_publish.py
+new file mode 100644
+index 0000000..777e817
+--- /dev/null
++++ b/board-game/tools/test_publish.py
+@@ -0,0 +1,185 @@
++import importlib.util
++import hashlib
++import json
++import os
++from pathlib import Path
++import tempfile
++import unittest
++from unittest.mock import patch
++import zipfile
++
++
++MODULE_PATH = Path(__file__).with_name("publish.py")
++SPEC = importlib.util.spec_from_file_location("vibe_publish", MODULE_PATH)
++assert SPEC is not None and SPEC.loader is not None
++publish = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(publish)
++
++
++class PublishArchiveTests(unittest.TestCase):
++    def test_declares_the_exact_project_rules_archive_contract(self) -> None:
++        self.assertEqual(
++            publish.RULES_ARCHIVE_CONTRACT,
++            "project-rules-byte-exact-v1",
++        )
++        self.assertEqual(
++            publish.ALICE_DRAFT_HANDOFF_CONTRACT,
++            "alice-text2game-export-v1",
++        )
++
++    def test_exact_alice_export_can_replace_only_the_private_draft_queue_gate(self) -> None:
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            idea = root / "game"
++            project = idea / "project"
++            project.mkdir(parents=True)
++            rules = b"# Accepted rules\n"
++            (project / "RULES.md").write_bytes(rules)
++            (project / "game.stl").write_bytes(b"solid game\nendsolid game\n")
++            idea_bytes = b'{"title":"Game"}\n'
++            (idea / "idea.json").write_bytes(idea_bytes)
++            idea_copy = project / "_text2game" / "vibe-idea.json"
++            idea_copy.parent.mkdir(parents=True)
++            idea_copy.write_bytes(idea_bytes)
++            files, project_sha256 = publish._project_manifest(project)
++            source_artifacts = {"gdd.md": "f" * 64}
++            source_artifacts_sha256 = hashlib.sha256(
++                json.dumps(
++                    source_artifacts,
++                    sort_keys=True,
++                    separators=(",", ":"),
++                ).encode("utf-8")
++            ).hexdigest()
++            receipt = {
++                "schema_version": 1,
++                "kind": "alice.text2game-export-receipt",
++                "candidate_id": "candidate-1",
++                "candidate_version": 7,
++                "candidate_content_sha256": "a" * 64,
++                "production_slug": "game",
++                "rules_sha256": "b" * 64,
++                "rules_file_sha256": hashlib.sha256(rules).hexdigest(),
++                "idea_sha256": hashlib.sha256(idea_bytes).hexdigest(),
++                "project_sha256": project_sha256,
++                "artifact_hashes": {
++                    item["path"]: item["sha256"] for item in files
++                },
++                "source_artifact_hashes": source_artifacts,
++                "source_artifact_hashes_sha256": source_artifacts_sha256,
++                "source_snapshot_sha256": "c" * 64,
++                "source_repo_url": "https://github.com/nohope88/text2game",
++                "source_repo_commit": "d" * 40,
++                "handoff": {
++                    "vibe_queue_transition_required": False,
++                    "vibe_queue_transition_performed": False,
++                    "publisher_invoked": False,
++                    "publisher_exact_rules_passthrough_required": True,
++                    "publisher_rules_archive_contract": "project-rules-byte-exact-v1",
++                    "publisher_alice_draft_handoff_contract": "alice-text2game-export-v1",
++                },
++            }
++            (idea / ".alice-text2game-export.json").write_text(
++                json.dumps(
++                    receipt,
++                    indent=2,
++                    sort_keys=True,
++                    ensure_ascii=False,
++                    allow_nan=False,
++                ) + "\n",
++                encoding="utf-8",
++            )
++            environment = {
++                "ALICE_OPERATION_KEY": "alice:rich-draft:candidate-1:v7:abc",
++                "ALICE_INPUT_SHA256": "e" * 64,
++                "ALICE_PROJECT_SHA256": project_sha256,
++            }
++
++            with patch.dict(os.environ, environment, clear=False):
++                accepted, reason = publish.alice_private_draft_authorized(
++                    project, "game"
++                )
++
++            self.assertTrue(accepted, reason)
++
++            (project / "game.stl").write_bytes(b"changed")
++            with patch.dict(os.environ, environment, clear=False):
++                accepted, _ = publish.alice_private_draft_authorized(
++                    project, "game"
++                )
++            self.assertFalse(accepted)
++
++    def test_project_rules_are_preserved_once_byte_for_byte(self) -> None:
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            project = root / "project"
++            project.mkdir()
++            exact = b"# Accepted rules\n\nDo not rewrite me.\n\xff\n"
++            (project / "RULES.md").write_bytes(exact)
++            (project / "game.stl").write_bytes(b"solid game\nendsolid game\n")
++            archive = root / "game.zip"
++
++            count, _ = publish.build_zip(
++                project,
++                "game",
++                archive,
++                fallback_rules="# Regenerated and wrong\n",
++            )
++
++            self.assertEqual(count, 2)
++            with zipfile.ZipFile(archive) as bundle:
++                names = bundle.namelist()
++                self.assertEqual(names.count("game/RULES.md"), 1)
++                self.assertEqual(bundle.read("game/RULES.md"), exact)
++
++    def test_legacy_workspace_gets_exactly_one_generated_rules_file(self) -> None:
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            project = root / "project"
++            project.mkdir()
++            (project / "game.stl").write_bytes(b"solid game\nendsolid game\n")
++            archive = root / "game.zip"
++
++            publish.build_zip(
++                project,
++                "game",
++                archive,
++                fallback_rules="# Legacy generated rules\n",
++            )
++
++            with zipfile.ZipFile(archive) as bundle:
++                self.assertEqual(bundle.namelist().count("game/RULES.md"), 1)
++                self.assertEqual(
++                    bundle.read("game/RULES.md"), b"# Legacy generated rules\n"
++                )
++
++    def test_empty_or_symlinked_project_rules_fail_closed(self) -> None:
++        with tempfile.TemporaryDirectory() as directory:
++            root = Path(directory)
++            project = root / "project"
++            project.mkdir()
++            rules = project / "RULES.md"
++            rules.write_bytes(b"")
++
++            with self.assertRaises(SystemExit):
++                publish.build_zip(
++                    project,
++                    "game",
++                    root / "empty.zip",
++                    fallback_rules="# fallback\n",
++                )
++
++            rules.unlink()
++            outside = root / "outside.md"
++            outside.write_text("# outside\n", encoding="utf-8")
++            rules.symlink_to(outside)
++            with self.assertRaises(SystemExit):
++                publish.build_zip(
++                    project,
++                    "game",
++                    root / "symlink.zip",
++                    fallback_rules="# fallback\n",
++                )
++
++
++if __name__ == "__main__":
++    unittest.main()

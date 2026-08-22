@@ -71,7 +71,7 @@ class AliceEngine:
         config: Mapping[str, Any],
         *,
         worker_id: str | None = None,
-        adapters: Mapping[str, CommandAdapter] | None = None,
+        adapters: Mapping[str, Any] | None = None,
     ) -> None:
         self.store = store
         self.provider = provider
@@ -2045,12 +2045,15 @@ def _validate_action_semantics(action: str, content: Mapping[str, Any]) -> None:
             )
         except PageBuilderError as exc:
             raise EngineError(str(exc)) from exc
+        _validate_text2game_physical_receipt(action, content)
     if action in {"physical.dfm", "physical.production_run"}:
         value = content.get("print_yield")
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not (
             0.0 <= float(value) <= 1.0
         ):
             raise EngineError(f"{action} print_yield must be between zero and one")
+        if action == "physical.dfm" and content.get("fit") is not True:
+            raise EngineError("physical.dfm fit must be the exact boolean true")
     if action in {"physical.prototype_print", "physical.production_run"}:
         try:
             validate_manufacturing_receipt(content, action)
@@ -2070,6 +2073,62 @@ def _validate_action_semantics(action: str, content: Mapping[str, Any]) -> None:
             0.0 <= float(value) <= 1.0
         ):
             raise EngineError("market.validate_offer gross_margin must be 0..1")
+
+
+_TEXT2GAME_PAGE_LINEAGE_FIELDS = (
+    "slug",
+    "production_slug",
+    "candidate_id",
+    "candidate_version",
+    "candidate_content_sha256",
+    "rules_sha256",
+    "rules_file_sha256",
+    "vibe_idea_sha256",
+    "project_sha256",
+    "artifact_hashes",
+    "text2game_source_artifact_hashes",
+    "text2game_source_artifact_hashes_sha256",
+    "text2game_export_receipt_sha256",
+    "text2game_source_snapshot_sha256",
+    "text2game_repo_url",
+    "text2game_repo_commit",
+)
+
+
+def _validate_text2game_physical_receipt(
+    action: str, content: Mapping[str, Any]
+) -> None:
+    lineage = content.get("page_builder_lineage")
+    if not isinstance(lineage, Mapping) or set(lineage) != set(
+        _TEXT2GAME_PAGE_LINEAGE_FIELDS
+    ):
+        raise EngineError(f"{action} page_builder_lineage fields are not exact")
+    for key in _TEXT2GAME_PAGE_LINEAGE_FIELDS:
+        if lineage.get(key) != content.get(key):
+            raise EngineError(f"{action} page_builder_lineage {key} mismatch")
+    hashes = content.get("validation_receipt_hashes")
+    if not isinstance(hashes, Mapping) or not hashes:
+        raise EngineError(f"{action} validation_receipt_hashes must be non-empty")
+    for key, digest in hashes.items():
+        if (
+            not isinstance(key, str)
+            or not key.strip()
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            raise EngineError(f"{action} validation receipt hash is malformed")
+    if not isinstance(content.get("receipt"), Mapping):
+        raise EngineError(f"{action} receipt must be an object")
+    operation_id = content.get("text2game_operation_id")
+    if not isinstance(operation_id, str) or re.fullmatch(
+        r"[0-9a-f]{32}", operation_id
+    ) is None:
+        raise EngineError(f"{action} text2game_operation_id is malformed")
+    if action == "physical.dfm":
+        if not isinstance(content.get("tolerances"), Mapping):
+            raise EngineError("physical.dfm tolerances must be an object")
+        if not isinstance(content.get("landed_cost"), Mapping):
+            raise EngineError("physical.dfm landed_cost must be an object")
 
 
 _RULE_FIELDS = (
@@ -2097,6 +2156,13 @@ def _bind_agent_lineage(
         rule_document = {name: result.get(name) for name in _RULE_FIELDS}
         result["candidate_content_sha256"] = candidate_hash
         result["rules_sha256"] = _canonical_sha256(rule_document)
+    elif task.kind == "physical.design":
+        result["candidate_id"] = task.candidate_id
+        result["candidate_version"] = task.payload.get("candidate_version")
+        result["candidate_content_sha256"] = candidate_hash
+        result["rules_sha256"] = _accepted_lineage_value(
+            task.payload, "candidate.rules", "rules_sha256"
+        )
     return result
 
 
@@ -2113,6 +2179,7 @@ def _validate_task_lineage(task: TaskRecord, content: Mapping[str, Any]) -> None
         "simulation.exploit",
         "human.prepare_blind_kit",
         "human.collect_blind_results",
+        "physical.design",
         "physical.cad",
         "physical.dfm",
         "physical.create_rich_draft",
@@ -2136,6 +2203,13 @@ def _validate_task_lineage(task: TaskRecord, content: Mapping[str, Any]) -> None
         )
     if content.get("rules_sha256") != expected_rules:
         raise EngineError(f"{task.kind} rules hash mismatch")
+
+    if task.kind == "physical.design":
+        if content.get("candidate_id") != task.candidate_id:
+            raise EngineError("physical.design candidate id mismatch")
+        if content.get("candidate_version") != task.payload.get("candidate_version"):
+            raise EngineError("physical.design candidate version mismatch")
+        return
 
     if task.kind == "human.prepare_blind_kit":
         try:
@@ -2162,6 +2236,20 @@ def _validate_task_lineage(task: TaskRecord, content: Mapping[str, Any]) -> None
             raise EngineError(str(exc)) from exc
 
     if task.kind == "physical.cad":
+        design = _dependency_payload(task.payload, "physical.design")
+        if not design:
+            raise EngineError("physical.cad lacks its physical.design dependency")
+        for key in (
+            "candidate_id",
+            "candidate_version",
+            "candidate_content_sha256",
+            "rules_sha256",
+            "production_slug",
+        ):
+            if content.get(key) != design.get(key):
+                raise EngineError(f"physical.cad does not match physical.design {key}")
+        if content.get("physical_design_sha256") != _canonical_sha256(design):
+            raise EngineError("physical.cad physical design hash mismatch")
         artifact_hashes = content.get("artifact_hashes")
         rules_file_hash = content.get("rules_file_sha256")
         if not isinstance(artifact_hashes, Mapping) or (
@@ -2175,6 +2263,28 @@ def _validate_task_lineage(task: TaskRecord, content: Mapping[str, Any]) -> None
         for key in ("rules_file_sha256", "project_sha256", "artifact_hashes"):
             if content.get(key) != cad.get(key):
                 raise EngineError(f"{task.kind} does not match physical.cad {key}")
+        if task.kind == "physical.dfm":
+            for key in (
+                "candidate_id",
+                "candidate_version",
+                "candidate_content_sha256",
+                "rules_sha256",
+                "slug",
+                "production_slug",
+                "vibe_idea_sha256",
+                "text2game_source_artifact_hashes",
+                "text2game_source_artifact_hashes_sha256",
+                "text2game_export_receipt_sha256",
+                "text2game_source_snapshot_sha256",
+                "text2game_repo_url",
+                "text2game_repo_commit",
+                "page_builder_lineage",
+                "physical_design_sha256",
+                "text2game_operation_id",
+                "validation_receipt_hashes",
+            ):
+                if content.get(key) != cad.get(key):
+                    raise EngineError(f"physical.dfm does not match physical.cad {key}")
         return
 
     if task.kind in {"physical.prototype_print", "physical.production_run"}:

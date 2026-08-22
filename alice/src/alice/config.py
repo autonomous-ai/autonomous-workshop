@@ -44,6 +44,24 @@ COMMAND_ADAPTER_NAMES = frozenset(
     }
 )
 _ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_GIT_COMMIT = re.compile(r"^[0-9a-f]{40}$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_OBJECT_ID = re.compile(r"^[0-9a-f]{24}$")
+_PAGE_BUILDER_DEPENDENCIES = frozenset(
+    {"animation_gate.py", "journal.py", "telegram.py"}
+)
+_UNSAFE_PROCESS_ENVIRONMENT = frozenset(
+    {
+        "BASH_ENV",
+        "ENV",
+        "LD_PRELOAD",
+        "PYTHONHOME",
+        "PYTHONPATH",
+        "PYTHONSTARTUP",
+        "PYTHONINSPECT",
+        "PYTHONBREAKPOINT",
+    }
+)
 _REMOVED_CONFIG_PATHS = (
     ("runtime", "artifacts"),
     ("runtime", "outbox"),
@@ -175,10 +193,125 @@ def _validate_config(config: Mapping[str, Any]) -> None:
             _environment_names(names, f"adapters.command_allowed_environment.{name}")
         )
 
+    text2game = adapters.get("text2game")
     page_builder = adapters.get("page_builder")
     vibe = adapters.get("vibe")
-    if not isinstance(page_builder, Mapping) or not isinstance(vibe, Mapping):
-        raise ValueError("adapters.page_builder and adapters.vibe must be objects")
+    if (
+        not isinstance(text2game, Mapping)
+        or not isinstance(page_builder, Mapping)
+        or not isinstance(vibe, Mapping)
+    ):
+        raise ValueError(
+            "adapters.text2game, adapters.page_builder, and adapters.vibe must be objects"
+        )
+    if "uv_binary" in text2game:
+        raise ValueError(
+            "adapters.text2game.uv_binary was removed; Alice uses a pinned "
+            "operation-local CAD-Python shim"
+        )
+    if not isinstance(text2game.get("enabled"), bool):
+        raise ValueError("adapters.text2game.enabled must be a boolean")
+    text2game_environment = set(
+        _environment_names(
+            text2game.get("allowed_environment"),
+            "adapters.text2game.allowed_environment",
+        )
+    )
+    unsafe_text2game_environment = sorted(
+        name
+        for name in text2game_environment
+        if name in _UNSAFE_PROCESS_ENVIRONMENT
+        or name.startswith("DYLD_")
+        or name.startswith("GIT_")
+    )
+    if unsafe_text2game_environment:
+        raise ValueError(
+            "adapters.text2game.allowed_environment contains process-injection names: "
+            + ", ".join(unsafe_text2game_environment)
+        )
+    adapter_environment.update(text2game_environment)
+    for key in (
+        "repo",
+        "work_root",
+        "vibe_workspace",
+        "text2cad_repo",
+        "cad_python",
+        "slicer_binary",
+        "slicer_profile",
+        "codex_binary",
+        "codex_home",
+        "git_binary",
+        "calibration_profile",
+    ):
+        if not isinstance(text2game.get(key), str):
+            raise ValueError(f"adapters.text2game.{key} must be a path string")
+    for key in ("commit", "text2cad_commit"):
+        pinned_commit = text2game.get(key)
+        if not isinstance(pinned_commit, str) or (
+            pinned_commit and _GIT_COMMIT.fullmatch(pinned_commit) is None
+        ):
+            raise ValueError(
+                f"adapters.text2game.{key} must be empty or a lowercase 40-hex commit"
+            )
+    text2game_command = text2game.get("command")
+    if not isinstance(text2game_command, list) or any(
+        not isinstance(item, str) or not item.strip() or item != item.strip()
+        for item in text2game_command
+    ):
+        raise ValueError(
+            "adapters.text2game.command must be an array of non-empty arguments"
+        )
+    if not isinstance(text2game.get("printer_target"), Mapping):
+        raise ValueError("adapters.text2game.printer_target must be an object")
+    _positive_number(
+        text2game.get("timeout_seconds"), "adapters.text2game.timeout_seconds"
+    )
+    _positive_integer(
+        text2game.get("max_output_bytes"), "adapters.text2game.max_output_bytes"
+    )
+    _positive_integer(
+        text2game.get("max_stderr_bytes"), "adapters.text2game.max_stderr_bytes"
+    )
+    _positive_number(
+        text2game.get("shutdown_grace_seconds"),
+        "adapters.text2game.shutdown_grace_seconds",
+    )
+    if text2game.get("enabled") is True:
+        missing_text2game = [
+            key
+            for key in (
+                "repo",
+                "commit",
+                "vibe_workspace",
+                "text2cad_repo",
+                "text2cad_commit",
+                "cad_python",
+                "slicer_binary",
+                "slicer_profile",
+                "codex_binary",
+                "codex_home",
+                "git_binary",
+                "calibration_profile",
+            )
+            if not str(text2game.get(key) or "").strip()
+        ]
+        if missing_text2game:
+            raise ValueError(
+                "enabled text2game adapter requires: "
+                + ", ".join(f"adapters.text2game.{key}" for key in missing_text2game)
+            )
+        if not text2game_command:
+            raise ValueError(
+                "enabled text2game adapter requires adapters.text2game.command"
+            )
+        if not text2game.get("printer_target"):
+            raise ValueError(
+                "enabled text2game adapter requires adapters.text2game.printer_target"
+            )
+        if adapters.get("cad_command"):
+            raise ValueError(
+                "adapters.text2game and adapters.cad_command cannot both be enabled"
+            )
     page_environment = set(
         _environment_names(
             page_builder.get("allowed_environment"),
@@ -186,6 +319,62 @@ def _validate_config(config: Mapping[str, Any]) -> None:
         )
     )
     adapter_environment.update(page_environment)
+    for key in ("workspace", "git_binary", "publishdesign_preflight_receipt"):
+        if not isinstance(page_builder.get(key), str):
+            raise ValueError(f"adapters.page_builder.{key} must be a path string")
+    for key in ("diagnostic_design_id", "diagnostic_owner_id"):
+        if not isinstance(page_builder.get(key), str):
+            raise ValueError(f"adapters.page_builder.{key} must be a string")
+    diagnostic_owner_id = page_builder.get("diagnostic_owner_id")
+    if diagnostic_owner_id and _OBJECT_ID.fullmatch(diagnostic_owner_id) is None:
+        raise ValueError(
+            "adapters.page_builder.diagnostic_owner_id must be empty or a "
+            "lowercase 24-hex owner id"
+        )
+    workspace_commit = page_builder.get("workspace_commit")
+    if not isinstance(workspace_commit, str) or (
+        workspace_commit and _GIT_COMMIT.fullmatch(workspace_commit) is None
+    ):
+        raise ValueError(
+            "adapters.page_builder.workspace_commit must be empty or a lowercase 40-hex commit"
+        )
+    for key in (
+        "interpreter_sha256",
+        "operator_sha256",
+        "publishdesign_sha256",
+        "publishdesign_preflight_sha256",
+    ):
+        digest = page_builder.get(key)
+        if not isinstance(digest, str) or (
+            digest and _SHA256.fullmatch(digest) is None
+        ):
+            raise ValueError(
+                f"adapters.page_builder.{key} must be empty or a lowercase SHA-256"
+            )
+    dependency_hashes = page_builder.get("operator_dependency_sha256")
+    if not isinstance(dependency_hashes, Mapping) or set(dependency_hashes) != set(
+        _PAGE_BUILDER_DEPENDENCIES
+    ):
+        raise ValueError(
+            "adapters.page_builder.operator_dependency_sha256 must contain exactly: "
+            + ", ".join(sorted(_PAGE_BUILDER_DEPENDENCIES))
+        )
+    for name, digest in dependency_hashes.items():
+        if not isinstance(digest, str) or (
+            digest and _SHA256.fullmatch(digest) is None
+        ):
+            raise ValueError(
+                "adapters.page_builder.operator_dependency_sha256."
+                f"{name} must be empty or a lowercase SHA-256"
+            )
+    operator_command = page_builder.get("operator_command")
+    if not isinstance(operator_command, list) or any(
+        not isinstance(item, str) or not item.strip() or item != item.strip()
+        for item in operator_command
+    ):
+        raise ValueError(
+            "adapters.page_builder.operator_command must be an array of non-empty arguments"
+        )
     allowed_project_hosts = page_builder.get("allowed_project_hosts")
     if not isinstance(allowed_project_hosts, list) or any(
         not isinstance(host, str)
@@ -209,6 +398,40 @@ def _validate_config(config: Mapping[str, Any]) -> None:
         raise ValueError(
             "enabled page_builder requires adapters.page_builder.allowed_project_hosts"
         )
+    if page_builder.get("enabled") is True:
+        required_page_builder = (
+            "workspace",
+            "workspace_commit",
+            "interpreter_sha256",
+            "operator_sha256",
+            "publishdesign_sha256",
+            "publishdesign_preflight_receipt",
+            "publishdesign_preflight_sha256",
+            "git_binary",
+            "diagnostic_design_id",
+            "diagnostic_owner_id",
+        )
+        missing_page_builder = [
+            key
+            for key in required_page_builder
+            if not str(page_builder.get(key) or "").strip()
+        ]
+        missing_page_builder.extend(
+            f"operator_dependency_sha256.{name}"
+            for name, digest in dependency_hashes.items()
+            if not digest
+        )
+        if missing_page_builder:
+            raise ValueError(
+                "enabled page_builder requires: "
+                + ", ".join(
+                    f"adapters.page_builder.{key}" for key in missing_page_builder
+                )
+            )
+        if len(operator_command) != 2:
+            raise ValueError(
+                "enabled page_builder requires exactly two operator_command arguments"
+            )
     for key in ("timeout_seconds", "readback_timeout_seconds"):
         _positive_number(
             page_builder.get(key), f"adapters.page_builder.{key}"
@@ -336,6 +559,38 @@ def resolve_runtime_paths(config: dict[str, Any], root: str | Path) -> dict[str,
     resolved["agents"]["codex"]["home"] = str(
         codex_home if codex_home.is_absolute() else root_path / codex_home
     )
+    text2game = resolved["adapters"]["text2game"]
+    for key in (
+        "repo",
+        "work_root",
+        "vibe_workspace",
+        "text2cad_repo",
+        "cad_python",
+        "slicer_binary",
+        "slicer_profile",
+        "codex_binary",
+        "codex_home",
+        "git_binary",
+        "calibration_profile",
+    ):
+        raw = str(text2game.get(key) or "")
+        if not raw:
+            continue
+        text2game_path = Path(raw).expanduser()
+        text2game[key] = str(
+            text2game_path
+            if text2game_path.is_absolute()
+            else root_path / text2game_path
+        )
+    page_builder = resolved["adapters"]["page_builder"]
+    for key in ("workspace", "git_binary", "publishdesign_preflight_receipt"):
+        raw = str(page_builder.get(key) or "")
+        if not raw:
+            continue
+        page_path = Path(raw).expanduser()
+        page_builder[key] = str(
+            page_path if page_path.is_absolute() else root_path / page_path
+        )
     return resolved
 
 

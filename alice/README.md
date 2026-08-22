@@ -26,10 +26,23 @@ all pass the pinned policy.
   order, print, and outcome systems, plus built-in adapters for the existing
   board-game rich-draft operator and Vibe public flip. They are disabled and
   uncredentialed by default.
+- A connected text2game CAD/DFM runtime and deterministic Vibe exporter. It
+  requires clean text2game and text2cad checkouts at exact Git commits plus
+  byte-pinned Git, Codex, CAD-Python, slicer, slicer-profile, and printer-
+  calibration inputs. It copies only an explicit reviewed runtime allowlist
+  into a private per-operation workspace—never either legacy publisher or a
+  credential-like backup—and runs the pinned deterministic
+  consistency check before any model call, then runs phases 1, 2, and 3 behind
+  durable reconciliation fences. The export preserves the exact accepted rules,
+  source/CAD hashes, storefront idea, and complete project lineage. Peter-
+  derived calibrated-fit, strict STL-topology, and fail-closed motion validators
+  independently check its output.
 - Dry-run, draft, and live effect modes with immutable inputs and durable
-  operation keys. Release authorization and packets are live-only. The public
-  path reuses the validated Vibe design and existing downstream rich-page
-  pipeline; Alice does not recreate its visuals, copy, or video work.
+  operation keys. The first operational milestone is `draft`: Alice creates the
+  complete private Factory product page, then stops for Dee's one-click review
+  and public flip. Automatic public release is a separate, disabled `live`
+  capability. Alice reuses the existing Vibe page pipeline; it does not recreate
+  its visuals, copy, or video work.
 - A paid-order orchestration contract that verifies the confirmed publication
   packet, SKU, profile, material specification, BOM, and packing recipe; creates
   one durably keyed print job per order; then binds QA, shipment, and tracking
@@ -39,12 +52,19 @@ all pass the pinned policy.
 ## Activation status
 
 The core runtime and offline safety suite are implemented, but this checkout is
-not a live inventor or a completed deployment. The default fixture cannot
-invent or provide external evidence and is rejected in `draft` and `live`. No
-credentials, production evidence commands, or operational fulfillment adapters
-are checked in. Public publishing remains fail-closed until Factory advertises
-and enforces atomic revision/packet, SKU/price/currency, and rich-page contracts
-described in
+not a live inventor or a completed deployment. No service has been installed
+and no real Factory draft has been created by Alice. The connected text2game
+adapter is disabled by default and still needs an authenticated dedicated Codex
+home, its exact external CAD/slicer toolchain, a measured printer calibration,
+and the other real evidence boundaries. The default fixture cannot invent or
+provide external evidence and is rejected in `draft` and `live`. No production
+token or operational fulfillment adapter is checked in.
+
+`auto_publish_when_eligible` is false by default: a verified **private** Factory
+draft is the current release boundary, and Dee publishes it manually after
+review. Future automatic public publishing remains fail-closed until Factory
+advertises and enforces atomic revision/packet, SKU/price/currency, and
+rich-page contracts described in
 [INTEGRATIONS.md](INTEGRATIONS.md). `alice doctor` accepts an effectful mode only
 after every required boundary returns an authenticated, version-matched,
 read-only diagnostic; having a command in config is not readiness.

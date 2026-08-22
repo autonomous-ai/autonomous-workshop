@@ -62,6 +62,10 @@ class BoundedProcessOutputLimit(RuntimeError):
         self.stream = stream
 
 
+class BoundedProcessSpawnError(OSError):
+    """The child process was conclusively not created."""
+
+
 @dataclass(frozen=True, slots=True)
 class BoundedProcessResult:
     """Bounded subprocess output; raw stderr never crosses this boundary."""
@@ -215,16 +219,19 @@ def run_bounded_process(
     ):
         raise ValueError("shutdown_grace_seconds must be a positive finite number")
 
-    proc = subprocess.Popen(
-        tuple(command),
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=cwd,
-        env=None if env is None else dict(env),
-        bufsize=0,
-        start_new_session=True,
-    )
+    try:
+        proc = subprocess.Popen(
+            tuple(command),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            env=None if env is None else dict(env),
+            bufsize=0,
+            start_new_session=True,
+        )
+    except OSError as exc:
+        raise BoundedProcessSpawnError("process could not be created") from exc
     group = ManagedProcessGroup(proc)
     selector = selectors.DefaultSelector()
     stdout = bytearray()

@@ -53,6 +53,14 @@ class PolicyTests(unittest.TestCase):
         decision = ReleasePolicy().assess(release_facts(), evidence(), effect_mode="live")
         self.assertTrue(decision.allowed, decision.failures)
 
+    def test_checked_in_policy_requires_explicit_auto_publish_activation(self) -> None:
+        decision = release_policy_from_config(load_config()).assess(
+            release_facts(), evidence(), effect_mode="live"
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertIn("automatic_publication_disabled", decision.failures)
+
     def test_live_fails_closed_without_backend_capability(self) -> None:
         facts = release_facts(factory_capabilities=("explicit_price",))
         decision = ReleasePolicy().assess(facts, evidence(), effect_mode="live")

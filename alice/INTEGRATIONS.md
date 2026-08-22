@@ -17,10 +17,82 @@ must not revive a retired path simply because its code is convenient.
 | Frozen/public | `autonomous-ai/autonomous-vibe` desktop | Historical UX/code reference only |
 | Maintained reference | `autonomous-org/projects/leonardo` | Reuse leases, process isolation, receipts, immutable packets |
 | Team experiment | `reinSPQR/vibe-ideas` | Borrow board-game content, physical manifests, and critique patterns |
+| Team inventor | `nohope88/text2game` | Connected CAD/DFM runtime at an exact clean commit: reuse its rules, CAD, gate, render, and print-preparation stages; never its legacy publisher |
 | Team CAD work | `peterat617/text-to-3d` | Borrow verified CAD helpers with the corrections below |
-| Team experiment | `nohope88/text2cad` | Negative evidence for completion and publishing; no critical-path code |
+| Team CAD toolchain | `nohope88/text2cad` | Clean, commit-pinned runtime prerequisite for text2game phases 2/3 CAD, measurement, gating, and render helpers; exclude its old admin/completion logic |
 
-## Existing rich-page draft and Vibe public publish
+## Text2game invention to existing rich-page draft
+
+Alice treats the internal repositories as one R&D library, not as mutually
+exclusive products. The supported board-game path deliberately composes their
+strongest parts:
+
+```text
+Alice accepted game and exact rules
+  -> text2game's separated rules, CAD, repair, gate, render, and slice stages
+  -> deterministic, hash-preserving export into a Vibe board-game workspace
+  -> vibe-ideas board-game/tools/publish.py <slug>
+  -> authenticated, complete private Factory draft
+  -> Dee reviews and clicks publish
+```
+
+The exporter takes Alice's structured accepted rules as authority; it does not
+lossily reinterpret `gdd.md`. It copies only verified in-root regular files,
+binds the source repository commit and every accepted rule/CAD artifact hash,
+and creates the Vibe workspace atomically. It never calls
+`text2game/publish.py`, never changes the Vibe queue to `shipped`, and never
+performs a remote write. A separate Alice gate must accept the exported
+workspace before the existing rich-page adapter can run.
+
+This is a connected runtime, not only an export format. The Alice integration
+was reviewed against `nohope88/text2game` commit
+`0285137beedb4602f0cb06ebb18046ff018c41b6`; an enabled deployment must name that
+exact 40-hex commit (or undergo a new review for a new pin). Startup and every
+operation reject a symlinked, dirty, or differently checked-out source tree.
+Alice verifies the pinned trees, then copies an explicit reviewed runtime
+allowlist—not the full repositories—into one private directory per durable
+operation. Both legacy publishers and credential-like backups are outside that
+allowlist. Alice never runs in the shared checkout or shares upstream `out/`
+between candidates. The exact accepted `gdd.md`, `components.json`, and
+`mechanisms.json` are staged first. The pinned non-LLM `consistency.py` must
+produce a well-formed report with no `high` finding before phase 1 is allowed to
+start.
+
+The sibling `nohope88/text2cad` checkout is independently required clean and
+pinned (the reviewed checkout is commit
+`fb9bc30e93afb4296693db58fb53cc1d66afeb1e`). Its selected gate/CAD-skill
+subtree, CAD Python interpreter, slicer, slicer profile, Git, Codex executable,
+and dedicated Codex home are explicit adapter inputs rather than ambient tool
+discovery. Executable/profile bytes and both selected repository trees are
+rechecked before and after every phase. Upstream `uv run ...` and plain
+`python` calls resolve through operation-local shims to the exact pinned CAD
+interpreter, so no dynamic package environment is certified accidentally.
+
+Each of phases 1, 2, and 3 is launched separately and must satisfy its own
+receipt/artifact gate before the next begins. Every launch first records a
+durable `sending` state; a crash or timeout is reconciled from exact output and
+is never converted into a blind rerun. The adapter forces `CODEX_JOBS=all`,
+`CODEX_SANDBOX=workspace-write`, and `CODEX_FALLBACK=0`. Thus text2game's Codex
+workers get the copied workspace they need without running in the shared source
+checkout, and cannot silently fall back to its Claude lane, whose upstream tool
+grant includes host Bash. Shared-vault
+ingest, concept video, Telegram/publisher credentials, and both text2game
+publish paths are disabled or rejected.
+
+The pinned upstream login preflight checks only for the existence of
+`~/.codex/auth.json` and does not honor `CODEX_HOME`. Alice therefore places a
+non-secret marker at that path inside the private operation `HOME`; it never
+copies the real auth file. The Codex process itself still receives the
+owner-only dedicated `CODEX_HOME` and must pass an actual login-status probe.
+
+`text2game/publish.py` is intentionally excluded. It uses a legacy importer
+whose draft behavior cannot be verified from the current source, can return
+success when owner credentials are missing, writes its local receipt before all
+viewer work finishes, and has no operation-key reconciliation or immutable
+rich-page readback. Its useful invention and CAD work remains reusable; its
+publisher is not the production boundary.
+
+## Existing rich-page draft and future Vibe public publish
 
 Alice uses the production operator already built in `reinSPQR/vibe-ideas` and
 the normal Vibe public flip. It does **not** contain a second copywriter, image
@@ -32,7 +104,8 @@ verified production workspace + slug
   -> private Panda/Vibe draft with rules, use case, story, specs, and covers
   -> authenticated readback + remote artifact hashes for that exact history
   -> prototype print + production validation of that draft history
-  -> Vibe public flip of the same history with exact price
+  -> Dee's one-click review and public flip of the same history (current)
+  -> capability-gated automatic Vibe public flip (future `live` mode)
   -> deployed page observer/enrichment, if produced
   -> anonymous Factory readback -> Alice public-page verification
 ```
@@ -67,13 +140,33 @@ Alice should provide the intended category upstream and keep the warning open
 for merchandising/SEO cleanup.
 
 `alice.page_builder.PageBuilderAdapter` owns the private-draft handoff. It is
-available only in `draft` or `live`. Its command is exactly one pinned absolute
+available only in `draft` or `live`. Its reviewed configuration pins the exact
+clean Vibe Git commit, interpreter bytes, `publish.py`, its local import closure
+(`journal.py`, `telegram.py`, and `animation_gate.py`), the Git executable, and
+the compiled `publishdesign` helper. Its command is exactly one absolute
 interpreter followed by that checkout's absolute
 `board-game/tools/publish.py`; wrappers, flags, extra arguments, and another
-operator path are rejected. Alice appends only `<slug>` and never uses
-`--force`. Readiness also requires an authenticated owner read of a configured
-diagnostic design. The source queue must say `shipped` and `gate.json` must
-pass, exactly as the operator requires. The CAD and DFM receipts must agree on
+operator path are rejected. Alice internally adds fixed Python isolation flags,
+appends only `<slug>`, and never uses `--force`. Untracked files under the tools
+directory, bytecode caches, hidden index state, replacement refs, source drift,
+or a missing/mismatched helper all fail readiness. The operator must statically declare
+`RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"`; Alice pins its source
+hash against configuration and rechecks the complete execution boundary
+immediately before the import. The reviewed
+upstream change is preserved in
+`integrations/vibe-ideas-exact-rules.patch` because the current maintainer
+checkout cannot push to that repository. For ordinary Vibe workspaces, the
+source queue must still say `shipped`. A text2game export can bypass that older
+pre-draft owner gate only when its Alice receipt, complete artifact map,
+project hash, rules hash, root `idea.json` copy, source-artifact manifest,
+operation key, and input hash all match; the operator does not mutate the queue
+or claim an owner shipped it. `gate.json` must still
+pass. Readiness also requires an authenticated read of a configured private
+draft whose owner and current history match exactly and which has no published
+history. `PANDA_OWNER_ID` must be that same owner; backend and GCS inputs are
+explicit owner-only local files, and a Vibe-workspace `.env` is forbidden so it
+cannot rehydrate messaging or process-injection variables. Telegram remains
+forced off for the Alice invocation. The CAD and DFM receipts must agree on
 a relative-path artifact hash map. Alice hashes the whole project, writes a
 small `alice-provenance.json`, persists a canonical input hash and operation
 key, then authenticates back to the draft and streams every accepted artifact
@@ -83,6 +176,19 @@ receipt binds `design_id`, canonical remote `slug`, `history_id`, `project_url`,
 `published.json` without Alice's matching sidecar is ambiguous and is never
 adopted automatically. The CDN fetch is intentionally anonymous and accepts
 only a configured credential-free HTTPS host with redirects disabled.
+
+The current Alice checkout does not execute `publishdesign -dry-run` during
+`doctor`: adding that credential-bearing Mongo/GCS probe was not authorized by
+the execution boundary. Before operational activation, an accountable operator
+must run the pinned helper's documented read-only dry run and verify the exact
+owner, draft status, database, and bucket. It must be a first-import dry run
+over a nonempty absolute project archive with positive byte count and one or
+more absolute cover paths; content-only probes do not qualify. Alice accepts
+only a canonical, owner-only manual receipt whose configured SHA-256 binds that
+captured result to the exact Vibe/operator/helper, backend config, and GCS
+credential hashes. The receipt is revalidated in `doctor` and immediately
+before the effect; no receipt, stale local binding, or changed byte can claim
+draft readiness.
 
 `alice.vibe_pipeline.VibePipeline.run` still owns the earlier text-only
 create/resume flow where needed. The release worker uses `publish_existing`:
@@ -204,6 +310,21 @@ and ZIP before upload.
 
 ### `text-to-3d` lessons Alice keeps
 
+Peter's current `main` at
+`f18aebe4698d92ffccf07d94e2d624b08d30e667` is a CAD skill and validator
+library, not a second inventor or publisher. Alice selectively vendors/adapts
+its pure fit derivations and STL topology checks, and borrows its ordered
+project-verification and motion-manifest contracts. The fit table is carried as
+a versioned printer/material/nozzle calibration profile; its 0.4-mm-nozzle
+defaults are not universal manufacturing truth.
+
+The transplanted implementation lives in `src/alice/cad_validation.py`; its MIT
+attribution is retained in `THIRD_PARTY_NOTICES.md`. Alice kept the dimensionally
+correct fit derivations, strict STL topology/body checks, and explicit
+motion-evaluator outcome contract. It did not copy Peter's renderer, unlocked
+JSON budget/cache/lock state, or any path that treats a missing body, absent
+layout, mesh error, or collision-evaluator exception as a pass.
+
 Useful checks include fresh project verification, bed fit, mesh inspection, and
 motion/collision. Alice wraps them with stricter contracts because the current
 experiment has known false-success modes:
@@ -217,6 +338,14 @@ experiment has known false-success modes:
 - keep threads, snap compliance, living hinges, and friction as physical open
   items until a suitable real test exists;
 - keep budgets in Alice's transactional store, not an unlocked JSON file.
+
+The two CAD layouts are not interchangeable. Peter's current scripts expect a
+build123d/cadgen `<slug>.step.py` plus `*_lib.py`/`part_*.step.py` tree, while
+text2game emits CadQuery `parts/<id>.py`, assembled STEP, and
+`fe_parts/<id>.stl`. The first operational draft keeps text2game's generator
+and runs the hardened Peter-derived checks over its exported meshes. A
+build123d backend can be evaluated later against the same fixed Alice receipt;
+it does not block the draft pipeline.
 
 `vibe-ideas` contributes the distinction between canonical parts (printability)
 and placed instances (interactions), plus physical-condition manifests. Every
@@ -274,12 +403,13 @@ prototype/production idempotency plus reconciliation capabilities. Every first
 send and reconciliation payload is bound by `effect_operation_key`,
 `task_input_sha256`, and `reconcile_only`.
 
-## Repositories deliberately not on the critical path
+## Repository pieces deliberately excluded
 
 - `vibe-ideas`' `publish.py` and compiled backend import bridge are the board-
   game draft entry point. Its local `published.json` alone is not production
   truth; authenticated backend readback and remote artifact hashes are.
-- `text2cad`'s old admin route and log-string/timeout completion markers are
-  unsafe. A timeout is not success.
+- `text2cad`'s CAD libraries are a text2game runtime prerequisite, but its old
+  admin route and log-string/timeout completion markers are excluded. A timeout
+  is not success.
 - `autonomous-vibe` is frozen; Alice integrates the live CAD worker and backend,
   not the desktop app.
