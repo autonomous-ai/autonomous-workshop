@@ -46,20 +46,21 @@ BANNED = ["revolutionary", "empower", "supercharge", "unlock", "transform",
 # --- card rendering -------------------------------------------------------
 
 
-def render_card(game, *, num: Optional[int] = None, blank_title=False) -> str:
+def render_card(game, *, num: Optional[int] = None, blank_title=False, slug: Optional[str] = None) -> str:
     """Render one catalog `<div class="card">` matching the Vibe × Factory markup.
 
     Mirrors the exact structure/format of the existing 10 cards
     (projects/vibe/boardgames/index.html), including the `featured` + `flag`
     treatment, so an inserted card is visually identical.
     """
+    slug = slug or getattr(game, "slug", None) or "game"
     title = game.title or game.slug
     mech = getattr(game, "mech", "") or getattr(game, "mechanism", "") or "printed mechanism"
     blurb = _one_line(getattr(game, "blurb", "") or game.idea or "")
     price = getattr(game, "price_usd", None)
     if not price:
         price = _default_price(game)
-    seats = getattr(game, "seats", None) or "2–4"
+    seats = (getattr(game, "seats", None) or "2–4").replace("-", "–")
     tmin = getattr(game, "t_min", None) or "15"
     tmax = getattr(game, "t_max", None) or "25"
     n = f"{num:02d}" if num is not None else "–"
@@ -67,7 +68,7 @@ def render_card(game, *, num: Optional[int] = None, blank_title=False) -> str:
     featured = " featured" if flag else ""
     flag_html = f'<span class="flag">{_esc(flag)}</span>' if flag else ""
     return (
-        f'      <div class="card{featured}">{flag_html}<div class="num">{n}</div><h4>{_esc(title)}</h4>\n'
+        f'      <div class="card{featured}" data-slug="{_esc(slug)}">{flag_html}<div class="num">{n}</div><h4>{_esc(title)}</h4>\n'
         f'        <div class="mech">{_esc(mech)}</div>\n'
         f'        <p>{_esc(blurb)}</p>\n'
         f'        <div class="specs">{_esc(seats)}p · {_esc(tmin)}–{_esc(tmax)} min · <b>${price:.2f}</b></div></div>'
@@ -101,7 +102,7 @@ def insert_card(html_path: Path, card_html: str, *, slug: str) -> bool:
     before the cards section's `</section>`.
     """
     text = html_path.read_text()
-    if slug.lower() in text.lower():
+    if f'data-slug="{slug.lower()}"' in text.lower() or f'data-slug="{slug}"' in text:
         return False  # already published
     lines = text.splitlines(keepends=True)
     try:
@@ -198,7 +199,7 @@ def store_description(game) -> str:
     identity = getattr(game, "identity", "") or ""
     mech = getattr(game, "mech", "") or getattr(game, "mechanism", "") or "a printed mechanism"
     idea = _one_line(getattr(game, "idea", "") or "")
-    seats = getattr(game, "seats", None) or "2–4"
+    seats = (getattr(game, "seats", None) or "2–4").replace("-", "–")
     tmin = getattr(game, "t_min", None) or "15"
     tmax = getattr(game, "t_max", None) or "25"
     body = (f"{title} is a {seats}-player tabletop game designed to be "

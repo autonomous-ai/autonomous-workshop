@@ -94,9 +94,18 @@ def scripted_engine(game, trials: int = 3000, seed: int = 0) -> FunEvidence:
 
 def _run_imported_engine(path: Path, trials: int, seed: int) -> FunEvidence:
     import importlib.util
+    import sys
     spec = importlib.util.spec_from_file_location("game_engine", path)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    # Register the module in sys.modules BEFORE exec so dataclass/typing
+    # resolution (which looks the class's module up in sys.modules) works.
+    # Without this, dataclasses.__process_class fails with
+    # AttributeError: 'NoneType' object has no attribute '__dict__'.
+    sys.modules[spec.name] = mod
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        sys.modules.pop(spec.name, None)   # avoid stale module across games
     run = getattr(mod, "run", None)
     if run is None:
         return FunEvidence(

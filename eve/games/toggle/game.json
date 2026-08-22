@@ -1,0 +1,20 @@
+{
+  "players": "2-4",
+  "target_minutes": 20,
+  "action_types": ["trust", "challenge", "reveal"],
+  "rules": {
+    "win": "After 6 rounds the player with the most point tokens wins. Ties break by the role-card suit matching the most often-shown Keystone faces with the fewest mismatches, then by elder.",
+    "round": "The Forger seals and peeks the Keystone (truth A/B), then claims a side on their own Toggle. Each other player trusts (sets own Toggle to the claimed side) or challenges. A challenge reveals the Toggle: match with Keystone = challenger wrong; mismatch = challenger right. Noble challenge takes the pot; failed challenge pays 1. If nobody challenges the pot banks (+2) and every truthful player scores 1."
+  },
+  "components": [
+    {"id": "toggle_01", "name": "Toggle", "qty": 4, "size_mm": "88 x 24 x 14", "signature": true},
+    {"id": "keystone_01", "name": "Keystone", "qty": 1, "size_mm": "42 x 24 x 16", "signature": true},
+    {"id": "cradle_01", "name": "Cradle", "qty": 1, "size_mm": "72 x 40 x 22"},
+    {"id": "truth_card_01", "name": "Truth card", "qty": 1, "size_mm": "88 x 56 x 1.6"},
+    {"id": "suit_tile_01", "name": "Suit tile", "qty": 6, "size_mm": "18 dia x 2.6"},
+    {"id": "suit_board_01", "name": "Suit board", "qty": 1, "size_mm": "160 x 70 x 20"},
+    {"id": "role_card_01", "name": "Role card", "qty": 6, "size_mm": "88 x 56 x 1.6"},
+    {"id": "point_01", "name": "Point token", "qty": 24, "size_mm": "14 dia x 2.2"},
+    {"id": "pawn_01", "name": "Round marker", "qty": 1, "size_mm": "20 x 12 x 24"}
+  ]
+}

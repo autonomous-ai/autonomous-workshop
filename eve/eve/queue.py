@@ -47,6 +47,16 @@ class Game:
     bill: Optional[dict] = None
     cogs_usd: Optional[float] = None
     fun_evidence: list = field(default_factory=list)  # playtest results
+    # --- presentation / catalog (publish.py reads these) --------
+    mech: str = ""                 # one-line mechanism, e.g. 'living-hinge detent'
+    blurb: str = ""                # one-line catalog blurb
+    seats: str = "2-4"
+    t_min: str = "15"
+    t_max: str = "25"
+    flag: str = ""                 # 'featured' triggers the featured treatment
+    price_usd: float = 0.0          # 0 -> publish._default_price()
+    rules_text: str = ""           # full rulebook text for the writeup
+    brief: str = ""                # dimension/interfaces/print plan
     repair_used: int = 0
     rework_used: int = 0
     kill_reason: str = ""
