@@ -6,9 +6,9 @@
   work (one gate, one book study, one improvement session, or one stage of one
   game) then exits. A slow steady cadence beats a daily monolith that loses the
   whole spend when killed (text2cad receipt: "a kill loses the entire spend").
-  eve tick is a logged no-op when audit/lease say no, so a 30-min cadence is
-  safe to fire around the clock. --run-agent lets LLM stages dispatch; the
-  offline-safe default (no flag) is only for dry-runs and tests.
+  eve drive executes real agent runs (the driver consumes the
+  planner's dispatch and actually calls Claude); a logged no-op when audit/lease
+  say no, so a 30-min cadence is safe to fire around the clock.
 -->
 <dict>
     <key>Label</key>
@@ -18,8 +18,9 @@
     <array>
         <string>/usr/bin/python3</string>
         <string>/Users/d/code/inventors/eve/bin/eve</string>
-        <string>tick</string>
-        <string>--run-agent</string>
+        <string>drive</string>
+        <string>--steps</string>
+        <string>1</string>
     </array>
 
     <key>WorkingDirectory</key>

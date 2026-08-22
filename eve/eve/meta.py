@@ -233,12 +233,39 @@ class Meta:
             RewardLedger(self.cfg, journal=self.journal).record(
                 game.slug, component, evidence=evidence)
             q.record(game.slug, stage=next_stage)
-        else:
-            self.journal.append("meta", action="gate_failed",
+        elif getattr(result, "measurable", True) is False:
+            # not enough to judge (e.g. no meshes in build/ yet): keep the
+            # game active but don't spend the kill cost; a later repaired
+            # build may become measurable. Never a reward term.
+            self.journal.append("meta", action="gate_immeasurable",
                                 game=game.slug, gate=gate,
                                 reasons=result.reasons)
+        else:
+            # A deterministic gate cannot pass by re-running it — no LLM
+            # changes state between attempts. A failed hard gate is terminal:
+            # spend the design's kill cost with a stated reason and free the
+            # queue. Without this a stuck game is re-judged forever and
+            # starves every other loop (the Loop-A/B/C/D meta).
+            self._kill_gate_failure(game, gate, result, q)
         return {"gate": gate, "passed": result.passed, "reasons": result.reasons,
                 "next_stage": next_stage if result.passed else game.stage}
+
+    def _kill_gate_failure(self, game, gate, result, q) -> None:
+        """Terminate a game that failed a hard deterministic gate.
+
+        Records the design's terminal `dead_game` penalty and marks the game
+        `killed` with a stated reason so the queue keeps moving. `rework` /
+        `repair_fail` rewards stay reserved for the LLM rework/repair loops
+        that have yet to be wired (see DESIGN.md); a no-LLM gate re-run can
+        never change the verdict.
+        """
+        from .reward import RewardLedger
+        reason = "; ".join(result.reasons) or f"{gate}-gate failed"
+        RewardLedger(self.cfg, journal=self.journal).record(
+            game.slug, "dead_game", evidence=f"{gate}-gate: {reason}")
+        q.kill(game.slug, reason=f"{gate}-gate: {reason}")
+        self.journal.append("meta", action="game_killed", game=game.slug,
+                            gate=gate, reasons=result.reasons)
 
     # --- record a stage advanced by an agent dispatch ---------------------
     def record_stage(self, slug: str, stage: str, *, component: Optional[str] = None,
@@ -274,7 +301,9 @@ class Meta:
             if decision["action"] == "gate":
                 from .queue import Queue
                 game = Queue(self.cfg, journal=self.journal).get(decision["game"])
-                out = self.run_gate(game, decision["gate"])
+                # print gate needs the real build dir, else it can never see meshes
+                gdir = self.cfg.games_dir / game.slug if game else None
+                out = self.run_gate(game, decision["gate"], game_dir=gdir)
                 out["action"] = "gate"
                 return out
             # agent stages: dispatch only when the driver is allowed to run it

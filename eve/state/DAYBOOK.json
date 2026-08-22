@@ -1,3 +1,17 @@
 {
-  "heartbeat": "2026-08-22T22:27:40+00:00"
+  "2026-08-22": {
+    "cost_usd": 1.153921,
+    "steps": [
+      {
+        "cost_usd": 1.153921,
+        "model": "claude-opus-5",
+        "name": "ideator",
+        "num_turns": 7,
+        "subtype": "success",
+        "wall_s": 393.97
+      }
+    ],
+    "ticks": 0
+  },
+  "heartbeat": "2026-08-22T23:30:19+00:00"
 }

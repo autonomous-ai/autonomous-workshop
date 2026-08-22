@@ -54,6 +54,18 @@ def cmd_tick(args):
     return 0
 
 
+
+def cmd_drive(args):
+    """Run the executor: advance `steps` real units of work (gates, LLM role
+    agents, book studies, improvements). Default is ONE step per call so the
+    launchd cadence stays crash-safe; --steps N runs a longer focused session."""
+    from eve import driver
+    cfg = _cfg()
+    result = driver.evolve(cfg, max_steps=args.steps)
+    print("drive: %s" % json.dumps(result, default=str)[:600])
+    return 0
+
+
 def cmd_status(_args):
     from eve import queue as queue_mod
     q = queue_mod.Queue(_cfg())
@@ -139,6 +151,10 @@ def main(argv=None):
                    help="allow agent dispatch for LLM stages (offline-safe default)")
     p.set_defaults(fn=cmd_tick)
     sub.add_parser("status").set_defaults(fn=cmd_status)
+    p = sub.add_parser("drive")
+    p.add_argument("--steps", type=int, default=1,
+                   help="units of work to advance (default 1)")
+    p.set_defaults(fn=cmd_drive)
     sub.add_parser("audit").set_defaults(fn=cmd_audit)
     sub.add_parser("improve").set_defaults(fn=cmd_improve)
     p = sub.add_parser("publish")

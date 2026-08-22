@@ -100,19 +100,6 @@ def _run_ideator(cfg, m: "meta_mod.Meta", fn_run_agent) -> dict:
             shutil.rmtree(pending, ignore_errors=True)
 
 
-def _run_brief(cfg, m, fn_run_agent, slug: str) -> dict:
-    gdir = _game_dir(cfg, slug)
-    prompt = promptlib.brief_prompt(cfg, game_dir=str(gdir))
-    res = fn_run_agent("brief", prompt, cwd=str(gdir))
-    out = _load_json(gdir / "stage_out.json")
-    if not out:
-        raise DriverStop(f"brief-agent for {slug} wrote no stage_out.json")
-    bill = out.get("bill")
-    if isinstance(bill, dict) and bill:
-        _queue(self=Queue := None)  # placeholder replaced below
-    return {"role": "brief", "game": slug}
-
-
 def _queue(cfg, m):
     from .queue import Queue
     return Queue(cfg, journal=m.journal)
