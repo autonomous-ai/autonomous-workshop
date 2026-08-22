@@ -26,7 +26,9 @@ The LLM table lives one gate later and answers a different question.
 """
 
 import math
+import os
 import random
+import time
 
 # --- Gate thresholds --------------------------------------------------------
 # UNCALIBRATED — n=2 ground truth. These numbers come from vibe-ideas'
@@ -246,12 +248,31 @@ def _game_seed(seed, salt, index):
     return (seed * 1000003 + salt * 7919 + index) & 0x7FFFFFFF
 
 
-def _batch(engine, n_players, seat_policies, count, move_cap, seed, salt, trace):
-    return [
-        _play_one(engine, n_players, seat_policies, move_cap,
-                  _game_seed(seed, salt, i), trace)
-        for i in range(count)
-    ]
+class SimWallExceeded(Exception):
+    """The battery blew its wall-clock budget — a finding, not a wait.
+
+    g0002 'Re-Pin' burned 46 CPU-minutes in one simulate() call
+    (2026-08-23): a lookahead mirror over a branchy engine is O(b^2) per
+    move and nothing bounded the total. A game whose OWN playtest harness
+    needs an hour is too branchy to certify — fail it and say why."""
+
+
+def _check_wall(deadline):
+    if deadline is not None and time.monotonic() > deadline:
+        raise SimWallExceeded(
+            "sim wall budget exceeded (BOB_SIM_WALL_MINUTES, default 20) — "
+            "the engine is too slow/branchy for its own battery")
+
+
+def _batch(engine, n_players, seat_policies, count, move_cap, seed, salt,
+           trace, deadline=None):
+    games = []
+    for i in range(count):
+        if i % 10 == 0:
+            _check_wall(deadline)
+        games.append(_play_one(engine, n_players, seat_policies, move_cap,
+                               _game_seed(seed, salt, i), trace))
+    return games
 
 
 def _median(values):
@@ -455,12 +476,15 @@ def simulate(engine, n_players, n_games=1000, seed=0,
         raise ValueError("n_players must be >= 1")
     ladder = list(policies)
     baseline = 1.0 / n_players
+    deadline = time.monotonic() + 60.0 * float(
+        os.environ.get("BOB_SIM_WALL_MINUTES", "20"))
 
     # 1. Probe: estimate median random-playout length to set the move cap
     #    (cap = 4x median, G2). The probe runs under an absolute lid so a
     #    never-ending game costs bounded time, not the whole tick.
     probe = _batch(engine, n_players, ["random"] * n_players,
-                   min(PROBE_GAMES, n_games), PROBE_MOVE_CAP, seed, 1, False)
+                   min(PROBE_GAMES, n_games), PROBE_MOVE_CAP, seed, 1, False,
+                   deadline=deadline)
     probe_lengths = [g["length"] for g in probe if g["terminated"]]
     probe_median = _median(probe_lengths) if probe_lengths else PROBE_MOVE_CAP
     move_cap = max(MIN_MOVE_CAP, int(math.ceil(MOVE_CAP_MULT * probe_median)))
@@ -479,7 +503,7 @@ def simulate(engine, n_players, n_games=1000, seed=0,
     # 2. Main batch: random mirror self-play with score traces. This is the
     #    GAVEL + Browne sampler (LUDI measured its criteria on self-play).
     main = _batch(engine, n_players, ["random"] * n_players,
-                  n_games, move_cap, seed, 2, True)
+                  n_games, move_cap, seed, 2, True, deadline=deadline)
 
     terminated = [g for g in main if g["terminated"]]
     completion = len(terminated) / float(len(main)) if main else 0.0
@@ -563,7 +587,7 @@ def simulate(engine, n_players, n_games=1000, seed=0,
         if name == "random":
             continue
         games = _batch(engine, n_players, [name] * n_players,
-                       n_mirror, move_cap, seed, 100 + k, False)
+                       n_mirror, move_cap, seed, 100 + k, False, deadline=deadline)
         mirror_rates[name] = _seat_winrates(games, n_players)
 
     strongest = ladder[-1]

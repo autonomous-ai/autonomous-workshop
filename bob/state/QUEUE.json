@@ -6,10 +6,6 @@
         "repair_used": 0,
         "rework_used": 0
       },
-      "crashes": {
-        "count": 1,
-        "state": "ruled"
-      },
       "created": "2026-08-22T09:25:21.568786+00:00",
       "direction": {
         "family": "wildcard",
@@ -18,9 +14,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T18:00:12.332916+00:00",
+        "expires": "2026-08-22T18:17:18.730154+00:00",
         "holder": "invent",
-        "id": "1553a429e3fb453088faf87c17afb3a4"
+        "id": "e61fafa68520404aa8d9628d84ef8e52"
       },
       "log": [
         {
@@ -52,6 +48,12 @@
           "from": "parked",
           "note": "human unpark: rules-writer 15-min ceiling was the bug, raised to 35; budgets untouched",
           "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T17:32:13.559971+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
         }
       ],
       "reward": {
@@ -59,7 +61,7 @@
         "latest": 0.0
       },
       "slug": "g0001",
-      "state": "ruled",
+      "state": "rules_gated",
       "title": "Crank"
     },
     "g0002": {
