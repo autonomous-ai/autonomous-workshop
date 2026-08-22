@@ -301,14 +301,18 @@ class FailingSimParksTest(_HomeCase):
 
         self._tick_once("simulated")
         game = queue.load()["games"][slug]
-        self.assertEqual(game["state"], "parked")
+        # 2026-08-23 recalibration: a sim finding spends a REWORK lap (back
+        # to ruled with the findings) — park is for a spent budget only.
+        self.assertEqual(game["state"], "ruled")
+        self.assertEqual(game["budgets"]["rework_used"], 1)
         last_note = game["log"][-1]["note"]
         self.assertIn("sim gate failed", last_note)
         self.assertIn("seat_bias_ok", last_note)  # the named failed floor
-        gate = self._read(slug, "playtest", "sim_gate.json")
-        self.assertFalse(gate["all_pass"])
-        self.assertFalse(gate["degeneracy_pass"])
-        self.assertEqual(gate["idea_sha"], sha)
+        # The rework rewind RESETS the certifying artifacts (stale-verdict
+        # discipline) — the gate file must be gone so next lap regenerates
+        # everything against the new rules.
+        self.assertFalse(os.path.exists(os.path.join(
+            self.home, "games", slug, "playtest", "sim_gate.json")))
         # The refusal is on the ledger too, with the game attributed.
         notes = " | ".join(row["notes"] for row in ledger.rows(slug=slug))
         self.assertIn("sim FAIL", notes)

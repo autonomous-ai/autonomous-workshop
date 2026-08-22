@@ -923,7 +923,19 @@ def _handle_simulated(step):
     if all_pass:
         queue.advance(slug, "tabled", "sim floors clear at every player count")
     else:
-        queue.park_or_kill(slug, "sim gate failed: %s" % ", ".join(failed))
+        # A sim-gate failure is DESIGN FEEDBACK, not a dead end: spend a
+        # rework and hand the findings back to the rules-writer, exactly
+        # like a lens FAIL. Park only when the rework budget is spent
+        # (2026-08-23: Re-Pin and Clearance both insta-parked on their
+        # first sim finding with rework_used=0 — the fix lane existed and
+        # the router never offered it).
+        reason = "sim gate failed: %s" % ", ".join(failed)
+        if _spend_or_terminate(slug, "rework", reason):
+            _rework_reset(slug)
+            queue.advance(slug, "ruled",
+                          "%s -> rework (sim findings in playtest/"
+                          "sim_report.json of the PREVIOUS lap's note)"
+                          % reason)
 
 
 # --- tabled: LLM tables + fresh reader ------------------------------------------

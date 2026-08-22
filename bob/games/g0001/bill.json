@@ -1,104 +1,19 @@
 [
-  {
-    "name": "Peg Plate",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "168 x 168 x 11"
-  },
-  {
-    "name": "Crank Post",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "34 dia x 96"
-  },
-  {
-    "name": "Crank Handle",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "66 x 18 x 22"
-  },
-  {
-    "name": "Drive Gear (13 teeth, black)",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "30 dia x 8"
-  },
-  {
-    "name": "Gear 11 (white)",
-    "per_player": false,
-    "qty": 8,
-    "size_mm": "26 dia x 14"
-  },
-  {
-    "name": "Gear 13 (black)",
-    "per_player": false,
-    "qty": 8,
-    "size_mm": "30 dia x 14"
-  },
-  {
-    "name": "Gear 17 (black)",
-    "per_player": false,
-    "qty": 7,
-    "size_mm": "38 dia x 14"
-  },
-  {
-    "name": "Gear 19 (white)",
-    "per_player": false,
-    "qty": 7,
-    "size_mm": "42 dia x 14"
-  },
-  {
-    "name": "Gear 23 (white)",
-    "per_player": false,
-    "qty": 5,
-    "size_mm": "50 dia x 14"
-  },
-  {
-    "name": "Gear 29 (black)",
-    "per_player": false,
-    "qty": 5,
-    "size_mm": "62 dia x 14"
-  },
-  {
-    "name": "Compound Hub",
-    "per_player": false,
-    "qty": 6,
-    "size_mm": "80 x 42 x 16"
-  },
-  {
-    "name": "Hub Tower",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "52 x 52 x 132"
-  },
-  {
-    "name": "Dial Unit",
-    "per_player": true,
-    "qty": 4,
-    "size_mm": "96 x 46 x 62"
-  },
-  {
-    "name": "Reading Ring",
-    "per_player": false,
-    "qty": 6,
-    "size_mm": "46 dia x 5"
-  },
-  {
-    "name": "Pull Token",
-    "per_player": true,
-    "qty": 16,
-    "size_mm": "18 dia x 4"
-  },
-  {
-    "name": "Gear Tray",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "186 x 74 x 24"
-  },
-  {
-    "name": "Scrap Tray",
-    "per_player": false,
-    "qty": 1,
-    "size_mm": "92 x 74 x 24"
-  }
+  {"name": "Plate Quadrant", "qty": 4, "size_mm": "122 x 122 x 10", "per_player": false},
+  {"name": "Crank Post", "qty": 1, "size_mm": "30 dia x 84", "per_player": false},
+  {"name": "Crank Handle", "qty": 1, "size_mm": "62 x 16 x 20", "per_player": false},
+  {"name": "Drive Gear", "qty": 1, "size_mm": "45 dia x 8", "per_player": false},
+  {"name": "Gear 11", "qty": 6, "size_mm": "39 dia x 10", "per_player": false},
+  {"name": "Gear 13", "qty": 8, "size_mm": "45 dia x 10", "per_player": false},
+  {"name": "Gear 17", "qty": 8, "size_mm": "57 dia x 10", "per_player": false},
+  {"name": "Gear 19", "qty": 7, "size_mm": "63 dia x 10", "per_player": false},
+  {"name": "Gear 23", "qty": 6, "size_mm": "75 dia x 10", "per_player": false},
+  {"name": "Gear 29", "qty": 5, "size_mm": "93 dia x 10", "per_player": false},
+  {"name": "Compound Hub", "qty": 6, "size_mm": "87 x 39 x 14", "per_player": false, "signature": true},
+  {"name": "Hub Magazine", "qty": 1, "size_mm": "96 x 50 x 104", "per_player": false},
+  {"name": "Dial Unit", "qty": 4, "size_mm": "90 x 58 x 58", "per_player": true},
+  {"name": "Reading Ring", "qty": 6, "size_mm": "52 dia x 4", "per_player": false},
+  {"name": "Spanner Token", "qty": 16, "size_mm": "18 dia x 4", "per_player": true},
+  {"name": "Gear Tray", "qty": 1, "size_mm": "186 x 74 x 22", "per_player": false},
+  {"name": "Scrap Tray", "qty": 1, "size_mm": "92 x 74 x 22", "per_player": false}
 ]

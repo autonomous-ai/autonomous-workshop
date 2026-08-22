@@ -4,7 +4,7 @@
       "budgets": {
         "clarify_used": 0,
         "repair_used": 0,
-        "rework_used": 1
+        "rework_used": 2
       },
       "created": "2026-08-22T09:25:21.568786+00:00",
       "direction": {
@@ -14,9 +14,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T18:25:10.350923+00:00",
+        "expires": "2026-08-22T19:20:00.290204+00:00",
         "holder": "invent",
-        "id": "bd060ab86282434eaac4abae99653348"
+        "id": "ed47dfd6f2004590b2e8a7f8f4c6585a"
       },
       "log": [
         {
@@ -60,6 +60,30 @@
           "from": "rules_gated",
           "note": "rules lens FAIL -> rework: Dominant strategy (rework): two placements build a deterministic, uncounterable win line. Place a white Gear 23 at mesh-distance 9 straight from the Drive Gear (13 black) down a column \u2014 quote: '13 (black) | ... | 9' in the Mesh Table for the 23 column \u2014 then a black Gear 13 at mesh-distance 9 further down the same column (row20\u2192row11\u2192row2), landing inside the 'within five holes of your edge' dial-read zone (\u00a75d Re-dock). That final black 13 gives 1.00 'up' per crank, the fastest black rate in the numbers-per-turn table, and it accrues on every crank in the game, not just the owner's \u2014 quote: 'Thirty turns of the handle after that \u2014 everybody's turns, not just hers.' The Drive Gear 'may mesh several' (\u00a75a), so every seat (N/S/E/W) can build the identical line off its own edge with zero contention, discoverable on a first read, with no Compound Hub ever touched. Sabotage does not deter it: a Pull costs the attacker one token plus a full turn (\u00a75c) while gear_13 (8 copies) and gear_23 (5 copies) sit in open supply (bill), so the owner rebuilds next turn \u2014 a losing trade for the attacker. This makes the Compound Hub / Reading Ring subsystem, billed as 'the reason this game cannot be a deck of cards,' strategically optional filler.; idea.json contradiction (clarify): idea.json states 'First dial to 20 wins; a dial driven to -5 jams for one round,' but rules.md sets the win threshold at 30 (\u00a74, \u00a77) and makes a -5 dial lock permanently until the owner spends a full turn on Reset (\u00a75e, \u00a76) \u2014 both the win number and the penalty duration changed without the source concept being updated.; idea.json contradiction (clarify): idea.json's stated 'fun_correct_bet' is that direction flips on mesh-chain parity \u2014 'your neighbour's mesh count goes odd' runs a dial backwards \u2014 but rules.md replaced that with a fixed rule independent of chain length: 'black climbs, white falls' (\u00a71) and 'Every black gear ... turns clockwise. Every white gear ... turns anticlockwise. Always' (\u00a75a). The parity-based tension the pitch was built on is absent from the shipped mechanic, which is consistent with the dominant straight-line route in the first finding.",
           "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T18:11:14.413410+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-22T18:21:38.463082+00:00",
+          "from": "rules_gated",
+          "note": "rules lens FAIL -> rework: R1 length-honesty: stated 25-40 min / 30-40 handle-turns implies ~45-70 sec per decision, but each turn requires computing a mesh-distance formula, checking a 6-row slant table, verifying no-foul against every already-placed gear, and tracing mesh-chain parity \u2014 well above the 8-25 sec/decision a 'light' game implies; applying the faster rate to the same 30-40 turn count finishes in ~13-17 min, half the 30-min target \u2014 evidence: \"Expect 30 to 40 turns of the handle... which is 25 to 40 minutes including the teach\" vs idea.json weight:\"light\", target_minutes:30 \u2014 disposition: rework; R2 reachable-ending: if every player simply Re-docks (free, always legal) on their opening turn, ending condition 2 fires after round 1 with all dials tied at 0/4 tokens/no-run, and the tiebreak falls through to step 4 (turn order), defaulting the win to player 1 before any gear is ever placed \u2014 evidence: \"If a complete round goes by \u2014 every player takes one turn \u2014 in which no gear and no hub is placed and no Spanner Token is spent, the game ends\" + tiebreak step 4 \"the one who would take their turn soonest, starting from the player to the left of whoever cranked last\" \u2014 disposition: clarify",
+          "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T18:30:02.688634+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-22T18:35:00.130407+00:00",
+          "from": "rules_gated",
+          "note": "rules gate passed",
+          "to": "simulated"
         }
       ],
       "reward": {
@@ -67,7 +91,7 @@
         "latest": 0.0
       },
       "slug": "g0001",
-      "state": "ruled",
+      "state": "simulated",
       "title": "Crank"
     },
     "g0002": {
@@ -126,6 +150,18 @@
           "from": "parked",
           "note": "human unpark: 792-branch turns sank full 2-ply; lookahead now beam-sampled at 40 \u2014 re-run the battery",
           "to": "simulated"
+        },
+        {
+          "at": "2026-08-22T18:27:42.995598+00:00",
+          "from": "simulated",
+          "note": "parked: sim gate failed: skill_ladder_ok",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T02:05:00+00:00",
+          "from": "parked",
+          "note": "human unpark after skill-gate recalibration: greedy>random +0.44..0.75 is real skill; the failing lookahead edge was the blunt instrument, now scored in depth instead of hard-failing",
+          "to": "simulated"
         }
       ],
       "reward": {
@@ -149,11 +185,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T18:43:55.537992+00:00",
-        "holder": "invent",
-        "id": "38ba75d298b24c759948e51418d55fe6"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -172,6 +204,30 @@
           "from": "researched",
           "note": "novelty pass, margin=far",
           "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T18:17:06.524969+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-22T18:26:13.045349+00:00",
+          "from": "rules_gated",
+          "note": "rules gate passed",
+          "to": "simulated"
+        },
+        {
+          "at": "2026-08-22T18:40:44.784376+00:00",
+          "from": "simulated",
+          "note": "parked: sim gate failed: skill_ladder_ok",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T02:05:00+00:00",
+          "from": "parked",
+          "note": "human unpark after skill-gate recalibration + sim-fail now reworks: edges healthy at 2-3p; re-run the battery",
+          "to": "simulated"
         }
       ],
       "reward": {
@@ -179,8 +235,87 @@
         "latest": 0.0
       },
       "slug": "g0003",
-      "state": "ruled",
+      "state": "simulated",
       "title": "Clearance"
+    },
+    "g0004": {
+      "budgets": {
+        "clarify_used": 0,
+        "repair_used": 0,
+        "rework_used": 0
+      },
+      "created": "2026-08-22T18:40:49.981080+00:00",
+      "direction": {
+        "family": "wildcard",
+        "lane": "invention",
+        "players": "2-4",
+        "weight": "light"
+      },
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
+      "log": [
+        {
+          "at": "2026-08-22T18:40:49.981080+00:00",
+          "from": null,
+          "note": "sparked",
+          "to": "sparked"
+        },
+        {
+          "at": "2026-08-22T18:48:32.270676+00:00",
+          "from": "sparked",
+          "note": "spark chosen: Fence (triage kept 1 of 5)",
+          "to": "researched"
+        },
+        {
+          "at": "2026-08-22T18:51:16.258159+00:00",
+          "from": "researched",
+          "note": "novelty kill with URL evidence: https://boardgamegeek.com/boardgame/22810/elastico",
+          "to": "killed"
+        }
+      ],
+      "reward": {
+        "history": [],
+        "latest": 0.0
+      },
+      "slug": "g0004",
+      "state": "killed",
+      "title": "Fence"
+    },
+    "g0005": {
+      "budgets": {
+        "clarify_used": 0,
+        "repair_used": 0,
+        "rework_used": 0
+      },
+      "created": "2026-08-22T18:51:21.446656+00:00",
+      "direction": {
+        "family": "hidden-mechanism",
+        "lane": "invention",
+        "players": "2-4",
+        "weight": "light"
+      },
+      "lease": {
+        "expires": "2026-08-22T19:36:26.617964+00:00",
+        "holder": "invent",
+        "id": "07b1fc94a6ba40d2aefab8a56838c5a3"
+      },
+      "log": [
+        {
+          "at": "2026-08-22T18:51:21.446656+00:00",
+          "from": null,
+          "note": "sparked",
+          "to": "sparked"
+        }
+      ],
+      "reward": {
+        "history": [],
+        "latest": 0.0
+      },
+      "slug": "g0005",
+      "state": "sparked",
+      "title": "unsparked (hidden-mechanism)"
     }
   },
   "version": 2

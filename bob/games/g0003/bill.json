@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Detent screw",
+    "qty": 1,
+    "size_mm": "16 dia x 118 (2.0 mm pitch thread, 44 dia x 14 knob integral at top, detent crown of 4 ramped notches on the base collar)",
+    "per_player": false,
+    "signature": true,
+    "note": "THE load-bearing mechanism. One quarter turn = one click = exactly 0.5 mm of bar travel, felt and heard but never seen. Must give a crisp, countable, repeatable detent and must not back-drive under the yoke's weight. Travel range 17.5 mm (hard bottom stop) to 33.0 mm (hard top stop) = 31 clicks."
+  },
+  {
+    "name": "Detent leaf spring",
+    "qty": 1,
+    "size_mm": "34 x 12 x 4",
+    "per_player": false,
+    "signature": false,
+    "note": "Printed cantilever with a rounded nub; snaps into the gantry base and rides the screw's detent crown. Separate part so the click can be re-tuned by reprinting one small piece."
+  },
+  {
+    "name": "Gantry base",
+    "qty": 1,
+    "size_mm": "220 x 110 x 12",
+    "per_player": false,
+    "signature": false,
+    "note": "Flat top face is the runway and the datum for every bar height. Carries both post sockets, the detent leaf socket, a scrap well at the rear, and the setter's ritual reminder (down 5 up 3 / down 6 up 2 / down 7 up 1) embossed on the front skirt. Must not rock."
+  },
+  {
+    "name": "Guide post",
+    "qty": 1,
+    "size_mm": "12 dia x 112",
+    "per_player": false,
+    "signature": false,
+    "note": "Smooth post opposite the screw; stops the yoke rotating so knob turns become vertical travel."
+  },
+  {
+    "name": "Bar yoke",
+    "qty": 1,
+    "size_mm": "170 x 24 x 16 bridge, with two end brackets dropping to bar height",
+    "per_player": false,
+    "signature": false,
+    "note": "Rides the screw, guided by the post. Bridge sits high, clear of the lane; only the two end brackets reach down to bar height, carrying V-saddles 4 mm deep. Leaves a 130 mm clear lane with nothing in it but the bar. Saddle line must stay parallel to the runway across the whole travel."
+  },
+  {
+    "name": "The bar",
+    "qty": 1,
+    "size_mm": "8 dia x 158 (hollow, max 6 g)",
+    "per_player": false,
+    "signature": false,
+    "note": "Lies loose in the saddles, never fastened. Light enough to visibly rock or roll on the lightest contact - it is the bust detector and it replaces a judge. Its lowest point is the measured bar height."
+  },
+  {
+    "name": "Knob hood",
+    "qty": 1,
+    "size_mm": "78 dia x 66, with a 60 x 45 hand port on one side",
+    "per_player": false,
+    "signature": false,
+    "note": "Drops over the knob so the setter's hand and wrist work out of sight. Hides turn direction, which is the only hidden information in the game. Deep enough that the whole hand is inside and only the wrist shows."
+  },
+  {
+    "name": "Stock rail",
+    "qty": 4,
+    "size_mm": "178 x 32 x 12, six 21 x 21 x 4 pockets on 28 mm centres",
+    "per_player": true,
+    "signature": false,
+    "note": "One per player. Holds six blocks standing in the open in any order. Front edge is the straightedge the score line is laid against."
+  },
+  {
+    "name": "Commit cup",
+    "qty": 4,
+    "size_mm": "30 x 30 x 44 (2.5 mm walls)",
+    "per_player": true,
+    "signature": false,
+    "note": "Opaque, no windows. Must clear a 20 x 20 x 32.75 mm block with room to set it down cleanly in one motion."
+  },
+  {
+    "name": "Stock block",
+    "qty": 30,
+    "size_mm": "20 x 20 x H, H drawn from the 42-rung ladder 12.25, 12.75 ... 32.75 (0.5 mm steps)",
+    "per_player": true,
+    "signature": false,
+    "note": "Five sets of six (6 per player, 2-4 players). Each set drawn at random without replacement within the set; sets drawn independently and may share heights. Every set must contain at least one block above 28 mm and one below 17 mm, and no two blocks in a set closer than 1.0 mm. Set identity is an embossed symbol on a SIDE face only (circle, square, triangle, cross, bar). Top and bottom faces flat, bare, parallel; height tolerance +/-0.05 mm face to face. Bar heights sit on the 0.5 mm grid and block heights on that grid plus 0.25 mm, so a block is never level with the bar and the minimum margin either way is 0.25 mm. NEVER print, stamp or engrave a height on a block, and re-randomise the draw for every copy."
+  }
+]

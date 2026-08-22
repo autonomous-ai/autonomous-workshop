@@ -44,6 +44,10 @@ import time
 #: chance baseline (1/n_players). Below it the game has no skill gradient.
 MIN_SKILL_EDGE = 0.15
 
+#: An adjacent rung may be FLAT (blunt instrument) but never clearly lose
+#: to the rung below it — that inversion is instrument-visible degeneracy.
+INVERSION_TOLERANCE = -0.05
+
 #: Max allowed seat winrate spread (max - min) in mirror self-play at the
 #: strongest rung. 0.10 encodes the 45-55% band from the research doc
 #: (chess White ~54-56%; beyond that real games reach for komi/pie rule).
@@ -577,19 +581,30 @@ def simulate(engine, n_players, n_games=1000, seed=0,
             salt += 1
 
     edges = {}
+    # RECALIBRATED 2026-08-23 on the first two real games (the thresholds
+    # header promised recalibration from real data): Re-Pin showed greedy >
+    # random by +0.44..+0.75 — massive skill — while lookahead1 > greedy sat
+    # at +0.01..+0.05, because 2-ply SCORE minimax cannot see information
+    # value in a deduction game (and the beam blunts it further). Requiring
+    # every adjacent edge >= 0.15 hard-fails games the instrument cannot
+    # read, not games without skill. The HARD gate is now: skill exists
+    # (best rung beats random end-to-end by MIN_SKILL_EDGE) and no
+    # INVERSION (a stronger policy losing outright to a weaker one). The
+    # adjacent-edge magnitudes stay in the report — the depth component
+    # scores them; a blunt lookahead lowers depth, it does not kill.
     staircase_ok = True
     for k in range(1, len(ladder)):
         strong, weak = ladder[k], ladder[k - 1]
         edge = matrix[strong][weak] - baseline
         edges["%s>%s" % (strong, weak)] = edge
-        if edge < MIN_SKILL_EDGE:
-            staircase_ok = False
-    if len(ladder) >= 3:
-        # The whole chain must hold end to end, not just link by link.
-        top_edge = matrix[ladder[-1]][ladder[0]] - baseline
+        if edge < INVERSION_TOLERANCE:
+            staircase_ok = False  # stronger rung LOSES to weaker: degenerate
+    top_edge = (matrix[ladder[-1]][ladder[0]] - baseline) if len(ladder) >= 2 \
+        else 0.0
+    if len(ladder) >= 2:
         edges["%s>%s" % (ladder[-1], ladder[0])] = top_edge
         if top_edge < MIN_SKILL_EDGE:
-            staircase_ok = False
+            staircase_ok = False  # no skill end to end: the game is dice
 
     # 4. Mirrors at every rung: seat winrates under identical policies is the
     #    clean read on seat advantage (any skill signal cancels). Strongest

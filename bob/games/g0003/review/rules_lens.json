@@ -1,0 +1,12 @@
+{
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "issues": [
+    "idea-contradiction: idea.json specifies a '0.4 mm ladder from 18 to 30 mm' but RULES.md ships a different ladder \u2014 'H is drawn from a 42-rung ladder: 12.25, 12.75, 13.25 \u2026 32.75 mm, in 0.5 mm steps.' Range and step size both differ from the pitch. Disposition: clarify (reconcile pitch doc with shipped spec, no mechanic to change).",
+    "idea-contradiction: idea.json's stated end condition is 'Play until one stock is empty,' but RULES.md's actual end condition is the bar hitting its bottom stop after repeated Sets \u2014 'The game ends at the end of the round in which the setter says \"Bottom\"' \u2014 with an explicit Salvage subsystem (\u00a75.7) so an empty rail/line does not end the game. This is a different core loop than the one pitched. Disposition: clarify (stale pitch summary, RULES.md mechanic is internally coherent and reachable).",
+    "reachable-ending gap: Round 1 pass order is undefined. \u00a74 says 'Order of play within a round... is by score line, shortest first, longest last, using the same tiebreakers,' but every score line is empty (tied) entering round 1, and the tiebreak chain resolves via 'closest going clockwise from the previous setter's left' \u2014 there is no previous setter yet. Setup only names the round-1 setter, not the round-1 pass order. Disposition: clarify (state round-1 pass order explicitly, e.g. clockwise from the first setter).",
+    "rules-completeness note: the setter's choice among the three Set patterns ('Down 5, then up 3 \u00b7 Down 6, then up 2 \u00b7 Down 7, then up 1') has an unstated secondary effect when remaining room above the bottom stop is 5-7 clicks \u2014 since the down-only phase is 5, 6, or 7 clicks respectively, the pattern chosen can itself trigger 'Bottom' this round or defer it, on top of its stated role of setting gap depth (1.0/2.0/3.0mm). The text frames the choice purely as depth ('Which of the three is the setter's private information'), never as an end-timing lever. Disposition: clarify (an explicit ruling would remove ambiguity about whether this is intended)."
+  ],
+  "judge": "bob-rules-lens",
+  "lane": "invention",
+  "verdict": "PASS"
+}

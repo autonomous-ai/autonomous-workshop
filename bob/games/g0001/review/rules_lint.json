@@ -1,0 +1,8 @@
+{
+  "idea_sha": "a9e2d5ff03fa69e0449ca74a5ab5c6a1a1eb251dc315d8c0dc930aeeb8f44e7f",
+  "lint_pass": true,
+  "problems": [],
+  "warnings": [
+    "unbound language in rules (several, some) \u2014 every rule carries a number (text2game consistency lint)"
+  ]
+}

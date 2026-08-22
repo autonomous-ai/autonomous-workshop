@@ -8,18 +8,44 @@
     "players": "2-4",
     "weight": "light"
   },
-  "emotion": "glee \u2014 three clicks and the entire table moves at once, including the parts you already regret",
-  "fun_correct_bet": "The crank is shared, so hoarding gears does nothing \u2014 you win by placing where your own ratio is good AND your neighbour's mesh count goes odd, which is a fact about the physical train, not about a card.",
+  "emotion": "glee — three clicks and the entire table moves at once, including the parts you already regret",
+  "fun_correct_bet": "The crank is shared, so hoarding gears does nothing — you win by placing where your own ratio is good AND your neighbour's mesh count goes odd, which is a fact about the physical train, not about a card.",
   "lane": "invention",
-  "mechanism": "Forty printed gears with awkward tooth counts (11, 13, 17, 19, 23, 29) plus a handful of print-in-place compound gears whose captive planetary reduction is hidden inside the hub \u2014 you can read the outer teeth, never the inner ratio; you learn it by cranking. Board is a peg plate; each player has a dial at their seat. Turn: place one gear so it meshes with at least one gear already down, then crank the communal handle exactly three clicks. Every dial connected to the train advances by its true ratio and in the direction its mesh count dictates \u2014 an odd number of meshes runs your dial backwards. First dial to 20 wins; a dial driven to -5 jams for one round.",
+  "mechanism": "Forty printed gears with awkward tooth counts (11, 13, 17, 19, 23, 29) plus a handful of print-in-place compound gears whose captive planetary reduction is hidden inside the hub — you can read the outer teeth, never the inner ratio; you learn it by cranking. Board is a peg plate; each player has a dial at their seat. Turn: place one gear so it meshes with at least one gear already down, then crank the communal handle exactly three clicks. Every dial connected to the train advances by its true ratio and in the direction its mesh count dictates — an odd number of meshes runs your dial backwards. First dial to 20 wins; a dial driven to -5 jams for one round.",
   "nearest_known": "Turing Tumble (physical computation, but solo puzzle); Gizmos (engine building, all cardboard)",
-  "one_line": "You bolt gears onto a shared plate to route one communal crank into your own scoring dial \u2014 but every tooth you add also turns for whoever is meshed to it, and reverse is a real physical direction, not a card that says 'reverse'.",
+  "one_line": "You bolt gears onto a shared plate to route one communal crank into your own scoring dial — but every tooth you add also turns for whoever is meshed to it, and reverse is a real physical direction, not a card that says 'reverse'.",
   "piggyback": "tile placement / adjacency building (Carcassonne-style 'must connect')",
-  "players": "2-4",
+  "players": {
+    "min": 2,
+    "max": 4
+  },
   "slug": "g0001",
-  "target_minutes": 35,
+  "target_minutes": 30,
   "title": "Crank",
   "weight": "light",
   "why_cardboard_breaks": "Ratio and direction are only real when teeth actually mesh; a die-cut version is a lookup table pretending to be a machine, and the reversal is a joke you have to feel in your hand.",
-  "why_molding_breaks": "The compound gears are print-in-place planetary stacks with a captive carrier \u2014 no draw direction, no assembly step \u2014 and each copy ships a different hidden assortment; a mold needs a parting seam, an assembly line, and one fixed catalog."
+  "why_molding_breaks": "The compound gears are print-in-place planetary stacks with a captive carrier — no draw direction, no assembly step — and each copy ships a different hidden assortment; a mold needs a parting seam, an assembly line, and one fixed catalog.",
+  "action_types": ["place_gear", "place_hub", "pull", "redock", "pass"],
+  "rules": {
+    "win": "First dial to reach 20 during a crank wins immediately. Otherwise, if a full round passes in which no gear and no hub is placed and no Spanner Token is spent, the game ends after that round's last crank and the highest dial wins. Ties break on: highest counter, then most unspent Spanner Tokens, then shortest run from the Drive Gear, then soonest turn order."
+  },
+  "components": [
+    {"id": "plate_01", "name": "Plate Quadrant", "qty": 4, "size_mm": "122 x 122 x 10"},
+    {"id": "crank_01", "name": "Crank Post", "qty": 1, "size_mm": "30 dia x 84"},
+    {"id": "crank_02", "name": "Crank Handle", "qty": 1, "size_mm": "62 x 16 x 20"},
+    {"id": "drive_01", "name": "Drive Gear", "qty": 1, "size_mm": "45 dia x 8"},
+    {"id": "gear_11", "name": "Gear 11", "qty": 6, "size_mm": "39 dia x 10"},
+    {"id": "gear_13", "name": "Gear 13", "qty": 8, "size_mm": "45 dia x 10"},
+    {"id": "gear_17", "name": "Gear 17", "qty": 8, "size_mm": "57 dia x 10"},
+    {"id": "gear_19", "name": "Gear 19", "qty": 7, "size_mm": "63 dia x 10"},
+    {"id": "gear_23", "name": "Gear 23", "qty": 6, "size_mm": "75 dia x 10"},
+    {"id": "gear_29", "name": "Gear 29", "qty": 5, "size_mm": "93 dia x 10"},
+    {"id": "hub_01", "name": "Compound Hub", "qty": 6, "size_mm": "87 x 39 x 14"},
+    {"id": "mag_01", "name": "Hub Magazine", "qty": 1, "size_mm": "96 x 50 x 104"},
+    {"id": "dial_01", "name": "Dial Unit", "qty": 4, "size_mm": "90 x 58 x 58"},
+    {"id": "ring_01", "name": "Reading Ring", "qty": 6, "size_mm": "52 dia x 4"},
+    {"id": "token_01", "name": "Spanner Token", "qty": 16, "size_mm": "18 dia x 4"},
+    {"id": "tray_01", "name": "Gear Tray", "qty": 1, "size_mm": "186 x 74 x 22"},
+    {"id": "tray_02", "name": "Scrap Tray", "qty": 1, "size_mm": "92 x 74 x 22"}
+  ]
 }

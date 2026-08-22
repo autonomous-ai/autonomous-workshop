@@ -65,11 +65,11 @@
     },
     "wildcard": {
       "alpha": 1.0,
-      "beta": 1.0,
-      "last": "2026-08-22T09:25:21.566544+00:00",
-      "pulls": 0,
+      "beta": 2.0,
+      "last": "2026-08-22T18:51:16.260816+00:00",
+      "pulls": 1,
       "reward_sum": 0.0
     }
   },
-  "total_pulls": 0
+  "total_pulls": 1
 }
