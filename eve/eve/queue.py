@@ -55,6 +55,7 @@ class Game:
     # --- claim/lease ----------------------------------------------------
     claimed_by: Optional[str] = None
     claim_until: Optional[float] = None
+    crashes: dict = field(default_factory=dict)  # per-state crash counters
 
     def to_dict(self) -> dict:
         return asdict(self)

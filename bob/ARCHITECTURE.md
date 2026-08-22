@@ -114,11 +114,15 @@ rounds + 2 owner amendments spent on rules that later failed the playtest.
    ΔR ≥ 2 and budgets remain (clarify 3 / rework 3 / repair 2 — with the
    mech-surface hash that converts a "clarify" that changed mechanics into a
    paid rework, and the cascade-stop that blocks A→B→C patch chains).
-8. **published** — publish-eligible + validator green ⇒ **Bob flips it public
-   himself** (Dee's 2026-08-22 ruling: "publish on our website automatically";
-   supersedes the 08-06 human-flip for this lane). Telegram notice + one-tap
-   UNPUBLISH. CPSIA hard-refuse, AI-disclosure, public-domain-only IP, price
-   floor remain hard pre-flip gates; borderline safety parks for a human.
+8. **published** — publish-eligible + validator green ⇒ Bob auto-imports the
+   DRAFT: via text2game's box pipeline (`BOB_PUBLISH_VIA=box` — Bob exports
+   the exact `out/<slug>/` payload `text2game/publish.py` consumes, rsync +
+   remote run when `BOB_BOX_SSH` is set, Telegram handoff otherwise) or the
+   HTTP path. **Draft→public is the owner's one click in admindash for now**
+   (Dee 2026-08-22: "publish draft is fine… once it's ok, we'll make it auto
+   publish"); `BOB_AUTO_FLIP=1` later makes the flip autonomous. CPSIA
+   hard-refuse, AI-disclosure, public-domain-only IP, price floor remain
+   hard pre-import gates; borderline safety parks for a human.
 9. **live** — L4 folds market + human-table signal into the ledger; "asked to
    play again ×3 groups" upgrades the game to **proven**.
 

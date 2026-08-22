@@ -24,16 +24,17 @@ Kill              ⇔  novelty gate fails with URL evidence ∨ owner rejects (v
 (post-publish) upgraded to **proven** when the house metric fires — a player
 asks to play again without being asked, 3× from different groups.
 
-**Auto-publish (Dee, 2026-08-22):** Bob flips draft→public HIMSELF when
-publish-eligible AND the deterministic publish validator is green — this
-supersedes the 08-06 human-flip ladder for Bob's board-game lane, by owner
-ruling ("publish on our website automatically; when someone buys, we print and
-ship"). The safety inversion: the human gate becomes a kill switch, not a
-turnstile — every auto-publish sends a Telegram notice with the listing link
-and an UNPUBLISH command; `bob unpublish <slug>` reverts in one call. CPSIA
-hard-refuse, AI-disclosure, price floor, and public-domain-only IP checks
-remain hard gates *before* the flip. G5-borderline games (any doubt) still
-park for a human.
+**Publish policy (Dee, 2026-08-22 — staged):** Bob DRAFT-imports
+automatically when publish-eligible AND the validator is green — through
+text2game's proven box pipeline (`BOB_PUBLISH_VIA=box`, github.com/nohope88/
+text2game) or the HTTP path. **The draft→public flip is the owner's one
+click in admindash for now** ("publish draft is fine. it's one click for me
+to review. once it's ok, we'll make it auto publish") — `BOB_AUTO_FLIP=1`
+turns on the full auto-flip once quality is proven on real listings. Every
+draft import sends a Telegram notice; `bob unpublish <slug>` reverts a
+flipped listing in one call. CPSIA hard-refuse, AI-disclosure, price floor,
+and public-domain-only IP checks remain hard gates *before* any import.
+G5-borderline games (any doubt) still park for a human.
 
 ## Two lanes, one pipeline
 

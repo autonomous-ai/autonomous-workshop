@@ -745,10 +745,14 @@ class RealPublishSingleAdvanceTest(_HomeCase):
         return sha
 
     def test_real_publish_advances_once_and_tolerates_curate_failure(self):
+        # BOB_AUTO_FLIP=1 exercises the full flip path (the future default,
+        # off today per Dee's draft-first ruling 2026-08-22).
         from harness import publish
         slug = "liveone"
         self._reviewed_game(slug)
         os.environ["BOB_PUBLISH_DRY_RUN"] = "0"
+        os.environ["BOB_AUTO_FLIP"] = "1"
+        self.addCleanup(os.environ.pop, "BOB_AUTO_FLIP", None)
         calls = []
         saved = {name: getattr(publish, name)
                  for name in ("validate", "import_draft", "curate",
@@ -786,6 +790,38 @@ class RealPublishSingleAdvanceTest(_HomeCase):
         publish_rows = [row for row in ledger.rows(slug=slug)
                         if row["kind"] == "publish"]
         self.assertEqual(len(publish_rows), 1)
+
+
+    def test_draft_first_default_stops_before_the_flip(self):
+        # Dee 2026-08-22 (second ruling): "publish draft is fine. it's one
+        # click for me to review for now." Default = import + curate, NO
+        # flip_public; the game rests at published awaiting the human click.
+        from harness import publish
+        slug = "draftone"
+        self._reviewed_game(slug)
+        os.environ["BOB_PUBLISH_DRY_RUN"] = "0"
+        os.environ.pop("BOB_AUTO_FLIP", None)
+        calls = []
+        saved = {name: getattr(publish, name)
+                 for name in ("validate", "import_draft", "curate",
+                              "flip_public")}
+
+        def fake_import(s):
+            calls.append("import")
+            queue.advance(s, "published", "draft imported (mock)")
+
+        publish.validate = lambda s: []
+        publish.import_draft = fake_import
+        publish.curate = lambda s: calls.append("curate")
+        publish.flip_public = \
+            lambda s, price_cents: calls.append("flip:%d" % price_cents)
+        try:
+            self._tick_once("reviewed")
+        finally:
+            for name, fn in saved.items():
+                setattr(publish, name, fn)
+        self.assertEqual(calls, ["import", "curate"])
+        self.assertEqual(queue.load()["games"][slug]["state"], "published")
 
 
 class FencedJudgePromptTest(_HomeCase):

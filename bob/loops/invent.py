@@ -1325,6 +1325,55 @@ def _publish(slug, game, score_value):
     sha = _idea_sha(slug)
     title = game.get("title", slug)
     kit_warnings = _page_kit(slug, game)
+
+    # BOB_PUBLISH_VIA=box (Dee 2026-08-22): publish through text2game's
+    # proven box-bound pipeline instead of the HTTP path. Bob exports the
+    # exact out/<slug>/ payload text2game/publish.py consumes; with
+    # BOB_BOX_SSH set the handoff is fully automatic (rsync + remote
+    # ./publish.py), otherwise the operator gets two copy-paste commands
+    # over Telegram. The draft->public flip stays in admindash either way —
+    # that pipeline's discipline, not ours to change from here.
+    if os.environ.get("BOB_PUBLISH_VIA", "").strip() == "box":
+        from harness import export_box
+        try:
+            manifest = export_box.export_text2game(slug)
+        except Exception as exc:  # noqa: BLE001 — an export bug parks, never crashes
+            queue.park(slug, "text2game export failed: %s: %s"
+                       % (type(exc).__name__, exc))
+            return
+        if not manifest["complete"]:
+            queue.park(slug, "text2game export incomplete — missing: %s"
+                       % "; ".join(manifest["missing"]))
+            return
+        pushed = None
+        try:
+            pushed = export_box.push_box(slug)
+        except Exception as exc:  # noqa: BLE001 — box unreachable = handoff, not crash
+            _warn("box push failed for %s: %s" % (slug, exc))
+        _write_json(os.path.join(_game_dir(slug), "published.json"), {
+            "via": "text2game-box",
+            "idea_sha": sha,
+            "score": score_value,
+            "pushed": bool(pushed),
+            "box_output": pushed,
+            "page_kit_warnings": kit_warnings,
+            "handoff_instructions": None if pushed else manifest["instructions"],
+        })
+        queue.advance(slug, "published",
+                      "box publish: %s" % ("pushed + imported on the box"
+                                           if pushed else "exported; awaiting"
+                                           " box operator (see Telegram)"))
+        if pushed:
+            _telegram_notice("[bob] DRAFT imported via box: %s (R=%.1f) — "
+                             "one click in admindash publishes it.\n%s"
+                             % (title, score_value, pushed[-300:]))
+        else:
+            _telegram_notice("[bob] EXPORT READY: %s (R=%.1f). Run on the "
+                             "panda box:\n%s"
+                             % (title, score_value,
+                                "\n".join(manifest["instructions"])))
+        return
+
     if dry:
         _write_json(os.path.join(_game_dir(slug), "published.json"), {
             "dry_run": True,
@@ -1361,14 +1410,24 @@ def _publish(slug, game, score_value):
         # publishable game must never park on page copy.
         _warn("curate failed for %s — continuing to the flip: %s: %s"
               % (slug, type(exc).__name__, exc))
-    publish.flip_public(slug, PRICE_CENTS_DEFAULT)  # published -> live
-    # NO queue.advance here: import_draft and flip_public each advance the
-    # queue themselves — a third advance was the live -> published
-    # ValueError that crashed every real publish (pre-launch verify
-    # finding). The ledger row + bandit update land in _handle_reviewed.
-    _telegram_notice("[bob] PUBLISHED: %s (R=%.1f, %d cents). "
-                     "`bob unpublish %s` reverts in one call."
-                     % (title, score_value, PRICE_CENTS_DEFAULT, slug))
+    # Draft-first (Dee 2026-08-22, second ruling): "publish draft is fine.
+    # it's one click for me to review for now. once it's ok, we'll make it
+    # auto publish." The flip is opt-in via BOB_AUTO_FLIP=1 — until quality
+    # is proven on real listings, Bob imports + curates and the human's one
+    # click in admindash takes it public.
+    if os.environ.get("BOB_AUTO_FLIP", "0") == "1":
+        publish.flip_public(slug, PRICE_CENTS_DEFAULT)  # published -> live
+        # NO queue.advance here: import_draft and flip_public each advance
+        # the queue themselves — a third advance was the live -> published
+        # ValueError that crashed every real publish (pre-launch verify
+        # finding). The ledger row + bandit update land in _handle_reviewed.
+        _telegram_notice("[bob] PUBLISHED: %s (R=%.1f, %d cents). "
+                         "`bob unpublish %s` reverts in one call."
+                         % (title, score_value, PRICE_CENTS_DEFAULT, slug))
+    else:
+        _telegram_notice("[bob] DRAFT imported: %s (R=%.1f). One click in "
+                         "admindash publishes it. Suggested price: %d cents."
+                         % (title, score_value, PRICE_CENTS_DEFAULT))
 
 
 def _handle_reviewed(step):

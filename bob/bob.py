@@ -312,6 +312,33 @@ def cmd_unpublish(args):
     return 0
 
 
+def cmd_export(args):
+    """Export a game in text2game's out/<slug>/ publish contract (Dee
+    2026-08-22: tap the existing publishing pipeline, don't rebuild it)."""
+    from harness import export_box
+    manifest = export_box.export_text2game(args.slug)
+    print(json.dumps(manifest, indent=2))
+    return 0 if manifest["complete"] else 1
+
+
+def cmd_mark_published(args):
+    """Record the box's import receipt after a manual handoff publish."""
+    path = os.path.join(queue.bob_home(), "games", args.slug, "published.json")
+    try:
+        with open(path) as handle:
+            info = json.load(handle)
+    except (OSError, ValueError):
+        info = {}
+    info.update({"design_id": args.design_id, "pushed": True,
+                 "confirmed_by": "human"})
+    tmp = "%s.tmp.%d" % (path, os.getpid())
+    with open(tmp, "w") as handle:
+        json.dump(info, handle, indent=2)
+    os.replace(tmp, path)
+    print("recorded design_id %s for %s" % (args.design_id, args.slug))
+    return 0
+
+
 def cmd_seed(_args):
     """First run: make sure the state files exist and the bandit knows its
     arms. Idempotent — safe to run any time."""
@@ -354,6 +381,13 @@ def main(argv=None):
     p.add_argument("slug")
     p.set_defaults(fn=cmd_unpublish)
     sub.add_parser("seed").set_defaults(fn=cmd_seed)
+    p = sub.add_parser("export")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_export)
+    p = sub.add_parser("mark-published")
+    p.add_argument("slug")
+    p.add_argument("design_id")
+    p.set_defaults(fn=cmd_mark_published)
     p = sub.add_parser("daemon")
     p.add_argument("action", choices=["install", "uninstall", "status"])
     p.set_defaults(fn=cmd_daemon)

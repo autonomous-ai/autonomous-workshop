@@ -1,7 +1,7 @@
 {
-  "created": "2026-08-22T09:05:13.777769+00:00",
+  "created": "2026-08-22T12:52:26.846344+00:00",
   "hashes": {
-    "docs/REWARD.md": "afaa7addd7341eb01004d5a2cb300d7908f5d7fd728dc1a578e63270d3d979b3",
+    "docs/REWARD.md": "52119f9450940faceafb51713c7ecde70a33d8930a116dad1eec17fde480b3de",
     "harness/reward.py": "f038a10a2452e5cfc30ad7806bdb5bd9ea576da050243b30e06cba662f4d1b9f"
   },
   "warning": "WARNING: this file seals harness/reward.py and docs/REWARD.md. Only a HUMAN commit may regenerate it (regenerate_baseline() with BOB_HUMAN=1, run by a person, after reviewing the reward diff). No agent, loop, or automation may touch it \u2014 an evaluator that can re-seal itself is not sealed (DGM receipt)."
