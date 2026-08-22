@@ -1,0 +1,75 @@
+{
+  "arms": {
+    "asymmetric-machine": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "classic-reborn": {
+      "alpha": 3.0,
+      "beta": 2.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "gravity-physics": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "hidden-mechanism": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "interlock-legality": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "kinetic-timer": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "legacy-permanence": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "measurement-dexterity": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "modular-worldbuild": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    },
+    "wildcard": {
+      "alpha": 1.0,
+      "beta": 1.0,
+      "last": "2026-08-22T09:25:21.566544+00:00",
+      "pulls": 0,
+      "reward_sum": 0.0
+    }
+  },
+  "total_pulls": 0
+}

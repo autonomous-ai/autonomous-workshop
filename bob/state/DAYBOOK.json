@@ -1,3 +1,25 @@
 {
-  "heartbeat": "2026-08-22T08:45:08.733485+00:00"
+ "heartbeat": "2026-08-22T09:26:00.849728+00:00",
+ "2026-08-22": {
+  "ticks": 0,
+  "cost_usd": 1.03113,
+  "steps": [
+   {
+    "name": "bob-ideator",
+    "model": "claude-opus-5",
+    "wall_s": 283.14,
+    "num_turns": 9,
+    "cost_usd": 0.8292140000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-triage-judge",
+    "model": "claude-sonnet-5",
+    "wall_s": 120.845,
+    "num_turns": 2,
+    "cost_usd": 0.20191579999999998,
+    "subtype": "success"
+   }
+  ]
+ }
 }

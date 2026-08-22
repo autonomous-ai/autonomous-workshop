@@ -1,0 +1,25 @@
+{
+  "arm": "wildcard",
+  "audience": "engine-builder players who want the engine to be a machine, and makers who will recognize a planetary hub on sight",
+  "concept": "An engine-building game where the engine is literally an engine: the game state is stored as rotation in a machine on the table, and three clicks of a shared handle resolve the whole turn with no arithmetic.",
+  "direction": {
+    "family": "wildcard",
+    "lane": "invention",
+    "players": "2-4",
+    "weight": "light"
+  },
+  "emotion": "glee \u2014 three clicks and the entire table moves at once, including the parts you already regret",
+  "fun_correct_bet": "The crank is shared, so hoarding gears does nothing \u2014 you win by placing where your own ratio is good AND your neighbour's mesh count goes odd, which is a fact about the physical train, not about a card.",
+  "lane": "invention",
+  "mechanism": "Forty printed gears with awkward tooth counts (11, 13, 17, 19, 23, 29) plus a handful of print-in-place compound gears whose captive planetary reduction is hidden inside the hub \u2014 you can read the outer teeth, never the inner ratio; you learn it by cranking. Board is a peg plate; each player has a dial at their seat. Turn: place one gear so it meshes with at least one gear already down, then crank the communal handle exactly three clicks. Every dial connected to the train advances by its true ratio and in the direction its mesh count dictates \u2014 an odd number of meshes runs your dial backwards. First dial to 20 wins; a dial driven to -5 jams for one round.",
+  "nearest_known": "Turing Tumble (physical computation, but solo puzzle); Gizmos (engine building, all cardboard)",
+  "one_line": "You bolt gears onto a shared plate to route one communal crank into your own scoring dial \u2014 but every tooth you add also turns for whoever is meshed to it, and reverse is a real physical direction, not a card that says 'reverse'.",
+  "piggyback": "tile placement / adjacency building (Carcassonne-style 'must connect')",
+  "players": "2-4",
+  "slug": "g0001",
+  "target_minutes": 35,
+  "title": "Crank",
+  "weight": "light",
+  "why_cardboard_breaks": "Ratio and direction are only real when teeth actually mesh; a die-cut version is a lookup table pretending to be a machine, and the reversal is a joke you have to feel in your hand.",
+  "why_molding_breaks": "The compound gears are print-in-place planetary stacks with a captive carrier \u2014 no draw direction, no assembly step \u2014 and each copy ships a different hidden assortment; a mold needs a parting seam, an assembly line, and one fixed catalog."
+}

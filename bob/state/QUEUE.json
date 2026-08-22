@@ -1,4 +1,44 @@
 {
-  "games": {},
+  "games": {
+    "g0001": {
+      "budgets": {
+        "clarify_used": 0,
+        "repair_used": 0,
+        "rework_used": 0
+      },
+      "created": "2026-08-22T09:25:21.568786+00:00",
+      "direction": {
+        "family": "wildcard",
+        "lane": "invention",
+        "players": "2-4",
+        "weight": "light"
+      },
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
+      "log": [
+        {
+          "at": "2026-08-22T09:25:21.568786+00:00",
+          "from": null,
+          "note": "sparked",
+          "to": "sparked"
+        },
+        {
+          "at": "2026-08-22T09:32:44.872690+00:00",
+          "from": "sparked",
+          "note": "spark chosen: Crank (triage kept 1 of 5)",
+          "to": "researched"
+        }
+      ],
+      "reward": {
+        "history": [],
+        "latest": 0.0
+      },
+      "slug": "g0001",
+      "state": "researched",
+      "title": "Crank"
+    }
+  },
   "version": 2
 }

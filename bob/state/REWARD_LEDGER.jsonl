@@ -1,0 +1,2 @@
+{"at": "2026-08-22T09:25:21.569367+00:00", "components": {}, "cost_usd": 0.0, "delta": 0.0, "kind": "iteration", "notes": "bandit picked arm wildcard (lane invention)", "score": 0.0, "slug": "g0001", "stage": "spark_new"}
+{"at": "2026-08-22T09:32:44.872188+00:00", "components": {}, "cost_usd": 1.03113, "delta": 0.0, "kind": "iteration", "notes": "kept spark 2/5: Crank", "score": 0.0, "slug": "g0001", "stage": "sparked"}
