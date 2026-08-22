@@ -1,28 +1,23 @@
-"""claude-CLI runner: every LLM call in Bob goes through run_agent().
+"""claude-CLI runner: every LLM call in Eve goes through run_agent().
 
-Why this module exists at all (instead of subprocess.run inline everywhere):
-text2cad's ledger says 58% of $430 was lost to harness bugs, not bad
-products — and most of those bugs were exactly the things this file
-centralizes:
+Port of Bob's harness (bob/harness/agents.py) with Eve's env knobs. The
+lessons it encodes are the org's own receipts:
 
 - Cost telemetry from the CLI's own JSON, persisted crash-safe after EVERY
-  call, never overwritten (text2cad's run.json under-reported a cycle by 12%
-  because repeated phases clobbered earlier rows — hence the #2 suffixes).
-- Starved vs crashed, mechanically distinguished (text2cad receipt: "$49
-  went to phases that were starved rather than wrong", and the pipeline
-  "paid for a retry at the SAME cap"). Starved raises Starved; callers must
-  raise the cap or cut the task, NEVER retry unchanged.
-- Quota death as a first-class exception, never a retry ("once the weekly
-  cap hits, each 'retry' burns wall-clock and produces nothing").
+  call, never overwritten (repeated phase names get a #2 suffix so rows are
+  never clobbered — text2cad's run.json under-reported a cycle by 12%).
+- Starved vs crashed, mechanically distinguished: starved raises Starved,
+  callers must raise the cap or cut the task, NEVER retry at the same cap.
+- Quota death is a first-class exception (QuotaExhausted), never a retry:
+  once the window is spent, "retrying" just burns wall-clock.
 - Process-group kill on overrun (start_new_session + SIGTERM, 5s grace,
-  SIGKILL) — the warm-daemon receipt: a plain .kill() leaves the CLI's
-  child processes alive and the "dead" phase keeps burning tokens.
-- BOB_MOCK_AGENTS=1 short-circuits the subprocess entirely and reads the
-  reply from tests/fixtures/<name>.txt — required for tests and dry runs,
-  so no test can ever hit the real CLI or the real wallet.
+  SIGKILL) so a killed phase can't leave orphaned children burning tokens.
+- EVE_MOCK_AGENTS=1 short-circuits the subprocess and reads the reply from
+  tests/fixtures/<name>.txt — required for tests and dry runs, so no test
+  can ever hit the real CLI or the real wallet.
 
-Stdlib only, Python 3.9. No env reads at import time (testability — every
-test builds its own BOB_HOME and flips env per-case).
+Stdlib only, Python 3.9. No env reads at import time (each test builds its
+own EVE_HOME and flips env per case).
 """
 
 import fcntl
@@ -36,76 +31,58 @@ import time
 from collections import namedtuple
 from datetime import datetime, timezone
 
-# The three CLI failure classes have OPPOSITE correct responses, so they are
-# distinct exception types — a caller that catches the wrong one repeats
-# text2cad's most expensive mistakes.
 
 class AgentError(Exception):
     """Transient crash (CLI died, bad JSON, error_during_execution).
 
-    Retryable ONCE by the caller — text2cad's lens-crash graduated to
-    exactly one retry after "lens:fidelity FAIL no output" cost 3 repair
-    tiers across 3 recurrences.
+    Retryable ONCE by the caller — a lens crash graduates to exactly one
+    retry, never an unbounded repair spiral.
     """
 
 
 class Starved(AgentError):
     """The agent hit its turn cap (subtype == 'error_max_turns').
 
-    NOT retryable at the same cap: "a cap that binds 3 times out of 3 is
-    not a safety limit, it is the real constraint on the work" (text2cad,
-    08-17: every scram repair ended at 71/70 turns). Raise the cap or cut
-    the task down.
+    NOT retryable at the same cap: a cap that binds 3 times out of 3 is the
+    real constraint on the work, not a safety limit (text2cad: every scram
+    repair ended at 71/70 turns). Raise the cap or cut the task down.
     """
 
 
 class QuotaExhausted(Exception):
     """The subscription window is exhausted (usage/rate limit).
 
-    Callers set DAYBOOK quota_until (now + 60 min) and the tick loop
-    no-ops until then. Never retry into a wall — the 08-13 text2cad cycle
-    died this way silently, burning wall-clock for nothing.
+    Callers set the DAYBOOK quota_until (now + 60 min) and the tick loop
+    no-ops until then. Never retry into a wall.
 
-    Deliberately NOT a subclass of AgentError: a generic "retry once on
-    AgentError" handler must never swallow a quota death.
+    Deliberately NOT a subclass of AgentError so a generic "retry once on
+    AgentError" handler can never swallow a quota death.
     """
 
 
-# Fields per the task contract (supersets CONTRACTS §2 with num_turns +
-# subtype, which the daybook and the starved/crashed split both need).
 AgentResult = namedtuple(
     "AgentResult",
     ["text", "cost_usd", "minutes", "num_turns", "transcript_path", "subtype"],
 )
 
-# Rate-limit fingerprints per CONTRACTS §6. Case-insensitive because the CLI
-# has emitted "Usage limit reached" and "rate limit" in different casings.
 QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit", re.IGNORECASE)
 
-# 5s between SIGTERM and SIGKILL: long enough for the CLI to flush its JSON
-# result line, short enough that an overrun tick doesn't blow the launchd
-# window (the warm-daemon receipt).
 KILL_GRACE_S = 5.0
 
-# Default model when neither the caller nor env says otherwise. Sonnet is
-# the cheap default; phases that cascade errors downstream get routed to a
-# bigger model via BOB_<PHASE>_MODEL (per-phase routing IS the cost model —
-# text2cad §a10).
 DEFAULT_MODEL = "claude-sonnet-5"
 
-# Tools granted only when the agent is given a working directory: a cwd
-# means "go do repo work"; a prompt-only call gets no tools at all, which
-# keeps pure-judge calls unable to touch the filesystem (judge isolation,
-# REWARD.md "judges read artifacts only").
+# Tools granted only when the agent is given a working directory: a cwd means
+# "go do repo work"; a prompt-only call gets no tools (judge/generator
+# isolation — a lens that can edit its own score is a lens that cheats).
 CWD_TOOLS = "Bash,Read,Write,Edit,Glob,Grep"
 
 
-def _bob_home():
-    """Repo root. BOB_HOME overrides (tests point it at a temp dir).
+def _eve_home():
+    """Repo root (cfg.root). EVE_HOME overrides (tests point it at a temp dir).
 
-    Read at call time, never import time (CONTRACTS §6).
+    Read at call time, never import time.
     """
-    env = os.environ.get("BOB_HOME")
+    env = os.environ.get("EVE_HOME")
     if env:
         return os.path.abspath(env)
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -116,8 +93,8 @@ def _utc_now():
 
 
 def _atomic_write(path, data):
-    """tmp + os.replace per CONTRACTS: a crash mid-write must never leave a
-    half-JSON state file (that is how ledgers silently rot)."""
+    """tmp + os.replace: a crash mid-write must never leave a half-JSON file
+    (that is how ledgers silently rot)."""
     tmp = "{}.tmp.{}".format(path, os.getpid())
     with open(tmp, "w") as f:
         f.write(data)
@@ -125,18 +102,14 @@ def _atomic_write(path, data):
 
 
 def resolve_model(name, explicit=None):
-    """Model resolution order: explicit arg > BOB_<PHASE>_MODEL > default.
-
-    PHASE is the agent name uppercased with dashes -> underscores, so the
-    agent file name ("rules-lens") maps 1:1 to its env knob
-    (BOB_RULES_LENS_MODEL). Per-phase routing is the whole cost model:
-    text2cad ran Opus only where "spec/code errors cascade downstream" and
-    Sonnet everywhere re-gated/rescored anyway.
-    """
+    """Explicit arg > EVE_<PHASE>_MODEL > default. PHASE is the agent name
+    uppercased with dashes -> underscores, so 'build-lens' maps 1:1 to
+    EVE_BUILD_LENS_MODEL. Per-phase routing is the cost model: run the big
+    model only where a bad spec cascades downstream."""
     if explicit:
         return explicit
     phase = name.upper().replace("-", "_")
-    env = os.environ.get("BOB_{}_MODEL".format(phase))
+    env = os.environ.get("EVE_{}_MODEL".format(phase))
     if env:
         return env
     return DEFAULT_MODEL
@@ -145,7 +118,7 @@ def resolve_model(name, explicit=None):
 def _transcript_path(name, when):
     """state/transcripts/<utc-ts>-<name>.json. Microseconds in the stamp so
     two calls in the same second never collide (never overwrite)."""
-    tdir = os.path.join(_bob_home(), "state", "transcripts")
+    tdir = os.path.join(_eve_home(), "state", "transcripts")
     os.makedirs(tdir, exist_ok=True)
     ts = when.strftime("%Y%m%dT%H%M%S.%f")
     return os.path.join(tdir, "{}-{}.json".format(ts, name))
@@ -154,13 +127,12 @@ def _transcript_path(name, when):
 def _append_daybook(step):
     """Append one telemetry row to today's steps in state/DAYBOOK.json.
 
-    Under its own tiny flock (state/.daybook.lock) so concurrent panel
-    calls can't lose rows, and with the #2 suffix pattern instead of
-    overwriting — text2cad's run.json "reported $102.25 for a cycle that
-    actually spent $116.67 — every figure the pipeline published about
-    itself was 12% low" because repeated phase names clobbered rows.
+    Under its own tiny flock (state/.daybook.lock) so concurrent calls can't
+    lose rows; #2 suffixing instead of overwriting keeps every call's cost
+    (text2cad's run.json reported $102.25 for a cycle that actually spent
+    $116.67 because repeated phase names clobbered earlier rows).
     """
-    home = _bob_home()
+    home = _eve_home()
     state_dir = os.path.join(home, "state")
     os.makedirs(state_dir, exist_ok=True)
     lock_path = os.path.join(state_dir, ".daybook.lock")
@@ -175,21 +147,20 @@ def _append_daybook(step):
                     with open(book_path) as f:
                         book = json.load(f)
                 except (ValueError, OSError):
-                    # A corrupt daybook must not block telemetry (the
-                    # postmortem principle: accounting "always runs").
-                    # Preserve the wreck for forensics instead of erasing.
+                    # A corrupt daybook must not block telemetry; preserve the
+                    # wreck for forensics instead of erasing.
                     os.replace(book_path, book_path + ".corrupt")
                     book = {}
             today = _utc_now().strftime("%Y-%m-%d")
             day = book.setdefault(
                 today, {"ticks": 0, "cost_usd": 0.0, "steps": []}
             )
-            # #2 suffixing: count rows already carrying this base name.
             base = step["name"]
             n = sum(
                 1
                 for s in day["steps"]
-                if s.get("name") == base or str(s.get("name", "")).startswith(base + "#")
+                if s.get("name") == base
+                or str(s.get("name", "")).startswith(base + "#")
             )
             if n:
                 step = dict(step)
@@ -204,11 +175,9 @@ def _append_daybook(step):
 
 
 def _log_call(name, model, wall_s, num_turns, cost_usd, subtype):
-    """Every call — success, starved, crashed, quota, killed — gets a row.
-
-    Failures are logged BEFORE their exception is raised, so a cycle that
-    dies still accounts for where the money went (text2cad postmortem runs
-    'including on a cycle that died because the key was exhausted')."""
+    """Every call — success, starved, crashed, quota, killed — gets a row,
+    logged BEFORE its exception is raised so a dead cycle still accounts for
+    where the money went."""
     _append_daybook(
         {
             "name": name,
@@ -222,15 +191,14 @@ def _log_call(name, model, wall_s, num_turns, cost_usd, subtype):
 
 
 def _mock_result(name, model, started):
-    """BOB_MOCK_AGENTS=1: canned reply, zero subprocess, near-zero cost.
+    """EVE_MOCK_AGENTS=1: canned reply, zero subprocess, near-zero cost.
 
-    Fixture lookup prefers BOB_HOME/tests/fixtures (a test home may plant
-    its own replies) and falls back to the repo's tests/fixtures. Cost is
-    a fixed $0.01 so budget math in tests exercises real (non-zero)
-    accumulation without ever touching the wallet.
+    Fixture lookup prefers EVE_HOME/tests/fixtures and falls back to the
+    repo's tests/fixtures. Cost is a fixed $0.01 so budget math is exercised
+    with real (non-zero) accumulation without ever touching the wallet.
     """
     candidates = [
-        os.path.join(_bob_home(), "tests", "fixtures", name + ".txt"),
+        os.path.join(_eve_home(), "tests", "fixtures", name + ".txt"),
         os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "tests",
@@ -245,7 +213,7 @@ def _mock_result(name, model, started):
             break
     if fixture is None:
         raise AgentError(
-            "BOB_MOCK_AGENTS=1 but no fixture for agent '{}'. "
+            "EVE_MOCK_AGENTS=1 but no fixture for agent '{}'. "
             "Create tests/fixtures/{}.txt with the canned reply.".format(name, name)
         )
     with open(fixture) as f:
@@ -278,22 +246,18 @@ def _mock_result(name, model, started):
 
 
 def _claude_argv():
-    """The CLI to shell. BOB_CLAUDE_BIN (shlex-split) overrides 'claude' so
+    """The CLI to shell. EVE_CLAUDE_BIN (shlex-split) overrides 'claude' so
     tests can point at a stub script — the only sanctioned way to unit-test
     the starved/crashed/quota classification without a real CLI."""
-    override = os.environ.get("BOB_CLAUDE_BIN")
+    override = os.environ.get("EVE_CLAUDE_BIN")
     if override:
         return shlex.split(override)
     return ["claude"]
 
 
 def _kill_process_group(proc):
-    """SIGTERM the whole group, wait KILL_GRACE_S, then SIGKILL.
-
-    start_new_session=True put the CLI in its own group, so this reaps its
-    children too — the warm-daemon receipt: killing only the parent leaves
-    orphaned workers burning tokens with no ledger row.
-    """
+    """SIGTERM the whole group, wait KILL_GRACE_S, then SIGKILL. Killing only
+    the parent leaves orphaned workers burning tokens with no ledger row."""
     try:
         pgid = os.getpgid(proc.pid)
     except (ProcessLookupError, PermissionError):
@@ -313,42 +277,18 @@ def _kill_process_group(proc):
         pass
 
 
-def _tick_budget_remaining():
-    """Minutes left in the open tick budget, or None when no budget ledger
-    is open (manual runs, tests) — then the budget is unenforced by design.
-    Lazy import so harness.timebudget never becomes an import cycle."""
-    from harness import timebudget
-    try:
-        return timebudget.report()["remaining_minutes"]
-    except (timebudget.BudgetExhausted, ValueError, OSError, KeyError):
-        return None
-
-
 def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=40):
-    """Run one headless claude call; return AgentResult or raise.
+    """Run one Claude agent for `name`, return an AgentResult.
 
-    When a tick budget is open (harness.timebudget.open_run), max_minutes
-    is capped to the minutes remaining, and a spent budget refuses BEFORE
-    the call — the with_budget contract was dead code until this check
-    (review 2026-08-22); an unenforced 25-min wall means overlapping ticks.
-
-    Raises:
-      Starved        — turn cap hit; raise the cap or cut the task, never
-                       retry the same cap.
-      QuotaExhausted — usage/rate limit; caller sets DAYBOOK quota_until.
-      AgentError     — anything else transient; retryable once. Also raised
-                       (before any spend) when the tick budget is spent.
+    Failure classification (differing correct responses):
+      Starved      — never retry at the same cap; raise or cut.
+      QuotaExhausted — a state, not an error; caller sets DAYBOOK quota_until.
+      AgentError   — anything else transient; retryable once.
     """
     started = time.monotonic()
     resolved = resolve_model(name, model)
 
-    remaining = _tick_budget_remaining()
-    if remaining is not None:
-        if remaining <= 0:
-            raise AgentError("tick budget spent — resume next tick")
-        max_minutes = min(max_minutes, remaining)
-
-    if os.environ.get("BOB_MOCK_AGENTS") == "1":
+    if os.environ.get("EVE_MOCK_AGENTS") == "1":
         return _mock_result(name, resolved, started)
 
     argv = _claude_argv() + [
@@ -362,8 +302,6 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
         "json",
     ]
     if cwd:
-        # Tools only when there is a workspace to use them in; pure judge
-        # calls stay tool-less (REWARD.md: judges read artifacts only).
         argv += ["--allowedTools", CWD_TOOLS]
 
     proc = subprocess.Popen(
@@ -400,16 +338,11 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
         raise AgentError(
             "Agent '{}' overran its {}-minute wall ceiling and was killed "
             "(SIGTERM then SIGKILL after {}s grace). Retry once with a "
-            "smaller task or a bigger ceiling — a ceiling that binds is the "
-            "real constraint, not a safety limit.".format(
-                name, max_minutes, KILL_GRACE_S
-            )
+            "smaller task or a bigger ceiling.".format(name, max_minutes, KILL_GRACE_S)
         )
 
     wall_s = time.monotonic() - started
     tpath = _transcript_path(name, _utc_now())
-    # Full stdout is the transcript, verbatim — the CLI's JSON is the source
-    # of truth for cost (text2cad §d1: the CLI's own numbers, crash-safe).
     _atomic_write(tpath, stdout if stdout else json.dumps({"stderr": stderr}))
 
     try:
@@ -420,8 +353,8 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
             _log_call(name, resolved, wall_s, None, 0.0, "quota")
             raise QuotaExhausted(
                 "Agent '{}' hit the usage/rate limit (unparseable CLI "
-                "output). Set DAYBOOK quota_until = now + 60 min and no-op "
-                "ticks until then; never retry into the wall.".format(name)
+                "output). Set DAYBOOK quota_until = now + 60 min; never "
+                "retry into the wall.".format(name)
             )
         _log_call(name, resolved, wall_s, None, 0.0, "crashed_no_json")
         raise AgentError(
@@ -437,8 +370,6 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
     text = payload.get("result") or ""
 
     if subtype == "error_max_turns":
-        # Starved, not crashed: "$49 went to phases that were starved
-        # rather than wrong" and every same-cap retry bought the same wall.
         _log_call(name, resolved, wall_s, num_turns, cost, subtype)
         raise Starved(
             "Agent '{}' ran out of turns ({} used, cap {}). Raise the cap "
@@ -454,8 +385,7 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
             _log_call(name, resolved, wall_s, num_turns, cost, "quota")
             raise QuotaExhausted(
                 "Agent '{}' hit the usage/rate limit. Set DAYBOOK "
-                "quota_until = now + 60 min; the tick loop must no-op "
-                "until then. Never retry into a wall.".format(name)
+                "quota_until = now + 60 min; never retry into a wall.".format(name)
             )
         _log_call(name, resolved, wall_s, num_turns, cost, subtype)
         raise AgentError(

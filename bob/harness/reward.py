@@ -43,12 +43,18 @@ WEIGHTS = {
         "physical_hook": 10.0,  # dies as cardboard/PDF? then 0 — print the wound
     },
     "edition": {
+        # 2026-08-22 human re-cut (pre-launch verify finding): the edition
+        # pipeline skips LLM tables (the classic proved play), so a nonzero
+        # fun_table weight made the lane mathematically unpublishable
+        # (max R was 65 < 70 with fun_table forever 0). Editions ARE read
+        # by the fresh reader (clarity is real evidence); everything else
+        # rides on the object.
         "fun_sim": 0.0,         # inherited from the classic (skip L1 engine build)
-        "fun_table": 15.0,      # tables still confirm the edition plays right
+        "fun_table": 0.0,       # inherited from the classic (tables skipped)
         "depth": 0.0,           # inherited from the classic
-        "clarity": 20.0,        # faithfulness + teachability of THIS rules sheet
-        "novelty_margin": 30.0, # no confusable existing SET — the edition is the invention
-        "physical_hook": 35.0,  # the object is the whole product; sales receipts say so
+        "clarity": 25.0,        # faithfulness + teachability of THIS rules sheet
+        "novelty_margin": 35.0, # no confusable existing SET — the edition is the invention
+        "physical_hook": 40.0,  # the object is the whole product; sales receipts say so
     },
 }
 

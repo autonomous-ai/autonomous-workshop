@@ -4,6 +4,8 @@ import json
 import os
 import random
 import tempfile
+import threading
+import time
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -177,6 +179,43 @@ class BanditTestCase(unittest.TestCase):
         with open(self._state_path()) as f:
             state = json.load(f)
         self.assertIn("classic-reborn", state["arms"])
+
+    # --- concurrency: the clobber fix ------------------------------------
+    def test_pick_does_not_rewrite_state_when_nothing_seeded(self):
+        # The clobber bug: pick() unconditionally saved its loaded
+        # snapshot, erasing any update() that landed in between. With all
+        # arms already seeded, pick() must not write the file at all.
+        random.seed(3)
+        bandit.pick()  # first pick seeds and persists every arm
+        bandit.update("gravity-physics", 1.0)  # the observation at risk
+        with open(self._state_path(), "rb") as f:
+            before = f.read()
+        random.seed(4)
+        bandit.pick()
+        with open(self._state_path(), "rb") as f:
+            after = f.read()
+        self.assertEqual(before, after)  # the reward survived the pick
+        self.assertAlmostEqual(
+            json.loads(after)["arms"]["gravity-physics"]["alpha"],
+            2.0, places=3)
+
+    def test_lock_serializes_concurrent_update(self):
+        # update() must queue behind the bandit lock, not interleave.
+        bandit.update("wildcard", 1.0)  # alpha 1->2, creates the file
+        done = []
+        def worker():
+            bandit.update("wildcard", 1.0)
+            done.append(True)
+        with bandit._locked():
+            t = threading.Thread(target=worker)
+            t.start()
+            time.sleep(0.3)
+            self.assertEqual(done, [])  # blocked while we hold the lock
+        t.join(timeout=10)
+        self.assertEqual(done, [True])
+        # Both observations landed: 1 + 1 + 1 (decay over ms ~ 0).
+        self.assertAlmostEqual(
+            bandit.arms()["wildcard"]["alpha"], 3.0, places=2)
 
 
 if __name__ == "__main__":

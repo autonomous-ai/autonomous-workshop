@@ -155,6 +155,51 @@ class TestLeases(QueueHome):
         self.assertGreater(minutes, queue.LEASE_MINUTES - 1)
         self.assertLess(minutes, queue.LEASE_MINUTES + 1)
 
+    def test_stale_lease_advance_is_fenced_noop(self):
+        # The fencing token: a driver that wedged past LEASE_MINUTES and
+        # lost the game to a fresh claim must not move it under the new
+        # holder (the triple-driver pile-up receipt).
+        queue.add_game("g", "G")
+        stale = queue.claim_next("wedged-driver")
+        with queue.transaction() as q:
+            q["games"]["g"]["lease"]["expires"] = (
+                datetime.now(timezone.utc) - timedelta(minutes=1)
+            ).isoformat()
+        fresh = queue.claim_next("fresh-driver")
+        self.assertNotEqual(stale.lease_id, fresh.lease_id)
+        result = queue.advance("g", "researched", "stale verdict",
+                               lease_id=stale.lease_id)
+        self.assertIs(result, False)
+        game = queue.load()["games"]["g"]
+        self.assertEqual(game["state"], "sparked")  # nothing moved
+        self.assertEqual(game["lease"]["holder"], "fresh-driver")
+        self.assertEqual(game["lease"]["id"], fresh.lease_id)
+        self.assertIn("fenced", game["log"][-1]["note"])  # logged no-op
+
+    def test_current_lease_advance_succeeds(self):
+        queue.add_game("g", "G")
+        step = queue.claim_next("invent")
+        game = queue.advance("g", "researched", "did research",
+                             lease_id=step.lease_id)
+        self.assertTrue(game)
+        self.assertEqual(game["state"], "researched")
+        self.assertIsNone(game["lease"]["holder"])
+
+    def test_stale_lease_release_is_fenced_noop(self):
+        queue.add_game("g", "G")
+        stale = queue.claim_next("wedged-driver")
+        with queue.transaction() as q:
+            q["games"]["g"]["lease"]["expires"] = (
+                datetime.now(timezone.utc) - timedelta(minutes=1)
+            ).isoformat()
+        fresh = queue.claim_next("fresh-driver")
+        self.assertIs(queue.release("g", lease_id=stale.lease_id), False)
+        game = queue.load()["games"]["g"]
+        self.assertEqual(game["lease"]["holder"], "fresh-driver")  # intact
+        # The rightful holder releases fine.
+        game = queue.release("g", lease_id=fresh.lease_id)
+        self.assertIsNone(game["lease"]["holder"])
+
     def test_release_clears_lease_without_progress(self):
         queue.add_game("g", "G")
         queue.claim_next("invent")
@@ -318,7 +363,9 @@ class TestMechSurface(QueueHome):
         b = json.loads(json.dumps(self.DOC))
         b["desc"] = "totally rewritten flavour"
         b["concept"] = "new pitch"
-        b["rules"]["setup"] = "clarified setup wording"
+        # Prose keys inside rules stay free (setup is NOT one of them any
+        # more — rules text is mechanics unless explicitly prose).
+        b["rules"]["description"] = "clarified rules description"
         b["title"] = "Ridgeline: Second Edition"
         self.assertEqual(queue.mech_surface(a), queue.mech_surface(b))
 
@@ -353,6 +400,42 @@ class TestMechSurface(QueueHome):
                           {"type": "cut"}]
         self.assertEqual(queue.mech_surface(doc),
                          queue.mech_surface(self.DOC))
+
+    def test_rules_mechanic_change_detected(self):
+        # The laundering hole: only rules['win'] was hashed, so a
+        # "clarify" rewriting movement dodged the paid-rework conversion.
+        a = json.loads(json.dumps(self.DOC))
+        b = json.loads(json.dumps(self.DOC))
+        a["rules"]["movement"] = "move 1 space"
+        b["rules"]["movement"] = "move up to 3 spaces"
+        self.assertNotEqual(queue.mech_surface(a), queue.mech_surface(b))
+
+    def test_rules_prose_keys_stay_free(self):
+        a = json.loads(json.dumps(self.DOC))
+        b = json.loads(json.dumps(self.DOC))
+        for key in ("description", "flavor", "notes", "summary"):
+            b["rules"][key] = "reworded %s" % key
+        self.assertEqual(queue.mech_surface(a), queue.mech_surface(b))
+
+    def test_structured_action_effect_change_detected(self):
+        a = json.loads(json.dumps(self.DOC))
+        b = json.loads(json.dumps(self.DOC))
+        for doc in (a, b):
+            del doc["action_types"]
+        a["actions"] = [{"type": "climb", "effect": "ascend 1"}]
+        b["actions"] = [{"type": "climb", "effect": "ascend 2"}]
+        self.assertNotEqual(queue.mech_surface(a), queue.mech_surface(b))
+
+    def test_structured_action_prose_stays_free(self):
+        a = json.loads(json.dumps(self.DOC))
+        b = json.loads(json.dumps(self.DOC))
+        for doc in (a, b):
+            del doc["action_types"]
+        a["actions"] = [{"type": "climb", "effect": "ascend 1",
+                         "description": "old wording"}]
+        b["actions"] = [{"type": "climb", "effect": "ascend 1",
+                         "description": "new wording"}]
+        self.assertEqual(queue.mech_surface(a), queue.mech_surface(b))
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ starting; studying never starves an in-flight game.
 """
 
 import argparse
+import fcntl
 import json
 import os
 import subprocess
@@ -29,8 +30,34 @@ if HERE not in sys.path:
 
 from harness import agents, integrity, ledger, queue  # noqa: E402
 
+
+def _load_dotenv():
+    """launchd runs bob.py with a bare environment — the plist carries only
+    PATH. Model routing, budget caps, and Telegram creds live in bob/.env,
+    so the driver loads it itself (setdefault: a real environment variable
+    always wins over the file)."""
+    path = os.path.join(HERE, ".env")
+    try:
+        with open(path) as handle:
+            for line in handle:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key, value = key.strip(), value.strip().strip('"').strip("'")
+                if key:
+                    os.environ.setdefault(key, value)
+    except OSError:
+        pass
+
 DAILY_BUDGET_DEFAULT = 25.0
 IMPROVE_EVERY_DAYS = 7
+
+# Wall-clock budget per tick, minutes. 45 = queue.LEASE_MINUTES: the lease
+# is the promise "this driver is done or dead within 45", and the time
+# budget is what makes the promise true (timebudget was dead code before —
+# pre-launch verify finding 2026-08-22).
+TICK_BUDGET_MINUTES = 45
 
 
 def _now():
@@ -49,21 +76,38 @@ def _read_daybook():
         return {}
 
 
-def _write_daybook(book):
+def _update_daybook(mutate):
+    """The ONE write path for bob.py's daybook fields, under the same
+    state/.daybook.lock flock harness.agents uses to append cost rows —
+    an unlocked read-modify-write here could erase a just-appended agent
+    cost row, and the daybook is the only complete spend meter (pre-launch
+    verify finding: the $25/day cap could be exceeded unseen). The tmp
+    name carries the pid so two writers can never race on one tmp file.
+
+    ``mutate(book)`` edits the freshly-read dict in place; the merged book
+    is written atomically and returned."""
     path = _daybook_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as handle:
-        json.dump(book, handle, indent=2, sort_keys=True)
-    os.replace(tmp, path)
+    state_dir = os.path.dirname(path)
+    os.makedirs(state_dir, exist_ok=True)
+    with open(os.path.join(state_dir, ".daybook.lock"), "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            book = _read_daybook()
+            mutate(book)
+            tmp = "%s.tmp.%d" % (path, os.getpid())
+            with open(tmp, "w") as handle:
+                json.dump(book, handle, indent=2, sort_keys=True)
+            os.replace(tmp, path)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+    return book
 
 
 def _stamp_heartbeat():
     """First act of every tick, BEFORE any precondition — a tick that skips
     still proves launchd fired (text2cad's watchdog contract)."""
-    book = _read_daybook()
-    book["heartbeat"] = _now().isoformat()
-    _write_daybook(book)
+    _update_daybook(lambda book: book.__setitem__(
+        "heartbeat", _now().isoformat()))
 
 
 def _quota_blocked(book):
@@ -80,9 +124,8 @@ def _quota_blocked(book):
 
 
 def _set_quota_wait(minutes=60):
-    book = _read_daybook()
-    book["quota_until"] = (_now() + timedelta(minutes=minutes)).isoformat()
-    _write_daybook(book)
+    until = (_now() + timedelta(minutes=minutes)).isoformat()
+    _update_daybook(lambda book: book.__setitem__("quota_until", until))
 
 
 def _improve_due(book):
@@ -121,6 +164,14 @@ def cmd_tick(_args):
         print("tick: no-op — quota window blocked until %s" % blocked)
         return 0
 
+    # Preconditions clear: open the tick's wall-clock budget. 45 minutes
+    # matches queue.LEASE_MINUTES — a tick that consults the run
+    # (harness.agents caps each call by what's left) can never outlive its
+    # own lease, which is what armed the unfenced-advance race. Handlers
+    # are NOT wrapped here: run_agent reads the open run itself.
+    from harness import timebudget
+    timebudget.open_run(TICK_BUDGET_MINUTES)
+
     from harness.agents import QuotaExhausted
 
     # 1) Finishing beats starting: an in-flight game first.
@@ -148,11 +199,14 @@ def cmd_tick(_args):
             print("tick: sparked new game %s" % slug)
             return 0
 
-    # 3) Learn: one scholar/librarian unit.
+    # 3) Learn: one scholar/librarian unit. outcome == "empty" means both
+    # study queues are exhausted — that MUST fall through, or the truthy
+    # empty dict makes steps 4-5 unreachable and the self-improvement loop
+    # silently never runs in 24/7 operation (pre-launch verify finding).
     try:
         from loops import scholar
         result = scholar.tick()
-        if result:
+        if result and result.get("outcome") not in ("empty",):
             print("tick: scholar %s" % json.dumps(result)[:200])
             return 0
     except QuotaExhausted:
@@ -179,9 +233,8 @@ def cmd_tick(_args):
         except QuotaExhausted:
             _set_quota_wait()
             return 0
-        book = _read_daybook()
-        book["improve_last_run"] = _now().isoformat()
-        _write_daybook(book)
+        _update_daybook(lambda b: b.__setitem__(
+            "improve_last_run", _now().isoformat()))
         print("tick: weekly improve session ran")
         return 0
 
@@ -227,9 +280,8 @@ def cmd_improve(_args):
     from loops import meta
     result = meta.improve()
     print(json.dumps(result, indent=2, default=str))
-    book = _read_daybook()
-    book["improve_last_run"] = _now().isoformat()
-    _write_daybook(book)
+    _update_daybook(lambda b: b.__setitem__(
+        "improve_last_run", _now().isoformat()))
     return 0
 
 
@@ -306,6 +358,7 @@ def main(argv=None):
     p.add_argument("action", choices=["install", "uninstall", "status"])
     p.set_defaults(fn=cmd_daemon)
     args = parser.parse_args(argv)
+    _load_dotenv()
     return args.fn(args)
 
 

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Dead-man watchdog: separate launchd job, separate process, on purpose -
+  text2cad receipt: "silent-channel death must alarm - 4-night scraper
+  blackout 6/5-6/8, admindash $13 silent burn 8/9-8/10". If the main agent
+  dies, only an independent job can notice. Hourly at :07, offset from the
+  tick cadence so it never reads the log mid-write of a fresh tick.
+-->
+<dict>
+    <key>Label</key>
+    <string>ai.autonomous.eve.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/d/code/inventors/eve/ops/watchdog.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/d/code/inventors/eve</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Minute</key>
+        <integer>7</integer>
+    </dict>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/d/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/d/code/inventors/eve/state/logs/watchdog.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/d/code/inventors/eve/state/logs/watchdog.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

@@ -96,7 +96,9 @@ class TestFreezeSettle(BudgetsHome):
         self.start_clarify()
         doc = json.loads(json.dumps(self.DOC))
         doc["desc"] = "clearer wording"
-        doc["rules"]["setup"] = "clearer setup"
+        # rules text is mechanic surface since the mech_surface widening
+        # (a "setup" rewrite can hide a rule change); prose keys stay free.
+        doc["rules"]["description"] = "clearer rules description"
         self.write_doc("g", doc)
         result = budgets.settle_clarify("g")
         self.assertEqual(result, {"changed": False, "converted": False,

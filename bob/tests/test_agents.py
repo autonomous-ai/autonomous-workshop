@@ -238,6 +238,47 @@ class TestOverrunKill(Base):
         self.assertEqual(self.today_steps()[0]["subtype"], "killed_overrun")
 
 
+class TestTickBudget(Base):
+    """Review 2026-08-22 (MAJOR): timebudget was dead code — zero callers —
+    so the 25-min wall and the 'two ticks never overlap' property did not
+    exist. run_agent now enforces any open budget: a spent budget refuses
+    BEFORE any call, and remaining minutes cap max_minutes."""
+
+    def test_no_open_budget_leaves_run_agent_unchanged(self):
+        os.environ["BOB_MOCK_AGENTS"] = "1"
+        res = agents.run_agent("ideate", "x")  # no ledger in this home
+        self.assertEqual(res.subtype, "success")
+
+    def test_spent_budget_refuses_before_any_call_mock_included(self):
+        from harness import timebudget
+
+        timebudget.open_run(total_minutes=0)
+        os.environ["BOB_MOCK_AGENTS"] = "1"
+        with self.assertRaises(agents.AgentError) as cm:
+            agents.run_agent("ideate", "x")
+        self.assertIn("tick budget spent", str(cm.exception))
+        # Refused before spending: no telemetry row was ever written.
+        self.assertFalse(
+            os.path.exists(os.path.join(self.home, "state", "DAYBOOK.json")))
+
+    def test_open_budget_caps_max_minutes(self):
+        from harness import timebudget
+
+        # 0.02 min = 1.2s remaining; the caller asks for 0.5 min (30s).
+        # With the cap applied the hanging stub is killed at ~1.2s; without
+        # it the kill would come only at 30s — the elapsed bound separates
+        # the two.
+        timebudget.open_run(total_minutes=0.02)
+        self.use_fake_cli("hang")
+        t0 = time.monotonic()
+        with self.assertRaises(agents.AgentError) as cm:
+            agents.run_agent("build", "go", max_minutes=0.5)
+        elapsed = time.monotonic() - t0
+        self.assertLess(elapsed, 15.0)
+        self.assertIn("killed", str(cm.exception).lower())
+        self.assertEqual(self.today_steps()[0]["subtype"], "killed_overrun")
+
+
 class TestDaybook(Base):
     def test_repeat_names_get_suffixes_never_overwrite(self):
         os.environ["BOB_MOCK_AGENTS"] = "1"

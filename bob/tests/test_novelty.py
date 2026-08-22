@@ -119,6 +119,40 @@ class TestBggCandidates(NoveltyHome):
         novelty.bgg_candidates("Tower Duel", ["stacking"])
         self.assertGreater(len(self.calls), n_calls)
 
+    def test_naive_fetched_at_never_raises(self):
+        """Review 2026-08-22: a tz-naive fetched_at (corrupted or
+        externally-written cache row) made _cache_fresh subtract naive from
+        aware OUTSIDE its try — a TypeError escaping the 'never raises'
+        contract. Naive stamps are normalized to UTC; any failure reads as
+        stale, never as a crash."""
+        self.mock_bgg()
+        novelty.bgg_candidates("Tower Duel", ["stacking"])
+        cache_dir = os.path.join(self.home, "state", "bgg_cache")
+        (cache_file,) = os.listdir(cache_dir)
+        path = os.path.join(cache_dir, cache_file)
+        with open(path) as fh:
+            cached = json.load(fh)
+
+        # Fresh-but-naive stamp: still a cache hit (no network), no raise.
+        naive_now = datetime.now(timezone.utc).replace(tzinfo=None)
+        cached["fetched_at"] = naive_now.isoformat()
+        with open(path, "w") as fh:
+            json.dump(cached, fh)
+        self.mock_down()  # any network call would fail loudly
+        n_calls = len(self.calls)
+        cands = novelty.bgg_candidates("Tower Duel", ["stacking"])
+        self.assertEqual(len(cands), 5)
+        self.assertEqual(len(self.calls), n_calls)  # served from cache
+
+        # Stale-and-naive stamp: falls through to the warning path, never
+        # raises even with the network down.
+        naive_old = naive_now - timedelta(hours=25)
+        cached["fetched_at"] = naive_old.isoformat()
+        with open(path, "w") as fh:
+            json.dump(cached, fh)
+        rows = novelty.bgg_candidates("Tower Duel", ["stacking"])
+        self.assertTrue(any("warning" in r for r in rows))
+
     def test_error_returns_warning_never_raises(self):
         self.mock_down()
         result = novelty.bgg_candidates("Tower Duel", ["stacking"])

@@ -47,10 +47,14 @@ game carries a lane flag:
 - **lane=edition** — an original sculptural/physical edition of a
   public-domain classic. G4 novelty applies to the EDITION (no confusable
   existing set, URL evidence rule unchanged); rules-lint checks faithfulness
-  to the classic instead of inventing; fun_sim/depth inherit known-good
-  scores (the classic already proved them — skip L1 engine build); the
-  score re-weights toward physical_hook + novelty_margin + clarity. IP gate:
-  public-domain games ONLY — never a modern copyrighted design.
+  to the classic instead of inventing; fun_sim/depth/fun_table inherit
+  known-good scores (the classic already proved them — skip L1 engine build
+  AND the LLM tables; the fresh reader still runs, so clarity is real
+  evidence); the score re-weights to clarity 25 / novelty_margin 35 /
+  physical_hook 40 (2026-08-22 re-cut: the earlier weights left a nonzero
+  fun_table on a lane that never runs tables, making the lane
+  mathematically unpublishable). IP gate: public-domain games ONLY — never
+  a modern copyrighted design.
 
 The bandit picks the lane via its arm (`classic-reborn` is lane=edition;
 everything else lane=invention). Editions keep the lights on and teach the

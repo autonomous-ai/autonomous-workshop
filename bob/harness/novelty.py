@@ -93,11 +93,21 @@ def _read_cache(path):
 
 
 def _cache_fresh(cached):
+    """False on ANY failure — this runs before bgg_candidates' own
+    try/except, and that function's contract is "never raises", so the
+    subtraction lives inside the try too: a tz-naive fetched_at (a
+    corrupted or externally-written cache row) would otherwise raise
+    TypeError against the tz-aware _now() (review 2026-08-22)."""
     try:
         fetched = datetime.fromisoformat(cached["fetched_at"])
+        if fetched.tzinfo is None:
+            # Naive stamps are treated as UTC — our own writer always
+            # stamps tz-aware UTC, so a naive one is foreign; assuming UTC
+            # at worst mis-ages it, never crashes the judge path.
+            fetched = fetched.replace(tzinfo=timezone.utc)
+        return (_now() - fetched).total_seconds() < CACHE_TTL_S
     except (KeyError, TypeError, ValueError):
         return False
-    return (_now() - fetched).total_seconds() < CACHE_TTL_S
 
 
 def _search_ids(query):

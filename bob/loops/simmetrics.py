@@ -82,6 +82,15 @@ PROBE_MOVE_CAP = 4000
 #: probe) must not truncate every real game into "incomplete".
 MIN_MOVE_CAP = 12
 
+#: Probe completion below this short-circuits the whole battery: with few
+#: or zero probe terminations the derived cap balloons toward
+#: 4x PROBE_MOVE_CAP = 16,000 moves and the 1,000-game main batch plus the
+#: lookahead ladder would grind for hours on a game the gate will fail on
+#: completion anyway (review 2026-08-22: a never-terminating engine wedged
+#: the tick behind 16M applies). Half is generous — the real gate needs
+#: MIN_COMPLETION = 0.98 — so nothing that could pass is ever skipped.
+PROBE_MIN_COMPLETION = 0.5
+
 #: Games shorter than this fraction of the median are "false starts" —
 #: endings that feel accidental (Browne's duration criterion).
 FALSE_START_FRACTION = 0.25
@@ -367,6 +376,68 @@ def _browne_tier(games):
 
 # --- The instrument ---------------------------------------------------------------
 
+def _short_circuit_report(n_players, n_games, seed, move_cap, probe_median,
+                          probe_completion, ladder):
+    """The failing SimReport for a game whose probe (mostly) never ends.
+
+    Shape-compatible with a full report — every field a consumer reads
+    exists (verdicts full set, gavel.harmonic_mean, ladder.edges, move_cap)
+    — but every verdict is False and every unmeasured metric is None/empty:
+    fail-closed, an absent measurement is never a pass.
+    """
+    gavel = {
+        "balance": None,
+        "decisiveness": None,
+        "completion": probe_completion,  # the one thing the probe measured
+        "agency": None,
+        "coverage": None,
+        "harmonic_mean": None,
+    }
+    verdicts = {
+        "balance_ok": False,
+        "decisiveness_ok": False,
+        "completion_ok": False,
+        "seat_bias_ok": False,
+        "skill_ladder_ok": False,
+        "runaway_ok": False,
+        "forced_ok": False,
+        "branching_ok": False,
+        "all_pass": False,
+    }
+    return {
+        "n_players": n_players,
+        "n_games": n_games,
+        "seed": seed,
+        "move_cap": move_cap,
+        "probe_median_length": probe_median,
+        "probe_completion": probe_completion,
+        "gavel": gavel,
+        "browne": {},
+        "seat_winrates_random": [],
+        "branching": {"median": None, "forced_fraction": None},
+        "ladder": {
+            "policies": list(ladder),
+            "matrix": {},
+            "edges": {},
+            "baseline": 1.0 / n_players,
+            "mirror_seat_winrates": {},
+            "strongest_rung": ladder[-1],
+            "strongest_seat_spread": None,
+            "runaway_max_seat_winrate": None,
+        },
+        "thresholds": thresholds(),
+        "verdicts": verdicts,
+        "notes": {
+            "short_circuit": (
+                "probe completion %.2f < PROBE_MIN_COMPLETION %.2f — the "
+                "main battery and ladder were skipped (they would run for "
+                "hours at a %d-move cap and fail on completion anyway); "
+                "every verdict is a fail-closed False"
+                % (probe_completion, PROBE_MIN_COMPLETION, move_cap)),
+        },
+    }
+
+
 def simulate(engine, n_players, n_games=1000, seed=0,
              policies=("random", "greedy", "lookahead1")):
     """Run the full measurement battery. Returns a SimReport dict.
@@ -393,6 +464,17 @@ def simulate(engine, n_players, n_games=1000, seed=0,
     probe_lengths = [g["length"] for g in probe if g["terminated"]]
     probe_median = _median(probe_lengths) if probe_lengths else PROBE_MOVE_CAP
     move_cap = max(MIN_MOVE_CAP, int(math.ceil(MOVE_CAP_MULT * probe_median)))
+
+    # Short-circuit: a probe that (mostly) never terminates already IS the
+    # verdict — completion fails at the gate no matter what the battery
+    # says, and running it would cost hours at a 16k-move cap. Emit the
+    # failing report now; every unmeasured verdict stays False (fail-closed:
+    # an absent measurement is never a pass).
+    probe_completion = (len(probe_lengths) / float(len(probe))) if probe else 0.0
+    if probe_completion < PROBE_MIN_COMPLETION:
+        return _short_circuit_report(
+            n_players, n_games, seed, move_cap, probe_median,
+            probe_completion, ladder)
 
     # 2. Main batch: random mirror self-play with score traces. This is the
     #    GAVEL + Browne sampler (LUDI measured its criteria on self-play).

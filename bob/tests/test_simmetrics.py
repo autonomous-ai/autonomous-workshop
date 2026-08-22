@@ -152,5 +152,84 @@ class HarmonicMeanTest(unittest.TestCase):
         self.assertIsNone(simmetrics._harmonic_mean([None, None]))
 
 
+class _NeverEndingEngine:
+    """An ordinary agent bug: a game that never terminates under random
+    play. Before the short-circuit this cost the full battery at a
+    4x PROBE_MOVE_CAP move cap — hours of compute for a completion FAIL
+    the probe already knew (review 2026-08-22)."""
+
+    ASSUMPTIONS = []
+    IDEA_SHA = "never-ends-fixture"
+
+    @staticmethod
+    def new_game(n_players, seed):
+        return 0
+
+    @staticmethod
+    def player_to_move(state):
+        return state % 2
+
+    @staticmethod
+    def legal_moves(state):
+        return [0, 1, 2]
+
+    @staticmethod
+    def apply(state, move):
+        return state + 1
+
+    @staticmethod
+    def is_over(state):
+        return False
+
+    @staticmethod
+    def winners(state):
+        return []
+
+    @staticmethod
+    def scores(state):
+        return [0.0, 0.0]
+
+    @staticmethod
+    def observation(state, seat):
+        return "endless"
+
+
+class ShortCircuitTest(unittest.TestCase):
+    """Zero probe terminations must skip the main battery and ladder and
+    emit a failing, shape-compatible report — fail-closed, cheap."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.report = simmetrics.simulate(_NeverEndingEngine, 2,
+                                         n_games=60, seed=0)
+
+    def test_fails_closed_without_running_the_battery(self):
+        report = self.report
+        self.assertFalse(report["verdicts"]["all_pass"])
+        self.assertFalse(report["verdicts"]["completion_ok"])
+        self.assertIsNone(report["gavel"]["harmonic_mean"])
+        # The battery and ladder never ran: no matrix, no edges, no mirrors.
+        self.assertEqual(report["ladder"]["matrix"], {})
+        self.assertEqual(report["ladder"]["edges"], {})
+        self.assertEqual(report["ladder"]["mirror_seat_winrates"], {})
+        self.assertIn("short_circuit", report["notes"])
+
+    def test_every_verdict_present_and_false(self):
+        # Consumers iterate the verdict keys (invent's failed-gates list),
+        # so the short-circuit report must carry the full set.
+        expected = {"balance_ok", "decisiveness_ok", "completion_ok",
+                    "seat_bias_ok", "skill_ladder_ok", "runaway_ok",
+                    "forced_ok", "branching_ok", "all_pass"}
+        self.assertEqual(set(self.report["verdicts"]), expected)
+        self.assertFalse(any(self.report["verdicts"].values()))
+
+    def test_consumer_fields_survive(self):
+        # tablerun._move_cap reads move_cap; reward reads gavel/ladder.
+        self.assertGreaterEqual(self.report["move_cap"],
+                                simmetrics.MIN_MOVE_CAP)
+        self.assertEqual(self.report["probe_completion"], 0.0)
+        self.assertIn("thresholds", self.report)
+
+
 if __name__ == "__main__":
     unittest.main()

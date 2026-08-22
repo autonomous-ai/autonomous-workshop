@@ -23,6 +23,7 @@ import hashlib
 import json
 import math
 import os
+import posixpath
 from datetime import datetime, timezone
 
 from harness import ledger  # pinned API (CONTRACTS §2): rows()
@@ -49,7 +50,25 @@ FORBIDDEN = [
     "state/**",
     "harness/integrity.py",
     "state/REWARD_BASELINE.json",
+    # Judge/gate prompts are part of the judge: an improver that can edit
+    # the rubric that scores it has re-sealed itself (the DGM
+    # hallucination-marker receipt, in prompt form). Generator prompts
+    # (ideator, builder, writers) stay writable; judge changes ride the
+    # PR path like reward.py changes do.
+    ".claude/agents/*-judge.md",
+    ".claude/agents/*-lens.md",
+    ".claude/agents/bob-fresh-reader.md",
+    ".claude/agents/bob-table-player.md",
+    ".claude/agents/bob-table-breaker.md",
 ]
+
+# The only arms allowed to carry lane='edition' (which skips the sim
+# gates — reward.hard_gates forces g2/g3 True for editions). Pinned HERE,
+# in the auditor, because corpus/DIRECTIONS.json is improver-writable:
+# a drifting improve session must not be able to grant gate-skipping to
+# an invention arm by editing a doc-tier file. classic-reborn earned the
+# lane with 2 real pre-Bob sales (the 2030 SF chess + xiangqi sets).
+EDITION_ARMS = frozenset(["classic-reborn"])
 
 HEARTBEAT_STALE_HOURS = 6.0   # launchd ticks every 30 min; 6h = 12 missed
                               # ticks — that is a dead daemon, not a busy one
@@ -151,6 +170,12 @@ def improve_write_allowed(relpath):
     A path must match some IMPROVE_MAY_WRITE glob AND no FORBIDDEN glob.
     '**' is handled as 'this directory and everything under it'.
     Enforced by loops/meta.py before any write is applied.
+
+    Normalization happens HERE, not in callers: this function is the
+    exported write-authority contract, and a caller-side-only guard let
+    'corpus/../harness/reward.py' match corpus/** by pure string prefix
+    — a traversal straight through the judge and its seal. Never rely
+    on every caller pre-normalizing.
     """
     rel = str(relpath).replace(os.sep, "/")
     # Strip a leading "./" without eating dotfile names like .claude/
@@ -158,6 +183,14 @@ def improve_write_allowed(relpath):
     # denied the improve loop its own prompt files).
     while rel.startswith("./"):
         rel = rel[2:]
+    # Absolute paths and home-dir shorthand are never repo-relative
+    # writes; refuse before normalizing.
+    if posixpath.isabs(rel) or rel.startswith("~"):
+        return False
+    rel = posixpath.normpath(rel)
+    # Any '..' surviving normpath escapes the repo root entirely.
+    if any(part == ".." for part in rel.split("/")):
+        return False
 
     def matches(pattern):
         if pattern.endswith("/**"):
@@ -190,9 +223,23 @@ def _pearson(xs, ys):
 def _check_reward_frozen(violations):
     baseline_path = _baseline_path()
     if not os.path.exists(baseline_path):
-        # First run: pin what exists NOW. Creating (not failing) here is
-        # deliberate — the seal must exist before it can protect anything,
-        # and first-run happens on the human's install, not mid-flight.
+        # A missing seal mid-flight is an ATTACK SIGNATURE, not a first
+        # run: rm the baseline + edit reward.py and a silent re-pin would
+        # bless the tampered judge (the exact METR reward-hack this file
+        # exists to stop). state/QUEUE.json is the first-run tell — it
+        # exists from the first tick onward, so its presence proves the
+        # factory has run before and the seal was deleted.
+        if os.path.exists(os.path.join(_home(), "state", "QUEUE.json")):
+            violations.append(
+                "reward-baseline: %s — baseline missing — a human must "
+                "re-pin with BOB_HUMAN=1 regenerate_baseline() after "
+                "reviewing harness/reward.py and docs/REWARD.md against "
+                "git. All ticks halt until then." % baseline_path)
+            return
+        # Genuinely first run (no QUEUE.json yet): pin what exists NOW.
+        # Creating (not failing) here is deliberate — the seal must exist
+        # before it can protect anything, and first-run happens on the
+        # human's install, not mid-flight.
         try:
             _write_baseline()
         except (OSError, FileNotFoundError) as e:
@@ -243,6 +290,34 @@ def _check_allowlist(violations):
                 "improve-allowlist: %r is writable by the improve loop — "
                 "IMPROVE_MAY_WRITE/FORBIDDEN have been tampered with. "
                 "Restore harness/integrity.py from git." % probe)
+
+
+def _check_edition_lanes(violations):
+    # lane='edition' skips the sim gates (reward.hard_gates forces
+    # g2_sim_integrity/g3_degeneracy True), and DIRECTIONS.json is
+    # improver-writable — so the set of edition arms is pinned here in
+    # the auditor (EDITION_ARMS), out of the improver's reach. Any other
+    # arm claiming the lane is gate-erosion, not configuration.
+    path = os.path.join(_home(), "corpus", "DIRECTIONS.json")
+    if not os.path.exists(path):
+        return  # no corpus, no lanes to grant
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except ValueError:
+        return  # corrupt corpus can't grant lanes; bandit alarms elsewhere
+    arms = data.get("arms")
+    if not isinstance(arms, dict):
+        return
+    for arm_id, spec in sorted(arms.items()):
+        lane = spec.get("lane") if isinstance(spec, dict) else None
+        if lane == "edition" and arm_id not in EDITION_ARMS:
+            violations.append(
+                "edition-lane: arm %r has lane='edition' in "
+                "corpus/DIRECTIONS.json but is not in the pinned set %s — "
+                "that lane skips the sim gates. Revert the corpus edit; "
+                "adding an edition arm means changing EDITION_ARMS in "
+                "harness/integrity.py via PR." % (arm_id, sorted(EDITION_ARMS)))
 
 
 def _check_heartbeat(violations):
@@ -338,6 +413,7 @@ def audit():
     violations = []
     _check_reward_frozen(violations)
     _check_allowlist(violations)
+    _check_edition_lanes(violations)
     _check_heartbeat(violations)
     _check_divergence(violations)
     return violations

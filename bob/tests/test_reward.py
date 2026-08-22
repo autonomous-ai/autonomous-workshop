@@ -112,8 +112,15 @@ class TestScore(unittest.TestCase):
         self.assertAlmostEqual(
             reward.score({"fun_sim": 20.0, "depth": 15.0}, lane="edition"), 0.0)
         self.assertAlmostEqual(
-            reward.score({"physical_hook": 35.0, "novelty_margin": 30.0},
-                         lane="edition"), 65.0)
+            reward.score({"physical_hook": 40.0, "novelty_margin": 35.0},
+                         lane="edition"), 75.0)
+        # The 2026-08-22 re-cut: a real edition (tables skipped, fresh reader
+        # run) must be ABLE to clear the 70 bar — the pre-fix weights made
+        # max attainable R 65 and the lane unpublishable by construction.
+        self.assertGreaterEqual(
+            reward.score({"clarity": 25.0, "novelty_margin": 35.0,
+                          "physical_hook": 40.0}, lane="edition"),
+            reward.PUBLISH_THRESHOLD)
 
 
 class TestPublishEligible(unittest.TestCase):
@@ -161,8 +168,8 @@ class TestPublishEligible(unittest.TestCase):
 
     def test_edition_zero_weight_components_exempt_from_floor(self):
         # Edition lane: fun_sim/depth have max 0 — absent is fine.
-        comps = {"fun_table": 15.0, "clarity": 20.0,
-                 "novelty_margin": 30.0, "physical_hook": 35.0}
+        comps = {"clarity": 25.0,
+                 "novelty_margin": 35.0, "physical_hook": 40.0}
         self.assertTrue(
             reward.publish_eligible(self.all_gates(), comps, lane="edition"))
 

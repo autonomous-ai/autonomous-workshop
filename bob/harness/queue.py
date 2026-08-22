@@ -294,13 +294,22 @@ def claim_next(loop_name):
         return None
 
 
-def advance(slug, to_state, note):
+def advance(slug, to_state, note, lease_id=None):
     """Move a game to to_state if the TRANSITIONS map allows it.
 
     Appends a log row and releases the lease — the step is over either way.
     Illegal moves raise ValueError naming the legal ones, because a stale
     caller (the vibe-ideas stray-Telegram-tap receipt) must be refused, never
     absorbed.
+
+    lease_id (optional) is the fencing token from claim_next(): a driver
+    that wedged past LEASE_MINUTES and lost its lease to a fresh claim
+    must not be able to move the game under the new holder. Pass the
+    Step's lease_id and a mismatch is a logged no-op returning False —
+    False, not an exception, because the stale driver did nothing wrong
+    except being slow, and its cleanup path should not crash. Success
+    returns the (truthy) game dict. Callers that don't pass lease_id keep
+    the old trusting behavior unchanged.
     """
     if to_state not in set(ALL_STATES):
         raise ValueError(
@@ -314,6 +323,18 @@ def advance(slug, to_state, note):
                 "no game '%s' in the queue — check the slug with load(), or "
                 "add_game() it first" % slug
             )
+        if lease_id is not None and \
+                (game.get("lease") or {}).get("id") != lease_id:
+            # Fenced out: record the refusal in the game log (durable
+            # evidence of a wedged driver) but touch nothing else — the
+            # current holder's lease and state stay exactly as they are.
+            game["log"].append({
+                "at": _iso(_now()), "from": game["state"],
+                "to": game["state"],
+                "note": "fenced: stale lease refused advance to %s (%s)"
+                        % (to_state, note),
+            })
+            return False
         frm = game["state"]
         allowed = TRANSITIONS[frm]
         if to_state not in allowed:
@@ -331,15 +352,27 @@ def advance(slug, to_state, note):
         return game
 
 
-def release(slug):
+def release(slug, lease_id=None):
     """End a step WITHOUT faking progress: clear the lease, change nothing
-    else. For drivers that claimed a step and then could not act on it."""
+    else. For drivers that claimed a step and then could not act on it.
+
+    lease_id (optional): same fencing token as advance() — a stale driver
+    releasing a lease it no longer holds would wipe the NEW holder's
+    lease mid-work. Mismatch is a logged no-op returning False."""
     with transaction() as q:
         game = q["games"].get(slug)
         if game is None:
             raise KeyError(
                 "no game '%s' to release — nothing to do" % slug
             )
+        if lease_id is not None and \
+                (game.get("lease") or {}).get("id") != lease_id:
+            game["log"].append({
+                "at": _iso(_now()), "from": game["state"],
+                "to": game["state"],
+                "note": "fenced: stale lease refused release",
+            })
+            return False
         game["lease"] = {"holder": None, "expires": None}
         return game
 
@@ -380,24 +413,59 @@ def park_or_kill(slug, reason):
 # Mechanic surface — the anti-laundering hash
 # ---------------------------------------------------------------------------
 
+# Keys inside rules/actions that a legitimate clarify is free to touch:
+# pure prose, no mechanics. Everything ELSE in the rules block is surface
+# — the hole this closes was hashing only rules['win'], which let a
+# "clarify" rewrite movement/turn/effect rules for free (up to
+# CLARIFY_BUDGET=3 laundered reworks per game).
+_PROSE_KEYS = frozenset(["description", "flavor", "notes", "summary"])
+
+
+def _strip_prose(obj):
+    """Recursively drop prose keys so only mechanic-bearing fields hash."""
+    if isinstance(obj, dict):
+        return {k: _strip_prose(v) for k, v in obj.items()
+                if k not in _PROSE_KEYS}
+    if isinstance(obj, list):
+        return [_strip_prose(v) for v in obj]
+    return obj
+
+
 def mech_surface(game_doc):
     """sha256 over exactly the mechanic-defining fields of a game doc.
 
     The vibe-ideas jewel: a "clarify" (free-ish lane, wording only) that
     actually changed mechanics must be converted into a paid rework after the
     fact — "the disposition is the gate's to assign and the queue's to
-    enforce, not the fixer's to claim." So the hash covers action types, the
-    whole win block, player counts, and component name/qty — and deliberately
-    NOT descriptions, wording, concept, or art direction, which a legitimate
-    clarify is free to touch.
+    enforce, not the fixer's to claim." So the hash covers action types plus
+    every non-prose field of structured actions, the FULL rules block minus
+    prose keys (_PROSE_KEYS), player counts, and component name/qty — and
+    deliberately NOT descriptions, wording, concept, or art direction, which
+    a legitimate clarify is free to touch.
     """
+    structured = game_doc.get("actions") or []
     actions = game_doc.get("action_types")
     if actions is None:
         # Docs that carry structured actions instead of a flat list.
         actions = [
             a.get("type") or a.get("name")
-            for a in (game_doc.get("actions") or [])
+            for a in structured
         ]
+    # Non-prose fields of each structured action (effects, costs, ranges)
+    # are mechanics too — 'move 1' -> 'move up to 3' must change the hash.
+    # Empty when actions carry only type/name, so a doc with a flat
+    # action_types list and one with bare typed dicts hash identically.
+    action_detail = []
+    for a in structured:
+        if not isinstance(a, dict):
+            continue
+        fields = _strip_prose(
+            {k: v for k, v in a.items() if k not in ("type", "name")})
+        if fields:
+            action_detail.append(
+                {"action": a.get("type") or a.get("name"), "fields": fields})
+    action_detail.sort(
+        key=lambda d: json.dumps(d, sort_keys=True, default=str))
     rules = game_doc.get("rules") or {}
     components = []
     for c in (game_doc.get("components") or []):
@@ -408,10 +476,12 @@ def mech_surface(game_doc):
         })
     surface = {
         "action_types": sorted(str(a) for a in (actions or [])),
-        "win": rules.get("win"),
+        "action_detail": action_detail,
+        "rules": _strip_prose(rules),
         "players": game_doc.get("players"),
         "components": sorted(components,
                              key=lambda c: (str(c["name"]), str(c["qty"]))),
     }
-    blob = json.dumps(surface, sort_keys=True, separators=(",", ":"))
+    blob = json.dumps(surface, sort_keys=True, separators=(",", ":"),
+                      default=str)
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()

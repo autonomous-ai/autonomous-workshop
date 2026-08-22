@@ -57,6 +57,22 @@ class IntegrityTestCase(unittest.TestCase):
         self.assertIn("harness/reward.py", baseline["hashes"])
         self.assertIn("docs/REWARD.md", baseline["hashes"])
 
+    def test_missing_baseline_mid_flight_is_violation_not_repin(self):
+        # The seal deleted AFTER the factory has run (state/QUEUE.json
+        # exists) is an attack signature — rm baseline + edit reward.py
+        # must NOT get silently re-pinned as the new frozen judge.
+        state_dir = os.path.join(self._tmp.name, "state")
+        os.makedirs(state_dir, exist_ok=True)
+        with open(os.path.join(state_dir, "QUEUE.json"), "w") as f:
+            json.dump({"version": 2, "games": {}}, f)
+        self._tamper_reward()
+        violations = integrity.audit()
+        self.assertTrue(
+            any("baseline missing — a human must re-pin with BOB_HUMAN=1"
+                in v for v in violations), violations)
+        # And crucially: no baseline was created behind the human's back.
+        self.assertFalse(os.path.exists(self._baseline_path()))
+
     def test_hash_drift_detected(self):
         integrity.audit()  # pin baseline
         self._tamper_reward()
@@ -109,6 +125,78 @@ class IntegrityTestCase(unittest.TestCase):
                   "knowledge/other.md", "bob.py", ".claude/agents/evil.py"]
         for p in denied:
             self.assertFalse(integrity.improve_write_allowed(p), p)
+
+    def test_traversal_and_absolute_paths_denied(self):
+        # 'corpus/../harness/reward.py' matched corpus/** by string
+        # prefix before normalization lived inside the function.
+        denied = [
+            "corpus/../harness/reward.py",
+            "corpus/../state/REWARD_BASELINE.json",
+            "corpus/../harness/integrity.py",
+            "corpus/../../outside/anything.md",
+            "../knowledge/lessons.md",
+            "/etc/passwd",
+            "/corpus/cards/x.md",
+            "~/corpus/cards/x.md",
+            "~",
+        ]
+        for p in denied:
+            self.assertFalse(integrity.improve_write_allowed(p), p)
+        # Normalization must not deny legitimate corpus writes.
+        self.assertTrue(integrity.improve_write_allowed("corpus/./cards/x.md"))
+        self.assertTrue(
+            integrity.improve_write_allowed("corpus/a/../cards/x.md"))
+
+    def test_judge_prompts_forbidden_generator_prompts_writable(self):
+        # Judge/gate prompts are part of the judge; the improver editing
+        # its own scorer is the DGM receipt in prompt form.
+        denied = [
+            ".claude/agents/bob-novelty-judge.md",
+            ".claude/agents/bob-triage-judge.md",
+            ".claude/agents/bob-rules-lens.md",
+            ".claude/agents/bob-build-lens.md",
+            ".claude/agents/bob-fresh-reader.md",
+            ".claude/agents/bob-table-player.md",
+            ".claude/agents/bob-table-breaker.md",
+        ]
+        for p in denied:
+            self.assertFalse(integrity.improve_write_allowed(p), p)
+        # Generator prompts stay writable — the improver's whole job.
+        for p in (".claude/agents/bob-ideator.md",
+                  ".claude/agents/bob-builder.md",
+                  ".claude/agents/bob-improver.md"):
+            self.assertTrue(integrity.improve_write_allowed(p), p)
+
+    # --- edition-lane pin ----------------------------------------------------
+    def _write_directions(self, arms):
+        path = os.path.join(self._tmp.name, "corpus", "DIRECTIONS.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"arms": arms}, f)
+
+    def test_edition_arms_pinned_export(self):
+        self.assertEqual(integrity.EDITION_ARMS, frozenset(["classic-reborn"]))
+
+    def test_pinned_edition_arm_is_clean(self):
+        self._write_directions({
+            "classic-reborn": {"lane": "edition"},
+            "gravity-physics": {"lane": "invention"},
+            "wildcard": {},
+        })
+        self.assertFalse(
+            any("edition-lane" in v for v in integrity.audit()))
+
+    def test_rogue_edition_lane_is_violation(self):
+        # An improver-writable corpus edit granting lane='edition' to an
+        # invention arm skips the sim gates for every future game in it.
+        self._write_directions({
+            "classic-reborn": {"lane": "edition"},
+            "gravity-physics": {"lane": "edition"},
+        })
+        violations = integrity.audit()
+        self.assertTrue(
+            any("edition-lane" in v and "gravity-physics" in v
+                for v in violations), violations)
 
     # --- (c) heartbeat -------------------------------------------------------
     def _write_daybook(self, heartbeat):

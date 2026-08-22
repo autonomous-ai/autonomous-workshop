@@ -26,16 +26,24 @@ pseudo-wins. Marketplace numbers never gate publishing and never enter
 R — they only tilt this bandit (engagement-Goodhart guard).
 """
 
+import fcntl
 import json
 import os
 import random
 import re
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 
 WEEKLY_DISCOUNT = 0.9      # x0.9/week on effective evidence
 WILDCARD_ARM = "wildcard"  # the exploration reserve; guaranteed present
 _PRIOR_RE = re.compile(r"alpha\s*=\s*([0-9.]+)\s*,\s*beta\s*=\s*([0-9.]+)")
 _SECONDS_PER_WEEK = 7 * 24 * 3600.0
+
+# 30s: a bandit write is a small JSON read-modify-write, milliseconds when
+# healthy; waiting longer means the other holder is wedged, and failing
+# loud beats queueing behind a corpse (same reasoning as queue.locked()).
+_LOCK_TIMEOUT_SECONDS = 30.0
 
 
 def _home():
@@ -68,6 +76,43 @@ def _parse_ts(ts):
         return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+def _lock_path():
+    return os.path.join(_home(), "state", ".bandit.lock")
+
+
+@contextmanager
+def _locked():
+    """fcntl.flock on state/.bandit.lock, exclusive, bounded wait.
+
+    Same pattern as queue.locked(): without it, a pick() in a manual tick
+    and an update() in the launchd tick interleave load-mutate-save and
+    one terminal reward observation silently vanishes from the posterior
+    (reproduced: alpha 2.0 where 3.0 expected).
+    """
+    path = _lock_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fh = open(path, "a+")
+    try:
+        deadline = time.monotonic() + _LOCK_TIMEOUT_SECONDS
+        while True:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (BlockingIOError, OSError):
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        "could not lock %s within %.0fs — another bob "
+                        "process is wedged; find it (ps aux | grep bob) "
+                        "before retrying" % (path, _LOCK_TIMEOUT_SECONDS))
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+    finally:
+        fh.close()
 
 
 def _atomic_save(state):
@@ -124,6 +169,10 @@ def _load_state():
     New arms (scholar/meta loops may ADD arms) get their prior on first
     sight; existing posteriors are never reset by a corpus edit. The
     wildcard arm is force-present even if the corpus file is gone.
+
+    Returns (state, seeded): seeded is True iff this load added arms the
+    file didn't have — pick() uses it to save ONLY then, so a read path
+    can't overwrite a concurrent update() with a stale snapshot.
     """
     path = _state_path()
     state = None
@@ -136,6 +185,7 @@ def _load_state():
     if not isinstance(state, dict) or not isinstance(state.get("arms"), dict):
         state = {"arms": {}, "total_pulls": 0}
 
+    seeded = False
     now_iso = _now_iso()
     directions = _load_directions()
     for arm_id, spec in directions.items():
@@ -148,12 +198,14 @@ def _load_state():
                 # is written, so stale receipts fade like any evidence.
                 "last": now_iso,
             }
+            seeded = True
     if WILDCARD_ARM not in state["arms"]:
         state["arms"][WILDCARD_ARM] = {
             "alpha": 1.0, "beta": 1.0,
             "pulls": 0, "reward_sum": 0.0, "last": now_iso,
         }
-    return state
+        seeded = True
+    return state, seeded
 
 
 def _effective(arm, now=None):
@@ -179,8 +231,13 @@ def _effective(arm, now=None):
 
 def pick():
     """Thompson sample: betavariate per arm on decayed counts, argmax."""
-    state = _load_state()
-    _atomic_save(state)  # persist any newly-seeded arms so audit sees them
+    with _locked():
+        state, seeded = _load_state()
+        if seeded:
+            # Persist newly-seeded arms so audit sees them — and ONLY
+            # then: an unconditional save here clobbered a concurrent
+            # update()'s reward with this call's stale snapshot.
+            _atomic_save(state)
     now = _now()
     best_arm = None
     best_draw = -1.0
@@ -201,21 +258,22 @@ def update(arm, reward01):
     now-current evidence), then the new observation lands at full weight.
     """
     r = min(max(float(reward01), 0.0), 1.0)
-    state = _load_state()
-    if arm not in state["arms"]:
-        raise ValueError(
-            "Unknown bandit arm %r; known arms: %s. Add it to "
-            "corpus/DIRECTIONS.json first." % (arm, sorted(state["arms"])))
-    now = _now()
-    rec = state["arms"][arm]
-    eff_a, eff_b = _effective(rec, now)
-    rec["alpha"] = eff_a + r
-    rec["beta"] = eff_b + (1.0 - r)
-    rec["pulls"] = int(rec.get("pulls", 0)) + 1
-    rec["reward_sum"] = float(rec.get("reward_sum", 0.0)) + r
-    rec["last"] = now.isoformat()
-    state["total_pulls"] = int(state.get("total_pulls", 0)) + 1
-    _atomic_save(state)
+    with _locked():
+        state, _ = _load_state()
+        if arm not in state["arms"]:
+            raise ValueError(
+                "Unknown bandit arm %r; known arms: %s. Add it to "
+                "corpus/DIRECTIONS.json first." % (arm, sorted(state["arms"])))
+        now = _now()
+        rec = state["arms"][arm]
+        eff_a, eff_b = _effective(rec, now)
+        rec["alpha"] = eff_a + r
+        rec["beta"] = eff_b + (1.0 - r)
+        rec["pulls"] = int(rec.get("pulls", 0)) + 1
+        rec["reward_sum"] = float(rec.get("reward_sum", 0.0)) + r
+        rec["last"] = now.isoformat()
+        state["total_pulls"] = int(state.get("total_pulls", 0)) + 1
+        _atomic_save(state)
     return rec
 
 
@@ -228,23 +286,24 @@ def retro_bonus(arm, bonus):
     and it is not a new trial — the trial already happened at publish.
     """
     b = min(max(float(bonus), 0.0), 1.0)
-    state = _load_state()
-    if arm not in state["arms"]:
-        raise ValueError(
-            "Unknown bandit arm %r; known arms: %s." % (arm, sorted(state["arms"])))
-    now = _now()
-    rec = state["arms"][arm]
-    eff_a, eff_b = _effective(rec, now)
-    rec["alpha"] = eff_a + b
-    rec["beta"] = eff_b
-    rec["last"] = now.isoformat()
-    _atomic_save(state)
+    with _locked():
+        state, _ = _load_state()
+        if arm not in state["arms"]:
+            raise ValueError(
+                "Unknown bandit arm %r; known arms: %s." % (arm, sorted(state["arms"])))
+        now = _now()
+        rec = state["arms"][arm]
+        eff_a, eff_b = _effective(rec, now)
+        rec["alpha"] = eff_a + b
+        rec["beta"] = eff_b
+        rec["last"] = now.isoformat()
+        _atomic_save(state)
     return rec
 
 
 def arms():
     """Current arms with stored and effective (decayed) counts."""
-    state = _load_state()
+    state, _ = _load_state()  # read-only view: never saves, needs no lock
     now = _now()
     out = {}
     for arm_id, rec in state["arms"].items():

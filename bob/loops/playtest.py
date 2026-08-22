@@ -48,6 +48,7 @@ builder — this module owns only the sim half):
   question asked, per-seat votes, confusion count, idea_sha.
 """
 
+import ast
 import hashlib
 import importlib.util
 import json
@@ -75,6 +76,36 @@ class StaleEngineError(EngineContractError):
 #: Every attribute an engine must expose (IDEA_SHA/ASSUMPTIONS checked apart).
 ENGINE_API = ("new_game", "player_to_move", "legal_moves", "apply",
               "is_over", "winners", "scores", "observation")
+
+#: Import whitelist for agent-written engines. An engine is a pure rules
+#: module, so the only stdlib it legitimately needs is deterministic
+#: data/algorithm plumbing. The engine execs IN-PROCESS (load_engine), so
+#: anything past this list — io, os, process, dynamic import, reflection —
+#: is a lever on the scorer itself: a reward-seeking engine could
+#: monkeypatch loops.simmetrics or rewrite state/ (review 2026-08-22).
+#: This lint is the minimal hardening; the real fix — subprocess isolation
+#: — is designed in knowledge/PROPOSALS.md (2026-08-22) and not yet built.
+ENGINE_IMPORT_WHITELIST = frozenset(
+    {"random", "math", "itertools", "collections", "functools", "copy",
+     "typing"})
+
+#: Tokens no engine has any business containing, anywhere in the file:
+#: file/OS access, process spawning, dynamic import, and the reflection
+#: calls that reach the loader's globals. Word-boundary regexes so prose
+#: like "those." or "open information" cannot false-positive; a hit in a
+#: docstring still refuses — fail-closed, an engine is cheap to regenerate.
+ENGINE_BANNED_TOKENS = (
+    ("open(", re.compile(r"\bopen\s*\(")),
+    ("os.", re.compile(r"\bos\s*\.")),
+    ("sys.", re.compile(r"\bsys\s*\.")),
+    ("subprocess", re.compile(r"\bsubprocess\b")),
+    ("importlib", re.compile(r"\bimportlib\b")),
+    ("__import__", re.compile(r"__import__")),
+    ("eval(", re.compile(r"\beval\s*\(")),
+    ("exec(", re.compile(r"\bexec\s*\(")),
+    ("globals(", re.compile(r"\bglobals\s*\(")),
+    ("setattr(", re.compile(r"\bsetattr\s*\(")),
+)
 
 
 def _home(home=None):
@@ -120,6 +151,46 @@ def idea_sha(slug, home=None):
         return hashlib.sha256(handle.read()).hexdigest()
 
 
+def _lint_engine_source(path, source):
+    """Refuse engine source that reaches outside the rules sandbox.
+
+    Runs BEFORE exec — a banned construct that already executed is not a
+    refusal, it is a breach. Raises EngineContractError naming the
+    offending line so the invent loop can park the game with a receipt.
+    Two passes: banned tokens by line (names the line), then imports via
+    ast (catches function-level imports too, not just module top).
+    """
+    for lineno, line in enumerate(source.splitlines(), 1):
+        for token, pattern in ENGINE_BANNED_TOKENS:
+            if pattern.search(line):
+                raise EngineContractError(
+                    "engine %s refused: banned token %r on line %d: %r — "
+                    "engines are pure rules modules (whitelist imports: "
+                    "%s); regenerate the engine"
+                    % (path, token, lineno, line.strip(),
+                       ", ".join(sorted(ENGINE_IMPORT_WHITELIST))))
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return  # exec_module will raise the honest SyntaxError itself
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            # Relative imports have module=None — refused ("" never
+            # whitelisted): an engine has no package to be relative to.
+            names = [node.module or ""]
+        else:
+            continue
+        for name in names:
+            if name.split(".")[0] not in ENGINE_IMPORT_WHITELIST:
+                raise EngineContractError(
+                    "engine %s refused: line %d imports %r — engines may "
+                    "import only {%s}; regenerate the engine"
+                    % (path, node.lineno, name,
+                       ", ".join(sorted(ENGINE_IMPORT_WHITELIST))))
+
+
 def load_engine(path, expected_idea_sha=None):
     """Import an engine module from an absolute path and verify the contract.
 
@@ -135,11 +206,15 @@ def load_engine(path, expected_idea_sha=None):
     # Unique module name per (path, content): two games' engines — or two
     # versions of one engine — must never collide in sys.modules.
     with open(path, "rb") as handle:
-        content_hash = hashlib.sha256(handle.read()).hexdigest()[:12]
+        content = handle.read()
+    content_hash = hashlib.sha256(content).hexdigest()[:12]
     mod_name = "bob_engine_%s" % content_hash
     if mod_name in sys.modules:
         engine = sys.modules[mod_name]
     else:
+        # Lint before exec: agent-written code runs in-process, so the
+        # refusal must come while it is still text (see ENGINE_BANNED_TOKENS).
+        _lint_engine_source(path, content.decode("utf-8", "replace"))
         spec = importlib.util.spec_from_file_location(mod_name, path)
         engine = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(engine)

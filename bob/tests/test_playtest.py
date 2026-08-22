@@ -95,6 +95,69 @@ class LoaderTest(unittest.TestCase):
             playtest.load_engine(os.path.join(self.home, "nope.py"))
         self.assertIn("build_engine_prompt", str(ctx.exception))
 
+    def _write_variant(self, filename, extra_source):
+        """Goodgame source + an appended snippet, written next to the real
+        engine — each variant hashes to a fresh module name."""
+        with open(self.engine_path) as handle:
+            src = handle.read()
+        path = os.path.join(os.path.dirname(self.engine_path), filename)
+        with open(path, "w") as handle:
+            handle.write(src + "\n" + extra_source + "\n")
+        return path
+
+    def test_lint_refuses_import_outside_whitelist(self):
+        """Review 2026-08-22 (MAJOR): agent-written engines exec in-process,
+        so an engine importing loops.simmetrics can monkeypatch the scorer.
+        The lint refuses any import outside ENGINE_IMPORT_WHITELIST —
+        before exec, while the code is still text."""
+        path = self._write_variant(
+            "evil_import.py", "import loops.simmetrics as sm")
+        with self.assertRaises(playtest.EngineContractError) as ctx:
+            playtest.load_engine(path, expected_idea_sha=self.sha)
+        self.assertIn("loops.simmetrics", str(ctx.exception))
+
+    def test_lint_refuses_function_level_import_too(self):
+        path = self._write_variant(
+            "evil_nested.py",
+            "def _sneak():\n    import socket\n    return socket")
+        with self.assertRaises(playtest.EngineContractError) as ctx:
+            playtest.load_engine(path, expected_idea_sha=self.sha)
+        self.assertIn("socket", str(ctx.exception))
+
+    def test_lint_refuses_banned_token_naming_the_line(self):
+        path = self._write_variant(
+            "evil_open.py", "def _leak():\n    return open('/etc/passwd')")
+        with self.assertRaises(playtest.EngineContractError) as ctx:
+            playtest.load_engine(path, expected_idea_sha=self.sha)
+        msg = str(ctx.exception)
+        self.assertIn("open(", msg)
+        self.assertIn("line", msg)
+        self.assertIn("open('/etc/passwd')", msg)
+
+    def test_lint_refuses_dunder_import_and_os_dot(self):
+        for filename, snippet, token in (
+                ("evil_dunder.py", "_os = __import__('o' + 's')",
+                 "__import__"),
+                ("evil_osdot.py",
+                 "import os as _o\n_x = _o.getcwd()", "os"),
+        ):
+            path = self._write_variant(filename, snippet)
+            with self.assertRaises(playtest.EngineContractError) as ctx:
+                playtest.load_engine(path, expected_idea_sha=self.sha)
+            self.assertIn(token, str(ctx.exception))
+
+    def test_lint_allows_whitelisted_imports_and_prose(self):
+        """random/collections are legitimate engine plumbing, and prose
+        like 'open information' must not false-positive the token scan
+        (goodgame's own docstring says exactly that)."""
+        path = self._write_variant(
+            "fine.py",
+            "import random\nfrom collections import deque\n"
+            "# players enjoy open information at those moments\n"
+            "_EXTRA = deque()")
+        engine = playtest.load_engine(path, expected_idea_sha=self.sha)
+        self.assertTrue(callable(engine.new_game))
+
 
 class PromptTest(unittest.TestCase):
     def setUp(self):

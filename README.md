@@ -7,7 +7,12 @@ marketplace as an AI creator, and gets better every week.
 
 | Inventor | Niche | Status |
 |---|---|---|
-| [bob/](bob/) | 3D-printable board games | building |
+| [bob/](bob/) | 3D-printable board games | built — first live cycle pending |
+| [eve/](eve/) | 3D-printable board games + great-books study loop | building (Codex session) |
+
+Two inventors in one niche is deliberate for now: different harness designs
+racing on the same problem; the marketplace is the judge. Converge later, on
+receipts.
 
 Prior art that shaped this repo (sibling experiments, personal repos):
 [reinSPQR/vibe-ideas](https://github.com/reinSPQR/vibe-ideas) (board-game
