@@ -1022,13 +1022,38 @@ def _handle_tabled(step):
         return
 
     fraction = report["aggregate"]["would_play_again_fraction"]
+    tables_done = sum(1 for t in report.get("tables", [])
+                      if t.get("would_play_again") is not None)
     _ledger_row(slug, "tabled", cost,
-                "tables: would-play-again %.2f (%d/%d seats), %d confusion "
-                "events; fresh reader misses %d/%d"
+                "tables: would-play-again %.2f (%d/%d seats, %d tables), "
+                "%d confusion events; fresh reader misses %d/%d%s"
                 % (fraction, report["aggregate"]["would_play_again_yes"],
-                   report["aggregate"]["seats_total"],
+                   report["aggregate"]["seats_total"], tables_done,
                    report["aggregate"]["confusion_events"],
-                   record["misses"], record["questions"]))
+                   record["misses"], record["questions"],
+                   " [ABORTED: %s]" % report["aborted"]
+                   if report.get("aborted") else ""))
+    if report.get("aborted") and tables_done < 2:
+        # One table of votes is a sample, not a verdict — g0003 was parked
+        # off n=4 seats after the cost cap ate the other three tables
+        # (2026-08-23). An aborted short run is INCONCLUSIVE: retry once
+        # (seats now route to Haiku so the cap buys ~4x the games), then
+        # park if it still cannot finish two tables.
+        with queue.transaction() as q:
+            entry = q["games"].get(slug) or {}
+            entry["table_retries"] = int(entry.get("table_retries", 0)) + 1
+            retries = entry["table_retries"]
+        for stale in ("table_report.json",):
+            path = os.path.join(gdir, "playtest", stale)
+            if os.path.exists(path):
+                os.remove(path)
+        if retries >= 2:
+            queue.park(slug, "table run aborted (%s) twice — cannot afford "
+                             "a verdict; raise BOB_TABLE_COST_CAP_USD or "
+                             "cheapen the seats" % report["aborted"])
+        else:
+            queue.release(slug)
+        return
     if fraction >= MIN_WOULD_PLAY_AGAIN:
         queue.advance(slug, "briefed",
                       "tables pass: would-play-again %.2f" % fraction)

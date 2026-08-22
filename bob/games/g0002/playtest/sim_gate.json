@@ -1,9 +1,7 @@
 {
-  "all_pass": false,
+  "all_pass": true,
   "degeneracy_pass": true,
-  "failed_verdicts": [
-    "skill_ladder_ok"
-  ],
+  "failed_verdicts": [],
   "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
   "integrity_pass": true,
   "n_games": 1000,

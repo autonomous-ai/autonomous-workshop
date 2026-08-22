@@ -1,0 +1,12 @@
+{
+  "findings": [
+    "\u00a75.1 miscount/jam recovery breaks the stated invariant: 'The bar therefore ends 2, 4, or 6 clicks lower than it started' \u2014 but the recovery rule says a mid-Set miscount/jam keeps whatever partial down-clicks already happened and then runs a fresh full eight-click Set on top, so a single round's net drop can exceed 6 clicks. The text never reconciles this with the 'always 2, 4, or 6' claim used elsewhere (e.g. the endgame countdown math in \u00a76).",
+    "\u00a76 arithmetic is internally inconsistent: for the largest drop pattern (down 7 then up 1, net -6/round, down-phase max 7), simulating from the 33.0mm start (31 clicks to the 17.5mm stop) hits the bottom stop mid-down-phase in round 5 (24 clicks after 4 rounds + 7th down-click = 31), not the stated 'at the largest, 6' rounds.",
+    "\u00a75.7 Salvage is gated on 'the game is not over,' but Salvage is itself a sub-step of The Take (\u00a74 step 5), and per \u00a76 the game 'ends at the end of the round in which the setter says Bottom' \u2014 i.e. the Bottom round's own Take is still part of that final round. It's ambiguous whether Salvage is allowed during the Bottom round's Take (self-referential: is the game 'over' before its own last Take completes?), and this matters because Salvage moves a block from score line to rail, which changes the \u00a77 tiebreak #2 ('more blocks remaining in the rail')."
+  ],
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "judge": "bob-fresh-reader",
+  "misses": 3,
+  "questions": 12,
+  "teach_minutes": 15
+}

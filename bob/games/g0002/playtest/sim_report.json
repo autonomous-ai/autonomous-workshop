@@ -91,7 +91,7 @@
         "MOVE_CAP_MULT": 4
       },
       "verdicts": {
-        "all_pass": false,
+        "all_pass": true,
         "balance_ok": true,
         "branching_ok": true,
         "completion_ok": true,
@@ -99,7 +99,7 @@
         "forced_ok": true,
         "runaway_ok": true,
         "seat_bias_ok": true,
-        "skill_ladder_ok": false
+        "skill_ladder_ok": true
       }
     },
     "3": {
@@ -197,7 +197,7 @@
         "MOVE_CAP_MULT": 4
       },
       "verdicts": {
-        "all_pass": false,
+        "all_pass": true,
         "balance_ok": true,
         "branching_ok": true,
         "completion_ok": true,
@@ -205,7 +205,7 @@
         "forced_ok": true,
         "runaway_ok": true,
         "seat_bias_ok": true,
-        "skill_ladder_ok": false
+        "skill_ladder_ok": true
       }
     },
     "4": {
@@ -307,7 +307,7 @@
         "MOVE_CAP_MULT": 4
       },
       "verdicts": {
-        "all_pass": false,
+        "all_pass": true,
         "balance_ok": true,
         "branching_ok": true,
         "completion_ok": true,
@@ -315,7 +315,7 @@
         "forced_ok": true,
         "runaway_ok": true,
         "seat_bias_ok": true,
-        "skill_ladder_ok": false
+        "skill_ladder_ok": true
       }
     }
   },
@@ -357,11 +357,11 @@
     "MOVE_CAP_MULT": 4
   },
   "verdicts": {
-    "all_pass": false,
+    "all_pass": true,
     "per_players": {
-      "2": false,
-      "3": false,
-      "4": false
+      "2": true,
+      "3": true,
+      "4": true
     }
   }
 }

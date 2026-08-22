@@ -13,7 +13,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-22T20:34:08.860905+00:00",
+        "holder": "invent",
+        "id": "3c45ac1c1cb149a8b8fca21530ddc8cb"
+      },
       "log": [
         {
           "at": "2026-08-22T09:25:21.568786+00:00",
@@ -116,9 +120,8 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T19:41:23.061049+00:00",
-        "holder": "invent",
-        "id": "8e44b2884d194505ac363422d811659f"
+        "expires": null,
+        "holder": null
       },
       "log": [
         {
@@ -174,6 +177,18 @@
           "from": "parked",
           "note": "human unpark after skill-gate recalibration: greedy>random +0.44..0.75 is real skill; the failing lookahead edge was the blunt instrument, now scored in depth instead of hard-failing",
           "to": "simulated"
+        },
+        {
+          "at": "2026-08-22T19:12:38.241198+00:00",
+          "from": "simulated",
+          "note": "sim floors clear at every player count",
+          "to": "tabled"
+        },
+        {
+          "at": "2026-08-22T19:49:45.022950+00:00",
+          "from": "tabled",
+          "note": "parked: table gate failed: would-play-again 0.00 < 0.50",
+          "to": "parked"
         }
       ],
       "reward": {
@@ -181,7 +196,7 @@
         "latest": 0.0
       },
       "slug": "g0002",
-      "state": "simulated",
+      "state": "parked",
       "title": "Re-Pin"
     },
     "g0003": {
@@ -197,11 +212,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T19:47:13.624276+00:00",
-        "holder": "invent",
-        "id": "1971ed664486483ba0506d7233a11d5b"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -249,6 +260,18 @@
           "at": "2026-08-22T19:02:08.442749+00:00",
           "from": "simulated",
           "note": "sim floors clear at every player count",
+          "to": "tabled"
+        },
+        {
+          "at": "2026-08-22T19:49:03.676447+00:00",
+          "from": "tabled",
+          "note": "parked: table gate failed: would-play-again 0.25 < 0.50",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T03:30:00+00:00",
+          "from": "parked",
+          "note": "human unpark: 1-table sample was not a verdict; seats now Haiku, aborted-short runs retry",
           "to": "tabled"
         }
       ],
@@ -319,8 +342,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": null,
-        "holder": null
+        "expires": "2026-08-22T20:36:23.087427+00:00",
+        "holder": "invent",
+        "id": "1ea487ff756b4cf697be3a558c81c2ca"
       },
       "log": [
         {
@@ -334,6 +358,12 @@
           "from": "sparked",
           "note": "spark chosen: Kick (triage kept 1 of 5)",
           "to": "researched"
+        },
+        {
+          "at": "2026-08-22T19:51:22.926778+00:00",
+          "from": "researched",
+          "note": "novelty pass, margin=far",
+          "to": "ruled"
         }
       ],
       "reward": {
@@ -341,7 +371,7 @@
         "latest": 0.0
       },
       "slug": "g0005",
-      "state": "researched",
+      "state": "ruled",
       "title": "Kick"
     }
   },

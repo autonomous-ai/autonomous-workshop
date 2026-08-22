@@ -1,321 +1,1121 @@
 {
- "2026-08-22": {
-  "cost_usd": 36.62913,
-  "steps": [
-   {
-    "cost_usd": 0.8292140000000001,
-    "model": "claude-opus-5",
-    "name": "bob-ideator",
-    "num_turns": 9,
-    "subtype": "success",
-    "wall_s": 283.14
-   },
-   {
-    "cost_usd": 0.20191579999999998,
-    "model": "claude-sonnet-5",
-    "name": "bob-triage-judge",
-    "num_turns": 2,
-    "subtype": "success",
-    "wall_s": 120.845
-   },
-   {
-    "cost_usd": 0.2938558,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge",
-    "num_turns": 14,
-    "subtype": "success",
-    "wall_s": 78.71
-   },
-   {
-    "cost_usd": 0.2443118,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#2",
-    "num_turns": 15,
-    "subtype": "success",
-    "wall_s": 46.482
-   },
-   {
-    "cost_usd": 0.3179546,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#3",
-    "num_turns": 17,
-    "subtype": "success",
-    "wall_s": 69.301
-   },
-   {
-    "cost_usd": 0.27248900000000004,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#4",
-    "num_turns": 16,
-    "subtype": "success",
-    "wall_s": 65.71
-   },
-   {
-    "cost_usd": 0.25595260000000003,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#5",
-    "num_turns": 16,
-    "subtype": "success",
-    "wall_s": 54.345
-   },
-   {
-    "cost_usd": 0.123534,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#6",
-    "num_turns": 9,
-    "subtype": "success",
-    "wall_s": 48.274
-   },
-   {
-    "cost_usd": 0.3619824,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#7",
-    "num_turns": 12,
-    "subtype": "success",
-    "wall_s": 103.532
-   },
-   {
-    "cost_usd": 0.0,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer",
-    "num_turns": null,
-    "subtype": "killed_overrun",
-    "wall_s": 900.978
-   },
-   {
-    "cost_usd": 0.0,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#2",
-    "num_turns": null,
-    "subtype": "killed_overrun",
-    "wall_s": 901.038
-   },
-   {
-    "cost_usd": 0.545294,
-    "model": "claude-opus-5",
-    "name": "bob-ideator#2",
-    "num_turns": 5,
-    "subtype": "success",
-    "wall_s": 210.407
-   },
-   {
-    "cost_usd": 0.25790599999999997,
-    "model": "claude-sonnet-5",
-    "name": "bob-triage-judge#2",
-    "num_turns": 6,
-    "subtype": "success",
-    "wall_s": 121.818
-   },
-   {
-    "cost_usd": 0.4298346,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#8",
-    "num_turns": 15,
-    "subtype": "success",
-    "wall_s": 96.174
-   },
-   {
-    "cost_usd": 1.7820169999999997,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#3",
-    "num_turns": 9,
-    "subtype": "success",
-    "wall_s": 651.859
-   },
-   {
-    "cost_usd": 0.3695764,
-    "model": "claude-sonnet-5",
-    "name": "bob-rules-lens",
-    "num_turns": 2,
-    "subtype": "success",
-    "wall_s": 291.932
-   },
-   {
-    "cost_usd": 3.1674949999999997,
-    "model": "claude-opus-5",
-    "name": "bob-engine-writer",
-    "num_turns": 22,
-    "subtype": "success",
-    "wall_s": 731.627
-   },
-   {
-    "cost_usd": 0.0,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#4",
-    "num_turns": null,
-    "subtype": "killed_overrun",
-    "wall_s": 2100.651
-   },
-   {
-    "cost_usd": 2.7135920000000002,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#5",
-    "num_turns": 8,
-    "subtype": "success",
-    "wall_s": 1021.194
-   },
-   {
-    "cost_usd": 0.4302768,
-    "model": "claude-sonnet-5",
-    "name": "bob-rules-lens#2",
-    "num_turns": 4,
-    "subtype": "success",
-    "wall_s": 273.675
-   },
-   {
-    "cost_usd": 0.6038460000000001,
-    "model": "claude-opus-5",
-    "name": "bob-ideator#3",
-    "num_turns": 6,
-    "subtype": "success",
-    "wall_s": 231.101
-   },
-   {
-    "cost_usd": 0.2478966,
-    "model": "claude-sonnet-5",
-    "name": "bob-triage-judge#3",
-    "num_turns": 5,
-    "subtype": "success",
-    "wall_s": 105.805
-   },
-   {
-    "cost_usd": 0.523212,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#9",
-    "num_turns": 12,
-    "subtype": "success",
-    "wall_s": 105.974
-   },
-   {
-    "cost_usd": 4.751709000000001,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#6",
-    "num_turns": 19,
-    "subtype": "success",
-    "wall_s": 1863.878
-   },
-   {
-    "cost_usd": 2.7842824999999998,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#7",
-    "num_turns": 6,
-    "subtype": "success",
-    "wall_s": 1090.956
-   },
-   {
-    "cost_usd": 0.4712152,
-    "model": "claude-sonnet-5",
-    "name": "bob-rules-lens#3",
-    "num_turns": 5,
-    "subtype": "success",
-    "wall_s": 266.759
-   },
-   {
-    "cost_usd": 0.4267978,
-    "model": "claude-sonnet-5",
-    "name": "bob-rules-lens#4",
-    "num_turns": 3,
-    "subtype": "success",
-    "wall_s": 269.338
-   },
-   {
-    "cost_usd": 0.8971045,
-    "model": "claude-opus-5",
-    "name": "bob-rules-writer#8",
-    "num_turns": 17,
-    "subtype": "success",
-    "wall_s": 139.518
-   },
-   {
-    "cost_usd": 0.4731856,
-    "model": "claude-sonnet-5",
-    "name": "bob-rules-lens#5",
-    "num_turns": 3,
-    "subtype": "success",
-    "wall_s": 297.281
-   },
-   {
-    "cost_usd": 3.0254325,
-    "model": "claude-opus-5",
-    "name": "bob-engine-writer#2",
-    "num_turns": 21,
-    "subtype": "success",
-    "wall_s": 804.8
-   },
-   {
-    "cost_usd": 0.805436,
-    "model": "claude-opus-5",
-    "name": "bob-ideator#4",
-    "num_turns": 10,
-    "subtype": "success",
-    "wall_s": 338.427
-   },
-   {
-    "cost_usd": 0.30846100000000004,
-    "model": "claude-sonnet-5",
-    "name": "bob-triage-judge#4",
-    "num_turns": 14,
-    "subtype": "success",
-    "wall_s": 118.587
-   },
-   {
-    "cost_usd": 0.520054,
-    "model": "claude-sonnet-5",
-    "name": "bob-novelty-judge#10",
-    "num_turns": 15,
-    "subtype": "success",
-    "wall_s": 158.325
-   },
-   {
-    "cost_usd": 6.6401414999999995,
-    "model": "claude-opus-5",
-    "name": "bob-engine-writer#3",
-    "num_turns": 41,
-    "subtype": "error_max_turns",
-    "wall_s": 1282.45
-   },
-   {
-    "cost_usd": 0.8558675,
-    "model": "claude-opus-5",
-    "name": "bob-ideator#5",
-    "num_turns": 9,
-    "subtype": "success",
-    "wall_s": 357.154
-   },
-   {
-    "cost_usd": 0.4714608,
-    "model": "claude-sonnet-5",
-    "name": "bob-triage-judge#5",
-    "num_turns": 20,
-    "subtype": "success",
-    "wall_s": 217.327
-   },
-   {
-    "name": "bob-table-player",
-    "model": "claude-sonnet-5",
-    "wall_s": 36.028,
-    "num_turns": 1,
-    "cost_usd": 0.09084239999999999,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#2",
-    "model": "claude-sonnet-5",
-    "wall_s": 12.563,
-    "num_turns": 1,
-    "cost_usd": 0.048878,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#3",
-    "model": "claude-sonnet-5",
-    "wall_s": 35.696,
-    "num_turns": 2,
-    "cost_usd": 0.0861038,
-    "subtype": "success"
-   }
-  ],
-  "ticks": 0
- },
- "heartbeat": "2026-08-22T19:02:13.620587+00:00"
+  "2026-08-22": {
+    "cost_usd": 47.418269,
+    "steps": [
+      {
+        "cost_usd": 0.8292140000000001,
+        "model": "claude-opus-5",
+        "name": "bob-ideator",
+        "num_turns": 9,
+        "subtype": "success",
+        "wall_s": 283.14
+      },
+      {
+        "cost_usd": 0.20191579999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 120.845
+      },
+      {
+        "cost_usd": 0.2938558,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge",
+        "num_turns": 14,
+        "subtype": "success",
+        "wall_s": 78.71
+      },
+      {
+        "cost_usd": 0.2443118,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#2",
+        "num_turns": 15,
+        "subtype": "success",
+        "wall_s": 46.482
+      },
+      {
+        "cost_usd": 0.3179546,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#3",
+        "num_turns": 17,
+        "subtype": "success",
+        "wall_s": 69.301
+      },
+      {
+        "cost_usd": 0.27248900000000004,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#4",
+        "num_turns": 16,
+        "subtype": "success",
+        "wall_s": 65.71
+      },
+      {
+        "cost_usd": 0.25595260000000003,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#5",
+        "num_turns": 16,
+        "subtype": "success",
+        "wall_s": 54.345
+      },
+      {
+        "cost_usd": 0.123534,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#6",
+        "num_turns": 9,
+        "subtype": "success",
+        "wall_s": 48.274
+      },
+      {
+        "cost_usd": 0.3619824,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#7",
+        "num_turns": 12,
+        "subtype": "success",
+        "wall_s": 103.532
+      },
+      {
+        "cost_usd": 0.0,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer",
+        "num_turns": null,
+        "subtype": "killed_overrun",
+        "wall_s": 900.978
+      },
+      {
+        "cost_usd": 0.0,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#2",
+        "num_turns": null,
+        "subtype": "killed_overrun",
+        "wall_s": 901.038
+      },
+      {
+        "cost_usd": 0.545294,
+        "model": "claude-opus-5",
+        "name": "bob-ideator#2",
+        "num_turns": 5,
+        "subtype": "success",
+        "wall_s": 210.407
+      },
+      {
+        "cost_usd": 0.25790599999999997,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge#2",
+        "num_turns": 6,
+        "subtype": "success",
+        "wall_s": 121.818
+      },
+      {
+        "cost_usd": 0.4298346,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#8",
+        "num_turns": 15,
+        "subtype": "success",
+        "wall_s": 96.174
+      },
+      {
+        "cost_usd": 1.7820169999999997,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#3",
+        "num_turns": 9,
+        "subtype": "success",
+        "wall_s": 651.859
+      },
+      {
+        "cost_usd": 0.3695764,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 291.932
+      },
+      {
+        "cost_usd": 3.1674949999999997,
+        "model": "claude-opus-5",
+        "name": "bob-engine-writer",
+        "num_turns": 22,
+        "subtype": "success",
+        "wall_s": 731.627
+      },
+      {
+        "cost_usd": 0.0,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#4",
+        "num_turns": null,
+        "subtype": "killed_overrun",
+        "wall_s": 2100.651
+      },
+      {
+        "cost_usd": 2.7135920000000002,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#5",
+        "num_turns": 8,
+        "subtype": "success",
+        "wall_s": 1021.194
+      },
+      {
+        "cost_usd": 0.4302768,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens#2",
+        "num_turns": 4,
+        "subtype": "success",
+        "wall_s": 273.675
+      },
+      {
+        "cost_usd": 0.6038460000000001,
+        "model": "claude-opus-5",
+        "name": "bob-ideator#3",
+        "num_turns": 6,
+        "subtype": "success",
+        "wall_s": 231.101
+      },
+      {
+        "cost_usd": 0.2478966,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge#3",
+        "num_turns": 5,
+        "subtype": "success",
+        "wall_s": 105.805
+      },
+      {
+        "cost_usd": 0.523212,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#9",
+        "num_turns": 12,
+        "subtype": "success",
+        "wall_s": 105.974
+      },
+      {
+        "cost_usd": 4.751709000000001,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#6",
+        "num_turns": 19,
+        "subtype": "success",
+        "wall_s": 1863.878
+      },
+      {
+        "cost_usd": 2.7842824999999998,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#7",
+        "num_turns": 6,
+        "subtype": "success",
+        "wall_s": 1090.956
+      },
+      {
+        "cost_usd": 0.4712152,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens#3",
+        "num_turns": 5,
+        "subtype": "success",
+        "wall_s": 266.759
+      },
+      {
+        "cost_usd": 0.4267978,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens#4",
+        "num_turns": 3,
+        "subtype": "success",
+        "wall_s": 269.338
+      },
+      {
+        "cost_usd": 0.8971045,
+        "model": "claude-opus-5",
+        "name": "bob-rules-writer#8",
+        "num_turns": 17,
+        "subtype": "success",
+        "wall_s": 139.518
+      },
+      {
+        "cost_usd": 0.4731856,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens#5",
+        "num_turns": 3,
+        "subtype": "success",
+        "wall_s": 297.281
+      },
+      {
+        "cost_usd": 3.0254325,
+        "model": "claude-opus-5",
+        "name": "bob-engine-writer#2",
+        "num_turns": 21,
+        "subtype": "success",
+        "wall_s": 804.8
+      },
+      {
+        "cost_usd": 0.805436,
+        "model": "claude-opus-5",
+        "name": "bob-ideator#4",
+        "num_turns": 10,
+        "subtype": "success",
+        "wall_s": 338.427
+      },
+      {
+        "cost_usd": 0.30846100000000004,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge#4",
+        "num_turns": 14,
+        "subtype": "success",
+        "wall_s": 118.587
+      },
+      {
+        "cost_usd": 0.520054,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#10",
+        "num_turns": 15,
+        "subtype": "success",
+        "wall_s": 158.325
+      },
+      {
+        "cost_usd": 6.6401414999999995,
+        "model": "claude-opus-5",
+        "name": "bob-engine-writer#3",
+        "num_turns": 41,
+        "subtype": "error_max_turns",
+        "wall_s": 1282.45
+      },
+      {
+        "cost_usd": 0.8558675,
+        "model": "claude-opus-5",
+        "name": "bob-ideator#5",
+        "num_turns": 9,
+        "subtype": "success",
+        "wall_s": 357.154
+      },
+      {
+        "cost_usd": 0.4714608,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge#5",
+        "num_turns": 20,
+        "subtype": "success",
+        "wall_s": 217.327
+      },
+      {
+        "cost_usd": 0.09084239999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 36.028
+      },
+      {
+        "cost_usd": 0.048878,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#2",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 12.563
+      },
+      {
+        "cost_usd": 0.0861038,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#3",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 35.696
+      },
+      {
+        "cost_usd": 0.0719354,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#4",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 24.25
+      },
+      {
+        "cost_usd": 0.11184,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#5",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 43.607
+      },
+      {
+        "cost_usd": 0.13704739999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#6",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 80.452
+      },
+      {
+        "cost_usd": 0.072034,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#7",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 37.286
+      },
+      {
+        "cost_usd": 0.075836,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#8",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 42.306
+      },
+      {
+        "cost_usd": 0.146106,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#9",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 90.655
+      },
+      {
+        "cost_usd": 0.094776,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#10",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 46.046
+      },
+      {
+        "cost_usd": 0.08846199999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#11",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 55.238
+      },
+      {
+        "cost_usd": 0.10364679999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#12",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 50.964
+      },
+      {
+        "cost_usd": 0.1144916,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#13",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 59.86
+      },
+      {
+        "cost_usd": 0.1576124,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#14",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 17.16
+      },
+      {
+        "cost_usd": 0.059214199999999995,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#15",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 8.268
+      },
+      {
+        "cost_usd": 0.0646082,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#16",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 18.68
+      },
+      {
+        "cost_usd": 0.0706818,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#17",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 16.86
+      },
+      {
+        "cost_usd": 0.0704324,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#18",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 17.912
+      },
+      {
+        "cost_usd": 0.055070799999999996,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#19",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 10.312
+      },
+      {
+        "cost_usd": 0.1796326,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#20",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 113.267
+      },
+      {
+        "cost_usd": 0.06318119999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#21",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 15.571
+      },
+      {
+        "cost_usd": 0.05779959999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#22",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 10.254
+      },
+      {
+        "cost_usd": 0.09953980000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#23",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 45.694
+      },
+      {
+        "cost_usd": 0.07852219999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#24",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 42.405
+      },
+      {
+        "cost_usd": 0.0755332,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#25",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 22.694
+      },
+      {
+        "cost_usd": 0.0823516,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#26",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 29.222
+      },
+      {
+        "cost_usd": 0.076768,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#27",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 25.442
+      },
+      {
+        "cost_usd": 0.18969940000000002,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#28",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 120.799
+      },
+      {
+        "cost_usd": 0.0924632,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#29",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 39.731
+      },
+      {
+        "cost_usd": 0.1436944,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#30",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 75.217
+      },
+      {
+        "cost_usd": 0.09976879999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#31",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 43.311
+      },
+      {
+        "cost_usd": 0.13712580000000002,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#32",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 75.488
+      },
+      {
+        "cost_usd": 0.13800279999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#33",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 60.014
+      },
+      {
+        "cost_usd": 0.14052540000000002,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#34",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 68.551
+      },
+      {
+        "cost_usd": 0.1880248,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#35",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 122.33
+      },
+      {
+        "cost_usd": 0.1266578,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#36",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 63.734
+      },
+      {
+        "cost_usd": 0.11434,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#37",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 55.732
+      },
+      {
+        "cost_usd": 0.0766622,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#38",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 24.588
+      },
+      {
+        "cost_usd": 0.0896682,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#39",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 59.003
+      },
+      {
+        "cost_usd": 0.1507346,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#40",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 73.889
+      },
+      {
+        "cost_usd": 0.0518902,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#41",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 12.218
+      },
+      {
+        "cost_usd": 0.1026004,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#42",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 48.133
+      },
+      {
+        "cost_usd": 0.060278200000000004,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#43",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 20.065
+      },
+      {
+        "cost_usd": 0.084339,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#44",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 29.702
+      },
+      {
+        "cost_usd": 0.1155662,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#45",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 57.263
+      },
+      {
+        "cost_usd": 0.10247339999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#46",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 44.081
+      },
+      {
+        "cost_usd": 0.0968258,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#47",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 40.441
+      },
+      {
+        "cost_usd": 0.1257768,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#48",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 66.06
+      },
+      {
+        "cost_usd": 0.08352419999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#49",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 31.575
+      },
+      {
+        "cost_usd": 0.1081092,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#50",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 49.171
+      },
+      {
+        "cost_usd": 0.11013020000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#51",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 79.683
+      },
+      {
+        "cost_usd": 0.0751916,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#52",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 22.011
+      },
+      {
+        "cost_usd": 0.06914619999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#53",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 31.914
+      },
+      {
+        "cost_usd": 0.13547879999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#54",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 76.45
+      },
+      {
+        "cost_usd": 0.1353566,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#55",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 70.944
+      },
+      {
+        "cost_usd": 0.0962142,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#56",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 64.263
+      },
+      {
+        "cost_usd": 0.09005100000000002,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#57",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 33.696
+      },
+      {
+        "cost_usd": 0.0656292,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#58",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 17.129
+      },
+      {
+        "cost_usd": 0.0752674,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#59",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 22.8
+      },
+      {
+        "cost_usd": 0.08852639999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#60",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 32.863
+      },
+      {
+        "cost_usd": 0.12652719999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#61",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 67.711
+      },
+      {
+        "cost_usd": 0.0690398,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#62",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 18.126
+      },
+      {
+        "cost_usd": 0.1017144,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#63",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 49.498
+      },
+      {
+        "cost_usd": 0.124566,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#64",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 59.165
+      },
+      {
+        "cost_usd": 0.08259620000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#65",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 43.358
+      },
+      {
+        "cost_usd": 0.0990742,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#66",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 70.315
+      },
+      {
+        "cost_usd": 0.1140552,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#67",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 54.768
+      },
+      {
+        "cost_usd": 0.11132360000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#68",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 53.662
+      },
+      {
+        "cost_usd": 0.0646462,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#69",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 26.896
+      },
+      {
+        "cost_usd": 0.1087536,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#70",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 48.55
+      },
+      {
+        "cost_usd": 0.06662219999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#71",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 25.656
+      },
+      {
+        "cost_usd": 0.07881400000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#72",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 24.731
+      },
+      {
+        "cost_usd": 0.1213628,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#73",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 66.184
+      },
+      {
+        "cost_usd": 0.11125260000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#74",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 46.24
+      },
+      {
+        "cost_usd": 0.12586019999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#75",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 64.441
+      },
+      {
+        "cost_usd": 0.07444020000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#76",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 42.157
+      },
+      {
+        "cost_usd": 0.1153602,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#77",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 82.333
+      },
+      {
+        "cost_usd": 0.0842832,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#78",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 34.981
+      },
+      {
+        "cost_usd": 0.10092340000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#79",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 41.638
+      },
+      {
+        "cost_usd": 0.1400854,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#80",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 74.571
+      },
+      {
+        "cost_usd": 0.12492819999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#81",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 99.655
+      },
+      {
+        "cost_usd": 0.0724542,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#82",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 38.225
+      },
+      {
+        "cost_usd": 0.13534939999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#83",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 75.579
+      },
+      {
+        "cost_usd": 0.2790208,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#84",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 157.019
+      },
+      {
+        "cost_usd": 0.0851462,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#85",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 52.585
+      },
+      {
+        "cost_usd": 0.045520200000000004,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#86",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 7.443
+      },
+      {
+        "cost_usd": 0.0687162,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#87",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 36.983
+      },
+      {
+        "cost_usd": 0.1255588,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#88",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 64.501
+      },
+      {
+        "cost_usd": 0.10244239999999999,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#89",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 47.031
+      },
+      {
+        "cost_usd": 0.0588582,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#90",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 21.546
+      },
+      {
+        "cost_usd": 0.1422698,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#91",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 74.371
+      },
+      {
+        "cost_usd": 0.0705142,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#92",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 36.572
+      },
+      {
+        "cost_usd": 0.09919019999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#93",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 41.878
+      },
+      {
+        "cost_usd": 0.08180660000000001,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#94",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 26.756
+      },
+      {
+        "cost_usd": 0.0785502,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#95",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 49.243
+      },
+      {
+        "cost_usd": 0.0638302,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#96",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 32.41
+      },
+      {
+        "cost_usd": 0.0555882,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#97",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 20.114
+      },
+      {
+        "cost_usd": 0.13166899999999998,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#98",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 65.087
+      },
+      {
+        "cost_usd": 0.0803004,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#99",
+        "num_turns": 1,
+        "subtype": "success",
+        "wall_s": 23.404
+      },
+      {
+        "cost_usd": 0.1428172,
+        "model": "claude-sonnet-5",
+        "name": "bob-table-player#100",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 75.438
+      },
+      {
+        "cost_usd": 0.2601574,
+        "model": "claude-sonnet-5",
+        "name": "bob-fresh-reader",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 137.143
+      },
+      {
+        "cost_usd": 0.2485918,
+        "model": "claude-sonnet-5",
+        "name": "bob-fresh-reader#2",
+        "num_turns": 2,
+        "subtype": "success",
+        "wall_s": 116.649
+      },
+      {
+        "cost_usd": 0.4476998,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#11",
+        "num_turns": 13,
+        "subtype": "success",
+        "wall_s": 97.41
+      }
+    ],
+    "ticks": 0
+  },
+  "heartbeat": "2026-08-22T19:51:23.081999+00:00"
 }

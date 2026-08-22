@@ -1,0 +1,14 @@
+{
+  "findings": [
+    "AMBIGUOUS \u2014 Probe rulings (sec 5): 'Key not fully home: same as above \u2014 void, re-insert, turn again.' Unclear whether 'same as above' imports the two-attempt-then-Hold conversion from the undetented-slider ruling, or allows unlimited re-insertion attempts on a mis-inserted key.",
+    "AMBIGUOUS \u2014 Re-pin restrictions (sec 5): '...you may not re-pin after a Hold or after the opening Probe.' 'Opening Probe' is undefined in place; a fresh reader can misread it as 'the round's first Probe' rather than 'the Probe that opens the lock' (already covered separately in sec 8's OPEN edge case), making the restriction look duplicated or contradictory.",
+    "UNANSWERABLE \u2014 Deepest reading bonus (sec 6): 'nobody gets it [if] no Probe was made all round.' The text never says whether a void Probe (undetented slider or key-not-home, sec 5) counts as 'a Probe made' for awarding the bonus, or whether a voided reading could be the 'highest reading' \u2014 a real scoring-arithmetic gap at round end.",
+    "Read-notes: components bill (sec 2) front-loads 8+ new terms (chamber, gate, slug, pin/rung, cut rail, shutter, keyway, shear line) before any turn is explained; a reader must hold all of them before the mechanism payoff arrives, forcing a re-read once turn structure/actions are reached.",
+    "Read-notes: the staircase-cam plug rule (sec 2, plug_01 \u2014 'chamber only blocks rotation once the plug reaches that chamber's gate angle') isn't actually clarified until the worked example one section later in sec 5 (3 7 2 5 1 vs 3 7 4 5 1); first-pass readers will flip back."
+  ],
+  "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
+  "judge": "bob-fresh-reader",
+  "misses": 3,
+  "questions": 12,
+  "teach_minutes": 18
+}
