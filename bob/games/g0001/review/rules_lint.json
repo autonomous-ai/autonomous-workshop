@@ -1,9 +1,0 @@
-{
-  "idea_sha": "969b8a3c5e6df96abed9e8a49e3a4d3173dd8f093a9064943732a62e211058ad",
-  "lint_pass": true,
-  "problems": [],
-  "warnings": [
-    "unbound language in rules (roughly, several, some) \u2014 every rule carries a number (text2game consistency lint)",
-    "0 signature parts (want exactly 1 \u2014 the one object a shopper remembers)"
-  ]
-}

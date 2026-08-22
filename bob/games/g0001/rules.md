@@ -1,83 +1,119 @@
 # CRANK
 
-*A gear-routing race for 2–4 players. 25–35 minutes. Ages 10+.*
+*A gear-routing race for 2–4 players. About 30 minutes. Ages 10+.*
 
 ---
 
 ## 1. Overview
 
-There is one machine on the table and one handle on it. On your turn you bolt a single gear onto the shared peg plate, then you turn the handle one full revolution — three clicks — and every dial around the table moves at once.
+There is one machine on the table and one handle on it. On your turn you bolt a
+single gear onto the shared peg plate, then you turn the handle three clicks —
+one full revolution — and every dial around the table moves at once.
 
-Your dial only moves if a live run of teeth reaches it from the crank. How *fast* it moves depends on the gear sitting under your dial, and on whether anybody has routed you through a compound hub, which is a sealed gearbox whose ratio nobody knows until it turns. Which *way* it moves is decided by the colour of the gear under your dial: black climbs, white falls.
+Your dial only moves if a live run of teeth reaches it from the handle. How
+**fast** it moves is set by the size of the gear sitting under it. Which **way**
+it moves is set by one thing only: how many meshes are between the handle and
+that gear. An even number of meshes and your dial climbs. An odd number and it
+falls. That is not a card that says "reverse" — it is what a line of gears
+actually does.
 
-You never add anything up. You crank, and the machine tells you what you built. First dial to reach **30** wins on the spot.
+You never add anything up. You crank, and the machine tells you what you built.
+**First dial to reach 20 wins on the spot.**
 
-The catch, and the whole game: **anybody may place the gear under your dial.**
+The catch, and the whole game: **the plate is shared, and anybody may place the
+gear under your dial.** One gear spliced onto your run in the right place turns
+your engine into a drain.
 
 ---
 
 ## 2. Components bill
 
-Every part is printed. The **Compound Hub** is the load-bearing part — a print-in-place planetary stack with a captive carrier, sealed in a bridge body. It is the reason this game cannot be a deck of cards.
+Every part is printed. All gears use a 3 mm module, and every hole on the plate
+is 3 mm from the next, which is why every mesh distance in this game is a whole
+number of holes.
+
+The **Compound Hub** is the load-bearing part. It is a print-in-place planetary
+stack with a captive carrier, sealed inside a bridge body. Both of its ends look
+identical from outside; what is inside changes both the speed and the direction
+of everything past it, and you find out by cranking. It is the reason this game
+cannot be a deck of cards.
 
 | id | name | qty | size (mm) | role |
 |---|---|---|---|---|
-| `plate_01` | Peg Plate | 1 | 168 × 168 × 11 (field 160 × 160 × 5, rim 3 wide × 6 tall) | 39 × 39 grid of ⌀2.2 holes at 4 mm pitch. Every gear stands on this. |
-| `crank_01` | Crank Post | 1 | ⌀34 × 96 | Stands in the exact centre hole (column 20, row 20). One-way ratchet, three detents per revolution. |
-| `crank_02` | Crank Handle | 1 | 66 × 18 × 22 | Presses onto the Crank Post shaft. This is the handle. |
-| `drive_01` | Drive Gear (13 teeth, black) | 1 | ⌀30 × 8 | Fixed to the crank shaft at gear height. Delivers 13 teeth per turn of the handle. Never removed. |
-| `gear_11` | Gear 11 (white) | 8 | ⌀26 × 14 | Plain gear, 11 teeth. |
-| `gear_13` | Gear 13 (black) | 8 | ⌀30 × 14 | Plain gear, 13 teeth. |
-| `gear_17` | Gear 17 (black) | 7 | ⌀38 × 14 | Plain gear, 17 teeth. |
-| `gear_19` | Gear 19 (white) | 7 | ⌀42 × 14 | Plain gear, 19 teeth. |
-| `gear_23` | Gear 23 (white) | 5 | ⌀50 × 14 | Plain gear, 23 teeth. |
-| `gear_29` | Gear 29 (black) | 5 | ⌀62 × 14 | Plain gear, 29 teeth. |
-| `hub_01`–`hub_06` | **Compound Hub** ★ | 6 | 80 × 42 × 16 | Two 17-tooth black ends, 40 mm apart, joined by a sealed planetary train. Outsides identical; the ratio inside is one of ×2, ×2, ×3, ×4, ÷2, ÷3 and is not marked. Locked until it is seated on the plate. |
-| `tower_01` | Hub Tower | 1 | 52 × 52 × 132 | Opaque magazine. Holds the six hubs stacked; dispenses only the bottom one. |
-| `dial_01`–`dial_04` | Dial Unit | 4 (one per player) | 96 × 46 × 62 | Clamps to the plate rim and slides along it. Arm reaches in over one gear; a follower rides that gear's track and steps the counter one number per revolution, either way. Counter reads −5 to 35. |
-| `ring_01`–`ring_06` | Reading Ring | 6 | ⌀46 × 5 | Marked ×2, ×2, ×3, ×4, ÷2, ÷3. Dropped over a hub end once the table has worked that hub out. |
-| `pull_01` | Pull Token | 16 (four per player) | ⌀18 × 4 | Spent to take a gear off the plate. |
-| `tray_01` | Gear Tray | 1 | 186 × 74 × 24 | Six open wells, one per tooth count. This is the supply and it is public. |
-| `tray_02` | Scrap Tray | 1 | 92 × 74 × 24 | Where pulled gears and pulled hubs go. Nothing ever comes back out. |
+| `plate_01` | Peg Plate | 1 | 184 × 184 × 10 | Playing field 174 × 174, ribbed underside, 5 mm rim. 59 × 59 grid of ⌀1.8 holes at 3 mm pitch. Columns 1–59 left to right, rows 1–59 near to far. |
+| `crank_01` | Crank Post | 1 | ⌀30 × 84 | Seats in the one oversized ⌀5 hole, at **column 22, row 34** — off-centre on purpose. One-way ratchet, three detents per revolution. |
+| `crank_02` | Crank Handle | 1 | 62 × 16 × 20 | Presses onto the Crank Post shaft. This is the handle. |
+| `drive_01` | Drive Gear | 1 | ⌀45 × 8 | 13 teeth, fixed to the crank shaft at gear height. Pushes 13 teeth into the machine per revolution of the handle. Never removed, never pulled. |
+| `gear_11` | Gear 11 | 8 | ⌀39 × 10 | 11 teeth. Spoked. |
+| `gear_13` | Gear 13 | 8 | ⌀45 × 10 | 13 teeth. Spoked. |
+| `gear_17` | Gear 17 | 7 | ⌀57 × 10 | 17 teeth. Spoked. |
+| `gear_19` | Gear 19 | 7 | ⌀63 × 10 | 19 teeth. Spoked. |
+| `gear_23` | Gear 23 | 5 | ⌀75 × 10 | 23 teeth. Spoked. |
+| `gear_29` | Gear 29 | 5 | ⌀93 × 10 | 29 teeth. Spoked. |
+| `hub_01`–`hub_06` | **Compound Hub** ★ | 6 | 87 × 39 × 14 | Two 11-tooth ends, centres **16 holes** apart, joined by a sealed planetary train. Each end carries one red index tooth. Inside is one of six pairings of speed and direction (§5b) — unmarked, unguessable, identical from outside. |
+| `mag_01` | Hub Magazine | 1 | 96 × 50 × 104 | Opaque stack. Holds all six hubs; dispenses only the bottom one. |
+| `dial_01`–`dial_04` | Dial Unit | 4 (one per player) | 90 × 52 × 58 | Clamps anywhere on the plate rim and slides along it. Arm reaches over any hole **1 to 12 holes in from that rim**. A follower rides the read gear's top track and steps the counter one number per revolution of that gear, either way. Counter reads −5 to 25. |
+| `ring_01`–`ring_06` | Reading Ring | 6 | ⌀52 × 4 | Marked ×2 same, ×3 same, ÷3 same, ×2 flip, ×3 flip, ÷2 flip. Dropped over a hub end once the table has read that hub. Bookkeeping only. |
+| `pull_01` | Pull Token | 12 (three per player) | ⌀18 × 4 | Spent to take a part off the plate. |
+| `tray_01` | Gear Tray | 1 | 186 × 74 × 22 | Six open wells, one per tooth count, each well marked. This is the supply and it is public all game. |
+| `tray_02` | Scrap Tray | 1 | 92 × 74 × 22 | Where pulled parts go. Nothing ever comes back out. |
 
-**Two facts about the printed gears that the rules lean on:**
+**Three facts about the printed gears that the rules lean on:**
 
-- Every plain gear has a ⌀2.0 × 6 mm spigot underneath — it drops straight into a plate hole and spins there. No separate pins.
-- Every plain gear has a ⌀20 mm follower track on its top face with one notch in it. The Dial Unit reads that notch. The track is the same size on all six gears, so a Dial Unit can read any gear.
+- Every gear has a ⌀1.7 × 5 mm spigot underneath. It drops straight into a plate
+  hole and spins there. There are no separate pins and no assembly.
+- Every gear has a ⌀20 mm follower track on its top face with one notch in it.
+  The track is the same size on all six gears, so any Dial Unit can read any gear.
+- Every gear has one **red index tooth**. That is how you see which way a gear is
+  turning without staring at it.
 
 ---
 
 ## 3. Setup
 
-1. Put the **Peg Plate** flat in the middle of the table, one edge facing each player.
-2. Push the **Crank Post** into the centre hole and press the **Crank Handle** onto its shaft. The **Drive Gear** is already on the post. This is the only gear that starts on the plate.
-3. Each player takes one **Dial Unit** and clamps it to the rim on the edge facing them, anywhere along that edge. Set every counter to **0**.
-   - **2 players:** use opposite edges.
-   - **3 players:** use the north, east and west edges. Nobody docks on the south edge; gears may still be placed there.
-   - **4 players:** one edge each.
-4. Each player takes **4 Pull Tokens**.
-5. Shuffle the six **Compound Hubs** face down without looking at their undersides and drop them into the **Hub Tower** in that order. Stand the Tower beside the plate. Put the six **Reading Rings** face up next to it.
-6. Tip all 40 plain gears into the **Gear Tray**, one tooth count per well. Everyone can see the supply all game. Put the empty **Scrap Tray** beside it.
-7. The youngest player goes first. Play passes to the left.
+1. Put the **Peg Plate** flat in the middle of the table.
+2. Push the **Crank Post** into the one oversized hole — it is the only hole it
+   fits, and it is not in the middle. Press the **Crank Handle** onto its shaft.
+   The **Drive Gear** is already on the post. This is the only gear that starts
+   on the plate.
+3. Tip all 40 gears into the marked wells of the **Gear Tray**. Put the empty
+   **Scrap Tray** beside it. Both stay in reach of everyone all game.
+4. Without turning them over and **without spinning either end**, stack all six
+   **Compound Hubs** into the **Hub Magazine** in any order. Stand the Magazine
+   beside the plate and lay the six **Reading Rings** face up next to it.
+5. **First player:** whoever most recently turned a real crank, spanner or hand
+   drill. If nobody has, the youngest player. Play passes to the left.
+6. **Docking, in reverse turn order** — the last player in turn order clamps
+   their Dial Unit first, the first player clamps last. Clamp anywhere on any of
+   the four rims and set the arm over any hole 1 to 12 holes in from that rim.
+   No two Dial Units may read the same hole.
+   - **2 players:** the two Dial Units must clamp on different sides of the plate.
+   - **3 and 4 players:** no restriction beyond the above. Sides are not owned;
+     two players may share a side.
+7. Set every counter to **0**. Each player takes **3 Pull Tokens**.
 
 ---
 
 ## 4. Turn structure
 
-A turn is two steps, in this order. Both always happen.
+A turn is two steps, in this order. Both always happen. There are no phases
+inside a turn, no reactions, and nothing happens between turns.
 
-**Step 1 — Act.** Do exactly one of the five actions in section 5. If you can do none of them, say so and do nothing.
+**Step 1 — Act.** Do exactly one of the four actions in §5. If none of them is
+legal for you, do nothing and say so.
 
-**Step 2 — Crank.** You, the player whose turn it is, take the handle and turn it **clockwise exactly three clicks** — one full revolution. It only turns one way; it will not go back. Do not stop halfway; three clicks or nothing.
+**Step 2 — Crank.** You, and only you, take the handle and turn it **clockwise
+exactly three clicks** — one full revolution. It ratchets; it will not go back.
+Three clicks every turn: not two because you are behind, not six because you are
+ahead.
 
-Then everyone looks at their dial. Dials move during the crank, on their own. Nobody adds anything up.
+Then everybody looks at their own dial. Dials move during the crank, driven by
+the machine. Nobody adds anything up and nobody moves anybody's counter by hand.
 
-- Any dial that reaches **30** — that player wins immediately. Stop.
-- Any dial that reaches **−5** locks (section 6).
+- Any dial that reaches **20** — that player wins immediately. Stop the game.
+- Any dial that reaches **−5** stops there and freezes (§6).
 
 Then the turn passes to the left.
-
-There are no phases inside a turn and no reactions. Between turns, nothing happens.
 
 ---
 
@@ -87,90 +123,214 @@ Pick exactly one.
 
 ### 5a. Place a gear
 
-Take any one plain gear from the Gear Tray and drop it onto an empty hole.
+Take any one gear from the Gear Tray and drop it onto an empty hole. **It must
+mesh at least one part already on the plate** — the Drive Gear counts, a hub end
+counts. It may mesh several.
 
-**It must mesh at least one gear already on the plate** (the Drive Gear counts). It may mesh several.
+**When do two gears mesh?** One rule, no table:
 
-**When do two gears mesh?** Look up the pair on the Mesh Table. That number is how many holes apart they must sit, counted straight along a row or column.
+> **Two gears mesh when the holes they sit in are exactly (my teeth + their
+> teeth) ÷ 2 holes apart.** Every tooth count in this box is odd, so that sum is
+> always even and the answer is always a whole number of holes.
 
-| | 11 (white) | 19 (white) | 23 (white) |
-|---|---|---|---|
-| **13 (black)** | 6 | 8 | 9 |
-| **17 (black)** | 7 | 9 | **10** ◹ |
-| **29 (black)** | **10** ◹ | 12 | **13** ◹ |
+Drive Gear = 13 teeth. Hub ends = 11 teeth. So a Gear 17 meshes the Drive Gear
+at (17 + 13) ÷ 2 = **15 holes**, and meshes a hub end at (17 + 11) ÷ 2 = **14
+holes**.
 
-Three rules follow from that table and they are worth saying out loud once:
+Measure straight along a row or straight along a column. **Six mesh numbers also
+work on a slant**, because the plate grid happens to allow it — these are real
+meshes, whether you meant them or not:
 
-- **A black gear only ever meshes a white gear.** Two gears of the same colour can never sit at a meshing distance on this plate. You do not have to check.
-- **Exactly that far apart = they mesh. Farther apart = they do not. Closer together = illegal**, because the teeth foul and the gear will not turn. The plate is the referee: if it does not drop in and spin freely, it is not a legal placement.
-- **Three pairs also mesh on a diagonal** — the ones marked ◹. A 10 goes six holes across and eight holes along; a 13 goes five across and twelve along. No other pair meshes diagonally.
+| mesh number | also meshes at |
+|---|---|
+| 13 | 5 across and 12 along |
+| 15 | 9 across and 12 along |
+| 17 | 8 across and 15 along |
+| 20 | 12 across and 16 along |
+| 26 | 10 across and 24 along |
+| 29 | 20 across and 21 along |
 
-**Which way things turn.** The Drive Gear is black and turns clockwise seen from above. Every gear meshed to it turns the other way, and so on down the line. Because a mesh always joins a black to a white:
+Any other slant is either farther apart than the mesh number, in which case the
+teeth never touch, or nearer, in which case:
 
-> **Every black gear on the plate turns clockwise. Every white gear turns anticlockwise. Always.**
+> **No two gears may ever sit closer than their mesh number.** The teeth foul and
+> the gear will not seat. The plate is the referee — if it does not drop in and
+> spin freely, it is not a legal placement.
 
-**Failed placement.** If the gear will not seat, fouls a neighbour, fouls a Dial Unit, or the crank will not turn afterwards (see *Jams*, section 9), the placement is illegal. Take the gear straight back and place it somewhere else, or choose a different action. There is no penalty and it is not your turn wasted — but once you have started cranking, everything on the plate stands.
+**Which way it turns.** The Drive Gear turns clockwise, seen from above. Every
+mesh reverses. So:
+
+> **Count the meshes from the Drive Gear to the gear under your dial. Even, and
+> that gear turns clockwise, and your dial climbs. Odd, and it turns
+> anticlockwise, and your dial falls.**
+
+The shortest possible run — one gear straight off the Drive Gear — is one mesh.
+It runs you **backwards**. Climbing takes at least two.
+
+**Failed placement.** If the gear will not seat, fouls a neighbour, fouls a Dial
+Unit arm, or the handle will not turn afterwards (§9, *Jams*), the placement is
+illegal. Take the gear straight back and put it somewhere else, or switch to a
+different action. No penalty, no turn lost. But once you have started cranking,
+everything on the plate stands.
 
 ### 5b. Draw and place a hub
 
-Instead of a plain gear, take the **bottom hub from the Hub Tower** — you do not get to choose which — and place it on the plate in one motion. It spans two holes exactly **10 holes apart**, in a row or a column, and at least one of its two 17-tooth ends must mesh a gear already on the plate. Its ends are black, so they mesh white gears only, at 7 (to an 11), 9 (to a 19) or 10 (to a 23).
+Instead of a gear, take the **bottom hub from the Hub Magazine** — you do not get
+to choose which — and place it on the plate in one motion, both spigots into
+holes exactly **16 holes apart** along a row or a column.
 
-Seating the hub on the plate releases its internal lock. **Do not spin a hub in your hand.** You find out what is inside it by cranking, and that is the game.
+**Exactly one of a hub's two ends may mesh something already on the plate.** The
+other end must, at the moment you place it, mesh nothing at all. (This is why a
+hub can never lock the machine on the turn it goes down.)
 
-Both ends of a hub turn the same way as each other, so a hub never changes any direction anywhere. What it changes is how many teeth come out the far end: two, three or four times as many, or a half or a third as many. That multiplies the speed of every dial downstream of it.
+Hub ends have 11 teeth, so a hub end meshes a Gear 11 at 11 holes, a Gear 13 or
+the Drive Gear at 12, a Gear 17 at 14, a Gear 19 at 15, a Gear 23 at 17, a Gear
+29 at 20.
 
-**One hub per run.** No dial may be driven through more than one hub. If placing a hub here would put two hubs between the crank and any player's dial, you may not place it there.
+Seating a hub on the plate releases its internal lock. **Do not spin a hub in
+your hand, and do not spin one in the Magazine.** You find out what is inside it
+by cranking, and that is the game.
+
+Inside every hub is one of these six, and each of the six is in the box exactly
+once:
+
+| what it does to speed | what it does to direction |
+|---|---|
+| ×2 | keeps it — **same** |
+| ×3 | keeps it — **same** |
+| ÷3 | keeps it — **same** |
+| ×2 | reverses it — **flip** |
+| ×3 | reverses it — **flip** |
+| ÷2 | reverses it — **flip** |
+
+**How you read a hub.** Crank, and watch the red index tooth on each of the hub's
+two ends. Which way the far end goes against the near end tells you same or flip.
+How much farther the far end travels than the near end tells you the speed. One
+crank answers both. When the table agrees, drop the matching **Reading Ring**
+over the far end so nobody has to remember.
+
+**A flip hub counts as one extra mesh** for everything past it. A same hub counts
+as none. That is the only thing you ever have to fold into the count in §5a.
+
+**One hub per run.** No dial may be driven through more than one hub. If placing
+a hub here would put two hubs between the handle and any player's dial gear, you
+may not place it there.
 
 ### 5c. Pull
 
-Spend one **Pull Token** (put it in the Scrap Tray) and take **any one plain gear or any one hub** off the plate. It goes to the Scrap Tray and is out of the game for good — pulled gears do not return to the supply and pulled hubs do not return to the Tower.
+Spend one **Pull Token** — put it in the Scrap Tray — and take **any one gear or
+any one hub** off the plate. It goes to the Scrap Tray and is out of the game for
+good. Pulled gears never return to the supply and pulled hubs never return to the
+Magazine.
 
-You may pull a gear that somebody's dial is reading, including your own. You may not pull the Drive Gear.
+You may pull a gear that a Dial Unit is reading, including your own. You may not
+pull the Drive Gear.
 
-Gears left hanging off the plate with no live path back to the crank simply stop turning. Leave them where they are.
+Parts left with no live path back to the handle simply stop turning. Leave them
+where they are; they still occupy their holes and they still block. A dead branch
+can be reconnected later, at whatever mesh count the reconnecting player chooses.
+That is the sharpest weapon in the box: pull one gear out of the middle of a run,
+then next turn re-connect the orphaned tail with the parity you want it to have.
 
 ### 5d. Re-dock
 
-Slide your Dial Unit to any other position on your edge, and set its arm to read any hole **within five holes of your edge**. The hole may be empty or may already have a gear on it. Your counter keeps its number.
-
-You may not dock over a hole another Dial Unit is already reading.
-
-### 5e. Reset
-
-Only if your dial is locked at −5. Lift the Dial Unit's arm out, set the counter to **0**, and drop the arm back. Your dial is live again from the next crank.
+Slide your Dial Unit anywhere along any rim and set its arm over any hole 1 to 12
+holes in from that rim. The hole may be empty or may already have a gear on it.
+Your counter keeps its number. You may not dock over a hole another Dial Unit is
+already reading.
 
 ### If you can do nothing
 
-If the supply is empty, you have no Pull Tokens, you have nowhere legal to re-dock and your dial is not locked, you take no action. You still crank.
+If the Gear Tray is empty, the Magazine is empty, you have no Pull Tokens and
+every re-dock is blocked, take no action. You still crank.
 
 ---
 
 ## 6. How dials move
 
-You do not need this section to play — the machine does it — but you need it to plan.
+You do not need this section to play — the machine does it — but you need it to
+plan.
 
-One full turn of the handle pushes **13 teeth** into the machine, because the Drive Gear has 13 teeth. Teeth do not multiply or vanish as they run along plain gears: 13 teeth in, 13 teeth out, all the way down the line. A big gear turns slowly and a small gear turns quickly, but the same teeth pass.
+One revolution of the handle pushes **13 teeth** into the machine. Teeth do not
+multiply or vanish as they run along plain gears: 13 in, 13 out, all the way
+down the line. A small gear spins fast, a big gear spins slowly, and the same
+teeth pass through both.
 
-Your Dial Unit steps its counter **one number for each full revolution of the gear it is reading**, and it steps whichever way that gear is turning. So:
+Your Dial Unit steps its counter **one number for every full revolution of the
+gear it is reading**, in whichever direction that gear is turning.
 
-| gear under your dial | colour | numbers per turn of the handle |
-|---|---|---|
-| 11 | white | 1.18 **down** |
-| 13 | black | 1.00 **up** |
-| 17 | black | 0.76 **up** |
-| 19 | white | 0.68 **down** |
-| 23 | white | 0.57 **down** |
-| 29 | black | 0.45 **up** |
+| gear under your dial | numbers per crank, on a plain run |
+|---|---|
+| 11 | 1.18 |
+| 13 | 1.00 |
+| 17 | 0.76 |
+| 19 | 0.68 |
+| 23 | 0.57 |
+| 29 | 0.45 |
 
-Those are not fractions you ever work out. The follower carries the leftover round with it, so some turns your dial clicks twice and some turns it does not click at all. Watch it; it will tell you.
+You never work those fractions out. The follower carries the remainder with it,
+so some cranks your dial clicks twice and some cranks it does not click at all.
+Watch it; it will tell you.
 
-A hub in your run multiplies all of it. A ×3 hub feeding a 13-tooth black gear gives you 3 numbers per turn. A ÷3 hub feeding a 29-tooth black gear gives you one number roughly every seven turns.
+**Direction** comes from the mesh count, always, and never from the gear itself.
+The same Gear 13 that climbed for you all game runs you down the moment somebody
+adds a mesh ahead of it.
 
-**Worked example.** Amara's run, from the middle outwards: Drive Gear (13, black) → Gear 23 (white, 9 holes away) → hub, in at its 17-tooth end (10 holes away) → out at the other end → Gear 11 (white, 7 holes away) → Gear 13 (black, 6 holes away), and that last black 13 is what her Dial Unit reads.
+**A hub multiplies the speed and may flip the direction** of everything past it.
 
-The hub turns out to be a ×2. So 13 teeth go in, 26 come out of the hub, and a 13-tooth gear turns twice. Her dial gains **2 a turn, upwards**, because the gear under it is black. Thirty turns of the handle after that — everybody's turns, not just hers — she wins. Unless somebody pulls the 23 out of the middle of her run, which costs them one Pull Token and one turn.
+### Worked example
 
-**A dial at −5 locks.** It stops there, stops counting, and stays stopped until its owner spends a turn on **Reset**. A locked dial cannot win.
+Amara docks on the left rim, arm over column 9, row 34 — 13 holes dead left of
+the Crank Post at column 22, row 34.
+
+**Turn 1.** She drops a Gear 13 on that hole. (13 + 13) ÷ 2 = 13, so it meshes
+the Drive Gear. One mesh — odd. Her dial runs **down** at 1.00 a crank. She knew
+that; she wanted the hole.
+
+**Turn 2.** She has slipped to −2. She places a Gear 11 twelve holes above the
+Crank Post at column 22, row 46, then re-docks? No — she cannot do both in one
+turn. She places the Gear 11 and lets the dial keep falling. −3.
+
+**Turn 3.** She pulls her own Gear 13 out of column 9, row 34, for one token. Her
+dial now reads nothing and holds at −3.
+
+**Turn 4.** She drops a Gear 23 at column 9, row 34. Is it meshed? To the Drive
+Gear the distance is 13, but a 23 needs 18 — no mesh. To the Gear 11 at column
+22, row 46: 13 across and 12 along, which is not one of the six slants — no mesh.
+Illegal. She takes it back and drops a Gear 11 there instead: (11 + 11) ÷ 2 = 11
+from the Gear 11 at row 46? That is 13 across and 12 along again. Still no.
+
+She re-reads the plate and does it properly: she puts a **Gear 11 at column 10,
+row 46**, which is 12 holes straight along from the Gear 11 at column 22, row 46
+— wrong, (11 + 11) ÷ 2 = 11, so she puts it at **column 11, row 46**. Now the run
+is Drive Gear → Gear 11 (12 holes up) → Gear 11 (11 holes across). Two meshes.
+Even. Clockwise. Climbing.
+
+**Turn 5.** She re-docks her arm over column 11, row 46 — twelve holes in from
+the far rim, legal. From −3 she now climbs 1.18 a crank, on **everybody's**
+crank, not just her own. Twenty numbers of climb from −3 means 23 numbers, about
+20 turns of the handle.
+
+**Turn 9, and it is not her turn.** Ben places a Gear 19 at column 11, row 27 —
+(19 + 11) ÷ 2 = 15 holes straight down from Amara's read gear. That does not
+touch her. But then he places a Gear 17 fifteen holes from the Drive Gear on the
+slant, 8 across and 15 along, landing at column 30, row 49 — and it also sits 19
+holes from her first Gear 11. Not a mesh number for 17 and 11 (that would be 14),
+so no. Ben cannot reach her that way.
+
+What Ben does instead: he spends a token and **pulls Amara's first Gear 11** out
+of column 22, row 46. Her tail goes dead at 8. Next turn he places a **Gear 13**
+at column 22, row 46 — 12 holes from the Drive Gear, a legal mesh — and Amara's
+read gear is now three meshes from the handle. Odd. She has spent two turns
+building and now she runs **down** at 1.18 a crank, from 8, and −5 is five cranks
+away. It cost Ben one token and two turns. It costs Amara her whole route.
+
+That is the game.
+
+**The −5 freeze.** A dial that reaches −5 stops there. It does not go lower and
+it does not move again — not on anybody's crank — until the end of its owner's
+next turn, at which point it comes back to life still reading −5. You get one
+turn of grace, frozen, to fix your route or re-dock somewhere kinder.
 
 ---
 
@@ -178,53 +338,124 @@ The hub turns out to be a ×2. So 13 teeth go in, 26 come out of the hub, and a 
 
 The game ends the moment any one of these happens.
 
-1. **A dial reaches 30 during a crank.** That player wins immediately. The crank finishes, nothing else happens, the game is over. A dial cannot pass 30; it stops there.
-2. **The supply runs dry.** If the last plain gear leaves the Gear Tray and the Hub Tower is empty, finish that turn's crank and the game ends. Highest dial wins.
-3. **Nobody builds for a full round.** If a complete round goes by — every player takes one turn — in which no gear or hub is placed and no Pull is spent, the game ends after the last crank of that round. Highest dial wins.
+1. **A dial reaches 20 during a crank.** That player wins immediately. Finish the
+   revolution, then stop; nothing else resolves. A dial cannot pass 20 for the
+   purpose of winning, but the counter reads to 25 so ties can be broken.
+2. **A round with no building.** If a complete round goes by — every player takes
+   one turn — in which no gear and no hub is placed and no Pull Token is spent,
+   the game ends after the last crank of that round. Highest dial wins.
 
-**The end is reachable, and here is the arithmetic.** Every turn removes one item from a finite pile: a Place takes one gear or hub out of the supply for good, a Pull takes one token out of your hand and one part off the plate for good. There are 40 gears, 6 hubs and 16 tokens — at most 62 turns before ending 3 must fire even if nobody ever scores. In real play ending 1 arrives first: a player wired to a plain black 13 gains 1 a turn, and every player's crank feeds every dial, so 30 arrives roughly 30 turns after they connect, and connecting takes two placements. Expect **25 to 40 turns, 25 to 35 minutes**, at any player count — the game length is set by turns of the handle, not by how many people are sitting down.
+**The end is reachable, and here is the arithmetic.** Every Place takes one part
+out of a finite supply for good; every Pull takes one token out of a hand for
+good. There are 40 gears, 6 hubs and 12 tokens: 58 turns, at the absolute
+outside, before nobody can build or pull at all, and then ending 2 must fire
+inside one more round. Hard ceiling: **62 turns of the handle**, even if not one
+dial ever moves.
+
+In real play ending 1 arrives long before that. A player wired to a plain Gear 11
+on an even mesh count gains 1.18 a crank, and **every player's crank feeds every
+dial**, so 20 arrives about 17 cranks after they connect. Connecting takes two or
+three turns. Interference — a pull, a re-dock, a spliced mesh — typically costs
+each player four to eight cranks of progress. Expect **30 to 40 turns of the
+handle**, which is **25 to 40 minutes** with teaching, at any player count.
+
+Note that the length is measured in cranks, not rounds. Two players and four
+players play the same number of cranks to the same finish; at two players each
+person simply gets more of them.
 
 ---
 
 ## 8. Tiebreak
 
-If endings 2 or 3 fire, or if one crank pushes two dials to 30 at once, work down this list until one player is left. It always resolves.
+If ending 2 fires, or if one crank pushes two dials to 20 in the same revolution,
+work down this list until one player is left. It always resolves.
 
-1. **Highest number on the dial.** The counter reads past 30 for exactly this reason.
+1. **Highest number on the counter.** This is why it reads past 20.
 2. **Most unspent Pull Tokens.**
-3. **Shortest run.** Count the gears and hubs between the Drive Gear and the gear your dial reads, not counting the Drive Gear and counting a hub as one. Fewest wins. A dial with no live run to the crank counts as the longest and loses this step to everybody.
-4. **Turn order.** Of the players still tied, the one who would take their turn soonest, starting from the player to the left of whoever cranked last.
+3. **Shortest run.** Count the parts between the Drive Gear and the gear your
+   dial reads, not counting the Drive Gear, counting a hub as one part. Fewest
+   wins. A dial with no live run to the handle counts as longer than any run and
+   loses this step to everybody.
+4. **Turn order.** Of the players still tied, the one who would take their turn
+   soonest, starting from the player to the left of whoever cranked last.
 
 ---
 
 ## 9. Edge cases
 
-**Jams.** Gears are rigid. If your placement closes a loop that asks two runs of teeth to disagree — an odd loop of plain gears, or a loop with a hub in it so the two ways round want different speeds — the machine locks and the handle will not move. That placement was illegal: take the gear back off and place it somewhere else, or take a different action. You find this out by trying to crank, which is fine; a jam before the first click costs nothing. **You may not jam the machine on purpose, because a jam is never a legal placement.**
+**Jams.** Gears are rigid, so some placements ask the machine to do two things at
+once and it simply locks. Two rulings cover every case:
 
-**A gear you cannot legally place.** If you can find nowhere on the plate for any gear in the supply, you may still Pull, Re-dock or Reset. If you can do none of those, take no action and crank.
+- **A closed ring of parts jams if the mesh count round the ring is odd.**
+  (Remember a flip hub counts as one mesh and a same hub as none.)
+- **A closed ring containing any hub jams**, always, because the two ways round
+  the ring want different speeds.
 
-**The well you want is empty.** Too bad. Take a different tooth count or take a different action. Gears never come back from the Scrap Tray.
+A placement that jams the machine is illegal. You find out by trying to crank,
+which is fine — a jam before the first click costs nothing. Take the part back
+off and place it elsewhere or switch actions. **You cannot jam the machine on
+purpose, because a jam is never a legal placement.**
 
-**Somebody put a white gear under my dial.** That is legal and it is the point. Your dial now runs down. Fix it by re-docking somewhere else, by placing a black gear on a hole you can then dock over, or by pulling the white one out.
+**Closing a ring through a hub nobody has read yet.** You may try it. If it locks,
+the placement is void and you take it back — but the table has now learned
+something about that hub for free, and everyone saw it.
 
-**Somebody docked over the gear I wanted.** First come, first served. Corner holes belong to both neighbouring edges, same rule.
+**You cannot legally place any gear anywhere.** You may still Pull or Re-dock. If
+none of those is available either, take no action and crank.
 
-**Two dials reading the same gear.** Not allowed — one Dial Unit per hole.
+**The well you want is empty.** Too bad. Take a different tooth count or a
+different action. Nothing comes back from the Scrap Tray.
 
-**Placing a gear on a hole that is already under a Dial Unit's arm.** Legal. Anybody may do it, and it becomes that player's dial gear at the next crank.
+**Somebody spliced a mesh into my run and now I fall.** That is legal and it is
+the point. Your fixes are: re-dock somewhere with an even count, pull the added
+gear out, or add another mesh past it and flip yourself back.
 
-**A dial with no gear under it.** It sits at whatever it reads and does not move. That is not a loss; at the end it is scored as it stands, and it loses tiebreak step 3.
+**Somebody docked over the hole I wanted.** First come, first served. Corner
+holes count as belonging to both rims that meet there, same rule.
 
-**Two things happen on one crank.** Check for 30 first and stop the game. Only if nobody hit 30 do you apply locks at −5.
+**Placing a gear on a hole that already has a Dial Unit arm over it.** Legal.
+Anybody may do it, and it becomes that player's read gear from the next crank.
 
-**A dial at −5 that nobody resets.** It stays dead. It can still lose ties on step 3 and it can never win. Resetting is always available on your turn and costs only the action.
+**A dial with no gear under it.** It holds at whatever it reads and does not move.
+That is not a loss — it scores as it stands and it loses tiebreak step 3.
 
-**A hub whose far end drives nothing.** Legal and useless. It reveals nothing until something downstream of it reaches a dial.
+**A dial that hits 20 and −5 in the same crank.** Impossible; a counter cannot
+reach both in one revolution. If two different dials hit 20 and −5 in the same
+crank, the 20 wins the game and the −5 is irrelevant.
 
-**Two hubs in a row.** Never legal (section 5b). If a *Pull* somewhere else on the plate would leave two hubs in one dial's run, that Pull is still legal — the restriction only ever blocks placing a hub. In that case the second hub counts and the two ratios multiply, and everybody has to live with it.
+**Two dials reach 20 in the same crank.** Go to §8.
 
-**We cannot agree what a hub is.** Then do not put a Reading Ring on it. The rings are bookkeeping; they change nothing. The machine keeps doing what it does whether or not you have worked it out.
+**Two dials freeze at −5 in the same crank.** Both freeze; each thaws at the end
+of its own owner's next turn.
 
-**Spinning a hub in your hand to peek.** Don't. It is locked in the Tower and it is meant to go from the Tower to the plate in one motion.
+**A frozen dial whose read gear is pulled while it is frozen.** It still thaws on
+schedule. It then reads nothing and holds at −5 until its owner re-docks.
 
-**Cranking fewer or more than three clicks.** Three clicks, every turn, no exceptions — not two if you are behind, not six if you are ahead. If somebody miscranks, finish the revolution to the next click and carry on; the machine has already moved and there is no rewind.
+**A hub whose far end drives nothing.** Legal, and useless until something
+downstream of it exists. It reveals nothing, because with nothing on its far end
+there is no load and both index teeth still move — read it the same way, by
+comparing the two ends.
+
+**Two hubs in one run.** You may never *place* a hub that creates this (§5b). But
+if a **Pull** somewhere else re-routes a dial through two hubs, that Pull is still
+legal, the two speeds multiply, the two directions combine, and the table lives
+with it.
+
+**We cannot agree what is inside a hub.** Then do not put a Reading Ring on it.
+The rings are bookkeeping and change nothing. The machine keeps doing what it
+does whether or not you have worked it out.
+
+**Somebody spun a hub in their hand.** Ask them not to. It tells them nothing
+useful — a hub out of the Magazine has both ends locked — but it is the one
+place in this box where a player can look like they are cheating, so keep hubs
+going Magazine-to-plate in one motion.
+
+**Miscranking.** Finish the revolution to the next click and carry on. The
+machine has already moved and there is no rewind. If somebody cranks on another
+player's turn, the same applies: the crank counts, and the turn's owner does not
+get a replacement crank.
+
+**Reaching 20 exactly versus overshooting.** The counter physically stops at 25,
+but the game stops the instant a counter shows 20 or more during a crank. If your
+dial jumps from 19 to 21 in one revolution, you have won at 21, and 21 is the
+number used for tiebreaks.

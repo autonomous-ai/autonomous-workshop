@@ -160,11 +160,22 @@ def _policy_greedy(engine, state, me, legal, rng):
     return _argmax_random_tiebreak(pairs, rng)
 
 
+#: Beam width for the 2-ply policy. Full 2-ply is O(b^2): Re-Pin's 792-move
+#: turns cost ~627K evals per DECISION and sank 46 CPU-minutes (2026-08-23).
+#: Sampling keeps the ladder meaningful at bounded cost — and a game whose
+#: turns need sampling at all is itself a finding (vibe-ideas held playable
+#: branching at ~60; the sampled width is recorded, never hidden).
+LOOKAHEAD_BEAM = 40
+
+
 def _policy_lookahead1(engine, state, me, legal, rng):
     """2-ply minimax on scores: my move, then the next player's best reply
     (they maximize their own eval); among their tied-best replies assume the
     one worst for me (paranoid minimax — the honest 2-ply assumption).
+    Both plies are beam-sampled at LOOKAHEAD_BEAM (deterministic under rng).
     """
+    if len(legal) > LOOKAHEAD_BEAM:
+        legal = rng.sample(legal, LOOKAHEAD_BEAM)
     pairs = []
     for move in legal:
         s1 = engine.apply(state, move)
@@ -173,6 +184,8 @@ def _policy_lookahead1(engine, state, me, legal, rng):
             continue
         opp = engine.player_to_move(s1)
         reply_legal = engine.legal_moves(s1)
+        if len(reply_legal) > LOOKAHEAD_BEAM:
+            reply_legal = rng.sample(reply_legal, LOOKAHEAD_BEAM)
         if not reply_legal:
             pairs.append((_eval(engine, s1, me), move))
             continue

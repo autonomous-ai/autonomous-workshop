@@ -1,6 +1,6 @@
 {
   "2026-08-22": {
-    "cost_usd": 12.166926,
+    "cost_usd": 13.972158,
     "steps": [
       {
         "cost_usd": 0.8292140000000001,
@@ -153,9 +153,41 @@
         "num_turns": 8,
         "subtype": "success",
         "wall_s": 1021.194
+      },
+      {
+        "cost_usd": 0.4302768,
+        "model": "claude-sonnet-5",
+        "name": "bob-rules-lens#2",
+        "num_turns": 4,
+        "subtype": "success",
+        "wall_s": 273.675
+      },
+      {
+        "cost_usd": 0.6038460000000001,
+        "model": "claude-opus-5",
+        "name": "bob-ideator#3",
+        "num_turns": 6,
+        "subtype": "success",
+        "wall_s": 231.101
+      },
+      {
+        "cost_usd": 0.2478966,
+        "model": "claude-sonnet-5",
+        "name": "bob-triage-judge#3",
+        "num_turns": 5,
+        "subtype": "success",
+        "wall_s": 105.805
+      },
+      {
+        "cost_usd": 0.523212,
+        "model": "claude-sonnet-5",
+        "name": "bob-novelty-judge#9",
+        "num_turns": 12,
+        "subtype": "success",
+        "wall_s": 105.974
       }
     ],
     "ticks": 0
   },
-  "heartbeat": "2026-08-22T17:32:18.726852+00:00"
+  "heartbeat": "2026-08-22T17:58:55.534571+00:00"
 }

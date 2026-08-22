@@ -1,0 +1,7 @@
+{
+  "all_pass": false,
+  "degeneracy_pass": false,
+  "error": "SimWallExceeded: sim wall budget exceeded (BOB_SIM_WALL_MINUTES, default 20) \u2014 the engine is too slow/branchy for its own battery",
+  "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
+  "integrity_pass": false
+}

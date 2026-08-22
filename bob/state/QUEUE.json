@@ -4,7 +4,7 @@
       "budgets": {
         "clarify_used": 0,
         "repair_used": 0,
-        "rework_used": 0
+        "rework_used": 1
       },
       "created": "2026-08-22T09:25:21.568786+00:00",
       "direction": {
@@ -14,9 +14,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T18:17:18.730154+00:00",
+        "expires": "2026-08-22T18:25:10.350923+00:00",
         "holder": "invent",
-        "id": "e61fafa68520404aa8d9628d84ef8e52"
+        "id": "bd060ab86282434eaac4abae99653348"
       },
       "log": [
         {
@@ -54,6 +54,12 @@
           "from": "ruled",
           "note": "rules written; gate next",
           "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-22T17:36:52.406125+00:00",
+          "from": "rules_gated",
+          "note": "rules lens FAIL -> rework: Dominant strategy (rework): two placements build a deterministic, uncounterable win line. Place a white Gear 23 at mesh-distance 9 straight from the Drive Gear (13 black) down a column \u2014 quote: '13 (black) | ... | 9' in the Mesh Table for the 23 column \u2014 then a black Gear 13 at mesh-distance 9 further down the same column (row20\u2192row11\u2192row2), landing inside the 'within five holes of your edge' dial-read zone (\u00a75d Re-dock). That final black 13 gives 1.00 'up' per crank, the fastest black rate in the numbers-per-turn table, and it accrues on every crank in the game, not just the owner's \u2014 quote: 'Thirty turns of the handle after that \u2014 everybody's turns, not just hers.' The Drive Gear 'may mesh several' (\u00a75a), so every seat (N/S/E/W) can build the identical line off its own edge with zero contention, discoverable on a first read, with no Compound Hub ever touched. Sabotage does not deter it: a Pull costs the attacker one token plus a full turn (\u00a75c) while gear_13 (8 copies) and gear_23 (5 copies) sit in open supply (bill), so the owner rebuilds next turn \u2014 a losing trade for the attacker. This makes the Compound Hub / Reading Ring subsystem, billed as 'the reason this game cannot be a deck of cards,' strategically optional filler.; idea.json contradiction (clarify): idea.json states 'First dial to 20 wins; a dial driven to -5 jams for one round,' but rules.md sets the win threshold at 30 (\u00a74, \u00a77) and makes a -5 dial lock permanently until the owner spends a full turn on Reset (\u00a75e, \u00a76) \u2014 both the win number and the penalty duration changed without the source concept being updated.; idea.json contradiction (clarify): idea.json's stated 'fun_correct_bet' is that direction flips on mesh-chain parity \u2014 'your neighbour's mesh count goes odd' runs a dial backwards \u2014 but rules.md replaced that with a fixed rule independent of chain length: 'black climbs, white falls' (\u00a71) and 'Every black gear ... turns clockwise. Every white gear ... turns anticlockwise. Always' (\u00a75a). The parity-based tension the pitch was built on is absent from the shipped mechanic, which is consistent with the dominant straight-line route in the first finding.",
+          "to": "ruled"
         }
       ],
       "reward": {
@@ -61,7 +67,7 @@
         "latest": 0.0
       },
       "slug": "g0001",
-      "state": "rules_gated",
+      "state": "ruled",
       "title": "Crank"
     },
     "g0002": {
@@ -77,11 +83,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T18:04:32.569002+00:00",
-        "holder": "invent",
-        "id": "360105ed1efa48c7a5e3e63c3bbd305a"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -112,6 +114,18 @@
           "from": "rules_gated",
           "note": "rules gate passed",
           "to": "simulated"
+        },
+        {
+          "at": "2026-08-22T17:56:58.750305+00:00",
+          "from": "simulated",
+          "note": "parked: sim gate failed (integrity): sim wall budget exceeded (BOB_SIM_WALL_MINUTES, default 20) \u2014 the engine is too slow/branchy for its own battery",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T01:15:00+00:00",
+          "from": "parked",
+          "note": "human unpark: 792-branch turns sank full 2-ply; lookahead now beam-sampled at 40 \u2014 re-run the battery",
+          "to": "simulated"
         }
       ],
       "reward": {
@@ -136,8 +150,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": null,
-        "holder": null
+        "expires": "2026-08-22T18:43:55.537992+00:00",
+        "holder": "invent",
+        "id": "38ba75d298b24c759948e51418d55fe6"
       },
       "log": [
         {
@@ -145,6 +160,18 @@
           "from": null,
           "note": "sparked",
           "to": "sparked"
+        },
+        {
+          "at": "2026-08-22T17:40:10.168801+00:00",
+          "from": "sparked",
+          "note": "spark chosen: Clearance (triage kept 1 of 5)",
+          "to": "researched"
+        },
+        {
+          "at": "2026-08-22T17:58:50.367201+00:00",
+          "from": "researched",
+          "note": "novelty pass, margin=far",
+          "to": "ruled"
         }
       ],
       "reward": {
@@ -152,8 +179,8 @@
         "latest": 0.0
       },
       "slug": "g0003",
-      "state": "sparked",
-      "title": "unsparked (measurement-dexterity)"
+      "state": "ruled",
+      "title": "Clearance"
     }
   },
   "version": 2
