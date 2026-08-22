@@ -375,16 +375,28 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
                 break
             prompt = _turn_prompt(seats[mover]["persona"], question,
                                   engine.observation(state, mover), legal)
-            result = agents.run_agent(SEAT_AGENT, prompt,
-                                      max_minutes=SEAT_MAX_MINUTES)
-            total_cost += result.cost_usd
-            idx, why = parse_index(result.text, len(legal))
+            try:
+                result = agents.run_agent(SEAT_AGENT, prompt,
+                                          max_minutes=SEAT_MAX_MINUTES)
+                total_cost += result.cost_usd
+                reply_text = result.text
+                idx, why = parse_index(reply_text, len(legal))
+            except agents.QuotaExhausted:
+                raise  # a wall is a wall — the driver defers the tick
+            except agents.AgentError as exc:
+                # ONE hung seat call must not void a 90-minute run: g0002's
+                # entire table investment died to a single 3-min overrun
+                # among ~650 calls (2026-08-23). A seat that fails to answer
+                # is a CONFUSED PLAYER — count it, play a random legal move,
+                # keep the table.
+                reply_text = ""
+                idx, why = None, "seat call failed: %s" % exc
             confused = why is not None
             if confused:
                 idx = rng.randrange(len(legal))
                 confusion_events.append({
                     "turn": turn, "seat": mover, "why": why,
-                    "reply": result.text[:COMMENT_CHARS],
+                    "reply": reply_text[:COMMENT_CHARS],
                 })
             moves.append({
                 "turn": turn,
@@ -392,7 +404,7 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
                 "legal_count": len(legal),
                 "choice_index": idx,
                 "confused": confused,
-                "comment": result.text[:COMMENT_CHARS],
+                "comment": reply_text[:COMMENT_CHARS],
             })
             state = engine.apply(state, legal[idx])
             turn += 1
@@ -424,21 +436,27 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
             vprompt = _verdict_prompt(
                 spec["persona"], question, spec["seat"], winners,
                 engine.observation(state, spec["seat"]))
-            result = agents.run_agent(SEAT_AGENT, vprompt,
-                                      max_minutes=SEAT_MAX_MINUTES)
-            total_cost += result.cost_usd
-            vote = _yes_no(_field(result.text, "PLAY_AGAIN") or result.text)
-            felt = _yes_no(_field(result.text, "AGENCY"))
+            try:
+                result = agents.run_agent(SEAT_AGENT, vprompt,
+                                          max_minutes=SEAT_MAX_MINUTES)
+                total_cost += result.cost_usd
+                vtext = result.text
+            except agents.QuotaExhausted:
+                raise
+            except agents.AgentError:
+                vtext = ""  # missing verdict counts as confusion below
+            vote = _yes_no(_field(vtext, "PLAY_AGAIN") or vtext)
+            felt = _yes_no(_field(vtext, "AGENCY"))
             if vote is None:
                 confusion_events.append({
                     "turn": None, "seat": spec["seat"],
                     "why": "unparseable would-play-again verdict",
-                    "reply": result.text[:COMMENT_CHARS],
+                    "reply": vtext[:COMMENT_CHARS],
                 })
             play_again.append(vote)
             agency.append(felt)
-            answers.append((_field(result.text, "ANSWER")
-                            or result.text)[:COMMENT_CHARS])
+            answers.append((_field(vtext, "ANSWER")
+                            or vtext)[:COMMENT_CHARS])
         if aborted:
             # Half-polled table: discard it whole — counting some seats'
             # votes but not others would skew the fail-closed fraction.

@@ -12,7 +12,7 @@
   {"name": "Compound Hub", "qty": 6, "size_mm": "87 x 39 x 14", "per_player": false, "signature": true},
   {"name": "Hub Magazine", "qty": 1, "size_mm": "96 x 50 x 104", "per_player": false},
   {"name": "Dial Unit", "qty": 4, "size_mm": "90 x 58 x 58", "per_player": true},
-  {"name": "Reading Ring", "qty": 6, "size_mm": "52 dia x 4", "per_player": false},
+  {"name": "Reading Ring", "qty": 6, "size_mm": "36 dia x 4", "per_player": false},
   {"name": "Spanner Token", "qty": 16, "size_mm": "18 dia x 4", "per_player": true},
   {"name": "Gear Tray", "qty": 1, "size_mm": "186 x 74 x 22", "per_player": false},
   {"name": "Scrap Tray", "qty": 1, "size_mm": "92 x 74 x 22", "per_player": false}

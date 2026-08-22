@@ -2,11 +2,11 @@
   "players": "2-4",
   "player_count": { "min": 2, "max": 4 },
   "target_minutes": 30,
-  "length_range_minutes": [25, 40],
+  "length_range_minutes": [25, 35],
   "teach_minutes": 5,
   "action_types": ["place_gear", "place_hub", "pull", "redock", "pass"],
   "rules": {
-    "win": "First dial to reach 20 during a crank wins immediately. Otherwise, if a full round passes in which no gear and no hub is placed and no Spanner Token is spent, the game ends after that round's last crank and the highest dial wins. Ties break on: highest counter, then most unspent Spanner Tokens, then shortest run from the Drive Gear, then soonest turn order."
+    "win": "First dial to reach 20 or more during a crank wins immediately. Otherwise, if a full round passes in which no gear and no hub is placed and no Spanner Token is spent, the game ends after that round's last crank and the highest dial wins. Ties break on: highest counter, then most unspent Spanner Tokens, then shortest run from the Drive Gear, then soonest turn order."
   },
   "components": [
     {"id": "plate_01", "name": "Plate Quadrant", "qty": 4, "size_mm": "122 x 122 x 10"},
@@ -22,7 +22,7 @@
     {"id": "hub_01", "name": "Compound Hub", "qty": 6, "size_mm": "87 x 39 x 14"},
     {"id": "mag_01", "name": "Hub Magazine", "qty": 1, "size_mm": "96 x 50 x 104"},
     {"id": "dial_01", "name": "Dial Unit", "qty": 4, "size_mm": "90 x 58 x 58"},
-    {"id": "ring_01", "name": "Reading Ring", "qty": 6, "size_mm": "52 dia x 4"},
+    {"id": "ring_01", "name": "Reading Ring", "qty": 6, "size_mm": "36 dia x 4"},
     {"id": "token_01", "name": "Spanner Token", "qty": 16, "size_mm": "18 dia x 4"},
     {"id": "tray_01", "name": "Gear Tray", "qty": 1, "size_mm": "186 x 74 x 22"},
     {"id": "tray_02", "name": "Scrap Tray", "qty": 1, "size_mm": "92 x 74 x 22"}

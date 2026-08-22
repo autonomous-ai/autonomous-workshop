@@ -4,39 +4,39 @@
   "moves": [
     {
       "choice_index": 0,
-      "comment": "**Move: 0 \u2014 set drop to 1.0 mm.**\n\nMy tallest block (a3, ~31.2mm) is close to the 31.0mm line a 2mm or 3mm drop would create \u2014 too risky to scrap my own best piece on round 1 with no score committed yet. A 1mm drop takes the gap to 32.0mm, ",
+      "comment": "**0**\n\nDrop 1mm. The gap barely budges (33\u219232mm), and my tallest block a3 stays safe. My blocks form a steep tower\u201431.2, 27.8, 21.2\u2014so I want to keep that height intact as long as possible. Aggressive drops (2-3mm) scrap my own value. A ran",
       "confused": false,
       "legal_count": 3,
       "seat": 2,
       "turn": 0
     },
     {
-      "choice_index": 4,
-      "comment": "4",
+      "choice_index": 1,
+      "comment": "1",
       "confused": false,
       "legal_count": 6,
       "seat": 3,
       "turn": 1
     },
     {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
+      "choice_index": 3,
+      "comment": "Looking at the gap estimate of 31.0 mm and my block heights:\n\n**c3 (30.2 mm):** Only 0.8 mm clearance. While my eye estimates suggest it should clear (~85% confidence), the downside is catastrophic\u2014if it touches, I lose my best block foreve",
+      "confused": true,
       "legal_count": 6,
       "seat": 0,
       "turn": 2
     },
     {
       "choice_index": 1,
-      "comment": "1",
+      "comment": "1\n\nThis is Round 1 with maximum information uncertainty\u2014I don't know what the other three players are holding or what strategy they'll use. b3 is too close to the gap (32.2mm vs ~32mm gap, my measurement \u00b11mm) to justify risking my tallest ",
       "confused": false,
       "legal_count": 6,
       "seat": 1,
       "turn": 3
     },
     {
-      "choice_index": 3,
-      "comment": "The gap only shrinks, so a tall block gets less useful every round \u2014 better to bank a3 (31.2mm) now while the 32.0mm gap still clears it with room, than risk it becoming dead weight later.\n\n0",
+      "choice_index": 0,
+      "comment": "0",
       "confused": false,
       "legal_count": 6,
       "seat": 2,
@@ -44,121 +44,121 @@
     },
     {
       "choice_index": 1,
-      "comment": "1",
-      "confused": false,
+      "comment": "Looking at this strategically:\n\n**Current position:** Gap is ~32mm (my estimate), and I need to protect my best asset (d4 at 27.8mm) while staying aggressive.\n\n**Gap math:**\n- Drop 1mm \u2192 gap \u224831mm (safe but passive\u2014seat 2 will score easily ",
+      "confused": true,
       "legal_count": 3,
       "seat": 3,
       "turn": 5
     },
     {
-      "choice_index": 1,
-      "comment": "1",
-      "confused": false,
-      "legal_count": 5,
+      "choice_index": 0,
+      "comment": "Looking at this situation:\n\n**Gap estimate:** ~29.5 mm (my margin of error \u00b11 mm)\n**My blocks:** c3 at ~30.2 mm, c6 at ~28.8 mm\n\n**Analysis:**\n- c3 is 0.7 mm above my gap estimate. Given my \u00b11 mm uncertainty band, there's real risk it touch",
+      "confused": true,
+      "legal_count": 6,
       "seat": 0,
       "turn": 6
     },
     {
       "choice_index": 1,
-      "comment": "1",
+      "comment": "1\n\nThe gap is at my estimate of 29.5 mm (\u00b11 mm). b6 is 28.8 mm\u2014roughly 90% likely to clear. It's my tallest safe block; if it clears, I'm the favorite to win the round. b3 almost certainly scraps (2.7 mm over). b1 is safer but much shorter ",
       "confused": false,
       "legal_count": 6,
       "seat": 1,
       "turn": 7
     },
     {
-      "choice_index": 4,
-      "comment": "4",
-      "confused": false,
+      "choice_index": 2,
+      "comment": "Looking at this situation:\n\n**Gap:** ~30.0 mm (\u00b11 mm)\n**a3:** ~31.2 mm (likely 1-2 mm too tall)\n**a6:** ~27.8 mm (comfortably safe)\n\na3 probably won't clear\u2014I'm risking losing it entirely, which hands its height (~31 mm) to whoever wins wit",
+      "confused": true,
       "legal_count": 5,
       "seat": 2,
       "turn": 8
     },
     {
-      "choice_index": 1,
-      "comment": "1",
+      "choice_index": 0,
+      "comment": "0",
       "confused": false,
-      "legal_count": 6,
+      "legal_count": 5,
       "seat": 3,
       "turn": 9
     },
     {
-      "choice_index": 0,
-      "comment": "0",
+      "choice_index": 1,
+      "comment": "Looking at this endgame:\n\nI'm in last place tied with Seat 1 (0 blocks, 0 mm). Seat 2 is running away (50 mm, 2 blocks). To catch up, I need to land a block this round.\n\nMy playable blocks at low gaps:\n- c1 (20.8 mm): clears at any of these",
       "confused": false,
       "legal_count": 3,
-      "seat": 1,
+      "seat": 0,
       "turn": 10
     },
     {
-      "choice_index": 3,
-      "comment": "b3 (32.2mm) is dead weight \u2014 the gap ceiling is already 30mm and only drops, so it can never clear again. b6 (28.8) sits right on my gap estimate (28.5\u00b11), too close to call. b1 (22.2) clears with confidence (well below even the low end of ",
+      "choice_index": 2,
+      "comment": "2",
       "confused": false,
       "legal_count": 6,
       "seat": 1,
       "turn": 11
     },
     {
-      "choice_index": 4,
-      "comment": "4",
+      "choice_index": 2,
+      "comment": "2\n\nMy gap estimate is 27.0 mm; **a6 (27.8 mm) is too close to the margin** \u2014 only 0.8 mm of clearance, which is at the edge of my \u00b11 mm accuracy. If I'm slightly off and a6 gets scrapped, it goes into someone else's line, not mine.\n\n**a5 (2",
       "confused": false,
       "legal_count": 5,
       "seat": 2,
       "turn": 12
     },
     {
-      "choice_index": 4,
-      "comment": "Gap only ever drops, so this round is the highest it will ever be \u2014 d4 (27.8mm) either clears now or never clears at all. My eye reads the gap at 29.0, right at the top of the logical 25-29mm range, which favors d4 clearing. Taking the shot",
+      "choice_index": 1,
+      "comment": "1",
       "confused": false,
-      "legal_count": 5,
+      "legal_count": 4,
       "seat": 3,
       "turn": 13
     },
     {
-      "choice_index": 2,
-      "comment": "2",
+      "choice_index": 0,
+      "comment": "Looking at this game state, I need to maximize my score line. Currently I'm at 0 blocks while seat 2 leads with ~50mm.\n\n**Key facts:**\n- Gap is ~28mm (my eye estimate \u00b11mm)  \n- My blocks ranked by height: c3(30.2), c6(28.8), c1(20.8), c5(15",
       "confused": false,
-      "legal_count": 4,
+      "legal_count": 6,
       "seat": 0,
       "turn": 14
     },
     {
       "choice_index": 0,
-      "comment": "I'm behind (tied last at 0 score) while seat0 leads with two tall blocks. Dropping the gap hard pressures the leader's remaining tall blocks toward scrapping, and I still have short blocks (d5, d3) that clear comfortably even after a big dr",
+      "comment": "Looking at this state:\n- I'm at 0 blocks, seat 3 is at 3 blocks (~85mm) \u2014 I'm significantly behind\n- Gap is at ~28.5mm\n- My blocks: b6 (~28.8mm), b1 (~22.2mm), b4 (~15.8mm), b5 (~15.2mm), b2 (~14.2mm)\n\nAs setter, I can control the gap to cr",
       "confused": false,
       "legal_count": 3,
-      "seat": 3,
+      "seat": 1,
       "turn": 15
     },
     {
-      "choice_index": 3,
-      "comment": "3",
+      "choice_index": 2,
+      "comment": "2\n\nPlaying a5 (21.2mm) \u2014 it's safe, brings me to 3 blocks (~71mm), and keeps my riskier blocks for later when I know more about the gap. Seat 3 is at 85mm with 3 blocks; I need to stay in the game without burning good cards on bad odds.",
       "confused": false,
-      "legal_count": 4,
+      "legal_count": 5,
       "seat": 2,
       "turn": 16
     },
     {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 5,
+      "choice_index": 2,
+      "comment": "Looking at the board:\n\n**I'm leading 85mm to 50mm.** My rail has d6 (~22.8mm, my longest), d5 (~18.8mm), and d3 (~12.2mm).\n\nThe gap is estimated at ~26mm. d6 has about 3.2mm clearance\u2014reasonable given my \u00b11mm eye accuracy. Over 3 rounds, th",
+      "confused": true,
+      "legal_count": 3,
       "seat": 3,
       "turn": 17
     },
     {
-      "choice_index": 3,
-      "comment": "Playing c6 now \u2014 it's my only shot at this block ever clearing. The gap only drops each round, so today's odds (my read ~28.5\u00b11mm vs c6's 28.8mm) are the best they'll ever be. And since blocks that clear but don't win just return to the rai",
-      "confused": true,
-      "legal_count": 4,
+      "choice_index": 2,
+      "comment": "2\n\nMy analysis:\n- Gap is ~27.5 mm; I have zero blocks in my line and can't afford to waste any\n- c1 (20.8 mm) is safely below the gap with buffer for my eye's uncertainty\n- c3 (30.2) and c6 (28.8) are both risky; a scrapped block doesn't he",
+      "confused": false,
+      "legal_count": 6,
       "seat": 0,
       "turn": 18
     },
     {
-      "choice_index": 2,
-      "comment": "2",
+      "choice_index": 1,
+      "comment": "1\n\nPlaying b1 (~22.2 mm) clears the gap safely and starts my score line. b6 is too risky at ~28.8 mm against a ~27.5 mm gap\u2014scrapping my tallest block would be a losing decision. Starting with my second-tallest safe block builds my line whi",
       "confused": false,
-      "legal_count": 6,
+      "legal_count": 5,
       "seat": 1,
       "turn": 19
     },
@@ -167,38 +167,38 @@
       "comment": "0",
       "confused": false,
       "legal_count": 3,
-      "seat": 1,
+      "seat": 0,
       "turn": 20
     },
     {
       "choice_index": 1,
-      "comment": "1",
-      "confused": false,
-      "legal_count": 4,
+      "comment": "Looking at this position:\n\nI'm crushing the table (135mm vs seat 2's 50mm), and either piece should clear the 25.5mm gap. The decision doesn't hinge on safety\u2014both are safe enough.\n\nWhat matters is **winning this round**. The round goes to ",
+      "confused": true,
+      "legal_count": 2,
       "seat": 3,
       "turn": 21
     },
     {
       "choice_index": 0,
-      "comment": "0",
+      "comment": "Looking at my position: I'm at 0 blocks while seat 3 dominates with 5, and I need to accumulate blocks quickly. The bar is around 25.5mm, which gives me good margin.\n\nMy blocks (by height): c6 (28.8) \u2192 c1 (20.8) \u2192 c5 (15.8) \u2192 c2 (13.2) \u2192 c4",
       "confused": false,
-      "legal_count": 3,
+      "legal_count": 5,
       "seat": 0,
       "turn": 22
     },
     {
-      "choice_index": 1,
-      "comment": "1",
-      "confused": false,
+      "choice_index": 3,
+      "comment": "Looking at this situation:\n\n**Current gap**: ~26.5 mm (confidence \u00b11 mm)  \n**My blocks**: b6 (28.8 mm), b1 (22.2 mm), b4 (15.8 mm), b5 (15.2 mm), b2 (14.2 mm)  \n**My score**: 0 blocks (tied for last)  \n**Seat 3's score**: 5 blocks, ~135 mm ",
+      "confused": true,
       "legal_count": 5,
       "seat": 1,
       "turn": 23
     },
     {
-      "choice_index": 3,
-      "comment": "3",
+      "choice_index": 2,
+      "comment": "2",
       "confused": false,
-      "legal_count": 4,
+      "legal_count": 5,
       "seat": 2,
       "turn": 24
     },
@@ -211,34 +211,34 @@
       "turn": 25
     },
     {
-      "choice_index": 0,
-      "comment": "0",
+      "choice_index": 3,
+      "comment": "3\n\nThe gap is ~22.5 mm and dropping. c5 (15.8 mm) is the tallest block I can safely play\u2014it clears with margin. c6 (28.8 mm) gets scrapped. I'm at 0 blocks in my line while seat 3 has 5; I need to catch up with blocks that survive, not gamb",
       "confused": false,
-      "legal_count": 3,
+      "legal_count": 4,
       "seat": 0,
       "turn": 26
     },
     {
-      "choice_index": 1,
-      "comment": "1",
+      "choice_index": 0,
+      "comment": "0",
       "confused": false,
       "legal_count": 5,
       "seat": 1,
       "turn": 27
     },
     {
-      "choice_index": 1,
-      "comment": "1",
-      "confused": false,
-      "legal_count": 3,
+      "choice_index": 2,
+      "comment": "Looking at this position:\n\n**Current score: I have ~50mm (2 blocks), seat 3 has ~135mm (5 blocks). I'm far behind.**\n\nThe gap is my critical uncertainty. My eye estimates 23.5mm (range 17.5\u201327.0mm). My blocks:\n- a2: 16.2mm \u2014 guaranteed safe",
+      "confused": true,
+      "legal_count": 4,
       "seat": 2,
       "turn": 28
     },
     {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 3,
+      "choice_index": 1,
+      "comment": "Looking at this end-game position:\n\n**I'm ahead 135mm vs 50mm; I should close the game.**\n\nMy two blocks (d5 at 18.8mm, d3 at 12.2mm) both clear the gap at ~23.5mm. Committing them extends my score to ~166mm and essentially locks in the win",
+      "confused": true,
+      "legal_count": 2,
       "seat": 3,
       "turn": 29
     },
@@ -247,36 +247,36 @@
       "comment": "2",
       "confused": false,
       "legal_count": 3,
-      "seat": 1,
+      "seat": 0,
       "turn": 30
     },
     {
-      "choice_index": 2,
-      "comment": "2",
+      "choice_index": 3,
+      "comment": "Looking at this endgame state:\n\n**Current position:** Seat 3 is far ahead (5 blocks, ~135mm). I'm tied for second (2 blocks, ~50mm) with seat 2. Seat 0 has nothing and will set the bar next round.\n\n**Gap analysis:** My estimate is ~20mm. My",
       "confused": false,
-      "legal_count": 5,
+      "legal_count": 4,
       "seat": 1,
       "turn": 31
     },
     {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 2,
+      "choice_index": 2,
+      "comment": "Looking at the gap (~19.5mm) against my rail:\n- a3 (31.2mm) and a6 (27.8mm) would definitely touch the bar and get scrapped\n- a5 (21.2mm) would likely touch\u2014too risky\n- a2 (16.2mm) clears the gap safely\n\nI'm at 50mm vs. Seat 3's 135mm. I ne",
+      "confused": true,
+      "legal_count": 4,
       "seat": 2,
       "turn": 32
     },
     {
-      "choice_index": 1,
-      "comment": "Playing d5 (~18.8mm) \u2014 it clears comfortably under my ~20.5mm gap read while still being tall enough to compete for the round. d6 (~22.8mm) is above my estimated range and too likely to scrap a good block for nothing; d3 is safe but too sho",
+      "choice_index": 0,
+      "comment": "Looking at the situation:\n\n**Gap is ~19.5 mm. My options:**\n- d3: ~12.2 mm (safe, guaranteed to clear)\n- d5: ~18.8 mm (risky\u2014barely under the gap, any measurement error scraps it)\n\n**Why move 0 (commit d3):**\nI'm up 135 mm vs 50 mm for each",
       "confused": true,
-      "legal_count": 3,
+      "legal_count": 2,
       "seat": 3,
       "turn": 33
     },
     {
-      "choice_index": 0,
-      "comment": "0",
+      "choice_index": 2,
+      "comment": "2",
       "confused": false,
       "legal_count": 3,
       "seat": 0,
@@ -284,24 +284,24 @@
     },
     {
       "choice_index": 0,
-      "comment": "0",
+      "comment": "0\n\nI'm setting the bar down by 5mm to roughly 14.5mm. This is the aggressive play to get my c2 (13.2mm) to clear while cutting off competitors' larger blocks, letting me accumulate points before seat 3's massive lead becomes insurmountable.",
       "confused": false,
       "legal_count": 3,
-      "seat": 1,
+      "seat": 0,
       "turn": 35
     },
     {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 2,
+      "choice_index": 2,
+      "comment": "Looking at the position:\n\n**My situation:** I'm in 3rd place with 2 blocks (~50mm). Seat 3 is far ahead with 5 blocks (~135mm). This is the final round. My rail has a3 (~31.2mm), a6 (~27.8mm), a2 (~16.2mm). The bar is at 17.5mm.\n\n**The key ",
+      "confused": true,
+      "legal_count": 3,
       "seat": 2,
       "turn": 36
     },
     {
-      "choice_index": 1,
-      "comment": "**1** \u2014 playing d3. My eye reads the gap at ~20.5mm (\u00b11mm), but d6 reads ~22.8mm \u2014 likely too tall and would get scrapped, permanently losing the block *and* handing it as a bonus to whoever wins the round (probably the leader, seat 2). d3 ",
-      "confused": false,
+      "choice_index": 0,
+      "comment": "Looking at this endgame:\n\n**Gap is 17.5 mm. Game ends this round.**\n\n- **d5 (18.8 mm)**: Scraps. Uncertain if I get credit, risky.  \n- **d3 (12.2 mm)**: Clears. Guaranteed +12 mm to my score.\n\nI'm already ahead 135 mm vs ~50 mm for the tabl",
+      "confused": true,
       "legal_count": 2,
       "seat": 3,
       "turn": 37
@@ -310,79 +310,39 @@
       "choice_index": 0,
       "comment": "0",
       "confused": false,
-      "legal_count": 3,
+      "legal_count": 2,
       "seat": 0,
       "turn": 38
     },
     {
-      "choice_index": 2,
-      "comment": "2",
-      "confused": false,
-      "legal_count": 5,
+      "choice_index": 1,
+      "comment": "Looking at this endgame position:\n\n**Current state:** Seat 3 has 135mm (decisively winning). I have 50mm, tied with Seat 2. Gap is at bottom (17.5mm), this is Round 8 (final round).\n\n**My hand:** b4 (~15.8mm), b5 (~15.2mm), b2 (~14.2mm). Al",
+      "confused": true,
+      "legal_count": 3,
       "seat": 1,
       "turn": 39
-    },
-    {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 3,
-      "seat": 1,
-      "turn": 40
-    },
-    {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 1,
-      "seat": 3,
-      "turn": 41
-    },
-    {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 3,
-      "seat": 0,
-      "turn": 42
-    },
-    {
-      "choice_index": 2,
-      "comment": "2",
-      "confused": false,
-      "legal_count": 4,
-      "seat": 1,
-      "turn": 43
-    },
-    {
-      "choice_index": 0,
-      "comment": "0",
-      "confused": false,
-      "legal_count": 2,
-      "seat": 2,
-      "turn": 44
     }
   ],
   "n_players": 4,
   "question": "Did your choices matter, or would a random player have done as well?",
   "seats": [
     {
-      "model": "claude-sonnet-5",
+      "model": "claude-haiku-4-5-20251001",
       "persona": "a competitive player who hunts for the strongest line every turn",
       "seat": 0
     },
     {
-      "model": "claude-sonnet-5",
+      "model": "claude-haiku-4-5-20251001",
       "persona": "a cautious first-timer who plays what the rules literally say",
       "seat": 1
     },
     {
-      "model": "claude-sonnet-5",
+      "model": "claude-haiku-4-5-20251001",
       "persona": "an experienced boardgamer who compares everything to games they know",
       "seat": 2
     },
     {
-      "model": "claude-sonnet-5",
+      "model": "claude-haiku-4-5-20251001",
       "persona": "an impatient player who wants every turn to matter",
       "seat": 3
     }
@@ -397,33 +357,105 @@
       true
     ],
     "answers": [
-      "My choices mattered \u2014 each round came down to judging the hidden gap and picking how tall a block to risk, and misjudging it got you scrapped (like c1 in round 1). But the game stayed mostly a guessing contest: I never learned the true bar ",
-      "My choice each round genuinely mattered \u2014 I kept picking my smallest surviving block to stay safe, and that worked (I never got scrapped), but it also meant I never once won a round, since winning takes nerve to play a taller block and gues",
-      "This plays like a blind-bidding push-your-luck game (Limbo meets a hidden-number auction) \u2014 you're ranking your own blocks by feel and guessing a shrinking target you can't see clearly, so a chunk of it is measurement-noise luck, but choosi",
-      "My own bar-drops scrapped my own blocks twice (R2 and R4), so my choices had real, direct consequences, not noise. But the game hinges on eyeballing gaps to only \u00b11mm precision, so a lot of the outcome still comes down to luck in reading he"
+      "My choices mattered \u2014 I set the bar in R3 and made specific play decisions each round. But I finished last (45 mm vs seat 3's 135 mm), which suggests I either made poor strategic calls (the bar drop might've helped seat 3 more than me) or d",
+      "My choices mattered moderately. I came second through strategic gap estimation and block selection, but a random player with lucky block distribution could have scored similarly\u2014luck (block draws and bar timing) dominated the outcome.",
+      "Your choices mattered completely\u2014you set the bar in R1 and chose which block to play each round\u2014but your strategy failed to scale. You won one round and ended with 2 blocks; the winner got 5. The gap-reading mechanic is skill-based enough t",
+      "Decisively yes. I set the bar twice (rounds 2 and later), made prediction calls that mostly landed (d4 clearing in round 3 while b3 scrapped), and finished with 135mm\u201440mm ahead of second place. A random player chucking blocks would've scra"
     ],
     "confusion_events": [
       {
-        "reply": "Playing c6 now \u2014 it's my only shot at this block ever clearing. The gap only drops each round, so today's odds (my read ~28.5\u00b11mm vs c6's 28.8mm) are the best they'll ever be. And since blocks that clear but don't win just return to the rai",
+        "reply": "Looking at the gap estimate of 31.0 mm and my block heights:\n\n**c3 (30.2 mm):** Only 0.8 mm clearance. While my eye estimates suggest it should clear (~85% confidence), the downside is catastrophic\u2014if it touches, I lose my best block foreve",
         "seat": 0,
-        "turn": 18,
-        "why": "index 6 out of range 0..3"
+        "turn": 2,
+        "why": "index 31 out of range 0..5"
       },
       {
-        "reply": "Playing d5 (~18.8mm) \u2014 it clears comfortably under my ~20.5mm gap read while still being tall enough to compete for the round. d6 (~22.8mm) is above my estimated range and too likely to scrap a good block for nothing; d3 is safe but too sho",
+        "reply": "Looking at this strategically:\n\n**Current position:** Gap is ~32mm (my estimate), and I need to protect my best asset (d4 at 27.8mm) while staying aggressive.\n\n**Gap math:**\n- Drop 1mm \u2192 gap \u224831mm (safe but passive\u2014seat 2 will score easily ",
+        "seat": 3,
+        "turn": 5,
+        "why": "index 32 out of range 0..2"
+      },
+      {
+        "reply": "Looking at this situation:\n\n**Gap estimate:** ~29.5 mm (my margin of error \u00b11 mm)\n**My blocks:** c3 at ~30.2 mm, c6 at ~28.8 mm\n\n**Analysis:**\n- c3 is 0.7 mm above my gap estimate. Given my \u00b11 mm uncertainty band, there's real risk it touch",
+        "seat": 0,
+        "turn": 6,
+        "why": "index 29 out of range 0..5"
+      },
+      {
+        "reply": "Looking at this situation:\n\n**Gap:** ~30.0 mm (\u00b11 mm)\n**a3:** ~31.2 mm (likely 1-2 mm too tall)\n**a6:** ~27.8 mm (comfortably safe)\n\na3 probably won't clear\u2014I'm risking losing it entirely, which hands its height (~31 mm) to whoever wins wit",
+        "seat": 2,
+        "turn": 8,
+        "why": "index 30 out of range 0..4"
+      },
+      {
+        "reply": "Looking at the board:\n\n**I'm leading 85mm to 50mm.** My rail has d6 (~22.8mm, my longest), d5 (~18.8mm), and d3 (~12.2mm).\n\nThe gap is estimated at ~26mm. d6 has about 3.2mm clearance\u2014reasonable given my \u00b11mm eye accuracy. Over 3 rounds, th",
+        "seat": 3,
+        "turn": 17,
+        "why": "index 85 out of range 0..2"
+      },
+      {
+        "reply": "Looking at this position:\n\nI'm crushing the table (135mm vs seat 2's 50mm), and either piece should clear the 25.5mm gap. The decision doesn't hinge on safety\u2014both are safe enough.\n\nWhat matters is **winning this round**. The round goes to ",
+        "seat": 3,
+        "turn": 21,
+        "why": "index 135 out of range 0..1"
+      },
+      {
+        "reply": "Looking at this situation:\n\n**Current gap**: ~26.5 mm (confidence \u00b11 mm)  \n**My blocks**: b6 (28.8 mm), b1 (22.2 mm), b4 (15.8 mm), b5 (15.2 mm), b2 (14.2 mm)  \n**My score**: 0 blocks (tied for last)  \n**Seat 3's score**: 5 blocks, ~135 mm ",
+        "seat": 1,
+        "turn": 23,
+        "why": "index 26 out of range 0..4"
+      },
+      {
+        "reply": "Looking at this position:\n\n**Current score: I have ~50mm (2 blocks), seat 3 has ~135mm (5 blocks). I'm far behind.**\n\nThe gap is my critical uncertainty. My eye estimates 23.5mm (range 17.5\u201327.0mm). My blocks:\n- a2: 16.2mm \u2014 guaranteed safe",
+        "seat": 2,
+        "turn": 28,
+        "why": "index 50 out of range 0..3"
+      },
+      {
+        "reply": "Looking at this end-game position:\n\n**I'm ahead 135mm vs 50mm; I should close the game.**\n\nMy two blocks (d5 at 18.8mm, d3 at 12.2mm) both clear the gap at ~23.5mm. Committing them extends my score to ~166mm and essentially locks in the win",
+        "seat": 3,
+        "turn": 29,
+        "why": "index 135 out of range 0..1"
+      },
+      {
+        "reply": "Looking at the gap (~19.5mm) against my rail:\n- a3 (31.2mm) and a6 (27.8mm) would definitely touch the bar and get scrapped\n- a5 (21.2mm) would likely touch\u2014too risky\n- a2 (16.2mm) clears the gap safely\n\nI'm at 50mm vs. Seat 3's 135mm. I ne",
+        "seat": 2,
+        "turn": 32,
+        "why": "index 19 out of range 0..3"
+      },
+      {
+        "reply": "Looking at the situation:\n\n**Gap is ~19.5 mm. My options:**\n- d3: ~12.2 mm (safe, guaranteed to clear)\n- d5: ~18.8 mm (risky\u2014barely under the gap, any measurement error scraps it)\n\n**Why move 0 (commit d3):**\nI'm up 135 mm vs 50 mm for each",
         "seat": 3,
         "turn": 33,
-        "why": "index 5 out of range 0..2"
+        "why": "index 19 out of range 0..1"
+      },
+      {
+        "reply": "Looking at the position:\n\n**My situation:** I'm in 3rd place with 2 blocks (~50mm). Seat 3 is far ahead with 5 blocks (~135mm). This is the final round. My rail has a3 (~31.2mm), a6 (~27.8mm), a2 (~16.2mm). The bar is at 17.5mm.\n\n**The key ",
+        "seat": 2,
+        "turn": 36,
+        "why": "index 3 out of range 0..2"
+      },
+      {
+        "reply": "Looking at this endgame:\n\n**Gap is 17.5 mm. Game ends this round.**\n\n- **d5 (18.8 mm)**: Scraps. Uncertain if I get credit, risky.  \n- **d3 (12.2 mm)**: Clears. Guaranteed +12 mm to my score.\n\nI'm already ahead 135 mm vs ~50 mm for the tabl",
+        "seat": 3,
+        "turn": 37,
+        "why": "index 17 out of range 0..1"
+      },
+      {
+        "reply": "Looking at this endgame position:\n\n**Current state:** Seat 3 has 135mm (decisively winning). I have 50mm, tied with Seat 2. Gap is at bottom (17.5mm), this is Round 8 (final round).\n\n**My hand:** b4 (~15.8mm), b5 (~15.2mm), b2 (~14.2mm). Al",
+        "seat": 1,
+        "turn": 39,
+        "why": "index 3 out of range 0..2"
       }
     ],
     "would_play_again": [
-      false,
-      false,
       true,
-      false
+      true,
+      true,
+      true
     ]
   },
   "winners": [
-    2
+    3
   ]
 }

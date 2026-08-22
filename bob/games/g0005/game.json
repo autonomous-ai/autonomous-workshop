@@ -1,0 +1,85 @@
+{
+  "players": "2-4",
+  "target_minutes": 20,
+  "action_types": [
+    "push",
+    "probe"
+  ],
+  "rules": {
+    "win": "Play ends when the last player's rack is empty; that final push resolves in full. Score 1 point per captured tile in your score tray that is NOT your own colour, and 0 for tiles of your own colour. Most points wins. Tiebreak in order: fewest of your own tiles left in the rail, then fewest of your own tiles in other players' score trays, then most unspent probe chips, then the tied player nearest the start player's left going clockwise."
+  },
+  "components": [
+    {
+      "id": "tile_01",
+      "name": "Pole tile",
+      "qty": 48,
+      "size_mm": "24 x 18 x 10"
+    },
+    {
+      "id": "rail_01",
+      "name": "Rail",
+      "qty": 1,
+      "size_mm": "240 x 30 x 16"
+    },
+    {
+      "id": "magnet_01",
+      "name": "N35 disc magnet",
+      "qty": 32,
+      "size_mm": "6 dia x 3"
+    },
+    {
+      "id": "slug_01",
+      "name": "Steel slug",
+      "qty": 16,
+      "size_mm": "6 dia x 3"
+    },
+    {
+      "id": "rack_01",
+      "name": "Player rack",
+      "qty": 4,
+      "size_mm": "96 x 86 x 22"
+    },
+    {
+      "id": "screen_01",
+      "name": "Screen",
+      "qty": 4,
+      "size_mm": "150 x 80 x 24"
+    },
+    {
+      "id": "tray_01",
+      "name": "Score tray",
+      "qty": 4,
+      "size_mm": "90 x 70 x 22"
+    },
+    {
+      "id": "catch_01",
+      "name": "Catch tray",
+      "qty": 2,
+      "size_mm": "96 x 60 x 18"
+    },
+    {
+      "id": "probe_01",
+      "name": "Probe wand",
+      "qty": 1,
+      "size_mm": "110 x 14 x 12"
+    },
+    {
+      "id": "probe_magnet_01",
+      "name": "Probe magnet",
+      "qty": 1,
+      "size_mm": "6 dia x 3"
+    },
+    {
+      "id": "chip_01",
+      "name": "Probe chip",
+      "qty": 12,
+      "size_mm": "16 dia x 3"
+    },
+    {
+      "id": "card_01",
+      "name": "Joint card",
+      "qty": 4,
+      "size_mm": "88 x 56 x 1.6"
+    }
+  ]
+}
