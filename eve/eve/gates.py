@@ -59,7 +59,7 @@ def novelty_gate(game, corpus) -> GateResult:
         return GateResult(False, ["no idea recorded"])
     if not game.identity or "+" not in game.identity:
         return GateResult(False, ["identity must be an explicit 'like X plus Y' combination"])
-    if "mechanic" not in corpus.get("owned", {}):
+    if "mechanics" not in corpus.get("owned", {}):
         return GateResult(False, ["corpus is not loaded — cannot judge novelty", "fallback: not measurable"])
     owned_mech = set(corpus["owned"]["mechanics"])
     owned_themes = set(corpus["owned"]["themes"])

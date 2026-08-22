@@ -610,35 +610,51 @@ def _handle_ruled(step):
         queue.park(slug, "ruled with no idea.json — pipeline artifact missing")
         return
     game = _game_record(slug)
+    gdir = _game_dir(slug)
+    # FILES, not one giant JSON reply: g0001's rules-writer died at BOTH the
+    # 15-min and 35-min walls trying to emit a full rulebook + bill + game
+    # doc as a single reply. With tools (cwd) the agent writes the three
+    # files incrementally — partial progress survives, the reply is just a
+    # summary, and the loop validates the FILES (a model's report of success
+    # is not a build). Mock/tool-less runs still use the JSON-map fallback.
     prompt = "\n\n".join([
         _agent_body("bob-rules-writer"),
         "## The approved spark (idea.json)\n%s"
         % json.dumps(idea, indent=2, sort_keys=True),
         "## Lane\n%s" % _lane(game),
-        "## Output contract\nReply with JSON only: {\"rules_md\": <the "
-        "complete rules document, markdown>, \"bill\": [{\"name\", \"qty\", "
-        "\"size_mm\", \"per_player\"}...], \"game\": {\"action_types\": "
-        "[...], \"rules\": {\"win\": \"...\"}, \"players\": \"%s\", "
-        "\"components\": <same names/qty as bill>}}."
-        % idea.get("players", "2-4"),
+        "## Output contract\nWrite THREE files in the working directory: "
+        "rules.md (the complete cold-readable rules document), bill.json "
+        "(JSON list: [{\"name\", \"qty\", \"size_mm\", \"per_player\", "
+        "\"signature\": true on exactly ONE part}...]), and %s (JSON: "
+        "{\"action_types\": [...], \"rules\": {\"win\": \"...\"}, "
+        "\"players\": \"%s\", \"components\": <same names/qty as bill>}). "
+        "Write rules.md FIRST and save it before polishing. If you cannot "
+        "write files, reply with JSON only: {\"rules_md\": ..., \"bill\": "
+        "[...], \"game\": {...}}." % (budgets.GAME_DOC,
+                                       idea.get("players", "2-4")),
     ])
-    # 35-min wall: Opus + extended thinking writing a full rulebook blew the
-    # 15-min default twice on g0001 (2026-08-22) and the crash counter parked
-    # a healthy game. A ceiling that binds is the real constraint.
-    result = agents.run_agent("bob-rules-writer", prompt, max_minutes=35)
-    reply = _extract_json(result.text)
-    if not isinstance(reply, dict) or not isinstance(reply.get("rules_md"), str) \
-            or not reply.get("rules_md").strip() \
-            or not isinstance(reply.get("bill"), list) \
-            or not isinstance(reply.get("game"), dict):
-        _ledger_row(slug, "ruled", result.cost_usd,
-                    "rules-writer reply failed validation — will re-run")
-        queue.release(slug)
-        return
-    gdir = _game_dir(slug)
-    _atomic_write(os.path.join(gdir, "rules.md"), reply["rules_md"])
-    _write_json(os.path.join(gdir, "bill.json"), reply["bill"])
-    _write_json(os.path.join(gdir, budgets.GAME_DOC), reply["game"])
+    result = agents.run_agent("bob-rules-writer", prompt, cwd=gdir,
+                              max_minutes=35)
+    rules_ok = (os.path.exists(os.path.join(gdir, "rules.md"))
+                and os.path.getsize(os.path.join(gdir, "rules.md")) > 200)
+    bill_ok = _read_json_or_none(os.path.join(gdir, "bill.json")) is not None
+    doc_ok = _read_json_or_none(os.path.join(gdir, budgets.GAME_DOC)) is not None
+    if not (rules_ok and bill_ok and doc_ok):
+        # Tool-less fallback: materialize from a JSON reply (mock fixtures).
+        reply = _extract_json(result.text)
+        if isinstance(reply, dict) and isinstance(reply.get("rules_md"), str) \
+                and reply.get("rules_md").strip() \
+                and isinstance(reply.get("bill"), list) \
+                and isinstance(reply.get("game"), dict):
+            _atomic_write(os.path.join(gdir, "rules.md"), reply["rules_md"])
+            _write_json(os.path.join(gdir, "bill.json"), reply["bill"])
+            _write_json(os.path.join(gdir, budgets.GAME_DOC), reply["game"])
+        else:
+            _ledger_row(slug, "ruled", result.cost_usd,
+                        "rules-writer produced neither files nor a valid "
+                        "reply — will re-run")
+            queue.release(slug)
+            return
     _ledger_row(slug, "ruled", result.cost_usd,
                 "rules.md + bill.json + %s written" % budgets.GAME_DOC)
     queue.advance(slug, "rules_gated", "rules written; gate next")

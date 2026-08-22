@@ -11,3 +11,5 @@
 {"at": "2026-08-22T15:07:02.435457+00:00", "components": {}, "cost_usd": 0.8032, "delta": 0.0, "kind": "iteration", "notes": "kept spark 0/5: Re-Pin", "score": 0.0, "slug": "g0002", "stage": "sparked"}
 {"at": "2026-08-22T15:38:39.916683+00:00", "components": {}, "cost_usd": 0.429835, "delta": 0.0, "kind": "iteration", "notes": "novelty PASS (margin=near)", "score": 0.0, "slug": "g0002", "stage": "researched"}
 {"at": "2026-08-22T16:19:32.180880+00:00", "components": {}, "cost_usd": 1.782017, "delta": 0.0, "kind": "iteration", "notes": "rules.md + bill.json + game.json written", "score": 0.0, "slug": "g0002", "stage": "ruled"}
+{"at": "2026-08-22T16:34:23.503938+00:00", "components": {}, "cost_usd": 0.369576, "delta": 0.0, "kind": "iteration", "notes": "rules lens PASS (2 issues)", "score": 0.0, "slug": "g0002", "stage": "rules_gated"}
+{"at": "2026-08-22T16:49:32.456426+00:00", "components": {}, "cost_usd": 0.0, "delta": 0.0, "kind": "iteration", "notes": "bandit picked arm measurement-dexterity (lane invention)", "score": 0.0, "slug": "g0003", "stage": "spark_new"}
