@@ -14,8 +14,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": null,
-        "holder": null
+        "expires": "2026-08-22T22:47:06.368746+00:00",
+        "holder": "invent",
+        "id": "77a03da257c14ff5bfdd1170d5b6c618"
       },
       "log": [
         {
@@ -123,10 +124,6 @@
         "repair_used": 0,
         "rework_used": 0
       },
-      "crashes": {
-        "count": 1,
-        "state": "tabled"
-      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -134,11 +131,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-22T22:18:27.702964+00:00",
-        "holder": "invent",
-        "id": "693c99c32e8a40c9b644c50282c5327c"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -211,6 +204,18 @@
           "from": "parked",
           "note": "human unpark: 0/0-seat verdict was the pre-patch gate; Haiku seats + inconclusive-retry now live",
           "to": "tabled"
+        },
+        {
+          "at": "2026-08-22T22:02:01.196580+00:00",
+          "from": "tabled",
+          "note": "parked: crashed 2 times in a row at tabled: AgentError: Agent 'bob-table-player' overran its 3-minute wall ceiling and was killed (SIGTERM then SIGKILL after 5.0s grace). Retry once with a smaller task or a bigger ceiling \u2014 a ceiling that binds is the real constraint, not a safety limit.",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T22:10:00+00:00",
+          "from": "parked",
+          "note": "human unpark: seat ceiling 3->6 min + seat-crash tolerance now live; both prior deaths were the same starved seat call",
+          "to": "tabled"
         }
       ],
       "reward": {
@@ -235,9 +240,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T21:04:06.745955+00:00",
+        "expires": "2026-08-22T22:38:19.734341+00:00",
         "holder": "invent",
-        "id": "dea72ad2c5334f0088a1889212b5eac8"
+        "id": "2df16be544684cdf8cd243d771d8fa5b"
       },
       "log": [
         {

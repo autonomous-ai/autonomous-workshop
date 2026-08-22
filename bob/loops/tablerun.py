@@ -72,7 +72,7 @@ PERSONAS = [
 
 #: Per-seat call ceiling. A table turn is one small decision over a short
 #: observation — minutes, not the 15-minute default a repo-work agent gets.
-SEAT_MAX_MINUTES = 3
+SEAT_MAX_MINUTES = 6  # 3 starved under CLI contention (two g0002 runs died the same way, 2026-08-23)
 
 #: Per-RUN dollar ceiling on paid seat calls. Spend scales with
 #: move_cap x n_tables x n_players and the daily budget is only checked at
