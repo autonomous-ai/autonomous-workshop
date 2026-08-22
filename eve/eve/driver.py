@@ -64,6 +64,14 @@ def _run_ideator(cfg, m: "meta_mod.Meta", fn_run_agent) -> dict:
     """Invent one new game. The agent writes <dir>/idea.json + rules.md in a
     staging dir; on success we move it to games/<slug> and queue it."""
     from .queue import Queue
+    # Never start a second ideator while one is already inventing: an Opus run
+    # can outlive a single 30-min daemon tick, and two ticks sparking at once
+    # would double-pay the ideator and contend on the same staging dir. If a
+    # .pending-* dir exists, the work is already in flight — skip.
+    if list(cfg.games_dir.glob(".pending-*")):
+        _log("ideator: an ideator is already in flight (.pending-*) — skipping")
+        return {"role": "ideator", "game": None, "skipped": True,
+                "reason": "pending-ideator-in-flight"}
     pending = cfg.games_dir / (".pending-" + time.strftime("%Y%m%d%H%M%S"))
     pending.mkdir(parents=True, exist_ok=True)
 
@@ -197,12 +205,68 @@ def _run_playtest(cfg, m, fn_run_agent, slug: str) -> dict:
             "reasons": gate.reasons}
 
 
+def _run_reader(cfg, m: "meta_mod.Meta", fn_run_agent, slug: str) -> dict:
+    """Loop D: the bibliophile. Reads the book currently under study and
+    distills it into design learnings + principles recorded in books/state.
+
+    The reader runs in loops/books/ and writes stage_out.json there. Each
+    learning is recorded via books.record_learning (tagged to a target_area so
+    the rules/brief/playtest lenses can consume it); the reader then marks the
+    book done so the shelf advances one book per day. A book is only marked
+    done after its learnings were recorded (Loop D's contract)."""
+    from . import books, promptlib
+    book = books.study_tick(cfg, journal=m.journal)
+    if book is None:
+        return {"role": "reader", "book": None, "skipped": True,
+                "reason": "no book under study"}
+    title = book.get("title", "")
+    workdir = cfg.root / "loops" / "books"
+    workdir.mkdir(parents=True, exist_ok=True)
+    prompt = promptlib.reader_prompt(cfg, book=book)
+    try:
+        fn_run_agent("reader", prompt, cwd=str(workdir))
+    except agents.QuotaExhausted:
+        raise
+    except agents.Starved:
+        raise
+    except agents.AgentError:
+        # LLM step: transient crash retried once, never twice (agents.py).
+        fn_run_agent("reader", prompt, cwd=str(workdir))
+    out = _load_json(workdir / "stage_out.json")
+    learnings = (out or {}).get("learnings") or []
+    if not learnings:
+        m.journal.append("meta", action="reader_empty", book=title,
+                         note="reader wrote no learnings; book stays in_progress")
+        return {"role": "reader", "book": title, "learnings": 0,
+                "skipped": True, "reason": "reader wrote no learnings"}
+    for l in learnings:
+        if not isinstance(l, dict) or not l.get("learning"):
+            continue
+        books.record_learning(
+            cfg, book=title, learning=l["learning"],
+            target_area=l.get("target_area", "design"),
+            mechanic=l.get("mechanic"), theme=l.get("theme"),
+            journal=m.journal)
+    for pr in (out or {}).get("principles") or []:
+        if isinstance(pr, dict) and pr.get("text"):
+            books.add_principle(cfg, text=pr["text"], source=title,
+                                journal=m.journal)
+    books.mark_done(cfg, title, journal=m.journal)
+    # Fold the fresh learnings into the policy on the same cadence so the
+    # bibliophile's output feeds the rules lens immediately.
+    m._flush_learnings()
+    return {"role": "reader", "book": title,
+            "learnings": len(learnings),
+            "principles": len((out or {}).get("principles") or [])}
+
+
 ROLE_FN = {
     "ideator": _run_ideator,
     "brief": _run_brief2,
     "builder": _run_builder,
     "panel": _run_panel,
     "playtest": _run_playtest,
+    "reader": _run_reader,
 }
 
 

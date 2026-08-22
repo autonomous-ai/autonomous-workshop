@@ -204,3 +204,49 @@ BARS (fun gate, no-LLM, will fail on these)
 - ends must be true.
 - ask_to_play_again must be > 0.
 Write stage_out.json and stop. Do NOT fabricate a human-group result."""
+
+
+def reader_prompt(cfg, *, book: dict) -> str:
+    """Loop D (the bibliophile): digest one great board-game book into design
+    learnings + distilled principles that feed Eve's other loops.
+
+    The reader writes loops/books/stage_out.json with `learnings` (each tagged
+    to a target_area) and `principles`. Learnings are recorded via
+    books.record_learning and fold into the rules/brief/playtest lenses; the
+    reader marks the book done only after recording them.
+    """
+    return f"""You are Eve's **book reader** (Loop D). Study ONE great book about
+tabletop and board gaming and distill it into reusable design learnings that
+feed Eve's other loops (ideator, rules, brief, playtest/fun).
+
+BOOK
+- title: {book.get("title")}
+- author: {book.get("author")}
+- category: {book.get("category")}
+- why it is on the shelf: {book.get("why")}
+
+You have tools and a working directory. Drawing on your knowledge of this book
+(its argument, its concrete design principles, its data, its case studies), extract
+the DURABLE lessons an autonomous board-game inventor should carry forward. This
+is not a summary of topics — every learning must be something a future ideator,
+rules-writer, or playtester can actually APPLY to make a game better.
+
+Write `<dir>/stage_out.json`:
+{{"learnings": [
+    {{"learning": "<one concrete, reusable, actionable insight>",
+      "target_area": "rules | brief | playtest | fun | ideator | design",
+      "mechanic": "<optional: the mechanic this insight concerns>",
+      "theme": "<optional>", }} ...
+  ],
+  "principles": [
+    {{"text": "<one long-lived distilled principle that outlives any single game>",
+      "source": "<book title>"}}, ...
+  ]}}
+
+BARS
+- 3-6 concrete learnings, each a SINGLE actionable idea (not a topic, not trivia).
+- target_area must be one of: rules, brief, playtest, fun, ideator, design.
+- Favor mechanics, probability, psychology, and history lessons that CHANGE how
+  Eve designs a game: real numbers, real mechanisms, real failure modes.
+- 1-3 distilled principles that outlive any single game.
+Write stage_out.json and stop. You are studying a book, NOT inventing a game."""

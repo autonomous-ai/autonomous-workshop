@@ -199,3 +199,68 @@ def test_gate_kill_records_dead_game_reward(cfg):
     assert "tension" in g.kill_reason
     from eve.reward import audit
     assert audit(cfg) == [], f"killed game must be ledger-consistent, got: {audit(cfg)}"
+
+
+# --- Loop D: the reader agent dispatch ------------------------------------
+# The meta-loop cadence (one book/day) must dispatch a `reader` agent that
+# reads the in-progress book, records its learnings, and marks it done —
+# and only then may the shelf advance. This proves the driver executes the
+# HTML books loop end-to-end without ever touching a live Claude run.
+
+
+def _mock_reader(role, prompt, *, cwd=None):
+    """Writes the reader's real contract (loops/books/stage_out.json)."""
+    cwd = Path(cwd or ".")
+    (cwd / "stage_out.json").write_text(json.dumps({
+        "learnings": [
+            {"learning": "Landmark games carry their moment's cultural weight.",
+             "target_area": "ideator"},
+            {"learning": "A game worth replaying lets the loser name the rematch.",
+             "target_area": "fun", "mechanic": "achievement"},
+        ],
+        "principles": [
+            {"text": "The printed game is the product."},
+        ],
+    }))
+    return _Result()
+
+
+def _seed_books(cfg):
+    from eve import books
+    src = config.REPO_ROOT / "corpus" / "seed" / "books.json"
+    cfg.seed_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.seed_dir / "books.json").write_text(src.read_text())
+    books.seed_reading_list(cfg)
+
+
+def test_reader_dispatch_records_learnings_and_marks_done(cfg):
+    from eve import books, meta
+    _seed_books(cfg)
+    first = books.reading_list(cfg)[0]["title"]
+    # Directly drive the reader role the same way evolve() would.
+    m = meta.Meta(cfg)
+    res = driver._run_reader(cfg, m, _mock_reader, "")
+    assert res["role"] == "reader"
+    assert res["book"] == first
+    assert res["learnings"] == 2
+    assert res["principles"] == 1
+    # The book advanced in_progress -> done, and learnings are applied.
+    prog = books.progress(cfg)
+    assert prog["books"]["done"] == 1
+    assert books.learnings_for(cfg, "ideator"), "learning must be tagged to a target area"
+
+
+def test_evolve_dispatches_reader_when_pipeline_idle(cfg):
+    from eve import books, driver as drv, meta
+    _seed_books(cfg)
+    first = books.reading_list(cfg)[0]["title"]
+    # Evolve with a null ideator (never sparks) so the only work available is
+    # the books cadence; the reader mock records + closes the book.
+    def _null_ideator(role, prompt, *, cwd=None):
+        return _Result()
+    res = drv.evolve(cfg, max_steps=1, fn_run_agent=_mock_reader)
+    # evolve() stamps last_books_study via _study_dispatch, so the cadence
+    # is now satisfied for the day (one book worked, no re-loop).
+    assert meta.Meta(cfg).books_due() is False
+    prog = books.progress(cfg)
+    assert prog["books"]["done"] == 1 and books.reading_list(cfg)[0]["title"] == first

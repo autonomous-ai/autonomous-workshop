@@ -139,6 +139,24 @@ class Meta:
             self.journal.append("meta", action="books_flush_skipped",
                                 error=str(exc))
 
+    def _study_dispatch(self) -> dict:
+        """Loop D cadence day: return the one-unit reader work.
+
+        Advances the shelf exactly one book per day (books.study_tick marks a
+        single book in_progress) and stamps the daily books cadence so the
+        meta never loops on the same book. When a book is under study the work
+        is a READER agent dispatch (the driver fulfills it and the reader
+        records learnings then marks the book done); when the shelf is empty it
+        is a bookkeeping-only 'study' so a tick still does one unit.
+        """
+        from . import books
+        book = books.study_tick(self.cfg, journal=self.journal)
+        self.heartbeat(last_books_study=_iso(_now()))
+        if book is None:
+            return {"action": "study", "book": None, "note": "shelf empty"}
+        return {"action": "dispatch", "role": "reader",
+                "book": book.get("title"), "author": book.get("author", "")}
+
     # --- self-improvement (weekly) ---------------------------------------
     def improve(self):
         from .improve import run
@@ -297,7 +315,7 @@ class Meta:
 
         # 1) Finishing beats starting: advance the in-flight game pipeline.
         decision = self.next_game_action()
-        if decision is not None:
+        if decision is not None and decision.get("action") != "spark":
             if decision["action"] == "gate":
                 from .queue import Queue
                 game = Queue(self.cfg, journal=self.journal).get(decision["game"])
@@ -311,10 +329,18 @@ class Meta:
                 return {"action": "dispatch", **decision}
             return {"action": "dispatch_pending", **decision}
 
-        # 2) Loop D: one book per day.
+        # Pipeline idle (or below the inflight floor): honor the cadence loops
+        # BEFORE inventing a fresh game, so Loop D (books) and the weekly
+        # improve are never starved by an always-hot spark. Eve invents a new
+        # game only when the rest of the meta is current (quality>quantity).
+        # 2) Loop D: one book per day (dispatch the reader agent).
         if self.books_due():
-            study, _ = self.study_tick()
-            return {"action": "study", "book": (study or {}).get("title")}
+            d = self._study_dispatch()
+            if d.get("action") == "dispatch":
+                if run_agent:
+                    return d
+                return {"action": "dispatch_pending", **d}
+            return d
 
         # 3) Weekly self-improvement.
         if self.improve_due():
@@ -326,6 +352,11 @@ class Meta:
         # 4) Weekly ship-check (cadence constraint).
         if self.ship_check_due():
             return {"action": "ship_check", **self.ship_check()}
+
+        # 5) All of the meta is current and the queue is below the inflight
+        #    floor -> invent a new game to keep the loop alive.
+        if decision is not None and decision.get("action") == "spark":
+            return decision
 
         self.journal.append("meta", action="quiet", note="everything current")
         return {"action": "quiet"}
