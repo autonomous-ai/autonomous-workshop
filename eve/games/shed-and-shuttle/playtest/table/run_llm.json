@@ -1,0 +1,62 @@
+{
+  "slug": "shed-and-shuttle",
+  "players": 4,
+  "games": [
+    {
+      "game": 1,
+      "ended": false,
+      "winner_seat": null,
+      "decisive": false,
+      "ask_to_play_again": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "legit": false,
+      "note": "seat returned no valid move for consecutive turns"
+    },
+    {
+      "game": 2,
+      "ended": false,
+      "winner_seat": null,
+      "decisive": false,
+      "ask_to_play_again": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "legit": false,
+      "note": "seat returned no valid move for consecutive turns"
+    },
+    {
+      "game": 3,
+      "ended": false,
+      "winner_seat": null,
+      "decisive": false,
+      "ask_to_play_again": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "legit": false,
+      "note": "seat returned no valid move for consecutive turns"
+    },
+    {
+      "game": 4,
+      "ended": false,
+      "winner_seat": null,
+      "decisive": false,
+      "ask_to_play_again": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "legit": false,
+      "note": "seat returned no valid move for consecutive turns"
+    }
+  ]
+}
