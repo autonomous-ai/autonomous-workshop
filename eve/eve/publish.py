@@ -8,11 +8,10 @@ Two surfaces, deliberately distinct (DESIGN.md ss.4 / ss.3):
     surface the other ten designs already occupy. This is what "publish the
     first board game on the site" means in the org's current operating state:
     the catalog is the design loop.
-  * the **store pipeline** (`import_design` / `publish_to_store`) — taps the
-    org's existing publishing pipeline (POST /designs/import on Panda Social)
-    so a finished game gets a full, auto-generated product page (visuals, copy,
-    and the rest are produced by that pipeline, not re-implemented here). Eve
-    only hands it the finished folder, an honest description, and covers.
+  * the **store pipeline** (`import_design` / `publish_to_store`) — hands the
+    finished folder to shared core for a canonical artifact packet and a
+    durable Panda import intent. The remote effect is never retried after an
+    ambiguous response; an operator must reconcile the persisted intent.
 
 Honesty note: publishing a *design* is not the reward-terminal `ship`. `ship`
 only fires after the fun gate clears on real (llm_table/human) playtest
@@ -25,12 +24,17 @@ HTTP. Everything degrades gracefully when credentials are unset.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
-import zipfile
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Mapping, Optional
+
+from inventor_core.errors import AmbiguousPublishError, ContractError, PublishError
+
+from . import core_adapter
 
 # Graduation-checkable symbols (see improve.graduation_check): any module-level
 # name whose lesson marker is "[GRADUATED -> publish.<NAME>]" must exist. Keep
@@ -170,7 +174,11 @@ def full_writeup(game, extra: Optional[dict] = None) -> str:
         md.append("")
         md.append(f"## Outcome\n{outcome}")
     md.append("")
-    ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # Queue.Game.updated is durable, so rendering the same shipped game twice
+    # does not silently change the artifact packet and defeat outbox replay.
+    ts = getattr(game, "updated", None) or datetime.now(timezone.utc).isoformat(
+        timespec="seconds"
+    )
     md.append(f"_rendered by Eve · {ts}_")
     return "\n".join(md)
 
@@ -182,9 +190,10 @@ def publish(game, *, cfg=None, catalog_path: Optional[Path] = None, num: Optiona
     Returns a result dict. Does NOT grant ship reward (see module docstring).
     """
     from .journal import open_journal
+    slug = core_adapter.validate_slug(game.slug)
     journal = journal or (open_journal(cfg) if cfg else None)
     base = (cfg.root / "games") if cfg else Path("games")
-    game_dir = base / game.slug
+    game_dir = base / slug
     game_dir.mkdir(parents=True, exist_ok=True)
 
     card = render_card(game, num=num)
@@ -246,130 +255,244 @@ def store_description(game) -> str:
     return body + suffix
 
 
-def _zip_game_dir(game_dir: Path, slug: str, title: Optional[str] = None) -> Path:
-    """Zip a game folder for import; returns the archive path.
+def _write_json_atomic(path: Path, document: Mapping[str, Any]) -> None:
+    """Write an operator projection without making it publication authority."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % path.name, suffix=".tmp", dir=str(path.parent)
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8", closefd=True) as stream:
+            descriptor = -1
+            stream.write(json.dumps(dict(document), indent=2, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
 
-    Injects a ``project.json`` at the archive root when the source folder does
-    not already carry one. The store's import endpoint only classifies a
-    design folder when it holds a ``project.json`` OR a top-level ``*.py``
-    defining ``gen_step`` (see panda-social-backend services/import_extract.go
-    ``findDesignFolder``), and reads the title from ``project.json`` when
-    present. The injected file is written only into the archive, never into the
-    source game folder, so the design's on-disk state stays untouched.
+
+def _record_core_projection(game_dir: Path, intent: Mapping[str, Any]) -> None:
+    """Keep a readable non-authoritative copy beside the game.
+
+    The authoritative state remains ``state/inventor-core.sqlite3``. This copy
+    is deliberately excluded from artifact packets and helps an operator find
+    the intent that must be reconciled.
     """
-    zip_path = game_dir.parent / f"{slug}.zip"
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        if not (game_dir / "project.json").is_file():
-            name = (title or slug.replace("-", " ").title())
-            zf.writestr("project.json", json.dumps(
-                {"id": f"eve-{slug}", "name": name}, ensure_ascii=False, indent=2))
-        for p in sorted(game_dir.rglob("*")):
-            if p.is_file():
-                zf.write(p, arcname=p.relative_to(game_dir))
-    return zip_path
+    projection = {
+        "schema_version": 1,
+        "authority": "state/inventor-core.sqlite3",
+        "product_id": intent.get("product_id"),
+        "intent_id": intent.get("id"),
+        "state": intent.get("state"),
+        "packet_sha256": intent.get("packet_sha256"),
+        "receipt": intent.get("receipt"),
+        "error": intent.get("error"),
+    }
+    _write_json_atomic(
+        game_dir / core_adapter.CORE_PUBLICATION_PROJECTION, projection
+    )
 
 
-def _upload_thumb(path: Path, cfg) -> Optional[str]:
-    """Upload one cover to admindash /uploads; returns a CDN URL or None."""
-    token = cfg.store_upload_token
-    if not token:
-        return None
-    r = subprocess.run(
-        ["curl", "-s", "-H", f"Authorization: Bearer {token}",
-         "-F", f"file=@{path}", f"{cfg.store_upload_base}/api/uploads"],
-        capture_output=True, text=True, timeout=120)
-    m = re.search(r"https?://[^\s\"']+", r.stdout)
-    if not m:
-        return None
-    return m.group(0)
-
-
-def _cover_candidates(game_dir: Path) -> list[Path]:
-    """Prefer the frozen hero render, then any PNG/JPG in the game folder."""
-    cands = []
-    for name in ("hero.png", "cover.png", "thumbnail.png"):
-        p = game_dir / name
-        if p.is_file():
-            cands.append(p)
-    cands += [p for p in sorted(game_dir.glob("*.png"))
-              if p not in cands] + [p for p in sorted(game_dir.glob("*.jpg"))]
-    return cands[:5]
-
-
-def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
+def import_design(
+    cfg, game, *, status: str = "draft", journal=None, transport=None
+) -> dict:
     """POST the finished game folder to the store's /designs/import endpoint.
 
     Returns a result dict with the platform response (project_url etc.). Taps
     the org's existing pipeline so the auto product page is generated for us.
-    Idempotent via games/<slug>/published.json. Skips (never fails) when the
-    bearer token is unset so the pipeline runs offline.
+    Successful historical imports still skip via ``published.json``. New
+    imports are fenced by core's durable intent database and bind the exact
+    canonical packet, artifact tree, owner, and draft receipt. Skips (never
+    fails) when credentials are unset so the creative pipeline runs offline.
     """
     from .journal import open_journal
     journal = journal or open_journal(cfg)
-    if not cfg.store_configured or not cfg.store_bearer:
+    if status != "draft":
+        return {"ok": False, "error": "Eve publication is draft-only"}
+    if (
+        not cfg.store_configured
+        or not cfg.store_bearer
+        or not cfg.panda_owner_id
+    ):
         journal.append("publish_skipped", game=game.slug,
-                       reason="store not configured (set EVE_STORE_BEARER / ADMIN_TOKEN)")
-        return {"skipped": True, "reason": "store not configured"}
+                       reason="store not configured (set EVE_STORE_BEARER and PANDA_OWNER_ID)")
+        return {
+            "skipped": True,
+            "reason": "store not configured (bearer and owner are required)",
+        }
 
-    game_dir = cfg.games_dir / game.slug
+    try:
+        slug = core_adapter.validate_slug(game.slug)
+    except ContractError as exc:
+        journal.append("publish_refused", game=str(game.slug), reason=str(exc))
+        return {
+            "ok": False,
+            "blocked": False,
+            "intent_id": None,
+            "state": None,
+            "error": str(exc),
+        }
+
+    game_dir = cfg.games_dir / slug
     pub_file = game_dir / "published.json"
     if pub_file.exists():
         journal.append("publish_skipped", game=game.slug, reason="already published")
         return {"skipped": True, "already_published": json.loads(pub_file.read_text())}
 
-    # build + validate the folder
+    # Render the source writeup before core freezes the artifact bytes.
     readme = game_dir / "README.md"
     if not readme.exists():
-        full_writeup(game)
         (game_dir / "README.md").write_text(full_writeup(game))
-    zip_path = _zip_game_dir(game_dir, game.slug, title=game.title or game.slug)
-
-    # covers: prefer locally-uploaded hero, else let the server render
-    th_urls = []
-    for p in _cover_candidates(game_dir):
-        u = _upload_thumb(p, cfg)
-        if u:
-            th_urls.append(u)
-
-    fields = ["-F", "file=@" + str(zip_path),
-              "-F", f"title={_one_line(game.title or game.slug)[:120]}",
-              "-F", f"description={store_description(game)}",
-              "-F", "status=" + status,
-              "-F", "license=CC-BY-NC",
-              "-F", "category=toys",   # live taxonomy: vases/toys/desk_office/home_garden
-              "-F", "tags=eve,board-game,3d-print"]
-    fields += ["-F", "prompt=" + _one_line(getattr(game, "identity", "") or "")]
-    for u in th_urls:
-        fields += ["-F", f"thumbnail_urls={u}"]
-
-    r = subprocess.run(
-        ["curl", "-s", "-X", "POST",
-         "-H", f"Authorization: Bearer {cfg.store_bearer}",
-         *fields, f"{cfg.store_base_url}/api/v1/designs/import"],
-        capture_output=True, text=True, timeout=180)
-    out = r.stdout.strip()
+    metadata = {
+        "title": _one_line(game.title or game.slug)[:120],
+        "description": store_description(game),
+        "status": "draft",
+        "license": "CC-BY-NC",
+        "category": "toys",
+        "tags": ["eve", "board-game", "3d-print"],
+    }
+    prompt = _one_line(getattr(game, "identity", "") or "")
+    if prompt:
+        metadata["prompt"] = prompt
     try:
-        info = json.loads(out)
-    except json.JSONDecodeError:
-        info = {"raw": out[-400:], "rc": r.returncode}
+        result = core_adapter.import_panda_draft(
+            cfg, game, metadata, transport=transport
+        )
+    except AmbiguousPublishError as exc:
+        intent = core_adapter.publication_state(cfg, game.slug) or {}
+        if intent:
+            _record_core_projection(game_dir, intent)
+        journal.append(
+            "publish_blocked",
+            game=game.slug,
+            intent_id=intent.get("id"),
+            state=intent.get("state"),
+            packet_sha256=intent.get("packet_sha256"),
+            reason=str(exc),
+        )
+        return {
+            "ok": False,
+            "blocked": True,
+            "intent_id": intent.get("id"),
+            "state": intent.get("state"),
+            "error": str(exc),
+        }
+    except PublishError as exc:
+        intent = core_adapter.publication_state(cfg, game.slug) or {}
+        if intent:
+            _record_core_projection(game_dir, intent)
+        journal.append(
+            "publish_failed",
+            game=game.slug,
+            intent_id=intent.get("id"),
+            state=intent.get("state"),
+            reason=str(exc),
+        )
+        return {
+            "ok": False,
+            "blocked": False,
+            "intent_id": intent.get("id"),
+            "state": intent.get("state"),
+            "error": str(exc),
+        }
+    except ContractError as exc:
+        # Packet, metadata, owner, or selected-artifact contract failures are
+        # proven local failures: no Panda effect was attempted. Report them as
+        # a graceful refusal while keeping published.json absent.
+        intent = core_adapter.publication_state(cfg, game.slug) or {}
+        if intent:
+            _record_core_projection(game_dir, intent)
+        journal.append(
+            "publish_refused",
+            game=game.slug,
+            intent_id=intent.get("id"),
+            state=intent.get("state"),
+            reason=str(exc),
+        )
+        return {
+            "ok": False,
+            "blocked": False,
+            "intent_id": intent.get("id"),
+            "state": intent.get("state"),
+            "error": str(exc),
+        }
 
-    if r.returncode != 0 or info.get("error") or not (info.get("id") or info.get("slug")):
-        journal.append("publish_failed", game=game.slug, detail=out[-400:])
-        return {"ok": False, "error": out[-400:], "info": info}
-
-    pub_file.write_text(json.dumps(info, indent=2))
-    journal.append("published_store", game=game.slug, id=info.get("id"),
-                   slug=info.get("slug"), project_url=info.get("project_url"),
-                   status=status)
+    receipt = result["receipt"]
+    persisted = {
+        "schema_version": 1,
+        "product_id": result["product_id"],
+        "intent_id": result["intent_id"],
+        "intent_state": result["intent_state"],
+        "receipt": receipt,
+        # Preserve the useful top-level shape of Eve's historical
+        # published.json files for operator scripts while keeping the exact
+        # typed core receipt intact above.
+        "id": receipt["design_id"],
+        "slug": receipt["slug"],
+        "owner_id": receipt["owner_id"],
+        "root_id": receipt["root_id"],
+        "current_history_id": receipt["current_history_id"],
+        "published_history_id": receipt["published_history_id"],
+        "status": receipt["status"],
+        "project_url": receipt["project_url"],
+    }
+    _write_json_atomic(pub_file, persisted)
+    intent = core_adapter.publication_state(cfg, game.slug)
+    if intent:
+        _record_core_projection(game_dir, intent)
+    # Eve's append-only journal retains the exact core receipt as well as the
+    # per-game projection. It is an audit copy, not a second outbox authority.
+    journal.append(
+        "published_store",
+        game=game.slug,
+        intent_id=result["intent_id"],
+        receipt=receipt,
+        packet=result["packet"],
+        status="draft",
+        producer="inventor_core",
+    )
     _telegram(cfg, f"🎲 Eve published a new board game: {game.title or game.slug}\n"
-                   f"id={info.get('id')} slug={info.get('slug')}\n"
-                   f"{info.get('project_url', '')}")
-    return {"ok": True, "info": info}
+                   f"id={receipt.get('design_id')} slug={receipt.get('slug')}\n"
+                   f"{receipt.get('project_url', '')}")
+    compatibility_info = {
+        "id": receipt["design_id"],
+        "slug": receipt["slug"],
+        "owner_id": receipt["owner_id"],
+        "root_id": receipt["root_id"],
+        "current_history_id": receipt["current_history_id"],
+        "published_history_id": receipt["published_history_id"],
+        "status": receipt["status"],
+        "project_url": receipt["project_url"],
+    }
+    return {
+        "ok": True,
+        "product_id": result["product_id"],
+        "intent_id": result["intent_id"],
+        "receipt": receipt,
+        # Compatibility for callers that previously inspected ``info``.
+        "info": compatibility_info,
+        "packet": result["packet"],
+    }
 
 
 def publish_to_store(cfg, game, *, status: str = "draft", journal=None) -> dict:
     """Full store publish for one game: catalog writeup + import. Public entry
     point (claimable by a graduation marker)."""
+    try:
+        core_adapter.validate_slug(game.slug)
+    except ContractError as exc:
+        from .journal import open_journal
+        active_journal = journal or open_journal(cfg)
+        active_journal.append("publish_refused", game=str(game.slug), reason=str(exc))
+        return {"ok": False, "blocked": False, "error": str(exc)}
     result = publish(game, cfg=cfg, journal=journal)
     result.update(import_design(cfg, game, status=status, journal=journal))
     return result

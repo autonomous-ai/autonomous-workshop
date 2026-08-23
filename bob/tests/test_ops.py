@@ -14,17 +14,21 @@ credential-less here, so its alert path is stderr, never curl.
 import os
 import plistlib
 import shutil
+import stat
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OPS = os.path.join(REPO, "ops")
 LAUNCHD = os.path.join(OPS, "launchd")
 
-MAIN_PLIST = os.path.join(LAUNCHD, "ai.autonomous.bob.plist")
-WATCHDOG_PLIST = os.path.join(LAUNCHD, "ai.autonomous.bob.watchdog.plist")
+MAIN_PLIST = os.path.join(LAUNCHD, "ai.autonomous.bob.plist.in")
+WATCHDOG_PLIST = os.path.join(LAUNCHD, "ai.autonomous.bob.watchdog.plist.in")
+RENDER_LAUNCHD = os.path.join(OPS, "render_launchd.py")
 WATCHDOG_SH = os.path.join(OPS, "watchdog.sh")
 INSTALL_SH = os.path.join(OPS, "install.sh")
 UNINSTALL_SH = os.path.join(OPS, "uninstall.sh")
@@ -32,10 +36,57 @@ UNINSTALL_SH = os.path.join(OPS, "uninstall.sh")
 CI_YML = os.path.join(os.path.dirname(REPO), ".github", "workflows", "ci.yml")
 
 
+def _rendered_plist(template):
+    with tempfile.TemporaryDirectory(prefix="bob-plist-render-") as directory:
+        root = Path(directory)
+        checkout = root / "checkout & launchd test"
+        user_home = root / "home & launchd test"
+        core_source = root / "core & launchd test"
+        checkout.mkdir()
+        user_home.mkdir()
+        core_source.mkdir()
+        output = root / "rendered.plist"
+        proc = subprocess.run(
+            [
+                sys.executable,
+                RENDER_LAUNCHD,
+                "--template",
+                template,
+                "--output",
+                str(output),
+                "--repo",
+                str(checkout),
+                "--home",
+                str(user_home),
+                "--core-src",
+                str(core_source),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if proc.returncode:
+            raise AssertionError(proc.stderr.decode())
+        raw = output.read_bytes()
+        return (
+            plistlib.loads(raw),
+            str(checkout.resolve()),
+            str(user_home.resolve()),
+            str(core_source.resolve()),
+            raw,
+            stat.S_IMODE(output.stat().st_mode),
+        )
+
+
 class TestMainPlist(unittest.TestCase):
     def setUp(self):
-        with open(MAIN_PLIST, "rb") as f:
-            self.plist = plistlib.load(f)
+        (
+            self.plist,
+            self.repo,
+            self.home,
+            self.core_source,
+            self.raw,
+            self.mode,
+        ) = _rendered_plist(MAIN_PLIST)
 
     def test_label(self):
         self.assertEqual(self.plist["Label"], "ai.autonomous.bob")
@@ -48,28 +99,48 @@ class TestMainPlist(unittest.TestCase):
     def test_runs_bob_tick(self):
         args = self.plist["ProgramArguments"]
         self.assertEqual(args[0], "/usr/bin/python3")
-        self.assertTrue(args[1].endswith("/bob.py"))
+        self.assertEqual(args[1], os.path.join(self.repo, "bob.py"))
         self.assertEqual(args[2], "tick")
 
     def test_working_directory_is_repo(self):
-        self.assertEqual(
-            self.plist["WorkingDirectory"], "/Users/d/code/inventors/bob"
-        )
+        self.assertEqual(self.plist["WorkingDirectory"], self.repo)
 
     def test_logs_land_in_state_logs(self):
         for key in ("StandardOutPath", "StandardErrorPath"):
-            self.assertIn("/state/logs/tick.log", self.plist[key])
+            self.assertEqual(
+                self.plist[key], os.path.join(self.repo, "state/logs/tick.log")
+            )
 
     def test_path_includes_claude_home(self):
         # launchd gives agents a bare PATH; claude lives in ~/.local/bin.
         path = self.plist["EnvironmentVariables"]["PATH"]
-        self.assertIn("/Users/d/.local/bin", path)
+        self.assertTrue(path.startswith(os.path.join(self.home, ".local/bin") + ":"))
+
+    def test_scheduled_tick_uses_validated_core_source(self):
+        self.assertEqual(
+            self.plist["EnvironmentVariables"]["BOB_CORE_SRC"],
+            self.core_source,
+        )
+        escaped_core = self.core_source.replace("&", "&amp;").encode()
+        self.assertIn(escaped_core, self.raw)
+        self.assertNotIn(self.core_source.encode(), self.raw)
+
+    def test_render_is_private_and_xml_safe(self):
+        self.assertEqual(self.mode, 0o600)
+        self.assertIn(b"&amp;", self.raw)
+        self.assertNotIn(b"/Users/d", self.raw)
 
 
 class TestWatchdogPlist(unittest.TestCase):
     def setUp(self):
-        with open(WATCHDOG_PLIST, "rb") as f:
-            self.plist = plistlib.load(f)
+        (
+            self.plist,
+            self.repo,
+            self.home,
+            self.core_source,
+            self.raw,
+            self.mode,
+        ) = _rendered_plist(WATCHDOG_PLIST)
 
     def test_label(self):
         self.assertEqual(self.plist["Label"], "ai.autonomous.bob.watchdog")
@@ -83,7 +154,15 @@ class TestWatchdogPlist(unittest.TestCase):
     def test_runs_watchdog_script(self):
         args = self.plist["ProgramArguments"]
         self.assertEqual(args[0], "/bin/bash")
-        self.assertTrue(args[1].endswith("ops/watchdog.sh"))
+        self.assertEqual(args[1], os.path.join(self.repo, "ops/watchdog.sh"))
+
+    def test_paths_are_rendered_for_this_checkout(self):
+        self.assertEqual(self.plist["WorkingDirectory"], self.repo)
+        self.assertEqual(
+            self.plist["StandardOutPath"],
+            os.path.join(self.repo, "state/logs/watchdog.log"),
+        )
+        self.assertNotIn(b"/Users/d", self.raw)
 
 
 class TestShellSyntax(unittest.TestCase):
@@ -132,12 +211,25 @@ class TestInstallScriptContent(unittest.TestCase):
     def test_refuses_when_harness_broken(self):
         self.assertIn("import harness", self.text)
 
+    def test_refuses_when_shared_core_is_missing(self):
+        self.assertIn("BOB_CORE_SRC", self.text)
+        self.assertIn("require_core", self.text)
+        self.assertIn("inventor_core", self.text)
+
     def test_creates_log_dir(self):
         self.assertIn("state/logs", self.text)
 
     def test_idempotent_bootout_before_bootstrap(self):
         # Re-running install must redeploy, not error on "already loaded".
         self.assertIn("launchctl bootout", self.text)
+
+    def test_renders_templates_instead_of_copying_hard_coded_plists(self):
+        self.assertIn("render_launchd.py", self.text)
+        self.assertIn(".plist.in", self.text)
+        self.assertIn("--repo", self.text)
+        self.assertIn("--home", self.text)
+        self.assertIn('--core-src "$CORE_SRC"', self.text)
+        self.assertNotIn('cp "$PLIST_SRC" "$PLIST_DST"', self.text)
 
 
 class TestUninstallScriptContent(unittest.TestCase):

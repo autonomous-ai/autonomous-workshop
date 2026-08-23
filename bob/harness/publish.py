@@ -11,8 +11,9 @@ one-tap UNPUBLISH), not a turnstile.
 Three non-negotiables carried from the contract:
 
 1. **Idempotency lives here, not in the API.** "uploading the same zip twice
-   creates two designs" — so games/<slug>/published.json is the ledger, and
-   import_draft() with an existing ledger entry is a hard no-op.
+   creates two designs" — core's SQLite outbox records the packet-bound intent
+   before HTTP and blocks retries after any ambiguous result. The historical
+   games/<slug>/published.json remains Bob's human-readable projection.
 2. **Disclosure is identity + copy**, because the backend has no structured
    AI field (0 swagger hits for disclosure/is_ai/ai_generated). The pinned
    bob user id, the fixed description line, and the 'ai-created' tag are the
@@ -38,12 +39,14 @@ import re
 import stat
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 import zipfile
 from datetime import datetime, timezone
+from pathlib import Path
 
-from harness import ledger, queue, telegram
+from harness import core_runtime, ledger, queue, telegram
 
 # --- Walls (mirror the backend's own numbers; publish-contract §3, §9) -----
 
@@ -85,6 +88,7 @@ API_PRICE_MAX = 1000000
 # Cloudflare aborts >100 s; contract says "HTTP timeout >=120 s" so the
 # client outlives the edge and reads the real error, not a local timeout.
 HTTP_TIMEOUT_S = 120
+MAX_HTTP_RESPONSE_BYTES = 2 * 1024 * 1024
 
 # Pre-strip list (§3): the server strips these anyway, but shipping them
 # wastes entry budget and, for transcripts/.env, ships things that must
@@ -101,7 +105,7 @@ STRIP_DIRS = frozenset([
 ])
 STRIP_FILES = frozenset([
     "conversation_transcript.txt", "_tree.json", ".DS_Store",
-    "published.json",    # the idempotency ledger is about the design,
+    "published.json",    # Bob's publication projection is about the design,
     "listing.json",      # and the metadata IS the form fields — neither
                          # belongs inside the artifact they describe
 ])
@@ -109,6 +113,7 @@ STRIP_SUFFIXES = (".jsonl", ".pem", ".key")
 STRIP_PREFIXES = (".env", "secrets.")
 
 AUTH_FILE = "panda-auth.json"    # state/panda-auth.json, chmod 600
+CORE_STATE_FILE = "inventor-core.sqlite3"
 DEFAULT_CATEGORY = "toys-games"  # publish-contract §10 open item 1: picked
                                  # deliberately instead of publish.py's
                                  # sloppy first-active fallback; listing.json
@@ -119,6 +124,13 @@ class PublishError(Exception):
     """Raised when publishing cannot proceed. The message always says what
     to do next (CONTRACTS §6) — a bare traceback teaches the 3am log reader
     nothing."""
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Never forward Bob's bearer through an HTTP redirect."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +170,10 @@ def _auth_path():
     return os.path.join(_home(), "state", AUTH_FILE)
 
 
+def _core_store_path():
+    return os.path.join(_home(), "state", CORE_STATE_FILE)
+
+
 def _atomic_write(path, data, mode=None):
     """tmp + os.replace; optional chmod BEFORE the replace so the secret
     file is never world-readable for even one scheduler tick."""
@@ -181,6 +197,232 @@ def _read_json(path):
         return json.load(fh)
 
 
+def _require_core():
+    try:
+        return core_runtime.require_core()
+    except core_runtime.CoreUnavailable as exc:
+        raise PublishError(
+            "shared inventor core is unavailable — publication cannot safely "
+            "continue: %s" % exc
+        ) from exc
+
+
+def _core_packet_identity(zip_path):
+    runtime = _require_core()
+    try:
+        identity = runtime.inspect_publish_packet(Path(zip_path))
+    except Exception as exc:
+        raise PublishError(
+            "core rejected publish packet %s: %s" % (zip_path, exc)
+        ) from exc
+    return dict(identity)
+
+
+def _core_allowed_origins():
+    configured = os.environ.get(
+        "BOB_PANDA_ALLOWED_ORIGINS",
+        "https://panda-social-api.autonomous.ai",
+    )
+    origins = tuple(item.strip() for item in configured.split(",") if item.strip())
+    if not origins:
+        raise PublishError("BOB_PANDA_ALLOWED_ORIGINS must pin at least one HTTPS origin")
+    return origins
+
+
+def _core_owner(auth):
+    pinned = auth.get("bob_user_id")
+    actual = (auth.get("user") or {}).get("id")
+    if not pinned or not actual or pinned != actual:
+        raise PublishError(
+            "core publication requires Bob's non-empty pinned owner id to "
+            "match the authenticated user; set BOB_FACTORY_USER_ID for an "
+            "operator bearer or repair state/%s" % AUTH_FILE
+        )
+    return pinned
+
+
+def _core_transport(runtime):
+    def transport(method, url, headers, body, timeout):
+        status, response_headers, response_body = _http(
+            method, url, headers=dict(headers), data=body, timeout=timeout
+        )
+        return runtime.HttpResponse(status, response_headers, response_body)
+
+    return transport
+
+
+def _validated_core_api_base():
+    """Return the API base only after core has pinned its HTTPS origin.
+
+    Authentication refresh is itself a credential-bearing network effect.  It
+    therefore has to pass the same origin contract as design import/publish,
+    before the refresh token is placed in a request body.
+    """
+    runtime = _require_core()
+    try:
+        client = runtime.PandaClient(
+            "origin-validation-only",
+            api_base=_api_base(),
+            transport=_core_transport(runtime),
+            allowed_origins=_core_allowed_origins(),
+        )
+    except Exception as exc:
+        raise PublishError(
+            "Panda API origin is not an allowed HTTPS endpoint: %s" % exc
+        ) from exc
+    return client.api_base
+
+
+def _validated_panda_url(url):
+    """Require one credential-bearing URL to stay below the pinned API base."""
+    api_base = _validated_core_api_base()
+    try:
+        expected = urllib.parse.urlsplit(api_base)
+        candidate = urllib.parse.urlsplit(url)
+    except (TypeError, ValueError) as exc:
+        raise PublishError("Panda request URL is malformed") from exc
+    base_path = expected.path.rstrip("/")
+    if (
+        candidate.scheme != expected.scheme
+        or candidate.netloc != expected.netloc
+        or candidate.username is not None
+        or candidate.password is not None
+        or candidate.query
+        or candidate.fragment
+        or not candidate.path.startswith(base_path + "/")
+    ):
+        raise PublishError(
+            "credential-bearing Panda request escaped the pinned API base"
+        )
+    return urllib.parse.urlunsplit(candidate)
+
+
+def _core_publication_context(auth):
+    runtime = _require_core()
+    owner = _core_owner(auth)
+    token = auth.get("access_token")
+    if not isinstance(token, str) or not token:
+        raise PublishError("Bob's authenticated access token is empty")
+    try:
+        store = runtime.InventorStore(Path(_core_store_path()))
+        client = runtime.PandaClient(
+            token,
+            api_base=_api_base(),
+            transport=_core_transport(runtime),
+            allowed_origins=_core_allowed_origins(),
+        )
+        coordinator = runtime.PandaPublicationCoordinator(store, client, owner)
+    except Exception as exc:
+        raise PublishError("could not initialize core publication runtime: %s" % exc) from exc
+    return runtime, store, coordinator, owner
+
+
+def _core_product_id(slug):
+    if not isinstance(slug, str) or not slug:
+        raise PublishError("Bob publication slug must be a non-empty string")
+    return "bob:%s" % hashlib.sha256(slug.encode("utf-8")).hexdigest()
+
+
+def _core_product(store, runtime, slug, artifact_sha):
+    # Stable logical identity is essential: including artifact_sha here would
+    # let changed source allocate a fresh product and bypass an UNKNOWN import
+    # intent for the same marketplace game.
+    product_id = _core_product_id(slug)
+    try:
+        product = store.get_product(product_id)
+    except KeyError:
+        try:
+            product = store.register_product(
+                product_id,
+                "reviewed",
+                metadata={"inventor_id": "bob", "slug": slug},
+                artifact_sha256=artifact_sha,
+            )
+        except runtime.StateConflict:
+            product = store.get_product(product_id)
+    if product.get("artifact_sha256") != artifact_sha:
+        raise PublishError(
+            "core product for '%s' is already bound to different artifact "
+            "bytes; corrected bytes require a new slug because an earlier "
+            "non-idempotent import may have reached Panda" % slug
+        )
+    return product_id
+
+
+def _bound_core_intent(store, slug, identity, owner=None, api_origin=None):
+    """Resolve publication truth from core, never from ``published.json``.
+
+    The JSON file beside a game is an operator-facing projection.  It can be
+    stale, partially written after a crash, or edited.  The durable product and
+    intent are keyed from Bob's logical slug and must identify the exact packet
+    currently present before a public result can be recorded locally.
+    """
+    product_id = _core_product_id(slug)
+    try:
+        product = store.get_product(product_id)
+    except KeyError as exc:
+        raise PublishError(
+            "core has no publication product for '%s'; import its draft first"
+            % slug
+        ) from exc
+    if product.get("artifact_sha256") != identity.get("artifact_sha256"):
+        raise PublishError(
+            "current game files do not match the exact artifact bound to core product "
+            "%s" % product_id
+        )
+    try:
+        intent = store.latest_publish_intent(product_id)
+    except AttributeError as exc:
+        raise PublishError(
+            "shared core lacks the public latest_publish_intent contract"
+        ) from exc
+    if intent is None:
+        raise PublishError(
+            "core has no publication intent for '%s'; import its draft first"
+            % slug
+        )
+    request = intent.get("request")
+    if not isinstance(request, dict):
+        raise PublishError("core publication intent has no persisted request")
+    if (
+        intent.get("product_id") != product_id
+        or intent.get("packet_sha256") != identity.get("packet_sha256")
+        or request.get("_core_artifact_sha256")
+        != identity.get("artifact_sha256")
+    ):
+        raise PublishError(
+            "current core packet does not match the slug-bound persisted intent; "
+            "refusing artifact drift"
+        )
+    if owner is not None and request.get("_core_owner_id") != owner:
+        raise PublishError(
+            "core publication intent belongs to a different Panda owner"
+        )
+    if api_origin is not None and request.get("_core_api_origin") != api_origin:
+        raise PublishError(
+            "core publication intent belongs to a different Panda API origin"
+        )
+    return product_id, intent
+
+
+def _core_metadata(slug, listing):
+    metadata = {
+        "title": listing.get("title", slug),
+        "status": "draft",
+        "tags": list(listing.get("tags", [])),
+    }
+    optional = {
+        "description": listing.get("description"),
+        "category": listing.get("category", DEFAULT_CATEGORY),
+        "prompt": listing.get("prompt"),
+        "license": listing.get("license"),
+    }
+    for name, value in optional.items():
+        if value:
+            metadata[name] = value
+    return metadata
+
+
 def _http(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
     """THE network seam. Returns (status, headers_dict, body_bytes).
 
@@ -195,10 +437,23 @@ def _http(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
     for key, val in (headers or {}).items():
         req.add_header(key, val)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, dict(resp.headers), resp.read()
+        opener = urllib.request.build_opener(_NoRedirectHandler())
+        with opener.open(req, timeout=timeout) as resp:
+            body = resp.read(MAX_HTTP_RESPONSE_BYTES + 1)
+            if len(body) > MAX_HTTP_RESPONSE_BYTES:
+                raise PublishError("Panda response exceeds the 2 MB safety limit")
+            return resp.status, dict(resp.headers), body
     except urllib.error.HTTPError as exc:
-        return exc.code, dict(exc.headers or {}), exc.read()
+        try:
+            body = exc.read(MAX_HTTP_RESPONSE_BYTES + 1)
+            if len(body) > MAX_HTTP_RESPONSE_BYTES:
+                raise PublishError(
+                    "Panda error response exceeds the 2 MB safety limit"
+                )
+            headers = dict(exc.headers or {})
+        finally:
+            exc.close()
+        return exc.code, headers, body
     except urllib.error.URLError as exc:
         # TLS interception breaks urllib's cert chain on this machine (the
         # house lesson: "curl, not urllib" — same wound the novelty client
@@ -214,39 +469,65 @@ def _http(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
 def _http_curl(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
     """curl transport for the same seam: (status, headers_dict, body).
 
-    The body is written to a temp file rather than passed as an argument —
-    a multipart import is megabytes, far past any argv limit.
+    Request and response bodies use private temp files so multipart bytes do
+    not hit argv limits and an untrusted response is never buffered without a
+    bound. Headers use a private config file so bearer tokens do not appear in
+    the process list.
     """
     import subprocess
     import tempfile
-    argv = ["curl", "-sS", "-X", method, "--max-time", str(int(timeout)),
-            "-w", "\n%{http_code}"]
-    for key, val in (headers or {}).items():
-        argv += ["-H", "%s: %s" % (key, val)]
-    tmp = None
+
+    argv = [
+        "curl", "-sS", "-X", method,
+        "--max-time", str(int(timeout)),
+        "--max-filesize", str(MAX_HTTP_RESPONSE_BYTES),
+        "--write-out", "%{http_code}",
+    ]
+    request_tmp = None
+    response_tmp = None
+    headers_tmp = None
     try:
+        response_fd, response_tmp = tempfile.mkstemp(suffix=".response")
+        os.close(response_fd)
+        argv += ["--output", response_tmp]
+        if headers:
+            headers_fd, headers_tmp = tempfile.mkstemp(suffix=".headers")
+            with os.fdopen(headers_fd, "w", encoding="utf-8") as fh:
+                for key, val in headers.items():
+                    fh.write("%s: %s\n" % (key, val))
+            argv += ["--header", "@" + headers_tmp]
         if data:
-            fd, tmp = tempfile.mkstemp(suffix=".body")
-            with os.fdopen(fd, "wb") as fh:
+            request_fd, request_tmp = tempfile.mkstemp(suffix=".body")
+            with os.fdopen(request_fd, "wb") as fh:
                 fh.write(data)
-            argv += ["--data-binary", "@" + tmp]
+            argv += ["--data-binary", "@" + request_tmp]
         argv.append(url)
-        proc = subprocess.run(argv, capture_output=True, timeout=timeout + 30)
+        proc = subprocess.run(
+            argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            timeout=timeout + 30,
+        )
+        if proc.returncode == 63:
+            raise PublishError("Panda response exceeds the 2 MB safety limit")
         if proc.returncode != 0:
             raise urllib.error.URLError(
                 "curl transport failed (rc=%d): %s"
-                % (proc.returncode, proc.stderr.decode("utf-8", "replace")[-300:]))
-        out = proc.stdout
-        idx = out.rfind(b"\n")
-        body, code = (out[:idx], out[idx + 1:]) if idx >= 0 else (out, b"0")
+                % (proc.returncode,
+                   proc.stderr.decode("utf-8", "replace")[-300:]))
         try:
-            status = int(code.strip() or 0)
-        except ValueError:
-            status = 0
+            status = int(proc.stdout.strip())
+        except ValueError as exc:
+            raise urllib.error.URLError(
+                "curl transport returned an invalid HTTP status"
+            ) from exc
+        with open(response_tmp, "rb") as fh:
+            body = fh.read(MAX_HTTP_RESPONSE_BYTES + 1)
+        if len(body) > MAX_HTTP_RESPONSE_BYTES:
+            raise PublishError("Panda response exceeds the 2 MB safety limit")
         return status, {}, body
     finally:
-        if tmp and os.path.exists(tmp):
-            os.unlink(tmp)
+        for tmp in (request_tmp, response_tmp, headers_tmp):
+            if tmp and os.path.exists(tmp):
+                os.unlink(tmp)
 
 
 # ---------------------------------------------------------------------------
@@ -300,9 +581,10 @@ def refresh_auth():
             "no refresh token in %s — a human must mint the bob account's "
             "first token pair (publish-contract §2); Bob cannot re-mint "
             "alone." % _auth_path())
+    api_base = _validated_core_api_base()
     body = json.dumps({"refresh_token": auth["refresh_token"]}).encode()
     status, _, resp_body = _http(
-        "POST", _api_base() + "/auth/refresh",
+        "POST", api_base + "/auth/refresh",
         headers={"Content-Type": "application/json"}, data=body)
     if status != 200:
         raise PublishError(
@@ -320,6 +602,16 @@ def refresh_auth():
     _write_json(_auth_path(), auth,
                 mode=stat.S_IRUSR | stat.S_IWUSR)  # 0600
     return auth
+
+
+def _fresh_core_auth():
+    """Refresh a minted account before a core effect; keep session bearers in memory."""
+    auth = _load_auth()
+    if not auth:
+        raise PublishError("no auth on disk — mint the bob token first")
+    if auth.get("source") == "env:BOB_FACTORY_TOKEN":
+        return auth
+    return refresh_auth()
 
 
 def _bearer(auth):
@@ -369,9 +661,8 @@ def validate(slug):
     wall-failure strings — empty means green. Each string names its wall
     so a test (and the 3am log) can tell exactly which brick was hit.
 
-    Builds the zip if it doesn't exist yet: the three zip walls are
-    unmeasurable without the artifact, and build_zip() is local,
-    deterministic, and idempotent.
+    Rebuilds the core packet every run: validation must measure the current
+    game tree, never a stale publish_payload left by an earlier tick.
     """
     problems = []
     gdir = _game_dir(slug)
@@ -438,14 +729,13 @@ def validate(slug):
             problems.append("title: empty — the import would fall back to "
                             "a folder-name-derived title")
 
-    # -- the zip itself ------------------------------------------------------
+    # -- the canonical core packet ------------------------------------------
     zip_path = os.path.join(gdir, "publish_payload", "%s.zip" % slug)
-    if not os.path.exists(zip_path):
-        try:
-            zip_path = build_zip(slug)
-        except (OSError, PublishError) as exc:
-            problems.append("zip: could not build — %s" % exc)
-            zip_path = None
+    try:
+        zip_path = build_zip(slug)
+    except (OSError, PublishError) as exc:
+        problems.append("zip: could not build — %s" % exc)
+        zip_path = None
     if zip_path and os.path.exists(zip_path):
         size = os.path.getsize(zip_path)
         if size > MAX_ZIP_BYTES:
@@ -454,21 +744,16 @@ def validate(slug):
                 "is 100 MB but 50 MB is the Cloudflare-safe bar"
                 % (size, MAX_ZIP_BYTES))
         try:
-            with zipfile.ZipFile(zip_path) as zf:
-                names = zf.namelist()
-        except zipfile.BadZipFile:
-            names = None
-            problems.append("zip: corrupt archive — rebuild with "
-                            "build_zip('%s')" % slug)
-        if names is not None:
-            if len(names) > MAX_ZIP_ENTRIES:
-                problems.append("zip: %d entries > %d backend cap"
-                                % (len(names), MAX_ZIP_ENTRIES))
-            tops = set(n.split("/", 1)[0] for n in names if n.strip("/"))
-            if tops != set([slug]):
-                problems.append(
-                    "zip: expected exactly one design folder '%s/', found "
-                    "%s — two design folders is a 400" % (slug, sorted(tops)))
+            identity = _core_packet_identity(zip_path)
+        except (OSError, PublishError, zipfile.BadZipFile) as exc:
+            identity = None
+            problems.append(
+                "zip: not an exact canonical core packet — rebuild with "
+                "build_zip('%s'): %s" % (slug, exc)
+            )
+        if identity is not None and identity["entries"] > MAX_ZIP_ENTRIES:
+            problems.append("zip: %d entries > %d backend cap"
+                            % (identity["entries"], MAX_ZIP_ENTRIES))
 
     # -- auth: right account or no account ----------------------------------
     auth = _load_auth()
@@ -531,15 +816,14 @@ def _keep_entry(rel_parts, name):
 
 
 def build_zip(slug):
-    """Assemble games/<slug>/publish_payload/<slug>.zip.
+    """Assemble games/<slug>/publish_payload/<slug>.zip through core.
 
-    Wrapper layout `<slug>/...` (one zip = one design; the backend 400s on
-    two top-level folders). Pre-strips everything the server would strip
-    anyway plus our own process artifacts — transcripts and .env must not
-    leave the machine even to a stripping server, and every skipped file
-    is entry budget saved (4096 cap). Deterministic: fixed timestamp so
-    rebuilding an unchanged game dir yields byte-identical zips (stable
-    sha256 in the manifest).
+    Bob chooses which product files ship, while shared core owns the byte
+    contract: no-follow regular-file staging, credential scanning, a
+    content-addressed ``_inventor-artifact.json``, fixed ZIP metadata, and an
+    exact packet hash. The project lives at the archive root, which Panda's
+    importer accepts and which avoids pretending the core manifest is a
+    second design folder.
     """
     gdir = _game_dir(slug)
     if not os.path.isdir(gdir):
@@ -553,30 +837,43 @@ def build_zip(slug):
         rel_root = os.path.relpath(root, gdir)
         rel_parts = [] if rel_root == "." else rel_root.split(os.sep)
         # prune stripped dirs in place so walk never descends into them
-        dirs[:] = sorted(d for d in dirs
-                         if d not in STRIP_DIRS and not d.startswith(".env")
-                         and not d.startswith("."))
+        kept_dirs = []
+        for dirname in sorted(dirs):
+            if (dirname in STRIP_DIRS or dirname.startswith(".env")
+                    or dirname.startswith(".")):
+                continue
+            directory_path = os.path.join(root, dirname)
+            if os.path.islink(directory_path):
+                raise PublishError(
+                    "publishable artifact directory is a symlink: %s"
+                    % os.path.relpath(directory_path, gdir)
+                )
+            kept_dirs.append(dirname)
+        dirs[:] = kept_dirs
         for name in sorted(files):
             if not _keep_entry(rel_parts, name):
                 continue
             full = os.path.join(root, name)
-            arc = "/".join([slug] + rel_parts + [name])
-            entries.append((full, arc))
+            relative = "/".join(rel_parts + [name])
+            entries.append((Path(full), relative))
 
-    tmp = zip_path + ".tmp.%s" % uuid.uuid4().hex[:8]
-    # 1980-01-01: the zip epoch. Real mtimes would make every rebuild a
-    # "new" artifact and churn the manifest sha for no content change.
-    fixed_date = (1980, 1, 1, 0, 0, 0)
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
-        for full, arc in entries:
-            with open(full, "rb") as fh:
-                data = fh.read()
-            info = zipfile.ZipInfo(arc, date_time=fixed_date)
-            info.compress_type = zipfile.ZIP_DEFLATED
-            info.external_attr = (stat.S_IFREG | 0o644) << 16
-            zf.writestr(info, data)
-    os.replace(tmp, zip_path)
+    try:
+        core_runtime.build_game_packet(
+            entries, Path(zip_path), maximum_bytes=MAX_ZIP_BYTES
+        )
+    except Exception as exc:
+        raise PublishError(
+            "core could not build the publish packet for '%s': %s" % (slug, exc)
+        ) from exc
     return zip_path
+
+
+def core_packet_identity(slug):
+    """Return core's verified identity for Bob's current publish packet."""
+    path = os.path.join(_game_dir(slug), "publish_payload", "%s.zip" % slug)
+    if not os.path.exists(path):
+        path = build_zip(slug)
+    return _core_packet_identity(path)
 
 
 # ---------------------------------------------------------------------------
@@ -620,13 +917,73 @@ def _multipart(fields, files, boundary=None):
 # Import (draft, always)
 # ---------------------------------------------------------------------------
 
+def _is_non_authoritative_dry_projection(record):
+    """Recognize Bob's no-effect rehearsal marker, never a remote receipt.
+
+    Current writers stamp ``publication_authority=none`` explicitly.  The
+    structural fallback accepts Bob's older dry stubs, which predate that
+    field, only when they contain neither a design nor a core intent.
+    """
+    if not isinstance(record, dict) or record.get("dry_run") is not True:
+        return False
+    if record.get("publication_authority") not in (None, "none"):
+        return False
+    return not record.get("core_intent_id") and not record.get("design")
+
+
+def _require_core_authority_for_existing_effect(slug, record):
+    """Reject a remote receipt that predates Bob's durable core intent.
+
+    A Panda design id proves that *an* effect happened, but without the local
+    intent and content hashes it cannot prove which bytes were sent or grant
+    Bob authority over the remote owner. Such a receipt must stay stranded;
+    deleting it and retrying the same slug could create a duplicate design.
+    """
+    required = (
+        "core_intent_id", "core_product_id", "core_artifact_sha256",
+        "zip_sha256",
+    )
+    if (
+        all(isinstance(record.get(name), str) and record.get(name)
+            for name in required[:2])
+        and all(isinstance(record.get(name), str)
+                and re.fullmatch(r"[0-9a-f]{64}", record[name])
+                for name in required[2:])
+    ):
+        return
+
+    design = record.get("design") if isinstance(record.get("design"), dict) \
+        else record
+    author = design.get("author") if isinstance(design.get("author"), dict) \
+        else {}
+    design_id = design.get("id") or design.get("design_id") or "unknown"
+    owner_id = design.get("owner_id") or author.get("id") or \
+        record.get("owner_id") or "unknown"
+    owner_name = author.get("display_name") or author.get("username")
+    owner = "%s (%s)" % (owner_name, owner_id) if owner_name else owner_id
+    raise PublishError(
+        "legacy pre-core published.json for '%s' records Panda design %s "
+        "owned by %s, but has no complete core intent/content identity. "
+        "Bob cannot adopt, reconcile, or safely retry that effect. Have its "
+        "current owner resolve, unpublish, or archive the legacy draft "
+        "separately; provision and pin a distinct Bob marketplace principal; "
+        "then re-import the product under a new slug so core records the "
+        "first effect. Do not delete this receipt and retry the same slug."
+        % (slug, design_id, owner)
+    )
+
+
 def import_draft(slug):
     """Import the game as a DRAFT design. The one function that moves bytes
     to the marketplace.
 
-    Hard no-op when games/<slug>/published.json exists: the API is not
-    idempotent ("the same zip twice creates two designs"), so the ledger on
-    disk is the only guard — safe to call from a loop.
+    A fully core-backed games/<slug>/published.json is a compatibility no-op.
+    A remote pre-core receipt is stranded with an actionable error because its
+    owner, intent, and bytes cannot be adopted safely. A dry-run projection is
+    explicitly non-authoritative: when real effects are armed it does not
+    suppress the first core-backed import. The crash-safe guard is core's
+    packet-bound SQLite outbox, which records the effect before HTTP and
+    permanently blocks an ambiguous retry.
 
     Dry-run (default): validate + build_zip + write
     publish_payload/manifest.json, advance the queue with note 'dry-run',
@@ -634,13 +991,24 @@ def import_draft(slug):
     dry-run — dry-run exists precisely because creds don't yet.
     """
     pub_path = _published_path(slug)
+    dry = _dry_run()
     if os.path.exists(pub_path):
-        return {"noop": True, "reason": "published.json exists — a second "
-                "import would fork the game into a second design",
-                "published": _read_json(pub_path)}
+        existing_projection = _read_json(pub_path)
+        non_authoritative = _is_non_authoritative_dry_projection(
+            existing_projection
+        )
+        if not non_authoritative:
+            _require_core_authority_for_existing_effect(
+                slug, existing_projection
+            )
+        if dry or not non_authoritative:
+            return {"noop": True, "reason": "published.json represents an "
+                    "existing core-bound effect or the current dry run — a "
+                    "second import "
+                    "would fork the game into a second design",
+                    "published": existing_projection}
 
     problems = validate(slug)
-    dry = _dry_run()
     if dry:
         auth_warnings = [p for p in problems if p.startswith("auth")]
         blocking = [p for p in problems if not p.startswith("auth")]
@@ -652,13 +1020,13 @@ def import_draft(slug):
             % (slug, "\n  - ".join(blocking)))
 
     listing = _load_listing(slug) or {}
-    zip_path = os.path.join(_game_dir(slug), "publish_payload",
-                            "%s.zip" % slug)
-    with open(zip_path, "rb") as fh:
-        zip_bytes = fh.read()
-    with zipfile.ZipFile(zip_path) as zf:
-        n_entries = len(zf.namelist())
-    zip_sha = hashlib.sha256(zip_bytes).hexdigest()
+    # Rebuild once more at the effect boundary. The content validators above
+    # may take time, and a generator could otherwise leave us uploading the
+    # packet they inspected instead of the game tree that exists now.
+    zip_path = build_zip(slug)
+    identity = _core_packet_identity(zip_path)
+    n_entries = identity["entries"]
+    zip_sha = identity["packet_sha256"]
 
     fields = [
         ("title", listing.get("title", slug)),
@@ -675,14 +1043,17 @@ def import_draft(slug):
         manifest = {
             "slug": slug,
             "dry_run": True,
+            "publication_authority": "none",
             "at": _now_iso(),
             # The Go CLI's dry-run surfaces the description because "it is
             # what the store page shows under the title" — ours surfaces
             # every field the form would carry.
             "fields": dict(fields),
             "zip": {"path": os.path.relpath(zip_path, _home()),
-                    "bytes": len(zip_bytes), "entries": n_entries,
-                    "sha256": zip_sha},
+                    "bytes": identity["bytes"], "entries": n_entries,
+                    "sha256": zip_sha,
+                    "artifact_sha256": identity["artifact_sha256"],
+                    "contract": "inventor_core.artifacts/v1"},
             "auth_warnings": auth_warnings,
         }
         _write_json(os.path.join(_game_dir(slug), "publish_payload",
@@ -696,30 +1067,36 @@ def import_draft(slug):
     # ---- live path ---------------------------------------------------------
     # Proactive refresh BEFORE the upload: a mid-flight 401 wastes a 50 MB
     # POST; refresh is cheap (publish-contract §2: refresh each tick).
-    auth = refresh_auth()
-
-    files = [("file", "%s.zip" % slug, "application/zip", zip_bytes)]
-    cover = os.path.join(_game_dir(slug), "%s_review" % slug,
-                         "_assembled.png")
-    if os.path.exists(cover):
-        with open(cover, "rb") as fh:
-            # hero render first = cover (§3 thumbnails rule)
-            files.append(("thumbnails", "_assembled.png", "image/png",
-                          fh.read()))
-
-    body, ctype = _multipart(fields, files)
-    headers = _bearer(auth)
-    headers["Content-Type"] = ctype
-    status, _, resp_body = _http(
-        "POST", _api_base() + "/designs/import", headers=headers, data=body)
-    if status != 201:
+    auth = _fresh_core_auth()
+    runtime, store, coordinator, _owner = _core_publication_context(auth)
+    product_id = _core_product(
+        store, runtime, slug, identity["artifact_sha256"]
+    )
+    try:
+        outcome = coordinator.import_draft(
+            product_id, Path(zip_path), _core_metadata(slug, listing)
+        )
+    except runtime.AmbiguousPublishError as exc:
         raise PublishError(
-            "import failed (HTTP %s): %s — a 524/500 mid-import never "
-            "leaves a half-built design visible and is safe to retry; a "
-            "400 names the wall the local validator missed (fix the "
-            "validator too)." % (status,
-                                 resp_body.decode("utf-8", "replace")[:400]))
-    design = json.loads(resp_body.decode("utf-8"))
+            "%s — core recorded the unknown import in %s and blocks every "
+            "retry; Panda must expose content/idempotency proof before this "
+            "packet can be reconciled" % (exc, _core_store_path())
+        ) from exc
+    except (runtime.CorePublishError, runtime.ContractError,
+            runtime.StateConflict) as exc:
+        raise PublishError("core publication refused the draft import: %s" % exc) from exc
+
+    intent = store.get_publish_intent(outcome.intent_id)
+    design = intent.get("response") or {
+        "id": outcome.receipt.design_id,
+        "slug": outcome.receipt.slug,
+        "owner_id": outcome.receipt.owner_id,
+        "root_id": outcome.receipt.root_id,
+        "current_history_id": outcome.receipt.current_history_id,
+        "published_history_id": outcome.receipt.published_history_id,
+        "status": outcome.receipt.status,
+        "project_url": outcome.receipt.project_url,
+    }
 
     # The 201 response IS the idempotency ledger. Persist before anything
     # else can fail — a crash after this line costs a retry of curation,
@@ -730,6 +1107,11 @@ def import_draft(slug):
         "status": "draft",
         "imported_at": _now_iso(),
         "zip_sha256": zip_sha,
+        "core_intent_id": outcome.intent_id,
+        "core_product_id": product_id,
+        "core_artifact_sha256": identity["artifact_sha256"],
+        "core_store": os.path.relpath(_core_store_path(), _home()),
+        "draft_receipt": outcome.receipt.to_dict(),
     }
     _write_json(pub_path, record)
 
@@ -788,6 +1170,7 @@ def _content_walls(use_case, blocks):
 def _authed_call(method, url, payload):
     """JSON call with bearer; one retry through refresh_auth() on 401
     (token lifetimes are undocumented — §2 says refresh on any 401)."""
+    url = _validated_panda_url(url)
     auth = _load_auth()
     if not auth:
         raise PublishError("no auth on disk — mint the bob token first "
@@ -802,6 +1185,123 @@ def _authed_call(method, url, payload):
         headers["Content-Type"] = "application/json"
         status, hdrs, resp = _http(method, url, headers=headers, data=body)
     return status, hdrs, resp
+
+
+def _authed_get(url):
+    """Authenticated readback with the same one-refresh rule as JSON writes."""
+    url = _validated_panda_url(url)
+    auth = _load_auth()
+    if not auth:
+        raise PublishError("no auth on disk — mint the bob token first "
+                           "(publish-contract §2)")
+    status, hdrs, resp = _http("GET", url, headers=_bearer(auth))
+    if status == 401:
+        auth = refresh_auth()
+        status, hdrs, resp = _http("GET", url, headers=_bearer(auth))
+    return status, hdrs, resp
+
+
+def _public_readback(slug, record):
+    """Return an authenticated design receipt or fail closed.
+
+    HTTP success from /publish proves only that a request returned. `live`
+    requires the remote design to identify Bob's account and report that its
+    exact current history entry is the published history entry.
+    """
+    local = record.get("design") or {}
+    dslug = local.get("slug", slug)
+    status, _, body = _authed_get(
+        "%s/designs/%s" % (_api_base(), dslug))
+    if status != 200:
+        raise PublishError(
+            "public readback failed (HTTP %s): %s — outcome is ambiguous; "
+            "do not POST publish again. Run `bob reconcile-public %s`."
+            % (status, body.decode("utf-8", "replace")[:300], slug))
+    try:
+        remote = json.loads(body.decode("utf-8"))
+    except (TypeError, ValueError, UnicodeDecodeError) as exc:
+        raise PublishError(
+            "public readback returned invalid JSON (%s) — outcome is "
+            "ambiguous; run `bob reconcile-public %s`" % (exc, slug))
+    if not isinstance(remote, dict):
+        raise PublishError("public readback was not a design object")
+    for field in ("id", "root_id"):
+        if local.get(field) and remote.get(field) != local.get(field):
+            raise PublishError(
+                "public readback %s %r does not match imported design %r"
+                % (field, remote.get(field), local.get(field)))
+    auth = _load_auth() or {}
+    expected_owner = auth.get("bob_user_id") or \
+        (auth.get("user") or {}).get("id")
+    remote_owner = remote.get("owner_id") or \
+        (remote.get("author") or {}).get("id")
+    if not expected_owner or remote_owner != expected_owner:
+        raise PublishError(
+            "public readback owner %r does not match Bob's pinned account %r"
+            % (remote_owner, expected_owner))
+    current = remote.get("current_history_id")
+    published = remote.get("published_history_id")
+    if remote.get("status") != "public" or not current or published != current:
+        raise PublishError(
+            "public readback did not prove the current version live "
+            "(status=%r current_history_id=%r published_history_id=%r) — "
+            "run `bob reconcile-public %s` after the platform settles"
+            % (remote.get("status"), current, published, slug))
+    if not str(remote.get("project_url") or "").startswith("https://"):
+        raise PublishError("public readback lacks an HTTPS project_url")
+    return remote
+
+
+def _record_verified_live(slug, record, remote, price=None):
+    now = _now_iso()
+    record["design"] = remote
+    record["status"] = "public"
+    if price is not None:
+        record["price_cents"] = price
+    record["flipped_at"] = record.get("flipped_at") or now
+    record["verified_public_at"] = now
+    record["publication_receipt"] = {
+        key: remote.get(key) for key in (
+            "id", "slug", "owner_id", "root_id", "current_history_id",
+            "published_history_id", "status", "project_url")
+    }
+    record["flip_intent"] = {
+        "state": "succeeded", "verified_at": now,
+        "price_cents": record.get("price_cents"),
+    }
+    _write_json(_published_path(slug), record)
+    try:
+        current_state = (queue.load().get("games", {}).get(slug) or {}).get("state")
+        if current_state == "published":
+            queue.advance(slug, "live", "authenticated public readback")
+    except (KeyError, ValueError) as exc:
+        sys.stderr.write("publish: queue advance skipped: %s\n" % exc)
+    return record
+
+
+def _design_from_core_receipt(receipt, previous=None):
+    """Translate core's typed receipt back to Bob's long-lived JSON surface."""
+    previous = previous or {}
+    design = {
+        "id": receipt.design_id,
+        "slug": receipt.slug,
+        "owner_id": receipt.owner_id,
+        "root_id": receipt.root_id,
+        "current_history_id": receipt.current_history_id,
+        "published_history_id": receipt.published_history_id,
+        "status": receipt.status,
+        "project_url": receipt.project_url,
+    }
+    if previous.get("thumbnail_urls"):
+        design["thumbnail_urls"] = previous["thumbnail_urls"]
+    if receipt.listing_active is not None:
+        design["listing"] = {
+            "active": receipt.listing_active,
+            "price_cents": receipt.listing_price_cents,
+            "currency": receipt.listing_currency,
+            "sku": receipt.listing_sku,
+        }
+    return design
 
 
 def curate(slug):
@@ -925,28 +1425,75 @@ def flip_public(slug, price_cents):
             "exists for this one" % (price, API_PRICE_MIN, API_PRICE_MAX))
 
     record = _read_json(pub_path)
-    design = record.get("design", {})
-    dslug = design.get("slug", slug)
-    status, _, resp = _authed_call(
-        "POST", "%s/designs/%s/publish" % (_api_base(), dslug),
-        {"listing": {"price_cents": price}})
-    if status not in (200, 201):
+    # Rebuild before consulting the outbox.  This is the current product, not a
+    # possibly stale publish_payload left by an earlier validation pass.
+    build_zip(slug)
+    current_identity = core_packet_identity(slug)
+    runtime = _require_core()
+    local_store = runtime.InventorStore(Path(_core_store_path()))
+    core_product_id, intent = _bound_core_intent(
+        local_store, slug, current_identity
+    )
+    core_intent_id = intent["id"]
+    projected_intent_id = record.get("core_intent_id")
+    if projected_intent_id and projected_intent_id != core_intent_id:
         raise PublishError(
-            "flip failed (HTTP %s): %s — a 400 here often names the "
-            "fulfilment floor's exact minimum; re-price at or above it "
-            "and retry" % (status, resp.decode("utf-8", "replace")[:300]))
-
-    record["status"] = "public"
-    record["price_cents"] = price
-    record["flipped_at"] = _now_iso()
+            "published.json points at a different intent than the slug-bound "
+            "core outbox; refusing the mutable projection"
+        )
+    auth = _fresh_core_auth()
+    runtime, store, coordinator, owner = _core_publication_context(auth)
+    core_product_id, persisted_intent = _bound_core_intent(
+        store,
+        slug,
+        current_identity,
+        owner=owner,
+        api_origin=coordinator.client.api_origin,
+    )
+    if persisted_intent["id"] != core_intent_id:
+        raise PublishError("slug-bound core intent changed during publication setup")
+    if persisted_intent.get("state") == "live":
+        live_request = persisted_intent.get("live_request") or {}
+        listing_request = live_request.get("listing") or {}
+        if listing_request.get("price_cents") != price:
+            raise PublishError(
+                "core already recorded this intent live at a different price"
+            )
+    record["flip_intent"] = {
+        "state": "sending", "started_at": _now_iso(), "price_cents": price,
+        "core_intent_id": core_intent_id,
+    }
     _write_json(pub_path, record)
+    try:
+        receipt = coordinator.publish_live(core_intent_id, price)
+    except runtime.AmbiguousPublishError as exc:
+        record["flip_intent"]["state"] = "unknown"
+        record["flip_intent"]["failed_at"] = _now_iso()
+        _write_json(pub_path, record)
+        raise PublishError(
+            "%s — do not POST publish again; run `bob reconcile-public %s`"
+            % (exc, slug)
+        ) from exc
+    except (runtime.CorePublishError, runtime.ContractError,
+            runtime.StateConflict) as exc:
+        record["flip_intent"]["state"] = "rejected"
+        record["flip_intent"]["failed_at"] = _now_iso()
+        _write_json(pub_path, record)
+        raise PublishError("core publication refused the public flip: %s" % exc) from exc
+
+    remote = _design_from_core_receipt(receipt, record.get("design"))
+    record = _record_verified_live(slug, record, remote, price=price)
+    record["core_intent_id"] = core_intent_id
+    record["core_product_id"] = core_product_id
+    record["core_artifact_sha256"] = current_identity["artifact_sha256"]
+    record["zip_sha256"] = current_identity["packet_sha256"]
+    record["publication_receipt"] = receipt.to_dict()
+    record["flip_intent"]["core_intent_id"] = core_intent_id
+    _write_json(pub_path, record)
+    design = remote
 
     ledger.append({"slug": slug, "kind": "publish", "stage": "flip_public",
-                   "notes": "public at %d cents" % price})
-    try:
-        queue.advance(slug, "live", "flipped public at %d cents" % price)
-    except (KeyError, ValueError) as exc:
-        sys.stderr.write("publish: queue advance skipped: %s\n" % exc)
+                   "notes": "verified public at %d cents" % price})
 
     listing = _load_listing(slug) or {}
     telegram.send(
@@ -954,6 +1501,71 @@ def flip_public(slug, price_cents):
         % (listing.get("title", slug), price / 100.0,
            design.get("project_url", ""), slug),
         buttons=["unpublish %s" % slug])
+    return record
+
+
+def reconcile_public(slug):
+    """Reconcile a core-recorded ambiguous public flip by authenticated GET.
+
+    This command may rotate auth, but never sends /publish, so it is safe after
+    a timeout or crash. A human click without the persisted core price intent
+    cannot satisfy the exact-listing receipt and remains deliberately blocked.
+    """
+    pub_path = _published_path(slug)
+    if not os.path.exists(pub_path):
+        raise PublishError("no published.json for '%s' — nothing to reconcile"
+                           % slug)
+    record = _read_json(pub_path)
+    build_zip(slug)
+    current_identity = core_packet_identity(slug)
+    runtime = _require_core()
+    local_store = runtime.InventorStore(Path(_core_store_path()))
+    core_product_id, intent = _bound_core_intent(
+        local_store, slug, current_identity
+    )
+    core_intent_id = intent["id"]
+    projected_intent_id = record.get("core_intent_id")
+    if projected_intent_id and projected_intent_id != core_intent_id:
+        raise PublishError(
+            "published.json points at a different intent than the slug-bound "
+            "core outbox; refusing the mutable projection"
+        )
+    auth = _fresh_core_auth()
+    runtime, store, coordinator, owner = _core_publication_context(auth)
+    core_product_id, intent = _bound_core_intent(
+        store,
+        slug,
+        current_identity,
+        owner=owner,
+        api_origin=coordinator.client.api_origin,
+    )
+    if intent["id"] != core_intent_id:
+        raise PublishError("slug-bound core intent changed during reconciliation setup")
+    try:
+        if intent["state"] == "live":
+            receipt = runtime.PublicationReceipt(**intent["receipt"])
+            receipt.assert_owner(owner)
+        else:
+            receipt = coordinator.reconcile_live(core_intent_id)
+    except runtime.AmbiguousPublishError as exc:
+        raise PublishError(
+            "%s — the exact core live intent remains ambiguous" % exc
+        ) from exc
+    except (runtime.CorePublishError, runtime.ContractError,
+            runtime.StateConflict, KeyError) as exc:
+        raise PublishError("core cannot reconcile the public flip: %s" % exc) from exc
+    remote = _design_from_core_receipt(receipt, record.get("design"))
+    record = _record_verified_live(
+        slug, record, remote, price=receipt.listing_price_cents)
+    record["core_intent_id"] = core_intent_id
+    record["core_product_id"] = core_product_id
+    record["core_artifact_sha256"] = current_identity["artifact_sha256"]
+    record["zip_sha256"] = current_identity["packet_sha256"]
+    record["publication_receipt"] = receipt.to_dict()
+    _write_json(pub_path, record)
+    ledger.append({"slug": slug, "kind": "publish",
+                   "stage": "reconcile_public",
+                   "notes": "authenticated readback proved public"})
     return record
 
 

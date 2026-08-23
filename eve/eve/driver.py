@@ -3,9 +3,9 @@
 meta.py is the planner — it decides *what* to run next (one unit of work per
 tick) and records the outcome. driver.py is the executor: it reads a tick's
 dispatch and actually runs the Claude sub-agent that fulfills it, then hands
-the result back through meta.record_stage / the queue. The launchd daemon runs
-`eve drive --steps 1` (or `eve tick --run-agent` which now executes), so a
-tick that says "dispatch this role" no longer just prints and exits.
+the result back through meta.record_stage / the queue. The launchd job runs
+`eve drive --steps 1`, so a tick that says "dispatch this role" no longer just
+prints and exits.
 
 The one contract every role agent obeys: write a JSON contract file back into
 its game directory (`stage_out.json`, or `idea.json` for a brand-new game).
@@ -71,17 +71,98 @@ def _auto_publish_draft(cfg, game, journal) -> dict:
         from . import publish
         result = publish.publish_to_store(cfg, game, status="draft",
                                           journal=journal)
-        # honest result: publish_to_store returns ok/skipped top-level and the
-        # platform id inside info (or already_published when idempotent)
+        # ``publish_to_store`` reports core ambiguity/refusal as data so the
+        # ship remains durable. Classify that data before writing the operator
+        # journal: a non-throwing failure is still not a publication.
         info = result.get("info") or {}
-        ok = bool(result.get("ok")) or bool(result.get("skipped"))
-        ident = info.get("id") or info.get("slug") or \
-            (result.get("already_published") or {}).get("id")
-        journal.append("meta", action="auto_published", game=game.slug,
-                       published=ok, id=ident)
+        already_published = result.get("already_published") or {}
+        receipt = result.get("receipt") or already_published.get("receipt") or {}
+        ident = (
+            info.get("id")
+            or info.get("slug")
+            or receipt.get("design_id")
+            or already_published.get("id")
+        )
+        intent_id = result.get("intent_id") or already_published.get("intent_id")
+        state = (
+            result.get("state")
+            or result.get("intent_state")
+            or already_published.get("intent_state")
+        )
+        blocked = bool(result.get("blocked"))
+        skipped = bool(result.get("skipped"))
+        succeeded = result.get("ok") is True
+        error = str(result.get("error") or "")[-300:]
+
+        if blocked:
+            journal.append(
+                "meta",
+                action="auto_publish_blocked",
+                game=game.slug,
+                published=False,
+                blocked=True,
+                intent_id=intent_id,
+                state=state,
+                error=error,
+            )
+            return {
+                "action": "publish_blocked",
+                "game": game.slug,
+                "ok": False,
+                "blocked": True,
+                "intent_id": intent_id,
+                "state": state,
+                "error": error,
+            }
+
+        if not succeeded and not skipped:
+            journal.append(
+                "meta",
+                action="auto_publish_refused",
+                game=game.slug,
+                published=False,
+                blocked=False,
+                intent_id=intent_id,
+                state=state,
+                error=error,
+            )
+            return {
+                "action": "publish_refused",
+                "game": game.slug,
+                "ok": False,
+                "blocked": False,
+                "intent_id": intent_id,
+                "state": state,
+                "error": error,
+            }
+
+        if skipped:
+            journal.append(
+                "meta",
+                action="auto_publish_skipped",
+                game=game.slug,
+                published=False,
+                blocked=False,
+                intent_id=intent_id,
+                state=state,
+                id=ident,
+                reason=result.get("reason"),
+            )
+        else:
+            journal.append(
+                "meta",
+                action="auto_published",
+                game=game.slug,
+                published=True,
+                blocked=False,
+                intent_id=intent_id,
+                state=state,
+                id=ident,
+            )
         return {"action": "publish_draft", "game": game.slug,
-                "ok": ok, "id": ident,
-                "skipped": bool(result.get("skipped"))}
+                "ok": succeeded or skipped, "id": ident,
+                "skipped": skipped, "blocked": False,
+                "intent_id": intent_id, "state": state}
     except Exception as exc:   # never let a publish hiccup take down a ship
         journal.append("meta", action="auto_publish_failed", game=game.slug,
                        error=str(exc)[-300:])
@@ -97,8 +178,8 @@ def _run_ideator(cfg, m: "meta_mod.Meta", fn_run_agent) -> dict:
     staging dir; on success we move it to games/<slug> and queue it."""
     from .queue import Queue
     # Never start a second ideator while one is already inventing: an Opus run
-    # can outlive a single 30-min daemon tick, and two ticks sparking at once
-    # would double-pay the ideator and contend on the same staging dir. If a
+    # can outlive a single 30-min drive invocation, and two drives sparking at
+    # once would double-pay the ideator and contend on the same staging dir. If a
     # .pending-* dir exists, the work is already in flight — skip.
     if list(cfg.games_dir.glob(".pending-*")):
         _log("ideator: an ideator is already in flight (.pending-*) — skipping")
@@ -171,8 +252,34 @@ def _run_builder(cfg, m, fn_run_agent, slug: str) -> dict:
     out = _load_json(gdir / "stage_out.json")
     if not out or not out.get("built"):
         raise DriverStop(f"builder for {slug} produced no staged parts (no build/)")
+    # Shared core owns the immutable artifact identity. Eve still owns stage
+    # progression and the print gate; this snapshot is evidence, not a second
+    # lifecycle write.
+    from inventor_core.errors import CoreError
+    from .core_adapter import snapshot_built_game
+    try:
+        artifact = snapshot_built_game(gdir)
+    except (CoreError, OSError) as exc:
+        # A tree that core cannot safely identify must never advance to a print
+        # gate (for example, a builder-created symlink or credential file).
+        raise DriverStop(
+            f"builder for {slug} produced an unpublishable artifact: {exc}"
+        ) from exc
+    m.journal.append(
+        "artifact_snapshot",
+        game=slug,
+        artifact_sha256=artifact["artifact_sha256"],
+        entries=len(artifact["entries"]),
+        total_bytes=artifact["total_bytes"],
+        producer="inventor_core",
+    )
     m.record_stage(slug, "build")   # next tick runs the deterministic print gate
-    return {"role": "builder", "game": slug, "n_parts": out.get("n_parts")}
+    return {
+        "role": "builder",
+        "game": slug,
+        "n_parts": out.get("n_parts"),
+        "artifact_sha256": artifact["artifact_sha256"],
+    }
 
 
 def _run_panel(cfg, m, fn_run_agent, slug: str) -> dict:

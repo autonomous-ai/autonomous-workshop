@@ -1,0 +1,15 @@
+# <2.8: cadquery 2.8.0 pulls numba/llvmlite, which have no macOS x86_64 (Intel)
+# wheel and break the Intel sidecar build. Keep in sync with
+# packages/cadpy/pyproject.toml.
+cadquery<2.8
+numpy
+
+# cadpy is vendored into scripts/packages/cadpy/ at build time by
+# scripts/build/build-skill-runtimes.sh (run from the Panda repo root).
+# It is NOT a PyPI package; this comment exists so future Track C
+# (Tauri integration) knows to add the vendor path to PYTHONPATH instead
+# of pip-installing.
+#
+# cadpy's own runtime deps (cadquery, cadquery-ocp, numpy, trimesh,
+# pygltflib) must be satisfied by the host Python; see Panda's
+# build-python-sidecar.sh.

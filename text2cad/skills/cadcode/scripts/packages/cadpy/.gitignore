@@ -1,0 +1,11 @@
+# Upstream cadcode ignores this whole directory: there, cadpy is regenerated
+# from a canonical packages/cadpy/ tree by scripts/build/build-skill-runtimes.sh,
+# so a tracked copy would let source edits land in the wrong place.
+#
+# This is a VENDORED SNAPSHOT inside text2cad, and no such build step exists on
+# panda — the installed skill is the only copy of cadpy, and it carries edits the
+# pipeline depends on (checks.py's interference band, render_part.py's ambient
+# and colour handling). Tracking it is the entire point of vendoring, so the
+# blanket ignore is dropped here and only build artifacts stay out.
+__pycache__/
+*.pyc

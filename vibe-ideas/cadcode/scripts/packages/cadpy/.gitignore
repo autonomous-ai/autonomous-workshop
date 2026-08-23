@@ -1,0 +1,28 @@
+# panda-social-cc-agent (standalone deploy repo) NOTE — differs from upstream:
+#
+# In the panda monorepo this directory is GITIGNORED and regenerated at build
+# time by scripts/build/build-skill-runtimes.sh, which rsyncs the canonical
+# packages/cadpy/src/cadpy/ tree here. THIS repo has no canonical cadpy in its
+# build context, so the cadquery cadpy is VENDORED AND COMMITTED here instead.
+#
+# Why it must exist: the cadcode runner inserts scripts/packages on sys.path and
+# does `import cadpy` (see ../../common/runner.py). With this dir empty the import
+# falls through to the build123d-based cad-viewer cadpy that the Dockerfile
+# pip-installs globally — which rejects cadquery shapes, so EVERY remix fails.
+# This cadquery cadpy (module-level generate_step, accepts cq.Workplane) is what
+# the runner was written for.
+#
+# Re-vendor on cadpy updates (from a checkout of the panda monorepo):
+#   rsync -a --delete --exclude=__pycache__ --exclude='*.pyc' \
+#     --filter='P README.md' --filter='P .gitignore' \
+#     <panda>/packages/cadpy/src/cadpy/  skills/cadcode/scripts/packages/cadpy/
+#
+# Vendored from panda/packages/cadpy @ commit 0eb65fd (matches the skill files
+# synced from that same panda commit for web-create desktop parity).
+# KEEP IN SYNC WITH THE SKILL: re-vendor from the panda commit whose cadcode skill
+# files (runner.py, cadlib/, SKILL.md, examples) this repo matches — NOT blindly from
+# HEAD. A cadpy from a different commit than the skill is a latent mismatch (we shipped
+# an older #13 cadpy under a #40 skill once; it worked, but only by luck of a stable API).
+# Keep only caches out of git:
+__pycache__/
+*.pyc

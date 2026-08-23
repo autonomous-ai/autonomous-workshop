@@ -1,0 +1,114 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 24,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "Going for max single-play value: small puck claims a floor for 2 points. Placing large only gets 1 point and seals the bore for everyone. With 4 players racing for 6 floors, small-first is greedy-optimal.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "2-point floor claim dominates a 1-point seal when the board is fresh and small pucks are abundant; build point pressure now while every bore is still open",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "matching the floor race that seats 0 and 1 opened, 2 points beats 1 and no one's smalls are running short yet",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "claiming floor on bore 3 while shelves 0-2 are still open threatens seats 0-2 with losing the floor forever if anyone else seals those shelves",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "Sealing bore 4 denies it to the next three players; nobody can sneak a small underneath now, and I bank 1 point before seat 1 can. Bore 5 stays open so I can still drop my second small for 2 points on the next pass.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 5,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "the only open-floor bore is bore 5; taking the 2-point floor now puts me in solo lead (4 pts) and locks opponents out of a 2-point score; I'll have 3 large pucks left to seal my own bores (1 and 5) for 2 more pts on top",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "all remaining shelves are equivalent 1-pointers, all floors are taken so my smalls are dead, just claiming one to keep pace",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 1,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "bore 2 sits next to seat 2's floor at bore 1; sealing it denies seat 2 a cheap shelf while I still get a point and keep my small pucks for floors",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "Sealing bore 1 (which has MY floor underneath) protects my 2-point claim from anyone stealing a shelf\u2014er, well, sealing denies ANYONE a shelf point, but more importantly the floor is already mine. Actually, sealing also makes the floor unreachable to no one (it's already taken). The value is the shelf point itself. I take it now before seat 1 (3.0+1=4) closes in.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "seats 0 and 1 each hold a 2-0 advantage over me on smalls; sealing bore 3 denies seat 2 the last open-floor bore (they have 2 smalls left!) and the only 2-pt they can score elsewhere; sealing bore 5 instead leaves bore 3 wide for them. Tied for the lead, I cannot let the threat compound",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "last unsealed bore, I still have one large left, take the point",
+      "arbitrary": true,
+      "note": null
+    }
+  ]
+}

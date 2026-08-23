@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "engine": "cadquery",
+  "entrypoint": {
+    "path": "main.py",
+    "callable": "gen_step"
+  },
+  "parameters": "params.py",
+  "specification": "spec.md",
+  "model": {
+    "kind": "assembly",
+    "primaryPose": "assembled",
+    "parts": [
+      {
+        "id": "base",
+        "source": "parts/base.py"
+      },
+      {
+        "id": "cover",
+        "source": "parts/cover.py"
+      }
+    ],
+    "assembly": "assemblies/product.py"
+  },
+  "artifactStem": "project_skeleton"
+}

@@ -1,0 +1,166 @@
+{
+  "slug": "millbind",
+  "idea_dir": "board-game/ideas/millbind",
+  "engine": "board-game/ideas/millbind/playtest/engine.py",
+  "seats": 2,
+  "seed": 63,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('setup_mill', (-3, 0))",
+      "by": "player",
+      "why": "setup mill placement has no mechanical impact on scoring or binding, so any yard pin works",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 14,
+      "move": "('setup_mill', (3, -2))",
+      "by": "player",
+      "why": "placing opposite seat 0 avoids direct meshing and preserves independent clockwise options once the crank is placed",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('setup_crank', (-3, 2))",
+      "by": "player",
+      "why": "placing crank at (-3, 2) leaves exactly one pin between it and my mill, setting up a 1-gear bridge for odd parity clockwise rotation next turn",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (-3, 2))",
+      "by": "player",
+      "why": "leaving crank at (-3, 2) maintains the 1-pin gap for a guaranteed 1-gear bridge next turn",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-3, 1) bridges my mill and crank with exactly one gear, guaranteeing odd parity for clockwise rotation and the two-pellet solo bonus",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 5,
+      "move": "('place', (-2, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing adjacent to the crank establishes immediate power access and follows my established line from game 3",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 14,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "moving crank to (3, 0) sets up a direct 1-gear bridge to my mill next turn, replicating the winning line from game 3",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 32,
+      "move": "('place', (3, -1), 'gear_low')",
+      "by": "player",
+      "why": "bridging crank and mill with one gear guarantees clockwise turn and solo bonus since opponent is disconnected",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 2), 'gear_low')",
+      "by": "player",
+      "why": "extends my low-tier chain safely along the outer ring toward the crank without forming any triangles or binds",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 2,
+      "move": "('power', (-2, 3))",
+      "by": "player",
+      "why": "moving crank to (-2, 3) connects my mill chain with exactly 3 gears (odd parity), guaranteeing clockwise rotation and the solo bonus while isolating seat 1",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "my chain already has 3 gears to the crank (odd parity), guaranteeing clockwise rotation and the solo bonus; passing avoids accidental binds or parity flips",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 8,
+      "move": "('place', (-1, 1), 'gear_low')",
+      "by": "player",
+      "why": "extends the low-gear chain from (-2,2) toward my sector while avoiding the binding triangle at (-2,1)",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 11,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "relocates crank to mesh directly with my bridge gear at (3, -1), creating a 1-gear odd chain for a guaranteed solo clockwise turn.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "my chain is already set for a solo clockwise turn; passing banks 2 pellets without risking a bind or parity shift.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing ensures no gear is placed this round, triggering the \"no gear placed\" end condition and securing my 4-2 victory immediately",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "undefined": null
+}

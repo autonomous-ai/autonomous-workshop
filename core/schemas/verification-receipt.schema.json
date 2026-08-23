@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/verification-receipt-v1.json",
+  "title": "CAD verification receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "artifact_sha256",
+    "validator",
+    "validator_version",
+    "config_sha256",
+    "substrate",
+    "status",
+    "checks",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "artifact_sha256": {"$ref": "#/$defs/sha256"},
+    "validator": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^(?:[Ss][Ee][Ll][Ff]-[Rr][Ee][Pp][Oo][Rr][Tt]|[Tt][Rr][Uu][Ss][Tt]-[Mm][Ee])$"
+      }
+    },
+    "validator_version": {"$ref": "#/$defs/exactVersion"},
+    "config_sha256": {"$ref": "#/$defs/sha256"},
+    "substrate": {
+      "enum": ["deterministic", "independent-review", "physical"]
+    },
+    "status": {"enum": ["passed", "failed", "held"]},
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/check"}
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "(?:Z|\\+00:00)$"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^(?=.*[0-9])[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$",
+      "not": {
+        "pattern": "(^|[._+-])(?:[Ll][Aa][Tt][Ee][Ss][Tt]|[Mm][Aa][Ii][Nn]|[Mm][Aa][Ss][Tt][Ee][Rr]|[Hh][Ee][Aa][Dd]|[Dd][Ee][Vv]|[Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Ss][Nn][Aa][Pp][Ss][Hh][Oo][Tt]|[Xx])([._+-]|$)"
+      }
+    },
+    "safePath": {
+      "type": "string",
+      "pattern": "^(?![.]$)(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*[/]$).+$"
+    },
+    "manifestMeasurements": {
+      "type": "object",
+      "properties": {"inventory_valid": {"type": "boolean"}}
+    },
+    "brepMeasurements": {
+      "type": "object",
+      "properties": {
+        "valid_solids": {"type": "integer", "minimum": 0},
+        "invalid_solids": {"type": "integer", "minimum": 0}
+      }
+    },
+    "meshTopologyMeasurements": {
+      "type": "object",
+      "properties": {
+        "watertight_parts": {"type": "integer", "minimum": 0},
+        "non_manifold_edges": {"type": "integer", "minimum": 0}
+      }
+    },
+    "dimensionsMeasurements": {
+      "type": "object",
+      "properties": {
+        "measured_parts": {"type": "integer", "minimum": 0},
+        "out_of_tolerance": {"type": "integer", "minimum": 0}
+      }
+    },
+    "interferenceMeasurements": {
+      "type": "object",
+      "properties": {
+        "poses_tested": {"type": "integer", "minimum": 0},
+        "forbidden_intersections": {"type": "integer", "minimum": 0}
+      }
+    },
+    "bedPackingMeasurements": {
+      "type": "object",
+      "properties": {
+        "beds_used": {"type": "integer", "minimum": 0},
+        "out_of_bounds_parts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "slicerMeasurements": {
+      "type": "object",
+      "properties": {
+        "profiles_checked": {"type": "integer", "minimum": 0},
+        "slicer_errors": {"type": "integer", "minimum": 0},
+        "support_material_grams": {"type": "number", "minimum": 0}
+      }
+    },
+    "formReviewMeasurements": {
+      "type": "object",
+      "properties": {
+        "views_reviewed": {"type": "integer", "minimum": 0},
+        "blockers": {"type": "integer", "minimum": 0}
+      }
+    },
+    "safetyMeasurements": {
+      "type": "object",
+      "properties": {
+        "hazards_found": {"type": "integer", "minimum": 0},
+        "review_scope": {"type": "string", "pattern": "\\S"}
+      }
+    },
+    "physicalClaimsMeasurements": {
+      "type": "object",
+      "properties": {
+        "claims_tested": {"type": "integer", "minimum": 0},
+        "claims_failed": {"type": "integer", "minimum": 0}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "check_id",
+        "status",
+        "measurements",
+        "evidence_ref",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "check_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["passed", "failed", "held"]},
+        "measurements": {"type": "object"},
+        "evidence_ref": {"$ref": "#/$defs/safePath"},
+        "evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "limitations": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"status": {"const": "passed"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"measurements": {"minProperties": 1}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "manifest"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/manifestMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "brep"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/brepMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "mesh-topology"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/meshTopologyMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "dimensions"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/dimensionsMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "interference"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/interferenceMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "bed-packing"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/bedPackingMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "slicer"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/slicerMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "form-review"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/formReviewMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "safety"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/safetyMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"check_id": {"const": "physical-claims"}},
+            "required": ["check_id"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {"$ref": "#/$defs/physicalClaimsMeasurements"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "manifest"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["inventory_valid"],
+                "properties": {"inventory_valid": {"const": true}}
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "brep"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["valid_solids", "invalid_solids"],
+                "properties": {
+                  "valid_solids": {"type": "integer", "minimum": 1},
+                  "invalid_solids": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "mesh-topology"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["watertight_parts", "non_manifold_edges"],
+                "properties": {
+                  "watertight_parts": {"type": "integer", "minimum": 1},
+                  "non_manifold_edges": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "dimensions"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["measured_parts", "out_of_tolerance"],
+                "properties": {
+                  "measured_parts": {"type": "integer", "minimum": 1},
+                  "out_of_tolerance": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "interference"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["poses_tested", "forbidden_intersections"],
+                "properties": {
+                  "poses_tested": {"type": "integer", "minimum": 1},
+                  "forbidden_intersections": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "bed-packing"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["beds_used", "out_of_bounds_parts"],
+                "properties": {
+                  "beds_used": {"type": "integer", "minimum": 1},
+                  "out_of_bounds_parts": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "slicer"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": [
+                  "profiles_checked",
+                  "slicer_errors",
+                  "support_material_grams"
+                ],
+                "properties": {
+                  "profiles_checked": {"type": "integer", "minimum": 1},
+                  "slicer_errors": {"const": 0},
+                  "support_material_grams": {"type": "number", "minimum": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "form-review"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["views_reviewed", "blockers"],
+                "properties": {
+                  "views_reviewed": {"type": "integer", "minimum": 3},
+                  "blockers": {"const": 0}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "safety"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["hazards_found", "review_scope"],
+                "properties": {
+                  "hazards_found": {"const": 0},
+                  "review_scope": {"type": "string", "pattern": "\\S"}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "check_id": {"const": "physical-claims"},
+              "status": {"const": "passed"}
+            },
+            "required": ["check_id", "status"]
+          },
+          "then": {
+            "properties": {
+              "measurements": {
+                "required": ["claims_tested", "claims_failed"],
+                "properties": {
+                  "claims_tested": {"type": "integer", "minimum": 1},
+                  "claims_failed": {"const": 0}
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

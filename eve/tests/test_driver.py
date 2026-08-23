@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from eve import config, corpus, driver, queue
+from eve import config, corpus, driver, journal, queue
 
 # A fresh, corpus-valid, non-colliding idea. Backpack-rail + vexing-pin is
 # deliberately unlike any owned mechanic/theme token (gates.py/gates novelty).
@@ -129,6 +129,18 @@ def test_evolve_drives_new_game_to_ship(cfg):
     # The shipped game carries real playtest evidence (fun_pass leave a trace).
     shipped_game = next(g for g in shipped if g.slug == IDEA["slug"])
     assert shipped_game.fun_evidence, "shipped game must have fun_evidence"
+    # Eve's normal builder path must enter shared core and retain its exact
+    # artifact identity before the local print gate advances.
+    manifest_path = cfg.games_dir / IDEA["slug"] / "_inventor-artifact.json"
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["artifact_sha256"]
+    assert manifest["created_at"] == "content-addressed"
+    snapshots = [
+        row for row in journal.open_journal(cfg).read()
+        if row.get("event") == "artifact_snapshot"
+        and row.get("game") == IDEA["slug"]
+    ]
+    assert snapshots and snapshots[-1]["producer"] == "inventor_core"
 
 
 def test_driver_audit_clean_after_ship(cfg):
@@ -279,8 +291,10 @@ def test_quota_pause_persists_hint_and_tick_noops(cfg):
 
     until = m.quota_until()
     assert until is not None
-    # Machine tz is +07, so 6:20pm local == 11:20 UTC.
-    assert until.hour == 11 and until.minute == 20, until
+    # Reset hints are wall-clock values in the machine's local timezone. Keep
+    # the assertion portable across the developer host and CI timezones.
+    local_until = until.astimezone()
+    assert local_until.hour == 18 and local_until.minute == 20, until
 
     # While paused, a tick must refuse to dispatch any agent work.
     out = m.tick(run_agent=True)
@@ -327,6 +341,7 @@ def test_auto_publish_draft_is_best_effort_and_idempotent(cfg, monkeypatch):
     assert res["action"] == "publish_draft"
     assert res["ok"] is True, "unconfigured store is a safe skip, not a failure"
     assert res["skipped"] is True
+    assert journal.open_journal(cfg).read()[-1]["action"] == "auto_publish_skipped"
 
     # 3) a publish exception is swallowed so a ship is never taken down
     def boom(cfg, game, **kw):
@@ -336,3 +351,73 @@ def test_auto_publish_draft_is_best_effort_and_idempotent(cfg, monkeypatch):
     res = driver._auto_publish_draft(cfg, g, j)
     assert res["action"] == "publish_failed"
     assert "store on fire" in res["error"]
+
+
+@pytest.mark.parametrize(
+    "publisher_result,expected_action,expected_journal_action,blocked",
+    [
+        (
+            {
+                "ok": False,
+                "blocked": True,
+                "intent_id": "intent-ambiguous",
+                "state": "unknown",
+                "error": "Panda may have accepted the import",
+            },
+            "publish_blocked",
+            "auto_publish_blocked",
+            True,
+        ),
+        (
+            {
+                "ok": False,
+                "blocked": False,
+                "intent_id": "intent-local",
+                "state": "planned",
+                "error": "artifact violates a local secret rule",
+            },
+            "publish_refused",
+            "auto_publish_refused",
+            False,
+        ),
+    ],
+)
+def test_auto_publish_surfaces_nonthrowing_core_failure(
+    cfg,
+    monkeypatch,
+    publisher_result,
+    expected_action,
+    expected_journal_action,
+    blocked,
+):
+    """A durable core failure must never be journaled as a publication."""
+    from eve import publish
+    from eve.queue import Queue
+
+    game = Queue(cfg).add(
+        "autumn-corridor", title="Autumn Corridor", idea="a corridor"
+    )
+    active_journal = journal.open_journal(cfg)
+    monkeypatch.setenv("EVE_AUTO_PUBLISH", "1")
+    monkeypatch.setattr(
+        publish,
+        "publish_to_store",
+        lambda cfg, game, **kwargs: dict(publisher_result),
+    )
+
+    result = driver._auto_publish_draft(cfg, game, active_journal)
+
+    assert result["action"] == expected_action
+    assert result["ok"] is False
+    assert result["blocked"] is blocked
+    assert result["intent_id"] == publisher_result["intent_id"]
+    assert result["state"] == publisher_result["state"]
+    event = active_journal.read()[-1]
+    assert event["action"] == expected_journal_action
+    assert event["published"] is False
+    assert event["blocked"] is blocked
+    assert event["intent_id"] == publisher_result["intent_id"]
+    assert event["state"] == publisher_result["state"]
+    assert not any(
+        row.get("action") == "auto_published" for row in active_journal.read()
+    )

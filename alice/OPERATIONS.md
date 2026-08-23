@@ -112,13 +112,34 @@ their diagnostics.
 
 The supported local deployment is one launchd worker plus an independent
 watchdog. Each tick runs in a fresh bounded process group. The service writes a
-private heartbeat, pins the complete committed Alice source tree plus the
-resolved config and release policy, and refuses a dirty checkout or a changed
-runtime identity. The watchdog checks that receipt independently and recovers
-only the exact launchd label; it never trusts a PID stored in a health file.
+private heartbeat, pins the complete committed Alice source tree, the tracked
+`core/src/inventor_core` package from the same repository, the resolved config,
+and the release policy, and refuses a dirty Alice or shared-core checkout or a
+changed runtime identity. Both Alice and core are copied into one owner-only
+execution snapshot; isolated children import from that snapshot rather than
+the mutable editable install. Every sealed worker, doctor, guardian, and tick
+interpreter starts with `-I -S`: Python site initialization and executable
+`.pth` files are disabled before the bootstrap prepends the sealed source, so
+an editable-install startup hook cannot pre-cache an unsealed package.
+The watchdog checks that receipt independently and recovers only the exact
+launchd label; it never trusts a PID stored in a health file.
 
 Create an absolute, owner-only environment file and an absolute draft config,
 then run the installer from a clean committed checkout:
+
+```bash
+python -m pip install -e ./core -e ./alice
+```
+
+The installer requires that Alice's virtual environment contain the declared
+`autonomous-inventor-core==0.1.0` distribution metadata and the statically
+parsed `__version__` declaration from the explicit source tree; it fails before
+touching launchd if the shared core is absent or version-mismatched. It does not
+import mutable core code to perform that check. Preflight captures the explicit
+shared-core checkout into the same runtime identity, and every worker identity
+check hashes that mutable checkout while child execution imports only the
+sealed copy. Changing core therefore stops the installed worker until a new
+verified service release and cannot alter an existing sealed child.
 
 ```bash
 chmod 600 /secure/alice.env /secure/alice-draft.json

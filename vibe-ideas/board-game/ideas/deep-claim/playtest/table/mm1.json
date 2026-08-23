@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 24,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "placing a small puck claims 2 pts (vs 1 for large) and the shelf stays open for me to seal later with a large for 3 total; first-mover advantage means I take a floor before opponents can seal it",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "seat 0 took bore 0's floor for 2 points; I respond by taking an uncontested floor on bore 1 before anyone else can",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "I am behind the two leaders; 2 points from a fresh floor beats 1 point plus a denial play against seat 0 or 1, and I would rather bank the guaranteed 2 and keep all three larges for later shelf claims than spend a large to seal a floor already claimed by a rival",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "I want a floor claim, and placing on an empty bore in order keeps my mark left of the other three compactly; bore 3 is mine by being the next empty after the seat-2 claim",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "taking the last two open floors secures me 2+2=4 pts; if I place large instead opponents grab both remaining floors for 2 each (me 1 each = worse); claim both open floors before seats 1/2/3 can",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "bore 5 is the last open floor; taking 2 points now before seat 0 (who scored twice already) seals or takes it",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "Every bore's shelf is now open above a rival-claimed floor. Claiming a shelf on a bore whose rival floor I cannot reach costs me nothing if I pick one whose opponent is most threatening in the late game; seat 0 and 1 both already have 4 points and two floors, so sealing bore 0 denies them any further upside on that floor and gives me 1. I will pick bore 0 because seat 0 is the leader; picks among the six are otherwise similar in value to me",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "seat 2 plugged bore 0's shelf over my floor claim to bury it; I have 2 small left and need floors before others take them. Bores 1 and 2 each have an opponent's floor claim with an open shelf \u2014 placing large there seals them. Sealing bore 1 buries seat 0's floor (denies them a future shelf gain), which is the most direct counter to what just happened to me",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 2,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "I have 1 small left; placing a small would give 2 pts but I can't deny opponents bores 2/3. Better: seal a floor I already own (bore 2 is mine) with large to lock in 1 pt, OR seal an opponent's floor. Wait, bores 2 and 3 are opponent floors (seats 1&1). Sealing opponent's floor denies nothing but gives me 1 pt. Hmm - actually if I seal my own floor I just add 1 pt. If I seal an opponent's floor, the floor is already claimed by them, sealing it gives ME the shelf (1 pt) but doesn't change their 2 pts. So best is to seal an opponent's floor to get 1 pt AND prevent them from being able to... no wait, large on a floor that's already claimed just gives me 1 shelf pt regardless. So I should just take any shelf - all equivalent. Let me seal bore 2 (seat 1's floor) for the 1 pt.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "bores 2 and 3 are mine on the floor (one each \u2014 wait, 2 is seat2, 3 is seat3); placing on bore 2 seals it for me to deny seat2's shelf entirely, and keeps me with 2 large + 1 small for endgame. Seat2 already has 3 with shelves coming; this stalls them while I bank a shelf",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "Bore 3 holds seat 3's floor (2 points to him). Plugging its shelf denies seat 3 a cheap +1, while leaving bore 5 (also seat 3's floor? no \u2014 bore 5 is seat 1's floor) for me to evaluate. Actually: bore 3 floor=3 (seat 3), bore 5 floor=1 (seat 1). Picking bore 3 hurts seat 3, my closest rival alongside me at 3 each",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only legal move \u2014 bore 5 is the last open shelf",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

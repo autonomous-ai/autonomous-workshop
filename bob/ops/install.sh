@@ -9,10 +9,13 @@
 # minutes until the watchdog's 6h stale alarm. Fail loudly NOW instead.
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AGENTS_DIR="$HOME/Library/LaunchAgents"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+USER_HOME="$(/usr/bin/python3 -c 'import os,pwd; print(pwd.getpwuid(os.getuid()).pw_dir)')"
+AGENTS_DIR="$USER_HOME/Library/LaunchAgents"
 GUI_DOMAIN="gui/$(id -u)"
 LABELS="ai.autonomous.bob ai.autonomous.bob.watchdog"
+RENDERER="$REPO/ops/render_launchd.py"
+CORE_SRC="${BOB_CORE_SRC:-$REPO/../core/src}"
 
 # --- Refusal guards (catch broken deploys before launchd loops on them) -----
 if [ ! -f "$REPO/bob.py" ]; then
@@ -29,18 +32,35 @@ if ! (cd "$REPO" && /usr/bin/python3 -c 'import harness') >/dev/null 2>&1; then
     echo "  cd '$REPO' && /usr/bin/python3 -c 'import harness'" >&2
     exit 1
 fi
+if ! (cd "$REPO" && BOB_CORE_SRC="$CORE_SRC" /usr/bin/python3 -c \
+    'from harness.core_runtime import require_core; require_core()') >/dev/null 2>&1; then
+    echo "REFUSING to install: shared inventor_core is unavailable at $CORE_SRC." >&2
+    echo "Bob's artifact and Panda outbox contracts require the repo-level core." >&2
+    echo "Fix: deploy core beside bob, or set BOB_CORE_SRC to core/src." >&2
+    exit 1
+fi
+if [ ! -f "$RENDERER" ]; then
+    echo "REFUSING to install: $RENDERER is missing." >&2
+    exit 1
+fi
 
 # --- Install -----------------------------------------------------------------
 mkdir -p "$REPO/state/logs" "$AGENTS_DIR"
 
 for LABEL in $LABELS; do
-    PLIST_SRC="$REPO/ops/launchd/$LABEL.plist"
+    PLIST_SRC="$REPO/ops/launchd/$LABEL.plist.in"
     PLIST_DST="$AGENTS_DIR/$LABEL.plist"
     if [ ! -f "$PLIST_SRC" ]; then
         echo "REFUSING: $PLIST_SRC missing (partial checkout?)." >&2
         exit 1
     fi
-    cp "$PLIST_SRC" "$PLIST_DST"
+    /usr/bin/python3 "$RENDERER" \
+        --template "$PLIST_SRC" \
+        --output "$PLIST_DST" \
+        --repo "$REPO" \
+        --home "$USER_HOME" \
+        --core-src "$CORE_SRC"
+    /usr/bin/plutil -lint "$PLIST_DST" >/dev/null
     # bootout first so re-install picks up plist changes; ignore "not loaded".
     launchctl bootout "$GUI_DOMAIN/$LABEL" 2>/dev/null || true
     launchctl bootstrap "$GUI_DOMAIN" "$PLIST_DST"

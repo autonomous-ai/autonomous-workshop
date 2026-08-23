@@ -60,7 +60,8 @@ class ExportTest(unittest.TestCase):
         # under truncation, a leading one survives every cut.
         self._full_game()
         m = export_box.export_text2game(self.slug)
-        text = open(os.path.join(m["export_dir"], "discover.md")).read()
+        with open(os.path.join(m["export_dir"], "discover.md")) as handle:
+            text = handle.read()
         lines = [l for l in text.splitlines() if l.strip()]
         self.assertEqual(lines[0], "WINNER: %s" % self.slug)
         self.assertTrue(lines[1].startswith(export_box.DISCLOSURE_LINE))

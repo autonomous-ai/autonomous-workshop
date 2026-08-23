@@ -8,6 +8,7 @@
   <array>
     <string>__PYTHON__</string>
     <string>-I</string>
+    <string>-S</string>
     <string>-c</string>
     <string>__ISOLATED_SERVICE_BOOTSTRAP__</string>
     <string>__RELEASE_SOURCE__</string>
@@ -20,6 +21,8 @@
     <string>__ROOT__</string>
     <string>--source-root</string>
     <string>__SOURCE_ROOT__</string>
+    <string>--core-source-root</string>
+    <string>__CORE_SOURCE_ROOT__</string>
     <string>--state</string>
     <string>__STATE__</string>
     <string>--lock</string>

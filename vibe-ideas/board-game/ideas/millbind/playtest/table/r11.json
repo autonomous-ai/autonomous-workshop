@@ -1,0 +1,207 @@
+{
+  "slug": "millbind",
+  "idea_dir": "board-game/ideas/millbind",
+  "engine": "board-game/ideas/millbind/playtest/engine.py",
+  "seats": 4,
+  "seed": 24,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('setup_crank', (-1, -2))",
+      "by": "player",
+      "why": "mid-side pin keeps three open routes and I still place my mill last after seeing everyone else's",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 16,
+      "move": "('setup_mill', (3, 0))",
+      "by": "player",
+      "why": "far-side placement leaves room for a long odd chain and avoids an early dead adjacency to the crank.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 8,
+      "move": "('setup_mill', (0, 3))",
+      "by": "player",
+      "why": "distance-5 from crank with a clear inner-pin path; seat 3 took the south so I take the north",
+      "arbitrary": true,
+      "decision": "unstated",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 2,
+      "move": "('setup_mill', (-3, 2))",
+      "by": "player",
+      "why": "distance 4 from the crank gives odd gear count with room to build, and it is far from both existing mills on the left side.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 11,
+      "move": "('setup_mill', (3, -3))",
+      "by": "player",
+      "why": "(3,-3) gives an even-length 4-path from the crank along yard pins only, so a three-gear chain grinds 3 grist, and it is isolated from the already placed mills.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 15,
+      "move": "('place', (0, -2), 'gear_low')",
+      "by": "player",
+      "why": "first link from crank toward my mill; (0,-2) is on the straight path and meshes with the crank.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 4,
+      "move": "('place', (-2, -1), 'gear_low')",
+      "by": "player",
+      "why": "Starting a three-gear chain toward my mill via the left path; distance 4 gives odd parity, and this pin is the first safe link near the crank.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 19,
+      "move": "('place', (1, -2), 'gear_low')",
+      "by": "player",
+      "why": "Extending the low chain from (0,-2) toward my mill at (3,-3); (1,-2) is the contested gap, and taking it now keeps the 3-gear path to my mill reachable.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 27,
+      "move": "('place', (2, 1), 'gear_low')",
+      "by": "player",
+      "why": "placing a low gear at (2,1) starts my chain adjacent to my mill and keeps a central expansion route toward the crank.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 1,
+      "move": "('place', (-3, 0), 'gear_low')",
+      "by": "player",
+      "why": "Continue my 3-gear chain to my mill: place at (-3,0) to connect crank through (-2,-1), then next turn (-3,1) will give odd parity and 3 pellets per grind.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 22,
+      "move": "('place', (2, -3), 'gear_low')",
+      "by": "player",
+      "why": "Placing (2,-3) low completes a 3-gear odd chain from crank to my mill for 3 grist now, and saving the tandem for later is better than spending it here.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 26,
+      "move": "('place', (3, -1), 'gear_low')",
+      "by": "player",
+      "why": "placing low at (3,-1) opens a five-gear odd chain to the crank via the south row, giving my mill clockwise grind; other routes are even or longer.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 13,
+      "move": "('place', (0, -1), 'gear_low')",
+      "by": "player",
+      "why": "continues my planned low-tier line to (0,3); all low gears along the row keeps parity odd",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 22,
+      "move": "('place', (2, -2), 'gear_low')",
+      "by": "player",
+      "why": "Placing low at (2,-2) extends my chain to 5 gears, flipping my mill from dead-even to clockwise and grinding 5 grist next round.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 23,
+      "move": "('place', (2, -1), 'gear_low')",
+      "by": "player",
+      "why": "placing low at (2,-1) bridges my (3,-1) gear to the crank's existing (2,-2) chain, giving my mill an odd-length path to grind.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 18,
+      "move": "('place', (1, -1), 'gear_low')",
+      "by": "player",
+      "why": "extends the crank chain through (1,-2) toward my mill on (0,3), sacrificing the previous bind spot; keeps a low-tier odd-length path reachable.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 1,
+      "move": "('place', (-3, 1), 'gear_low')",
+      "by": "player",
+      "why": "Completing the planned chain crank\u2013(-2,-1)\u2013(-3,0)\u2013(-3,1)\u2013mill, adding the third gear to get odd parity and 3 pellets this round.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 22,
+      "move": "('place', (3, -2), 'gear_low')",
+      "by": "player",
+      "why": "placing a low at (3,-2) flips seat 2's chain to even parity, shutting down the leader while my own 5-gear grind is unaffected.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 73,
+      "move": "('shift', (3, -2))",
+      "by": "player",
+      "why": "shift to (3,-2) rides the existing low chain through (3,-1) to give an odd 5-gear count and immediate scoring; building from scratch would cost four turns the granary doesn't have.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "abandoned_at": 19,
+  "abandoned_because": "seat 1 returned nothing readable on a position offering 74 moves"
+}

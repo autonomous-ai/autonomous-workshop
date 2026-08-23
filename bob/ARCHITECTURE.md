@@ -118,12 +118,21 @@ rounds + 2 owner amendments spent on rules that later failed the playtest.
    DRAFT: via text2game's box pipeline (`BOB_PUBLISH_VIA=box` — Bob exports
    the exact `out/<slug>/` payload `text2game/publish.py` consumes, rsync +
    remote run when `BOB_BOX_SSH` is set, Telegram handoff otherwise) or the
-   HTTP path. **Draft→public is the owner's one click in admindash for now**
-   (Dee 2026-08-22: "publish draft is fine… once it's ok, we'll make it auto
-   publish"); `BOB_AUTO_FLIP=1` later makes the flip autonomous. CPSIA
+   HTTP path. The HTTP path now uses shared core's canonical artifact packet
+   and durable SQLite publication outbox; timeout/5xx import results are never
+   retried. **Draft→public remains owner-reviewed by default** (Dee 2026-08-22:
+   "publish draft is fine… once it's ok, we'll make it auto publish");
+   `BOB_AUTO_FLIP=1` makes Bob issue the price-bound core flip. An out-of-band
+   admindash click cannot advance Bob's queue because it lacks that local
+   intent proof. CPSIA
    hard-refuse, AI-disclosure, public-domain-only IP, price floor remain
-   hard pre-import gates; borderline safety parks for a human.
-9. **live** — L4 folds market + human-table signal into the ledger; "asked to
+   hard pre-import gates; borderline safety parks for a human. This state is
+   deliberately not scheduler-claimable: a dry-run or unverified handoff can
+   never become live by bookkeeping.
+9. **live** — reached only after authenticated Panda readback proves Bob owns
+   the exact core-bound design, `published_history_id == current_history_id`,
+   and the requested active USD listing has the exact price and a SKU. L4 then folds
+   market + human-table signal into the ledger; "asked to
    play again ×3 groups" upgrades the game to **proven**.
 
 Every verdict artifact embeds the sha256 of the `idea.json` it judged — stale

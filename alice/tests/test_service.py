@@ -29,6 +29,7 @@ from alice.service import (
     ServiceRunner,
     WorkerAlreadyRunning,
     WorkerLock,
+    _isolated_module_argv,
     _positive_float,
     _run_guard_tick,
     configured_tick_timeout_floor,
@@ -52,6 +53,8 @@ CONFIG_SHA = "b" * 64
 POLICY_HASH = "c" * 64
 BASE_TIME = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
 IDENTITY = RuntimeIdentity(SOURCE_SHA, CONFIG_SHA, POLICY_HASH, "draft")
+ALICE_ROOT = Path(__file__).resolve().parents[1]
+CORE_SOURCE_ROOT = ALICE_ROOT.parent / "core" / "src"
 
 
 WATCHDOG_PATH = Path(__file__).resolve().parents[1] / "ops" / "watchdog.py"
@@ -412,6 +415,17 @@ class IdentityTests(unittest.TestCase):
             stderr=subprocess.DEVNULL,
         )
 
+    def _core_fixture(self, repository: Path) -> tuple[Path, Path]:
+        core_source = repository / "core" / "src"
+        core_package = core_source / "inventor_core"
+        core_package.mkdir(parents=True)
+        (core_package / "__init__.py").write_text(
+            '__version__ = "0.1.0"\n', encoding="utf-8"
+        )
+        core_module = core_package / "artifacts.py"
+        core_module.write_text("CORE_PIN = 1\n", encoding="utf-8")
+        return core_source, core_module
+
     def test_source_tree_hash_covers_every_tracked_file_and_requires_clean_tree(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -420,22 +434,29 @@ class IdentityTests(unittest.TestCase):
             (alice / "a.py").write_text("one\n", encoding="utf-8")
             (alice / "nested").mkdir()
             (alice / "nested" / "b.json").write_text("{}\n", encoding="utf-8")
+            core_source, core_module = self._core_fixture(root)
             self._git(root, "init", "-q")
             self._git(root, "config", "user.email", "alice@example.invalid")
             self._git(root, "config", "user.name", "Alice Test")
-            self._git(root, "add", "alice")
+            self._git(root, "add", "alice", "core")
             self._git(root, "commit", "-qm", "fixture")
             environment = sanitized_environment({})
 
-            first = source_tree_sha256(alice, environment)
+            first = source_tree_sha256(alice, core_source, environment)
             self.assertEqual(len(first), 64)
             (alice / "nested" / "b.json").write_text('{"changed":true}\n', encoding="utf-8")
             with self.assertRaisesRegex(ServiceError, "not clean"):
-                source_tree_sha256(alice, environment)
+                source_tree_sha256(alice, core_source, environment)
             self._git(root, "checkout", "--", "alice/nested/b.json")
             (alice / "untracked.txt").write_text("new\n", encoding="utf-8")
             with self.assertRaisesRegex(ServiceError, "not clean"):
-                source_tree_sha256(alice, environment)
+                source_tree_sha256(alice, core_source, environment)
+            (alice / "untracked.txt").unlink()
+            core_module.write_text("CORE_PIN = 2\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                ServiceError, "shared inventor core source tree is not clean"
+            ):
+                source_tree_sha256(alice, core_source, environment)
 
     def test_resolved_config_hash_uses_env_file_values_not_inherited_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -454,13 +475,15 @@ class IdentityTests(unittest.TestCase):
                     first = resolve_runtime_identity(
                         config=config,
                         root=root,
-                        source_root=Path(__file__).resolve().parents[1],
+                        source_root=ALICE_ROOT,
+                        core_source_root=CORE_SOURCE_ROOT,
                         environment=sanitized_environment({"ALICE_POLL_SECONDS": "17"}),
                     )
                     second = resolve_runtime_identity(
                         config=config,
                         root=root,
-                        source_root=Path(__file__).resolve().parents[1],
+                        source_root=ALICE_ROOT,
+                        core_source_root=CORE_SOURCE_ROOT,
                         environment=sanitized_environment({"ALICE_POLL_SECONDS": "18"}),
                     )
             finally:
@@ -482,7 +505,8 @@ class IdentityTests(unittest.TestCase):
                     resolve_runtime_identity(
                         config=config,
                         root=root,
-                        source_root=Path(__file__).resolve().parents[1],
+                        source_root=ALICE_ROOT,
+                        core_source_root=CORE_SOURCE_ROOT,
                         environment=sanitized_environment({}),
                     )
 
@@ -494,18 +518,20 @@ class IdentityTests(unittest.TestCase):
             source.mkdir()
             tracked = source / "a.py"
             tracked.write_text("PINNED = 1\n", encoding="utf-8")
+            core_source, _core_module = self._core_fixture(repository)
             config = repository / "operator.json"
             config.write_text("{}\n", encoding="utf-8")
             self._git(repository, "init", "-q")
             self._git(repository, "config", "user.email", "alice@example.invalid")
             self._git(repository, "config", "user.name", "Alice Test")
-            self._git(repository, "add", "source")
+            self._git(repository, "add", "source", "core")
             self._git(repository, "commit", "-qm", "fixture")
 
             snapshot, identity = materialize_execution_snapshot(
                 config=config,
                 root=runtime,
                 source_root=source,
+                core_source_root=core_source,
                 environment=sanitized_environment({}),
             )
             self.assertEqual(
@@ -529,8 +555,226 @@ class IdentityTests(unittest.TestCase):
                     config=config,
                     root=runtime,
                     source_root=source,
+                    core_source_root=core_source,
                     environment=sanitized_environment({}),
                 )
+
+    def test_execution_snapshot_seals_shared_core_and_binds_its_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory).resolve()
+            source = repository / "source"
+            runtime = repository / "runtime"
+            alice_package = source / "src" / "alice"
+            alice_package.mkdir(parents=True)
+            (alice_package / "__init__.py").write_text("", encoding="utf-8")
+            (alice_package / "__main__.py").write_text(
+                "from pathlib import Path\n"
+                "import inventor_core\n"
+                "from inventor_core.artifacts import CORE_PIN\n"
+                "print(f'{CORE_PIN}|{Path(inventor_core.__file__).resolve()}')\n",
+                encoding="utf-8",
+            )
+            core_source, core_module = self._core_fixture(repository)
+            config = repository / "operator.json"
+            config.write_text("{}\n", encoding="utf-8")
+            self._git(repository, "init", "-q")
+            self._git(repository, "config", "user.email", "alice@example.invalid")
+            self._git(repository, "config", "user.name", "Alice Test")
+            self._git(repository, "add", "source", "core")
+            self._git(repository, "commit", "-qm", "fixture")
+
+            snapshot, identity = materialize_execution_snapshot(
+                config=config,
+                root=runtime,
+                source_root=source,
+                core_source_root=core_source,
+                environment=sanitized_environment({}),
+            )
+            sealed_core = snapshot.source_path / "inventor_core" / "artifacts.py"
+            self.assertEqual(
+                sealed_core.read_text(encoding="utf-8"), "CORE_PIN = 1\n"
+            )
+            self.assertEqual(stat.S_IMODE(sealed_core.stat().st_mode), 0o400)
+            verify_execution_snapshot(
+                snapshot, root=runtime, expected_identity=identity
+            )
+
+            core_module.write_text("CORE_PIN = 2\n", encoding="utf-8")
+            with self.assertRaisesRegex(
+                ServiceError, "shared inventor core source tree is not clean"
+            ):
+                resolve_runtime_identity(
+                    config=config,
+                    root=runtime,
+                    source_root=source,
+                    core_source_root=core_source,
+                    environment=sanitized_environment({}),
+                )
+
+            # The old release remains self-consistent and contains only the
+            # core bytes captured before the mutable checkout changed.
+            verify_execution_snapshot(snapshot, root=runtime, expected_identity=identity)
+            self.assertEqual(
+                sealed_core.read_text(encoding="utf-8"), "CORE_PIN = 1\n"
+            )
+
+            # Isolated mode alone still processes executable .pth files. Model
+            # an editable-install startup hook that pre-caches a counterfeit
+            # core before our bootstrap. The control proves the hook is live;
+            # the sealed child must disable site before it can execute.
+            poison_venv = repository / "poison-venv"
+            created = subprocess.run(
+                [
+                    str(Path(sys.executable).resolve()),
+                    "-m",
+                    "venv",
+                    "--without-pip",
+                    str(poison_venv),
+                ],
+                check=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=sanitized_environment({}),
+                cwd=repository,
+            )
+            self.assertEqual(created.returncode, 0, created.stderr)
+            poison_python = poison_venv / "bin" / "python"
+            poison_site = (
+                poison_venv
+                / "lib"
+                / f"python{sys.version_info.major}.{sys.version_info.minor}"
+                / "site-packages"
+            )
+            poison_site.mkdir(parents=True, exist_ok=True)
+            pth_marker = repository / "executable-pth-ran"
+            (poison_site / "preimport_core.pth").write_text(
+                "import pathlib,sys,types;"
+                f"pathlib.Path({str(pth_marker)!r}).write_text('executed');"
+                "m=types.ModuleType('inventor_core');"
+                "m.__file__='pth://poison';m.__path__=[];"
+                "a=types.ModuleType('inventor_core.artifacts');a.CORE_PIN=999;"
+                "sys.modules['inventor_core']=m;"
+                "sys.modules['inventor_core.artifacts']=a\n",
+                encoding="utf-8",
+            )
+            control = subprocess.run(
+                [str(poison_python), "-I", "-c", "pass"],
+                check=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=sanitized_environment({}),
+                cwd=repository,
+            )
+            self.assertEqual(control.returncode, 0, control.stderr)
+            self.assertTrue(pth_marker.exists())
+            pth_marker.unlink()
+            child = subprocess.run(
+                _isolated_module_argv(poison_python, snapshot, "alice", []),
+                check=False,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=sanitized_environment({}),
+                cwd=snapshot.root,
+            )
+            self.assertEqual(child.returncode, 0, child.stderr)
+            self.assertFalse(pth_marker.exists())
+            marker, imported_path = child.stdout.strip().split("|", 1)
+            self.assertEqual(marker, "1")
+            self.assertEqual(
+                Path(imported_path),
+                snapshot.source_path / "inventor_core" / "__init__.py",
+            )
+
+    def test_execution_snapshot_keeps_staging_root_writable_until_publish(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory).resolve()
+            source = repository / "source"
+            runtime = repository / "runtime"
+            source.mkdir()
+            (source / "a.py").write_text("PINNED = 1\n", encoding="utf-8")
+            core_source, _core_module = self._core_fixture(repository)
+            config = repository / "operator.json"
+            config.write_text("{}\n", encoding="utf-8")
+            self._git(repository, "init", "-q")
+            self._git(repository, "config", "user.email", "alice@example.invalid")
+            self._git(repository, "config", "user.name", "Alice Test")
+            self._git(repository, "add", "source", "core")
+            self._git(repository, "commit", "-qm", "fixture")
+
+            real_replace = os.replace
+            staging_modes = []
+
+            def macos_compatible_replace(source_path, destination_path):
+                candidate = Path(source_path)
+                if candidate.is_dir() and candidate.name.startswith(".alice-release-"):
+                    mode = stat.S_IMODE(candidate.stat().st_mode)
+                    staging_modes.append(mode)
+                    if mode & stat.S_IWUSR == 0:
+                        raise PermissionError("Darwin refuses to rename a sealed directory")
+                return real_replace(source_path, destination_path)
+
+            with patch("alice.service.os.replace", side_effect=macos_compatible_replace):
+                snapshot, identity = materialize_execution_snapshot(
+                    config=config,
+                    root=runtime,
+                    source_root=source,
+                    core_source_root=core_source,
+                    environment=sanitized_environment({}),
+                )
+
+            self.assertEqual(staging_modes, [0o700])
+            self.assertEqual(stat.S_IMODE(snapshot.root.stat().st_mode), 0o500)
+            verify_execution_snapshot(
+                snapshot, root=runtime, expected_identity=identity
+            )
+
+    def test_execution_snapshot_cleans_sealed_staging_after_publish_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory).resolve()
+            source = repository / "source"
+            runtime = repository / "runtime"
+            source.mkdir()
+            nested = source / "nested"
+            nested.mkdir()
+            (nested / "a.py").write_text("PINNED = 1\n", encoding="utf-8")
+            core_source, _core_module = self._core_fixture(repository)
+            config = repository / "operator.json"
+            config.write_text("{}\n", encoding="utf-8")
+            self._git(repository, "init", "-q")
+            self._git(repository, "config", "user.email", "alice@example.invalid")
+            self._git(repository, "config", "user.name", "Alice Test")
+            self._git(repository, "add", "source", "core")
+            self._git(repository, "commit", "-qm", "fixture")
+
+            real_replace = os.replace
+
+            def fail_release_publish(source_path, destination_path):
+                candidate = Path(source_path)
+                if candidate.is_dir() and candidate.name.startswith(".alice-release-"):
+                    raise PermissionError("simulated release publish failure")
+                return real_replace(source_path, destination_path)
+
+            with patch("alice.service.os.replace", side_effect=fail_release_publish):
+                with self.assertRaisesRegex(PermissionError, "publish failure"):
+                    materialize_execution_snapshot(
+                        config=config,
+                        root=runtime,
+                        source_root=source,
+                        core_source_root=core_source,
+                        environment=sanitized_environment({}),
+                    )
+
+            releases = runtime / "var" / "service" / "releases"
+            leftovers = (
+                list(releases.rglob(".alice-release-*")) if releases.exists() else []
+            )
+            self.assertEqual(leftovers, [])
 
 
 class HealthAndRunnerTests(unittest.TestCase):
@@ -984,6 +1228,7 @@ class LaunchdArtifactTests(unittest.TestCase):
                 rate_state=root / "alert-rate.json",
                 watchdog_state=root / "watchdog-health.json",
                 source_root=alice_root,
+                core_source_root=CORE_SOURCE_ROOT,
                 identity=IDENTITY,
                 poll_seconds=30,
                 stale_seconds=300,
@@ -1008,8 +1253,11 @@ class LaunchdArtifactTests(unittest.TestCase):
             self.assertIn("--heartbeat-seconds", worker_text)
             self.assertIn("<key>AbandonProcessGroup</key>", worker_text)
             self.assertIn("<string>-I</string>", worker_text)
+            self.assertIn("<string>-S</string>", worker_text)
             self.assertNotIn("<string>-m</string>", worker_text)
             self.assertIn("/var/service/releases/", worker_text)
+            self.assertIn("--core-source-root", worker_text)
+            self.assertIn(str(CORE_SOURCE_ROOT), worker_text)
             self.assertNotIn("alice.service</string>\n    <string>probe", watcher_text)
             self.assertGreaterEqual(combined.count("<string>/dev/null</string>"), 4)
 
@@ -1025,6 +1273,13 @@ class LaunchdArtifactTests(unittest.TestCase):
         self.assertIn("trap 'rollback 143' TERM", install)
         self.assertIn("prior jobs were restored", install)
         self.assertIn("runtime state was retained", install)
+        self.assertIn("autonomous-inventor-core 0.1.0", install)
+        self.assertIn("--core-source-root", install)
+        self.assertIn("import ast, importlib.metadata", install)
+        self.assertIn("__version__", install)
+        self.assertIn("importlib.metadata.version", install)
+        self.assertNotIn("importlib.metadata, inventor_core", install)
+        self.assertNotIn("import inventor_core", install)
 
     @unittest.skipUnless(Path("/bin/zsh").exists(), "macOS installer behavior")
     def test_failed_post_start_health_check_rolls_back_jobs_but_keeps_runtime(self) -> None:

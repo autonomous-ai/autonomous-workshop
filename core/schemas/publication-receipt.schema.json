@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/publication-receipt-v1.json",
+  "title": "Panda publication receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "packet_sha256",
+    "artifact_sha256",
+    "design_id",
+    "slug",
+    "owner_id",
+    "root_id",
+    "current_history_id",
+    "status",
+    "project_url",
+    "observed_at",
+    "listing_active",
+    "listing_price_cents",
+    "listing_currency",
+    "listing_sku"
+  ],
+  "properties": {
+    "packet_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "design_id": {"type": "string", "minLength": 1},
+    "slug": {"type": "string", "minLength": 1},
+    "owner_id": {"type": "string", "minLength": 1},
+    "root_id": {"type": "string", "minLength": 1},
+    "current_history_id": {"type": "string", "minLength": 1},
+    "published_history_id": {"type": ["string", "null"], "minLength": 1},
+    "listing_active": {"type": ["boolean", "null"]},
+    "listing_price_cents": {
+      "type": ["integer", "null"],
+      "minimum": 100,
+      "maximum": 1000000
+    },
+    "listing_currency": {"type": ["string", "null"], "minLength": 1},
+    "listing_sku": {"type": ["string", "null"], "minLength": 1},
+    "status": {"enum": ["draft", "public"]},
+    "project_url": {
+      "type": "string",
+      "pattern": "^https://[^/?#@\\u0000-\\u001f\\u007f]+(?:/[^?#\\u0000-\\u001f\\u007f]*)?$"
+    },
+    "observed_at": {
+      "type": "string", "format": "date-time", "pattern": "(?:Z|\\+00:00)$"
+    }
+  }
+}

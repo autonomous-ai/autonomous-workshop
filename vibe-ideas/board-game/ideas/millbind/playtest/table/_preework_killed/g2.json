@@ -1,0 +1,416 @@
+{
+  "slug": "millbind",
+  "idea_dir": "board-game/ideas/millbind",
+  "engine": "board-game/ideas/millbind/playtest/engine.py",
+  "seats": 4,
+  "seed": 37,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('setup_mill', (-3, 0))",
+      "by": "player",
+      "why": "setup mill placement has no mechanical impact on scoring or binding, so any yard pin works",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 14,
+      "move": "('setup_mill', (3, -2))",
+      "by": "player",
+      "why": "placing opposite seat 0 avoids direct meshing and preserves independent clockwise options once the crank is placed",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 4,
+      "move": "('setup_mill', (-2, 3))",
+      "by": "player",
+      "why": "repeating my game 1 spacing to keep shifting options open and avoid early neighbor-lock",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 7,
+      "move": "('setup_mill', (0, 3))",
+      "by": "player",
+      "why": "replaying the exact winning setup position (0,3) from game one to guarantee independence from the other mills",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('setup_crank', (-3, 2))",
+      "by": "player",
+      "why": "placing the crank two pins from my mill allows a single bridging gear to make it grind clockwise on the first round",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (-3, 2))",
+      "by": "player",
+      "why": "leaving the crank two pins from my mill sets up a 1-gear bridge for an odd-length clockwise path on my first action",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low on (-3, 1) puts exactly one gear between my mill and the crank, guaranteeing an odd-length chain for clockwise rotation and the two-pellet solo bonus",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 27,
+      "move": "('place', (2, 0), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at inner pin (2, 0) starts a low-tier chain toward my mill at (3, -2) and away from the crank, matching my line from game 1.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 5,
+      "move": "('place', (-2, 2), 'gear_low')",
+      "by": "player",
+      "why": "repeating my proven opening bridge to (-2, 2) to secure an odd-mesh path to the crank for immediate clockwise rotation",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 21,
+      "move": "('place', (1, 1), 'gear_low')",
+      "by": "player",
+      "why": "repeating the proven game-one opening to anchor the center and mesh safely with the lone gear at (2,0)",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 10,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "moving crank to (3, 0) severs all opponents from power while positioning me to bridge to my mill at (3, -2) with a single gear in the action phase, securing the double-pellet solo score.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 28,
+      "move": "('place', (3, -1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (3, -1) bridges my mill and the crank with exactly one intermediate gear, ensuring my mill turns clockwise while leaving opponents disconnected.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 5,
+      "move": "('place', (-2, 1), 'gear_low')",
+      "by": "player",
+      "why": "repeating the exact bridge from game one to extend my low chain inward toward the crank cluster",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 16,
+      "move": "('place', (0, 2), 'gear_low')",
+      "by": "player",
+      "why": "repeating the exact game-one line to bridge (1,1) to (0,3) with an odd-gear chain for clockwise scoring",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('place', (-2, 0), 'gear_low')",
+      "by": "player",
+      "why": "extends the low-tier chain from (-2,1) toward the center without forming a binding triangle, setting up an odd-length path to the crank for clockwise rotation",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 1,
+      "move": "('power', (-2, -1))",
+      "by": "player",
+      "why": "moving crank to (-2,-1) connects to my isolated cluster but yields even-length paths to both mills, guaranteeing zero points this round to halt seat 3's scoring streak while I prepare a bridging placement next turn",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 3,
+      "move": "('place', (-2, 0), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-2, 0) bridges the crank to my mill with exactly three intermediate gears, guaranteeing clockwise rotation and a double-point bonus since no other mill connects to this cluster",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 40,
+      "move": "('place', (0, 1), 'gear_high')",
+      "by": "player",
+      "why": "repeating the proven safe high-tier anchor at (0,1) to consume supply without risking a bind on the crowded low tier",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 2), 'gear_low')",
+      "by": "player",
+      "why": "extends low-tier mesh safely without forming a triangle with the crank, keeping options open for next round's crank move",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 7,
+      "move": "('place', (-1, 1), 'gear_low')",
+      "by": "player",
+      "why": "bridging the isolated crank cluster and center cluster with a low gear at (-1, 1) extends the powered network toward my sector for next turn",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('power', (3, -1))",
+      "by": "player",
+      "why": "moves crank to (3, -1) to create a 3-gear chain to my mill, guaranteeing clockwise turn and double points since seat 1's adjacent mill will turn backwards",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 44,
+      "move": "('place', (1, 2), 'gear_high')",
+      "by": "player",
+      "why": "repeating the exact game-one high-tier anchor at (1,2) to safely consume supply and extend reach without touching the crowded low mesh",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('place', (-2, 0), 'gear_low')",
+      "by": "player",
+      "why": "extends chain from my mill towards the crank without closing any odd loops, keeping parity options open",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 41,
+      "move": "('place', (1, -1), 'gear_high')",
+      "by": "player",
+      "why": "placing gear_high at (2, -2) attaches to my mill without creating a binding triangle with the adjacent crank, safely extending my network for future rounds.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 60,
+      "move": "('place', (0, 0), 'gear_tandem')",
+      "by": "player",
+      "why": "placing a tandem at (0, 0) bridges the split low-tier trees into one unified network, setting up a direct crank link next round while blocking seat 3's high-tier expansion",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 2,
+      "move": "('power', (-1, -2))",
+      "by": "player",
+      "why": "moving crank to (-1,-2) sets up a 1-gear bridge to my mill via (-2,-1) next turn, guaranteeing clockwise rotation",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 3,
+      "move": "('place', (-2, -1), 'gear_low')",
+      "by": "player",
+      "why": "places gear_low at (-2,-1) to bridge crank and my mill with exactly one gear, guaranteeing odd parity for clockwise rotation and the solo bonus",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 17,
+      "move": "('place', (2, -1), 'gear_low')",
+      "by": "player",
+      "why": "extends the powered low chain toward my mill, setting up a 5-gear path (odd) for a clockwise turn next round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 1,
+      "move": "('place', (-3, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-3, 2) bridges my mill to the crank through exactly 5 intermediate gears, ensuring clockwise rotation and a point this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 4,
+      "move": "('place', (-1, -1), 'gear_low')",
+      "by": "player",
+      "why": "bridges the crank's isolated low gear at (-2,-1) to the central tandem at (0,0), starting the chain that will reach my mill next round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 5,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "relocates crank to (3, 0) to connect to my low chain at (2, 0), enabling a single-gear bridge at (3, -1) next round for a guaranteed clockwise turn",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 17,
+      "move": "('place', (2, -2), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (2, -2) bypasses the poisoned (3, -1) triangle and creates a 3-gear chain to my mill for a clockwise turn",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 8,
+      "move": "('place', (-1, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-1,2) creates a shorter alternate odd-length path to my mill, securing clockwise rotation against future crank shifts while denying seat 3 a pivot point",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 29,
+      "move": "('place', (-1, 3), 'gear_high')",
+      "by": "player",
+      "why": "places a high gear at (-1,3) adjacent only to full-height mills, safely consuming supply without forming low-tier loops or disrupting my scoring chain",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place', (-1, 0), 'gear_low')",
+      "by": "player",
+      "why": "bridges my isolated mill cluster to the active crank chain via the tandem at (0,0), finally connecting me to the power source",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "leaving crank at (3,0) preserves the drivable chain to my mill, guaranteeing clockwise rotation and a point this round, while all other legal crank pins are isolated from the gear train",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "the low-gear mesh has saturated all safe inner pins with odd-length cycles, so passing avoids binding my turn while the crank or supply dictates the next shift",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 31,
+      "move": "('place', (1, 0), 'gear_high')",
+      "by": "player",
+      "why": "places high gear on inner pin (1,0) to safely consume supply while forming an even 4-gear loop with existing high/tandem pieces, preserving my low-tier scoring chain",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing avoids binding risks and preserves current parity as supply dwindles",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 18,
+      "move": "('place', (3, -1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (3, -1) bridges crank and mill with exactly one intermediate gear for a clockwise turn, avoiding the tier-mismatch bind that doomed my g1 attempt by using the correct gear height.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "undefined": null
+}

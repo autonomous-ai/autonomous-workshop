@@ -1,0 +1,47 @@
+{
+  "slug": "deep-claim",
+  "title": "Deep Claim",
+  "concept": "A single quarried-looking slab is drilled with six deep two-stage bores: a wide upper shelf that only a broad disc can catch on, narrowing through a throat only a slim disc can pass, opening into a floor chamber below. On your turn you commit one of your own dwindling stone pucks — broad or slim — to an open bore: a broad puck always plugs the shelf and seals that bore forever, a slim puck always slips past an unplugged shelf to rest on the floor, worth more but leaving the shelf above it claimable later by anyone. A turn is deciding whether your last broad puck is worth spending to deny a rival's future floor claim, or worth banking now for the guaranteed point.",
+  "players": {"min": 2, "max": 4},
+  "playtime_min": 20,
+
+  "novelty": "The genuinely new part is a fully deterministic, gravity-free size-gate: which of two fixed physical tiers a piece can ever occupy is decided entirely by the piece's own diameter against a fixed stepped-bore geometry, not by touching/adjacency rules (as in dexterity drop games) or by a rolled/drawn value (as in dice-sorting mining games) — and claiming the shallow tier is itself the denial move that permanently seals the deeper, higher-value tier underneath it. Ran board-game/tools/prior_art_search.sh on the mechanism phrase plus theme plus title. The closest real comparable found is Thames & Kosmos's 'Drop It!', where players drop shapes down an open vertical grid and score by the depth reached, but that game is real-time gravity/dexterity, pieces settle against whichever pieces already happen to be there (an adjacency/touch-matching rule, not a fixed diameter gate), and there is no permanent single-owner sealing of a slot. 'Fool's Gold' sorts dice by rolled face value onto paths, which is numeric/random sorting, not a physical diameter gate with no randomness at all. No shipped game found combining a fixed stepped-bore size gate, deterministic disc routing, and permanent tier-sealing-as-denial. 'Deep Claim' as a title returned no matching game (only the unrelated card game 'Claim' and the unrelated game 'The Deep').",
+
+  "art_direction": {
+    "form_language": "A single thick quarried-stone slab, top face pierced by six deep circular assay bores like drill cores taken from rock; no separate layers, no stacking, no posts — the whole board reads as one carved block a prospector hauled to the claim and sank shafts into.",
+    "silhouette": "From across a table it reads as a chunk of core-sample rock set on a bench, six drilled shafts sunk into its face, with player-marked stones scattered across it like ore already staked out at different depths.",
+    "part_vocabulary": "assay_board is the fixed slab, told apart by sheer bulk and its ring of six drilled bores, each showing a visible stepped throat when empty; disc_large is a broad, low puck sized so it always catches on a bore's upper shelf and can never reach the floor; disc_small is a slim, narrow puck sized so it always slips past an open shelf and settles on the bore's floor; player ownership, carried identically across both a player's broad and slim pucks, is a raised cluster of pyramid studs on the puck's top face — three, four, five, or six studs per player — legible by touch without lifting the piece off the board.",
+    "surface_treatment": "1mm-deep radial rock-vein relief lines run across the slab's top face between the six bores; each bore's upper shelf carries a shallow 0.8mm witness collar so a plugged shelf reads visibly different from an open one even from across the table; each puck's ownership studs stand 1.2mm proud of its top face.",
+    "hero_shot": "A high overhead shot straight down onto the slab: three bores plugged with studded broad pucks sitting proud at shelf level, two bores showing a studded slim puck resting deep on the floor with the shelf still visibly open above it, one bore untouched and empty — the whole claim state legible at a glance without touching a single piece."
+  },
+
+  "components": [
+    {"name": "assay_board", "qty": 1, "desc": "~190mm-diameter, 34mm-thick round slab with six two-stage bores in a ring at 62mm radius. Each bore: 34mm-diameter, ~12mm-deep upper shelf chamber narrowing through an 18mm-diameter throat into a 22mm-diameter, ~11mm-deep closed floor chamber below. Top face carries 1mm-deep radial vein relief between bores; each shelf rim carries a 0.8mm witness collar."},
+    {"name": "disc_large_mark3", "qty": 3, "desc": "Broad puck, 28mm diameter, 9mm tall, sized to always catch on a bore's upper shelf. Top face carries 3 raised pyramid studs (this player's mark)."},
+    {"name": "disc_large_mark4", "qty": 3, "desc": "Broad puck, 28mm diameter, 9mm tall, sized to always catch on a bore's upper shelf. Top face carries 4 raised pyramid studs (this player's mark)."},
+    {"name": "disc_large_mark5", "qty": 3, "desc": "Broad puck, 28mm diameter, 9mm tall, sized to always catch on a bore's upper shelf. Top face carries 5 raised pyramid studs (this player's mark)."},
+    {"name": "disc_large_mark6", "qty": 3, "desc": "Broad puck, 28mm diameter, 9mm tall, sized to always catch on a bore's upper shelf. Top face carries 6 raised pyramid studs (this player's mark)."},
+    {"name": "disc_small_mark3", "qty": 3, "desc": "Slim puck, 14mm diameter, 8mm tall, sized to always pass an open shelf throat and rest on the floor chamber. Top face carries 3 raised pyramid studs, matching disc_large_mark3's owner."},
+    {"name": "disc_small_mark4", "qty": 3, "desc": "Slim puck, 14mm diameter, 8mm tall, sized to always pass an open shelf throat and rest on the floor chamber. Top face carries 4 raised pyramid studs, matching disc_large_mark4's owner."},
+    {"name": "disc_small_mark5", "qty": 3, "desc": "Slim puck, 14mm diameter, 8mm tall, sized to always pass an open shelf throat and rest on the floor chamber. Top face carries 5 raised pyramid studs, matching disc_large_mark5's owner."},
+    {"name": "disc_small_mark6", "qty": 3, "desc": "Slim puck, 14mm diameter, 8mm tall, sized to always pass an open shelf throat and rest on the floor chamber. Top face carries 6 raised pyramid studs, matching disc_large_mark6's owner."}
+  ],
+
+  "rules": {
+    "setup": [
+      {"text": "Set the assay_board within reach of every seat.", "uses": ["assay_board"]},
+      {"text": "Each player takes one matching pair of marks: with 2 players, take mark3 (both its large and small pucks) and mark4; with 3, add mark5; with 4, add mark6. Every player starts with exactly 3 disc_large and 3 disc_small of their own mark.", "uses": ["disc_large_mark3", "disc_large_mark4", "disc_large_mark5", "disc_large_mark6", "disc_small_mark3", "disc_small_mark4", "disc_small_mark5", "disc_small_mark6"]},
+      {"text": "Confirm all six bores on the assay_board are empty and their shelves unplugged. Agree who goes first.", "uses": ["assay_board"]}
+    ],
+    "turn": [
+      {"text": "Choose one of your remaining pucks (large or small) and one bore on the assay_board that is not yet sealed.", "uses": ["assay_board", "disc_large_mark3", "disc_large_mark4", "disc_large_mark5", "disc_large_mark6", "disc_small_mark3", "disc_small_mark4", "disc_small_mark5", "disc_small_mark6"]},
+      {"text": "If you chose a large puck: it is legal only if that bore's upper shelf is currently empty. Set it into the bore; it catches on the shelf. You claim the shelf (1 point) for yourself, and that bore's floor chamber becomes permanently unreachable for the rest of the game, whether or not it was already claimed.", "uses": ["assay_board", "disc_large_mark3", "disc_large_mark4", "disc_large_mark5", "disc_large_mark6"]},
+      {"text": "If you chose a small puck: it is legal only if that bore's floor chamber is empty AND its shelf is still unplugged. Set it into the bore; it slips past the open shelf and settles on the floor. You claim the floor (2 points) for yourself. The shelf above it remains open and can still be claimed later, by anyone, with a large puck.", "uses": ["assay_board", "disc_small_mark3", "disc_small_mark4", "disc_small_mark5", "disc_small_mark6"]},
+      {"text": "If you have no puck that can legally be placed in any unsealed bore, you pass this turn.", "uses": []}
+    ],
+    "end": [
+      {"text": "The game ends the moment every bore's shelf is plugged (sealed), or every player in a row passes with no legal placement remaining, whichever happens first.", "uses": ["assay_board"]}
+    ],
+    "win": {"text": "Each player totals the points of every shelf and floor chamber marked with their own studs across all six bores. Highest total wins; a tie is a shared win.", "uses": ["assay_board", "disc_large_mark3", "disc_large_mark4", "disc_large_mark5", "disc_large_mark6", "disc_small_mark3", "disc_small_mark4", "disc_small_mark5", "disc_small_mark6"]}
+  }
+}

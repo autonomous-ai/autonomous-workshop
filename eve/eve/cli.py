@@ -1,10 +1,10 @@
-"""eve — the tick driver and CLI for Eve, the autonomous board-game inventor.
+"""eve — the driver and CLI for Eve, the autonomous board-game inventor.
 
-One tick advances ONE unit of work (one gate, one book study, one improvement
-session, or one stage of one game), then exits. launchd fires a tick every 30
-minutes; the machine sleeping just makes the next tick a catch-up (state lives
-entirely on disk, so a long gap costs time and nothing else — the heartbeat
-still records when the loop was last alive).
+launchd runs `eve drive --steps 1` every 30 minutes. Each invocation asks the
+executor to advance at most one unit of work (one gate, one book study, one
+improvement session, or one stage of one game), then exits. A sleeping machine
+only delays the next drive because state lives entirely on disk; the heartbeat
+records when the loop was last alive.
 
 Tick preconditions, in order, all in code (DESIGN.md ss.4):
   1. reward-ledger audit clean   — never improve/advance from an unverifiable score;
@@ -46,9 +46,9 @@ def cmd_tick(args):
         print("tick: HALTED — ledger audit red:")
         for p in problems:
             print("  - %s" % p)
-        return 0  # launchd keeps firing; a human reads status
-    # A launched tick does bookkeeping + deterministic gates. Agent dispatch
-    # is opt-in (run_agent) so the harness is offline-safe and deterministic.
+        return 0  # Manual/offline tick stays inspectable; drive handles launchd.
+    # A manual tick does bookkeeping + deterministic gates. Agent dispatch is
+    # opt-in here; the scheduled service uses drive --steps 1 instead.
     out = m.tick(run_agent=args.run_agent)
     print("tick: %s" % json.dumps(out, default=str)[:400])
     return 0

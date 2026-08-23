@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluate CAD Reconstruction"
+  short_description: "Score CAD/STL reconstruction quality."
+  default_prompt: "Use $evaluate-cad-reconstruction to evaluate this reconstructed CAD/STL project."

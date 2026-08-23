@@ -225,10 +225,17 @@ def _secure_read_file(path: Path, *, maximum_bytes: int, purpose: str) -> bytes:
             chunks.append(chunk)
             remaining -= len(chunk)
         content = b"".join(chunks)
+        after = os.fstat(descriptor)
     finally:
         os.close(descriptor)
     if len(content) > maximum_bytes:
         raise ServiceError(f"{purpose} is too large")
+    if (
+        after.st_size != opened.st_size
+        or after.st_mtime_ns != opened.st_mtime_ns
+        or len(content) != opened.st_size
+    ):
+        raise ServiceError(f"{purpose} changed while reading")
     return content
 
 
@@ -639,7 +646,7 @@ def _git_output(
         "git", path=os.defpath
     )
     if not git:
-        raise ServiceError("git is required to verify Alice source identity")
+        raise ServiceError("git is required to verify runtime source identity")
     result = _control_runner().run(
         [
             git,
@@ -655,7 +662,7 @@ def _git_output(
         cwd=source_root,
     )
     if not result.ok:
-        raise ServiceError("Alice source identity command failed")
+        raise ServiceError("runtime source identity command failed")
     return result.stdout
 
 
@@ -672,7 +679,7 @@ class SourceCapture:
     sha256: str
 
 
-def _capture_source_tree(
+def _capture_alice_source_tree(
     source_root: Path, environment: Mapping[str, str]
 ) -> SourceCapture:
     """Capture exact tracked bytes while the Alice subtree is demonstrably clean."""
@@ -741,6 +748,116 @@ def _capture_source_tree(
     return SourceCapture(tuple(entries), _source_capture_sha256(entries))
 
 
+def _capture_core_source_tree(
+    core_source_root: Path, environment: Mapping[str, str]
+) -> SourceCapture:
+    """Capture the clean, tracked core package under its sealed import prefix."""
+
+    core_source_root = _require_absolute(
+        core_source_root, "shared inventor core source root"
+    )
+    _check_path_components(core_source_root)
+    if not core_source_root.is_dir():
+        raise ServiceError("shared inventor core source root must be a directory")
+    package_root = core_source_root / "inventor_core"
+    _check_path_components(package_root)
+    if not package_root.is_dir():
+        raise ServiceError("shared inventor core source package is unavailable")
+
+    repository_text = _git_output(
+        core_source_root, ["rev-parse", "--show-toplevel"], environment=environment
+    )
+    try:
+        repository_root = Path(repository_text.decode("utf-8").strip())
+    except UnicodeDecodeError as exc:
+        raise ServiceError("git returned an invalid shared-core repository path") from exc
+    _check_path_components(repository_root)
+    try:
+        relative_package = package_root.relative_to(repository_root)
+    except ValueError as exc:
+        raise ServiceError(
+            "shared inventor core source is outside its repository"
+        ) from exc
+    pathspec = str(relative_package)
+
+    def status() -> bytes:
+        return _git_output(
+            repository_root,
+            ["status", "--porcelain=v1", "--untracked-files=all", "--", pathspec],
+            environment=environment,
+        )
+
+    if status():
+        raise ServiceError("shared inventor core source tree is not clean")
+    listing = _git_output(
+        repository_root,
+        ["ls-files", "--full-name", "-z", "--", pathspec],
+        environment=environment,
+    )
+    names = [item for item in listing.split(b"\0") if item]
+    if not names:
+        raise ServiceError("shared inventor core source package has no tracked files")
+    entries: list[SourceEntry] = []
+    total = 0
+    for encoded_name in sorted(names):
+        try:
+            name = encoded_name.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ServiceError("shared inventor core source path is not UTF-8") from exc
+        candidate = repository_root / name
+        try:
+            relative = candidate.relative_to(package_root)
+        except ValueError as exc:
+            raise ServiceError("git returned a path outside shared inventor core") from exc
+        if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
+            raise ServiceError("shared inventor core contains an unsafe source path")
+        content = _secure_read_file(
+            candidate,
+            maximum_bytes=SOURCE_FILE_MAX_BYTES,
+            purpose="shared inventor core source file",
+        )
+        total += len(content)
+        if total > SOURCE_TREE_MAX_BYTES:
+            raise ServiceError("shared inventor core exceeds its verification bound")
+        mode = stat.S_IMODE(candidate.lstat().st_mode) & 0o111
+        entries.append(
+            SourceEntry(
+                (Path("src") / "inventor_core" / relative).as_posix(),
+                content,
+                bool(mode),
+            )
+        )
+    entries.sort(key=lambda entry: entry.relative_name)
+    if not any(
+        entry.relative_name == "src/inventor_core/__init__.py" for entry in entries
+    ):
+        raise ServiceError("shared inventor core source package is incomplete")
+    if status():
+        raise ServiceError("shared inventor core source tree changed during verification")
+    return SourceCapture(tuple(entries), _source_capture_sha256(entries))
+
+
+def _capture_source_tree(
+    source_root: Path,
+    core_source_root: Path,
+    environment: Mapping[str, str],
+) -> SourceCapture:
+    """Capture Alice and the exact shared core that her sealed child imports."""
+
+    alice_capture = _capture_alice_source_tree(source_root, environment)
+    core_capture = _capture_core_source_tree(core_source_root, environment)
+    combined = sorted(
+        (*alice_capture.entries, *core_capture.entries),
+        key=lambda entry: entry.relative_name,
+    )
+    names = [entry.relative_name for entry in combined]
+    if len(names) != len(set(names)):
+        raise ServiceError("Alice and shared core source paths collide")
+    if sum(len(entry.content) for entry in combined) > SOURCE_TREE_MAX_BYTES:
+        raise ServiceError("Alice runtime source tree exceeds its verification bound")
+    return SourceCapture(tuple(combined), _source_capture_sha256(combined))
+
+
 def _source_capture_sha256(entries: Sequence[SourceEntry]) -> str:
     digest = hashlib.sha256()
     previous = ""
@@ -757,10 +874,14 @@ def _source_capture_sha256(entries: Sequence[SourceEntry]) -> str:
     return digest.hexdigest()
 
 
-def source_tree_sha256(source_root: Path, environment: Mapping[str, str]) -> str:
-    """Hash every tracked Alice file and reject any tracked/untracked change."""
+def source_tree_sha256(
+    source_root: Path,
+    core_source_root: Path,
+    environment: Mapping[str, str],
+) -> str:
+    """Hash Alice's clean tree plus the exact imported shared-core sources."""
 
-    return _capture_source_tree(source_root, environment).sha256
+    return _capture_source_tree(source_root, core_source_root, environment).sha256
 
 
 def _canonical_json_bytes(value: object) -> bytes:
@@ -808,6 +929,7 @@ def _resolve_runtime_inputs(
     config: Path,
     root: Path,
     source_root: Path,
+    core_source_root: Path,
     environment: Mapping[str, str],
 ) -> tuple[RuntimeIdentity, dict[str, object], SourceCapture]:
     """Resolve config only under the sanitized environment and bind its source."""
@@ -815,9 +937,13 @@ def _resolve_runtime_inputs(
     config = _require_absolute(config, "config path")
     root = _require_absolute(root, "runtime root")
     source_root = _require_absolute(source_root, "Alice source root")
+    core_source_root = _require_absolute(
+        core_source_root, "shared inventor core source root"
+    )
     _check_path_components(config)
     _check_path_components(root, allow_missing_leaf=True, allow_missing_parents=True)
     _check_path_components(source_root)
+    _check_path_components(core_source_root)
     config_bytes = _secure_read_file(
         config, maximum_bytes=CONFIG_FILE_MAX_BYTES, purpose="config file"
     )
@@ -838,14 +964,20 @@ def _resolve_runtime_inputs(
         effect_mode = resolved["runtime"]["effect_mode"]
         if effect_mode not in _EFFECT_MODES:
             raise ServiceError("resolved effect mode is invalid")
-        before_source = _capture_source_tree(source_root, environment)
+        before_source = _capture_source_tree(
+            source_root, core_source_root, environment
+        )
         if _secure_read_file(
             config, maximum_bytes=CONFIG_FILE_MAX_BYTES, purpose="config file"
         ) != config_bytes:
             raise ServiceError("config file changed during resolution")
-        after_source = source_tree_sha256(source_root, environment)
+        after_source = source_tree_sha256(
+            source_root, core_source_root, environment
+        )
         if before_source.sha256 != after_source:
-            raise ServiceError("Alice source tree changed during config resolution")
+            raise ServiceError(
+                "Alice or shared-core source tree changed during config resolution"
+            )
         identity = RuntimeIdentity(
             source_tree_sha256=before_source.sha256,
             config_sha256=config_sha,
@@ -869,6 +1001,7 @@ def resolve_runtime_identity(
     config: Path,
     root: Path,
     source_root: Path,
+    core_source_root: Path,
     environment: Mapping[str, str],
 ) -> RuntimeIdentity:
     """Resolve config only under the sanitized environment and bind its source."""
@@ -877,6 +1010,7 @@ def resolve_runtime_identity(
         config=config,
         root=root,
         source_root=source_root,
+        core_source_root=core_source_root,
         environment=environment,
     )
     return identity
@@ -921,26 +1055,52 @@ def _release_path(root: Path, identity: RuntimeIdentity) -> Path:
     )
 
 
+def _discard_execution_staging(path: Path) -> None:
+    """Remove a private release tree even after its directories were sealed."""
+
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
+        path.unlink()
+        return
+    # macOS refuses unlink/rmdir inside a 0500 directory. This path is a
+    # mkdtemp-created, owner-only staging tree, so restore owner write access
+    # only long enough for bounded cleanup and never follow symlinks.
+    for directory, _names, _files in os.walk(
+        path, topdown=True, followlinks=False
+    ):
+        os.chmod(directory, 0o700, follow_symlinks=False)
+    shutil.rmtree(path)
+
+
 def materialize_execution_snapshot(
     *,
     config: Path,
     root: Path,
     source_root: Path,
+    core_source_root: Path,
     environment: Mapping[str, str],
     expected_identity: RuntimeIdentity | None = None,
 ) -> tuple[ExecutionSnapshot, RuntimeIdentity]:
-    """Atomically seal the exact source/config bytes that a child will execute."""
+    """Atomically publish and seal the source/config bytes a child executes."""
 
-    try:
-        root.relative_to(source_root)
-    except ValueError:
-        pass
-    else:
-        raise ServiceError("service runtime root must be outside the Alice source tree")
+    for prohibited_root, label in (
+        (source_root, "Alice source tree"),
+        (core_source_root, "shared inventor core source tree"),
+    ):
+        try:
+            root.relative_to(prohibited_root)
+        except ValueError:
+            pass
+        else:
+            raise ServiceError(f"service runtime root must be outside the {label}")
     identity, resolved, capture = _resolve_runtime_inputs(
         config=config,
         root=root,
         source_root=source_root,
+        core_source_root=core_source_root,
         environment=environment,
     )
     if expected_identity is not None and identity != expected_identity:
@@ -972,9 +1132,21 @@ def materialize_execution_snapshot(
             0o400,
         )
         for directory, _names, _files in os.walk(temporary, topdown=False):
-            os.chmod(directory, 0o500)
+            directory_path = Path(directory)
+            if directory_path != temporary:
+                os.chmod(directory_path, 0o500, follow_symlinks=False)
+        # Darwin requires the directory being renamed to remain owner-writable.
+        # Its contents and descendants are already sealed; the containing
+        # releases directory is 0700, so publish the private staging root and
+        # immediately seal that same directory at its final name.
+        os.chmod(temporary, 0o700, follow_symlinks=False)
         destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         os.replace(temporary, destination)
+        try:
+            os.chmod(destination, 0o500, follow_symlinks=False)
+        except BaseException:
+            _discard_execution_staging(destination)
+            raise
         directory_fd = os.open(
             destination.parent, os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
         )
@@ -983,18 +1155,20 @@ def materialize_execution_snapshot(
         finally:
             os.close(directory_fd)
     finally:
-        if temporary.exists():
-            shutil.rmtree(temporary)
+        _discard_execution_staging(temporary)
     verify_execution_snapshot(snapshot, root=root, expected_identity=identity)
     # Ensure neither mutable input drifted while the sealed release was built.
     final_identity = resolve_runtime_identity(
         config=config,
         root=root,
         source_root=source_root,
+        core_source_root=core_source_root,
         environment=environment,
     )
     if final_identity != identity:
-        raise IdentityMismatch("Alice source or configuration changed during release sealing")
+        raise IdentityMismatch(
+            "Alice, shared-core source, or configuration changed during release sealing"
+        )
     return snapshot, identity
 
 
@@ -1160,7 +1334,19 @@ def _isolated_module_argv(
         "sys.argv[0]='alice';"
         f"runpy.run_module({module!r},run_name='__main__')"
     )
-    return [str(python), "-I", "-c", bootstrap, str(snapshot.source_path), *arguments]
+    # -I alone still imports site and executes installation-controlled .pth
+    # files before this bootstrap can prepend the sealed release. Alice and
+    # inventor_core are stdlib-only and both live in the snapshot, so disable
+    # site initialization entirely before any application module can be cached.
+    return [
+        str(python),
+        "-I",
+        "-S",
+        "-c",
+        bootstrap,
+        str(snapshot.source_path),
+        *arguments,
+    ]
 
 
 @dataclass(frozen=True)
@@ -1760,6 +1946,7 @@ def render_plists(
     rate_state: Path,
     watchdog_state: Path,
     source_root: Path,
+    core_source_root: Path,
     identity: RuntimeIdentity,
     poll_seconds: float,
     stale_seconds: float,
@@ -1775,6 +1962,7 @@ def render_plists(
         "PYTHON": str(python),
         "STATE": str(state),
         "SOURCE_ROOT": str(source_root),
+        "CORE_SOURCE_ROOT": str(core_source_root),
         "SOURCE_TREE_SHA256": identity.source_tree_sha256,
         "CONFIG_SHA256": identity.config_sha256,
         "POLICY_HASH": identity.policy_hash,
@@ -1964,6 +2152,7 @@ def _runtime_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--env-file", required=True)
     parser.add_argument("--root", required=True)
     parser.add_argument("--source-root", required=True)
+    parser.add_argument("--core-source-root", required=True)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -2046,30 +2235,46 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _runtime_context(args: argparse.Namespace) -> tuple[Path, Path, Path, Path, dict[str, str], dict[str, str]]:
+def _runtime_context(
+    args: argparse.Namespace,
+) -> tuple[Path, Path, Path, Path, Path, dict[str, str], dict[str, str]]:
     config = _require_absolute(args.config, "config path")
     env_file = _require_absolute(args.env_file, "environment file")
     root = _require_absolute(args.root, "runtime root")
     source_root = _require_absolute(args.source_root, "Alice source root")
+    core_source_root = _require_absolute(
+        args.core_source_root, "shared inventor core source root"
+    )
     _check_path_components(config)
     _check_path_components(env_file)
     _check_path_components(source_root)
+    _check_path_components(core_source_root)
     _check_path_components(root, allow_missing_leaf=True, allow_missing_parents=True)
     env_values = load_env_file(env_file)
     environment = sanitized_environment(env_values)
-    return config, env_file, root, source_root, env_values, environment
+    return (
+        config,
+        env_file,
+        root,
+        source_root,
+        core_source_root,
+        env_values,
+        environment,
+    )
 
 
 def _resolve_from_context(
     config: Path,
     root: Path,
     source_root: Path,
+    core_source_root: Path,
     environment: Mapping[str, str],
 ) -> RuntimeIdentity:
     return resolve_runtime_identity(
         config=config,
         root=root,
         source_root=source_root,
+        core_source_root=core_source_root,
         environment=environment,
     )
 
@@ -2184,15 +2389,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_guard_tick(args)
 
         if args.command in {"identity", "preflight", "run", "probe", "wait-healthy", "render-plists"}:
-            config, env_file, root, source_root, _env_values, environment = _runtime_context(args)
+            (
+                config,
+                env_file,
+                root,
+                source_root,
+                core_source_root,
+                _env_values,
+                environment,
+            ) = _runtime_context(args)
             identity, resolved_runtime_config, _source_capture = _resolve_runtime_inputs(
                 config=config,
                 root=root,
                 source_root=source_root,
+                core_source_root=core_source_root,
                 environment=environment,
             )
             identity_resolver = lambda: _resolve_from_context(
-                config, root, source_root, environment
+                config, root, source_root, core_source_root, environment
             )
             if hasattr(args, "max_tick_seconds"):
                 args.max_tick_seconds = effective_max_tick_seconds(
@@ -2212,6 +2426,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config=config,
                 root=root,
                 source_root=source_root,
+                core_source_root=core_source_root,
                 environment=environment,
                 expected_identity=identity,
             )
@@ -2259,6 +2474,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config=config,
                 root=root,
                 source_root=source_root,
+                core_source_root=core_source_root,
                 environment=environment,
                 expected_identity=expected,
             )
@@ -2441,6 +2657,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     args.watchdog_state, "watchdog receipt"
                 ),
                 source_root=source_root,
+                core_source_root=core_source_root,
                 identity=identity,
                 poll_seconds=args.poll_seconds,
                 stale_seconds=args.stale_seconds,

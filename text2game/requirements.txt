@@ -1,0 +1,4 @@
+# System-python needs of THIS repo (discover, phase 1, phase 3 glue, publish).
+# The heavy CAD stack (cadquery, trimesh, numpy, matplotlib, manifold3d) lives
+# in the text2cad sibling's venv and is addressed via TEXT2CAD_PY - see SETUP.md.
+pillow>=10        # video_qa.py frame checks

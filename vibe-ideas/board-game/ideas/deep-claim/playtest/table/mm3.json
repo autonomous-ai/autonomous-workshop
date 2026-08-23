@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 50,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "same solved line: small for 2 pts, leave shelf open. This is just confirming the strategy.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same forced play; floor 1 for 2 points",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "Same opening: take the third floor before seat 3 can. Nothing new to test \u2014 the structure is settled",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "same opening move bore 3 with small \u2014 three games in I have no better idea, and a small on an empty bore guarantees a 2-pointer I will keep",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "solved line: second small for the 2-pt floor, deny seats 2/3 the remaining floor.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "last open floor; must claim it before seat 0's next turn",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "Same as games one and two: all six moves are equivalent shelf claims over rival floors. Pick one and move on",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "seat 2 buried my floor again, last two games. If I do nothing different I get the same result. This time I spend my large on bore 1 (seat 0's floor, the leader), giving me a shelf and denying seat 0 the chance to add to their lead later. I am not going to bury my own bore 3 \u2014 that just kills my own 2-pointer for 1. Picking the leading opponent's floor is the smallest improvement on the previous plan; buries their floor and gets me a shelf",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "all 4 options give 1 pt; arbitrary",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "mirror game 1/2: seal the bore on top of seat 3's floor to deny them a shelf; +1 for me",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "Bore 4 = seat 0's floor, bore 5 = seat 1's floor. Leaders are tied at 5; pick one to mildly annoy. No reason to prefer either; flipping a coin in my head",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only legal move, same forced endgame as the previous two games",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "ref_name": "Arm",
+    "instances": [
+      "NAUO1"
+    ],
+    "count": 1,
+    "volume_mm3": 25239.646345569803,
+    "bbox_dims_mm": [
+      8.501678147757211,
+      182.9245290002769,
+      70.72598208444882
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/Arm.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/Arm.step"
+  },
+  {
+    "ref_name": "Boden",
+    "instances": [
+      "NAUO2"
+    ],
+    "count": 1,
+    "volume_mm3": 87461.88844746834,
+    "bbox_dims_mm": [
+      200.00000020000004,
+      200.0000002,
+      33.0000002
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/Boden.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/Boden.step"
+  },
+  {
+    "ref_name": "Schraube",
+    "instances": [
+      "NAUO3",
+      "NAUO5",
+      "NAUO7",
+      "NAUO11"
+    ],
+    "count": 4,
+    "volume_mm3": 4633.162605389758,
+    "bbox_dims_mm": [
+      26.919739955282992,
+      28.590873996518248,
+      27.87406591312786
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/Schraube.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/Schraube.step"
+  },
+  {
+    "ref_name": "Mutter",
+    "instances": [
+      "NAUO4",
+      "NAUO8",
+      "NAUO10",
+      "NAUO12"
+    ],
+    "count": 4,
+    "volume_mm3": 2829.7189312518412,
+    "bbox_dims_mm": [
+      8.204114953576223,
+      28.271548613457384,
+      28.51093088217319
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/Mutter.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/Mutter.step"
+  },
+  {
+    "ref_name": "arm -mir",
+    "instances": [
+      "NAUO6"
+    ],
+    "count": 1,
+    "volume_mm3": 25239.646345571273,
+    "bbox_dims_mm": [
+      8.50167814775719,
+      182.92452900027683,
+      70.72598208444886
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/arm_-mir.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/arm_-mir.step"
+  },
+  {
+    "ref_name": "Laptopaufnahme",
+    "instances": [
+      "NAUO9"
+    ],
+    "count": 1,
+    "volume_mm3": 74897.2479778269,
+    "bbox_dims_mm": [
+      111.80056339848602,
+      191.04715161740373,
+      78.89243137717551
+    ],
+    "stl": "tests/tablet-and-notebook-stand/parts/Laptopaufnahme.stl",
+    "step": "tests/tablet-and-notebook-stand/parts/Laptopaufnahme.step"
+  }
+]

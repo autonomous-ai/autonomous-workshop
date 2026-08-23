@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 2,
+  "seed": 76,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "same forced line: small for 2 pts. Game is solved.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same play; take a floor",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "second small; 2 pts. Forced 9-9 line.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "1 small left for me, seat 0 has 2 left. Take one floor now; seat 0 will get the other 2 to my 3 floors total",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "third small; completing the floor-grab phase.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "I have 1 small left, seat 0 has 0. Take the last floor now or it goes unclaimed",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "seal phase; forced 9-9. Arbitrary bore.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "seat 0 leads 7-6, similar to game 4. 4 floors for me, 2 for them. Seat 0 has 3 larges, I have 2. If I seal above my floor on bore 1, that's +1 to 7 tie and seat 0 can't grab it",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "seal bore 3 for tie at 8",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only move; tie at 9",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

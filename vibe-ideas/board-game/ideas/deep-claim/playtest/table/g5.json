@@ -1,0 +1,109 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 2,
+  "seed": 67,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "standard opening - grab the guaranteed 2-point floor before any contest exists; last game's dead-even mirror suggests pure floor-racing at minimum ties, so I'll stay greedy and look for a real denial opportunity if one appears later rather than pre-committing to a sealing gambit I can't fully verify",
+      "arbitrary": false
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same exact-match 2p structure as last game; floors split 3-3 regardless of who moves first since 6 divides evenly by 2, so greedy floor-priority remains correct and heads to the same forced 9-9",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "still four virgin floors on offer, worth more than any shelf grab",
+      "arbitrary": false
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "three floors still open worth 2 each, continuing the greedy line toward my 3-floor share",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "continuing the floor race - I tried working through a few sealing deviations by hand (seal now vs. seal later vs. bank an early shelf instead) and each one still canceled out to an exact tie against a mirroring opponent, so I'm sticking with the straightforward greedy line rather than risk a miscalculated gambit",
+      "arbitrary": false
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "last open floor and my final small puck; secures my third floor claim to keep the split even",
+      "arbitrary": false
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "six shelves left, even split guaranteed 3-3 regardless of which specific bores each side picks - homogeneous choice",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "all floors already claimed; open shelves are flat 1-point grabs, still tracking to the forced 9-9 regardless of which bore",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "four shelves left, even split guaranteed 2-2 regardless of choice - homogeneous",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "three equivalent shelf grabs remain, still tracking to the forced 9-9",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "last two shelves, one each guaranteed regardless of pick - homogeneous, final tie confirmed either way",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only legal move, last shelf on the board, claims it and ends the game at the predicted 9-9",
+      "arbitrary": true
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>text2cad Pipeline Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --color-paper:       #f5f5f5;
+      --color-paper-2:     #ececec;
+      --color-ink:         #2d3142;
+      --color-muted:       #4f5d75;
+      --color-soft:        #7a8399;
+      --color-rule:        rgba(45,49,66,0.12);
+      --color-accent:      #eb6c36;
+      --color-accent-tint: rgba(235,108,54,0.08);
+      --color-link:        #2e5aa8;
+      --font-sans:   'Geist', system-ui, -apple-system, 'Segoe UI', Helvetica, sans-serif;
+      --font-serif:  'Instrument Serif', Georgia, 'Times New Roman', serif;
+      --font-mono:   'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      padding: 3rem 2rem;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header { margin-bottom: 2.5rem; }
+
+    .header-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.75rem, 3vw + 1rem, 2.5rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      text-wrap: balance;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      line-height: 1.55;
+      color: var(--color-muted);
+      max-width: 60ch;
+    }
+
+    .diagram-container {
+      background: transparent;
+      border: none;
+      padding: 0;
+      overflow-x: auto;
+    }
+
+    svg { width: 100%; min-width: 900px; display: block; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 0.9fr;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1px solid var(--color-rule);
+      padding: 1.25rem;
+    }
+
+    .card-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-soft);
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.875rem;
+      padding-bottom: 0.875rem;
+      border-bottom: 1px solid rgba(45,49,66,0.08);
+    }
+
+    .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .card-dot.ink   { background: var(--color-ink); }
+    .card-dot.muted { background: var(--color-muted); }
+    .card-dot.coral { background: var(--color-accent); }
+
+    .card h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: -0.005em;
+    }
+
+    .card ul { list-style: none; color: var(--color-muted); font-size: 0.8125rem; line-height: 1.55; }
+
+    .card li { margin-bottom: 0.4rem; padding-left: 0.875rem; position: relative; }
+
+    .card li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: rgba(45,49,66,0.25);
+      font-size: 0.75rem;
+    }
+
+    .card code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-ink);
+      background: rgba(45,49,66,0.05);
+      padding: 0.05em 0.3em;
+      border-radius: 3px;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(45,49,66,0.10);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      color: var(--color-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <p class="header-eyebrow">Flowchart · text2cad · 2026-08-17</p>
+      <h1>One cycle, and where it dies</h1>
+      <p class="subtitle">Trend digest to published product. Every phase is labelled with the file it writes — that file is where you start reading when the run goes wrong.</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 832" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="text2cad-pipeline-title text2cad-pipeline-desc">
+        <title id="text2cad-pipeline-title">text2cad pipeline: one cycle, and where it dies</title>
+        <desc id="text2cad-pipeline-desc">Flowchart of the text2cad autonomous product cycle, running from trend discovery through brief and draft, build, a deterministic printability gate and a four-lens judging panel, to one of two outcomes: publish, or hold without publishing. Failures from either the gate or the ship decision route into a budgeted repair loop that re-runs the gate, and a repair loop that exhausts its budget ends in hold.</desc>
+
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+          </marker>
+          <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+          </marker>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <!-- ── Arrows (drawn first, behind nodes) ─────────────────── -->
+
+        <!-- Discover → Brief+draft -->
+        <line x1="420" y1="108" x2="420" y2="132" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Brief+draft → Build -->
+        <line x1="420" y1="200" x2="420" y2="224" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Build → Gate -->
+        <line x1="420" y1="292" x2="420" y2="316" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Gate PASS → Panel -->
+        <line x1="420" y1="412" x2="420" y2="436" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Gate FAIL → Repair (elbow, r=8) -->
+        <path d="M 540 364 H 752 A 8 8 0 0 1 760 372 V 440" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Repair → Gate, re-gate loop (elbow, r=8) -->
+        <path d="M 880 440 V 348 A 8 8 0 0 0 872 340 H 480" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Panel → Ship? -->
+        <line x1="420" y1="504" x2="420" y2="536" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Ship? NO → Repair (elbow, r=8) -->
+        <path d="M 540 584 H 812 A 8 8 0 0 0 820 576 V 508" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <!-- Ship? YES → Publish (happy path) -->
+        <line x1="420" y1="632" x2="420" y2="664" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <!-- Repair budget spent → Hold -->
+        <line x1="920" y1="508" x2="920" y2="664" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- ── Arrow labels (masked, 6–10px clear of the stroke) ──── -->
+
+        <rect x="428" y="418" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="444" y="427" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">PASS</text>
+
+        <rect x="634" y="372" width="32" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="650" y="381" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">FAIL</text>
+
+        <rect x="672" y="318" width="56" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="700" y="327" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">RE-GATE</text>
+
+        <rect x="628" y="560" width="64" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="660" y="569" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">LENS FAIL</text>
+
+        <rect x="428" y="640" width="36" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="446" y="649" fill="#eb6c36" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">SHIP</text>
+
+        <rect x="832" y="584" width="80" height="12" rx="2" fill="#f5f5f5"/>
+        <text x="872" y="593" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle" letter-spacing="0.12em">BUDGET SPENT</text>
+
+        <!-- ── Entry annotation ───────────────────────────────────── -->
+        <text x="300" y="28" fill="#7a8399" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.18em">CRON 00:15 UTC · AUTOLOOP.PY · TREND DIGEST VIA SECOND-BRAIN MCP</text>
+
+        <!-- ── Nodes ──────────────────────────────────────────────── -->
+
+        <!-- Discover -->
+        <rect x="300" y="40" width="240" height="68" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="420" y="64" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Discover</text>
+        <text x="420" y="80" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">3 lanes x 2 cand -&gt; 3 judges</text>
+        <text x="420" y="92" fill="#7a8399" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">discover.md · seed</text>
+
+        <!-- Brief + draft -->
+        <rect x="300" y="132" width="240" height="68" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="420" y="156" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Brief + draft</text>
+        <text x="420" y="172" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">brief.md · hero.png · reference/</text>
+        <text x="420" y="184" fill="#7a8399" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">no render -&gt; one retry</text>
+
+        <!-- Build -->
+        <rect x="300" y="224" width="240" height="68" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="420" y="248" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Build</text>
+        <text x="420" y="264" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">half budget · likeness · build2</text>
+        <text x="420" y="276" fill="#7a8399" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">&lt;slug&gt;.stl · run.json</text>
+
+        <!-- Gate (decision) -->
+        <polygon points="420,316 540,364 420,412 300,364" fill="#f5f5f5"/>
+        <polygon points="420,316 540,364 420,412 300,364" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="420" y="356" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Printability gate</text>
+        <text x="420" y="372" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">gate.py · gate.json</text>
+
+        <!-- Panel -->
+        <rect x="300" y="436" width="240" height="68" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="420" y="460" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Four-lens panel</text>
+        <text x="420" y="476" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">printability · fidelity · likeness · sell</text>
+        <text x="420" y="488" fill="#7a8399" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">run.json panel{} · 1 retry each</text>
+
+        <!-- Ship? (decision, focal) -->
+        <polygon points="420,536 540,584 420,632 300,584" fill="#f5f5f5"/>
+        <polygon points="420,536 540,584 420,632 300,584" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="420" y="576" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Ship?</text>
+        <text x="420" y="592" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">gate AND 4/4 verdicts AND 0 fail</text>
+
+        <!-- Repair loop -->
+        <rect x="700" y="440" width="240" height="68" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="820" y="464" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Repair</text>
+        <text x="820" y="480" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">tier budget 2 / 3 / 2</text>
+        <text x="820" y="492" fill="#7a8399" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">+1 bonus while scores climb</text>
+
+        <!-- Publish (outcome, focal) -->
+        <rect x="300" y="664" width="240" height="56" rx="28" fill="#f5f5f5"/>
+        <rect x="300" y="664" width="240" height="56" rx="28" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+        <text x="420" y="688" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Publish</text>
+        <text x="420" y="704" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">publish.py -&gt; Panda Social draft</text>
+
+        <!-- Hold (outcome) -->
+        <rect x="700" y="664" width="240" height="56" rx="28" fill="#f5f5f5"/>
+        <rect x="700" y="664" width="240" height="56" rx="28" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="820" y="688" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', system-ui, sans-serif" text-anchor="middle">Hold — no publish</text>
+        <text x="820" y="704" fill="#4f5d75" font-size="9" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">arbitration · postmortem.md</text>
+
+        <!-- ── Legend ─────────────────────────────────────────────── -->
+        <line x1="40" y1="768" x2="960" y2="768" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <text x="40" y="784" fill="#4f5d75" font-size="8" font-family="'Geist Mono', ui-monospace, monospace" letter-spacing="0.18em">LEGEND · SHAPE CARRIES TYPE</text>
+
+        <rect x="40" y="800" width="24" height="12" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+        <text x="72" y="810" fill="#4f5d75" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Outcome (oval)</text>
+
+        <rect x="220" y="800" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="252" y="810" fill="#4f5d75" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Phase (rectangle)</text>
+
+        <polygon points="412,806 424,800 436,806 424,812" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="448" y="810" fill="#4f5d75" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Gate (diamond)</text>
+
+        <line x1="604" y1="808" x2="632" y2="808" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+        <text x="640" y="810" fill="#4f5d75" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Ship path</text>
+
+        <line x1="768" y1="808" x2="796" y2="808" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="804" y="810" fill="#4f5d75" font-size="8.5" font-family="'Geist', system-ui, sans-serif">Failure / retry</text>
+      </svg>
+    </div>
+
+    <div class="cards">
+
+      <div class="card">
+        <p class="card-eyebrow">Read in this order</p>
+        <div class="card-header">
+          <span class="card-dot ink"></span>
+          <h3>Where to look when it breaks</h3>
+        </div>
+        <ul>
+          <li><code>out/&lt;slug&gt;/postmortem.md</code> — first stop. Cause, phase, cost, what to fix. Written on every DONE and every ABORT.</li>
+          <li><code>out/&lt;slug&gt;/run.json</code> — per phase: <code>cost_usd</code>, <code>num_turns</code>, <code>max_turns</code>, <code>is_error</code>, plus <code>panel</code>, <code>ship</code>, <code>unjudged_lenses</code>, <code>seed</code>.</li>
+          <li><code>out/&lt;slug&gt;/gate.json</code> — <code>watertight</code>, <code>bodies</code>, <code>overhang_pct</code>, <code>bridge_span_mm</code>, slice result.</li>
+          <li><code>CYCLES.md</code> — one row per cycle, every run since the start.</li>
+          <li><code>logs/cycle-&lt;date&gt;.log</code> — full stdout when the postmortem isn't enough.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <p class="card-eyebrow">Exits</p>
+        <div class="card-header">
+          <span class="card-dot coral"></span>
+          <h3>How a run actually dies</h3>
+        </div>
+        <ul>
+          <li><b>Discover</b> — no <code>WINNER:</code> line, abort before the build spend.</li>
+          <li><b>Draft</b> — no <code>_assembled.png</code>: one retry with an export-first note, then the proposal goes out render-less.</li>
+          <li><b>Build</b> — milestone likeness FAIL sets <code>build_aborted</code> and kills the run at half budget.</li>
+          <li><b>Gate</b> — <code>not_watertight</code>, <code>bodies=N</code>, <code>overhang</code>, <code>bridge_span&gt;25</code>, <code>slice_failed</code>, footprint or print time.</li>
+          <li><b>Panel</b> — a crashed lens returns <code>FAIL no output</code>; a lens that never ran is seeded <code>FAIL did not run</code>. Neither reads as silence.</li>
+          <li><b>Ship</b> — gate PASS with an unjudged lens still holds. An unjudged product is untested, not clean.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <p class="card-eyebrow">Starvation</p>
+        <div class="card-header">
+          <span class="card-dot muted"></span>
+          <h3>Turn caps and budgets</h3>
+        </div>
+        <ul>
+          <li><code>num_turns == max_turns</code> in run.json means the phase was <b>starved</b>, not broken — it ran out of turns mid-thought.</li>
+          <li><code>BUILD_TURNS=160</code> · <code>DRAFT_TURNS=70</code> · <code>LENS_TURNS=70</code> · <code>LENS_TURNS_LIKENESS=35</code></li>
+          <li><code>REPAIR_TURNS=70</code> · <code>ARB_TURNS=60</code> · <code>DISCOVER_TURNS=40</code> — all env-overridable.</li>
+          <li>Repair tiers: broken 2 · functional 3 · cosmetic 2, plus one bonus pass while the failing lens scores are still climbing.</li>
+          <li>Cycle killed at <code>CYCLE_TIMEOUT_S</code> (6h default); the marker still writes, so the day is spent.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <span>text2cad · panda ops VM · /root/text2cad</span>
+      <span>Diagram Design · flowchart · doc-wide · balanced</span>
+    </div>
+
+  </div>
+</body>
+</html>

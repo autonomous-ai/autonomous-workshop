@@ -1,0 +1,152 @@
+{
+  "slug": "overcap-v2",
+  "title": "Overcap V2",
+  "concept": "A two-player connection game on a 6-per-side rhombus of hexagonal sockets. Each player races to link their own two opposite edges with a chain of sockets they own. Every Claim plants a base and, while that player's cap supply is nonempty, automatically seats one matching sleeve over the new base; those scarce sleeves can later Seize exactly one adjacent based socket, temporarily reassigning its ownership while revealing the vacated source. A relief-marked opening key selects a band for a balanced two-stone pie offer, and a turn is always either Claim empty ground or shift an on-board sleeve locally — never both — with each player allowed only one Seize between their own Claims.",
+  "players": {
+    "min": 2,
+    "max": 2
+  },
+  "playtime_min": 25,
+  "action_types": [
+    "OFFER CREATION",
+    "SIDE SELECTION",
+    "CLAIM",
+    "SEIZE SHIFT"
+  ],
+  "novelty": "Connection games with a capture wrinkle exist (Onyx removes stones by flanking), but Overcap's capping peg does not remove anything: it stacks physically over an existing base peg, reassigns that one socket's ownership while leaving the original peg seated underneath, and can later be lifted and moved so the same few printed caps form a shifting front rather than a spent capture supply. That is a scarce, non-removing, stack-to-overwrite resource rather than a removal capture, layered on the classic Hex edge-connection goal. Confirmed by one WebSearch pass ('abstract board game hex grid connection with capture cap piece limited supply overwrite ownership') on 2026-08-19: results surfaced Hex, Onyx (removal capture), Havannah and Hexagony, none of which stack a movable ownership-overwrite piece on top of a placed piece.",
+  "art_direction": {
+    "form_language": "Chunky chamfered stonework, everything reading as fitted masonry — the board a slab of shallow round sockets, the pegs squat and deeply chamfered, no thin walls or filigree.",
+    "silhouette": "A hexagonal paving slab studded with two families of stubby posts, half of them wearing a second, taller collar — reads as a half-finished mosaic being claimed piece by piece.",
+    "part_vocabulary": "span_board: a flat hexagon-tiled slab, recessed round sockets in a 6-per-side rhombus. opening_key: a chunky six-sided toss key with one to six raised bars on its faces. spire_peg: a short peg with a fluted, ridged collar (Spire's base piece). sill_peg: a short peg with a smooth stepped taper, no flutes (Sill's base piece). spire_cap: a taller sleeve with the same fluted collar motif, sized to seat down over any base peg already in a socket. sill_cap: a taller sleeve with the same smooth stepped-taper motif, sized to seat down over any base peg already in a socket. Ownership is always readable by the ridged-vs-smooth distinction alone, and which peg is 'on top' at a glance.",
+    "surface_treatment": "1.5mm deep flutes ringing spire pieces; 1.5mm stepped concentric grooves ringing sill pieces. The board's sockets carry a 1mm chamfered lip so a capped socket visibly sits proud of an uncapped one.",
+    "hero_shot": "The board mid-game, both piece families visibly threading toward opposite edges, three or four tall capped sockets standing proud among the low ones, showing at a glance who currently owns the contested middle."
+  },
+  "components": [
+    {
+      "name": "span_board",
+      "qty": 1,
+      "desc": "Flat hexagon slab, 6-per-side rhombus of 36 recessed round sockets, each socket taking one base peg and optionally one capping sleeve over it. Sockets are readable as coordinates q0-r0 through q5-r5 by shallow edge ticks: q counts west to east and r counts northwest to southeast."
+    },
+    {
+      "name": "opening_key",
+      "qty": 1,
+      "desc": "Chunky six-sided toss key, each face marked by one to six raised bars. It selects which printed opening band is live for the first pie-offer placement."
+    },
+    {
+      "name": "spire_peg",
+      "qty": 36,
+      "desc": "Spire's short fluted-collar base peg. Supply sized to the full board (36 sockets) so a lopsided game never leaves Spire without a legal placement; typical games use 14-20."
+    },
+    {
+      "name": "sill_peg",
+      "qty": 36,
+      "desc": "Sill's short smooth-taper base peg. Same sizing rationale as spire_peg."
+    },
+    {
+      "name": "spire_cap",
+      "qty": 5,
+      "desc": "Spire's tall fluted-collar capping sleeve. Whenever Spire Claims while any Spire sleeve is in supply, Claim resolution automatically seats exactly one over the newly placed Spire base; while seated, it assigns that socket to Spire and may later shift one edge-adjacent step to another based socket. A challenged sleeve returns to supply and deterministically re-enters on Spire's next Claim. Deliberately scarce."
+    },
+    {
+      "name": "sill_cap",
+      "qty": 5,
+      "desc": "Sill's tall smooth-taper capping sleeve. It follows the same automatic Claim entry, deterministic post-challenge re-entry, and edge-adjacent shift rules as spire_cap for Sill."
+    }
+  ],
+  "rules": {
+    "setup": [
+      {
+        "text": "Place span_board on the table between the two players. The Spire edge-pair is the board's northwest and southeast sides, and the Sill edge-pair is the northeast and southwest sides. Name sockets by coordinates q0-r0 through q5-r5: q counts west to east and r counts northwest to southeast. Two sockets are edge-adjacent exactly when their coordinate difference (target minus source) is one of these six axial deltas: (+1,0), (-1,0), (0,+1), (0,-1), (+1,-1), or (-1,+1), and both coordinates remain between 0 and 5.",
+        "uses": [
+          "span_board"
+        ]
+      },
+      {
+        "text": "Set all pegs and caps beside span_board and randomly choose an opener. Toss opening_key; its top face selects the live opening band: 1 = q1r1/q2r1/q3r1/q1r2/q2r2/q3r2; 2 = q2r1/q3r1/q4r1/q2r2/q3r2/q4r2; 3 = q1r2/q2r2/q1r3/q2r3/q1r4/q2r4; 4 = q3r1/q4r1/q3r2/q4r2/q3r3/q4r3; 5 = q1r3/q2r3/q3r3/q1r4/q2r4/q3r4; 6 = q2r3/q3r3/q4r3/q2r4/q3r4/q4r4. The opener creates one two-stone offer by choosing two distinct sockets in that band that are not edge-adjacent, placing one spire_peg in one and one sill_peg in the other. The other player chooses Spire or Sill and takes that side's remaining pegs, five caps, and edge-pair goal; the opener takes the other side. The opener then takes the first normal turn. Thus the chooser receives exactly one offered stone but not the first normal turn. The game has exactly four elected procedures: offer creation, side selection, Claim, and Seize shift; tossing the key and all sleeve seating, challenge, and connection resolution are automatic.",
+        "uses": [
+          "span_board",
+          "opening_key",
+          "spire_peg",
+          "spire_cap",
+          "sill_peg",
+          "sill_cap"
+        ]
+      }
+    ],
+    "turn": [
+      {
+        "text": "Across setup and normal play, the four elected procedure types are offer creation, side selection, Claim, and Seize shift. On your turn, take exactly one of the latter two actions. (a) Claim: place one base peg from your own supply into any empty socket on span_board. If your matching sleeve supply is nonempty, Claim resolution automatically takes exactly one matching sleeve from that supply and seats it over the newly claimed base; you choose neither whether to seat it nor where it enters. This includes a sleeve returned to supply by a challenge, so every supplied sleeve has a deterministic re-entry path through your next future Claim. Claiming refreshes your Seize option. (b) Seize shift: only if you have made a Claim since your last Seize, choose one of your sleeves already on span_board and move it exactly one edge-adjacent step from its source to a based target that is either uncapped or holds an opponent sleeve. On a challenge, automatically return the opponent sleeve to its owner's supply, then seat your moving sleeve over the unchanged base peg. The vacated source immediately reverts to the ownership of its base peg, and every socket still holds at most one sleeve. The target is yours while your sleeve remains there. After any Seize, you may not Seize again until after your next Claim. Thus the first normal Claim automatically puts a sleeve on-board and immediately makes an adjacent shift legal on that player's next turn whenever an adjacent based target exists. A challenged sleeve cannot globally recapture: it automatically re-enters only over its owner's newly placed base on a future Claim and can approach the contested area only by later one-step Seizes separated by Claims.",
+        "uses": [
+          "span_board",
+          "spire_peg",
+          "sill_peg",
+          "spire_cap",
+          "sill_cap"
+        ]
+      },
+      {
+        "text": "A socket's current owner is: the player whose capping sleeve sits in it, if any; otherwise the player whose base peg sits in it; otherwise nobody (empty). Immediately after every action, check both players' currently owned sockets for an unbroken chain of edge-adjacent sockets connecting that player's own two assigned edges of span_board. If only one player has a chain, that player wins immediately. If both players have chains after the same action, the acting player wins; moving a cap to reveal an opponent's connection is therefore allowed only when your own new connection wins first.",
+        "uses": [
+          "span_board",
+          "spire_peg",
+          "sill_peg",
+          "spire_cap",
+          "sill_cap"
+        ]
+      }
+    ],
+    "end": [
+      {
+        "text": "The game ends the instant a player's chain connects their two assigned edges, checked for both players after every action. If every one of the 36 sockets on span_board has received a base peg, resolve the same chain check immediately and end the game; a fully based rhombus always has at least one edge connection under the current ownership map. Because each player may Seize only once between their own Claims, ordinary legal play must keep adding base pegs and cannot cycle before or after the board fills.",
+        "uses": [
+          "span_board",
+          "spire_peg",
+          "sill_peg",
+          "spire_cap",
+          "sill_cap"
+        ]
+      }
+    ],
+    "win": {
+      "text": "The winner is the player whose currently owned sockets (by base peg where no cap is present, or by their capping sleeve where one is present) form an unbroken edge-adjacent chain linking that player's assigned opposite edges of span_board, using only the six deltas stated in setup. Check both players after each action; if both chains exist, the acting player wins. There are no draws: each Seize requires an intervening Claim, Claims permanently reduce the number of empty sockets, and filling the last empty socket ends the game immediately under the decisive full-board connection check, before any further Seize can occur.",
+      "uses": [
+        "span_board",
+        "spire_peg",
+        "sill_peg",
+        "spire_cap",
+        "sill_cap"
+      ]
+    }
+  },
+  "schema_version": 2,
+  "provenance": {
+    "forked_from": "overcap",
+    "rules_iteration": 3,
+    "source": "team-abstract"
+  },
+  "design_contract": {
+    "core_experience": "A tense, legible connection duel where every cap move can rewrite one local ownership fight without erasing the underlying board.",
+    "core_mechanism": "Players Claim empty sockets with bases and scarce sleeves, then shift those sleeves one seam at a time to Seize based sockets while racing to connect opposite rails.",
+    "must_preserve": [
+      "movable sleeves that temporarily overwrite the visible owner of a base",
+      "local seam-to-seam cap movement",
+      "a connection win that can be audited directly on the physical board",
+      "a balanced opening choice rather than a fixed first-player setup"
+    ],
+    "anti_goals": [
+      "an opening book that makes the first cap exchanges automatic",
+      "late-game cap-count arithmetic replacing positional decisions",
+      "occupied caps becoming permanent, uncontestable locks",
+      "adjacency or ownership that players cannot determine from the board"
+    ],
+    "complexity_budget": {
+      "max_rule_words": 900,
+      "max_action_types": 4
+    },
+    "kill_criteria": [
+      "persistent players converge on the same scripted opening within four games",
+      "a legal-play cycle can avoid the ending indefinitely",
+      "either player cannot identify legal adjacency and current ownership from the physical state"
+    ]
+  }
+}

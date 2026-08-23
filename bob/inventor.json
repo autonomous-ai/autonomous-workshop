@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "id": "bob",
+  "name": "Bob",
+  "niche": "Autonomous 3D-printable board-game invention",
+  "summary": "A budgeted multi-agent loop from literature and novelty research through executable playtests, CAD, review, and Panda publication.",
+  "autonomy": "autonomous",
+  "status": "experimental",
+  "entrypoint": ["python3", "bob.py", "tick"],
+  "capabilities": ["research", "game-design", "simulation", "table-play", "cad", "publishing", "learning"],
+  "core_features": [
+    "skills.cad",
+    "skills.step-parts",
+    "artifacts.content-addressed",
+    "publication.outbox",
+    "adapters.panda"
+  ],
+  "source": {"kind": "local"}
+}

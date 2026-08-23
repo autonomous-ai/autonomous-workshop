@@ -1,0 +1,196 @@
+{
+  "slug": "blindcap",
+  "parts": [
+    {
+      "name": "loam_tile",
+      "kind": "board",
+      "bbox_mm": [132, 132, 28],
+      "qty": 4,
+      "tiles": 1,
+      "per_player": 1,
+      "relief_mm": 1.4,
+      "notes": "One per player, joined edge-to-edge at setup (2/3/4 tiles, per idea.json's own setup text) — NOT a board split for bed size. idea.json's `tiled: true` flag is schema-ambiguous between 'exceeds the bed' and 'tiled by rule'; this is the latter (see unstated_in_spec). At 132x132x28mm a single loam_tile is nowhere near the 246mm bed limit, so `tiles: 1` here means 'prints as one piece,' matching millbind's yard_board usage of the same field. 3x3 grid of stool sockets at 44mm pitch (OWNED here; every mating part below derives from it), generated once via shared_positions(3,3,44) and reused for both the bore centres and the probe-hole geometry. Each socket: a 12.8mm-diameter, 20mm-deep blind bore (from seated_pair(12,'free') on the shank's 12mm OD — loam_tile derives its bore from the shank, not the other way around), ringed by a 2mm-tall raised collar (idea.json's own stated figure) with 20mm OD. Two probe holes per socket enter the TOP face only (never the underside, which stays flat and solid on the bed), each at 35 degrees from vertical (the midpoint of idea.json's stated 30-40deg range) from an entry point ~10mm off the socket centre — inside the planted cap's 17mm brim radius, per idea.json's own containment rule, so the brim always roofs both hole mouths and there is no sightline into a socket from any seat. The upper hole reaches the bore wall at the shank's upper groove band (8mm below the collar-top/shoulder line); the lower hole reaches the lower band (16mm below). CLEARANCE CONTRACT (idea.json's own words, restated as the `slides` interface below): a fully-proud pin's 5mm head radius plus a neighbour's 5mm head radius (10mm total) is far under the 44mm pitch, and every hole's entry point sits within 10mm of its OWN socket centre while the nearest neighbour cap starts 44-17=27mm away, so no pin at any insertion depth can reach a neighbouring cap's envelope, by construction of the entry-point placement alone. Craquelure channels (relief_mm=1.4mm, idea.json's own stated figure) are the binding relief feature. Dovetailed on all four edges, symmetric about each edge's midpoint so any edge mates any edge regardless of tile or rotation (idea.json's own requirement) — see the tile-tile `joins` interface. Prints top-face up (sockets, collars and craquelure all open upward); bottom face stays flat and unbroken."
+    },
+
+    {
+      "name": "stool_deadhead_p1",
+      "kind": "loose_piece",
+      "bbox_mm": [34, 34, 49],
+      "qty": 2,
+      "stackable": false,
+      "relief_mm": 0.8,
+      "notes": "CANONICAL stool geometry — every other stool_* part (all 4 species x all 4 owner marks, 16 names total) is this same body with only two things changed: the owner-bite count on the brim (visible, cap) and the internal groove pattern on the buried shank (hidden). idea.json's own words: 'Cap, brim, boss and shank diameter are identical to every other species; only the shank grooves differ.' This is the single most load-bearing constraint in the idea and it is preserved by construction here, not by convention: every stool_* part below states the identical bbox_mm and the identical above-collar dimensions. Body, top to bottom: flat-topped fluted cap, 34mm dia x 8mm thick, 0.8mm-proud concentric growth rings on top (idea.json's stated figure, the binding relief_mm), 32 radial gill ribs 1.0mm proud on the brim underside (idea.json's stated count and figure); a 16mm-dia x 3mm-proud central boss for the crown; a 12mm-dia x 14mm-tall exposed neck (idea.json's 'a finger's height' shadow gap, where a pin slides in sideways — my own number, see unstated_in_spec); an 18mm-dia x 2mm-tall shoulder that rests flush on loam_tile's 2mm collar; then a 12mm-dia x 22mm-long buried shank (matches loam_tile's 12.8mm bore with 0.4mm/side clearance via seated_pair) — 22mm = the 2mm collar pass-through + 20mm of bore below the loam surface, leaving 0mm dead air at the bore floor by design (builder should trim 1-2mm for print tolerance, per print_plan). Owner mark: 1 square bite, 3mm wide x 2.5mm deep (idea.json's own stated figures, used directly), cut into the brim edge — player 1's mark. Species mark (stool_deadhead = neither band grooved): NO internal grooves; both probe holes stop on solid shank and both pins stand proud. bbox_mm is the piece's UPRIGHT/planted orientation (cap up, shank down) — its dominant board state for 5 of 6 rounds — not its lying-on-its-side storage orientation in spore_trough (see that part's notes and unstated_in_spec for why no `recesses` cross-reference is made between the two)."
+    },
+    {
+      "name": "stool_deadhead_p2", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_deadhead_p1 in every dimension and in species (no shank grooves, both probe pins stand proud) — only the owner mark differs: 2 square bites (player 2's mark) instead of 1."
+    },
+    {
+      "name": "stool_deadhead_p3", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_deadhead_p1 in every dimension and in species — owner mark is 3 square bites (player 3's mark)."
+    },
+    {
+      "name": "stool_deadhead_p4", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_deadhead_p1 in every dimension and in species — owner mark is 4 square bites (player 4's mark)."
+    },
+
+    {
+      "name": "stool_bracket_p1", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Same canonical body as stool_deadhead_p1 (see its notes for every above-collar dimension) — owner mark 1 bite. Species mark: ONE internal annular groove at the UPPER band only (centred 8mm below the shoulder line, ~4mm axial width, 3mm deep — idea.json's stated depth, my own axial placement/width, see unstated_in_spec), 3mm deep and chamfered so a pin's tip is guided in rather than catching (idea.json's own stated figure and instruction). The upper probe pin sinks; the lower stands proud."
+    },
+    {
+      "name": "stool_bracket_p2", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_bracket_p1 in body and species (upper groove only) — owner mark 2 bites."
+    },
+    {
+      "name": "stool_bracket_p3", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_bracket_p1 in body and species (upper groove only) — owner mark 3 bites."
+    },
+    {
+      "name": "stool_bracket_p4", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 2, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_bracket_p1 in body and species (upper groove only) — owner mark 4 bites."
+    },
+
+    {
+      "name": "stool_inkcap_p1", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Same canonical body as stool_deadhead_p1 — owner mark 1 bite. Species mark: ONE internal annular groove at the LOWER band only (centred 16mm below the shoulder line, ~4mm axial width, 3mm deep, same chamfer treatment as stool_bracket). The lower probe pin sinks; the upper stands proud. Scarce (1 per player, idea.json's stated quantity) — a grove of these scores double."
+    },
+    {
+      "name": "stool_inkcap_p2", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_inkcap_p1 in body and species (lower groove only) — owner mark 2 bites."
+    },
+    {
+      "name": "stool_inkcap_p3", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_inkcap_p1 in body and species (lower groove only) — owner mark 3 bites."
+    },
+    {
+      "name": "stool_inkcap_p4", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_inkcap_p1 in body and species (lower groove only) — owner mark 4 bites."
+    },
+
+    {
+      "name": "stool_hollow_p1", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Same canonical body as stool_deadhead_p1 — owner mark 1 bite. Species mark: BOTH internal annular grooves (upper band centred 8mm below the shoulder, lower band centred 16mm below, same 3mm depth and chamfer as stool_bracket/stool_inkcap). Both probe pins sink. Scarce (1 per player, idea.json's stated quantity) — a grove of these scores double."
+    },
+    {
+      "name": "stool_hollow_p2", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_hollow_p1 in body and species (both grooves) — owner mark 2 bites."
+    },
+    {
+      "name": "stool_hollow_p3", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_hollow_p1 in body and species (both grooves) — owner mark 3 bites."
+    },
+    {
+      "name": "stool_hollow_p4", "kind": "loose_piece", "bbox_mm": [34, 34, 49],
+      "qty": 1, "stackable": false, "relief_mm": 0.8,
+      "notes": "Identical to stool_hollow_p1 in body and species (both grooves) — owner mark 4 bites."
+    },
+
+    {
+      "name": "claim_crown",
+      "kind": "loose_piece",
+      "bbox_mm": [24, 24, 6],
+      "qty": 12,
+      "stackable": false,
+      "notes": "Low, flat-topped crenellated ring: 24mm OD (my own figure, chosen well inside both loam_tile's 44mm socket pitch and the stool's own 34mm cap diameter, satisfying idea.json's 'does not foul a neighbour' requirement with wide margin) x 3mm base thickness, six 3mm-tall crenellated points (idea.json's stated figure, used directly). Central bore 16.8mm, derived from the stool boss's 16mm OD via seated_pair(16,'free') — the boss OWNS the diameter, the crown's bore is never restated independently. Owner mark: 1-4 pierced Ø3 holes through the flat top (idea.json's stated figure, used directly), one variant per player — a single part name suffices here (unlike the stools) because the crown's owner mark is a small through-hole count that does not change its outer envelope or its fit onto the boss, so it does not multiply into 16 geometries the way owner-bites-on-a-brim do. Never removed once placed. Qty 12 = 3 per player x 4 players (idea.json's stated total)."
+    },
+
+    {
+      "name": "probe_pin",
+      "kind": "loose_piece",
+      "bbox_mm": [10, 10, 34],
+      "qty": 16,
+      "stackable": false,
+      "relief_mm": 0.9,
+      "notes": "Hex-shafted (4mm across flats, my own figure), knurled disc head 10mm dia x 3mm thick with 0.9mm knurl (idea.json's stated figure, used directly as relief_mm), blunt guided taper tip (~3mm). Total length 34mm — my own figure, chosen so the two states are unmistakable (see unstated_in_spec): BLOCKED (no groove at that band) leaves the head standing ~22mm proud of the loam top/collar ('a clear thumb's width', idea.json's own simile); ADMITTED (groove at that band) lets the head settle to ~3mm proud ('comes down almost to the brim's shadow', idea.json's own simile) — an ~19mm visible difference, unmistakable across a table. Shared supply of 16, never replenished (idea.json's stated total and rule). This is the only part in the box modelled with a `slides` interface rather than a `seats`/`joins` one — see interfaces below."
+    },
+
+    {
+      "name": "spore_trough",
+      "kind": "container",
+      "bbox_mm": [230, 90, 40],
+      "qty": 4,
+      "per_player": 1,
+      "relief_mm": 1.4,
+      "notes": "Boat-shaped personal tray, 230 x 90 x 40mm (my own figures, sized from the stool's own dimensions: 6 cradles side by side at a ~36mm pitch = 216mm, plus wall margin = 230mm width; a cradle deep enough for the stool's 49mm length lying down plus lip walls, plus a strip for the 3 upright crown slots = 90mm depth — see unstated_in_spec). Six cradles hold stools LYING ON THEIR SIDE, shanks pointing toward the owner (idea.json's stated orientation) — a different orientation from every stool's canonical upright bbox_mm above, so no `recesses` cross-reference is declared here (see unstated_in_spec and the `seats` interface note below, which documents this fit in prose instead of the auto-checked recess formula). The near lip is 34mm tall (matches the stool cap's own diameter, so it is taller than a stool lying in its cradle from any angle, per idea.json's requirement that no opposite seat can see the grooves). Three upright slots near one end hold claim_crowns on edge, ~25mm dia (crown OD + clearance) x 8mm deep, enough to stand a 6mm-tall crown upright without it tipping. Owner mark cut into the back wall: reuses the stool's own bite figure, 3mm wide x 2.5mm deep per notch, 1-4 notches matching the owner (idea.json says only 'owner notch count cut into the back wall' with no size of its own — see unstated_in_spec). Craquelure relief_mm=1.4mm on the outer back wall, same figure as loam_tile's (idea.json: 'same craquelure')."
+    }
+  ],
+
+  "interfaces": [
+    {
+      "kind": "joins",
+      "a": "loam_tile",
+      "b": "loam_tile",
+      "joint": "dovetail, symmetric about each edge midpoint, self-mating on all four edges",
+      "notes": "idea.json's own requirement: 'dovetailed on all four edges, so any edge mates any edge.' The builder must cut a profile that is symmetric about each edge's own midpoint (e.g. a central tab flanked by two half-slots, or an equivalent self-mating pattern) rather than a plain directional tab/socket pair, which would only mate in specific rotations. 2, 3 or 4 tiles are joined at setup depending on player count (18/27/36 sockets), per idea.json's own setup text; the joint must engage over its full depth in every one of those combinations (side-by-side for 2, an L for 3, a 2x2 square for 4)."
+    },
+    {
+      "kind": "joins",
+      "a": "stool_deadhead_p1",
+      "b": "loam_tile",
+      "joint": "shank-into-blind-bore, drop-in seated, non-rotating, permanent for the round",
+      "notes": "REPRESENTATIVE for all 16 stool_* parts (4 species x 4 owner marks) — every one shares the identical 12mm shank OD, 18mm shoulder and 2mm collar-rest geometry; only the owner-bite count (cap brim, visible) and the internal groove pattern (buried shank, hidden) vary, and neither affects this fit. loam_tile OWNS the 12.8mm bore diameter and 44mm socket pitch; every stool's shank clearance (0.4mm/side, via seated_pair) derives from loam_tile's bore, never restated independently. The shoulder rests on the 2mm collar; the shank is fully swallowed by the 20mm bore below it. Planted stools are not meant to be lifted mid-round (only at the harvest), so no `recesses`-style retrieval check applies — the cap and neck stand fully clear of the loam regardless."
+    },
+    {
+      "kind": "joins",
+      "a": "claim_crown",
+      "b": "stool_deadhead_p1",
+      "joint": "boss-into-bore, drop-on, permanent",
+      "notes": "REPRESENTATIVE for all 16 stool_* parts — the 16mm boss and its position on the cap's centre are identical across every species and owner mark. The stool's boss OWNS the 16mm diameter; claim_crown's 16.8mm bore derives its 0.4mm/side clearance from it, via seated_pair. A crown may be dropped onto ANY player's stool (idea.json: 'it may be a stool any player planted'), so this single fit must work identically across all 16 stool geometries — which it does by construction, since the boss never varies."
+    },
+    {
+      "kind": "slides",
+      "piece": "probe_pin",
+      "into": "loam_tile",
+      "vector_mm": [0, 0, 34],
+      "notes": "probe_pin travels along its own hole axis (35deg from vertical) from full retraction (not yet touching the tile) to full insertion — either stopped proud on solid shank (no groove at that band) or sunk into a 3mm-deep groove (groove present at that band). This is loam_tile's own CLEARANCE CONTRACT, restated as an executable sweep: swept at EVERY insertion depth, the pin (5mm head radius at its widest) must never enter a neighbouring socket's planted-cap envelope. This holds by construction here because each hole's entry point sits within 10mm of its OWN socket centre (inside the cap's own 17mm brim radius) while travelling further inward toward that same centre, and the nearest neighbouring cap begins 44-17=27mm away — but the builder must still sweep and check it explicitly rather than trust the arithmetic alone, per this pipeline's own lesson about parts in motion (Armillary). Also check: a fully-proud pin's exposed shank/head must not foul the underside of its OWN planted cap's brim at any point along the stroke, since the pin enters through the same shadow gap the cap creates."
+    },
+    {
+      "kind": "seats",
+      "piece": "stool_deadhead_p1",
+      "into": "spore_trough",
+      "clearance_mm": 1.0,
+      "notes": "REPRESENTATIVE for all 16 stool_* parts, all of which fit the trough's 6 cradles identically. DOCUMENTATION ONLY — deliberately not expressed as a `recesses` entry on spore_trough, because a stool sits in its cradle LYING ON ITS SIDE (its 49mm length running front-to-back, its 34mm cap nested in a half-round groove), a different orientation from the stool's own canonical upright bbox_mm [34,34,49]. Feeding that upright bbox into the standard seat-clearance/protrusion formula (which assumes the piece rests in its own stated orientation) would compare the wrong faces. Cradle groove: ~34.8mm wide (34mm cap OD + 0.8mm total clearance) x 49mm long, at a 36mm pitch across the trough's 6 lanes. Every stool lifts out freely — nothing overlaps the near lip, which exists only to block sightlines, not to trap the piece."
+    },
+    {
+      "kind": "seats",
+      "piece": "claim_crown",
+      "into": "spore_trough",
+      "clearance_mm": 0.5,
+      "notes": "The 3 upright crown slots near one end of the trough, ~25mm dia x 8mm deep — a crown (24mm OD x 6mm tall) drops in on edge and is retrievable by fingertip, since the slot is far shallower (8mm) than the crown's own 24mm diameter, leaving most of it proud."
+    }
+  ],
+
+  "print_plan": {
+    "min_wall_mm": 1.6,
+    "notes": "loam_tile prints top-face up: sockets, collars, dovetails and craquelure all open upward from a flat, unbroken bottom face; the two probe holes per socket are drilled at 35deg from vertical from the top face only and never break through the underside, so they are self-supporting (idea.json's own requirement) with no supports anywhere. Every stool_* part (all 16) prints upright, shank-tip down, cap up — its natural planted orientation, identical to how it stands on the board, so nothing needs reorienting between 'as it sits on the table' and 'as planted.' The shank is a plain vertical cylinder (self-supporting); the two internal grooves (where present) are cut radially into that cylinder and read as simple stepped-diameter turnings, no overhangs. claim_crown prints flat-top down (or up), teeth building straight up as simple crenellations, no supports. probe_pin prints head-up, shaft down (or vice versa) — a straight hex extrusion with a taper at one end and a knurled disc at the other, no supports. spore_trough prints open-top, cradles and crown slots all cut downward from the top face, craquelure texturing the outer back wall as a straightforward vertical relief, no supports.\n\nblocks.py notes for the builder: use shared_positions(3,3,44) exactly once per loam_tile to generate the 9 socket centres, and reuse that same list for the socket bores, the collars, and the two probe-hole entry points per socket (offset ~10mm from each centre) — never regenerate the grid twice. Use add_piece_family for every multi-copy family: all 16 stool_* names (qty 1 or 2 each), claim_crown (12x), probe_pin (16x), loam_tile (4x) and spore_trough (4x) — every copy lands as a separately named assembly child, per the lesson graduated from the 48-tile/65-piece union failure; nothing here should ever be unioned into one body. Use seated_pair for every bore/boss and bore/shank pair (loam_tile's bore over every stool's shank; every stool's boss under claim_crown's bore) so the owning dimension is stated once and every mating clearance derives from it, never restated independently. tiled_board is not needed anywhere in this brief — the largest single print (loam_tile at 132x132x28mm, or spore_trough at 230x90x40mm) is well inside the 246x246x251mm P2S bed."
+  },
+
+  "unstated_in_spec": [
+    "Socket pitch (44mm) and loam_tile's own 132x132x28mm footprint: idea.json states a 3x3 grid and dovetailed edges but no pitch or tile size. I derived 44mm from the stool's own 34mm cap diameter plus a working margin (idea.json's stated CLEARANCE CONTRACT: adjacent caps and pins must not foul each other), and the tile footprint from 2x that pitch plus edge margin.",
+    "Every stool dimension beyond the ones idea.json states directly (owner bites 3mm x 2.5mm, shank grooves 3mm deep, 32 gill ribs at 1.0mm, growth rings at 0.8mm): cap 34mm dia x 8mm thick, boss 16mm dia x 3mm proud, neck ('a finger's height' in idea.json's own words) 12mm dia x 14mm tall, shoulder 18mm dia x 2mm tall, shank 12mm dia x 22mm buried. Chosen to be proportionate to each other and to the numbers idea.json does give.",
+    "Groove band axial placement and width on the buried shank (upper band centred 8mm below the shoulder line, lower band centred 16mm below, ~4mm axial width each) — idea.json names 'upper'/'lower' bands and a 3mm depth but gives no position along the shank's length.",
+    "loam_tile's bore depth (20mm), probe-hole angle (35deg, the midpoint of idea.json's own stated 30-40deg range) and probe-hole entry offset (~10mm from socket centre) — idea.json states the angle RANGE and the containment rule ('hole mouths lie inside the radius of the planted cap's brim') but not a single angle or an offset.",
+    "probe_pin's own dimensions (34mm total length, 4mm hex across flats, 10mm x 3mm disc head) and the two target stand-off heights this pipeline's `slides` check should verify (~22mm proud when blocked, reading idea.json's 'a clear thumb's width'; ~3mm proud when admitted, reading idea.json's 'comes down almost to the brim's shadow') — idea.json gives both states only as similes, no numbers.",
+    "claim_crown's outer diameter (24mm) and base thickness (3mm) — idea.json gives the tooth count/height (six, 3mm) and the owner-hole diameter (Ø3) directly but not the ring's own size; I chose a diameter well inside both the socket pitch and the stool's own cap diameter, satisfying idea.json's 'does not foul a neighbour' requirement with margin.",
+    "spore_trough's overall envelope (230x90x40mm), cradle pitch (~36mm) and crown-slot size (~25mm dia x 8mm deep) — idea.json describes the trough qualitatively (six cradles, three slots, a taller near lip) with no numbers; I derived all of these from the stool's and crown's own dimensions.",
+    "spore_trough's own owner-notch size — idea.json says only 'owner notch count cut into the back wall' with no dimensions of its own. I reused the stool's owner-bite figure (3mm wide x 2.5mm deep) rather than inventing an unrelated number.",
+    "idea.json's `tiled: true` field on loam_tile is genuinely schema-ambiguous between 'this board exceeds the print bed' and 'tiled by rule, one physical piece per player.' Resolved as the latter here: loam_tile is a single 132x132x28mm print (`tiles: 1`, `qty: 4`), and idea.json's own setup rules describe joining 2, 3 or 4 of them by their dovetails depending on player count — never a single oversized board split for the bed.",
+    "The owner-identity axis: idea.json's component list gives only 4 bill lines (one per species, e.g. 'stool_deadhead, qty 8'), but its own prose states every stool also carries a 1-4 owner-bite mark baked into the cap, which is a real geometric difference (4 owner marks x 4 species = 16 distinct stool bodies), not just 4. I expanded the bill into 16 separate part entries (stool_<species>_p<owner mark>) so the brief's own part count reflects the real number of distinct geometries, per this task's own flagged schema gap.",
+    "spore_trough's cradle fit is deliberately NOT expressed as a `recesses` entry (see spore_trough's own notes): a stool rests in its cradle lying on its side, a different orientation from its canonical upright bbox_mm, and the standard recess formula assumes a piece is dropped in the same orientation as its stated bbox. Documented instead as a `seats` interface with explicit clearance."
+  ]
+}

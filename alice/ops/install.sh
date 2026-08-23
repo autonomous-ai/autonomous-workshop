@@ -7,6 +7,7 @@ WATCHDOG_LABEL="ai.autonomous.alice.watchdog"
 SCRIPT_DIR="${0:A:h}"
 ALICE_DIR="${SCRIPT_DIR:h}"
 REPO_ROOT="${ALICE_DIR:h}"
+CORE_SOURCE_ROOT="$REPO_ROOT/core/src"
 PYTHON="$ALICE_DIR/.venv/bin/python"
 WATCHDOG_PYTHON="/usr/bin/python3"
 CONFIG=""
@@ -70,6 +71,10 @@ if [[ ! -x "$WATCHDOG_PYTHON" ]]; then
   print -u2 -- "independent /usr/bin/python3 watchdog runtime is unavailable"
   exit 64
 fi
+if [[ ! -d "$CORE_SOURCE_ROOT" || -L "$CORE_SOURCE_ROOT" || ! -d "$CORE_SOURCE_ROOT/inventor_core" || -L "$CORE_SOURCE_ROOT/inventor_core" ]]; then
+  print -u2 -- "shared inventor core source package is unavailable or unsafe"
+  exit 64
+fi
 if [[ -n "$OFFLINE_TOOL_DIR" ]]; then
   USER_HOME="$HOME"
 else
@@ -87,12 +92,16 @@ if ! "$PYTHON" -c 'import pathlib, sys, alice.service; expected = pathlib.Path(s
   print -u2 -- "venv must use this Alice checkout (install it editable first)"
   exit 64
 fi
-if [[ -n "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all -- alice)" ]]; then
-  print -u2 -- "refusing to install from a dirty Alice subtree"
+if ! "$PYTHON" -c 'import ast, importlib.metadata, pathlib, sys; expected = "0.1.0"; installed = importlib.metadata.version("autonomous-inventor-core"); tree = ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")); declared = [node.value.value for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)]; raise SystemExit(0 if installed == expected and declared == [expected] else 1)' "$CORE_SOURCE_ROOT/inventor_core/__init__.py"; then
+  print -u2 -- "venv must contain autonomous-inventor-core 0.1.0 (install ../core first)"
+  exit 64
+fi
+if [[ -n "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all -- alice core/src/inventor_core core/pyproject.toml)" ]]; then
+  print -u2 -- "refusing to install from a dirty Alice or shared-core subtree"
   exit 65
 fi
 
-PREFLIGHT=("$PYTHON" -m alice.service preflight --config "$CONFIG" --env-file "$ENV_FILE" --root "$ROOT" --source-root "$ALICE_DIR")
+PREFLIGHT=("$PYTHON" -m alice.service preflight --config "$CONFIG" --env-file "$ENV_FILE" --root "$ROOT" --source-root "$ALICE_DIR" --core-source-root "$CORE_SOURCE_ROOT")
 if (( ALLOW_DRY_RUN )); then
   PREFLIGHT+=(--allow-dry-run)
 fi
@@ -200,6 +209,7 @@ install -m 700 "$SCRIPT_DIR/watchdog.py" "$WATCHDOG_SCRIPT"
   --env-file "$ENV_FILE" \
   --root "$ROOT" \
   --source-root "$ALICE_DIR" \
+  --core-source-root "$CORE_SOURCE_ROOT" \
   --state "$STATE" \
   --lock "$LOCK" \
   --rate-state "$RATE_STATE" \
@@ -226,6 +236,7 @@ launchctl print "$WATCHDOG_TARGET" >/dev/null
   --env-file "$ENV_FILE" \
   --root "$ROOT" \
   --source-root "$ALICE_DIR" \
+  --core-source-root "$CORE_SOURCE_ROOT" \
   --state "$STATE" \
   --watchdog-state "$WATCHDOG_STATE" \
   --started-after-epoch "$START_EPOCH" \

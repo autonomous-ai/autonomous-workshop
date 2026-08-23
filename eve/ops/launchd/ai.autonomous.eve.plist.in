@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Main driver agent. StartInterval 1800s (30 min): each launch runs
+  the one-step `eve drive` command, which advances at most one unit (one gate,
+  book study, improvement session, or game stage) and exits. A slow steady
+  cadence beats a daily monolith that loses the whole spend when killed
+  (text2cad receipt: "a kill loses the entire spend"). The drive is a logged
+  no-op when audit or lease state says no, so it is safe around the clock.
+-->
+<dict>
+    <key>Label</key>
+    <string>ai.autonomous.eve</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>__REPO__/bin/eve</string>
+        <string>drive</string>
+        <string>--steps</string>
+        <string>1</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__</string>
+
+    <key>StartInterval</key>
+    <integer>1800</integer>
+
+    <!-- RunAtLoad: the first one-step drive runs at install, so a fresh
+         deployment proves itself immediately instead of 30 minutes later. -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- launchd agents get a bare PATH (/usr/bin:/bin); the claude CLI lives
+         in ~/.local/bin, so agent dispatch would fail with "claude: command
+         not found" without this. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>__USER_HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <!-- Bind the service to the exact shared-core source tree that the
+             installer validated. This cannot silently fall back to a stale
+             globally installed autonomous-inventor-core package. -->
+        <key>EVE_CORE_SRC</key>
+        <string>__CORE_SRC__</string>
+        <key>PYTHONPATH</key>
+        <string>__CORE_SRC__</string>
+    </dict>
+
+    <!-- Both streams retain the historical tick.log name. The watchdog greps
+         its tail for Traceback, and launchd appends each drive's output. -->
+    <key>StandardOutPath</key>
+    <string>__REPO__/state/logs/tick.log</string>
+    <key>StandardErrorPath</key>
+    <string>__REPO__/state/logs/tick.log</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

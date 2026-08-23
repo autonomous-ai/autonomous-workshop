@@ -1,22 +1,55 @@
-# Inventor CI — deterministic gates for each self-contained harness.
-# Bob runs on 3.9 because that is the Mac's system python (the real runtime;
-# CONTRACTS.md pins 3.9-compatible stdlib only) and 3.12 so a future OS
-# bump is a non-event. BOB_MOCK_AGENTS=1 keeps every test off the network
-# and away from the real `claude` CLI (CONTRACTS.md sec 5).
-#
-# NOTE for the integrator: the git repo root is one level ABOVE bob/
-# (inventors/). GitHub only reads workflows from <root>/.github/workflows,
-# so promote this file there; `working-directory: bob` below already
-# assumes the root checkout.
+# Inventor CI — deterministic, credential-free gates for the shared core and
+# every native inventor harness. Imported upstream snapshots are validated by
+# their pinned provenance records rather than by installing their undeclared
+# or environment-specific dependency trees.
 name: inventors-ci
 
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
+  repository-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: reject tracked secrets and backups
+        run: python core/tools/scan_secrets.py
+      - name: validate inventor registry
+        env:
+          PYTHONPATH: core/src
+        run: python -m inventor_core registry --root . --check-entrypoints
+      - name: verify pinned inventor snapshot bytes and modes
+        run: python core/tools/verify_snapshot_locks.py
+
+  core-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: core contract tests
+        env:
+          PYTHONPATH: core/src
+          PYTHONWARNINGS: error
+        run: python -m unittest discover -s core/tests -p 'test_*.py' -v
+
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -31,11 +64,42 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: install shared inventor core
+        run: python -m pip install ../core
       - name: unit tests (stdlib unittest only, no pytest)
         run: python -m unittest discover -s tests -v
 
+  eve-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    defaults:
+      run:
+        working-directory: eve
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: eve/requirements-test.txt
+      - name: install shared core and pinned Eve test dependencies
+        run: |
+          python -m pip install ../core
+          python -m pip install --disable-pip-version-check -r requirements-test.txt
+          python -m pip check
+      - name: deterministic offline tests
+        env:
+          PYTHONPATH: .
+          PYTHONWARNINGS: error
+        run: python -m pytest -q -ra
+
   alice-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -48,8 +112,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: install Alice package
-        run: python -m pip install .
+      - name: install Alice and shared inventor core
+        run: python -m pip install ../core .
       - name: unit tests (warnings are errors)
         env:
           PYTHONWARNINGS: error
@@ -64,3 +128,22 @@ jobs:
           alice --root "$runtime" learning-init
           alice --root "$runtime" eval
           alice --root "$runtime" doctor
+
+  alice-macos-service:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: alice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: install Alice and shared inventor core
+        run: python -m pip install ../core .
+      - name: service snapshot tests on the declared deployment OS
+        env:
+          PYTHONWARNINGS: error
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -p 'test_service.py' -v

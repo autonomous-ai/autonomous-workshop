@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 50,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "openai/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "small on empty bore for +2",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same plan, same outcome as the prior two games \u2014 small on an open floor for 2pts. The only real variation would be breaking the symmetry, and I haven't found one that helps seat 1 specifically",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "small on bore 2 \u2014 same dominant play, secures a floor now since first two seats already took 0 and 1",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 5,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "seat 3 deviated (sealed my floor), but my math is unchanged - take a small for +2 on an empty bore",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "bore 5 is the last empty floor; seat 0 (next) will claim it otherwise. This is the move I've been making every game \u2014 and now it's potentially the difference, since seat 3 broke the mirror by playing large, which slightly shook the table",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 5,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "seat 3 deviated and sealed instead of taking a floor, leaving bore 4 empty. Taking floor on 4 now (worth 2) instead of sealing my own bore 2 (worth 1) lets me end at 5 pts vs 3 \u2014 seat 3 will grab floor 4 with a small if I don't",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "seal seat 3's bore 3 floor - seat 3 is behind at 2 pts and the only one I can usefully deny from pulling even; gains me +1, denies seat 3 +1",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "bore 2 has my floor (2pts). Sealing it = 2pt floor + 1pt shelf = keep my 4pts safe. Other two bores have no floor for me, sealing gives only 1pt and leaves my floor at bore 5 exposed for seat 0 next. Bore 2 is the protective play",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "seal bore 4 \u2014 it's my floor; sealing bore 5 would give +1 to seat 1 who owns that floor. Picking my own.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

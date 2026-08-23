@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/validator-policy-v1.json",
+  "title": "CAD validator policy",
+  "description": "The ordered JSON form of a non-empty ValidatorRequirement sequence.",
+  "type": "array",
+  "minItems": 1,
+  "uniqueItems": true,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "validator",
+      "validator_version",
+      "config_sha256",
+      "substrate",
+      "required_checks"
+    ],
+    "properties": {
+      "validator": {
+        "type": "string",
+        "minLength": 1,
+        "not": {
+          "pattern": "^(?:[Ss][Ee][Ll][Ff]-[Rr][Ee][Pp][Oo][Rr][Tt]|[Tt][Rr][Uu][Ss][Tt]-[Mm][Ee])$"
+        }
+      },
+      "validator_version": {"$ref": "#/$defs/exactVersion"},
+      "config_sha256": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "substrate": {
+        "enum": ["deterministic", "independent-review", "physical"]
+      },
+      "required_checks": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "$defs": {
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^(?=.*[0-9])[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$",
+      "not": {
+        "pattern": "(^|[._+-])(?:[Ll][Aa][Tt][Ee][Ss][Tt]|[Mm][Aa][Ii][Nn]|[Mm][Aa][Ss][Tt][Ee][Rr]|[Hh][Ee][Aa][Dd]|[Dd][Ee][Vv]|[Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Ss][Nn][Aa][Pp][Ss][Hh][Oo][Tt]|[Xx])([._+-]|$)"
+      }
+    }
+  }
+}

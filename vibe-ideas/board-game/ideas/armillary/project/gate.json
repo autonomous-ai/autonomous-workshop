@@ -1,0 +1,591 @@
+{
+  "project": "/Users/macbookpro/Documents/ai-chain/_hardware/vibe-ideas/board-game/ideas/armillary/project",
+  "source_sha256": "a2786a8f6475a402d68095ac30df43ecb315eb86faa2e9a37a0812b6f33a1261",
+  "bed_usable_mm": [
+    246.0,
+    246.0,
+    251.0
+  ],
+  "build": {
+    "ok": true,
+    "is_solid": true,
+    "volume_mm3": 2821709.1683995407,
+    "blocking_warnings": []
+  },
+  "part_count": 40,
+  "bill": {
+    "expected_total": 39,
+    "findings": [
+      "bill:reserve_column: rules need 1, build named 2"
+    ]
+  },
+  "parts": {
+    "plinth_ring": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 1053631.9,
+      "bbox_mm": [
+        215.0,
+        215.5,
+        70.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 35.26,
+      "bridge_span_mm": 0.0
+    },
+    "mask_disc_a": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 118165.64,
+      "bbox_mm": [
+        231.3,
+        215.8,
+        11.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 39.88,
+      "bridge_span_mm": 0.0
+    },
+    "mask_disc_b": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 206903.14,
+      "bbox_mm": [
+        231.2,
+        215.9,
+        11.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 39.48,
+      "bridge_span_mm": 0.0
+    },
+    "mask_disc_c": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 206670.91,
+      "bbox_mm": [
+        232.0,
+        214.8,
+        11.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 39.19,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_01": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_02": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_03": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_04": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_05": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_06": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_07": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_08": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_09": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_10": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_11": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "star_tile_12": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2665.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.36,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_01": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_02": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_03": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_04": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_05": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_06": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_07": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_08": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_09": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "moon_tile_10": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2614.91,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 13.82,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_01": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_02": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_03": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_04": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_05": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_06": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_07": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "void_tile_08": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 2680.97,
+      "bbox_mm": [
+        21.9,
+        21.9,
+        15.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.74,
+      "bridge_span_mm": 0.0
+    },
+    "reserve_column_lower": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 619785.99,
+      "bbox_mm": [
+        70.0,
+        70.0,
+        188.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.89,
+      "bridge_span_mm": 0.0
+    },
+    "reserve_column_upper": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 238320.87,
+      "bbox_mm": [
+        55.9,
+        55.9,
+        126.0
+      ],
+      "print_orientation": "flip-X-180",
+      "overhang_pct": 4.24,
+      "bridge_span_mm": 0.0
+    },
+    "score_rail_tri": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 69068.75,
+      "bbox_mm": [
+        140.0,
+        30.0,
+        24.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 3.88,
+      "bridge_span_mm": 0.0
+    },
+    "score_rail_square": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 69517.36,
+      "bbox_mm": [
+        140.0,
+        30.0,
+        24.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 3.87,
+      "bridge_span_mm": 0.0
+    },
+    "score_rail_penta": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 69759.05,
+      "bbox_mm": [
+        140.0,
+        30.0,
+        24.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 3.87,
+      "bridge_span_mm": 0.0
+    },
+    "score_rail_hex": {
+      "watertight": true,
+      "bodies": 1,
+      "volume_mm3": 69900.13,
+      "bbox_mm": [
+        140.0,
+        30.0,
+        24.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 3.87,
+      "bridge_span_mm": 0.0
+    }
+  },
+  "distinct_shapes": 13,
+  "slice": {
+    "plinth_ring": {
+      "sliced": null
+    },
+    "mask_disc_a": {
+      "sliced": null
+    },
+    "mask_disc_b": {
+      "sliced": null
+    },
+    "mask_disc_c": {
+      "sliced": null
+    },
+    "star_tile_01": {
+      "sliced": null
+    },
+    "moon_tile_01": {
+      "sliced": null
+    },
+    "void_tile_01": {
+      "sliced": null
+    },
+    "reserve_column_lower": {
+      "sliced": null
+    },
+    "reserve_column_upper": {
+      "sliced": null
+    },
+    "score_rail_tri": {
+      "sliced": null
+    },
+    "score_rail_square": {
+      "sliced": null
+    },
+    "score_rail_penta": {
+      "sliced": null
+    },
+    "score_rail_hex": {
+      "sliced": null
+    }
+  },
+  "fit_checks": "pass",
+  "pass": false,
+  "fails": [
+    "bill:reserve_column: rules need 1, build named 2"
+  ]
+}

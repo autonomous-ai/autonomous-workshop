@@ -1,0 +1,97 @@
+{
+  "slug": "armillary",
+  "idea_dir": "board-game/ideas/armillary",
+  "engine": "board-game/ideas/armillary/playtest/engine.py",
+  "seats": 4,
+  "seed": 24,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": false,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 2,
+      "move": "('pull', 8)",
+      "by": "player",
+      "why": "Pulling is positive EV over stopping and all three open wells are identical Serpent wells, so no reason to prefer one; choose the middle arbitrarily.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('stop',)",
+      "by": "player",
+      "why": "Banking the guaranteed star is better than risking it on a ~30% void pull that would also hand a face-up star to the next seat; the unused reach is the price of safety.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('rotate', 1, 1)",
+      "by": "player",
+      "why": "One-groove rotation keeps my next reach at 3, and disc b +1 leaves a 4-well mixed sky (anvil, wheel, two serpents) rather than a 5-well flood; no single rotation can deny serpent entirely.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 1,
+      "move": "('pull', 3)",
+      "by": "player",
+      "why": "starting with an anvil pull: I have nothing yet and need breadth across constellations for nights; anvil is the one seat 0 has not touched",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 1,
+      "move": "('pull', 6)",
+      "by": "player",
+      "why": "pull wheel first: if it succeeds I can take a serpent next and complete an all-three night, whose bonus outweighs the void risk; stopping now is safe but capped at 2",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 1,
+      "move": "('pull', 8)",
+      "by": "player",
+      "why": "expected value favors the serpent pull: ~69% chance to complete a three-constellation night worth 8-9 versus safe 4, and the void risk is worth taking this early",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 3,
+      "move": "('rotate', 1, -1)",
+      "by": "player",
+      "why": "rotating disc B back one closes both face-up stars at 3 and 6, leaving seat 2 only blind serpent wells to risk, and I need to deny easy points after busting",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 1,
+      "move": "('pull', 7)",
+      "by": "player",
+      "why": "only concealed serpent wells are open; TAKE is unavailable, so a blind pull is the only way to gain, and single-pull EV is positive despite the ~1/4 void risk",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "abandoned_at": 8,
+  "abandoned_because": "seat 2 returned nothing readable on a position offering 6 moves"
+}

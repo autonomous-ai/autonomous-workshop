@@ -312,6 +312,16 @@ def cmd_unpublish(args):
     return 0
 
 
+def cmd_reconcile_public(args):
+    """Read Panda state; never re-sends the non-idempotent-facing flip."""
+    from harness import publish
+    record = publish.reconcile_public(args.slug)
+    design = record.get("design") or {}
+    print("verified public: %s (%s)" %
+          (design.get("slug", args.slug), design.get("current_history_id")))
+    return 0
+
+
 def cmd_export(args):
     """Export a game in text2game's out/<slug>/ publish contract (Dee
     2026-08-22: tap the existing publishing pipeline, don't rebuild it)."""
@@ -380,6 +390,9 @@ def main(argv=None):
     p = sub.add_parser("unpublish")
     p.add_argument("slug")
     p.set_defaults(fn=cmd_unpublish)
+    p = sub.add_parser("reconcile-public")
+    p.add_argument("slug")
+    p.set_defaults(fn=cmd_reconcile_public)
     sub.add_parser("seed").set_defaults(fn=cmd_seed)
     p = sub.add_parser("export")
     p.add_argument("slug")

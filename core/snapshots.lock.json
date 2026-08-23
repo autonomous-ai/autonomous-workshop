@@ -1,0 +1,24 @@
+{
+  "algorithm": "canonical-files-v1",
+  "schema_version": 1,
+  "snapshots": {
+    "text2cad": {
+      "bytes": 7083044,
+      "commit": "0cb635eb868bd54408c97d45604704fc9bc8edd4",
+      "files": 155,
+      "tree_sha256": "c35114136ffc63d50a0b97ff2a19fac4ed77c26343824e41b361f5ccc0939a0e"
+    },
+    "text2game": {
+      "bytes": 668724,
+      "commit": "9b007f65e83bc79e3c9b78a6228942b6354b3019",
+      "files": 61,
+      "tree_sha256": "c5bef74868ba71d611d6a245f93c99554e900d1932f5c4ca80a84cde2d3dc2a5"
+    },
+    "vibe-ideas": {
+      "bytes": 34629150,
+      "commit": "ed3d1e876faed95b1bf785af2fae2a8133354517",
+      "files": 403,
+      "tree_sha256": "5c83e8748d49b38890a5326f7b457aa7cbbf41e16ac88ccd83e3aef4c8081a1b"
+    }
+  }
+}

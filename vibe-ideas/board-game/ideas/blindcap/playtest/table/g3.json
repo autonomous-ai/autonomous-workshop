@@ -1,0 +1,536 @@
+{
+  "slug": "blindcap",
+  "idea_dir": "board-game/ideas/blindcap",
+  "engine": "board-game/ideas/blindcap/playtest/engine.py",
+  "seats": 4,
+  "seed": 50,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 15,
+      "move": "('plant', 'bracket', 15)",
+      "by": "player",
+      "why": "executing the tested opening: center bracket as a hub for an immediate pair, same as game two.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "executing the tested line: pass now, pair the bracket next turn, crown the pair immediately after.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('plant', 'bracket', 0)",
+      "by": "player",
+      "why": "replaying game-one/game-two opening: corner bracket at 0 to build a secure uncontested 2-grove, pass rather than spend a probe.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "same opening line as games one and two: don't spend a probe or crown yet, save for the second bracket at 1.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 33,
+      "move": "('plant', 'bracket', 35)",
+      "by": "player",
+      "why": "setting up a bracket corner pair at 35 gives a reliable 4-point uncontested base, consistent with prior games",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "holding the crown until the second bracket is planted secures 4 uncontested points, as in previous games; crowning now wastes a crown.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 9,
+      "move": "('plant', 'bracket', 10)",
+      "by": "player",
+      "why": "Replaying the established line: start a bracket at 10, then pair and crown next turn, far from opponents' corner brackets.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "Executing the planned opening: plant bracket at 10, pass now, pair and crown next turn.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 13,
+      "move": "('plant', 'bracket', 16)",
+      "by": "player",
+      "why": "executing tested bracket-pair line: place second bracket at 16 adjacent to 15, then crown next action.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 13,
+      "move": "('crown', 15)",
+      "by": "player",
+      "why": "executing tested line: crown the adjacent bracket pair now to lock 4 uncontested points before opponents can attach.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('plant', 'bracket', 1)",
+      "by": "player",
+      "why": "executing the proven opening: bracket at 1 pairs with my corner bracket for a secure uncontested 2-grove, crown next turn.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 13,
+      "move": "('crown', 0)",
+      "by": "player",
+      "why": "locking the two-bracket grove at 0, the same winning line from games one and two; no reason to deviate.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 29,
+      "move": "('plant', 'bracket', 34)",
+      "by": "player",
+      "why": "completing the corner bracket pair at 34 for an uncontested 4-point grove, the same line as previous games",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 18,
+      "move": "('crown', 34)",
+      "by": "player",
+      "why": "crowning the completed bracket pair secures 4 uncontested, as in prior games",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 8,
+      "move": "('plant', 'bracket', 11)",
+      "by": "player",
+      "why": "Executing planned opening: second bracket at 11 adjacent to 10, then crown next turn for uncontested 4.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 18,
+      "move": "('crown', 10)",
+      "by": "player",
+      "why": "Executing planned crown on my bracket pair (10/11) for uncontested 4, same as game 2.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 16,
+      "move": "('plant', 'deadhead', 22)",
+      "by": "player",
+      "why": "executing tested line: plant deadhead at 22, then crown it next action to secure a future uncontested deadhead grove.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 22,
+      "move": "('crown', 22)",
+      "by": "player",
+      "why": "executing tested line: crown the deadhead anchor now to guarantee a future uncontested deadhead grove.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 4,
+      "move": "('plant', 'deadhead', 6)",
+      "by": "player",
+      "why": "same winning line as game two: deadhead at 6 to set up a later contest against seat3\u2019s bracket grove while saving my last crowns for leaders.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 23,
+      "move": "('crown', 11)",
+      "by": "player",
+      "why": "crowning seat3's second bracket contests their 2-grove, cutting their 4 to 2 and giving me 2\u2014the same swing that won game two.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 3,
+      "move": "('plant', 'deadhead', 5)",
+      "by": "player",
+      "why": "setting up the top-right deadhead pair at 5 for a reliable 4-point grove, then using my other crown to contest seat1's uncrowned bracket next action",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 23,
+      "move": "('crown', 1)",
+      "by": "player",
+      "why": "crowning seat1's uncrowned bracket at 1 contests their leading grove: they drop from 4 to 2 points, I gain 2, and I still keep a crown for my deadhead pair.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 7,
+      "move": "('plant', 'deadhead', 13)",
+      "by": "player",
+      "why": "Replaying the game-2 line: start deadhead at 13, pair with 14 next turn, crown for uncontested 4.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "Executing the game-2 line: pass now, plant the second deadhead at 14 next turn, then crown the pair for an uncontested 4.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 13,
+      "move": "('plant', 'deadhead', 23)",
+      "by": "player",
+      "why": "executing tested line: second deadhead at 23 grows my crowned deadhead to a 4-point grove, then next action crown seat2's 35 to contest their bracket pair.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 32,
+      "move": "('crown', 35)",
+      "by": "player",
+      "why": "executing tested line: use last crown to contest seat2's crowned bracket pair at 35, denying 2 and gaining 2.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 15,
+      "move": "('plant', 'deadhead', 26)",
+      "by": "player",
+      "why": "replaying the game-two winning move: deadhead at 21 adjacent to seat0's 22-23 grove, setting up a crown to contest it next turn.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 33,
+      "move": "('crown', 23)",
+      "by": "player",
+      "why": "crowning seat0's deadhead at 23 contests their grove with 22, cutting their lead and gaining me points; the strongest swing remaining.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 2,
+      "move": "('plant', 'deadhead', 4)",
+      "by": "player",
+      "why": "planting second deadhead at 4 adjacent to my existing 5 creates a crownable pair; socket10 is seat3's bracket so no adjacency risk",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 31,
+      "move": "('crown', 4)",
+      "by": "player",
+      "why": "crowning my deadhead pair at 4 immediately secures 4 uncontested points and keeps my last crown productive, better than contesting seat0 for only 2 and falling further behind",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('plant', 'deadhead', 14)",
+      "by": "player",
+      "why": "Executing the known line: plant second deadhead at 14 beside 13, then crown the uncontested pair for +4, catching up before focusing on scarce species.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 35,
+      "move": "('crown', 13)",
+      "by": "player",
+      "why": "Executing the same scripted play: crown my deadhead pair at 13/14 for uncontested 4, as planned since game 2.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('plant', 'hollow', 17)",
+      "by": "player",
+      "why": "placing hollow at socket 17 blocks seat3 from planting a bracket there to extend their crowned 10-11 grove toward my crowned 16/23 clusters and force a contest, protecting my lead.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "probing reveals public information that could help seat3 use their last crown against me; passing protects the lead and none of my actions score now.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('plant', 'hollow', 2)",
+      "by": "player",
+      "why": "no crowns remain for me, so my plant cannot score; placing hollow at 2 avoids connecting to any existing crowned grove or giving seat3 a cheap grove to crown.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "I have no crowns left and the block points I need are already visible empty sockets; probing now would only give seat3, who still has a crown, useful information.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 17,
+      "move": "('plant', 'hollow', 33)",
+      "by": "player",
+      "why": "with no crowns left, planting hollow at isolated 33 avoids merging into any opposing grove; other safe isolated spots are equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "probing only gives public info that seat 3 can use with their last crown, while I have no crowns left; pass avoids helping them.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 2,
+      "move": "('plant', 'hollow', 8)",
+      "by": "player",
+      "why": "Repeating the known hollow pairing: plant at 8 adjacent to seat1's hollow at 2, crown next turn for a double 2-stool grove worth 8, as in game 2.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 44,
+      "move": "('crown', 8)",
+      "by": "player",
+      "why": "Executing the known hollow-pair crown: crowning socket 8 secures an uncontested double 2-stool grove worth 8, bringing me to 14 and past all current leaders.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('plant', 'inkcap', 3)",
+      "by": "player",
+      "why": "no crowns remain, so my last inkcap cannot contribute to any scored grove; all placements are equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns are placed and no stools remain, so probing cannot affect final scores.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('plant', 'inkcap', 7)",
+      "by": "player",
+      "why": "all crowns spent and my plant is inkcap with no scoring potential, so location is irrelevant.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns are spent and I have no remaining stools; no probe or action can change the final score.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 2,
+      "move": "('plant', 'inkcap', 18)",
+      "by": "player",
+      "why": "no crowns remain and socket 18 is isolated, so planting my inccap there cannot merge into any scoring grove; all safe spots are equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns are placed and I have no stools or crowns left, so probing cannot change final scores; pass is equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('plant', 'inkcap', 9)",
+      "by": "player",
+      "why": "No crowns left; my remaining inkcap cannot score, so placement is harmless.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "No crowns or plants remain, so probes cannot change any score; all actions equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns placed and my planting done; probing cannot affect final scores.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns are placed and the board is fully planted; no probe or action can change the final scoring.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "all crowns are placed and I have no stools left, so probing cannot change final scores; pass is equivalent.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "No crowns or plants remain; probes cannot affect scores, so pass is equivalent to anything else.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    }
+  ],
+  "undefined": null
+}

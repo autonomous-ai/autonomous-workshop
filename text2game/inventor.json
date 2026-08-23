@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "text2game",
+  "name": "text2game",
+  "niche": "End-to-end FDM-printed board-game creation",
+  "summary": "A creation pipeline for discovery, rules, component contracts, grouped CAD, print plates, slicing, rulebooks, and instructional media.",
+  "autonomy": "human-checkpointed",
+  "status": "experimental",
+  "entrypoint": ["python3", "text2game"],
+  "capabilities": ["trend-discovery", "game-design", "consistency", "cad", "slicing", "media", "publishing", "learning"],
+  "core_features": [],
+  "source": {
+    "kind": "upstream-snapshot",
+    "url": "https://github.com/nohope88/text2game",
+    "commit": "9b007f65e83bc79e3c9b78a6228942b6354b3019",
+    "imported_at": "2026-08-23"
+  }
+}

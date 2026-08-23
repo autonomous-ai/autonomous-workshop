@@ -9,6 +9,7 @@ from unittest.mock import patch
 from alice.adapters import AdapterError, adapter_input_sha256
 from alice.cli import _adapters
 from alice.config import load_config
+from alice.core_integration import build_core_packet_binding
 from alice.store import DurableStore, IdempotencyConflictError
 from alice.vibe_pipeline import (
     ALICE_REVISION_BOUND_RELEASE_CAPABILITIES,
@@ -218,6 +219,10 @@ class VibePipelineTests(unittest.TestCase):
             "listing": {"sku": "VB-1"},
         }
         self.packet_hash = self.store.sha256_json(self.production_manifest)
+        self.core_packet = build_core_packet_binding(
+            self.production_manifest,
+            alice_packet_sha256=self.packet_hash,
+        )
         self.metadata_release_decision = {
             "allowed": True,
             "effect_mode": "live",
@@ -324,6 +329,7 @@ class VibePipelineTests(unittest.TestCase):
                         "content": {
                             "publication_packet": self.production_manifest,
                             "packet_hash": self.packet_hash,
+                            "core_packet": self.core_packet,
                             "policy_hash": self.policy_hash,
                             "release_decision": self.release_decision,
                         },
@@ -573,6 +579,20 @@ class VibePipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(AdapterError, "hash does not match"):
             adapter.invoke("publish.invoke_pipeline", payload)
 
+        self.assertEqual(self.transport.publish_calls, [])
+
+    def test_worker_adapter_rejects_a_forged_core_packet_before_publish(self) -> None:
+        adapter = VibePublishingAdapter(self.pipeline())
+        payload = self.adapter_payload()
+        content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
+        binding = dict(content["core_packet"])  # type: ignore[index]
+        binding["packet_sha256"] = "f" * 64
+        content["core_packet"] = binding  # type: ignore[index]
+
+        with self.assertRaisesRegex(AdapterError, "core publication packet binding"):
+            adapter.invoke("publish.invoke_pipeline", payload)
+
+        self.assertEqual(self.transport.capability_calls, 0)
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_agent_packet_envelope_before_publish(self) -> None:

@@ -1,0 +1,109 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 2,
+  "seed": 51,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "floors are worth more than shelves per move and nothing distinguishes one empty bore from another; take the higher-value slot first",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "grab a guaranteed 2-point virgin floor rather than the 1-point shelf snipe on bore0 (which only steals a point seat0 already effectively owns) - same greedy-floor logic that's worked all evening, and with 2 players every puck eventually gets used so early value matters",
+      "arbitrary": false
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "continue the greedy line: four floors still open, worth 2 each versus 1 for a shelf, and I want to keep pace to reach my full 3-floor share",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "three virgin floors left, still worth more than any shelf snipe - keep taking guaranteed 2-point claims while they're on offer",
+      "arbitrary": false
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "last floor still worth double the shelf, and this is my final small puck - matches the planned 3-floor allocation",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "last remaining floor, worth more than any shelf grab, and I'm still the only one holding a small puck so it's mine for the taking",
+      "arbitrary": false
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "floor phase is over exactly as predicted (6-6, all floors split 3-3), now it's a flat shelf race where every open slot pays 1 point with no differentiation",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "five shelf slots left in an alternating sequence starting with me - guaranteed 3 of the 5 regardless of which specific bores I pick, so the choice among them doesn't change my total",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "four equivalent shelf grabs remain, tracking evenly to the predicted 9-9 finish",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "three shelf slots left, alternating turns starting with me nets me 2 of 3 regardless of which specific bores chosen",
+      "arbitrary": true
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "last two shelves, either pays the same 1 point; confirms the forced 9-9",
+      "arbitrary": true
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only legal move, last open shelf, and it wins me the game",
+      "arbitrary": true
+    }
+  ]
+}

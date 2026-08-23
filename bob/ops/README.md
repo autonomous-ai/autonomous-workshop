@@ -11,10 +11,11 @@ the money dies.
 
 | File | Job |
 |---|---|
-| `launchd/ai.autonomous.bob.plist` | `python3 bob.py tick` every 1800s. Logs to `state/logs/tick.log`. PATH includes `~/.local/bin` (where `claude` lives — launchd gives agents a bare PATH). |
-| `launchd/ai.autonomous.bob.watchdog.plist` | runs `watchdog.sh` hourly at :07. |
+| `launchd/ai.autonomous.bob.plist.in` | Template for `python3 bob.py tick` every 1800s. Logs to `state/logs/tick.log`. PATH includes `~/.local/bin` (where `claude` lives — launchd gives agents a bare PATH). |
+| `launchd/ai.autonomous.bob.watchdog.plist.in` | Template for running `watchdog.sh` hourly at :07. |
 | `watchdog.sh` | dead-man switch. Alarms via Telegram when `state/DAYBOOK.json` (the tick heartbeat) is missing or >6h stale, or when a fresh `Traceback` appears in the tail of `tick.log`. Rate-limited by marker files in `state/` so one dead night is one DM, not twelve. |
-| `install.sh` | copies both plists to `~/Library/LaunchAgents`, `launchctl bootstrap`s them. Refuses if `bob.py` is missing or `import harness` fails — a broken deploy must fail at install time, not silently every 30 minutes. Idempotent (re-run = redeploy). |
+| `render_launchd.py` | Safely binds the current checkout, service-user home, and validated shared-core source into a plist template using `plistlib`; paths containing spaces or XML metacharacters are not shell-substituted. |
+| `install.sh` | renders both plists for the current checkout into `~/Library/LaunchAgents`, validates them, then `launchctl bootstrap`s them. Refuses if `bob.py`, the harness, or the shared `../core/src/inventor_core` runtime is missing — a broken deploy must fail at install time, not silently every 30 minutes. Idempotent (re-run = redeploy). |
 | `uninstall.sh` | boots both agents out and removes the plists. Keeps `state/` and `games/` — stopping the schedule never deletes work. Idempotent. |
 
 ## Install / operate
@@ -30,6 +31,13 @@ Telegram alerts need `BOB_TELEGRAM_TOKEN` and `BOB_TELEGRAM_CHAT` — put them
 in `.env` at the repo root (`watchdog.sh` sources it; launchd inherits almost
 no environment). Without them the watchdog still runs and shouts to
 `state/logs/watchdog.log` instead of DMing.
+
+Bob is deployed from this monorepo with `core/` beside `bob/`. The runtime
+adapter resolves `../core/src` without a pip install. A nonstandard layout may
+set `BOB_CORE_SRC=/absolute/path/to/core/src`; `ops/install.sh` verifies that
+pin and persists the resolved path in the scheduled tick's environment before
+loading either agent. Publication then writes the private core SQLite outbox
+at `state/inventor-core.sqlite3`.
 
 ## Why these numbers
 
@@ -61,7 +69,7 @@ The vendored `skills/cad` toolchain (see `skills/PROVENANCE.md`) needs
 Python ≥3.10 with `cadgen==0.4.19`:
 
 ```bash
-/Users/d/miniconda/bin/python3.12 -m venv .venv-cad
+python3.12 -m venv .venv-cad
 .venv-cad/bin/pip install cadgen==0.4.19
 echo "BOB_CAD_PY=$PWD/.venv-cad/bin/python" >> .env
 ```

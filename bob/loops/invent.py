@@ -1585,16 +1585,35 @@ def _publish(slug, game, score_value):
         return
 
     if dry:
+        # Even an offline rehearsal executes the shared artifact contract.
+        # This catches credential leakage, symlinks, non-canonical ZIPs, and
+        # content drift before an operator ever arms the network path. The
+        # harness keeps Bob's existing stub + queue semantics.
+        try:
+            from harness import publish
+            publish.build_zip(slug)
+            packet_identity = publish.core_packet_identity(slug)
+        except Exception as exc:  # noqa: BLE001 — publication walls park safely
+            queue.park(slug, "core dry-run publication failed: %s: %s"
+                       % (type(exc).__name__, exc))
+            return
         _write_json(os.path.join(_game_dir(slug), "published.json"), {
             "dry_run": True,
+            # Operator projection only.  It proves a rehearsal happened, not
+            # a remote effect; harness.publish consults core when real effects
+            # are later armed and may replace this record with a draft receipt.
+            "publication_authority": "none",
             "idea_sha": sha,
             "score": score_value,
             "page_kit_warnings": kit_warnings,
+            "core_artifact_sha256": packet_identity["artifact_sha256"],
+            "core_packet_sha256": packet_identity["packet_sha256"],
+            "core_contract": "inventor_core.artifacts/v1",
             "note": "BOB_PUBLISH_DRY_RUN=1 — stub only; no listing exists. "
                     "Set BOB_PUBLISH_DRY_RUN=0 with creds to flip for real.",
         })
         queue.advance(slug, "published",
-                      "dry-run publish: published.json stub written")
+                      "dry-run publish: core packet + published.json stub written")
         _telegram_notice("[bob] DRY-RUN publish: %s (R=%.1f). No listing "
                          "created. `bob unpublish %s` is a no-op."
                          % (title, score_value, slug))
@@ -1716,63 +1735,11 @@ def _handle_reviewed(step):
         _bandit_terminal(game, 0.15)
 
 
-# --- published: hand off to L4 ----------------------------------------------------
-
-def _handle_published(step):
-    """`live` requires PROOF a listing exists — never a handoff stub.
-
-    2026-08-23: g0003 sat at `live` with published.json carrying
-    `pushed: false` and a list of commands for a human to run. The queue
-    said the game was on the storefront; nothing had been uploaded. That is
-    the same species of lie as an absent lens verdict counting as a pass,
-    and the queue is the one artifact that must never tell one.
-
-    Proof is a design id or slug returned by the platform. A dry run, an
-    un-pushed box export, or a missing receipt HOLDS the game at
-    `published` — visible in status, waiting for the real import."""
-    slug = step.slug
-    receipt = _read_json_or_none(
-        os.path.join(_game_dir(slug), "published.json")) or {}
-    # The import response nests the object under "design"; older receipts
-    # (box handoff, dry run) are flat. Read both.
-    design = receipt.get("design") if isinstance(
-        receipt.get("design"), dict) else receipt
-    design_id = design.get("id") or design.get("design_id")
-    listing_slug = design.get("slug")
-    status = design.get("status")
-    if design_id and status == "draft":
-        # A real draft exists and only a human can flip it public. Holding
-        # it in the schedulable set makes it win the closest-to-done
-        # priority race every tick and STARVE every game behind it
-        # (2026-08-23: Clearance blocked Re-Pin and Kick this way). Park is
-        # the honest place for "done until a person acts" — it shows in
-        # status and costs no tick.
-        queue.park(slug, "DRAFT LIVE on the Factory (design %s, slug %s) — "
-                         "awaiting the owner's publish click in admindash. "
-                         "`bob mark-published %s <id>` after the flip."
-                   % (design_id, listing_slug, slug))
-        return
-    if not design_id or receipt.get("dry_run"):
-        # A slug alone is NOT a listing: the dry-run manifest carries the
-        # game's own slug, and the old code advanced on it, announcing
-        # "design g0003" for a listing that did not exist (2026-08-23).
-        # Only a platform-issued design id counts.
-        _warn("%s: holding at published — no platform design id "
-              "(dry_run=%s, pushed=%s). Publish for real, or run "
-              "`bob mark-published %s <design_id>` after a manual import."
-              % (slug, receipt.get("dry_run"), receipt.get("pushed"), slug))
-        queue.release(slug)
-        return
-    if status not in ("public", "live", "published"):
-        queue.park(slug, "draft on the Factory (design %s, status %r) — "
-                         "awaiting the owner's publish click"
-                   % (design_id, status))
-        return
-    queue.advance(slug, "live",
-                  "listing public (design %s) — L4 owns market/human "
-                  "signal from here" % design_id)
-
-
+# `published` is deliberately a WAITING state, not a dispatch state. The old
+# handoff handler trusted mutable published.json fields and could mark an
+# out-of-band/manual listing live. Only publish.flip_public() or
+# publish.reconcile_public() may advance published -> live after shared core
+# proves the exact owner, artifact, history, active USD listing, price, and SKU.
 # --- Dispatch ----------------------------------------------------------------------
 
 #: State -> handler. Every PRIORITY state the queue can hand out MUST have a
@@ -1789,7 +1756,6 @@ STEP_HANDLERS = {
     "built": _handle_built,
     "build_gated": _handle_build_gated,
     "reviewed": _handle_reviewed,
-    "published": _handle_published,
 }
 
 assert set(STEP_HANDLERS) == set(queue.PRIORITY), (

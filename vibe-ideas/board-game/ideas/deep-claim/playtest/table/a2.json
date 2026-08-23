@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 37,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "Same plan as game one, but now I know: small-first is mandatory. Bore 0 it is.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 7,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "same plan: 2-pt floor beats 1-pt seal; bores 2 and 5 are symmetric so far, picking 2 to claim the upper half while leaving 5 for later",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same as last game \u2014 claim a floor while they exist; smalls are the whole game",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "Same opening as game one \u2014 claim a floor before anyone seals shelves. Bore 3 keeps me near the action.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 7,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "Last game I wasted a large here. This time I take the 5th floor myself \u2014 2 points, and I become the only player with 2 floors. Seat 1 is the big threat; denying them the 5th floor matters more than banking.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "only open-floor bore left and four players still alive; the 2 points are unrecoverable later. I'll have plenty of large pucks to seal in subsequent rounds. This is the obvious repeatable play \u2014 same as turn 1 last game",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "all floors gone, all shelves equal \u2014 any large scores 1, no smalls to play",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "sealing bore 1 denies seat 1 (who owns floor at bore 2) AND seat 2 (floor at bore 1) \u2014 two rival floors buried with one large",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 3,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "I claim shelf of bore 5 (my floor) \u2014 it pairs my two best claims and the shelf is uncontested. Bore 4 is more important strategically because it's seat 1's floor, but sealing my own shelf first doesn't let opponent steal it. Wait \u2014 sealing anywhere gives ME 1 point. I want to seal one whose floor is MINE so I get 2+1=3. Bore 5's floor is mine. Take it.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 2,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "bore 4 has my small in it; sealing it gives me 5 pts (floor+shelf). Sealing bores 2 or 3 also gives 3+0=3 each and lets other players score on the next round. Sealing my own bore is the +1 over the alternatives; I keep pace with seat 0",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "two equal shelves left, identical outcome either way",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "bore 3 is the only open shelf; taking it gets me a 4th point and the game ends",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

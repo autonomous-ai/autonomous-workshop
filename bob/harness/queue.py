@@ -44,11 +44,16 @@ PIPELINE = [
     "briefed", "built", "build_gated", "reviewed", "published", "live",
 ]
 
-# Side states. "Terminal" means terminal FOR THE SCHEDULER: claim_next() will
-# never hand these out. parked/blocked are reopened by an explicit advance()
-# (a human or the meta loop deciding), killed and live never re-enter the
-# invent loop (live games feed the ledger/bandit, not the queue).
+# Side states. "Terminal" means both scheduler-terminal and lifecycle-terminal
+# for ordinary operation. parked/blocked are reopened explicitly; killed/live
+# never re-enter the invent loop.
 TERMINAL = frozenset(["live", "parked", "blocked", "killed"])
+
+# A `published` game is deliberately waiting, not terminal: it is a draft or a
+# dry-run receipt awaiting an explicit authenticated flip/reconciliation.
+# Scheduling it used to advance unconditionally to `live`, including when
+# published.json said pushed=false. It may still be parked by an operator.
+WAITING = frozenset(["published"])
 
 ALL_STATES = PIPELINE + ["parked", "blocked", "killed"]
 
@@ -56,7 +61,7 @@ ALL_STATES = PIPELINE + ["parked", "blocked", "killed"]
 # sparked sits last so a backlog never crowds out a build" (vibe-ideas
 # PRIORITY, ported with Bob's state names).
 PRIORITY = [
-    "published", "reviewed", "build_gated", "built", "briefed", "tabled",
+    "reviewed", "build_gated", "built", "briefed", "tabled",
     "simulated", "rules_gated", "ruled", "researched", "sparked",
 ]
 
@@ -64,12 +69,14 @@ PRIORITY = [
 # state the scheduler silently never touches — every idea that reached it
 # stalled forever and nothing alarmed. This assert makes that bug impossible
 # to ship: every state is either schedulable or DELIBERATELY terminal.
-assert set(PRIORITY) | set(TERMINAL) == set(ALL_STATES), (
-    "PRIORITY + TERMINAL must cover every state exactly — a state outside "
-    "both is a silent stall (add it to PRIORITY or declare it TERMINAL)"
+assert set(PRIORITY) | set(WAITING) | set(TERMINAL) == set(ALL_STATES), (
+    "PRIORITY + WAITING + TERMINAL must cover every state exactly — a state "
+    "outside them is a silent stall"
 )
-assert not set(PRIORITY) & set(TERMINAL), (
-    "a state cannot be both schedulable and terminal — pick one"
+assert not (set(PRIORITY) & set(TERMINAL) or
+            set(PRIORITY) & set(WAITING) or
+            set(WAITING) & set(TERMINAL)), (
+    "a state cannot be schedulable, waiting, and/or terminal at once"
 )
 
 # Explicit legal moves. Forward edges follow the pipeline; backward edges are

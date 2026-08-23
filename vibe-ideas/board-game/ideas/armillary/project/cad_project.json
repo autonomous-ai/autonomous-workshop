@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "engine": "cadquery",
+  "entrypoint": {
+    "path": "main.py",
+    "callable": "gen_step"
+  },
+  "parameters": "params.py",
+  "specification": "spec.md",
+  "model": {
+    "kind": "assembly",
+    "primaryPose": "assembled",
+    "parts": [
+      {"id": "plinth_ring", "source": "parts/plinth_ring.py"},
+      {"id": "mask_disc_a", "source": "parts/mask_disc.py"},
+      {"id": "mask_disc_b", "source": "parts/mask_disc.py"},
+      {"id": "mask_disc_c", "source": "parts/mask_disc.py"},
+      {"id": "star_tile", "source": "parts/tile.py"},
+      {"id": "moon_tile", "source": "parts/tile.py"},
+      {"id": "void_tile", "source": "parts/tile.py"},
+      {"id": "reserve_column", "source": "parts/reserve_column.py"},
+      {"id": "score_rail", "source": "parts/score_rail.py"}
+    ],
+    "assembly": "assemblies/product.py"
+  },
+  "artifactStem": "armillary"
+}

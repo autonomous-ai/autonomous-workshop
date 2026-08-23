@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 2,
+  "seed": 63,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "2-player changes the math. With 6 bores and 2 players, seat 1 mirrors me perfectly. The script collapses \u2014 I need to find a non-mirror line. Start small as before to probe, but the 5th-floor grab won't work here because seat 1 always takes the next free bore. Actually maybe the SEALING strategy changes: deny seat 1 instead of racing.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "new player count (2), same boring principle: take the 2-point floor claim when no opponent's on this bore yet. See if anything different emerges at 2p",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "Continuing the small probe. 2-player is structurally different \u2014 sealing hurts me more than in 4p because no third party to absorb the loss. Looking for whether seat 1 deviates.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "still small-then-large; my opponent took bore 2 so I'll take the next nearest \"empty yet unclaimed\" bore (3). Symmetry broken by seat 0's choice \u2014 adapt mildly",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 7,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "Take the 5th floor \u2014 protects the lead. If I seal instead, I concede a floor to seat 1 and pair my shelf with no floor behind. Small is 2 points, AND seat 1 then can't take this floor.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "last small, last open bore: take bore 4's floor for 2 points and a guaranteed self-seal later. If I seal now I give opponent the unclaimed floor at bore 4 next turn for free",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 5,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "Math: 6 bores, 3 large each = 6 total seals, 3-3 forced split. This is a mathematical tie at 2-player regardless of bore choice. Picking bore 5 (my own floor) for symbolic consistency. The game is structurally broken at 2p.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 4,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "seal bore 4 (my own) for shelf + buried floor = 8 pts total. Sealing any other bore gives the shelf to opponent too. Only move worth taking",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "Symmetry holds. Bore 0 (my floor). Mirror game forced by 2-player structure.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "seat 0 just sealed bore 0 to take the lead 8-7. I must respond by sealing one of my own to keep denying opponent. Bore 1 carries my floor; sealing it gives 9 pts (vs 7 sealing 2/3 which gives opponent shelf too). No other move reaches 9",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "Final seal. Forced tie at 9-9 by math.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "forced; I'm out of large pucks and opponent still has one. Sealing bore 3 (my floor) for 10 pts. Opponent seals last bore 0 (their floor) for 12. I lose 12-10 regardless of anything else I could do. Nothing to choose between, just end the game",
+      "arbitrary": true,
+      "note": null
+    }
+  ]
+}

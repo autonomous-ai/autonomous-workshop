@@ -265,17 +265,20 @@ class InventionPipelineTest(_HomeCase):
         self.assertGreaterEqual(score["score"], 70.0)
         stub = self._read(slug, "published.json")
         self.assertTrue(stub["dry_run"])  # BOB_PUBLISH_DRY_RUN=1 default
+        self.assertEqual(stub["publication_authority"], "none")
         self.assertEqual(stub["idea_sha"], sha)
+        self.assertEqual(stub["core_contract"],
+                         "inventor_core.artifacts/v1")
+        self.assertEqual(len(stub["core_artifact_sha256"]), 64)
+        self.assertEqual(len(stub["core_packet_sha256"]), 64)
         publish_rows = [row for row in ledger.rows(slug=slug)
                         if row["kind"] == "publish"]
         self.assertEqual(len(publish_rows), 1)
         self.assertGreaterEqual(publish_rows[0]["score"], 70.0)
 
-        self._tick_once("published")
-        # 2026-08-23: a DRY publish must NOT reach live. `live` claims a
-        # listing exists on the storefront; a dry run has no platform id,
-        # so the game holds at published (g0003 receipt: the queue said
-        # live while published.json carried pushed=false).
+        # A dry-run stub is terminal for the scheduler. Only an authenticated
+        # publish/readback may make a game live.
+        self.assertIsNone(queue.claim_next("test"))
         self.assertEqual(self._state(slug), "published")
 
 

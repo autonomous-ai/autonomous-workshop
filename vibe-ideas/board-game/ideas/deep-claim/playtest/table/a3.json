@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 50,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "Same script. Small on bore 0, race for the 5th floor next time.",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 7,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "same pattern: place small on a bore seat 0 didn't take. Bores 2 and 5 are equivalent in isolation; choosing 2 by convention",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "turn 2 small reflex, identical to games one and two",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "again bore 3 for a floor \u2014 same opening that worked twice. But seat 0/1/2 just used their turn-1 smalls so they each have one small left and three larges. I'll have to be the sealer if I want any shelf points.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 7,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "Take the 5th floor. Same as last game. Seat 1 can't beat 2 floors if I lock this in.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "only open bore; take the 2. This is the third game in a row with the same opening \u2014 the script is dead",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "floors gone, only shelves, all equal \u2014 forced bookkeeping",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "same as game two: bore 1 buries seat 1's floor at bore 2 AND seat 2's floor at bore 1",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 3,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "Exact mirror of game two. Seal my own floor (bore 5) for the floor+shelf pair. Seat 1 will likely seal bore 4 (their floor). I win the tiebreak by... actually I don't. Hmm. Both will have 5. Tie. Need to think.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 2,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "identical position to game a2 turn 9. Seal my own bore 4 (floor+shelf = 3 pts, total 5) beats sealing 2 or 3 for opponent-shelves (3 pts each, total 4). Same reasoning, same answer",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "two equal shelves, same point, arbitrary which",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "only legal move; take the shelf and end the game",
+      "arbitrary": true,
+      "note": null
+    }
+  ]
+}

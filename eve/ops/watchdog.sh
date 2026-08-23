@@ -1,13 +1,13 @@
 #!/bin/bash
 # Eve dead-man watchdog. Runs hourly from launchd (ai.autonomous.eve.watchdog),
-# deliberately NOT from inside eve's tick: a dead main loop cannot report its
-# own death (text2cad receipt: "silent-channel death must alarm - 4-night
+# deliberately NOT from inside Eve's one-step drive: a dead main loop cannot
+# report its own death (text2cad receipt: "silent-channel death must alarm - 4-night
 # scraper blackout 6/5-6/8, admindash $13 silent burn 8/9-8/10").
 #
 # Two alarms:
-#   1. Heartbeat stale: state/DAYBOOK.json (the tick loop touches it every
-#      tick, per DESIGN.md) is missing or its mtime is older than 6h.
-#      Ticks fire every 30 min, so 6h = 12 missed ticks - well past any
+#   1. Heartbeat stale: state/DAYBOOK.json (each drive touches it via
+#      meta.tick, per DESIGN.md) is missing or its mtime is older than 6h.
+#      Drives fire every 30 min, so 6h = 12 missed launches - well past any
 #      normal back-off but fast enough that a dead night costs 6 hours.
 #   2. Fresh Traceback: the last 50 lines of state/logs/tick.log contain
 #      'Traceback' AND the log is newer than the last traceback alarm -
@@ -24,7 +24,7 @@ HEARTBEAT="$REPO/state/DAYBOOK.json"
 TICK_LOG="$REPO/state/logs/tick.log"
 HB_MARKER="$REPO/state/.watchdog-heartbeat-alarm"
 TB_MARKER="$REPO/state/.watchdog-traceback-alarm"
-STALE_SECONDS=21600   # 6h: 12 missed 30-min ticks
+STALE_SECONDS=21600   # 6h: 12 missed 30-min one-step drives
 NOW="$(date +%s)"
 
 # Telegram creds come from the environment or from .env at the repo root
@@ -79,7 +79,7 @@ if [ "$HB_STALE" -eq 1 ]; then
         [ "$MARKER_AGE" -lt "$STALE_SECONDS" ] && RECENT_ALARM=1
     fi
     if [ "$RECENT_ALARM" -eq 0 ]; then
-        alert "HEARTBEAT STALE - state/DAYBOOK.json last touched ${HB_AGE} (threshold 6h). The tick loop is not running. Check: tail -50 '$TICK_LOG' ; launchctl print gui/$(id -u)/ai.autonomous.eve"
+        alert "HEARTBEAT STALE - state/DAYBOOK.json last touched ${HB_AGE} (threshold 6h). The drive loop is not running. Check: tail -50 '$TICK_LOG' ; launchctl print gui/$(id -u)/ai.autonomous.eve"
         mkdir -p "$(dirname "$HB_MARKER")"
         touch "$HB_MARKER"
     fi
@@ -94,7 +94,7 @@ if [ -f "$TICK_LOG" ] && tail -n 50 "$TICK_LOG" | grep -q "Traceback"; then
     # stuck traceback must not DM every hour, but a new crash always does.
     if [ "$LOG_MTIME" -gt "$MARKER_MTIME" ]; then
         SNIPPET="$(tail -n 50 "$TICK_LOG" | grep -A 3 "Traceback" | head -8)"
-        alert "TRACEBACK in tick.log - the tick loop is crashing. Last crash lines:
+        alert "TRACEBACK in tick.log - the drive loop is crashing. Last crash lines:
 ${SNIPPET}
 Full log: tail -50 '$TICK_LOG'"
         mkdir -p "$(dirname "$TB_MARKER")"

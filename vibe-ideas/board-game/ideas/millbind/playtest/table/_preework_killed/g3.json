@@ -1,0 +1,616 @@
+{
+  "slug": "millbind",
+  "idea_dir": "board-game/ideas/millbind",
+  "engine": "board-game/ideas/millbind/playtest/engine.py",
+  "seats": 4,
+  "seed": 50,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('setup_mill', (-3, 0))",
+      "by": "player",
+      "why": "setup mill placement has no mechanical impact, keeping (-3, 0) for consistency",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 14,
+      "move": "('setup_mill', (3, -2))",
+      "by": "player",
+      "why": "placing opposite seat 0 avoids direct meshing and preserves independent clockwise options once the crank is placed",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 4,
+      "move": "('setup_mill', (-2, 3))",
+      "by": "player",
+      "why": "repeating the proven opening spot that balances distance from rivals and access to inner pins for early bridging",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 7,
+      "move": "('setup_mill', (0, 3))",
+      "by": "player",
+      "why": "repeating the exact winning setup position (0,3) from the previous two games",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('setup_crank', (-3, 2))",
+      "by": "player",
+      "why": "placing crank at (-3, 2) leaves exactly one pin between it and my mill, setting up a 1-gear bridge for odd parity clockwise rotation next turn",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (-3, 2))",
+      "by": "player",
+      "why": "leaving the crank at (-3, 2) sets up a 1-gear bridge on my next turn for a guaranteed odd-length clockwise path",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low on (-3, 1) bridges my mill and the crank with exactly one gear, guaranteeing odd parity for clockwise rotation and the solo bonus",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 5,
+      "move": "('place', (-2, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing adjacent to the crank at (-2, 2) immediately secures power access and follows the revised strategy from game 2 to avoid building deep isolated chains.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 9,
+      "move": "('place', (-1, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-1, 2) extends the low chain inward from (-2, 2) safely, avoiding the triangle bind that would occur at (-2, 1) while preserving my direct clockwise drive",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 21,
+      "move": "('place', (1, 1), 'gear_low')",
+      "by": "player",
+      "why": "repeating the proven center anchor from game one to establish a safe hub for future gear trains",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 11,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "moving crank to (3, 0) positions it to bridge to my mill at (3, -2) via a single low gear at (3, -1) next turn, guaranteeing a clockwise turn.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 29,
+      "move": "('place', (3, -1), 'gear_low')",
+      "by": "player",
+      "why": "executing the proven line to bridge the crank at (3, 0) to my mill at (3, -2) via a single gear, guaranteeing a clockwise turn",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 5,
+      "move": "('place', (-2, 1), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (-2, 1) extends my chain inward toward the crank at (3, 0) while avoiding immediate triangle binds with existing gears",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 16,
+      "move": "('place', (0, 2), 'gear_low')",
+      "by": "player",
+      "why": "repeating the exact game-one and game-two line to bridge (1,1) to my mill at (0,3) with an odd-gear chain",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('place', (-2, 0), 'gear_low')",
+      "by": "player",
+      "why": "extends my low-tier chain safely without forming odd loops, keeping options open for later crank moves",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('power', (3, 0))",
+      "by": "player",
+      "why": "leaving the crank at (3,0) avoids wasting a move on a position that yields only counterclockwise rotation, preserving flexibility to bridge my chain on my action turn",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 24,
+      "move": "('place', (2, 0), 'gear_low')",
+      "by": "player",
+      "why": "bridging the isolated crank gear at (3,-1) to the main cluster at (1,1) connects the yard's largest trees, enabling drivable chains next round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 41,
+      "move": "('place', (0, 1), 'gear_high')",
+      "by": "player",
+      "why": "repeating the proven safe high-tier anchor at (0,1) to consume supply without risking a bind on the crowded low tier",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('place', (-2, 0), 'gear_low')",
+      "by": "player",
+      "why": "extends my low-tier chain from (-3, 1) towards the center, bridging toward active clusters without risking a bind",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "my mill is already connected to the crank with an odd-distance chain for a clockwise turn; passing conserves gears while opponents scramble for power.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "moves crank to (2,1) to mesh with (1,1) low, forming a 3-gear odd chain to my mill at (0,3) for a guaranteed double-point grind",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 44,
+      "move": "('place', (1, 2), 'gear_high')",
+      "by": "player",
+      "why": "repeating the exact game-two high-tier anchor to safely consume supply and preserve my low-tier scoring chain without risking a bind",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 7,
+      "move": "('place', (-1, 0), 'gear_low')",
+      "by": "player",
+      "why": "extends chain from (-2,1) toward center safely, avoiding triangles while building path options",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "crank moved to (2, 1) breaking my chain; no single pin bridges it to my mill, so any placement yields even parity (CCW) or disconnects. Passing preserves my lead.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 55,
+      "move": "('place', (-1, 1), 'gear_tandem')",
+      "by": "player",
+      "why": "bridging my low chain to the crank's cluster via a tandem at (-1, 1) creates a 5-gear odd path, guaranteeing clockwise rotation for me this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "keeping the crank at (2, 1) avoids the binding triangle that would form at (-2, -1) and safely preserves the board while I plan my next placement",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 14,
+      "move": "('place', (1, -3), 'gear_low')",
+      "by": "player",
+      "why": "places gear_low at (0,0) to finally bridge my mill chain to the crank at (2,1), creating a 5-gear path (odd parity) for guaranteed clockwise rotation",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "crank moved to (2, 1) breaking my chain; no single pin bridges it to my mill, so any placement yields even parity (CCW) or disconnects. Passing preserves my lead.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 13,
+      "move": "('place', (0, 0), 'gear_low')",
+      "by": "player",
+      "why": "extending my low chain to (0,0) safely bridges toward the crank cluster without closing odd triangles, preparing a drivable path for next round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 22,
+      "move": "('place', (3, 0), 'gear_low')",
+      "by": "player",
+      "why": "placing at (3,0) safely consumes supply without closing any loops, as the central mesh is already dense with triangles that would bind",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "all legal crank positions yield even parity or disconnect for my mill, so keeping it at (2, 1) conserves gears while preserving my lead",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 20,
+      "move": "('place', (2, 0), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (2, 0) extends the chain to three intermediate gears, flipping my mill to clockwise; the resulting triangles with the crank are odd-length and thus legal",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 8,
+      "move": "('place', (-1, 2), 'gear_low')",
+      "by": "player",
+      "why": "extending my low chain to (-1, 0) safely avoids the triangle bind at (-1, 1) while advancing toward the center for future crank connections",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 17,
+      "move": "('place', (2, -3), 'gear_low')",
+      "by": "player",
+      "why": "safely consumes a low gear on a peripheral branch, avoiding the dense central mesh where triangle binds are likely",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 1,
+      "move": "('place', (-3, 2), 'gear_low')",
+      "by": "player",
+      "why": "extends my low-tier chain outward to (-3, 2) safely, avoiding the dense binding triangles in the center while preserving my clockwise path",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "leaving the crank at (2, 1) drives my mill clockwise through a verified 5-gear chain, securing a point while all other legal crank pins are isolated from the main cluster",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 16,
+      "move": "('place', (1, 2), 'gear_low')",
+      "by": "player",
+      "why": "placing gear_low at (1, 2) safely extends the drivable network toward the center without forming an odd-length binding loop, preserving my clockwise path to the crank",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 20,
+      "move": "('place', (3, -3), 'gear_low')",
+      "by": "player",
+      "why": "safely consumes supply on a peripheral branch without closing loops or altering the broken parity chain this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing avoids binding triangles and preserves current score while supply dwindles",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing preserves my 4-point lead and avoids wasting my last low gears on uncertain chains.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "keeping the crank at (2, 1) preserves the adjacent path to my mill, allowing a single gear placement next round to bridge it with odd parity and guarantee clockwise scoring",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 28,
+      "move": "('place', (-1, 3), 'gear_high')",
+      "by": "player",
+      "why": "safely consumes supply on a peripheral branch without closing loops or altering the broken parity chain this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "my chain already has 5 gears to the crank (odd parity), guaranteeing points this round; passing avoids binding risks with dwindling supply",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing conserves my remaining gears and preserves my 4-point lead while opponents scramble for connections.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing secures a guaranteed point this round since my mill is on an odd-length chain, avoiding the binding risks of placing in a saturated low-gear cluster",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "leaving crank at (2,1) preserves my 5-gear odd-parity chain for clockwise rotation; moving it to any empty pin disconnects the yard and scores zero",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing avoids risking a bind or accidentally flipping my own clockwise parity, and the score gap is too wide to safely chase with remaining supply",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing preserves my lead; the crank position leaves me disconnected from a clockwise turn, and placing a gear is risky and unnecessary.",
+      "arbitrary": true,
+      "decision": "scripted",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing secures my guaranteed clockwise point this round without risking binding or altering chain parity unfavorably",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 19,
+      "move": "('place', (-3, 2), 'gear_high')",
+      "by": "player",
+      "why": "safely consumes supply on a peripheral pin without creating binds or altering parity, as I cannot catch up on points this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "none of the legal crank positions connect to my mill, so leaving it minimizes risk while I maintain a 4-point lead",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing preserves my 4-point lead while the crank remains disconnected from a clockwise path to my mill, making any placement risky and unnecessary",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 38,
+      "move": "('place', (-1, -2), 'gear_tandem')",
+      "by": "player",
+      "why": "placing tandem at (-3,3) safely extends my chain by one gear, flipping parity from even to odd so my mill turns clockwise this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 45,
+      "move": "('place', (1, 2), 'gear_tandem')",
+      "by": "player",
+      "why": "placing tandem at (1,2) creates a direct 1-gear link to my mill from the crank, guaranteeing a clockwise turn and immediate points to close the gap",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "my mill chain is disconnected from the crank; passing avoids wasting supply on a risky connection that would likely create an even-parity path",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('power', (2, 1))",
+      "by": "player",
+      "why": "leaving crank at (2,1) avoids wasting a move since my gear chain is isolated from the crank and cannot rotate either way",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 37,
+      "move": "('place', (-1, 1), 'gear_tandem')",
+      "by": "player",
+      "why": "bridging at (-1,1) with a tandem connects my isolated low chain to the crank via an odd-length path (5 gears), guaranteeing clockwise rotation this round",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 45,
+      "move": "('place', (1, 2), 'gear_tandem')",
+      "by": "player",
+      "why": "places a tandem at (1,2) to bridge the crank at (2,1) directly to my mill at (0,3) with one gear in between, guaranteeing a clockwise turn and a vital point",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "passing avoids binding risks in a dense board with dwindling supply, preserving current score",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('pass',)",
+      "by": "player",
+      "why": "preserving my 4-point lead requires no risk; the crank position gives me no guaranteed clockwise turn, so passing avoids binds and parity errors.",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "undefined": null
+}

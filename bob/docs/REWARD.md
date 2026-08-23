@@ -36,6 +36,11 @@ flipped listing in one call. CPSIA hard-refuse, AI-disclosure, price floor,
 and public-domain-only IP checks remain hard gates *before* any import.
 G5-borderline games (any doubt) still park for a human.
 
+`published` waits outside the scheduler. A public POST is recorded before it
+is sent, ambiguous outcomes cannot be re-POSTed, and only authenticated
+readback of Bob's exact current published history moves the game to `live`.
+Use `bob reconcile-public <slug>` after an admindash click or uncertain reply.
+
 ## Two lanes, one pipeline
 
 Market data (2 sales before Bob existed — two different chess sets, one the

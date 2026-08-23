@@ -15,11 +15,11 @@ Cadence is a CONSTRAINT, not a reward (DESIGN.md ss.3.4):
   * one book worked / day (Loop D is deliberately the slowest loop);
   * one self-improvement session / week (it spends the most and rushes worst).
 
-`tick()` performs exactly ONE unit of work per call, in priority order, so a
-launchd 30-minute cadence is safe to fire around the clock — each tick either
-does one step or reports why it is quiet. A heartbeat is stamped before any
-precondition so the watchdog can distinguish "alive but idle" from "dead"
-(text2cad receipt, mirrored from Bob).
+`tick()` performs exactly ONE unit of work per call, in priority order. The
+launchd job invokes `eve drive --steps 1` every 30 minutes; that drive calls
+one tick, which either does one step or reports why it is quiet. A heartbeat is
+stamped before any precondition so the watchdog can distinguish "alive but
+idle" from "dead" (text2cad receipt, mirrored from Bob).
 """
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ class Meta:
 
     def heartbeat(self, **extra) -> dict:
         """Stamp the heartbeat BEFORE any precondition. A tick that skips all
-        work still proves launchd fired (text2cad's watchdog contract)."""
+        work still proves the scheduled drive fired (text2cad's contract)."""
         book = self._read_daybook()
         book["heartbeat"] = _iso(_now())
         book.update(extra)

@@ -1,0 +1,57 @@
+[
+  {
+    "slug": "keep-the-light-relay",
+    "lane": "legacy",
+    "mechanism": "rotating limited-reach beam with a lamp-relay hand-off race against a one-way dawn ratchet"
+  },
+  {
+    "slug": "overcommit",
+    "lane": "legacy",
+    "mechanism": "blind-hopper task draft into a tipping overcommit tray that permanently fragments on eviction"
+  },
+  {
+    "slug": "one-way-ratchet",
+    "lane": "legacy",
+    "mechanism": "shrinking-pool ratchet draft \u2014 spend assets to activate one legal ability, the pool never refills"
+  },
+  {
+    "slug": "the-hull-remembers",
+    "lane": "legacy",
+    "mechanism": "blind hazard-drum draft against a sand-timer dive clock, with single-use wedge-plug repairs and permanent weld-cap compartment loss"
+  },
+  {
+    "slug": "nightwinder",
+    "lane": "legacy",
+    "mechanism": "cocked-pendulum sweep harvest over an arc of open cradles where the arm's LENGTH is the reach, the reach is the resource, and the only way to get what is out of reach is to snap a segment off the arm and fit it into the clock \u2014 SUBTRACTION legacy, the outer cradles go out of reach forever, and any fault left unfixed is pressed permanently into the clock plate and costs a socket for the rest of the campaign"
+  },
+  {
+    "slug": "the-rounds",
+    "lane": "coop",
+    "mechanism": "self-closing route network \u2014 move one road, then push a peg into the rim of a rotating central wheel at the mouth you used; the wheel advances two clicks at end of round so pegs sweep round and physically stand in the mouths of streets nobody has used yet, while each courier's carrying capacity is a real packing problem inside a slot-topped satchel only they may look into and which they may only describe by the shape of the gap left."
+  },
+  {
+    "slug": "precedent",
+    "lane": "legacy",
+    "mechanism": "Blind-draw weight drop through a socketed routing bench onto a tipping verdict balance, where the loser picks the permanent gate and the winner picks its socket"
+  },
+  {
+    "slug": "coach-party",
+    "lane": "coop",
+    "mechanism": "escort-placement into push-through huts \u2014 each hut holds three and physically ejects its oldest occupant out of a back door into the street behind \u2014 around a sight-blocking central tower, fed by a coach-hopper spill that scatters each round's arrivals into the square's bays"
+  },
+  {
+    "slug": "no-ball-games",
+    "lane": "legacy",
+    "mechanism": "constrained peg placement where each zone's only rule is the engraved sign facing it from a central kiosk, and one sign per session is pulled out and retired for good, leaving a through-hole you can see the lawless zone through"
+  },
+  {
+    "slug": "drop-in",
+    "lane": "time",
+    "mechanism": "one-way topple chain on a socketed reef \u2014 set one chisel-nosed lip in any empty dish, then optionally tip the single Peak lip and keep every lip that falls"
+  },
+  {
+    "slug": "dead-stop",
+    "lane": "aim",
+    "mechanism": "banded hull launch into sprung piling jaws that arrest the boat and throw its loose cargo onto a shared dock, where landed crates stay live and can be knocked off by later shots"
+  }
+]

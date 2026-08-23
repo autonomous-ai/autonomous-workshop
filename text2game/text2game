@@ -1,0 +1,838 @@
+#!/usr/bin/env python3
+"""text2game - PHASE 1 (RULES) of the printed-board-game pipeline.
+
+    ./text2game --slug keep-the-light-relay
+    ./text2game "one line pitch" --slug my-game
+
+Phase 1 turns a DISCOVER winner into two artifacts and then STOPS:
+
+    gdd.md          the rules, every one of them carrying a number
+    components.json the printable contract phase 2 may not deviate from
+
+Shape: an agentic build loop - write the game design document, decompose it
+into TODO phases with exit criteria, loop - plus GameGrammar's specialist-agent
+split. Where the two disagree, GameGrammar wins: no algorithm playtests a game,
+so the referee here is scoped to rules EXECUTION - contradictions, dead states,
+turns that cannot legally end - and never claims to judge fun.
+
+Phase 1 ends at a human checkpoint on purpose. A wrong rule is cheap here and
+costs a day of printing in phase 2.
+"""
+import argparse
+import json
+import os
+import re
+import statistics
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import consistency  # noqa: E402
+import discover  # noqa: E402  - for its discover.md table reader only
+import harness  # noqa: E402
+import phase2  # noqa: E402
+import phase3  # noqa: E402
+import prompts  # noqa: E402
+
+
+def require(path: Path, phase: str) -> None:
+    """A phase that did not write its artifact is a hard stop, not a warning.
+
+    text2cad learned this the expensive way: a starved BRIEF that returned no
+    output still let BUILD start, which then burned an hour building nothing.
+    """
+    if not path.exists() or not path.read_text(encoding="utf-8").strip():
+        msg = f"ABORT: {path.name} was not produced by [{phase}]"
+        print(msg, flush=True)
+        harness.telegram(f"text2game: {msg}")
+        raise SystemExit(3)
+
+
+def blocked(out_dir: Path) -> str:
+    """The reviser's escape hatch: a fix that needs the locked mechanisms changed."""
+    gdd = out_dir / "gdd.md"
+    if gdd.exists():
+        m = re.search(r"^##\s+Blocked\s*$(.*)", gdd.read_text(encoding="utf-8"),
+                      re.M | re.S)
+        if m:
+            return m.group(1).strip()[:600]
+    return ""
+
+
+def evaluate_round(out_dir: Path, rnd: int, run_log: dict) -> tuple:
+    """Score the design REPS times and take the median, like the judge panel.
+
+    Measured 2026-08-19 on two real documents, three reads each: `tension`,
+    `depth` and `replayability` came back with a spread of 0-1, but `social`
+    ranged 2..7 on one document and `teach` 4..7 on the other - the two axes
+    this pipeline most needs. A single read of those is a coin flip, and one had
+    already been reported as a result before this was measured.
+
+    The SPREAD is kept, not thrown away: three readers agreeing 8/8/8 and three
+    readers saying 2/4/7 are different facts about the same document. Wide
+    disagreement means the rules do not communicate that property, which is a
+    finding about the writing, not noise to be averaged out.
+    """
+    reps = max(1, int(os.environ.get("EVALUATE_REPS", "3")))
+    dests = [f"evaluate_r{rnd}_{i}.json" for i in range(1, reps + 1)]
+    with ThreadPoolExecutor(max_workers=reps) as ex:
+        list(ex.map(lambda d: harness.run_phase(
+            f"evaluate-r{rnd}-{d[-6]}", prompts.evaluate(out_dir, rnd, d),
+            out_dir, 25, run_log), dests))
+
+    runs = []
+    for d in dests:
+        try:
+            s = (json.loads((out_dir / d).read_text(encoding="utf-8"))
+                 .get("scores") or {})
+        except (OSError, json.JSONDecodeError):
+            continue
+        got = {k: v for k, v in s.items()
+               if k in prompts.DIMENSIONS and isinstance(v, (int, float))}
+        if got:
+            runs.append(got)
+    if not runs:
+        return {}, {}
+    med = {d: statistics.median([r[d] for r in runs if d in r])
+           for d in prompts.DIMENSIONS if any(d in r for r in runs)}
+    spread = {d: max(r[d] for r in runs if d in r) - min(r[d] for r in runs if d in r)
+              for d in med}
+    (out_dir / "evaluate.json").write_text(json.dumps(
+        {"round": rnd, "reps": len(runs), "scores": med, "spread": spread,
+         "runs": runs}, indent=2), encoding="utf-8")
+    return med, spread
+
+
+def evaluation(out_dir: Path) -> dict:
+    """This round's evaluate.json scores, or {} if the phase produced nothing."""
+    try:
+        d = json.loads((out_dir / "evaluate.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    s = d.get("scores") or {}
+    return {k: v for k, v in s.items()
+            if k in prompts.DIMENSIONS and isinstance(v, (int, float))}
+
+
+def trend(history: list) -> tuple:
+    """(total delta, per-dimension deltas) between the last two rounds.
+
+    The number a design evaluator writes is an LLM's opinion of a document and
+    is not worth much on its own. The DELTA is: it answers the one question the
+    loop could not ask before - did `revise` make this better or worse? The loop
+    counted remaining issues, which falls whether the design improved or the
+    reviewer simply gave up.
+    """
+    if len(history) < 2 or not history[-1] or not history[-2]:
+        return None, {}
+    now, was = history[-1], history[-2]
+    per = {k: now[k] - was[k] for k in now if k in was}
+    return sum(per.values()), per
+
+
+def below_floor(scores: dict, teach_min: int) -> bool:
+    """Is this design below the teach floor? False when nothing was scored.
+
+    An evaluate phase that produced nothing must not block the loop - that is a
+    broken checker, not a bad design, and the same round already telegrams
+    about a referee that wrote no file.
+    """
+    teach = (scores or {}).get("teach")
+    return isinstance(teach, (int, float)) and teach < teach_min
+
+
+def one_change(out_dir: Path) -> str:
+    """What the evaluate readers said would help most, joined for a human.
+
+    Each rep writes its own file; evaluate_round keeps only the scores, so this
+    reaches back for the prose the median threw away.
+    """
+    out, seen = [], set()
+    for f in sorted(out_dir.glob("evaluate_r*_*.json")):
+        try:
+            d = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        c = (d.get("one_change") or "").strip()
+        # Compare the TEXT, not the rendered bullet - three readers agreeing on
+        # one fix is the strongest signal here, and printing it three times
+        # buries the other two.
+        if c and c not in seen:
+            seen.add(c)
+            out.append(f"- {c}")
+    return "\n".join(out[-3:]) or "(the readers wrote no one_change)"
+
+
+def snapshot_round(out_dir: Path, rnd: int) -> None:
+    """Keep the documents this round was scored on, before revise overwrites them.
+
+    gdd.md and components.json were edited IN PLACE every round and nothing
+    kept a copy, so trend() could telegram "revise made the design WORSE" about
+    a document that no longer existed anywhere.
+
+    Measured 2026-08-20 on the-rounds: round 1 was referee CLEAN, teach 8, six
+    printed designs. Round 3 was FINDINGS 3, teach 4, ten designs, one of them
+    decoration - while six of the seven evaluate axes rose every round. The
+    loop optimised what it measured and spent what it did not, and round 1 -
+    the best version of that game - was gone before anyone could look at it.
+    """
+    d = out_dir / "rounds" / f"r{rnd}"
+    d.mkdir(parents=True, exist_ok=True)
+    # critic.json and referee.md are overwritten every round too, and they are
+    # what harvest.py reads. Three rounds of findings were collapsing to one.
+    for name in ("gdd.md", "components.json", "critic.json", "referee.md"):
+        f = out_dir / name
+        if f.is_file():
+            (d / name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def machine_highs(v: dict) -> int:
+    """Unresolved findings a MACHINE found, not a reader's opinion of the game.
+
+    consistency and critic `high`s plus a dirty referee. Deliberately excludes
+    the evaluate scores: those are three models reading prose, they move by a
+    point between rounds for no reason anybody can point at, and a document
+    should not be swapped out over them.
+    """
+    return (v.get("consistency_high", 0) + v.get("critic_high", 0)
+            + (0 if v.get("referee_clean") else 1))
+
+
+def restore_round(out_dir: Path, rnd, rounds_log: list, teach_min: int) -> str:
+    """Put the best round's rules back on disk when the last round is WORSE.
+
+    The loop keeps the LAST document, and at max_rounds it scores that document
+    and returns WITHOUT revising - so the final round's findings are collected
+    and thrown away. Measured on coach-party 2026-08-20: r1 was 1,239 words
+    with 1 machine high, r3 was 1,989 words with 3, both read teach 6, and the
+    table said "BEST: round 1" in the same breath as shipping round 3. Two
+    rounds of revision added 60% more rules to a design whose weakest axis was
+    how hard it is to learn, and nothing acted on the round that measured it.
+
+    Only fires when the last round has MORE machine highs than the best round.
+    A better-or-equal last round is left alone: later revisions carry earlier
+    fixes and there is no reason to lose them over a scoring wobble.
+    """
+    src = out_dir / "rounds" / f"r{rnd}"
+    if not src.is_dir():
+        return ""
+    last, best = rounds_log[-1], next(
+        (v for v in rounds_log if v.get("round") == rnd), None)
+    if best is None or machine_highs(last) <= machine_highs(best):
+        return ""
+    moved = []
+    for name in ("gdd.md", "components.json"):
+        f = src / name
+        if not f.is_file():
+            return ""            # a partial restore is worse than none
+        moved.append(name)
+    keep = out_dir / "rounds" / f"r{last.get('round')}-discarded"
+    keep.mkdir(parents=True, exist_ok=True)
+    for name in moved:
+        (keep / name).write_bytes((out_dir / name).read_bytes())
+        (out_dir / name).write_bytes((src / name).read_bytes())
+    return (f"RESTORED round {rnd} to disk: it carries {machine_highs(best)} "
+            f"machine high(s) against round {last.get('round')}'s "
+            f"{machine_highs(last)}. The discarded round is in {keep}.")
+
+
+def gates_of(v: dict, teach_min: int) -> list:
+    """The four things that decide whether a round could ship, as booleans."""
+    return [v.get("consistency_high", 1) == 0,
+            v.get("critic_high", 1) == 0,
+            bool(v.get("referee_clean")),
+            not below_floor(v.get("evaluate") or {}, teach_min)]
+
+
+def best_round(rounds_log: list, teach_min: int) -> dict:
+    """The round a person should read. Gates first, then the evaluate sum.
+
+    Both the printed table and verdict["best_round"] must agree, and on
+    2026-08-20 they did not: the table tie-broke on the evaluate sum and the
+    verdict did not, so `precedent` printed BEST: round 3 and wrote
+    "best_round": 1 - r1 and r3 both cleared 3 of 4 gates and max() returns the
+    FIRST maximum. The JSON is the half a machine reads.
+    """
+    def key(v):
+        ev = v.get("evaluate") or {}
+        return (sum(gates_of(v, teach_min)),
+                sum(x for x in ev.values() if isinstance(x, (int, float))))
+    return max(rounds_log, key=key)
+
+
+def rounds_table(rounds_log: list, teach_min: int, out_dir: Path) -> str:
+    """Every round side by side, and which one a person should actually read.
+
+    The loop keeps the LAST document, never the best, and until this table
+    existed nothing said which round that was.
+    """
+    if not rounds_log:
+        return ""
+    lines = ["", "ROUNDS"]
+    scored = []
+    for v in rounds_log:
+        g = gates_of(v, teach_min)
+        ev = v.get("evaluate") or {}
+        teach = ev.get("teach")
+        state = ("MISSING" if v.get("referee_missing")
+                 else "CLEAN" if v.get("referee_clean") else "FINDINGS")
+        lines.append(
+            f"  r{v.get('round')}  gates {sum(g)}/4   consistency "
+            f"{v.get('consistency_high')}   critic {v.get('critic_high')}   "
+            f"referee {state:<8}  teach {teach if teach is not None else '?'}")
+        scored.append((sum(g), sum(x for x in ev.values()
+                                   if isinstance(x, (int, float))), v))
+    best = best_round(rounds_log, teach_min)
+    kept = rounds_log[-1]
+    where = out_dir / "rounds" / f"r{best.get('round')}"
+    lines.append(f"  BEST: round {best.get('round')} -> {where}")
+    if best.get("round") != kept.get("round"):
+        lines.append(f"  NOTE: gdd.md and components.json on disk are round "
+                     f"{kept.get('round')}, which scored WORSE. The loop keeps "
+                     f"the last document, not the best one.")
+    return "\n".join(lines)
+
+
+def loop(out_dir: Path, run_log: dict, games: int, max_rounds: int) -> dict:
+    """Consistency + referee + critic + evaluate, revise, repeat.
+
+    Returns the last verdict. `history` carries the design scores across rounds
+    so the loop can see a direction, not just a count of what is still wrong.
+    """
+    verdict, history, rounds_log = {}, [], []
+    for rnd in range(1, max_rounds + 1):
+        print(f"\n--- round {rnd}/{max_rounds} ---", flush=True)
+        round_started = time.time()
+        # Before anything can overwrite them.
+        snapshot_round(out_dir, rnd)
+
+        issues = consistency.check(out_dir, HERE)
+        (out_dir / "consistency.json").write_text(json.dumps(issues, indent=2),
+                                                  encoding="utf-8")
+        for i in issues:
+            print(f"  [{i['severity']:4}] {i['code']}: {i['message'][:110]}", flush=True)
+
+        # Independent readers of the same document - no reason to serialise them.
+        with ThreadPoolExecutor(max_workers=3) as ex:
+            f_ref = ex.submit(harness.run_phase, f"referee-r{rnd}",
+                              prompts.referee(out_dir, games), out_dir, 80, run_log)
+            f_cri = ex.submit(harness.run_phase, f"critic-r{rnd}",
+                              prompts.critic(out_dir), out_dir, 40, run_log)
+            f_eva = ex.submit(evaluate_round, out_dir, rnd, run_log)
+            f_ref.result(), f_cri.result()
+            ev_scores, ev_spread = f_eva.result()
+
+        # A referee that wrote NOTHING is not a referee that found problems,
+        # but both used to read as `FINDINGS` and silently cost a round.
+        # Observed 2026-08-19: referee-r1 ran 2363s and $3.08, spent its turns
+        # trying to delegate the games to background agents, and produced no
+        # file - the loop scored that identically to a clean run with findings.
+        # Retry once (text2cad's lens crash-retry, same reasoning), then alarm.
+        refp = out_dir / "referee.md"
+        before = refp.stat().st_mtime if refp.exists() else 0
+        if before <= round_started:
+            harness.run_phase(f"referee-r{rnd}-retry",
+                              prompts.referee(out_dir, games), out_dir, 80, run_log)
+        ref_missing = not refp.exists() or refp.stat().st_mtime <= round_started
+        if ref_missing:
+            harness.telegram(f"text2game round {rnd}: referee produced no "
+                             f"referee.md twice - the rules went unplayed this round")
+        ref = refp.read_text(encoding="utf-8") if refp.exists() else ""
+        ref_clean = (not ref_missing) and bool(re.search(r"^\s*CLEAN\s*$", ref, re.M))
+        try:
+            crit = json.loads((out_dir / "critic.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            crit = []
+
+        history.append(ev_scores)
+        (out_dir / "evaluate_history.json").write_text(
+            json.dumps(history, indent=2), encoding="utf-8")
+        total, per = trend(history)
+
+        c_high = [i for i in issues if i["severity"] == "high"]
+        k_high = [i for i in crit if i.get("severity") == "high"]
+        verdict = {"round": rnd, "consistency_high": len(c_high),
+                   "critic_high": len(k_high), "referee_clean": ref_clean,
+                   "referee_missing": ref_missing,
+                   "evaluate": history[-1], "evaluate_delta": per,
+                   "evaluate_spread": ev_spread}
+        rounds_log.append(verdict)
+        state = "MISSING" if ref_missing else ("CLEAN" if ref_clean else "FINDINGS")
+        print(f"  => consistency high={len(c_high)}  critic high={len(k_high)}  "
+              f"referee={state}", flush=True)
+        if history[-1]:
+            print("  => design " + " ".join(
+                f"{k}={v:g}" + (f"({per[k]:+g})" if k in per else "")
+                for k, v in history[-1].items()), flush=True)
+        # A revise that lowers the design is the failure this loop was blind to:
+        # issue counts fall whether the design improved or the reviewer tired.
+        # Three readers disagreeing by 3+ on one axis is not noise to average
+        # away: it means the rules do not say clearly whether the game has that
+        # property. Worth more than the median it sits under.
+        vague = sorted((d for d, s in (ev_spread or {}).items() if s >= 3),
+                       key=lambda d: -ev_spread[d])
+        if vague:
+            print("  => AMBIGUOUS to readers: " + ", ".join(
+                f"{d} (spread {ev_spread[d]:g})" for d in vague), flush=True)
+        if total is not None and total < 0:
+            worst = sorted(per.items(), key=lambda kv: kv[1])[:3]
+            harness.telegram(
+                f"text2game {out_dir.name} round {rnd}: revise made the design "
+                f"WORSE ({total:+g} across {len(per)} dimensions) - "
+                + ", ".join(f"{k} {v:+g}" for k, v in worst if v < 0))
+
+        # teach is a FLOOR here as well as in DISCOVER. It was a floor only on
+        # the pitch - one sentence, scored before a single rule existed - and
+        # after that nothing looked at it again: `loop` exited on issue COUNTS,
+        # so a design read at teach 4 exited exactly like one read at teach 9.
+        # Both games this pipeline has shipped left phase 1 below the floor
+        # DISCOVER had enforced on them (overcommit 6, keep-the-light-relay 4).
+        teach_min = int(os.environ.get("TEACH_MIN", "7"))
+        teach = (history[-1] or {}).get("teach")
+        teach_low = below_floor(history[-1], teach_min)
+        if teach_low:
+            verdict["teach_below_floor"] = teach
+            print(f"  => teach {teach:g} < floor {teach_min} - not clean, "
+                  f"another round", flush=True)
+        if not c_high and not k_high and ref_clean and not teach_low:
+            verdict["exit"] = "clean"
+            print(rounds_table(rounds_log, teach_min, out_dir), flush=True)
+            return verdict
+        if rnd == max_rounds:
+            verdict["exit"] = "rounds-exhausted"
+            table = rounds_table(rounds_log, teach_min, out_dir)
+            print(table, flush=True)
+            best = best_round(rounds_log, teach_min)
+            verdict["best_round"] = best.get("round")
+            verdict["kept_round"] = rounds_log[-1].get("round")
+            if best.get("round") != rounds_log[-1].get("round"):
+                note = restore_round(out_dir, best.get("round"), rounds_log,
+                                     teach_min)
+                if note:
+                    verdict["restored_round"] = best.get("round")
+                    verdict["kept_round"] = best.get("round")
+                    print("  => " + note, flush=True)
+                    harness.telegram(f"text2game {out_dir.name}: {note}")
+                    # The verdict was measured on the round just DISCARDED.
+                    # Re-check the files actually on disk - the deterministic
+                    # half costs nothing - and let a restore that lands clean
+                    # exit clean. drop-in 2026-08-21: exit 1 for "1910 words
+                    # over budget" while the restored gdd was 1222 words; the
+                    # reading was stale, not the game.
+                    issues = consistency.check(out_dir, HERE)
+                    (out_dir / "consistency.json").write_text(
+                        json.dumps(issues, indent=2), encoding="utf-8")
+                    c2 = sum(1 for i in issues
+                             if i.get("severity") == "high")
+                    verdict["consistency_high_after_restore"] = c2
+                    print(f"  => consistency re-run on the restored round: "
+                          f"{c2} high", flush=True)
+                    if c2 == 0 and all(gates_of(best, teach_min)[1:]):
+                        verdict["exit"] = "clean"
+                        verdict["clean_via_restore"] = True
+                        print("  => restored round clears every gate - "
+                              "exiting clean", flush=True)
+                # Said out loud, because the files on disk are NOT this round.
+                harness.telegram(
+                    f"text2game {out_dir.name}: round {best.get('round')} scored "
+                    f"better than the round left on disk "
+                    f"({rounds_log[-1].get('round')}). Read "
+                    f"out/{out_dir.name}/rounds/r{best.get('round')}/ before "
+                    f"approving phase 2.")
+            if teach_low:
+                # Nothing downstream can fix this - phase 2 builds parts, not
+                # rules - so it is said once, loudly, while a person can act.
+                harness.telegram(
+                    f"text2game {out_dir.name}: phase 1 out of rounds with "
+                    f"teach {teach:g}/{teach_min}. The rules are playable but "
+                    f"hard to LEARN - a stranger needs a reference open. "
+                    f"Weakest fix the readers named:\n"
+                    f"{one_change(out_dir)[:400]}")
+            return verdict
+
+        harness.run_phase(f"revise-r{rnd}", prompts.revise(out_dir, rnd),
+                          out_dir, 80, run_log)
+        why = blocked(out_dir)
+        if why:
+            verdict["exit"] = "blocked"
+            verdict["blocked"] = why
+            # The reviser can only reach this by needing a LOCKED mechanism
+            # changed, and the lock is phase 1's contract with the panel. No
+            # amount of retrying moves it - a person has to.
+            harness.confirm(f"{out_dir.name} is BLOCKED at round {rnd}",
+                            f"The reviser cannot fix the design without changing "
+                            f"a locked mechanism:\n\n{why[:600]}",
+                            "approve the mechanism change, or reject and re-run "
+                            "DISCOVER for a different game")
+            return verdict
+    return verdict
+
+
+# --- one stage at a time ---------------------------------------------------
+# The driver could only run a whole phase, so exercising a single job meant
+# paying for everything in front of it. Added 2026-08-20: the critic had just
+# gained an evidence block read out of evidence.jsonl and there was no way to
+# run the critic and nothing else.
+#
+# This is NOT a pipeline. Each job runs ONCE, in the order given, with no
+# rounds, no exit criteria, no retry and no checkpoint - the loop's job is to
+# decide when a document is done, and that is exactly what you do not want
+# while testing a stage. Artifacts are overwritten; --force is not consulted.
+JOB_SPECS = {
+    "mechanism": ("mechanisms.json", lambda d, a: prompts.mechanism(d), 20),
+    "gdd":       ("gdd.md",          lambda d, a: prompts.gdd(d),       60),
+    "manifest":  ("components.json", lambda d, a: prompts.manifest(d),  40),
+    "todo":      ("todo.md",         lambda d, a: prompts.todo(d),      30),
+    "referee":   ("referee.md",      lambda d, a: prompts.referee(d, a.games), 80),
+    "critic":    ("critic.json",     lambda d, a: prompts.critic(d),    40),
+    "revise":    ("gdd.md",          lambda d, a: prompts.revise(d, 1), 80),
+    "priorart":  ("priorart.json",   lambda d, a: prompts.priorart(d),  40),
+    # Phase 2/3 jobs that stand alone. `build` and `repair` do not: they are
+    # scoped to a todo.md group and belong to --groups, not here.
+    "art_direction": ("art_direction.md",  lambda d, a: prompts.art_direction(d), 25),
+    "stage":         ("stage.json",        lambda d, a: prompts.stage_layout(d),  25),
+    "coherence":     ("lens_coherence.md", lambda d, a: prompts.coherence(d),     20),
+    "rulebook":      ("rulebook.md",       lambda d, a: prompts.rulebook(d),      40),
+    "video_spec":    ("howto.json",        lambda d, a: prompts.video_spec(d),    25),
+}
+
+
+def run_jobs(out_dir: Path, run_log: dict, a, names: list) -> int:
+    """Run the named phase-1 jobs once each and stop. Exit code, not a verdict."""
+    known = set(JOB_SPECS) | {"consistency"}
+    unknown = [n for n in names if n not in known]
+    if unknown:
+        print(f"ABORT: unknown job(s) {unknown}. Known: consistency, "
+              f"{', '.join(JOB_SPECS)}", flush=True)
+        return 2
+    print(f"\n== JOBS (one pass each, no loop): {', '.join(names)}", flush=True)
+    missing = []
+    for name in names:
+        if name == "consistency":
+            issues = consistency.check(out_dir, HERE)
+            (out_dir / "consistency.json").write_text(json.dumps(issues, indent=2),
+                                                      encoding="utf-8")
+            for i in issues:
+                print(f"  [{i['severity']:4}] {i['code']}: {i['message'][:110]}",
+                      flush=True)
+            highs = sum(1 for i in issues if i["severity"] == "high")
+            print(f"consistency: {highs} high, {len(issues) - highs} warn", flush=True)
+            continue
+        artifact, fn, turns = JOB_SPECS[name]
+        f = out_dir / artifact
+        before = f.stat().st_mtime if f.exists() else 0
+        harness.run_phase(name, fn(out_dir, a), out_dir, turns, run_log)
+        # A job that produced no file is the failure this pipeline keeps
+        # hitting (referee-r1, 2026-08-19: 2363s, $3.08, no referee.md) and it
+        # reads identically to success unless something checks the mtime.
+        if not f.exists() or f.stat().st_mtime <= before:
+            print(f"[{name}] \u26a0 {artifact} was NOT written", flush=True)
+            missing.append(name)
+        else:
+            print(f"[{name}] wrote {artifact}", flush=True)
+    print("\npostmortem: " + harness.postmortem(out_dir), flush=True)
+    if missing:
+        print(f"JOBS INCOMPLETE: {', '.join(missing)} wrote nothing", flush=True)
+    return 1 if missing else 0
+
+
+def phase1(out_dir: Path, run_log: dict, a) -> dict:
+    print("\n== PHASE 1: rules", flush=True)
+    steps = [("mechanism", "mechanisms.json", prompts.mechanism, 20),
+             ("gdd", "gdd.md", prompts.gdd, 60),
+             ("manifest", "components.json", prompts.manifest, 40),
+             ("todo", "todo.md", prompts.todo, 30)]
+    for name, artifact, fn, turns in steps:
+        if (out_dir / artifact).exists() and not a.force:
+            print(f"[{name}] {artifact} exists, skipping (--force to rerun)", flush=True)
+            continue
+        harness.run_phase(name, fn(out_dir), out_dir, turns, run_log)
+        require(out_dir / artifact, name)
+
+    verdict = loop(out_dir, run_log, a.games, a.max_rounds)
+
+    if verdict.get("exit") == "clean":
+        harness.run_phase("priorart", prompts.priorart(out_dir), out_dir, 40, run_log)
+        try:
+            pa = json.loads((out_dir / "priorart.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pa = {"verdict": "unknown"}
+        verdict["priorart"] = pa.get("verdict")
+        verdict["nearest"] = pa.get("nearest", "")
+        if pa.get("verdict") == "exists" and pa.get("nearest_url"):
+            verdict["exit"] = "exists"
+            verdict["nearest_url"] = pa["nearest_url"]
+    (out_dir / "phase1.json").write_text(json.dumps(verdict, indent=2), encoding="utf-8")
+    return verdict
+
+
+def briefing(out_dir: Path, slug: str, verdict: dict, comps: list) -> str:
+    """What the game is, why it beat the others, and how it scored.
+
+    The panel's reasoning is already on disk in discover.md - the winner's
+    pitch, its mechanism, and the full scored table of everything it beat. None
+    of that reached the human before: the alert was a slug and a row of counts.
+    """
+    dm = out_dir / "discover.md"
+    text = dm.read_text(encoding="utf-8") if dm.exists() else ""
+    pitch = mech = why = ""
+    m = re.search(r"^WINNER:\s*\S+\s*\n+(.+?)\n", text, re.M)
+    if m:
+        pitch = m.group(1).strip()
+    # The name, the box line and the object the game is sold on. They are the
+    # only part of this briefing a human can judge without reading gdd.md, and
+    # they are what the buyer meets first - so they go at the top, above the
+    # score table. Missing lines are dropped rather than printed as blanks.
+    face = [f"{k}: {v.group(1).strip()}" for k, v in
+            ((k, re.search(rf"^{k}:\s*(.+)$", text, re.M))
+             for k in ("Name", "Box face", "First look"))
+            if v and not v.group(1).strip().startswith("NOT ")]
+    m = re.search(r"^Mechanism:\s*(.+)$", text, re.M)
+    if m:
+        mech = m.group(1).strip()
+    m = re.search(r"^Why nobody has this:\s*(.+)$", text, re.M)
+    if m:
+        why = m.group(1).strip()
+
+    # Every scored row, so "why this one" is answerable rather than asserted.
+    # Read by COLUMN NAME, never by position: this block was reading the table
+    # one column left and reporting craft as teach, because `teach` had been
+    # appended upstream and every index under it moved.
+    rows, won = [], None
+    for r in discover.table_rows(text):
+        name = r.get("candidate", "").strip("~ ")
+        if not name:
+            continue
+
+        def num(key, default=0.0):
+            try:
+                return float((r.get(key) or "").split()[0])
+            except (ValueError, IndexError):
+                return default
+
+        # `score` is the objective pick_winner actually ranked on, lane penalty
+        # already applied. Older discover.md files predate the column, so fall
+        # back to the axes they do carry rather than printing nothing.
+        score = num("score", num("desire") + num("buildable") + num("craft")
+                    + num("teach") + num("resonance"))
+        if not any((r.get(k) or "").strip() for k in ("desire", "score")):
+            continue
+        row = (name, r.get("lane", ""), score, num("teach"), num("resonance"))
+        rows.append(row)
+        if name == slug:
+            won = row
+    lines = [f"PHASE 1 XONG: {slug}", ""]
+    if face:
+        lines += face + [""]
+    if pitch:
+        lines += [pitch, ""]
+    if mech:
+        lines += [f"Co che: {mech}"]
+    if why:
+        lines += [f"Chua ai co: {why}", ""]
+
+    if won and len(rows) > 1:
+        beat = sorted((r for r in rows if r[0] != slug), key=lambda r: -r[2])
+        lines.append(f"VI SAO CHON NO - thang {len(rows) - 1} ung vien khac:")
+        lines.append(f"  {slug} (lane {won[1]}): score {won[2]:g}, "
+                     f"teach {won[3]:g}, resonance {won[4]:g}")
+        for r in beat[:3]:
+            lines.append(f"  {r[0]} (lane {r[1]}): {r[2]:g}, teach {r[3]:g}, "
+                         f"resonance {r[4]:g}")
+        lines.append("")
+
+    ev = verdict.get("evaluate") or {}
+    if ev:
+        lines.append("DIEM THIET KE (median 3 luot doc):")
+        lines.append("  " + "  ".join(f"{k}={v:g}" for k, v in ev.items()))
+        vague = [d for d, s in (verdict.get("evaluate_spread") or {}).items() if s >= 3]
+        if vague:
+            lines.append(f"  (nguoi doc bat dong ve: {', '.join(vague)})")
+        lines.append("")
+    gdd = out_dir / "gdd.md"
+    if gdd.exists():
+        lines.append(f"Luat: {len(gdd.read_text(encoding='utf-8').split())} tu "
+                     f"(ngan sach 1800)")
+    lines.append(f"Parts: {len(comps)} thiet ke, "
+                 f"{sum(c.get('qty', 0) for c in comps)} manh")
+    lines.append(f"referee={'CLEAN' if verdict.get('referee_clean') else 'FINDINGS'}"
+                 f"  consistency high={verdict.get('consistency_high')}"
+                 f"  critic high={verdict.get('critic_high')}")
+    lines += ["", f"-> tu dong chay tiep PHASE 2. {out_dir}"]
+    return "\n".join(lines)
+
+
+def main() -> int:
+    harness.load_env()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("pitch", nargs="?", default="", help="one-line pitch (optional if seeded)")
+    ap.add_argument("--slug", required=True)
+    ap.add_argument("--seed-from", help="dir to copy brief.md / discover.md from")
+    ap.add_argument("--games", type=int, default=int(os.environ.get("REFEREE_GAMES", "3")))
+    ap.add_argument("--max-rounds", type=int, default=int(os.environ.get("MAX_ROUNDS", "3")))
+    ap.add_argument("--force", action="store_true", help="rerun phases whose artifact exists")
+    ap.add_argument("--jobs", default="", metavar="NAMES",
+                    help="run ONLY these phase-1 jobs, once each, no loop and no "
+                         "checkpoint - for testing one stage. consistency,"
+                         + ",".join(JOB_SPECS))
+    ap.add_argument("--groups", default="",
+                    help="phase 2 only: rebuild just these group numbers, e.g. 3,5")
+    ap.add_argument("--phase", default="1", choices=["1", "2", "3", "all"],
+                    help="1=rules (stops at the checkpoint), 2=assets, 3=print")
+    # Provider routing is per JOB and lands in the environment, because
+    # discover.py shares harness.run_phase but has no argv of its own.
+    ap.add_argument("--codex", default=os.environ.get("CODEX_JOBS", ""), metavar="JOBS",
+                    help="jobs to run on `codex exec` instead of `claude -p`: a "
+                         "comma list (referee,critic), the alias 'phase1' "
+                         f"({','.join(harness.PHASE1_JOBS)}), 'all', or 'none'")
+    ap.add_argument("--codex-model", default=os.environ.get("CODEX_MODEL", ""),
+                    metavar="NAME", help=f"default {harness.CODEX_MODEL_DEFAULT}")
+    a = ap.parse_args()
+    os.environ["CODEX_JOBS"] = a.codex
+    if a.codex_model:
+        os.environ["CODEX_MODEL"] = a.codex_model
+
+    out_dir = HERE / "out" / a.slug
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if a.seed_from:
+        src = Path(a.seed_from)
+        for name in ("brief.md", "discover.md"):
+            if (src / name).exists():
+                (out_dir / name).write_text((src / name).read_text(encoding="utf-8"),
+                                            encoding="utf-8")
+    if a.pitch:
+        (out_dir / "seed.md").write_text(a.pitch.strip() + "\n", encoding="utf-8")
+
+    run_f = out_dir / "run.json"
+    run_log = json.loads(run_f.read_text(encoding="utf-8")) if run_f.exists() else {}
+    print(f"== text2game phase 1: {a.slug} -> {out_dir}", flush=True)
+    on_codex = harness.codex_jobs()
+    if on_codex:
+        why = harness.codex_ready()
+        if why:
+            print(f"ABORT: --codex asked for {', '.join(sorted(on_codex))} but "
+                  f"{why}", flush=True)
+            return 2
+        print(f"== codex ({os.environ.get('CODEX_MODEL') or harness.CODEX_MODEL_DEFAULT}, "
+              f"sandbox {os.environ.get('CODEX_SANDBOX', 'danger-full-access')}): "
+              f"{', '.join(sorted(on_codex))}", flush=True)
+
+    if a.jobs:
+        return run_jobs(out_dir, run_log, a,
+                        [j.strip() for j in a.jobs.split(",") if j.strip()])
+
+    verdict, p2, p3 = {}, {}, {}
+    try:
+        if a.phase in ("1", "all"):
+            verdict = phase1(out_dir, run_log, a)
+            # The checkpoint used to BLOCK here unless phase 1 came out clean.
+            # Tam, 2026-08-20: auto-continue. The gate was built on the
+            # assumption that `critic high == 0` is reachable, and it is not -
+            # measured on overcommit, a targeted pass that fixed both remaining
+            # highs had the critic return two NEW ones. A gate that never opens
+            # is not a gate, it is a stop. The summary still goes to Telegram in
+            # full, so a human can intervene; it just no longer waits for one.
+            # STOP_AT_CHECKPOINT=1 restores the old behaviour.
+            if (a.phase == "all" and verdict.get("exit") != "clean"
+                    and os.environ.get("STOP_AT_CHECKPOINT", "0") == "1"):
+                print(f"\nphase 1 exited '{verdict.get('exit')}' - not "
+                      f"continuing to phase 2 (STOP_AT_CHECKPOINT=1)", flush=True)
+                a.phase = "1"
+            elif a.phase == "all" and verdict.get("exit") != "clean":
+                print(f"\nphase 1 exited '{verdict.get('exit')}' - continuing to "
+                      f"phase 2 anyway (set STOP_AT_CHECKPOINT=1 to stop here)",
+                      flush=True)
+        if a.phase in ("2", "all"):
+            only = [int(x) for x in a.groups.split(",") if x.strip()]
+            p2 = phase2.run(out_dir, run_log, only=only or None)
+        blocks = os.environ.get("COHERENCE_BLOCKS", "0") == "1"
+        if a.phase == "all" and p2.get("coherence_fail") and blocks:
+            print(f"\ncoherence {p2.get('coherence')}/10 - not continuing to "
+                  f"phase 3 (COHERENCE_BLOCKS=1)", flush=True)
+        elif a.phase in ("3", "all"):
+            # 2026-08-20: this gate has never passed. overcommit 2/10,
+            # precedent 4/10, coach-party 3/10 - every run that reached it
+            # failed it, and the two that shipped did so because a person ran
+            # `--phase 3` by hand afterwards. A stop that is worked around
+            # every single time is not protecting anything; it is withholding
+            # the plates, the rulebook and the print kit from the human who
+            # has to make the draft->public call, and that call is where the
+            # real gate lives (publish.py only ever writes status=draft).
+            #
+            # So it records instead of stopping, loudly and in the artifact,
+            # and COHERENCE_BLOCKS=1 restores the hard stop for anyone who
+            # wants it. If a future run ever clears 6, tighten this back up -
+            # a floor nothing has cleared is a measurement, not a standard.
+            if p2.get("coherence_fail"):
+                warn = (f"coherence {p2.get('coherence')}/10 below "
+                        f"{os.environ.get('COHERENCE_MIN', '6')} - building "
+                        f"phase 3 anyway; the draft carries the flag")
+                print(f"\n{warn}", flush=True)
+                harness.telegram(f"text2game {out_dir.name}: {warn}")
+            p3 = phase3.run(out_dir, run_log)
+            if p2.get("coherence_fail") and isinstance(p3, dict):
+                p3["coherence_fail"] = True
+                p3["coherence"] = p2.get("coherence")
+                (out_dir / "phase3.json").write_text(
+                    json.dumps(p3, indent=2), encoding="utf-8")
+    finally:
+        print("\npostmortem: " + harness.postmortem(out_dir), flush=True)
+
+    comps = []
+    if (out_dir / "components.json").exists():
+        try:
+            comps = json.loads((out_dir / "components.json").read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            comps = []
+    if isinstance(comps, dict):
+        comps = comps.get("components", [])
+    sculpt = [c["id"] for c in comps if c.get("class") == "sculptural"]
+
+    if a.phase in ("2", "3") and not verdict:
+        summary = (f"text2game phase {a.phase} done: {a.slug}\n"
+                   f"phase2={json.dumps(p2)[:300]}\nphase3={json.dumps(p3)[:300]}")
+        print("\n" + summary, flush=True)
+        harness.telegram(summary)
+        return 0
+
+    lines = [f"text2game PHASE 1 done: {a.slug}",
+             f"exit: {verdict.get('exit')} (round {verdict.get('round')})",
+             f"parts: {len(comps)} distinct, {sum(c.get('qty', 0) for c in comps)} pieces",
+             f"sculptural: {len(sculpt)} {sculpt}",
+             f"consistency high={verdict.get('consistency_high')} "
+             f"critic high={verdict.get('critic_high')} "
+             f"referee={'CLEAN' if verdict.get('referee_clean') else 'FINDINGS'}"]
+    if verdict.get("evaluate"):
+        ev = verdict["evaluate"]
+        dl = verdict.get("evaluate_delta") or {}
+        lines.append("design: " + " ".join(
+            f"{k}={v:g}" + (f"({dl[k]:+g})" if dl.get(k) else "") for k, v in ev.items()))
+    if verdict.get("priorart"):
+        lines.append(f"prior art: {verdict['priorart']} - {verdict.get('nearest', '')[:120]}")
+    if verdict.get("blocked"):
+        lines.append(f"BLOCKED: {verdict['blocked'][:200]}")
+    if p2:
+        lines.append(f"phase2: {len(p2.get('groups', []))} group(s) built"
+                     + (f", STOPPED at {p2['stopped_at']}" if p2.get("stopped_at") else "")
+                     + (f", coherence {p2.get('coherence')}/10" if p2.get("coherence") else ""))
+    if p3:
+        lines.append(f"phase3: gate={p3.get('gate', {}).get('pass')} "
+                     f"plates={p3.get('plates')} "
+                     f"open questions={p3.get('open_questions')}")
+    lines += ["", "CHECKPOINT - read gdd.md + components.json, then approve phase 2.",
+              f"  {out_dir}"]
+    summary = "\n".join(lines)
+    (out_dir / "checkpoint.md").write_text(summary + "\n", encoding="utf-8")
+    print("\n" + summary, flush=True)
+    # Telegram gets a BRIEFING, not a receipt: what the game is, and why the
+    # panel picked it over the others. A slug and a score table cannot be read
+    # on a phone, and "why this one" is the question a human actually has.
+    harness.telegram(briefing(out_dir, a.slug, verdict, comps)[:3900])
+    return 0 if verdict.get("exit") == "clean" else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

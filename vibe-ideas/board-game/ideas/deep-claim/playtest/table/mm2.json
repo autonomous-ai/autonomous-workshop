@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 4,
+  "seed": 37,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "same as g1: small for 2 pts, leaves shelf open. This game I want to see if the second-floor grab on turn 4 still works, or if a different pacing is better.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "same as game 1: grab the next open floor for 2 points",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "Same plan as game one \u2014 claim a fresh floor while seats 0 and 1 already have theirs. Floor is worth 2 and keeps all three larges for late denial plays",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "same opening as game one; mirror seat 2 by taking bore 3 with a small so my marks cluster",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "repeat g1: take the second open floor before opponents can. Denies seats 2/3 a floor claim.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "bore 5 is the last floor; take it before seats 0/2/3 come back around",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "Identical to game-one turn 6: all six bores have rival floors and open shelves, all six options yield +1 and seal one rival's floor. Pick one to keep moving",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 2,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "this time I skip the denial play. Sealing a bore only gives me 1 shelf point and buries a 2-point floor for someone \u2014 a net +1 for me but locks the floor from ever being contested. Instead I leave bores 1, 2, 4, 5 open and accept that seat 2 will likely bury my floor next turn. The floors are already mine; the real question is whether I can get a second floor elsewhere. On turn 7 I still have 2 small and 3 large, so I have the inventory to do something \u2014 but the only legal moves are large. Picking bore 3 (my own floor) is the worst, since it just buries my own 2-pointer for 1 shelf. Of the remaining, bore 2 is the next seat 0 floor in the sequence and mirrors what seat 2 did to me last game \u2014 at least this time I am the one burying their floor on my turn rather than watching it happen. The structural problem is the same: I have no small available to claim a second floor this turn, so the large placements are pure denial. Between equal denial plays I pick the one that takes out seat 0 (currently leading with 4) on bore 2, the next active floor in rotation",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "all 4 bores give me 1 pt (all floors already claimed, no small legal); arbitrary pick",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "seat 2 already has 3 (floor 2 + now shelf 0). Sealing bore 2 denies seat 2 a future shelf on top of their floor, and I get +1 to match pace. Bores 4/5 leave me with shelves others might claim if they return",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 2,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "Bore 4 holds seat 0's floor; bore 5 holds seat 1's floor. Seat 0 and 1 are tied at 5. Picking bore 4 hurts seat 0 (one of the leaders). Otherwise symmetric; I break the tie against the player I most expect to win from observed play",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 3,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only legal move, and now the seats that have smalls left all still have a path to a second floor on bore 5 \u2014 whoever goes next gets it",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

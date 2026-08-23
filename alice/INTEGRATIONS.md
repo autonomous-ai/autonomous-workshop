@@ -94,6 +94,24 @@ publisher is not the production boundary.
 
 ## Existing rich-page draft and future Vibe public publish
 
+The deterministic `publish.packet` task now uses the shared
+`autonomous-inventor-core` artifact boundary. It wraps the exact canonical
+Alice production manifest as `publication.json`, requires that entry's SHA-256
+to equal Alice's already-reviewed `production_packet_hash`, and records both
+the core artifact-manifest identity and deterministic ZIP identity. The Vibe
+adapter rebuilds and compares the complete core binding before it creates a
+durable publication intent or sends a public effect. This adds a shared,
+reconstructable packaging contract without replacing Alice's stricter release
+policy, evidence ledger, or effect state machine.
+
+For the always-on worker, the shared-core package is also part of Alice's
+service identity. Installation passes the explicit `core/src` checkout to the
+sealed worker: identity checks continue to hash that mutable checkout, while
+all Alice and `inventor_core` imports used for execution resolve from the
+owner-only release snapshot. The bootstrap disables Python site initialization
+with `-I -S` before adding that snapshot, preventing editable-install `.pth`
+hooks from pre-caching an unsealed core module.
+
 Alice uses the production operator already built in `reinSPQR/vibe-ideas` and
 the normal Vibe public flip. It does **not** contain a second copywriter, image
 generator, video generator, or product-page renderer:

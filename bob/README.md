@@ -55,6 +55,18 @@ code — never advisory text twice.
 | `games/<slug>/` | one game: idea, rules, engine, sim reports, table transcripts, parts, page kit |
 | `ops/` | launchd plists, install/uninstall, watchdog |
 
+Bob uses the repository-level `core/` for two production contracts. Every
+publish payload is a canonical, content-addressed core packet (including the
+embedded `_inventor-artifact.json`), even in autonomous dry-run mode. The live
+Panda path runs through core's durable SQLite publication outbox, which records
+an effect intent before HTTP, blocks retries after timeouts/5xx responses, and
+requires an owner-, history-, listing-, price-, currency-, SKU-, packet-, and
+artifact-bound receipt before Bob records `live`. Bob's creative queue and CLI
+remain his own; `state/inventor-core.sqlite3` is the publication safety ledger.
+The core product identity is stable per Bob slug. If an import is ambiguous,
+editing the source cannot allocate a fresh retry lane; corrected bytes require
+a new slug until Panda exposes a content/idempotency receipt.
+
 ## Run it
 
 ```bash
@@ -69,6 +81,33 @@ ops/install.sh                             # go 24/7 (launchd) — ops/uninstall
 Publishing starts in dry-run (`BOB_PUBLISH_DRY_RUN=1` default). Going live
 needs the `bob` marketplace account credentials in `state/panda-auth.json` —
 minting that account is a one-time human act (docs/research/publish-contract.md §2).
+The dry-run `published.json` is stamped `publication_authority: none`: it is a
+rehearsal report, not an effect receipt. After credentials are installed, run
+`BOB_PUBLISH_DRY_RUN=0 python3 bob.py publish <slug>` to replace it with a
+core-backed draft receipt; the queue safely remains in `published` while the
+durable core outbox prevents duplicate imports.
+`published` is a waiting state and is never scheduled into `live`. After an
+ambiguous core-recorded flip, run `python3 bob.py reconcile-public <slug>`;
+the command never resends `/publish` (its marketplace readback is GET; auth
+may rotate first). A human admindash click made without Bob's
+price-bound core intent cannot be proven from Panda's current response and
+therefore does not advance the queue. Only an authenticated receipt for the
+same core intent, owner, artifact, history, active USD listing, price, and SKU
+advances Bob to `live`.
+
+The checked-in `g0003` / Clearance draft is historical and intentionally
+stranded: it was imported before core recorded publication intents, carries no
+core artifact identity, and its Panda receipt belongs to Dee rather than a Bob
+principal. Bob will neither adopt it nor retry that slug. Its current owner
+must resolve, unpublish, or archive the legacy draft separately; deployment
+must provision and pin a distinct Bob marketplace principal, then re-import
+the product under a new slug so core records the first effect.
+
+The official Panda origin is pinned by default. Staging requires both
+`BOB_PANDA_API` and an explicit comma-separated
+`BOB_PANDA_ALLOWED_ORIGINS`; an unpinned override fails closed. The monorepo
+layout is resolved automatically, or a deployment may set
+`BOB_CORE_SRC=/absolute/path/to/core/src`.
 
 Every auto-publish pings Telegram with the listing link and a one-tap
 UNPUBLISH. The human is a kill switch, not a turnstile.

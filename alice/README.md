@@ -20,6 +20,19 @@ all pass the pinned policy.
   mode for tests.
 - Hard publication gates plus an evidence-weighted multi-objective quality
   score that same-model grading cannot unlock.
+- A shared-core publication boundary: the normal `publish.packet` task passes
+  Alice's exact production manifest through `autonomous-inventor-core`, records
+  its content-addressed artifact manifest and reproducible ZIP identity, and
+  rebuilds that binding immediately before the Vibe effect. Alice's existing
+  production-manifest hash remains authoritative and must equal the core
+  packet's `publication.json` entry hash.
+- The always-on service folds the explicit, clean
+  `core/src/inventor_core` checkout into Alice's runtime identity and sealed
+  execution snapshot. Every worker identity check hashes that mutable checkout,
+  while a scheduled child can only import the owner-only core bytes that were
+  verified and sealed for its installed identity. Sealed processes use
+  `python -I -S`, disabling site packages and executable `.pth` startup hooks
+  before the release source is added.
 - A contextual Thompson-sampling learner for choosing improvement actions from
   verified held-out outcomes. Alice cannot edit or activate her own gates.
 - Strict command-adapter contracts for corpus, playtest, human, CAD, market,
@@ -81,7 +94,7 @@ read-only diagnostic; having a command in config is not readiness.
 cd alice
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e ../core -e .
 python -m unittest discover -s tests -v
 alice init
 alice status

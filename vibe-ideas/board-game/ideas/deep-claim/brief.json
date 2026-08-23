@@ -1,0 +1,51 @@
+{
+  "slug": "deep-claim",
+  "parts": [
+    {
+      "name": "assay_board",
+      "kind": "board",
+      "bbox_mm": [190, 190, 34],
+      "qty": 1,
+      "tiles": 1,
+      "relief_mm": 0.8,
+      "notes": "Round slab, 190mm diameter x 34mm thick. Six identical two-stage bores on a ring at 62mm radius from board center, evenly spaced at 60deg (adjacent bore-center chord = 62mm; adjacent shelf-rim-to-shelf-rim gap = 62 - 17 - 17 = 28mm of solid material). Each bore, measured downward from the top face: shelf chamber 34mm diameter x 6mm deep, then throat 18mm diameter x 4mm deep, then floor chamber 22mm diameter x 11mm deep with a closed (solid) bottom. Total bore depth 21mm, leaving 13mm of solid slab beneath every floor chamber. Top face carries 1mm-deep radial vein relief between bores; each shelf rim carries a 0.8mm-deep witness collar (the shallower of the two relief features is the one declared in relief_mm above, since it is the binding constraint). Shelf rim gets a 1mm x 45deg lead-in chamfer, unstated in idea.json, added so a large puck cannot catch a sharp printed edge on the way in.",
+      "recesses": [
+        {"holds": "disc_large_mark3", "width_mm": 34, "depth_mm": 6, "count": 6}
+      ]
+    },
+    {"name": "disc_large_mark3", "kind": "loose_piece", "bbox_mm": [28, 28, 9], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Broad puck. Top face carries 3 raised pyramid ownership studs, 1.2mm proud."},
+    {"name": "disc_large_mark4", "kind": "loose_piece", "bbox_mm": [28, 28, 9], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Broad puck. Top face carries 4 raised pyramid ownership studs, 1.2mm proud. Identical bbox to disc_large_mark3; shares its shelf-seat geometry on assay_board."},
+    {"name": "disc_large_mark5", "kind": "loose_piece", "bbox_mm": [28, 28, 9], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Broad puck. Top face carries 5 raised pyramid ownership studs, 1.2mm proud. Identical bbox to disc_large_mark3; shares its shelf-seat geometry on assay_board."},
+    {"name": "disc_large_mark6", "kind": "loose_piece", "bbox_mm": [28, 28, 9], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Broad puck. Top face carries 6 raised pyramid ownership studs, 1.2mm proud. Identical bbox to disc_large_mark3; shares its shelf-seat geometry on assay_board."},
+    {"name": "disc_small_mark3", "kind": "loose_piece", "bbox_mm": [14, 14, 8], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Slim puck. Top face carries 3 raised pyramid ownership studs, 1.2mm proud, matching disc_large_mark3's owner."},
+    {"name": "disc_small_mark4", "kind": "loose_piece", "bbox_mm": [14, 14, 8], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Slim puck. Top face carries 4 raised pyramid ownership studs, 1.2mm proud, matching disc_large_mark4's owner. Identical bbox to disc_small_mark3; shares its throat/floor-seat geometry on assay_board."},
+    {"name": "disc_small_mark5", "kind": "loose_piece", "bbox_mm": [14, 14, 8], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Slim puck. Top face carries 5 raised pyramid ownership studs, 1.2mm proud, matching disc_large_mark5's owner. Identical bbox to disc_small_mark3; shares its throat/floor-seat geometry on assay_board."},
+    {"name": "disc_small_mark6", "kind": "loose_piece", "bbox_mm": [14, 14, 8], "qty": 3, "stackable": false, "relief_mm": 1.2, "notes": "Slim puck. Top face carries 6 raised pyramid ownership studs, 1.2mm proud, matching disc_large_mark6's owner. Identical bbox to disc_small_mark3; shares its throat/floor-seat geometry on assay_board."}
+  ],
+  "interfaces": [
+    {
+      "kind": "seats",
+      "piece": "disc_large_mark3",
+      "into": "assay_board",
+      "clearance_mm": 3.0,
+      "notes": "Applies identically to disc_large_mark4/5/6 (all four owner variants share this bbox — one geometry, four studs). The 28mm puck drops into the 34mm-diameter, 6mm-deep shelf chamber; it cannot descend further because the chamber narrows to the 18mm throat (28mm > 18mm, a 5mm margin per side, so the catch is robust to print tolerance). Owns: shelf diameter (34mm) and shelf depth (6mm); disc_large diameter (28mm) and height (9mm) derive their fit from those. At depth 6mm the 9mm-tall puck sits 3mm PROUD of the slab's top face when seated — matches idea.json's own hero-shot language ('sitting proud at shelf level') and clears ergonomics_check's 2mm minimum protrusion for retrieval."
+    },
+    {
+      "kind": "seats",
+      "piece": "disc_small_mark3",
+      "into": "assay_board",
+      "clearance_mm": 2.0,
+      "notes": "Applies identically to disc_small_mark4/5/6. The 14mm puck passes freely through the 18mm-diameter, 4mm-deep throat (2mm clearance per side) whenever that bore's shelf is unplugged, then drops the remaining depth to rest on the closed floor chamber (22mm diameter x 11mm deep). Owns: throat diameter (18mm, shared with the seats-interface above, where it is also the value disc_large_mark3 must NOT fit through) and floor depth (11mm); disc_small diameter (14mm) and height (8mm) derive their fit from the throat. Seated puck's top face sits ~13mm below the slab's top face. Deliberately NOT declared as a `recesses` entry on assay_board's ergonomics block: the retrieval formula assumes a single-depth pocket, but the real limiting aperture here is the 18mm throat 2mm above the piece, not the 22mm floor chamber it rests in — widening the throat to the >=38mm the formula would need to call this 'retrievable' would let a 28mm disc_large pass through it too, destroying the size gate the whole game depends on. No rule in idea.json ever requires removing a seated piece during play (a floor claim is meant to sit there, sealed under an open shelf, until someone caps it or the game ends), so this is being treated as an intentional one-way placement, not an omission. Teardown/storage removal is by tipping the slab, not by fingertip pinch."
+    }
+  ],
+  "print_plan": {
+    "min_wall_mm": 1.6,
+    "notes": "assay_board prints flat, bottom face down, all six bore openings facing up. Every shelf/throat and throat/floor transition is a horizontal ring bridging over the void below it (max unsupported span 9mm radius, at the throat-to-shelf step) — well inside FDM bridging limits for a flat, non-curling horizontal bridge, so the whole board prints with no supports. Pucks print flat, stud face up, no supports. Single tile — 190x190x34mm is well inside the 246x246x251mm bed, no splitting needed."
+  },
+  "unstated_in_spec": [
+    "idea.json marked the assay_board's overall diameter (~190mm) and both bore depths (~12mm shelf, ~11mm floor) as approximate with a tilde, unlike the diameters (34/18/22mm bores, 28/14mm pucks) and the 34mm slab thickness and 62mm ring radius, which are stated as fixed. I kept the board diameter at 190mm and the floor depth at 11mm, but cut the shelf depth from ~12mm to 6mm: ergonomics_check.py showed a 9mm-tall disc_large resting on a 12mm-deep shelf sits 3mm BELOW the rim inside a 34mm chamber with only 3mm clearance per side — under both the 2mm minimum protrusion and the 12mm finger-room fallback, i.e. ungraspable by the same formula that failed turn 15's Sluice Row seeds. At 6mm deep the puck instead sits 3mm proud of the top face, which is also literally what idea.json's own hero_shot text already claims ('broad pucks sitting proud at shelf level'), so this reads as firming up a number the idea's own art direction had already committed to, not a new design choice. This does not touch the diameter-driven size gate (28mm puck vs 18mm throat vs 34mm chamber) that the win condition actually depends on.",
+    "idea.json never states a throat depth (the vertical extent of the narrow 18mm passage between the shelf chamber and the floor chamber) — it only names the throat's diameter. I set it to 4mm: enough to read as a distinct constriction rather than a knife-edge, and small enough that total bore depth (6 + 4 + 11 = 21mm) stays well inside the 34mm slab thickness, leaving 13mm of solid material under every floor chamber.",
+    "idea.json never states a retrieval provision for disc_small once it is seated on the floor chamber (13mm below the top face, reachable only through the 18mm throat, 2mm clearance per side). I did not invent one (e.g. a bottom access port or a magnetic wand), since no rule ever calls for removing a placed piece mid-game and inventing a mechanism would be design, not translation. I flagged this directly in the interfaces block instead of quietly omitting the ergonomics recess check that would otherwise fire on it — see the disc_small_mark3 interface note for the full reasoning.",
+    "idea.json describes a 0.8mm witness collar and 1mm vein relief on the slab and 1.2mm-proud studs on the pucks, but never specifies a lead-in chamfer on the shelf rim. I added a 1mm x 45deg chamfer there so a printed puck edge doesn't have to catch on a sharp printed corner on the way into the bore — a printability detail, not a rules change."
+  ]
+}

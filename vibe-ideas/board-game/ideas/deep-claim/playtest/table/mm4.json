@@ -1,0 +1,123 @@
+{
+  "slug": "deep-claim",
+  "idea_dir": "board-game/ideas/deep-claim",
+  "engine": "board-game/ideas/deep-claim/playtest/engine.py",
+  "seats": 2,
+  "seed": 63,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 0)",
+      "by": "player",
+      "why": "start with small for 2 pts; same logic holds at 2p",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 1)",
+      "by": "player",
+      "why": "2-player, 6 bores, I have 3 smalls and seat 0 has 3 smalls \u2014 6 smalls total for 6 bores, so all floors will get claimed. Take one now for the 2 points",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 2)",
+      "by": "player",
+      "why": "now is where 2p differs from 4p. At 2p I have only one opponent and 4 open bores. I should think: if I take small again, I get 2 more pts but seat 1 then takes a floor. If I take large, I seal a floor I just claimed for 1 pt \u2014 wasteful. Small is still better than large, but now I have to think about pacing. With 4 bores and 2 smalls each, total 4 smalls and we have 4 open bores \u2014 all floors will get claimed. Then it's about shelf denial. Take a second small: 2 more pts, opponent mirrors.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 3)",
+      "by": "player",
+      "why": "3 bores left, I have 1 small left, seat 0 has 2 \u2014 seat 0 will get 2 more floors to my 1. Just grab mine now on the lowest free bore",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 6,
+      "move": "('place_small', 4)",
+      "by": "player",
+      "why": "mirror: take third small. Now we both have 1 small + 3 large. 2 open bores left, 2 smalls left between us. After this, opponent takes last small, then we each have 3 large and 2 open shelves.",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 6,
+      "move": "('place_small', 5)",
+      "by": "player",
+      "why": "I have 1 small left, seat 0 has 0 \u2014 but small is legal here. Take the last floor before seat 0 can do anything about it. Wait, seat 0 has 0 smalls left. If I don't take it, who can? Only seat 0 if they had one, but they don't. Still legal for me, so take the 2 points",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 0)",
+      "by": "player",
+      "why": "",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 1)",
+      "by": "player",
+      "why": "6 points vs 7 \u2014 seat 0 has 5 shelves waiting for me to half-claim. I need shelves; seat 0 has 3 larges left and I have 2. If I seal bore 1 (above my floor), I get +1 to 7 tie, and seat 0 then has only 2 shelves to grab. But seat 0 already has my floor under their shelf on bore 0 \u2014 sealing that one (which is already sealed) isn't an option. Sealing bore 1 denies seat 0 that shelf",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 2)",
+      "by": "player",
+      "why": "forced 9-9; pick any",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 3)",
+      "by": "player",
+      "why": "seal bore 3 (my floor) for +1 to tie at 8. All three open bores have my floor; whichever I pick gets me a shelf. Pick lowest index",
+      "arbitrary": false,
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('place_large', 4)",
+      "by": "player",
+      "why": "forced 9-9",
+      "arbitrary": true,
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 0,
+      "move": "('place_large', 5)",
+      "by": "player",
+      "why": "only move; seat 0 wins 9-9 if I also place? No \u2014 placing on bore 5 seals my last open bore, +1 to 9, tie. Then seat 0's last large could seal another. Either way I take my last shelf",
+      "arbitrary": false,
+      "note": null
+    }
+  ]
+}

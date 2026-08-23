@@ -1,0 +1,67 @@
+{
+  "slug": "millbind",
+  "idea_dir": "board-game/ideas/millbind",
+  "engine": "board-game/ideas/millbind/playtest/engine.py",
+  "seats": 2,
+  "seed": 24,
+  "scripted": {},
+  "agent_turns": 0,
+  "finish_with": "greedy",
+  "seed_blind": true,
+  "wire": "anthropic/cached/stream",
+  "handed_over_at": null,
+  "moves": [
+    {
+      "seat": 0,
+      "choice": 8,
+      "move": "('setup_mill', (0, -3))",
+      "by": "player",
+      "why": "any yard pin is equivalent by board symmetry, and the opponent's mill placement will shape actual strategy from here",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 1,
+      "choice": 16,
+      "move": "('setup_mill', (3, 0))",
+      "by": "player",
+      "why": "Opposite corner from seat 0's mill so we are not neighbours and cannot block each other directly.",
+      "arbitrary": true,
+      "decision": "indifferent",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 4,
+      "move": "('setup_crank', (-2, -1))",
+      "by": "player",
+      "why": "placing crank at (-2,-1) is only 2 ring steps from my mill (0,-3) via (-1,-2), giving me an early chance to chain a single gear and grind round 1, while keeping the crank far from opp's mill at (3,0) so opp struggles to build a quick chain",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 0,
+      "move": "('power', (-2, -1))",
+      "by": "player",
+      "why": "keeping crank at (-2,-1) preserves my setup plan; no bind risk with only two mills and the crank standing, and I want my chain through (-1,-2) to (0,-3)",
+      "arbitrary": true,
+      "decision": "forced",
+      "note": null
+    },
+    {
+      "seat": 0,
+      "choice": 9,
+      "move": "('place', (-1, -2), 'gear_low')",
+      "by": "player",
+      "why": "(-1,-2) neighbors both crank (-2,-1) and my mill (0,-3), letting a single gear_low bridge them \u2014 I'll be the lone clockwise mill this grind for 2 pellets, and I keep the tandem supply intact for later cross-tier welding",
+      "arbitrary": false,
+      "decision": "real",
+      "note": null
+    }
+  ],
+  "abandoned_at": 5,
+  "abandoned_because": "seat 1 returned nothing readable on a position offering 114 moves"
+}

@@ -34,7 +34,8 @@ class TestPriorityCompleteness(QueueHome):
     def test_priority_union_terminal_covers_all_states(self):
         # The scheduler-hole receipt: a state outside both sets stalls
         # every game that reaches it, silently.
-        self.assertEqual(set(queue.PRIORITY) | set(queue.TERMINAL),
+        self.assertEqual(set(queue.PRIORITY) | set(queue.WAITING) |
+                         set(queue.TERMINAL),
                          set(queue.ALL_STATES))
 
     def test_priority_and_terminal_disjoint(self):
@@ -85,6 +86,11 @@ class TestTransitions(QueueHome):
     def test_terminal_states_have_no_exits(self):
         self.assertEqual(queue.TRANSITIONS["killed"], frozenset())
         self.assertEqual(queue.TRANSITIONS["live"], frozenset())
+
+    def test_published_waits_for_verified_live(self):
+        self.assertIn("published", queue.WAITING)
+        self.assertNotIn("published", queue.PRIORITY)
+        self.assertIn("live", queue.TRANSITIONS["published"])
 
     def test_advance_appends_log_and_releases_lease(self):
         queue.add_game("g", "G")

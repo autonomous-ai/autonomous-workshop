@@ -1,7 +1,17 @@
-# local env + creds
+# local env + creds (only inert examples belong in Git)
 .env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
 *.pem
 *.key
+*.p12
+*.pfx
+**/*.bak
+**/*.bak-*
+**/*.bak.*
 **/state/panda-auth.json
 
 # runtime noise (state that matters — QUEUE, ledger, bandit, DAYBOOK — IS committed)
@@ -16,11 +26,23 @@
 # python
 __pycache__/
 *.pyc
+*.egg-info/
+.pytest_cache/
+.coverage
 .venv*/
+/core/build/
+/core/dist/
 
 # macOS
 .DS_Store
 .venv-cad/
+.runtime/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
 
 # regen build artifacts (store records live in published.json)
 eve/games/*.zip

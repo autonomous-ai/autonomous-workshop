@@ -453,6 +453,7 @@ OUTPUT_CONTRACTS: dict[str, dict[str, Any]] = {
         "required": [
             "publication_packet",
             "packet_hash",
+            "core_packet",
             "policy_hash",
             "release_decision",
         ],

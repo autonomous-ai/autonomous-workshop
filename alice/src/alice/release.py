@@ -8,6 +8,7 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
+from .core_integration import CoreIntegrationError, build_core_packet_binding
 from .fulfillment import (
     FulfillmentValidationError,
     manufacturing_spec_from_manifest,
@@ -909,9 +910,19 @@ def build_publication_packet(
     ):
         raise ReleaseAssemblyError("production manifest candidate version mismatch")
     policy_hash = _sha(release_decision, "policy_hash")
+    try:
+        core_packet = build_core_packet_binding(
+            packet,
+            alice_packet_sha256=production_hash,
+        )
+    except CoreIntegrationError as exc:
+        raise ReleaseAssemblyError(
+            f"shared core publication assembly failed: {exc}"
+        ) from exc
     return {
         "publication_packet": dict(packet),
         "packet_hash": production_hash,
+        "core_packet": core_packet,
         "policy_hash": policy_hash,
         "release_decision": {
             "allowed": True,

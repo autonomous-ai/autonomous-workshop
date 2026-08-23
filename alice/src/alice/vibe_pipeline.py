@@ -24,6 +24,7 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Mapping, Protocol
 
 from .adapters import AdapterError, AdapterReceipt, adapter_input_sha256
+from .core_integration import CoreIntegrationError, validate_core_packet_binding
 from .page import (
     PageVerification,
     has_exact_alice_product_description_suffix,
@@ -1934,6 +1935,14 @@ class VibePublishingAdapter:
             raise AdapterError(
                 "release decision artifact_manifest_sha256 mismatch"
             )
+        try:
+            validate_core_packet_binding(
+                packet,
+                alice_packet_sha256=packet_hash,
+                binding=content.get("core_packet"),
+            )
+        except CoreIntegrationError as exc:
+            raise AdapterError(f"core publication packet binding failed: {exc}") from exc
         price_cents = price.get("price_cents")
         operation_key = (
             f"alice:vibe:{candidate_id}:v{version}:{packet_hash}"

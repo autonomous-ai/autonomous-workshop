@@ -1,0 +1,370 @@
+{
+  "slug": "millbind",
+  "wire": "anthropic/cached/stream",
+  "model": "qwen/qwen3.6-27b",
+  "breaker_seat": 0,
+  "seconds": 9060.9,
+  "usage": {
+    "in": 18492318,
+    "out": 620775,
+    "cached": 0,
+    "cache_write": 0,
+    "cost_usd": 0.0,
+    "calls": 220
+  },
+  "leaks": [],
+  "games": [
+    {
+      "label": "g1",
+      "seats": 4,
+      "seed": 24,
+      "seed_blind": true,
+      "stuck": false,
+      "finished": true,
+      "decisions": 60,
+      "scores": [
+        9.0,
+        0.0,
+        1.0,
+        12.0
+      ],
+      "winners": [
+        3
+      ],
+      "undefined": null,
+      "arbitrary_rate": 0.067,
+      "decisions_by_seat": {
+        "0": {
+          "forced": 0,
+          "indifferent": 1,
+          "scripted": 0,
+          "real": 15,
+          "unstated": 0
+        },
+        "1": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 0,
+          "real": 14,
+          "unstated": 1
+        },
+        "2": {
+          "forced": 1,
+          "indifferent": 1,
+          "scripted": 0,
+          "real": 13,
+          "unstated": 0
+        },
+        "3": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 0,
+          "real": 14,
+          "unstated": 0
+        }
+      },
+      "arbitrary_by_seat": {
+        "0": 0.062,
+        "1": 0.067,
+        "2": 0.133,
+        "3": 0.0
+      },
+      "session": "board-game/ideas/millbind/playtest/table/g1.json"
+    },
+    {
+      "label": "g2",
+      "seats": 4,
+      "seed": 37,
+      "seed_blind": true,
+      "stuck": false,
+      "finished": true,
+      "decisions": 40,
+      "scores": [
+        4.0,
+        0.0,
+        4.0,
+        6.0
+      ],
+      "winners": [
+        3
+      ],
+      "undefined": null,
+      "arbitrary_rate": 0.45,
+      "decisions_by_seat": {
+        "0": {
+          "forced": 0,
+          "indifferent": 1,
+          "scripted": 4,
+          "real": 6,
+          "unstated": 0
+        },
+        "1": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 5,
+          "real": 5,
+          "unstated": 0
+        },
+        "2": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 3,
+          "real": 7,
+          "unstated": 0
+        },
+        "3": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 5,
+          "real": 4,
+          "unstated": 0
+        }
+      },
+      "arbitrary_by_seat": {
+        "0": 0.455,
+        "1": 0.5,
+        "2": 0.3,
+        "3": 0.556
+      },
+      "session": "board-game/ideas/millbind/playtest/table/g2.json"
+    },
+    {
+      "label": "g3",
+      "seats": 4,
+      "seed": 50,
+      "seed_blind": true,
+      "stuck": false,
+      "finished": true,
+      "decisions": 60,
+      "scores": [
+        1.0,
+        4.0,
+        1.0,
+        0.0
+      ],
+      "winners": [
+        1
+      ],
+      "undefined": null,
+      "arbitrary_rate": 0.283,
+      "decisions_by_seat": {
+        "0": {
+          "forced": 0,
+          "indifferent": 1,
+          "scripted": 3,
+          "real": 12,
+          "unstated": 0
+        },
+        "1": {
+          "forced": 0,
+          "indifferent": 2,
+          "scripted": 5,
+          "real": 8,
+          "unstated": 0
+        },
+        "2": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 1,
+          "real": 14,
+          "unstated": 0
+        },
+        "3": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 5,
+          "real": 9,
+          "unstated": 0
+        }
+      },
+      "arbitrary_by_seat": {
+        "0": 0.25,
+        "1": 0.467,
+        "2": 0.067,
+        "3": 0.357
+      },
+      "session": "board-game/ideas/millbind/playtest/table/g3.json"
+    },
+    {
+      "label": "g4",
+      "seats": 2,
+      "seed": 63,
+      "seed_blind": true,
+      "stuck": false,
+      "finished": true,
+      "decisions": 15,
+      "scores": [
+        4.0,
+        4.0
+      ],
+      "winners": [
+        1
+      ],
+      "undefined": null,
+      "arbitrary_rate": 0.6,
+      "decisions_by_seat": {
+        "0": {
+          "forced": 0,
+          "indifferent": 1,
+          "scripted": 3,
+          "real": 4,
+          "unstated": 0
+        },
+        "1": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 5,
+          "real": 2,
+          "unstated": 0
+        }
+      },
+      "arbitrary_by_seat": {
+        "0": 0.5,
+        "1": 0.714
+      },
+      "session": "board-game/ideas/millbind/playtest/table/g4.json"
+    },
+    {
+      "label": "g5",
+      "seats": 2,
+      "seed": 76,
+      "seed_blind": true,
+      "stuck": false,
+      "finished": true,
+      "decisions": 15,
+      "scores": [
+        4.0,
+        4.0
+      ],
+      "winners": [
+        1
+      ],
+      "undefined": null,
+      "arbitrary_rate": 0.8,
+      "decisions_by_seat": {
+        "0": {
+          "forced": 0,
+          "indifferent": 1,
+          "scripted": 4,
+          "real": 3,
+          "unstated": 0
+        },
+        "1": {
+          "forced": 0,
+          "indifferent": 0,
+          "scripted": 7,
+          "real": 0,
+          "unstated": 0
+        }
+      },
+      "arbitrary_by_seat": {
+        "0": 0.625,
+        "1": 1.0
+      },
+      "session": "board-game/ideas/millbind/playtest/table/g5.json"
+    }
+  ],
+  "rules_questions": [],
+  "debriefs": [
+    {
+      "game": "g1",
+      "seat": 0,
+      "text": "I cared about turn 25, moving the crank to (-3,3) to lock in odd parity for my chain.\nMy plan to build a dedicated low-tier path worked early, but seat 3's aggressive high-tier placements eventually outpaced my scoring rate.\nThe winner maintained better mesh connectivity and consistently hit the clockwise bonus when I couldn't isolate my mill.\nI wanted a legal move to block opponents' paths without risking a bind on my own gears.\nI would play again at four seats; the parity mechanic is sharp and the count works well.\nThe late-game passing phase felt draggy as supply dwindled, but nothing was broken or unfair."
+    },
+    {
+      "game": "g1",
+      "seat": 1,
+      "text": "Most critical decision was turn 43 (placing gear_high at 3, -1), where I wrongly assumed it would bridge my mill to the adjacent low gear at 2, -1.\nMy plan was to build an isolated odd-length chain to the crank for solo bonus points; the game let me attempt it, but the tier-mismatch rule broke my chain entirely.\nThe winner (seat 3) secured power early, placed tandems to bypass tier restrictions, and locked in clockwise turns every round while I chased a broken path.\nNo missing moves; the rules are clear, but the penalty for ignoring height tiers is absolute.\nI would play again at 4 players, but only after memorizing that low and high gears physically cannot mesh without a tandem.\nNothing felt broken or unfair\u2014just a harsh lesson that the \"two facts of engineering\" in the brief are the entire game."
+    },
+    {
+      "game": "g1",
+      "seat": 2,
+      "text": "I cared most about turn 8, placing gear_low at (-2,2) to attempt a drivable bridge to the crank.\nMy plan was securing an odd-length chain for clockwise rotation, but seat 3's central placement fractured my reach.\nThe winner anchored short, resilient paths and consistently controlled optimal crank positions to deny me rotation.\nNo missing moves, though shifting's high opportunity cost makes repositioning feel overly punitive.\nI would play again at this count to test different chain geometries, but expect similar lopsided results.\nThe late-game passing felt pointless; a mechanic to contest the crank or penalize idle turns would tighten the win race."
+    },
+    {
+      "game": "g1",
+      "seat": 3,
+      "text": "Turn 40 (POWER) was decisive: shifting the crank to (-2, 3) to lock an odd-length path to my mill.\nPlan: maintain odd parity and avoid triangle loops; the game allowed this and it secured the win.\nI actively rerouted the crank each round and hoarded high-tier gears to guarantee clockwise turns, unlike others who placed blindly.\nA non-binding \"probe\" to test mesh parity without losing the action if it binds.\nYes at four players, but only if the physical bind-checking is streamlined.\nThe mandatory quarter-turn test after every placement is tedious and breaks pacing."
+    },
+    {
+      "game": "g2",
+      "seat": 0,
+      "text": "Turn 26.\nMy low-tier parity chain plan executed, but seat 3's central mesh scored faster.\nWinner seized the center with tandems, creating multiple independent crank paths.\nA non-binding block move to prevent opponents from attaching to my chain.\nYes, at four seats; the parity puzzle is tight and the count balances well.\nLate-game passing dragged as supply dried up, but rules held up.\nI knew the opening parity line from turn 0, and was sure by turn 4 that central control would win.\nI now move the crank adjacent to my mill on turn 1 to guarantee an immediate bridge."
+    },
+    {
+      "game": "g2",
+      "seat": 1,
+      "text": "Turn 31 (placing gear_low at 2, -2) was critical: I misjudged parity and failed to connect before the crank moved.\nPlan was an isolated odd-chain for solo points; failed because the crank relocated and left my chain disconnected during grinds.\nWinner (seat 3) secured a stable path early, used tandems to bridge tiers, and scored every round while I chased a moving target.\nNo missing moves; tier-mismatch and crank mobility are the intended core challenges.\nI would play again at 4 players, prioritizing direct crank connection over deep isolated chains.\nNothing broken; just a harsh reminder that isolated chains are useless if power leaves.\nI knew the opening would mirror game 1, but was sure by turn 7 that seat 3 would dominate without immediate connection.\nI now place gears adjacent to the crank rather than building deep chains away from it, correcting my game 1 mistake."
+    },
+    {
+      "game": "g2",
+      "seat": 2,
+      "text": "I cared most about turn 16, bridging the crank at (-2, -1) to my mill with a low gear to secure rotation.\nMy plan was building a resilient odd-length chain, but seat 3's tandem placements fractured parity before I could lock it.\nThe winner anchored central pivots and shifted the crank to exploit alternate paths, denying me consistent clockwise turns.\nNo missing moves, but shifting's action cost punishes adaptation, forcing passive play when geometry turns hostile.\nI would play again at four seats to test reactive bridging, though the math heavily favors the center.\nLate-game passing felt hollow; a penalty for idle turns would stop the dead air when the board locks up.\nBefore this game, I knew the setup but not the crank shifts; I was sure by turn 15 that reactive bridging was mandatory.\nI now place a low gear at (-2, 0) to bridge a left-flank crank, a move I computed here but avoided in game one."
+    },
+    {
+      "game": "g2",
+      "seat": 3,
+      "text": "Round 3 POWER to (3,-1) secured the winning chain.\nPlan: maintain odd-parity to my mill and park high tiers on isolated pins; the game allowed it.\nI win by rerouting the crank each round and consuming supply safely without touching the low mesh.\nA probe move that tests parity without costing the action on a bind would be useful.\nYes at four players, but the mandatory quarter-turn checks drag pacing.\nKnew the line from setup turn 3; (0,3) is optimal. I now automatically play (1,1) low then (0,1) high."
+    },
+    {
+      "game": "g3",
+      "seat": 0,
+      "text": "Turn 26 bridging to the crank.\nMy outer-ring parity plan stalled when the center congested, leaving my mill stranded.\nSeat 1 secured early central mesh control and never lost parity alignment with the crank.\nA binding-safe way to nudge opponent gears off a pin without wasting an action.\nYes, at four seats; the parity tension is tight and replayable.\nLate passing dragged as supply died, but rules held up.\nI knew the opening by turn 0, and was sure by turn 4 that central congestion would kill my chain.\nThe game got smaller: outer-ring parity is fragile against central tandems, so I now place the crank adjacent to my mill on turn 1."
+    },
+    {
+      "game": "g3",
+      "seat": 1,
+      "text": "Turn 31 was decisive: placing gear_low at (2, 0) secured an odd-length chain before opponents could shift parity.\nMy plan was to grab crank-adjacent power early, then pass to conserve gears; the game let me lock it in after round 2.\nI outlasted seat 3's wasted tandems and seat 2's scattered low gears by controlling parity and sitting on my lead.\nNo missing moves; placement, shifting and power cover what a player actually needs.\nI would play again at four, opening with crank-adjacent placement as a fixed line.\nNothing broken; the game cleanly rewards early connection and patience over chaotic building.\nI knew I'd win by turn 39 when seats 2 and 3 passed consecutively, leaving my chain unchallenged.\nI now open with a gear adjacent to the crank rather than building deep isolated chains, correcting game 1."
+    },
+    {
+      "game": "g3",
+      "seat": 2,
+      "text": "I cared most about turn 38, placing a tandem at (-1, 1) to secure a clockwise drive.\nMy plan was building an odd-length chain to the crank, but seat 1's center control starved me.\nThe winner anchored central pins and shifted the crank to exploit short paths while isolating rivals.\nI wanted a way to contest the crank's rotation without spending an action, which the rules lack.\nI would play again at four seats, though center dominance makes flank play nearly hopeless.\nLate-game parity traps felt punishing when one gear bound a cluster for zero gain.\nI knew the setup but not crank shifts; I was sure by turn 32 that reactive tandem bridging was mandatory.\nI now play (-1, 1) tandem to link flank chains to the center, a move I computed manually here."
+    },
+    {
+      "game": "g3",
+      "seat": 3,
+      "text": "Turn 41 POWER was the only decision that mattered, but my parity was locked too early to recover.\nPlan: secure odd-chain to (0,3); the game allowed it, but seat 1 monopolized crank reroutes.\nWinner: seat 1 moved the crank every round to feed their mill while leaving mine isolated.\nMissing move: a free parity probe that doesn\u2019t cost the action if it binds.\nKnew from turn 13 seat 1 would dominate; I now auto-play (0,3) setup and skip center lows.\nPlay again at 4? Yes, but the mandatory bind-test breaks pacing and feels pointless late-game."
+    },
+    {
+      "game": "g4",
+      "seat": 0,
+      "text": "Turn 14: forcing the endgame.\nMy attrition plan backfired when a mutual pass triggered a final grind that tied the score.\nWinner matched my pass, exploiting the \"no gear placed\" rule to close the gap.\nA rule allowing forced opponent action without placing a gear.\nYes, at two seats; the parity puzzle is tight, but the pass-spiral end condition feels blunt.\nI knew the opening by turn 0 and now always place the crank adjacent to my mill on turn 1."
+    },
+    {
+      "game": "g4",
+      "seat": 1,
+      "text": "CHOICE 0\nWHY my chain is already set for a solo clockwise turn; passing banks 2 pellets without risking a bind or parity shift.\nDECISION real"
+    },
+    {
+      "game": "g5",
+      "seat": 0,
+      "text": "Turn 14 deciding the tie.\nParity plan hit 4-0, but passing to avoid binding tied it 4-4, handing the win to seat 1 on the final-grind tiebreak.\nWinner mirrored my pass, exploiting the \"no gear placed\" rule to lock in a clockwise final grind.\nA forced-place action to prevent passive ties; I would play again at two seats despite the blunt pass-spiral end condition.\nI knew it by turn 4 and now always crank adjacent; the game got smaller because two-player parity is a fixed point.\nPass-ties are inevitable, so I now bridge early and never pass, costing the game all mid-game tension."
+    },
+    {
+      "game": "g5",
+      "seat": 1,
+      "text": "Turn 13 (passing) was the only meaningful decision, banking the solo bonus to secure the tie-break win condition.\nMy plan was to establish a 1-gear odd chain to the crank and pass to conserve gears; the game let me execute it exactly.\nI controlled the crank position and parity, waiting for the opponent to waste turns while I secured the tie-break rule.\nNo missing moves; the rules cover exactly what is needed to solve the parity puzzle.\nI would play again at two players, as the direct parity conflict is cleaner than the 4-player noise.\nNothing feels broken; the game is highly solvable once the crank-distance parity rule is understood.\nI knew from turn 1 that I would replicate the winning line from games 3 and 4 exactly.\nI now open with a gear adjacent to the crank rather than building deep isolated chains, correcting game 1."
+    },
+    {
+      "game": "RUN END",
+      "seat": 0,
+      "text": "Yes. By game three, the opening line was completely solved: park the crank two pins from your mill, bridge the gap on turn one with a single low gear, and bank two points for the solo clockwise bonus. After that, every turn reduced to a binary check: does this gear flip my parity or close an odd loop? In two-player, it collapsed further into a pass-spiral where both sides just extended safe leaf gears or passed to trigger the \"no gear placed\" end condition, leaving the final-grind tiebreaker to decide the match. The cost to the game is severe: the stated tension of managing a shared, interlocking mesh network evaporates the moment the opening parity trick is known, leaving only attrition, bind-avoidance, and end-condition exploitation. A game that survives three sessions of actively trying to kill its own opening line deserves credit, but Millbind does not. It becomes a rote exercise in avoiding triangles and waiting for the opponent to run out of legal moves."
+    },
+    {
+      "game": "RUN END",
+      "seat": 1,
+      "text": "Did this game get smaller? Yes, drastically.\n\nWhat I know now: Millbind is not a spatial placement game; it is a parity lock. The crank\u2019s position dictates power, so building chains away from it is pointless because the next start player simply moves the crank elsewhere. The winning line is a three-turn script: place your mill, move the crank to a yard pin adjacent to yours, place a single gear to bridge them (creating a one-gear odd chain for a clockwise turn and solo bonus), then pass. Gear tiers only matter to avoid binding triangles, not for long-term strategy.\n\nWhat it cost: The middle and end games evaporate. Once the crank is parked and bridged, the rest of the round is just passing or making cosmetic fills. The solo bonus rule makes deep chain-building obsolete, turning a stated 35-minute supply management puzzle into a solved opening sequence. If both players know the line, the game ends before the gear pile matters."
+    },
+    {
+      "game": "RUN END",
+      "seat": 2,
+      "text": "Yes. After game one I believed mill placement and crank racing were the main levers; now I know the real constraint is lattice parity. Whoever anchors an inner pin on turn one dictates odd/even paths for everyone else, collapsing the opening from a spatial puzzle into a parity race. It cost the game its early branching: turns two through six are now just safe extensions of a known template, and the middlegame devolves into reactive tandem placements or forced passes because any new gear risks an odd-cycle bind. The bind test is so unforgiving that \u201cbuild a network\u201d became \u201cdon\u2019t close a triangle,\u201d turning a spatial engine into a counting exercise. I\u2019m no longer guessing on turn four, but the discovery phase is over."
+    },
+    {
+      "game": "RUN END",
+      "seat": 3,
+      "text": "Yes. After game one I thought the inner ring was a contest; it is a script. Mill on (0,3), then low on (1,1) and high on (0,1) is a forced opening that guarantees isolation and an odd-parity path. The decision space collapsed entirely to crank rerouting and late-game tandem bridges.\n\nCost: The supply pile becomes a parking lot. Once parity is set, the remaining turns are mechanical bind-tests where placing anything that closes a triangle wastes the action and placing anything on an empty rim pin changes nothing. Thinking stopped mattering by round four.\n\nFinding: Millbind is not about meshing gears; it is about counting parity steps to your mill and moving the crank to keep that count odd. Everything else is table management."
+    }
+  ]
+}

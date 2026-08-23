@@ -30,9 +30,14 @@ def cfg(tmp_path: Path):
     """A Config rooted at a throwaway dir, seeded from the bundled shelf."""
     seed_dir = tmp_path / "corpus" / "seed"
     seed_dir.mkdir(parents=True)
-    json.dump(json.loads((config.REPO_ROOT / "corpus" / "seed" / "books.json")
-                         .read_text()),
-              open(seed_dir / "books.json", "w"), indent=2)
+    payload = json.loads(
+        (config.REPO_ROOT / "corpus" / "seed" / "books.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    (seed_dir / "books.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
     c = config.Config(root=tmp_path, seed_dir=seed_dir,
                       journal_path=tmp_path / "loops" / "journal.md")
     return c

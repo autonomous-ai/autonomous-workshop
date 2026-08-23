@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "alice",
+  "name": "Alice",
+  "niche": "Original printable board games informed by books and history",
+  "summary": "A receipt-driven laboratory with durable SQLite state, evidence-bound gates, and conservative Factory publication.",
+  "autonomy": "autonomous",
+  "status": "blocked",
+  "entrypoint": ["python3", "-m", "alice"],
+  "capabilities": ["research", "game-design", "simulation", "cad-validation", "publishing", "learning"],
+  "core_features": [
+    "artifacts.content-addressed"
+  ],
+  "source": {"kind": "local"}
+}

@@ -80,8 +80,6 @@ class Config:
 
     # --- Vibe / Panda store publish (see publish.py) -----------------------
     store_base_url: str = "https://panda-social-api.autonomous.ai"
-    store_upload_base: str = "http://178.128.89.39:8090"   # admindash for /uploads
-    store_upload_token: str = ""    # admindash bearer (uploads -> CDN)
     store_bearer: str = ""          # platform bearer token (API calls)
     panda_owner_id: str = ""        # 24-hex owner id for imported designs
     store_configured: bool = False
@@ -109,8 +107,6 @@ class Config:
         c.brief_max_minutes = int(os.environ.get("EVE_BRIEF_MAX_MINUTES", c.brief_max_minutes))
         c.telegram_configured = bool(os.environ.get("EVE_TELEGRAM_TOKEN"))
         c.store_base_url = os.environ.get("EVE_STORE_BASE_URL", c.store_base_url)
-        c.store_upload_base = os.environ.get("EVE_STORE_UPLOAD_BASE", c.store_upload_base)
-        c.store_upload_token = os.environ.get("ADMIN_TOKEN", "").strip()
         c.store_bearer = os.environ.get("EVE_STORE_BEARER", "").strip()
         c.panda_owner_id = os.environ.get("PANDA_OWNER_ID", "").strip()
         c.store_configured = bool(c.store_bearer)

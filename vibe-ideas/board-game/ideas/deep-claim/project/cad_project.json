@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "engine": "cadquery",
+  "entrypoint": {
+    "path": "main.py",
+    "callable": "gen_step"
+  },
+  "parameters": "params.py",
+  "specification": "spec.md",
+  "model": {
+    "kind": "assembly",
+    "primaryPose": "assembled",
+    "parts": [
+      {"id": "assay_board", "source": "parts/assay_board.py"},
+      {"id": "disc_large_mark3", "source": "parts/disc_large.py"},
+      {"id": "disc_large_mark4", "source": "parts/disc_large.py"},
+      {"id": "disc_large_mark5", "source": "parts/disc_large.py"},
+      {"id": "disc_large_mark6", "source": "parts/disc_large.py"},
+      {"id": "disc_small_mark3", "source": "parts/disc_small.py"},
+      {"id": "disc_small_mark4", "source": "parts/disc_small.py"},
+      {"id": "disc_small_mark5", "source": "parts/disc_small.py"},
+      {"id": "disc_small_mark6", "source": "parts/disc_small.py"}
+    ],
+    "assembly": "assemblies/product.py"
+  },
+  "artifactStem": "deep_claim"
+}
