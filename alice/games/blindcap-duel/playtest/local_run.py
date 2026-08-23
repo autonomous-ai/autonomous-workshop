@@ -94,7 +94,8 @@ def main() -> None:
 
     mode = args.mode
     n = args.games
-    rng = random.Random(args.seed)
+    random.seed(args.seed)          # seed global RNG too: random_move draws globals
+    rng = random.Random(args.seed)  # per-game seed stream
 
     if mode in ("greedy", "random"):
         policy = greedy_move if mode == "greedy" else random_move

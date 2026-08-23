@@ -2,9 +2,9 @@
   "games": 120,
   "label": "greedy_vs_random",
   "natural": 120,
-  "shared": 0,
+  "shared": 1,
   "win_credit": [
-    0.967,
-    0.033
+    0.954,
+    0.046
   ]
 }
