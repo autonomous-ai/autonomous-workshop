@@ -1,0 +1,23 @@
+{
+  "components": {
+    "clarity": 6.5625,
+    "depth": 15.0,
+    "fun_sim": 19.289262405684575,
+    "fun_table": 15.625,
+    "novelty_margin": 15.0,
+    "physical_hook": 0.0
+  },
+  "delta": 71.47676240568458,
+  "gates": {
+    "g1_completeness": true,
+    "g2_sim_integrity": true,
+    "g3_degeneracy": true,
+    "g4_novelty": true,
+    "g5_safety": true,
+    "g6_buildable": true
+  },
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "lane": "invention",
+  "publish_eligible": false,
+  "score": 71.47676240568458
+}

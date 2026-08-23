@@ -161,7 +161,8 @@ BOSS_REF_Z = SKIRT_RIM_Z + 21.0   # +6.0
 CAVITY_TOP_Z = 8.0             # clears the shroud top at H_bottom by 1.5
 NUT_Z0 = 14.65                 # local; cone from D30 to D16.7 at 45 deg lands here
 NUT_Z1 = NUT_Z0 + NUT_LEN
-POST_BORE_D = 12.40            # running clearance 0.40 diametral
+NUT_LEAD_IN = 2.00             # thread cut runs this far below NUT_Z0, into the cone's void
+POST_BORE_D = 12.40           # running clearance 0.40 diametral
 POST_BORE_DEPTH = 60.0         # [DEV] 54 -> 60, see POST_LEN
 POST_BORE_TOP_Z = SKIRT_RIM_Z + POST_BORE_DEPTH   # +45
 POST_TOWER_TOP_Z = POST_BORE_TOP_Z + 2.0          # +47 -> yoke is 62 tall, per brief
@@ -192,15 +193,22 @@ HOOD_RIM_Z = HOOD_TOP_Z - 84.0                    # 8.4 -> the brief's 84 mm she
 HOOD_SEAT_Z = KNOB_TOP_Z                          # rests on the knob top face, Z = 90
 HOOD_LEDGE_D = 44.40                              # +0.20/-0.00 over the D44 knob
 # [DEV] a 45 deg conical roof replaces the 10 mm downward-hanging ledge ring:
-# the shell can only print rim-down (one opaque piece, no top solid), and a ring
-# hanging in mid-air needs support inside the very cavity that must stay clean.
-# The cone's inner surface passes D44.40 exactly at Z = 90, so the hood still
-# self-centres on the knob's top edge and still hangs from the KNOB (§4.2).
+# a ring hanging in mid-air needs support inside the very cavity that must stay
+# clean. The cone's inner surface passes D44.40 exactly at Z = 90, so the hood
+# self-centres on the knob's top edge and hangs from the KNOB (§4.2).
+# The roof is CLOSED — see HOOD_CAP_T. The hood therefore prints ROOF-DOWN, not
+# rim-down: the D47.6 cap is the first layer, the cone is a 45 deg expanding
+# overhang above it, and the port/relief/rim are all open at the top of the
+# print, so nothing bridges anywhere.
 HOOD_CONE_BOT_Z = 75.2
 HOOD_APEX_OD = HOOD_LEDGE_D + 2 * HOOD_WALL       # 47.6
+HOOD_CAP_T = HOOD_TOP_Z - HOOD_SEAT_Z             # 2.4 of solid roof over the knob
 HOOD_PORT_W = 66.0                                # brief §2 hand port width
 HOOD_PORT_LIP_Z = 58.0                            # brief §4.1 port top lip
 HOOD_TAB_W = 26.0
+HOOD_TAB_BOT_Z = HOOD_TOP_Z - 30.0                # 62.4
+HOOD_TAB_TOP_Z = HOOD_TAB_BOT_Z + 12.0            # 74.4
+HOOD_TAB_OUT = 10.0                               # radial protrusion past D80
 HOOD_RELIEF_HALF_D = 13.0                         # lane-side slot for the yoke bridge
 HOOD_RELIEF_TOP_Z = 51.0                          # bridge top at H_top (33.0 + 17.0) + 1
 
@@ -280,8 +288,16 @@ def _check_params() -> None:
     # hood: 84 mm shell, 45 deg roof, and it must clear the yoke at the top stop
     assert abs((HOOD_TOP_Z - HOOD_RIM_Z) - 84.0) < 1e-9, "hood height 84 (brief §2)"
     assert abs((HOOD_TOP_Z - HOOD_CONE_BOT_Z) - (HOOD_OD - HOOD_APEX_OD) / 2) < 1e-9, (
-        "hood roof must be 45 deg to print rim-down without support"
+        "hood roof must be 45 deg to print roof-down without support"
     )
+    # §4.1/§4.2 hidden state: NOTHING may see the knob from above. The roof is a
+    # closed cap at least one wall thick over the whole D44.40 seat circle, and
+    # the seat plane is the knob's top face, so the sightline is solid PLA.
+    assert HOOD_CAP_T >= HOOD_WALL, "the roof must close over the knob (§4.1)"
+    assert HOOD_APEX_OD >= HOOD_LEDGE_D, "the cap must span the whole seat circle"
+    # printed roof-down, the tab's upper face is an overhang unless it is tapered
+    # at 45 deg back into the shell
+    assert HOOD_TAB_TOP_Z - HOOD_TAB_BOT_Z > HOOD_TAB_OUT, "tab taper runs past the tab"
     assert HOOD_RIM_Z > RING_H, "the hood must hang clear of the stop ring"
     assert HOOD_RELIEF_TOP_Z > H_TOP_NOM + BRIDGE_TOP_Z, "bridge relief too short"
     assert HOOD_RELIEF_HALF_D > BRIDGE_HALF_D, "bridge relief too narrow"
@@ -628,8 +644,16 @@ def build_yoke():
             align=(Align.CENTER, Align.CENTER, Align.MIN),
         )
     )
+    # The 45 deg cone lands on D16.70 at exactly NUT_Z0, and the thread cut's own
+    # bottom trim plane is that same circle at that same Z — two cut solids
+    # tangent along one shared edge, which the tessellator turned into a 17-edge
+    # crack (check_mesh: "FAIL watertight, 17 boundary edges"). Start the cut
+    # NUT_LEAD_IN lower instead: at NUT_Z0 - 2.0 the cone has already opened to
+    # R10.35, so the cut's bottom cap lands entirely in void and puts no face on
+    # the part at all. The nut's threaded span (NUT_Z0..NUT_Z1) is unchanged.
     cut, nut_minor = threads.nut_cut(
-        THREAD_MAJOR, THREAD_PITCH, NUT_LEN, NUT_Z0, NUT_FLANK_CLEARANCE, NUT_MAJOR
+        THREAD_MAJOR, THREAD_PITCH, NUT_LEN + NUT_LEAD_IN, NUT_Z0 - NUT_LEAD_IN,
+        NUT_FLANK_CLEARANCE, NUT_MAJOR,
     )
     part = part - Pos(-POST_X, 0, 0) * cut
     part = part - _cyl(TOP_STOP_BORE_D, SCREW_TOWER_TOP_Z - NUT_Z1 + 1, NUT_Z1, -POST_X)
@@ -680,9 +704,10 @@ def build_knob_hood():
         HOOD_LEDGE_D,
         HOOD_SEAT_Z,
     )
+    # The apex is NOT opened. `inner` stops at the D44.40 seat circle at Z = 90,
+    # so everything above the knob's top face is solid: HOOD_CAP_T = 2.4 mm of
+    # opaque PLA on the one sightline that would otherwise read the knob (§4.1).
     part = outer - inner
-    # open the apex: the D44.40 seat circle is where the knob's top edge lands
-    part = part - _cyl(HOOD_LEDGE_D, HOOD_TOP_Z - HOOD_SEAT_Z + 2, HOOD_SEAT_Z, SCREW_X)
 
     # hand port: 66 wide, open to the bottom rim, ONE side, facing the setter (-Y).
     # [DEV] the top is a 45 deg gable peaking at the brief's Z = 58 lip instead of
@@ -714,10 +739,29 @@ def build_knob_hood():
         align=(Align.CENTER, Align.CENTER, Align.MIN),
     )
 
-    tab = Pos(SCREW_X, HOOD_OD / 2 - 1, HOOD_TOP_Z - 30.0) * Box(
-        HOOD_TAB_W, 10.0, 12.0, align=(Align.CENTER, Align.MIN, Align.MIN)
+    tab = Pos(SCREW_X, HOOD_OD / 2 - 1, HOOD_TAB_BOT_Z) * Box(
+        HOOD_TAB_W, HOOD_TAB_OUT, HOOD_TAB_TOP_Z - HOOD_TAB_BOT_Z,
+        align=(Align.CENTER, Align.MIN, Align.MIN)
     )
     part = part + fillet(tab.edges().filter_by(Axis.Z), 3.0)
+    # [DEV] printed roof-down, the tab's Z = 74.4 face points at the bed and a
+    # flat 10 mm radial ledge there is an unsupported overhang. Taper it 45 deg:
+    # the tab starts at the shell at 74.4 and reaches full protrusion by 64.4.
+    # the cutter starts AT the OD, not at the tab's 1 mm root inset: one
+    # millimetre further in it would notch a window through the 1.6 mm shell.
+    y0 = HOOD_OD / 2
+    taper = Pos(SCREW_X, 0, 0) * extrude(
+        Plane.YZ * Polygon(
+            (y0, HOOD_TAB_TOP_Z),
+            (y0 + HOOD_TAB_OUT + 2, HOOD_TAB_TOP_Z - HOOD_TAB_OUT - 2),
+            (y0 + HOOD_TAB_OUT + 2, HOOD_TOP_Z + 10),
+            (y0, HOOD_TOP_Z + 10),
+            align=None,
+        ),
+        amount=HOOD_OD,
+        both=True,
+    )
+    part = part - taper
     return part
 
 
@@ -956,9 +1000,11 @@ def print_stop_ring():
 
 
 def print_knob_hood():
-    """Rim down. The 45 deg roof is self-supporting and the gabled port lip
-    keeps the shell free of a 66 mm lintel."""
-    return _to_bed(build_knob_hood())
+    """ROOF DOWN. The closed D47.6 cap is the first layer; the 45 deg cone above
+    it is an expanding overhang; the hand port, the lane relief and the rim are
+    all open at the TOP of the print, so nothing bridges. The tab's outer face is
+    tapered 45 deg for the same reason (D4)."""
+    return _to_bed(Rot(180, 0, 0) * build_knob_hood())
 
 
 def print_rail():

@@ -129,6 +129,10 @@
         "repair_used": 0,
         "rework_used": 0
       },
+      "crashes": {
+        "count": 1,
+        "state": "tabled"
+      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -136,7 +140,10 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -241,14 +248,14 @@
       },
       "slug": "g0002",
       "state": "tabled",
-      "table_retries": 0,
+      "table_retries": 1,
       "title": "Re-Pin"
     },
     "g0003": {
       "budgets": {
         "clarify_used": 1,
         "repair_used": 2,
-        "rework_used": 0
+        "rework_used": 1
       },
       "created": "2026-08-22T16:49:32.455641+00:00",
       "direction": {
@@ -257,7 +264,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-23T03:10:11.559646+00:00",
+        "holder": "invent",
+        "id": "66b0422f37564d5090ac5cb35ccaf184"
+      },
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -384,14 +395,76 @@
           "from": "parked",
           "note": "human unpark: builder crash was the session-limit window misclassified; rotated-fit gate now live",
           "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T01:23:45.933393+00:00",
+          "from": "build_gated",
+          "note": "parked: repair budget exhausted: check_mesh FAIL parts/part_yoke.stl: ot float)\n  FAIL  fits 220x220x250 bed               224.0x34.0x62.0 mm\n  PASS  small triangles                    7156 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T08:30:00+00:00",
+          "from": "parked",
+          "note": "owner arbitration: repair lap 1 was burned by the gate checking the assembly bbox (harness bug, fixed) \u2014 refunded. Real defect for this lap: part_yoke.stl 17 boundary edges (not watertight); bed-fit is waived via the rotated-45 test once watertight passes",
+          "to": "built"
+        },
+        {
+          "at": "2026-08-23T02:13:56.622083+00:00",
+          "from": "built",
+          "note": "143 part file(s) built",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T02:19:52.171955+00:00",
+          "from": "build_gated",
+          "note": "build gate passed",
+          "to": "reviewed"
+        },
+        {
+          "at": "2026-08-23T02:20:29.709769+00:00",
+          "from": "reviewed",
+          "note": "review not eligible (R=71.5 below the 70 bar) but improving (dR=+71.5) -> rework",
+          "to": "ruled"
+        },
+        {
+          "at": "2026-08-24T02:50:00+00:00",
+          "from": "ruled",
+          "note": "owner hold: component-floor fail came from an unargued lens boolean, not the design; do NOT rewrite rules \u2014 evidence restore + lens rubric fix in progress",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-24T02:58:00+00:00",
+          "from": "parked",
+          "note": "owner: evidence restored from git @6a21823 (rules unchanged, same idea_sha); lens rubric now defines survives_as_cardboard; re-gate then re-review",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T02:25:11.468118+00:00",
+          "from": "build_gated",
+          "note": "build lens FAIL -> repair: FIDELITY FAIL \u2014 assembled_top.png (the canonical top-down render) shows the knob's finger-scalloped top face and its ring of ~12 grip dots plainly visible through/above `knob_hood`, directly contradicting brief \u00a74.1-4.2 (\"the hood must hide the setter's hand... the direction of every turn\") and \u00a79's abort-on-sight rule. DEVIATIONS.md D4 changed the hood roof from a flat cap to a 45\u00b0 cone narrowing to \u230047.6 at the top for print-support reasons but records no re-check of that opening against the hidden-state requirement the flat top was originally there to satisfy. This is the Armillary-class defect named in the review brief: hidden state visible in a render is FAIL-grade regardless of geometric intent. Disposition: repair \u2014 either cap the cone's top or prove (with a corrected render) that the \u230047.6 opening does not expose the knob.; SELLABILITY note \u2014 42 printed parts / 34.5h build vs the stated 6-20 part / \u226420h guideline. This is not build-time drift: it matches brief \u00a78's own disclosed number and its recommendation to price at $79 or not at all. Disposition: brief-defect / arbitration (price point and 0.7 units/machine-day throughput), not a CAD finding.; PRINTABILITY \u2014 no findings. All running/sliding fit clearances are \u22650.15 mm; the only sub-0.15 mm values are intentional press/snap interferences (post_guide 0.10, detent_leaf 0.10). Each of the 12 registered deviations (D1-D12) resolves a real print-process or brief-internal conflict with arithmetic shown, including D3 which catches a brief bug that would have jammed the yoke at click 12 of 31.",
+          "to": "built"
         }
       ],
       "reward": {
-        "history": [],
-        "latest": 0.0
+        "history": [
+          {
+            "at": "2026-08-23T02:20:29.702728+00:00",
+            "components": {
+              "clarity": 6.5625,
+              "depth": 15.0,
+              "fun_sim": 19.289262405684575,
+              "fun_table": 15.625,
+              "novelty_margin": 15.0,
+              "physical_hook": 0.0
+            },
+            "score": 71.47676240568458,
+            "stage": "reviewed"
+          }
+        ],
+        "latest": 71.47676240568458
       },
       "slug": "g0003",
-      "state": "build_gated",
+      "state": "built",
       "title": "Clearance"
     },
     "g0004": {

@@ -59,3 +59,17 @@ DISPOSITION per FAIL finding: repair (CAD fix) | brief-defect (arbitration — t
 UNKNOWN when an artifact you need is missing — name it; the harness treats
 absent verdicts as FAIL, correctly. Findings are symptoms with named parts
 and numbers, never CAD instructions — the fix belongs to the builder.
+
+## survives_as_cardboard — the exact question (added 2026-08-24, rubric repair)
+
+`survives_as_cardboard: true` means: **a cardboard/paper/PDF version would
+deliver the same play experience with no human referee, no honor system, no
+lookup table, and no trusted scorekeeper.** Almost any game can be
+*approximated* in cardboard — that is not the question. If the printed
+mechanism is what generates hidden information, enforces a rule physically,
+or makes an outcome undisputable (a click, a bind, a tip, a jam), then a
+cardboard version needs a human to fake that role, and the answer is
+**false**. Answer with one sentence of reasoning BEFORE the boolean; an
+unargued boolean on this field is a defective verdict (g0003 receipt:
+an unreasoned `true` zeroed physical_hook on a game whose entire premise
+is felt-not-seen mechanical clicks under a hood).

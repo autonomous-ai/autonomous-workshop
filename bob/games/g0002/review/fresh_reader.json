@@ -1,12 +1,11 @@
 {
   "findings": [
-    "Re-pin window on the first Probe of a round is contradictory: turn structure step 4 (section 4) says any 'failed Probe' opens a re-pin window with no exception, but the Re-pin action rules say the Locksmith 'may not re-pin ... after the opening Probe.' Unclear whether the first Probe of every round is categorically barred from triggering a re-pin, or whether that line just restates that the Locksmith can't yet afford the 2-point cost.",
-    "Tiebreak step 3, 'Highest single opening score (the biggest rail number anyone banked)', does not say whether 'anyone' is scoped to the tied players or to any player in the game. If scoped to all players, it can fail to separate two tied players when a third, non-tied player holds the highest banked opening.",
-    "Tiebreak steps 2 ('most locks opened as a Cracker across the whole game') and 3 ('highest single opening score') require per-player history across all rounds, but no printed component (score board, round board, deduction card) records either history \u2014 the score board only shows current point totals, not counts of opens or past opening values."
+    "Re-pin timing is ambiguous: section 5 says the Locksmith 'may not re-pin after... the opening Probe,' but section 4's turn structure lists the re-pin window as available after ANY failed Probe with no first-turn exception. A reader following only section 4 would think re-pin is legal after the round's very first failed Probe. The worked example (turn 1 is a failed Probe, no re-pin follows) shows 'opening Probe' means 'the round's first Probe,' but that reading only surfaces by cross-checking the example against two separate sections, not from either section's prose alone.",
+    "The worked scoring example has an internal arithmetic mismatch. The recap states 'six failed turns paid 6, two re-pins cost 4' (which nets to 2), but the turn table shows 7 income-paying turns before the open (6 failed Probes plus 1 Hold, since section 4 step 3 says Holds pay the Locksmith too) minus 4 for two re-pins, netting the stated final score of 3. The prose undercounts by one because it omits the Hold's contribution to the tally, so a reader trying to verify the math from the summary sentence alone gets the wrong number."
   ],
   "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
   "judge": "bob-fresh-reader",
-  "misses": 3,
+  "misses": 2,
   "questions": 12,
-  "teach_minutes": 15
+  "teach_minutes": 12
 }

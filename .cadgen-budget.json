@@ -1,40 +1,188 @@
 {
-  "startedAt": 1787446860.2240791,
-  "totalSeconds": 2700.0,
+  "startedAt": 1787452124.803823,
+  "totalSeconds": 1800,
   "measure": "wall",
-  "label": "g0003-export",
+  "label": null,
   "steps": [
     {
       "argv": [
-        "bash",
-        "/tmp/g0003_export.sh"
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/gen",
+        "part_knob_hood.step.py",
+        "--write"
       ],
-      "seconds": 71.53,
-      "cap": 1200.0,
-      "exit": 0,
-      "outcome": "ok"
-    },
-    {
-      "argv": [
-        "bash",
-        "/tmp/g0003_mesh.sh"
-      ],
-      "seconds": 4.958,
-      "cap": 900.0,
+      "seconds": 6.913,
+      "cap": 480.0,
       "exit": 0,
       "outcome": "ok"
     },
     {
       "argv": [
         "/Users/d/code/inventors/bob/.venv-cad/bin/python",
-        "../../../skills/cad/scripts/inspect",
-        "validate",
-        "part_yoke.step"
+        "/Users/d/code/inventors/bob/skills/cad/scripts/export",
+        "part_knob_hood.step",
+        "--stl"
       ],
-      "seconds": 420.02,
-      "cap": 420.0,
-      "exit": 124,
-      "outcome": "timeout"
+      "seconds": 1.6,
+      "cap": 300.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/check_mesh",
+        "part_knob_hood.stl",
+        "--bed",
+        "251x251x251"
+      ],
+      "seconds": 0.125,
+      "cap": 180.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/gen",
+        "clearance.step.py",
+        "--write"
+      ],
+      "seconds": 13.033,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/inspect",
+        "interfere",
+        "clearance.step"
+      ],
+      "seconds": 33.759,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/inspect",
+        "validate",
+        "part_knob_hood.step"
+      ],
+      "seconds": 7.08,
+      "cap": 300.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "render_assembly.py",
+        "--views"
+      ],
+      "seconds": 30.344,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/check_layout",
+        "."
+      ],
+      "seconds": 0.071,
+      "cap": 300.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/gen",
+        "part_knob_hood.step.py",
+        "--write"
+      ],
+      "seconds": 6.214,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/export",
+        "part_knob_hood.step",
+        "--stl"
+      ],
+      "seconds": 1.599,
+      "cap": 300.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/check_mesh",
+        "part_knob_hood.stl",
+        "--bed",
+        "251x251x251"
+      ],
+      "seconds": 0.123,
+      "cap": 180.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "measure/check_fit.py"
+      ],
+      "seconds": 10.709,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/gen",
+        "clearance.step.py",
+        "--write"
+      ],
+      "seconds": 12.769,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/inspect",
+        "interfere",
+        "clearance.step"
+      ],
+      "seconds": 32.231,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/check_fit",
+        ".",
+        "--bed",
+        "251",
+        "251"
+      ],
+      "seconds": 12.656,
+      "cap": 720.0,
+      "exit": 0,
+      "outcome": "ok"
     }
   ]
 }
