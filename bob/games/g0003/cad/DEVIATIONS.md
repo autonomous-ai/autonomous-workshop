@@ -75,24 +75,53 @@ The post bottoms out in the bore 15.5 mm early — the yoke stops at click 12 of
 swallowed by the bore at **every** click, so §3.10's "the post never emerges"
 still holds. Asserted in `clearance_lib._check_params()`.
 
-## D4. `knob_hood`: 45° conical roof, gabled port lintel, lane relief, finger tab
+## D4. `knob_hood`: CLOSED 45° conical roof printed roof-down, gabled port lintel, lane relief, tapered finger tab
 
-Four shape changes, one print reason each. Wall stays 1.6 mm, opaque, hand port
-66 wide open to the bottom rim on ONE side, ledge ⌀44.40 on the knob top at
-Z = 90 — every §4 hidden-state number is untouched.
+Wall stays 1.6 mm, opaque, hand port 66 wide open to the bottom rim on ONE side,
+ledge ⌀44.40 on the knob top at Z = 90, height exactly 84.0 (Z 8.4 → 92.4) —
+every §4 hidden-state number is untouched, and the roof is now **more** closed
+than the brief's flat top, not less.
 
-- **Roof.** Flat top + a 10 mm hanging ledge ring → a 45° cone from ⌀82 to
-  ⌀47.6. The hood prints **rim-down** (its only support-free orientation) and a
-  flat top over a ⌀44.4 hole is a 19 mm unsupported annulus. 45° is
-  self-supporting. Height stays exactly 84.0 (Z 8.4 → 92.4), asserted.
+- **Roof — closed, and the print flips to suit it.** Flat top + a 10 mm hanging
+  ledge ring → a 45° cone from ⌀82 to ⌀47.6, **capped**: the cone's inner
+  surface reaches ⌀44.40 at Z = 90 (that circle *is* the seat on the knob's top
+  face) and everything above it is solid, **2.4 mm of opaque PLA on the one
+  sightline that looks straight down the screw axis**.
+  An earlier revision left that ⌀44.4 apex open for print reasons; the top-down
+  render showed the knob's scalloped face and its ring of grip dots through it,
+  which is a direct §4.1/§4.2 failure — the hood's whole job is that an opponent
+  cannot see the knob, and a knob you can see is a knob you can watch turn.
+  Capping it costs the rim-down orientation (a flat roof over the cavity is a
+  ⌀44 bridge; closing it at 45° instead would need 22.2 mm of extra height and
+  break the 84 mm envelope), so the hood prints **roof-down**: the ⌀47.6 cap is
+  the first layer, the cone above it is a 45° *expanding* overhang, and the hand
+  port, the lane relief and the rim are all open at the **top** of the print.
+  **Nothing bridges anywhere, in either direction** — this orientation is
+  strictly better than the one it replaces. Add a brim; the first layer is only
+  ⌀47.6 under an 84 mm part.
+  Verified as geometry, not as intent: `measure/check_fit.py` intersects the
+  hood solid with the whole ⌀44.40 × 2.4 column above the seat plane and asserts
+  it is **100.00 % solid**, and separately asserts the ⌀44 × 10 column *below*
+  the seat is **0.00 % obstructed** so the hood still drops onto the knob.
 - **Port lintel.** The 66 mm-wide port's top is a 45° gable peaking at the
-  brief's Z = 58 lip, not a flat lintel — a 66 mm bridge printed rim-up sags
-  into the cavity. Port width, side, and lip height are the brief's.
+  brief's Z = 58 lip, not a flat lintel. Printed roof-down it is no longer a
+  bridging question at all, but it is kept because it is **tighter than the
+  brief's own §4.1 sightline argument**: a flat lintel is 66 mm wide at Z = 58,
+  the gable is a knife-point there, so the low-eye-opposite-the-port sightline
+  the brief accepts shrinks to essentially zero width. Port width, side, and lip
+  height are the brief's.
 - **Lane relief.** A 26 mm-wide slot on the lane side: the yoke's bridge has to
   pass through the shell at every click. It exposes only the skirt and shroud,
-  which every seat can already see; the knob (Z 76–90) stays covered.
+  which every seat can already see; the knob (Z 76–90) stays covered, and the
+  slot tops out at Z = 51.
 - **Finger tab** on the closed side, per brief §2 — it puts the built envelope at
-  82 × **91** × 84 rather than ⌀82 × 84.
+  82 × **91** × 84 rather than ⌀82 × 84. Its upper face (Z = 74.4) is **tapered
+  45° back into the shell**, reaching full 10 mm protrusion by Z = 64.4: printed
+  roof-down that face points at the bed and a flat radial ledge there would be
+  the part's only unsupported overhang. The taper cutter starts exactly at the
+  ⌀82 OD — one millimetre further in, at the tab's root inset, it opens an
+  18 × 2 mm window through the 1.6 mm shell (caught by volume: 41.41 → 41.71 cm³
+  when closed).
 
 ## D5. `detent_leaf` prints on edge, not flat
 

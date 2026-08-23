@@ -23,7 +23,7 @@ and pick by feel; it is 2 g and the whole point of the part.
 | `post_guide` | 1 | vertical | 5 perimeters, 40%. **Fuzzy skin 0.30** on the cylinder (§4.5). |
 | `yoke` | 1 | skirts down | 4 perimeters, 25%. **Rotate 45° in XY on a 220 bed** → 182 mm square (D12). Light colour (§4 contrast). |
 | `stop_ring` | 1 | flat | **height is per copy** — §5.3, same session and Z-offset as the blocks. |
-| `knob_hood` | 1 | **rim down** | 2 perimeters, 0.28 mm, no infill, no top solid. Opaque pigmented filament only — never natural or clear. |
+| `knob_hood` | 1 | **roof down** (D4) | 2 perimeters, 0.28 mm, no infill, **5 bottom solid layers, no top solid**, brim. The roof is **closed** — it is the sightline that would otherwise read the knob. Opaque pigmented filament only — never natural or clear. |
 | `rail_01`–`04` | 4 | flat | front edge is the straightedge every score line is laid against. |
 | `piece_a1`–`e6` | 30 | standing | ironing ON, 5 top / 5 bottom. **Layer height per block** — see below. |
 
@@ -74,7 +74,7 @@ Never print, stamp or engrave a height on a block.
 | `check_fit . --bed 251 251` | **ok** — 43 parts, min(Z) = 0, footprint and volume all pass |
 | `inspect interfere clearance.step` | **0 clashes**, 43 pairs tested, 37 occurrences |
 | `check_layout .` | **ok** — every entry generator conforms to the split rule |
-| `measure/check_fit.py` (project audit) | **15 pass, 0 fail** — brief §3 coupled pairs, §3.3 margin guarantee re-proved at H_top 32.50/33.00/33.50, bill↔parts, envelopes |
+| `measure/check_fit.py` (project audit) | **17 pass, 0 fail** — brief §3 coupled pairs, §3.3 margin guarantee re-proved at H_top 32.50/33.00/33.50, bill↔parts, envelopes, **§4.1 sightline: the ⌀44.40 column above the knob's top face is 100.00 % solid hood and the ⌀44 column below the seat is 0.00 % obstructed** |
 
 Renders: `../parts/renders/assembled.png` plus `_front` / `_lane` / `_top`.
 

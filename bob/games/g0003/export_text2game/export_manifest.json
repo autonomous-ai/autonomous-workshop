@@ -1,0 +1,19 @@
+{
+  "slug": "g0003",
+  "export_dir": "/Users/d/code/inventors/bob/games/g0003/export_text2game/g0003",
+  "complete": true,
+  "missing": [],
+  "copied": [
+    "discover.md",
+    "seed.md",
+    "assembled.stl",
+    "fe_parts/ (44 meshes)",
+    "part_colors.json",
+    "renders/assembled.png",
+    "rulebook.md (print-bundle only; page content skips it per Tam's 2026-08-20 call)"
+  ],
+  "instructions": [
+    "rsync -av '/Users/d/code/inventors/bob/games/g0003/export_text2game/g0003/' <box>:/root/text2game/out/g0003/",
+    "ssh <box> 'cd /root/text2game && ./publish.py g0003'"
+  ]
+}

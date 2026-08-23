@@ -183,6 +183,82 @@
       "cap": 720.0,
       "exit": 0,
       "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "render_assembly.py",
+        "--views"
+      ],
+      "seconds": 29.692,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/export",
+        "clearance.step",
+        "--stl",
+        "--glb"
+      ],
+      "seconds": 1.653,
+      "cap": 480.0,
+      "exit": 1,
+      "outcome": "error"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/export",
+        "clearance.step",
+        "--stl",
+        "--glb",
+        "--out-dir",
+        "."
+      ],
+      "seconds": 0.075,
+      "cap": 480.0,
+      "exit": 2,
+      "outcome": "error"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/export",
+        "clearance.step",
+        "--stl",
+        "--glb"
+      ],
+      "seconds": 3.698,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "bash",
+        "-c",
+        "ok=0; bad=\"\"; for f in part_*.stl; do r=$($BOB_CAD_PY /Users/d/code/inventors/bob/skills/cad/scripts/check_mesh \"$f\" --bed 251x251x251 2>&1 | tail -1); if [ \"$r\" = \"RESULT: printable\" ]; then ok=$((ok+1)); else bad=\"$bad $f:$r\"; fi; done; echo \"printable: $ok / $(ls part_*.stl | wc -l | tr -d \" \")\"; echo \"failures:$bad\""
+      ],
+      "seconds": 5.7,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "/Users/d/code/inventors/bob/skills/cad/scripts/check_mesh",
+        "assembled.stl",
+        "--bed",
+        "251x251x251"
+      ],
+      "seconds": 0.333,
+      "cap": 300.0,
+      "exit": 1,
+      "outcome": "error"
     }
   ]
 }
