@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/alice/contracts/game-definition.schema.json",
+  "title": "Alice executable game definition",
+  "type": "object",
+  "required": [
+    "candidate_id",
+    "version",
+    "title",
+    "players",
+    "duration_minutes",
+    "setup",
+    "state",
+    "legal_actions",
+    "turn",
+    "end",
+    "scoring",
+    "ties",
+    "components"
+  ],
+  "properties": {
+    "candidate_id": {"type": "string", "minLength": 1},
+    "version": {"type": "integer", "minimum": 1},
+    "title": {"type": "string", "minLength": 1},
+    "player_experience": {"type": "string", "minLength": 1},
+    "players": {
+      "type": "object",
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": {"type": "integer", "minimum": 1},
+        "maximum": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "duration_minutes": {
+      "type": "object",
+      "required": ["target", "maximum"],
+      "properties": {
+        "target": {"type": "integer", "minimum": 1},
+        "maximum": {"type": "integer", "minimum": 1}
+      }
+    },
+    "mechanisms": {"type": "array", "items": {"type": "string"}},
+    "prior_art": {"type": "array", "items": {"type": "object"}},
+    "setup": {"type": "object"},
+    "state": {"type": "object"},
+    "legal_actions": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "turn": {"type": "object"},
+    "end": {"type": "object"},
+    "scoring": {"type": "object"},
+    "ties": {"type": "object"},
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "count", "manufacturing"],
+        "properties": {
+          "id": {"type": "string"},
+          "kind": {"type": "string"},
+          "count": {"type": "integer", "minimum": 1},
+          "manufacturing": {
+            "type": "object",
+            "required": ["process"],
+            "properties": {
+              "process": {"const": "3d_print"},
+              "material": {"type": "string"},
+              "orientation": {"type": "string"},
+              "supports": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

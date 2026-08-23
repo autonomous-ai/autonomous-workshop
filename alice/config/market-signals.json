@@ -1,0 +1,19 @@
+{
+  "signals": [
+    {
+      "id": "founder-report-2026-08-22-two-chess-designs",
+      "observed_on": "2026-08-22",
+      "source": "founder_report",
+      "evidence_class": "pre_alice_context",
+      "alice_outcome": false,
+      "release_evidence_eligible": false,
+      "learning_outcome_eligible": false,
+      "product_family": "3d_printable_chess_sets",
+      "distinct_designs_with_purchases": 2,
+      "known_designs": ["San Francisco chess set", "second design not yet named"],
+      "units_sold": null,
+      "interpretation": "Early evidence that buyers will pay for more than one 3D-printable chess-set design; not yet evidence that a particular original game mechanic will sell.",
+      "may_update_release_policy": false
+    }
+  ]
+}

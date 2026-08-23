@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>ai.autonomous.alice.watchdog</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__WATCHDOG_PYTHON__</string>
+    <string>__WATCHDOG_SCRIPT__</string>
+    <string>--state</string>
+    <string>__STATE__</string>
+    <string>--env-file</string>
+    <string>__ENV_FILE__</string>
+    <string>--rate-state</string>
+    <string>__RATE_STATE__</string>
+    <string>--watchdog-state</string>
+    <string>__WATCHDOG_STATE__</string>
+    <string>--launchd-target</string>
+    <string>__LAUNCHD_TARGET__</string>
+    <string>--expected-source-tree-sha256</string>
+    <string>__SOURCE_TREE_SHA256__</string>
+    <string>--expected-config-sha256</string>
+    <string>__CONFIG_SHA256__</string>
+    <string>--expected-policy-hash</string>
+    <string>__POLICY_HASH__</string>
+    <string>--expected-effect-mode</string>
+    <string>__EFFECT_MODE__</string>
+    <string>--stale-seconds</string>
+    <string>__STALE_SECONDS__</string>
+    <string>--max-consecutive-failures</string>
+    <string>__MAX_CONSECUTIVE_FAILURES__</string>
+    <string>--max-tick-seconds</string>
+    <string>__MAX_TICK_SECONDS__</string>
+    <string>--alert-interval-seconds</string>
+    <string>__ALERT_INTERVAL_SECONDS__</string>
+    <string>--startup-grace-seconds</string>
+    <string>__STARTUP_GRACE_SECONDS__</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>__WORKING_DIRECTORY__</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>__WATCHDOG_INTERVAL__</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/dev/null</string>
+  <key>StandardErrorPath</key>
+  <string>/dev/null</string>
+  <key>Umask</key>
+  <integer>63</integer>
+</dict>
+</plist>
