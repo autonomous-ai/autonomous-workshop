@@ -1,0 +1,3 @@
+# Eve's shared runtime infrastructure is the repository-root monorepo package.
+# Foundation itself is Python 3.9+ and has no third-party runtime dependencies.
+../../foundation

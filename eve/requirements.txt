@@ -1,3 +1,0 @@
-# Eve's shared runtime infrastructure is the sibling monorepo package.
-# Core itself is Python 3.9+ and has no third-party runtime dependencies.
-../core

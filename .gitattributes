@@ -1,5 +1,5 @@
 # These imported snapshots are byte-locked to their upstream commits. Preserve
 # their source/CAD whitespace verbatim and exempt it from repository diff checks.
-text2cad/** -whitespace
-text2game/** -whitespace
-vibe-ideas/** -whitespace
+inventors/text2cad/** -whitespace
+inventors/text2game/** -whitespace
+inventors/vibe-ideas/** -whitespace

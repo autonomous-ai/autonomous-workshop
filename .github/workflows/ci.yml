@@ -1,4 +1,4 @@
-# Inventor CI — deterministic, credential-free gates for the shared core and
+# Inventor CI — deterministic, credential-free gates for the shared Foundation and
 # every native inventor harness. Imported upstream snapshots are validated by
 # their pinned provenance records rather than by installing their undeclared
 # or environment-specific dependency trees.
@@ -21,15 +21,15 @@ jobs:
         with:
           python-version: "3.13"
       - name: reject tracked secrets and backups
-        run: python core/tools/scan_secrets.py
+        run: python foundation/tools/scan_secrets.py
       - name: validate inventor registry
         env:
-          PYTHONPATH: core/src
-        run: python -m inventor_core registry --root . --check-entrypoints
+          PYTHONPATH: foundation/src
+        run: python -m inventor_core registry --root inventors --check-entrypoints
       - name: verify pinned inventor snapshot bytes and modes
-        run: python core/tools/verify_snapshot_locks.py
+        run: python foundation/tools/verify_snapshot_locks.py
 
-  core-test:
+  foundation-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -41,13 +41,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: core contract tests
+      - name: Foundation contract tests
         env:
-          PYTHONPATH: core/src
+          PYTHONPATH: foundation/src
           PYTHONWARNINGS: error
-        run: python -m unittest discover -s core/tests -p 'test_*.py' -v
+        run: python -m unittest discover -s foundation/tests -p 'test_*.py' -v
 
-  test:
+  bob-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -58,14 +58,14 @@ jobs:
       BOB_MOCK_AGENTS: "1"
     defaults:
       run:
-        working-directory: bob
+        working-directory: inventors/bob
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: install shared inventor core
-        run: python -m pip install ../core
+      - name: install Inventor Foundation
+        run: python -m pip install ../../foundation
       - name: unit tests (stdlib unittest only, no pytest)
         run: python -m unittest discover -s tests -v
 
@@ -78,17 +78,17 @@ jobs:
         python-version: ["3.9", "3.12"]
     defaults:
       run:
-        working-directory: eve
+        working-directory: inventors/eve
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: eve/requirements-test.txt
-      - name: install shared core and pinned Eve test dependencies
+          cache-dependency-path: inventors/eve/requirements-test.txt
+      - name: install shared Foundation and pinned Eve test dependencies
         run: |
-          python -m pip install ../core
+          python -m pip install ../../foundation
           python -m pip install --disable-pip-version-check -r requirements-test.txt
           python -m pip check
       - name: deterministic offline tests
@@ -106,14 +106,14 @@ jobs:
         python-version: ["3.11", "3.13"]
     defaults:
       run:
-        working-directory: alice
+        working-directory: inventors/alice
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: install Alice and shared inventor core
-        run: python -m pip install ../core .
+      - name: install Alice and shared inventor Foundation
+        run: python -m pip install ../../foundation .
       - name: unit tests (warnings are errors)
         env:
           PYTHONWARNINGS: error
@@ -134,14 +134,14 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: alice
+        working-directory: inventors/alice
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: install Alice and shared inventor core
-        run: python -m pip install ../core .
+      - name: install Alice and shared inventor Foundation
+        run: python -m pip install ../../foundation .
       - name: service snapshot tests on the declared deployment OS
         env:
           PYTHONWARNINGS: error

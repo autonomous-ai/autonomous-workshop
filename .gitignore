@@ -30,8 +30,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 .venv*/
-/core/build/
-/core/dist/
+/foundation/build/
+/foundation/dist/
 
 # macOS
 .DS_Store
@@ -45,4 +45,4 @@ __pycache__/
 *.sqlite3-wal
 
 # regen build artifacts (store records live in published.json)
-eve/games/*.zip
+inventors/eve/games/*.zip

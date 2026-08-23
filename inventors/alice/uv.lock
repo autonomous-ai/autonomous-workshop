@@ -1,0 +1,19 @@
+version = 1
+revision = 1
+requires-python = ">=3.11"
+
+[[package]]
+name = "autonomous-alice"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "autonomous-inventor-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "autonomous-inventor-core", editable = "../../foundation" }]
+
+[[package]]
+name = "autonomous-inventor-core"
+version = "0.1.0"
+source = { editable = "../../foundation" }

@@ -1,45 +1,63 @@
 # Autonomous inventors
 
-This is the team monorepo for autonomous AI inventors. Each inventor gets one
-top-level folder containing its complete implementation, operating guide, and
-`inventor.json`. Shared infrastructure lives in [`core/`](core/); niche,
-personality, taste, prompts, mechanisms, and reward hypotheses stay with the
-inventor.
+This is the team monorepo for autonomous AI inventors. It has two main surfaces:
+[`inventors/`](inventors/) contains one self-contained folder per inventor, and
+[`foundation/`](foundation/) contains the shared library they are built on.
+Niche, personality, taste, prompts, mechanisms, and reward hypotheses stay with
+the inventor.
+
+```text
+inventors/
+  alice/  bob/  eve/
+  text2cad/  text2game/  vibe-ideas/
+foundation/
+  src/  skills/  schemas/  docs/  tests/
+```
+
+Existing launchd deployments must be redeployed from the inventor's `ops/`
+runbook after this move because rendered service files contain absolute checkout
+paths. External cron or operator configuration must likewise point into
+`inventors/<id>/`.
 
 ## Inventor registry
 
 | Inventor | Niche | Autonomy | Integration status |
 |---|---|---|---|
-| [Alice](alice/) | Original printable board games informed by books/history | autonomous | core artifact boundary connected; live activation blocked on authenticated adapters and a bound Factory contract |
-| [Bob](bob/) | Printable board games | autonomous | core skills, packets, and Panda draft/live outbox connected; first real live cycle pending |
-| [Eve](eve/) | Printable board games + great-books study | autonomous | core build snapshot, packets, and Panda draft outbox connected; publication remains draft/manual |
-| [text2cad](text2cad/) | Trend-driven printable mechanisms/products | autonomous | pinned reference snapshot; credential rotation and core migration required |
-| [text2game](text2game/) | Fully FDM-printed board games | human-checkpointed | pinned creation-pipeline snapshot; gate hardening in progress |
-| [vibe-ideas](vibe-ideas/) | Deeply playtested printable board games | human-checkpointed | pinned reference snapshot; queue/gate hardening required |
+| [Alice](inventors/alice/) | Original printable board games informed by books/history | autonomous | Foundation artifact boundary connected; live activation blocked on authenticated adapters and a bound Factory contract |
+| [Bob](inventors/bob/) | Printable board games | autonomous | Foundation skills, packets, and Panda draft/live outbox connected; first real live cycle pending |
+| [Eve](inventors/eve/) | Printable board games + great-books study | autonomous | Foundation build snapshot, packets, and Panda draft outbox connected; publication remains draft/manual |
+| [text2cad](inventors/text2cad/) | Trend-driven printable mechanisms/products | autonomous | pinned reference snapshot; credential rotation and Foundation migration required |
+| [text2game](inventors/text2game/) | Fully FDM-printed board games | human-checkpointed | pinned creation-pipeline snapshot; gate hardening in progress |
+| [vibe-ideas](inventors/vibe-ideas/) | Deeply playtested printable board games | human-checkpointed | pinned reference snapshot; queue/gate hardening required |
 
 Validate the catalog without executing any inventor:
 
 ```bash
-PYTHONPATH=core/src python3 -m inventor_core registry --root . --check-entrypoints
+PYTHONPATH=foundation/src python3 -m inventor_core registry --root inventors --check-entrypoints
 ```
 
 Registry validation rejects control characters, credentialed provenance URLs or
 URLs with query/fragment, and manifest/folder/entrypoint symlinks that escape an
-inventor boundary.
+inventor boundary. It also requires every inventor to expose a regular,
+non-empty root `TASTE.md` as its human-owned creative constitution.
 
 The three imported snapshots preserve the team implementations at exact
 upstream commits. Their `UPSTREAM.md` files record origin, exclusions, license
 status, and known blockers. They are present for migration and comparison, not
 endorsed as unattended production runners. CI also verifies their bytes,
 executable/symlink modes, inventories, and commit coverage against
-[`core/snapshots.lock.json`](core/snapshots.lock.json) with the offline
-[`core/tools/verify_snapshot_locks.py`](core/tools/verify_snapshot_locks.py).
+[`foundation/snapshots.lock.json`](foundation/snapshots.lock.json) with the offline
+[`foundation/tools/verify_snapshot_locks.py`](foundation/tools/verify_snapshot_locks.py).
 
-## Core
+## Foundation
 
-[`core/`](core/) is the paved road for the next ten inventors:
+[`foundation/`](foundation/) is the paved road for the next ten inventors. Its
+v1 package and durable wire identifiers retain their established `core` names
+until a versioned compatibility migration can preserve existing receipts and
+publication ledgers.
 
-- a strict manifest contract and atomic `inventor-core new` scaffolder; new
+- a strict manifest contract and atomic `inventor-foundation new` scaffolder
+  (`inventor-core` remains a compatibility alias); new
   packages target Python 3.11+ and resolve one stable runtime database
   regardless of the launch directory, with `create <product-id>` and `status`
   commands for initial product registration and inspection;
@@ -57,7 +75,7 @@ executable/symlink modes, inventories, and commit coverage against
   members for cross-zlib reproducibility;
 - engine-neutral `CadReleaseBundle` identities across deterministic and
   independent-review substrates, adding physical evidence for critical claims,
-  with exact validator/version/config policy, typed semantics for all ten core
+  with exact validator/version/config policy, typed semantics for all ten Foundation
   checks, and nested finite-JSON revalidation;
 - one canonical CAD and STEP-parts skill tree plus the new
   `product-to-cad` workflow for printable, attractive products;
@@ -69,7 +87,7 @@ executable/symlink modes, inventories, and commit coverage against
   fulfillment so Panda/Vibe/Factory stay independently deployed services.
 
 Panda's current readback does not expose the imported packet/tree hash or an
-idempotency identity. Core therefore cannot safely reconcile an ambiguous
+idempotency identity. Foundation therefore cannot safely reconcile an ambiguous
 import from a slug and will not retry it. Only the explicit proven-no-effect
 status allowlist is treated as rejection rather than ambiguity; redirects,
 conflicts, throttling, unexpected success, 5xx, and transport failures remain
@@ -82,15 +100,15 @@ for unattended publication.
 Create a new niche inventor without cloning Alice, Bob, or Eve:
 
 ```bash
-PYTHONPATH=core/src python3 -m inventor_core new deduction-games \
+PYTHONPATH=foundation/src python3 -m inventor_core new deduction-games \
   --name "Ada" \
   --niche "two-player printable deduction games" \
-  --root .
+  --root inventors
 ```
 
-Read [core architecture](core/docs/ARCHITECTURE.md), the
-[current adoption map](core/docs/ADOPTION.md), [migration plan](core/docs/MIGRATION.md), and the evidence-backed
-[64-repository ecosystem map](core/docs/ECOSYSTEM.md) before adding shared
+Read [Foundation architecture](foundation/docs/ARCHITECTURE.md), the
+[current adoption map](foundation/docs/ADOPTION.md), [migration plan](foundation/docs/MIGRATION.md), and the evidence-backed
+[64-repository ecosystem map](foundation/docs/ECOSYSTEM.md) before adding shared
 infrastructure to an inventor folder.
 
 ## House rules
@@ -125,7 +143,7 @@ Telegram, admin, MongoDB, and Panda values and purge the upstream history.
 Run the repository policy check before committing:
 
 ```bash
-python3 core/tools/scan_secrets.py
+python3 foundation/tools/scan_secrets.py
 ```
 
 The scanner rejects secret-shaped paths, source backups, private-key material,
