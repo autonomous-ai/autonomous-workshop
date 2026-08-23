@@ -1,0 +1,133 @@
+{
+  "by_players": {
+    "2": {
+      "branching": {
+        "forced_fraction": 0.11302083333333335,
+        "median": 5.0
+      },
+      "browne": {
+        "drama": 0.9285714285714286,
+        "duration": {
+          "cv": 0.0,
+          "false_start_share": 0.0,
+          "median": 16.0
+        },
+        "killer_scarcity": 0.7645833333333334,
+        "late_uncertainty": 0.6766666666666666,
+        "lead_changes_mean": 3.7666666666666666
+      },
+      "gavel": {
+        "agency": 0.8869791666666667,
+        "balance": 0.9333333333333333,
+        "completion": 1.0,
+        "coverage": null,
+        "decisiveness": 0.9333333333333333,
+        "harmonic_mean": 0.9367068714886261
+      },
+      "ladder": {
+        "baseline": 0.5,
+        "edges": {
+          "greedy>random": 0.1166666666666667,
+          "lookahead1>greedy": 0.09999999999999998,
+          "lookahead1>random": 0.2583333333333333
+        },
+        "matrix": {
+          "greedy": {
+            "lookahead1": 0.43333333333333335,
+            "random": 0.6166666666666667
+          },
+          "lookahead1": {
+            "greedy": 0.6,
+            "random": 0.7583333333333333
+          },
+          "random": {
+            "greedy": 0.44166666666666665,
+            "lookahead1": 0.26666666666666666
+          }
+        },
+        "mirror_seat_winrates": {
+          "greedy": [
+            0.425,
+            0.575
+          ],
+          "lookahead1": [
+            0.45,
+            0.55
+          ],
+          "random": [
+            0.4666666666666667,
+            0.5333333333333333
+          ]
+        },
+        "policies": [
+          "random",
+          "greedy",
+          "lookahead1"
+        ],
+        "runaway_max_seat_winrate": 0.575,
+        "strongest_rung": "lookahead1",
+        "strongest_seat_spread": 0.10000000000000003
+      },
+      "move_cap": 64,
+      "n_games": 120,
+      "n_players": 2,
+      "notes": {
+        "coverage": "skipped: engine contract exposes no board sites; None is excluded from the harmonic mean, never treated as a pass"
+      },
+      "probe_median_length": 16.0,
+      "seat_winrates_random": [
+        0.4666666666666667,
+        0.5333333333333333
+      ],
+      "seed": 23,
+      "thresholds": {
+        "MAX_FORCED_FRACTION": 0.25,
+        "MAX_RUNAWAY": 0.85,
+        "MAX_SEAT_EDGE": 0.1,
+        "MIN_COMPLETION": 0.98,
+        "MIN_DECISIVENESS": 0.9,
+        "MIN_MEDIAN_BRANCHING": 3.0,
+        "MIN_SKILL_EDGE": 0.15,
+        "MOVE_CAP_MULT": 4
+      },
+      "verdicts": {
+        "all_pass": false,
+        "balance_ok": true,
+        "branching_ok": true,
+        "completion_ok": true,
+        "decisiveness_ok": true,
+        "forced_ok": true,
+        "runaway_ok": true,
+        "seat_bias_ok": false,
+        "skill_ladder_ok": true
+      }
+    }
+  },
+  "engine_assumptions": [
+    "A band whose constraint has no legal socket for the active player falls back to any empty socket (prevents a deadlock; registered, not guessed).",
+    "Each player draws exactly two distinct objective tiles at setup; they rest hidden behind the player's screen until scoring. The two tiles are never the same shape.",
+    "The six glaze maps are dealt without replacement: each player gets two and two remain unseen, so maps never duplicate within a game.",
+    "The 16-placement game always fills the tray with exactly 8 discs per player, so public disc totals are always equal and there is no material-parity imbalance.",
+    "The firing dial is public: its 16-band shuffle is fixed at setup and both players see every revealed band in order."
+  ],
+  "idea_sha": "4ccf65ccab208ae7a8362a5fb808ebccf4e7510a2f8447f45d927b9b1ac69792",
+  "n_games": 120,
+  "seed": 23,
+  "slug": "cone-nine",
+  "thresholds": {
+    "MAX_FORCED_FRACTION": 0.25,
+    "MAX_RUNAWAY": 0.85,
+    "MAX_SEAT_EDGE": 0.1,
+    "MIN_COMPLETION": 0.98,
+    "MIN_DECISIVENESS": 0.9,
+    "MIN_MEDIAN_BRANCHING": 3.0,
+    "MIN_SKILL_EDGE": 0.15,
+    "MOVE_CAP_MULT": 4
+  },
+  "verdicts": {
+    "all_pass": false,
+    "per_players": {
+      "2": false
+    }
+  }
+}

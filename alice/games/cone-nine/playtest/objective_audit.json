@@ -1,0 +1,53 @@
+{
+  "artifact_kind": "deterministic_digital_model_audit",
+  "checks": {
+    "all_map_ceilings_equal_eight": true,
+    "all_six_masks_distinct": true,
+    "deals_without_replacement": true,
+    "dial_is_fixed_cycle_with_random_start": true,
+    "seed_reproducible": true
+  },
+  "engine_idea_sha": "4ccf65ccab208ae7a8362a5fb808ebccf4e7510a2f8447f45d927b9b1ac69792",
+  "fixed_draw_games": 1440,
+  "fixed_draw_policy": "own-score greedy; deterministic random tiebreak",
+  "human_or_physical_evidence": false,
+  "map_max_points": {
+    "CORNERS": 8,
+    "CRACKLE": 8,
+    "HEART": 8,
+    "HORIZON": 8,
+    "PILLARS": 8,
+    "SALTIRE": 8
+  },
+  "mean_objective_bonus": {
+    "CORNERS": 5.420833333333333,
+    "CRACKLE": 4.525,
+    "HEART": 7.3125,
+    "HORIZON": 4.915625,
+    "PILLARS": 4.884375,
+    "SALTIRE": 4.309375
+  },
+  "mean_objective_bonus_spread": 3.003125,
+  "objective_appearances": {
+    "CORNERS": 960,
+    "CRACKLE": 960,
+    "HEART": 960,
+    "HORIZON": 960,
+    "PILLARS": 960,
+    "SALTIRE": 960
+  },
+  "seat_win_credit": [
+    0.5322916666666667,
+    0.46770833333333334
+  ],
+  "setup_deal_counts": {
+    "CORNERS": 392,
+    "CRACKLE": 407,
+    "HEART": 412,
+    "HORIZON": 388,
+    "PILLARS": 390,
+    "SALTIRE": 411
+  },
+  "setup_seed_count": 600,
+  "shared_win_rate": 0.04375
+}

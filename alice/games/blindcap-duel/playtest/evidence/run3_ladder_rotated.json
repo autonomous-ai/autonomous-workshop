@@ -1,0 +1,36 @@
+{
+  "games": 240,
+  "greedy_by_seat": {
+    "0": {
+      "games": 120,
+      "win_credit": 0.942
+    },
+    "1": {
+      "games": 120,
+      "win_credit": 0.979
+    }
+  },
+  "label": "greedy_vs_random_rotated",
+  "move_kinds_seen": [
+    "crown",
+    "plant",
+    "probe",
+    "seed"
+  ],
+  "natural": 240,
+  "policy_win_credit": {
+    "greedy": 0.96,
+    "random": 0.04
+  },
+  "seat_win_credit": [
+    0.481,
+    0.519
+  ],
+  "seed": 2026082306,
+  "shared": 1,
+  "turns": {
+    "max": 24,
+    "min": 24
+  },
+  "undefined": 0
+}

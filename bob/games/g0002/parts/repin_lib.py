@@ -381,6 +381,25 @@ def part_colors() -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # 11. plug_01 — the part that turns the ladder into an angle
 # ---------------------------------------------------------------------------
+# [DEV] the roof aperture is a continuous axial slot, not five separate holes.
+# A D4.80 lifter standing up to 9.8 above the blade roof cannot traverse 96 mm
+# of solid keyway roof to reach its chamber: with five isolated holes the key
+# cannot be inserted or withdrawn at all (check_motion: key-withdraws blocked by
+# plug_01 at step 1/22, 612 mm3).  The slot keeps the briefed 5.40 width, so
+# C13 (a D6.20 pin still cannot pass it) and C14 (a D4.80 lifter still passes
+# with 0.30 of blade side-play) are both unchanged, and a pin still lands on the
+# crescent shelves at r 10.40 either side of the slot.
+LIFTER_SLOT_TOP = round(LIFTER_TOP_Y[0] + 0.2, 3)          # 19.60, clears setting 1
+LIFTER_SLOT_END = CHAMBER_X[-1] + BORE_R + 0.5             # runs past chamber 5
+assert LIFTER_SLOT_TOP < NOTCH_FLOOR_R                     # notch floor stays solid
+
+
+def _lifter_slot(z_end: float):
+    """The axial corridor the standing lifters travel in, above the keyway."""
+    return (Pos(0, (ROOF_R + LIFTER_SLOT_TOP) / 2, z_end / 2)
+            * Box(APERTURE_D, LIFTER_SLOT_TOP - ROOF_R, z_end, align=Align.CENTER))
+
+
 def _chamber_bore(zc: float):
     """Pin bore + roof aperture for one chamber, as a cutting solid."""
     neck = (Rot(-90, 0, 0) * Pos(0, 0, ROOF_R)
@@ -444,6 +463,7 @@ def build_plug():
     p -= (Pos(0, (KEYWAY_ROOF_Y + KEYWAY_FLOOR_Y) / 2, KEYWAY_DEPTH / 2)
           * Box(KEYWAY_W, KEYWAY_H, KEYWAY_DEPTH, align=Align.CENTER))
 
+    p -= _lifter_slot(LIFTER_SLOT_END)
     for zc, s in zip(CHAMBER_X, STOPS):
         p -= _chamber_bore(zc)
         p -= _gate_notch(zc, s)
@@ -554,6 +574,15 @@ def build_shell():
 
     # --- cuts ---
     body -= _teardrop_void()
+    # [DEV] cam relief.  The latch cam lobe grows to r 25.0, which is 2.2 outside
+    # the r 22.8 bore, so a plain bore ploughs the lobe into the shell the moment
+    # the plug turns (check_motion: plug-turns-free blocked at 25 deg, and 61 mm3
+    # of overlap by 45 deg).  A 7 mm relief band at r 25.4 over the cam's z gives
+    # the lobe 0.40 all round, the same clearance the shear line uses.  It removes
+    # no bearing surface: both journals are outside this band.
+    body -= (Pos(0, 0, CAM_Z[0] - 0.5)
+             * Cylinder(CAM_R_MAX + 0.4, (CAM_Z[1] - CAM_Z[0]) + 1.0,
+                        align=(Align.CENTER, Align.CENTER, Align.MIN)))
     for zc, s in zip(CHAMBER_X, STOPS):
         body -= _chimney_cut(zc, s)
     # dovetail grooves in the rails (female = male + 0.10 per side)
@@ -592,10 +621,16 @@ def build_shell():
                      * Pos(0, (r_in + r_out) / 2, (z0 + z1) / 2)
                      * Box(CAP_TAB[0] + 2 * CAP_TAB_FIT, r_out - r_in, z1 - z0,
                            align=Align.CENTER))
-    # rail-groove detent nib: the lever's three notches click onto it
+    # Rail detent nib: the lever's flank dimples click onto it.  [DEV] it used to
+    # sit at (x 14.6, y 55.4) — up in the dovetail tongue, 8.4 above the dimples
+    # at y 47.0 — so it never met a dimple and instead rubbed the tongue flank
+    # for the whole stroke (check_motion: a constant 0.048 mm3 at every travel,
+    # including the seated RUN pose).  Now it is on the rail's inner face at the
+    # dimple height: tip at x 12.6, so it stands 0.25 into the lever flank
+    # between positions and sits free inside the dimple at RUN and at LOAD.
     for sx in (-1, 1):
-        body += (Pos(sx * 14.6, 55.4, LEVER_DETENT_NIB_Z)
-                 * Box(1.6, 0.6, 2.4, align=Align.CENTER))
+        body += (Pos(sx * 12.8, 47.0, LEVER_DETENT_NIB_Z)
+                 * Box(0.4, 0.6, 2.4, align=Align.CENTER))
     body -= _protractor()
     body -= (Pos(0, BASE_Y - 50.0, (SHELL_Z0 + SHELL_Z1) / 2)
              * Box(300, 100, SHELL_LEN + 20, align=Align.CENTER))   # flat bed face
@@ -808,12 +843,18 @@ def build_key(settings=(1, 2, 3, 4, 5), seated: bool = False):
         # crank slot + D5.40 roof guide at the chamber.  The slot has to hold the
         # crank (lane x -> centreline) *and* the D4.80 head at x = 0, so it spans
         # from whichever of the two reaches further out on each side.
+        #
+        # Its z thickness is set by the *head*, not by the crank: the head's
+        # bottom 2.0 mm sits below the roof guide's mouth, and a D4.80 cylinder
+        # in a ROD_T (3.00) slot bites 0.6 into the frame on both sides — which
+        # welded all five rods to the frame (check_mesh read 6 shells, not 11).
+        # max(ROD_T, LIFTER_D) + 2g = 5.40 clears both with the print-in-place gap.
         cx0 = min(x - LANE_W / 2 - g, -(LIFTER_D / 2 + g + 0.2))
         cx1 = max(x + LANE_W / 2 + g, +(LIFTER_D / 2 + g + 0.2))
         frame -= (Pos((cx0 + cx1) / 2, (ROD_CRANK_Y - 3.0 + BLADE_H + 1.0) / 2,
                       KEY_LIFTER_Z[i])
                   * Box(cx1 - cx0, BLADE_H + 4.0 - ROD_CRANK_Y,
-                        ROD_T + 2 * g, align=Align.CENTER))
+                        max(ROD_T, LIFTER_D) + 2 * g, align=Align.CENTER))
         frame -= (Rot(-90, 0, 0) * Pos(0, -KEY_LIFTER_Z[i], ROD_CRANK_Y)
                   * Cylinder(LIFTER_D / 2 + g, BLADE_H,
                              align=(Align.CENTER, Align.CENTER, Align.MIN)))
@@ -1215,6 +1256,7 @@ def build_gp1_plug():
         JOURNAL_R, 8.0, align=(Align.CENTER, Align.CENTER, Align.MIN))
     p -= (Pos(0, (KEYWAY_ROOF_Y + KEYWAY_FLOOR_Y) / 2, GP1_LEN / 2)
           * Box(KEYWAY_W, KEYWAY_H, GP1_LEN + 2, align=Align.CENTER))
+    p -= _lifter_slot(GP1_LEN)
     p -= _chamber_bore(GP1_ZC)
     p -= _gate_notch(GP1_ZC, GP1_STOP)
     return p

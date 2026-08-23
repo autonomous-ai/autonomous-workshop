@@ -91,7 +91,15 @@ COST_CAP_USD = 5.0
 #: bill. 160 turns is ~2x the longest honest game in Bob's 15-50 minute
 #: design band; BOB_TABLE_MAX_TURNS overrides. Effective per-table limit is
 #: min(move_cap, this).
-MAX_TABLE_TURNS = 160
+#:
+#: Cut 160 -> 60 on 2026-08-23 after the first real cost read: the tables
+#: were 41% of ALL spend ($50 of $123 across six games). A table exists to
+#: SAMPLE the experience and collect a would-play-again vote, not to play a
+#: complete tournament — and every question the length was buying ("did it
+#: end at the right time") is already answered better by the sim's duration
+#: distribution over 1,000 games. Four diverse tables beat one long one;
+#: the transcript records the truncation so nothing is hidden.
+MAX_TABLE_TURNS = 60
 
 #: Observations are engine-authored text and the engine writer is a
 #: generator agent: a reward-seeking engine can plant instructions in

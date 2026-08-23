@@ -1,0 +1,80 @@
+{
+  "slug": "cone-nine",
+  "title": "CONE NINE: the Firing Dial",
+  "schema_version": 2,
+  "concept": "Two potters share one 4x4 kiln. A single printed dial holds sixteen firing bands; spin it to choose a random starting band, then advance it one click each turn and obey the fire. Every disc changes which regions you can join before the kiln is full. But only you know the two glaze maps that pay for your target wells — so the same open board hides two different scoring surfaces at once.",
+  "players": {"min": 2, "max": 2},
+  "playtime_min": 20,
+  "action_types": ["turn", "glaze"],
+  "design_contract": {
+    "core_experience": "A tense two-player territorial packing duel in which public dial constraints collide with private hidden objectives, so both players optimise different boards at once.",
+    "core_mechanism": "A shared cyclic dial of sixteen printed firing bands is spun to a random starting band, then advanced one click per turn. Each band forces the active player's placement: OPEN anywhere, SHY away from rival discs, REGION beside your own disc, FAR away from your own disc. Each player additionally holds two hidden glaze-map tiles; every target well they own on the finished tray pays the value printed on that map.",
+    "must_preserve": [
+      "The firing dial is a single rotating printed wheel, public to both players, with a fixed cyclic band order and a random starting band.",
+      "Each player's two objective tiles are visible only to them until scoring, creating simultaneous asymmetric play on one shared board.",
+      "The tray fills after exactly 16 placements with 8 discs per player, so material parity is structural, never adjudicated.",
+      "Regions of orthogonally connected own-colour discs score size squared; hidden glaze maps add per-target-well bonuses with equal eight-point ceilings."
+    ],
+    "anti_goals": [
+      "No cards, dice, app or moderator.",
+      "No hidden dial information: both players must always see the dial position and the revealed band.",
+      "No rule that lets a player move or remove a disc once glazed.",
+      "No voluntary pass."
+    ],
+    "complexity_budget": {"max_rule_words": 550, "max_action_types": 2},
+    "kill_criteria": [
+      "A competent first seat exceeds a 10 percentage-point advantage after simulation.",
+      "The game draws (ties) more than 10 percent of competent self-play games.",
+      "Players face fewer than 3 meaningful placement choices on average (median branching below 3).",
+      "Any single part cannot be printed on a 160 x 160 mm bed without supports or split geometry."
+    ]
+  },
+  "novelty": "CONE NINE does not claim hidden objectives, territorial scoring, constrained placement, or a dial in isolation. Its narrower product hypothesis is a public sixteen-click firing dial that changes the legal placement relation each turn, combined with two private per-cell glaze maps per player on one 4x4 tray and structural eight-disc parity. A 2026-08-23 search found an existing pottery board game titled KILN, so this prototype was renamed immediately; it also found Garden Nation as relevant prior art for spatial building under location constraints plus secret missions. The mechanism and title remain product-search findings, not trademark or freedom-to-operate clearance. Full sources and limits travel with content/prior-art.md.",
+  "art_direction": {
+    "form_language": "Everything is baked-clay geometry: the shared tray is a thick slab with sixteen recessed glaze wells, its corners radiused like a kiln shelf. The dial is a low faceted wheel with a knurled rim and one raised pointer, printed to rotate on a central boss. The discs are fat shallow bungs with a knurled top lip so they can be picked up even when the tray is crowded.",
+    "silhouette": "A slab of cracked sienna loam dotted with two colours of glazed bungs, one low faceted dial at its edge where the fire is read, and two small screens sheltering each player's ritual tiles.",
+    "part_vocabulary": "FIVE families, each separable by shape alone at arm's length. (1) kiln_tray — the only flat, wide, cracked thing, a 144 x 144 x 26 mm slab of sixteen recessed wells. (2) kiln_dial — the only rotating thing, a faceted wheel with a pointer on a central boss; one shared dial per game. (3) glaze_disc — the only round bung; 16 discs, 8 per colour, fat with a knurled lip. (4) ritual_screen — two small freestanding screens with a notch. (5) glaze_map — six thin square tiles with raised target-well diagrams and point pips.",
+    "surface_treatment": "The tray top is crosshatched with 1.0 mm fine crazing so it reads as fired clay, never a plain plate. Each glaze well has a chamfered rim. The dial pointer and band pips are at least 0.8 mm proud. Disc knurl is 0.9 mm. No motif is under 0.8 mm.",
+    "hero_shot": "The full tray moments before the final glaze: sixteen wells, two colours nearly settled into interlocking regions, the faceted dial mid-turn with a pointer resting on a band, and just visible at the table's edge the two screens behind which each potter hides a different ambition."
+  },
+  "components": [
+    {"name": "kiln_tray", "qty": 1,
+     "desc": "A 144 x 144 x 26 mm slab of fired loam with sixteen recessed glaze wells in a 4x4 grid, each well chamfered and arranged so the tray is separable by shape alone. One shared tray per game; prints on a single 160 x 160 mm bed with no supports."},
+    {"name": "kiln_dial", "qty": 1,
+     "desc": "A faceted low wheel, about 62 mm across, with a knurled rim, one raised pointer, and a set of sixteen band pips around its edge. It rotates on a fixed central boss at the tray's corner. The band order is set by the shuffle at setup and is public."},
+    {"name": "glaze_disc", "qty": 16, "per_player": 8,
+     "desc": "A fat round bung about 18 mm across with a knurled top lip, flat-bottomed so it seats cleanly in a glaze well. Eight per player in their own colour. Kerbing on the top lip lets it be lifted even from a full tray."},
+    {"name": "ritual_screen", "qty": 2, "per_player": 1,
+     "desc": "A small freestanding L-shaped screen with a notch; one per player, sheltering the two glaze-map tiles so only the owner sees them. The screen reads as a kiln hood."},
+    {"name": "glaze_map", "qty": 6,
+     "desc": "A thin square tile embossed with one 4x4 target-well map and its per-well value. Four maps are dealt each game and two stay unseen; every map has an eight-point ceiling."}
+  ],
+  "objective_tiles": [
+    "CORNERS: 2 points for each corner well you own (8 maximum).",
+    "HEART: 2 points for each of the four centre wells you own (8 maximum).",
+    "SALTIRE: 1 point for each well on either diagonal you own (8 maximum).",
+    "HORIZON: 1 point for each well in the top or bottom row you own (8 maximum).",
+    "PILLARS: 1 point for each well in the left or right column you own (8 maximum).",
+    "CRACKLE: 1 point for each well in the marked checker pattern you own (8 maximum)."
+  ],
+  "rules": {
+    "setup": [
+      {"text": "Place the shared kiln_tray between the players and the kiln_dial at its corner. Spin the dial without looking, then stop it on one of its sixteen printed bands. This random starting band and the full cyclic order are public.", "uses": ["kiln_tray", "kiln_dial"]},
+      {"text": "Shuffle the six glaze_map tiles. Deal two to each player behind their ritual_screen and return the remaining two unseen to the box. No map appears twice in one game.", "uses": ["glaze_map", "ritual_screen"]},
+      {"text": "Each player takes eight glaze_discs of their colour. Choose the first player at random; that player obeys the starting band and places one disc.", "uses": ["kiln_dial", "glaze_disc"]}
+    ],
+    "turn": [
+      {"text": "Play alternates. On the first turn, obey the starting band. On every later turn, advance the dial one click and read the new band aloud. Then place exactly one disc in an empty well under that band's constraint.", "uses": ["kiln_dial", "glaze_disc", "kiln_tray"]},
+      {"text": "Bands: OPEN = any empty well; SHY = a well not orthogonally adjacent to a rival disc; REGION = a well orthogonally adjacent to one of your own discs; FAR = a well not orthogonally adjacent to one of your own discs.", "uses": ["kiln_dial"]},
+      {"text": "If a band has no legal well for you, place in any empty well instead. A disc, once placed, never moves.", "uses": ["kiln_tray", "glaze_disc"]}
+    ],
+    "end": [
+      {"text": "After sixteen placements the tray is full (eight discs each). Each player reveals their two glaze_map tiles and counts the target wells they own on each map.", "uses": ["kiln_tray", "glaze_disc", "glaze_map"]},
+      {"text": "Score each orthogonally connected region of your colour: a region of size n is worth n x n. Then add each map's printed value for every target well you own. Highest total wins.", "uses": ["kiln_tray", "glaze_disc", "glaze_map"]}
+    ],
+    "win": {
+      "text": "Add your region size-squared scores to your two per-target-well map bonuses. Highest total wins. On a tie, the player with the higher region-only score wins; if still tied, the win is shared.",
+      "uses": ["kiln_tray", "glaze_disc"]
+    }
+  }
+}

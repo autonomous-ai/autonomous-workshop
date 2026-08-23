@@ -126,7 +126,7 @@
     "g0002": {
       "budgets": {
         "clarify_used": 0,
-        "repair_used": 0,
+        "repair_used": 1,
         "rework_used": 0
       },
       "created": "2026-08-22T14:31:29.804089+00:00",
@@ -137,9 +137,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-23T10:10:07.990024+00:00",
+        "expires": "2026-08-23T13:03:05.265973+00:00",
         "holder": "invent",
-        "id": "a86f04e7412e4d71b323361d60f8a485"
+        "id": "00b48e1fb6774b28bdaca3a2efda211e"
       },
       "log": [
         {
@@ -272,6 +272,18 @@
           "at": "2026-08-23T16:10:00+00:00",
           "from": "parked",
           "note": "human unpark: the killed builder had already written 79 files / 24 STLs \u2014 the gate judges the files, not the agent exit code; ceiling now 90 min",
+          "to": "built"
+        },
+        {
+          "at": "2026-08-23T12:15:38.832123+00:00",
+          "from": "built",
+          "note": "80 part file(s) built (builder ended early: Agent 'bob-builder' ran out of turns (161 used, cap 160). Raise the cap or cut the task do)",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T12:18:00.108893+00:00",
+          "from": "build_gated",
+          "note": "build lens FAIL -> repair: Brief \u00a78 makes GP1's physical 64/64 pass a hard gate \u2014 \"nothing downstream is printed until GP1 passes\" \u2014 but BUILD_NOTES.md states plainly \"No printer ran, no slicer ran.\" All 14 production parts (plug_01, shell_01, pin_r1-r8, key_01, etc.) were nonetheless fully modeled and marked built/validated by geometric checks alone. The mechanism's own arithmetic (brief \u00a75, C5) admits a worst-case engagement of only 0.30 mm on the one dimension the entire game depends on, and that number has zero physical confirmation.; Brief \u00a77 flags the shell at 21 h, over the 20 h gate, and prescribes an open-frame redesign to reach ~19.5 h. DEVIATIONS.md C1 confirms the redesign was made, but adds \"Print time was not measured \u2014 no slicer ran \u2014 so no hour claim is made.\" The $47-52 COGS estimate and the 20 h gate are therefore both unresolved for the shipped geometry.; None of the five named 'Approved look' pass criteria (free 0-90\u00b0 turn; protractor marks at 4/20/36/52/68/90\u00b0\u00b11\u00b0; shoulder flat r=34.6\u00b10.15; slug nose at 22.4\u00b10.15; hood no-sight-line at 400 mm) appear by name among the checks BUILD_NOTES.md lists as having run (layout, build, check_fit, check_mesh, interfere, motion). The hood no-sight-line check is the exact axis this rubric singles out as FAIL-grade (the Armillary precedent) and it is not confirmed anywhere in the artifacts.",
           "to": "built"
         }
       ],
@@ -626,7 +638,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-23T13:10:31.211942+00:00",
+        "holder": "invent",
+        "id": "9facfd062ee645f4bed3fa8f2d1af50e"
+      },
       "log": [
         {
           "at": "2026-08-22T18:51:21.446656+00:00",
@@ -696,6 +712,75 @@
       "slug": "g0005",
       "state": "tabled",
       "title": "Kick"
+    },
+    "g0006": {
+      "budgets": {
+        "clarify_used": 0,
+        "repair_used": 0,
+        "rework_used": 1
+      },
+      "created": "2026-08-23T10:40:00.329715+00:00",
+      "direction": {
+        "family": "modular-worldbuild",
+        "lane": "invention",
+        "players": "2-4",
+        "weight": "light"
+      },
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
+      "log": [
+        {
+          "at": "2026-08-23T10:40:00.329715+00:00",
+          "from": null,
+          "note": "sparked",
+          "to": "sparked"
+        },
+        {
+          "at": "2026-08-23T11:46:39.215429+00:00",
+          "from": "sparked",
+          "note": "spark chosen: Fold Line (triage kept 1 of 5)",
+          "to": "researched"
+        },
+        {
+          "at": "2026-08-23T11:48:51.230633+00:00",
+          "from": "researched",
+          "note": "novelty pass, margin=far",
+          "to": "ruled"
+        },
+        {
+          "at": "2026-08-23T12:04:11.695614+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-23T12:09:09.129128+00:00",
+          "from": "rules_gated",
+          "note": "rules gate passed",
+          "to": "simulated"
+        },
+        {
+          "at": "2026-08-23T12:18:41.402037+00:00",
+          "from": "simulated",
+          "note": "sim gate failed: balance_ok, branching_ok, forced_ok, seat_bias_ok -> rework (sim findings in playtest/sim_report.json of the PREVIOUS lap's note)",
+          "to": "ruled"
+        },
+        {
+          "at": "2026-08-23T12:25:26.058001+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
+        }
+      ],
+      "reward": {
+        "history": [],
+        "latest": 0.0
+      },
+      "slug": "g0006",
+      "state": "rules_gated",
+      "title": "Fold Line"
     }
   },
   "version": 2
