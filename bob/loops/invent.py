@@ -1125,10 +1125,25 @@ def _handle_built(step):
         "If you cannot write files, reply with JSON: {\"parts\": "
         "{\"<filename>\": \"<file content>\"}}." % slug,
     ])
-    result = agents.run_agent("bob-builder", prompt, cwd=gdir,
-                              max_minutes=45,   # CAD builds are the longest stage
-                              max_turns=100)    # and the most tool-call heavy
-    reply = _extract_json(result.text)
+    # A killed builder is not a lost build. It writes files as it goes, so
+    # a wall-clock kill can still leave a complete part set — g0002's did:
+    # 79 files, 24 STLs, discarded because the AGENT died (2026-08-23).
+    # The deterministic gate is the judge of a build, never the agent's
+    # exit code, so a crash falls through to the same file check as success.
+    # Ceiling raised to 90 min (Eve's EVE_BUILDER_MAX_MINUTES lesson, same
+    # night, same wound) and overridable for big assemblies.
+    builder_minutes = int(os.environ.get("BOB_BUILDER_MAX_MINUTES", "90"))
+    killed_note = ""
+    try:
+        result = agents.run_agent("bob-builder", prompt, cwd=gdir,
+                                  max_minutes=builder_minutes,
+                                  max_turns=160)  # most tool-call-heavy stage
+    except agents.QuotaExhausted:
+        raise
+    except agents.AgentError as exc:
+        result = None
+        killed_note = " (builder ended early: %s)" % str(exc)[:90]
+    reply = _extract_json(result.text) if result is not None else None
     parts_dir = os.path.join(gdir, "parts")
     if isinstance(reply, dict) and isinstance(reply.get("parts"), dict):
         for name, content in reply["parts"].items():
@@ -1137,12 +1152,14 @@ def _handle_built(step):
     produced = [f for f in (os.listdir(parts_dir)
                             if os.path.isdir(parts_dir) else [])
                 if not f.startswith(".")]
-    _ledger_row(slug, "built", result.cost_usd,
-                "%d part file(s) produced" % len(produced))
+    _ledger_row(slug, "built", result.cost_usd if result else 0.0,
+                "%d part file(s) produced%s" % (len(produced), killed_note))
     if not produced:
-        queue.park(slug, "builder produced no part files — nothing to gate")
+        queue.park(slug, "builder produced no part files — nothing to gate%s"
+                   % killed_note)
         return
-    queue.advance(slug, "build_gated", "%d part file(s) built" % len(produced))
+    queue.advance(slug, "build_gated",
+                  "%d part file(s) built%s" % (len(produced), killed_note))
 
 
 def _handle_build_gated(step):

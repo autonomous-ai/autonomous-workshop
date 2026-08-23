@@ -129,10 +129,6 @@
         "repair_used": 0,
         "rework_used": 0
       },
-      "crashes": {
-        "count": 2,
-        "state": "built"
-      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -140,10 +136,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -270,6 +263,12 @@
           "from": "built",
           "note": "parked: crashed 2 times in a row at built: AgentError: Agent 'bob-builder' overran its 45-minute wall ceiling and was killed (SIGTERM then SIGKILL after 5.0s grace). Retry once with a smaller task or a bigger ceiling \u2014 a ceiling that binds is the real constraint, not a safety limit.",
           "to": "parked"
+        },
+        {
+          "at": "2026-08-23T16:10:00+00:00",
+          "from": "parked",
+          "note": "human unpark: the killed builder had already written 79 files / 24 STLs \u2014 the gate judges the files, not the agent exit code; ceiling now 90 min",
+          "to": "built"
         }
       ],
       "reward": {
@@ -277,7 +276,7 @@
         "latest": 0.0
       },
       "slug": "g0002",
-      "state": "parked",
+      "state": "built",
       "table_retries": 0,
       "title": "Re-Pin"
     },
