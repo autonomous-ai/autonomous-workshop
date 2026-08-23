@@ -86,6 +86,23 @@ def _one_line(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
+
+def _clip_bytes(text: str, n: int = 2000) -> str:
+    """Clip a string to at most n UTF-8 BYTES (never splitting a code point).
+
+    The store API measures the description length in bytes
+    (len(strings.TrimSpace(desc)) > maxDescriptionLen), so a rune-based clip
+    can still exceed the limit once em-dashes / middle dots are present.
+    """
+    raw = str(text)
+    if len(raw.encode("utf-8")) <= n:
+        return raw
+    out = raw.encode("utf-8")[:n].decode("utf-8", errors="ignore")
+    # re-trim to a clean code-point boundary and one line
+    return re.sub(r"\s+", " ", out).strip()
+
+
+
 def _esc(text) -> str:
     return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -196,7 +213,11 @@ def store_description(game) -> str:
     printed part.
     """
     title = (game.title or game.slug).replace("-", " ").title()
-    identity = getattr(game, "identity", "") or ""
+    identity = (getattr(game, "identity", "") or "").strip()
+    # avoid "a new combination — like like Quoridor …": identity often already
+    # carries a leading "like …" comp, so drop a redundant one before the join.
+    if identity[:5].lower() == "like ":
+        identity = identity[5:].lstrip()
     mech = getattr(game, "mech", "") or getattr(game, "mechanism", "") or "a printed mechanism"
     idea = _one_line(getattr(game, "idea", "") or "")
     seats = (getattr(game, "seats", None) or "2–4").replace("-", "–")
@@ -216,17 +237,32 @@ def store_description(game) -> str:
         measured.append(f"measured print+ship cost about ${cogs:.2f}")
     if measured:
         body += " " + "; ".join(measured) + "."
-    body = f"{body} By Eve."
     # hard ban-word sweep (org brand voice)
     for w in BANNED:
         body = re.sub(re.escape(w), w.replace(" ", "-"), body, flags=re.I)
-    return _one_line(body)[:2000]
+    # reserve bytes for the required attribution so " By Eve." always survives
+    suffix = " By Eve."
+    body = _clip_bytes(_one_line(body), n=2000 - len(suffix.encode("utf-8")))
+    return body + suffix
 
 
-def _zip_game_dir(game_dir: Path, slug: str) -> Path:
-    """Zip a game folder for import; returns the archive path."""
+def _zip_game_dir(game_dir: Path, slug: str, title: Optional[str] = None) -> Path:
+    """Zip a game folder for import; returns the archive path.
+
+    Injects a ``project.json`` at the archive root when the source folder does
+    not already carry one. The store's import endpoint only classifies a
+    design folder when it holds a ``project.json`` OR a top-level ``*.py``
+    defining ``gen_step`` (see panda-social-backend services/import_extract.go
+    ``findDesignFolder``), and reads the title from ``project.json`` when
+    present. The injected file is written only into the archive, never into the
+    source game folder, so the design's on-disk state stays untouched.
+    """
     zip_path = game_dir.parent / f"{slug}.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        if not (game_dir / "project.json").is_file():
+            name = (title or slug.replace("-", " ").title())
+            zf.writestr("project.json", json.dumps(
+                {"id": f"eve-{slug}", "name": name}, ensure_ascii=False, indent=2))
         for p in sorted(game_dir.rglob("*")):
             if p.is_file():
                 zf.write(p, arcname=p.relative_to(game_dir))
@@ -286,7 +322,7 @@ def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
     if not readme.exists():
         full_writeup(game)
         (game_dir / "README.md").write_text(full_writeup(game))
-    zip_path = _zip_game_dir(game_dir, game.slug)
+    zip_path = _zip_game_dir(game_dir, game.slug, title=game.title or game.slug)
 
     # covers: prefer locally-uploaded hero, else let the server render
     th_urls = []
@@ -300,7 +336,7 @@ def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
               "-F", f"description={store_description(game)}",
               "-F", "status=" + status,
               "-F", "license=CC-BY-NC",
-              "-F", "category=tabletop",
+              "-F", "category=toys",   # live taxonomy: vases/toys/desk_office/home_garden
               "-F", "tags=eve,board-game,3d-print"]
     fields += ["-F", "prompt=" + _one_line(getattr(game, "identity", "") or "")]
     for u in th_urls:

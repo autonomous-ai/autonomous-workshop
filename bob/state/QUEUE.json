@@ -136,7 +136,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-23T04:12:50.364477+00:00",
+        "holder": "invent",
+        "id": "c94dada8960244d5ab857f99d09ca543"
+      },
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -465,6 +469,12 @@
           "from": "reviewed",
           "note": "box publish: exported; awaiting box operator (see Telegram)",
           "to": "published"
+        },
+        {
+          "at": "2026-08-23T03:27:45.221558+00:00",
+          "from": "published",
+          "note": "listing live \u2014 L4 owns market/human signal from here",
+          "to": "live"
         }
       ],
       "reward": {
@@ -499,7 +509,7 @@
         "latest": 81.47676240568458
       },
       "slug": "g0003",
-      "state": "published",
+      "state": "live",
       "title": "Clearance"
     },
     "g0004": {

@@ -5494,7 +5494,7 @@
   "ticks": 0
  },
  "2026-08-23": {
-  "cost_usd": 45.363728,
+  "cost_usd": 46.123305,
   "steps": [
    {
     "cost_usd": 0.0704784,
@@ -8537,287 +8537,431 @@
     "wall_s": 230.854
    },
    {
-    "name": "bob-table-player#364",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 34.713,
-    "num_turns": 1,
     "cost_usd": 0.031209299999999995,
-    "subtype": "success"
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#364",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 34.713
    },
    {
-    "name": "bob-table-player#365",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 32.344,
-    "num_turns": 1,
     "cost_usd": 0.035247,
-    "subtype": "success"
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#365",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 32.344
    },
    {
-    "name": "bob-page-writer",
-    "model": "claude-sonnet-5",
-    "wall_s": 98.672,
-    "num_turns": 14,
     "cost_usd": 0.3692866,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#366",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 132.63,
-    "num_turns": 1,
-    "cost_usd": 0.0769773,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#367",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 34.966,
-    "num_turns": 1,
-    "cost_usd": 0.03677,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#368",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 88.507,
-    "num_turns": 1,
-    "cost_usd": 0.063281,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#369",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 52.189,
-    "num_turns": 1,
-    "cost_usd": 0.045811,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#370",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 64.016,
-    "num_turns": 1,
-    "cost_usd": 0.056122000000000005,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#371",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 95.167,
-    "num_turns": 1,
-    "cost_usd": 0.06818000000000002,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#372",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 165.49,
-    "num_turns": 1,
-    "cost_usd": 0.105445,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#373",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 53.936,
-    "num_turns": 1,
-    "cost_usd": 0.08141499999999999,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#374",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 19.568,
-    "num_turns": 1,
-    "cost_usd": 0.0192692,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#375",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 48.396,
-    "num_turns": 1,
-    "cost_usd": 0.0337872,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#376",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 22.151,
-    "num_turns": 1,
-    "cost_usd": 0.0209522,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#377",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 19.89,
-    "num_turns": 1,
-    "cost_usd": 0.019405199999999997,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#378",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 34.008,
-    "num_turns": 1,
-    "cost_usd": 0.0254892,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#379",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 23.701,
-    "num_turns": 1,
-    "cost_usd": 0.0213132,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#380",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 35.988,
-    "num_turns": 1,
-    "cost_usd": 0.0273472,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#381",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 94.246,
-    "num_turns": 1,
-    "cost_usd": 0.0564192,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#382",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 69.892,
-    "num_turns": 1,
-    "cost_usd": 0.0442122,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#383",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 20.43,
-    "num_turns": 1,
-    "cost_usd": 0.0216612,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#384",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 92.496,
-    "num_turns": 1,
-    "cost_usd": 0.058475200000000005,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#385",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 29.803,
-    "num_turns": 1,
-    "cost_usd": 0.035063,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#386",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 55.698,
-    "num_turns": 1,
-    "cost_usd": 0.0367314,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#387",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 175.232,
-    "num_turns": 1,
-    "cost_usd": 0.09873739999999999,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#388",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 73.358,
-    "num_turns": 1,
-    "cost_usd": 0.0485954,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#389",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 80.014,
-    "num_turns": 1,
-    "cost_usd": 0.049394400000000005,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#390",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 71.075,
-    "num_turns": 1,
-    "cost_usd": 0.045433400000000006,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#391",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 46.778,
-    "num_turns": 1,
-    "cost_usd": 0.0328824,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#392",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 119.858,
-    "num_turns": 1,
-    "cost_usd": 0.0706454,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#393",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 128.082,
-    "num_turns": 1,
-    "cost_usd": 0.0725114,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#394",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 59.712,
-    "num_turns": 1,
-    "cost_usd": 0.049731,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#395",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 80.72,
-    "num_turns": 1,
-    "cost_usd": 0.0486554,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-table-player#396",
-    "model": "claude-haiku-4-5-20251001",
-    "wall_s": 94.883,
-    "num_turns": 1,
-    "cost_usd": 0.055264400000000005,
-    "subtype": "success"
-   },
-   {
-    "name": "bob-fresh-reader#4",
     "model": "claude-sonnet-5",
-    "wall_s": 156.362,
-    "num_turns": 2,
+    "name": "bob-page-writer",
+    "num_turns": 14,
+    "subtype": "success",
+    "wall_s": 98.672
+   },
+   {
+    "cost_usd": 0.0769773,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#366",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 132.63
+   },
+   {
+    "cost_usd": 0.03677,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#367",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 34.966
+   },
+   {
+    "cost_usd": 0.063281,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#368",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 88.507
+   },
+   {
+    "cost_usd": 0.045811,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#369",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 52.189
+   },
+   {
+    "cost_usd": 0.056122000000000005,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#370",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 64.016
+   },
+   {
+    "cost_usd": 0.06818000000000002,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#371",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 95.167
+   },
+   {
+    "cost_usd": 0.105445,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#372",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 165.49
+   },
+   {
+    "cost_usd": 0.08141499999999999,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#373",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 53.936
+   },
+   {
+    "cost_usd": 0.0192692,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#374",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 19.568
+   },
+   {
+    "cost_usd": 0.0337872,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#375",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 48.396
+   },
+   {
+    "cost_usd": 0.0209522,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#376",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 22.151
+   },
+   {
+    "cost_usd": 0.019405199999999997,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#377",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 19.89
+   },
+   {
+    "cost_usd": 0.0254892,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#378",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 34.008
+   },
+   {
+    "cost_usd": 0.0213132,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#379",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 23.701
+   },
+   {
+    "cost_usd": 0.0273472,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#380",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 35.988
+   },
+   {
+    "cost_usd": 0.0564192,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#381",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 94.246
+   },
+   {
+    "cost_usd": 0.0442122,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#382",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 69.892
+   },
+   {
+    "cost_usd": 0.0216612,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#383",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 20.43
+   },
+   {
+    "cost_usd": 0.058475200000000005,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#384",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 92.496
+   },
+   {
+    "cost_usd": 0.035063,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#385",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 29.803
+   },
+   {
+    "cost_usd": 0.0367314,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#386",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 55.698
+   },
+   {
+    "cost_usd": 0.09873739999999999,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#387",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 175.232
+   },
+   {
+    "cost_usd": 0.0485954,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#388",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 73.358
+   },
+   {
+    "cost_usd": 0.049394400000000005,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#389",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 80.014
+   },
+   {
+    "cost_usd": 0.045433400000000006,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#390",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 71.075
+   },
+   {
+    "cost_usd": 0.0328824,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#391",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 46.778
+   },
+   {
+    "cost_usd": 0.0706454,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#392",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 119.858
+   },
+   {
+    "cost_usd": 0.0725114,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#393",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 128.082
+   },
+   {
+    "cost_usd": 0.049731,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#394",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 59.712
+   },
+   {
+    "cost_usd": 0.0486554,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#395",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 80.72
+   },
+   {
+    "cost_usd": 0.055264400000000005,
+    "model": "claude-haiku-4-5-20251001",
+    "name": "bob-table-player#396",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 94.883
+   },
+   {
     "cost_usd": 0.2979596,
+    "model": "claude-sonnet-5",
+    "name": "bob-fresh-reader#4",
+    "num_turns": 2,
+    "subtype": "success",
+    "wall_s": 156.362
+   },
+   {
+    "name": "bob-table-player#397",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 24.608,
+    "num_turns": 1,
+    "cost_usd": 0.066564,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#398",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 33.818,
+    "num_turns": 1,
+    "cost_usd": 0.0317169,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#399",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 66.534,
+    "num_turns": 1,
+    "cost_usd": 0.0454559,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#400",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 41.062,
+    "num_turns": 1,
+    "cost_usd": 0.029425899999999998,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#401",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 65.5,
+    "num_turns": 1,
+    "cost_usd": 0.0419089,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#402",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 56.898,
+    "num_turns": 1,
+    "cost_usd": 0.0371579,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#403",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 37.489,
+    "num_turns": 1,
+    "cost_usd": 0.031866900000000004,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#404",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 16.901,
+    "num_turns": 1,
+    "cost_usd": 0.0184109,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#405",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 95.962,
+    "num_turns": 1,
+    "cost_usd": 0.05675890000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#406",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 79.372,
+    "num_turns": 1,
+    "cost_usd": 0.065514,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#407",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 41.139,
+    "num_turns": 1,
+    "cost_usd": 0.0297554,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#408",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 45.968,
+    "num_turns": 1,
+    "cost_usd": 0.0378094,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#409",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 53.965,
+    "num_turns": 1,
+    "cost_usd": 0.0360984,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#410",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 130.339,
+    "num_turns": 1,
+    "cost_usd": 0.07789539999999999,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#411",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 65.141,
+    "num_turns": 1,
+    "cost_usd": 0.05705500000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#412",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 62.711,
+    "num_turns": 1,
+    "cost_usd": 0.04108289999999999,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#413",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 41.369,
+    "num_turns": 1,
+    "cost_usd": 0.030060899999999998,
+    "subtype": "success"
+   },
+   {
+    "name": "bob-table-player#414",
+    "model": "claude-haiku-4-5-20251001",
+    "wall_s": 27.752,
+    "num_turns": 1,
+    "cost_usd": 0.025039900000000004,
     "subtype": "success"
    }
   ],
   "ticks": 0
  },
- "heartbeat": "2026-08-23T02:43:06.348961+00:00"
+ "heartbeat": "2026-08-23T03:27:50.344207+00:00"
 }

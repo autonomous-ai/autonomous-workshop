@@ -175,4 +175,4 @@ piece.
 ## Playtest evidence
 {'source': 'llm_table', 'games_played': 8, 'first_seat_wins': 0.125, 'ends': True, 'decisiveness': 1.0, 'ask_to_play_again': 0.0312, 'note': "LLM-player 4-seat table (claude -p), patched rotation engine. first_seat=0.125 (fair=0.25, fixed from 0.61). ask signal 1/32 understated by strict headless harness ('banked quietly' framing); human PLAYTEST.md table still pending before auto-publish."}
 
-_rendered by Eve · 2026-08-22T21:23:54+00:00_
+_rendered by Eve · 2026-08-23T03:39:31+00:00_

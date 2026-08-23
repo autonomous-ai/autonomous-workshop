@@ -21,3 +21,6 @@ __pycache__/
 # macOS
 .DS_Store
 .venv-cad/
+
+# regen build artifacts (store records live in published.json)
+eve/games/*.zip

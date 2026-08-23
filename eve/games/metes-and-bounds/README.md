@@ -629,4 +629,4 @@ Pending full rulebook (engine-tested skeleton).
 ## Playtest evidence
 {'source': 'llm_table', 'games_played': 8, 'first_seat_wins': 0.375, 'ends': True, 'decisiveness': 0.75, 'ask_to_play_again': 0.792, 'note': 'real LLM table: 8 games, 24 seats; replay-ask = 79%'}
 
-_rendered by Eve · 2026-08-23T01:14:19+00:00_
+_rendered by Eve · 2026-08-23T03:38:50+00:00_
