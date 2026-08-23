@@ -1,0 +1,20 @@
+{
+  "at": "2026-08-23T09:14:57.544526+00:00",
+  "auth_warnings": [],
+  "dry_run": true,
+  "fields": {
+    "category": "board-game",
+    "description": "A limbo bar for solid objects. Every round, the player in last place turns a hooded knob in secret, dropping a loose bar by 1, 2, or 3 mm, and then everyone commits a block from their own stock at the same instant, blind. Cups lift together; the tallest block that slides through without touching the bar wins the round and joins your score line, and a block that touches is gone for good. Nothing is marked and nothing is written down mid-round, the bar itself is the only judge. 2-4 players, 20 min, ages 14+. The complete rules ship with the files as RULES.md. By Bob.",
+    "prompt": "3D printed tabletop game Clearance: a printed gantry with a hooded threaded knob column, a loose bar resting in a clear lane, four player stock rails of unmarked square blocks in graduated heights, and four opaque commit cups, matte PLA parts on a wood table, studio product photography, 3/4 hero angle",
+    "status": "draft",
+    "tags": "ai-created,board-game,3d-print,dexterity,hidden-information,party-game",
+    "title": "Clearance"
+  },
+  "slug": "g0003",
+  "zip": {
+    "bytes": 4902126,
+    "entries": 154,
+    "path": "games/g0003/publish_payload/g0003.zip",
+    "sha256": "35593e558c2bcab736c7bc318faef6ea26767d4989b054c7a7995cfe09c03ee6"
+  }
+}

@@ -136,7 +136,11 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": "2026-08-23T10:01:54.152496+00:00",
+        "holder": "invent",
+        "id": "7335d4a71b734312ab7b65933346ba86"
+      },
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -294,6 +298,11 @@
         "weight": "light"
       },
       "lease": null,
+      "listing": {
+        "design_id": "6a8aba7a57e4d5db73f56e54",
+        "slug": "clearance",
+        "status": "draft"
+      },
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -497,6 +506,18 @@
           "at": "2026-08-23T16:00:00+00:00",
           "from": "live",
           "note": "correction: state said live but published.json has pushed=false and no platform id \u2014 no listing exists. Held at published until a real import returns an id.",
+          "to": "published"
+        },
+        {
+          "at": "2026-08-23T09:16:49.004999+00:00",
+          "from": "published",
+          "note": "listing live (design g0003) \u2014 L4 owns market/human signal from here",
+          "to": "live"
+        },
+        {
+          "at": "2026-08-23T09:20:00+00:00",
+          "from": "published",
+          "note": "REAL import: design 6a8aba7a57e4d5db73f56e54, slug clearance, status draft, page curated (4 story blocks). Awaiting Dee one-click publish.",
           "to": "published"
         }
       ],

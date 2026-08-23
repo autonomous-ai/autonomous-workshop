@@ -16,7 +16,7 @@ the list of renders in `parts/render/`. You produce `page_kit.json`:
   "description": "≤900 chars: pitch + '2–4 players · 20 min · ages 14+' facts + 'The complete rules ship with the files as RULES.md.' + the fixed disclosure line.",
   "use_case": {"label": "≤40 chars, the experience in a phrase", "body": "180–400 chars: what it feels like to play — the tension, the moment people talk about"},
   "story_blocks": [
-    {"label": "≤40 chars — a claim, not a topic", "body": "180–400 chars, numbers-forward: real dimensions from bill.json, tolerances, why the geometry does what it does", "render": "which render file illustrates this"}
+    {"lead": "≤40 chars — a claim, not a topic (the API field is `lead`, NOT `label`; only use_case uses `label`)", "body": "180–400 chars, numbers-forward: real dimensions from bill.json, tolerances, why the geometry does what it does", "render": "which render file illustrates this"}
   ],
   "tags": ["board-game", "3d-print", "ai-created", "..."],
   "shot_list": ["renders that must exist: hero 3/4, the mechanism mid-action, all components laid out, in-play closeup"]

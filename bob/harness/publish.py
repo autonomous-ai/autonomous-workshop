@@ -199,6 +199,54 @@ def _http(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
             return resp.status, dict(resp.headers), resp.read()
     except urllib.error.HTTPError as exc:
         return exc.code, dict(exc.headers or {}), exc.read()
+    except urllib.error.URLError as exc:
+        # TLS interception breaks urllib's cert chain on this machine (the
+        # house lesson: "curl, not urllib" — same wound the novelty client
+        # hit, and the reason g0003's first real import died at the wire).
+        # curl honours the system trust store the interceptor patched, so
+        # it is the working transport, not a workaround.
+        if "CERTIFICATE_VERIFY" not in str(exc) and "SSL" not in str(exc):
+            raise
+        return _http_curl(method, url, headers=headers, data=data,
+                          timeout=timeout)
+
+
+def _http_curl(method, url, headers=None, data=None, timeout=HTTP_TIMEOUT_S):
+    """curl transport for the same seam: (status, headers_dict, body).
+
+    The body is written to a temp file rather than passed as an argument —
+    a multipart import is megabytes, far past any argv limit.
+    """
+    import subprocess
+    import tempfile
+    argv = ["curl", "-sS", "-X", method, "--max-time", str(int(timeout)),
+            "-w", "\n%{http_code}"]
+    for key, val in (headers or {}).items():
+        argv += ["-H", "%s: %s" % (key, val)]
+    tmp = None
+    try:
+        if data:
+            fd, tmp = tempfile.mkstemp(suffix=".body")
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(data)
+            argv += ["--data-binary", "@" + tmp]
+        argv.append(url)
+        proc = subprocess.run(argv, capture_output=True, timeout=timeout + 30)
+        if proc.returncode != 0:
+            raise urllib.error.URLError(
+                "curl transport failed (rc=%d): %s"
+                % (proc.returncode, proc.stderr.decode("utf-8", "replace")[-300:]))
+        out = proc.stdout
+        idx = out.rfind(b"\n")
+        body, code = (out[:idx], out[idx + 1:]) if idx >= 0 else (out, b"0")
+        try:
+            status = int(code.strip() or 0)
+        except ValueError:
+            status = 0
+        return status, {}, body
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.unlink(tmp)
 
 
 # ---------------------------------------------------------------------------
@@ -805,8 +853,13 @@ def curate(slug):
             "already written and correct; only the curated page failed. "
             "Retry curate('%s') alone."
             % (status, resp.decode("utf-8", "replace")[:300], slug))
+    # The endpoint takes an OBJECT wrapping the array, not a bare array —
+    # a bare list returns 400 "cannot unmarshal array into
+    # apis.storyBlocksReq" (measured against the live API 2026-08-23 while
+    # importing Clearance).
     status, _, resp = _authed_call(
-        "PUT", "%s/designs/%s/story-blocks" % (base, dslug), blocks)
+        "PUT", "%s/designs/%s/story-blocks" % (base, dslug),
+        {"story_blocks": blocks})
     if status not in (200, 201):
         raise PublishError(
             "story-blocks PUT failed (HTTP %s): %s — retry curate('%s') "

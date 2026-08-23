@@ -1,12 +1,64 @@
 {
-  "box_output": null,
-  "handoff_instructions": [
-    "rsync -av '/Users/d/code/inventors/bob/games/g0003/export_text2game/g0003/' <box>:/root/text2game/out/g0003/",
-    "ssh <box> 'cd /root/text2game && ./publish.py g0003'"
-  ],
-  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
-  "page_kit_warnings": [],
-  "pushed": false,
-  "score": 81.47676240568458,
-  "via": "text2game-box"
+  "curated_at": "2026-08-23T09:18:40.287072+00:00",
+  "design": {
+    "author": {
+      "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocJ1GsDLSs7cNMhIfza5VBmz85x7TgeDyU_TtCXu78b695FBaa0=s96-c",
+      "display_name": "Dee",
+      "id": "6a4dfe7a83c93d8bdf733ac0",
+      "username": "dee"
+    },
+    "category": {
+      "id": "6a3909676f042e573bf14cca",
+      "name": "Toys & Games",
+      "slug": "toys"
+    },
+    "collected": false,
+    "created_at": "2026-08-23T09:16:46.98624015Z",
+    "current_history_id": "6a8aba7b57e4d5db73f56e56",
+    "description": "A limbo bar for solid objects. Every round, the player in last place turns a hooded knob in secret, dropping a loose bar by 1, 2, or 3 mm, and then everyone commits a block from their own stock at the same instant, blind. Cups lift together; the tallest block that slides through without touching the bar wins the round and joins your score line, and a block that touches is gone for good. Nothing is marked and nothing is written down mid-round, the bar itself is the only judge. 2-4 players, 20 min, ages 14+. The complete rules ship with the files as RULES.md. By Bob.",
+    "id": "6a8aba7a57e4d5db73f56e54",
+    "license": {
+      "propagated_from": "000000000000000000000000",
+      "type": "CC-BY-NC-SA"
+    },
+    "liked": false,
+    "origin": "import",
+    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
+    "primary_thumbnail_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8aba7a57e4d5db73f56e54/cover.png",
+    "print_specs": null,
+    "project_url": "https://cdn.autonomous.ai/panda-social/6a8aba7a57e4d5db73f56e54/6a8aba7b57e4d5db73f56e56/",
+    "published_at": "0001-01-01T00:00:00Z",
+    "root_id": "6a8aba7a57e4d5db73f56e54",
+    "slug": "clearance",
+    "stats": {
+      "collects": 0,
+      "comment_count": 0,
+      "downloads": 0,
+      "likes": 0,
+      "prints": 0,
+      "remix_count": 0,
+      "views": 0
+    },
+    "status": "draft",
+    "story_blocks": null,
+    "tags": [
+      "ai-created",
+      "board-game",
+      "3d-print",
+      "dexterity",
+      "hidden-information",
+      "party-game"
+    ],
+    "thumbnail_urls": [
+      "https://cdn.autonomous.ai/panda-social/thumbnails/6a8aba7a57e4d5db73f56e54/cover.png"
+    ],
+    "tier": "code_native",
+    "title": "Clearance",
+    "updated_at": "2026-08-23T09:16:46.986241342Z",
+    "use_case": null
+  },
+  "imported_at": "2026-08-23T09:16:47.029572+00:00",
+  "slug": "g0003",
+  "status": "draft",
+  "zip_sha256": "35593e558c2bcab736c7bc318faef6ea26767d4989b054c7a7995cfe09c03ee6"
 }

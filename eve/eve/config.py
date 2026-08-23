@@ -71,6 +71,13 @@ class Config:
     telegram_configured: bool = False
     playtest_configured: bool = False
 
+    # --- real LLM-player table (see playtest.run_player_table) --------------
+    run_llm_table: bool = False          # enable live claude -p 4-seat table runs
+    table_games: int = 4                 # games per table run
+    table_players: int = 4               # seats per game
+    table_parallel: int = 2              # concurrent seats (bounded by DAYBOOK quota)
+    table_seed: int = 11                 # base rng seed for replayability
+
     # --- Vibe / Panda store publish (see publish.py) -----------------------
     store_base_url: str = "https://panda-social-api.autonomous.ai"
     store_upload_base: str = "http://178.128.89.39:8090"   # admindash for /uploads
@@ -112,6 +119,11 @@ class Config:
             and os.environ.get("PLAYTEST_API_KEY")
             and os.environ.get("PLAYTEST_MODEL")
         )
+        c.run_llm_table = bool(int(os.environ.get("EVE_RUN_LLM_TABLE", "0")))
+        c.table_games = int(os.environ.get("EVE_TABLE_GAMES", c.table_games))
+        c.table_players = int(os.environ.get("EVE_TABLE_PLAYERS", c.table_players))
+        c.table_parallel = int(os.environ.get("EVE_TABLE_PARALLEL", c.table_parallel))
+        c.table_seed = int(os.environ.get("EVE_TABLE_SEED", c.table_seed))
         return c
 
 
