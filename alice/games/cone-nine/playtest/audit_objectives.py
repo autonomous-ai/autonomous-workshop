@@ -1,4 +1,4 @@
-"""Deterministic fixed-draw audit for CONE NINE's six glaze maps.
+"""Deterministic fixed-draw audit for CONE NINE's eight glaze maps.
 
 This is a complement to the authoritative generic simulation.  It holds the
 private map deal and the public dial start fixed across every legal disjoint
@@ -64,8 +64,14 @@ def run():
     }
     if set(ceilings.values()) != {8}:
         raise AssertionError("glaze-map ceilings diverged: %r" % ceilings)
-    if len({tuple(engine.OBJ_CELLS[obj]) for obj in engine.OBJECTIVES}) != 6:
-        raise AssertionError("glaze maps must be six distinct target masks")
+    if len({tuple(engine.OBJ_CELLS[obj]) for obj in engine.OBJECTIVES}) != 8:
+        raise AssertionError("glaze maps must be eight distinct target masks")
+    corners = {0, 3, 12, 15}
+    centres = {5, 6, 9, 10}
+    for obj in engine.OBJECTIVES:
+        cells = set(engine.OBJ_CELLS[obj])
+        if len(cells & corners) != 2 or len(cells & centres) != 2:
+            raise AssertionError("map location classes diverged for %s" % obj)
 
     # Setup/determinism audit over 600 seeds: all four dealt maps are unique,
     # the wheel is a cyclic rotation, and the same seed reproduces byte-for-
@@ -91,7 +97,7 @@ def run():
     appearances = {obj: 0 for obj in engine.OBJECTIVES}
 
     # Every ordered pair of disjoint two-map hands at all 16 public dial
-    # starts: 90 matchups x 16 = 1,440 controlled games.
+    # starts: 420 matchups x 16 = 6,720 controlled games.
     for pair0 in pairs:
         remaining = [obj for obj in engine.OBJECTIVES if obj not in pair0]
         for pair1 in itertools.combinations(remaining, 2):
@@ -129,7 +135,8 @@ def run():
         "mean_objective_bonus_spread": max(mean_bonus.values()) - min(mean_bonus.values()),
         "checks": {
             "all_map_ceilings_equal_eight": True,
-            "all_six_masks_distinct": True,
+            "all_eight_masks_distinct": True,
+            "each_map_has_two_corners_two_centres": True,
             "deals_without_replacement": True,
             "seed_reproducible": True,
             "dial_is_fixed_cycle_with_random_start": True,

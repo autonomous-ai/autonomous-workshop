@@ -1,62 +1,72 @@
-# KILN: the Firing Dial — prior art and novelty
+# CONE NINE: the Firing Dial — prior art and novelty
 
-This is a product-search memo, not trademark or freedom-to-operate clearance.
+This is a dated product-search memo, not trademark or freedom-to-operate
+clearance. Absence from these searches is not evidence of legal availability.
 
-## What KILN does not claim
+## Collision found and acted on
 
-The component ideas below are all old and are explicitly NOT claimed as
-novel:
+The prototype entered this iteration as **KILN: the Firing Dial**. That title
+is unavailable as a clean product hypothesis: Néstor Romeral Andrés already
+publishes **KILN**, a pottery-themed tile game for 2–4 players. The publisher's
+live product page identifies the title, designer, shared kiln, and 3D-printed
+tiles, and links its rulebook:
 
-- **Hidden / secret objectives.** Secret scoring conditions date to games
-  like *Ticket to Ride*, *Ingenious*, and countless area-control games.
-- **Territorial / area scoring of connected regions (size²).** Ancient;
-  *Go* is the canonical example.
-- **A shared dial, wheel, or spinner determining placement.** Spinner and
-  wheel mechanics are widespread; e.g. *Skyjo*'s open draw, generic
-  wheel-spinner games.
-- **Area majority / control as a genre.** Common across Carcassonne-style
-  titles.
+- <https://nestorgames.com/kiln.html>
+- <https://nestorgames.com/rulebooks/KILN_EN.pdf>
 
-## What is narrower and printable
+The mechanism is different, but the name and pottery category collide. The
+candidate was therefore renamed **CONE NINE: the Firing Dial** before any
+publication. An exact-title product search for `"Cone Nine" board game` and
+`"The Firing Dial" game` found pottery uses of “cone nine,” but no tabletop
+title in the reviewed results. That is a search result, not clearance.
 
-KILN's combinational claim is the specific, printable package:
+## Relevant mechanism prior art
 
-1. A single **printed rotating firing dial** is the ONLY shared information
-   instrument. Its 16-band order is shuffled once at setup and then public;
-   each turn exactly one band is revealed as the active player turns the
-   wheel.
-2. The revealed band **forces** the active player's placement into one of
-   four constraint families (OPEN / SHY / REGION / FAR), and the player
-   cannot pass.
-3. That same open board carries **two fully hidden asymmetric objective
-   tiles per player** worth secret bonuses — so both players are optimising
-   different surfaces on the same 4x4 tray simultaneously.
-4. **Structural material parity**: the tray fills after 16 placements with
-   exactly 8 discs per player, so there is no adjudicated material balance —
-   the parity is a property of the rules and the printed geometry, never a
-   judgement call.
+None of these ingredients is claimed in isolation:
 
-## Search results (2026-08-23)
+- secret objectives or end-game objective scoring;
+- connected-region or area scoring;
+- constrained placement;
+- a spinner, wheel, or dial;
+- equal piece counts on a shared grid.
 
-Searches for "KILN board game", "board game spinning wheel determines
-placement tiles", "hidden objectives area majority shared dial", and
-"3d printed grid discs hidden goals" surfaced no existing tabletop product
-titled **KILN** or **KILN: the Firing Dial**, and no product combining a
-placement-forcing shared printed dial with hidden asymmetric area-objective
-tiles on a shared tray. Results returned were general (Carcassonne-style
-tile games, wheel spinners, 3D-printed coaster collections, video games) and
-did not disclose the combination.
+**Garden Nation** is particularly relevant. Its players build spatially while
+an active-territory marker constrains location, and each player holds two
+secret mission cards. A contemporary rules review describes both features and
+also reports that some secret missions are stronger than others:
+<https://www.thefamilygamers.com/garden-nation/>. That makes “spatial
+constraints plus two secret goals” prior art, not CONE NINE's claim.
 
-Searches were run via DuckDuckGo on 2026-08-23 with the `ddgs` client. This
-is a product-search result, not legal clearance; a professional FTO search
-would be required before any commercial release.
+## Narrow product hypothesis
 
-## Distinctiveness from Blindcap: Duel (Alice's prior game)
+The remaining hypothesis is the complete small physical system:
 
-Blindcap is a hidden-information **probing duel** in which geometry (probes
-and buried tunnels) reveals partial truth and crowns claim it. KILN is a
-**public-dial territorial packing** game whose hidden information is
-entirely in the two private objective tiles, with no probes, no crowns, and
-no physical reading of uncertainty by printed geometry. Same author, same
-printable-tray design language, different mechanism and information
-structure.
+1. one public, sixteen-click printed firing dial with a fixed cyclic order and
+   random starting band;
+2. each click changes the legal placement relation (OPEN / SHY / REGION / FAR)
+   on a shared 4×4 tray, with no pass;
+3. two private per-cell glaze maps per player, dealt without replacement from
+   a complete eight-map rotation/reflection family;
+4. exactly eight discs per player after sixteen placements, with connected
+   regions scoring size squared.
+
+The search did not establish that this combination is unique. It established
+two narrower facts: the original title was already occupied, and Garden Nation
+materially narrows any mechanism claim. A professional trademark and
+freedom-to-operate review remains mandatory before commercial release.
+
+## Distinctness from Blindcap: Duel
+
+Blindcap is a hidden-species probing duel whose printed tunnels reveal partial
+truth. CONE NINE has no probes, crowns, species, or physical oracle. Its board
+is public; only the two scoring maps are private. The shared material language
+does not make the information structures or decisions the same.
+
+## Search limits (2026-08-23)
+
+Searches covered exact and descriptive phrases through general web and BGG-
+indexed results. They did not include paid trademark databases, non-indexed
+prototypes, every language, patent claims, or counsel review. The Double Fine
+video game **Kiln** also appears in current results, further supporting the
+title change, but it is not tabletop mechanism prior art:
+<https://news.xbox.com/en-us/2026/04/23/kiln-get-started-pottery-party-brawler-journey-launch-day-tips/>.

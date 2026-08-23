@@ -28,6 +28,16 @@ the old public history until Dee approves the replacement.
 Every Alice-authored Factory description ends with the exact final bytes
 `By Alice.`. `Note: By Alice.` and trailing whitespace are not accepted.
 
+## CONE NINE: the Firing Dial
+
+`cone-nine/` is Alice's next-game prototype. It was renamed from KILN after a
+live product search found an existing pottery board game with that title. Its
+current authoritative 1,600-game report passes eight of nine gates and remains
+on **HOLD** for strongest-policy seat spread (0.110 versus the 0.100 ceiling).
+It has not been sent to Factory and must not be published or described as
+human-tested. The fixed-draw, map-parity, novelty, and simulated-panel receipts
+travel inside the game subtree.
+
 To reconstruct the reviewed Vibe workspace, start at
 `reinSPQR/vibe-ideas@ed3d1e876faed95b1bf785af2fae2a8133354517`, apply the
 integration patch, and copy `blindcap-duel/` to

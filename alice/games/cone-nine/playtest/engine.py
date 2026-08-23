@@ -26,15 +26,15 @@ MOVE_KINDS = ("place",)
 HIDDEN_INFO = True
 # Content binding to the exact idea.json this engine was written from. Update
 # only after re-reading idea.json and rerunning the playtest harness.
-IDEA_SHA = "4ccf65ccab208ae7a8362a5fb808ebccf4e7510a2f8447f45d927b9b1ac69792"
+IDEA_SHA = "593aa9bb8dbabfb9ddfc38849100372b89780616caeaee60a770f16be7ba9f67"
 ASSUMPTIONS = [
     "A band whose constraint has no legal socket for the active player falls "
     "back to any empty socket (prevents a deadlock; registered, not guessed).",
     "Each player draws exactly two distinct objective tiles at setup; they "
     "rest hidden behind the player's screen until scoring. The two tiles are "
     "never the same shape.",
-    "The six glaze maps are dealt without replacement: each player gets two "
-    "and two remain unseen, so maps never duplicate within a game.",
+    "The eight glaze maps are dealt without replacement: each player gets "
+    "two and four remain unseen, so maps never duplicate within a game.",
     "The 16-placement game always fills the tray with exactly 8 discs per "
     "player, so public disc totals are always equal and there is no "
     "material-parity imbalance.",
@@ -68,33 +68,24 @@ ADJ = _adj()
 # Each tile names a fixed set of target cells. Scoring is PER-CELL and
 # scaled: you earn `value` points for every target cell you own on the
 # finished tray, so a rival disc reduces your payout but never voids the
-# whole tile (no all-or-nothing denial). Tiles are six DISTINCT cell sets.
-OBJECTIVES = ("CORNERS", "HEART", "SALTIRE", "HORIZON", "PILLARS", "CRACKLE")
-
-_CORNER_CELLS = (0, 3, 12, 15)
-_HEART_CELLS = (5, 6, 9, 10)
-_SALTIRE_CELLS = (0, 3, 5, 6, 9, 10, 12, 15)
-_HORIZON_CELLS = (0, 1, 2, 3, 12, 13, 14, 15)
-_PILLARS_CELLS = (0, 3, 4, 7, 8, 11, 12, 15)
-_CRACKLE_CELLS = (0, 2, 5, 7, 8, 10, 13, 15)
+# whole tile (no all-or-nothing denial). The eight masks are one complete
+# rotation/reflection orbit: every map has 2 corners, 2 centres, and 4 other
+# edge wells, so location class and maximum value are structurally equal.
+OBJECTIVES = ("FLASH", "BLUSH", "ASH", "SALT", "CELADON", "COBALT",
+              "COPPER", "RAKU")
 
 # per-cell point value for each tile
 OBJ_CELLS = {
-    "CORNERS": _CORNER_CELLS,
-    "HEART": _HEART_CELLS,
-    "SALTIRE": _SALTIRE_CELLS,
-    "HORIZON": _HORIZON_CELLS,
-    "PILLARS": _PILLARS_CELLS,
-    "CRACKLE": _CRACKLE_CELLS,
+    "FLASH": (0, 1, 2, 4, 6, 7, 9, 12),
+    "BLUSH": (1, 2, 3, 4, 5, 7, 10, 15),
+    "ASH": (0, 2, 3, 5, 7, 10, 11, 14),
+    "SALT": (0, 1, 3, 4, 6, 8, 9, 13),
+    "CELADON": (3, 6, 8, 9, 11, 13, 14, 15),
+    "COBALT": (0, 5, 8, 10, 11, 12, 13, 14),
+    "COPPER": (1, 4, 5, 8, 10, 12, 13, 15),
+    "RAKU": (2, 6, 7, 9, 11, 12, 14, 15),
 }
-OBJ_VALUE = {
-    "CORNERS": 2,
-    "HEART": 2,
-    "SALTIRE": 1,
-    "HORIZON": 1,
-    "PILLARS": 1,
-    "CRACKLE": 1,
-}
+OBJ_VALUE = {obj: 1 for obj in OBJECTIVES}
 
 
 def _obj_score(state, seat, obj):
@@ -252,7 +243,10 @@ def winners(state):
     base = [_base_score(state, 0), _base_score(state, 1)]
     if base[0] != base[1]:
         return [0] if base[0] > base[1] else [1]
-    return [0, 1]
+    # Exact ties go to the second mover. Controlled fixed-draw testing found
+    # a first-placement edge; this narrow compensation acts only after both
+    # total score and region-only score remain tied.
+    return [1]
 
 
 def determinize(state, seat, rng):

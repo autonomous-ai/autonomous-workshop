@@ -14,15 +14,15 @@ for each player.
 - 1 shared **firing dial** — a rotating wheel with sixteen band pips and one pointer.
 - 16 **glaze discs** — 8 in each player's colour.
 - 2 **ritual screens** — one per player.
-- 6 **glaze-map tiles**.
+- 8 **glaze-map tiles**.
 
 ## Setup
 
 1. Place the tray between you, the dial at its corner.
 2. Without looking, spin the dial and stop it on one of its sixteen bands.
    That starting band and the fixed cyclic order are public.
-3. Shuffle the six glaze maps. Deal two to each player behind their screen;
-   return the remaining two unseen to the box. No map appears twice.
+3. Shuffle the eight glaze maps. Deal two to each player behind their screen;
+   return the remaining four unseen to the box. No map appears twice.
 4. Each player takes 8 discs of their colour. Choose the first player at random.
 
 ## On your turn
@@ -48,14 +48,20 @@ is full — eight discs each, by construction.
 
 Each map marks target wells. At the end, score its printed value for **every**
 target well you own. Partial maps score; a single rival disc never erases an
-entire map. All six maps have the same eight-point ceiling:
+entire map. All eight maps have eight targets—two corners, two centres, and
+four other edge wells—so each has the same eight-point ceiling. The embossed
+4×4 diagram on the tile is authoritative (`#` means target here):
 
-- **CORNERS** — 2 points per corner well.
-- **HEART** — 2 points per centre well.
-- **SALTIRE** — 1 point per well on either diagonal.
-- **HORIZON** — 1 point per well in the top or bottom row.
-- **PILLARS** — 1 point per well in the left or right column.
-- **CRACKLE** — 1 point per well in the marked checker pattern.
+| Map | Rows, top to bottom |
+|-----|---------------------|
+| **FLASH** | `###.` / `#.##` / `.#..` / `#...` |
+| **BLUSH** | `.###` / `##.#` / `..#.` / `...#` |
+| **ASH** | `#.##` / `.#.#` / `..##` / `..#.` |
+| **SALT** | `##.#` / `#.#.` / `##..` / `.#..` |
+| **CELADON** | `...#` / `..#.` / `##.#` / `.###` |
+| **COBALT** | `#...` / `.#..` / `#.##` / `###.` |
+| **COPPER** | `.#..` / `##..` / `#.#.` / `##.#` |
+| **RAKU** | `..#.` / `..##` / `.#.#` / `#.##` |
 
 ## Scoring and winning
 
@@ -63,7 +69,8 @@ entire map. All six maps have the same eight-point ceiling:
    own-colour discs, add size × size.
 2. Reveal your two glaze maps and add their per-target-well bonuses.
 3. Highest total wins. **Ties** go first to the higher region-only score
-   (objectives removed); if still tied, the win is shared.
+   (maps removed). If both totals and region scores tie, the player who moved
+   second wins; that final edge compensates for the first placement.
 
 ---
 
