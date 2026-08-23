@@ -63,6 +63,7 @@ class Config:
 
     repair_budget: int = 2                 # repaired rounds per game
     rework_budget: int = 3                 # rules rework rounds per game
+    builder_max_minutes: int = 90           # CAD build ceiling (large multi-part sets)
 
     # --- tooling flags ---------------------------------------------------
     claude_cli: str = "claude"
@@ -96,6 +97,7 @@ class Config:
         c.cogs_budget_usd = float(os.environ.get("EVE_COGS_BUDGET_USD", c.cogs_budget_usd))
         c.repair_budget = int(os.environ.get("EVE_REPAIR_BUDGET", c.repair_budget))
         c.rework_budget = int(os.environ.get("EVE_REWORK_BUDGET", c.rework_budget))
+        c.builder_max_minutes = int(os.environ.get("EVE_BUILDER_MAX_MINUTES", c.builder_max_minutes))
         c.telegram_configured = bool(os.environ.get("EVE_TELEGRAM_TOKEN"))
         c.store_base_url = os.environ.get("EVE_STORE_BASE_URL", c.store_base_url)
         c.store_upload_base = os.environ.get("EVE_STORE_UPLOAD_BASE", c.store_upload_base)

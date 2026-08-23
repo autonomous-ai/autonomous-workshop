@@ -43,7 +43,7 @@ class _Result:
     text = ""  # placeholder
 
 
-def _mock_agent(role, prompt, *, cwd=None):
+def _mock_agent(role, prompt, *, cwd=None, max_minutes=None):
     """Writes the role's real contract file into its cwd, like a real agent."""
     cwd = Path(cwd or ".")
     if role == "ideator":
@@ -147,7 +147,7 @@ def test_driver_audit_clean_after_ship(cfg):
 # `sieve-season-gauge` / 'tension' incident). This test locks that in.
 
 
-def _colliding_mock_agent(role, prompt, *, cwd=None):
+def _colliding_mock_agent(role, prompt, *, cwd=None, max_minutes=None):
     """Always proposes a game whose identity claims an ALREADY-OWNED mechanic
     ('tension' is owned by CATENARY), so the novelty gate must kill it."""
     cwd = Path(cwd or ".")
@@ -208,7 +208,7 @@ def test_gate_kill_records_dead_game_reward(cfg):
 # HTML books loop end-to-end without ever touching a live Claude run.
 
 
-def _mock_reader(role, prompt, *, cwd=None):
+def _mock_reader(role, prompt, *, cwd=None, max_minutes=None):
     """Writes the reader's real contract (loops/books/stage_out.json)."""
     cwd = Path(cwd or ".")
     (cwd / "stage_out.json").write_text(json.dumps({

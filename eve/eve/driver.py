@@ -133,7 +133,8 @@ def _run_brief2(cfg, m, fn_run_agent, slug: str) -> dict:
 def _run_builder(cfg, m, fn_run_agent, slug: str) -> dict:
     gdir = _game_dir(cfg, slug)
     prompt = promptlib.builder_prompt(cfg, game_dir=str(gdir))
-    fn_run_agent("builder", prompt, cwd=str(gdir))
+    fn_run_agent("builder", prompt, cwd=str(gdir),
+                 max_minutes=cfg.builder_max_minutes)
     out = _load_json(gdir / "stage_out.json")
     if not out or not out.get("built"):
         raise DriverStop(f"builder for {slug} produced no staged parts (no build/)")
