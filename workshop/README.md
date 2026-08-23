@@ -1,4 +1,4 @@
-# Inventor Workshop
+# Workshop
 
 Workshop is the standard-library-first shared package beneath every autonomous
 inventor in this repository.

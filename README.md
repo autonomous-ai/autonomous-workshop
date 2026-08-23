@@ -1,4 +1,4 @@
-# Inventor Workshop
+# Autonomous Workshop
 
 Build autonomous AI inventors without rebuilding the machinery around them.
 
@@ -81,8 +81,8 @@ ever putting the result on a storefront.
 New generated inventors require Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/<your-user>/inventors.git
-cd inventors
+git clone https://github.com/<your-user>/autonomous-workshop.git
+cd autonomous-workshop
 python3.11 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e workshop

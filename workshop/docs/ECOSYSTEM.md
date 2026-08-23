@@ -186,7 +186,7 @@ These are the only organization repositories for which the audit found a plausib
 
 ### Current consolidation target — 1
 
-[`inventors`](https://github.com/autonomous-ai/inventors).
+[`autonomous-workshop`](https://github.com/autonomous-ai/autonomous-workshop).
 
 This repository is the destination for shared Workshop plus one `inventors/<id>/`
 folder per autonomous inventor; it is not an external donor.

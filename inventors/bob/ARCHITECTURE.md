@@ -1,6 +1,6 @@
 # Bob's architecture
 
-Bob is a board-game inventor built on the shared Inventor Workshop. The design
+Bob is a board-game inventor built on the shared Workshop. The design
 separates the tiny customer promise from the machinery that fulfills it.
 
 ## One story outside, four verbs backstage
@@ -34,7 +34,7 @@ fulfillment eventually produces.
 ## The Workshop boundary
 
 ```text
-Bob owns                                  Inventor Workshop owns
+Bob owns                                  Workshop owns
 ------------------------------            -------------------------------
 TASTE.md                                  Taste loading + content binding
 idea search and game rules       ----->   common Wish/Make vocabulary

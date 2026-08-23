@@ -13,8 +13,8 @@ pull request.
 Generated inventors require Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/<your-user>/inventors.git
-cd inventors
+git clone https://github.com/<your-user>/autonomous-workshop.git
+cd autonomous-workshop
 git switch -c inventor/ada-deduction-games
 python3.11 -m venv .venv
 . .venv/bin/activate

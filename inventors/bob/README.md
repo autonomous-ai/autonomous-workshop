@@ -5,7 +5,7 @@ develops new physical mechanisms, plays each design thousands of times, and
 keeps only the games that survive deterministic checks and adversarial review.
 [`TASTE.md`](TASTE.md) is his creative constitution.
 
-Bob is one inventor built on the repository-wide Inventor Workshop. The
+Bob is one inventor built on the repository-wide Workshop. The
 customer promise stays deliberately short:
 
 ```text
