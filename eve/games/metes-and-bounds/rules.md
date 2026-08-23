@@ -33,6 +33,7 @@ leave the fence somewhere the next player can't cheaply bring it back from.
 | Survey board | 1 | 7 × 7 grid of **nodes** (36 mm pitch), forming 6 × 6 **parcels** between them |
 | Stakes | 24 | 6 per player, each player a distinct printed top glyph |
 | Score rail + pegs | 5 | 0–40 track, one peg per player |
+| Round-track peg | 1 | marks the current round on the score rail's round track (§7); ships with the score rail |
 
 **Nodes** are the grid intersections — each has a small socket hole.
 **Parcels** are the square cells *between* four nodes — each has a centre dimple
@@ -117,6 +118,13 @@ Do exactly one of:
 
 - **BEND** — change exactly one hinge from its current letter to a different
   letter. Only one hinge; only one change.
+  Lift the rule clear of the board before you click a hinge: the stakes sit at
+  parcel centres and the rule's pegged nodes sit at the socket holes, so the
+  fence cannot pivot while it is seated. Raise the root end, click the hinge
+  into its new **L / S / R** detent, then re-seat the root end in the same
+  node socket pointing the same way; the conical peg leads are designed for
+  exactly this reseat. A first-time player who tries to bend in place will
+  fight the pegs — so lift, click, and re-seat.
 - **RESTATION** — lift the rule's root end out of its node socket and drop it
   into any other node socket, facing any of the four directions. Do not change
   any hinge.

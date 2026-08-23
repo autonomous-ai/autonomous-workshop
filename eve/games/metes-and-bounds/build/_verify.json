@@ -1,0 +1,500 @@
+{
+ "parts": {
+  "folding_rule_10seg": {
+   "facets": 108632,
+   "bbox": [
+    126.214,
+    90.214,
+    14.5
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 51.65,
+   "shells": 10,
+   "kb": 5304.4,
+   "ok": true
+  },
+  "survey_board_7x7": {
+   "facets": 55748,
+   "bbox": [
+    236.0,
+    236.0,
+    8.0
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 304.04,
+   "shells": 1,
+   "kb": 2722.2,
+   "ok": true
+  },
+  "stake_p1_a": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p1_b": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p1_c": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p1_d": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p1_e": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p1_f": {
+   "facets": 1284,
+   "bbox": [
+    11.483,
+    11.486,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.58,
+   "shells": 1,
+   "kb": 62.8,
+   "ok": true
+  },
+  "stake_p2_a": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p2_b": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p2_c": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p2_d": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p2_e": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p2_f": {
+   "facets": 1794,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.56,
+   "shells": 1,
+   "kb": 87.7,
+   "ok": true
+  },
+  "stake_p3_a": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p3_b": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p3_c": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p3_d": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p3_e": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p3_f": {
+   "facets": 2190,
+   "bbox": [
+    9.994,
+    9.997,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.39,
+   "shells": 1,
+   "kb": 107.0,
+   "ok": true
+  },
+  "stake_p4_a": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "stake_p4_b": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "stake_p4_c": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "stake_p4_d": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "stake_p4_e": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "stake_p4_f": {
+   "facets": 1832,
+   "bbox": [
+    10.0,
+    10.0,
+    16.4
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.44,
+   "shells": 1,
+   "kb": 89.5,
+   "ok": true
+  },
+  "score_rail": {
+   "facets": 138786,
+   "bbox": [
+    220.0,
+    82.0,
+    6.0
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 91.22,
+   "shells": 1,
+   "kb": 6776.7,
+   "ok": true
+  },
+  "score_peg_p1": {
+   "facets": 1032,
+   "bbox": [
+    8.994,
+    8.997,
+    12.5
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.36,
+   "shells": 1,
+   "kb": 50.5,
+   "ok": true
+  },
+  "score_peg_p2": {
+   "facets": 1544,
+   "bbox": [
+    8.995,
+    8.99,
+    12.5
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.35,
+   "shells": 1,
+   "kb": 75.5,
+   "ok": true
+  },
+  "score_peg_p3": {
+   "facets": 1952,
+   "bbox": [
+    8.994,
+    8.997,
+    12.5
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.25,
+   "shells": 1,
+   "kb": 95.4,
+   "ok": true
+  },
+  "score_peg_p4": {
+   "facets": 1564,
+   "bbox": [
+    8.994,
+    8.997,
+    12.5
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.28,
+   "shells": 1,
+   "kb": 76.4,
+   "ok": true
+  },
+  "round_peg": {
+   "facets": 1200,
+   "bbox": [
+    11.0,
+    12.702,
+    13.0
+   ],
+   "nonmanifold_edges": 0,
+   "volume_cm3": 0.61,
+   "shells": 1,
+   "kb": 58.7,
+   "ok": true
+  }
+ },
+ "rule_shell_clashes": [],
+ "rule_min_gaps_mm": [
+  [
+   1,
+   2,
+   0.2
+  ],
+  [
+   2,
+   3,
+   0.2
+  ],
+  [
+   3,
+   4,
+   0.2
+  ],
+  [
+   4,
+   5,
+   0.2
+  ],
+  [
+   5,
+   6,
+   0.2
+  ],
+  [
+   6,
+   7,
+   0.2
+  ]
+ ],
+ "hinge_sweep_clash_mm3": [
+  [
+   0.0,
+   0.0
+  ],
+  [
+   2.0,
+   0.0
+  ],
+  [
+   2.5,
+   0.1205
+  ],
+  [
+   22.5,
+   9.1169
+  ],
+  [
+   45.0,
+   9.1169
+  ],
+  [
+   67.5,
+   9.1169
+  ],
+  [
+   88.0,
+   0.0
+  ],
+  [
+   90.0,
+   0.0
+  ],
+  [
+   92.0,
+   0.0
+  ],
+  [
+   92.5,
+   0.1205
+  ],
+  [
+   95.0,
+   1.6855
+  ]
+ ],
+ "detent_flank_gap_mm": 0.2
+}

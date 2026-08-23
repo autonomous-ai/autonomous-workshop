@@ -17,7 +17,9 @@ Run:  /Users/d/.cadcode-venv/bin/python cad/build_parts.py
 
 from __future__ import annotations
 
+import json
 import math
+import struct
 import time
 from pathlib import Path
 
@@ -90,11 +92,14 @@ BUTTRESS_R_OUT = 8.30  # rigid arm root backing (clears the neck at r 8.70)
 # DEVIATION (brief S1.8): a 60 deg V 1.00 mm deep cannot seat an R1.00 nose --
 # tangency puts the nose centre 2.00 mm out from the apex, i.e. at r 7.50,
 # which is the riding-the-OD position, so the detent would have ~0 travel.
-# The V is deepened to an apex at r 4.20 (2.30 below the OD).  That restores
-# the brief's own numbers exactly: nose centre r 6.50 seated with a 0.15 mm
-# printed flank gap, r 7.50 riding, 1.00 mm working deflection.
-NOTCH_APEX_R = 4.20
+# The V is deepened to an apex at r 4.10 (2.40 below the OD).  That restores
+# the brief's own numbers exactly: nose centre r 6.50 seated, r 7.50 riding,
+# 1.00 mm working deflection -- and leaves a 0.20 mm printed flank gap, the
+# same clearance every other print-in-place face in this part uses.  (0.15 mm,
+# the exact-tangency figure, is below what a 0.30 mm extrusion separates.)
+NOTCH_APEX_R = 4.10
 NOTCH_HALF_ANGLE = 30.0  # 60 deg included
+NOTCH_FLANK_GAP = (6.50 - NOTCH_APEX_R) * math.sin(math.radians(30.0)) - 1.00
 
 PEG_R = 1.50  # hinge/tip peg D3.00
 PEG_LEN = 2.50
@@ -262,9 +267,17 @@ def _fork(hinge_no):
     0 deg points back along segment N's body.  Rotated +180 deg and moved to
     the node by the caller.
     """
+    # The blind capture bore is cut out of the bottom ear BEFORE the post is
+    # fused in.  Cutting it afterwards would eat the bottom 1.21 mm of the post
+    # (bore D5.40 > post D5.00) and the pivot would end up a cantilever off the
+    # top ear -- exactly the failure the brief's S1.4 capture is there to stop.
+    bottom_ear = cut(
+        cyl(PUCK_R, Z_BOTEAR_BOT, Z_BOTEAR_TOP),
+        [cyl(BORE_R, CAPTURE_BOT, Z_BOTEAR_TOP + 0.01)],
+    )
     parts = [
         cyl(PUCK_R, Z_TOPEAR_BOT, Z_TOP),                 # top ear
-        cyl(PUCK_R, Z_BOTEAR_BOT, Z_BOTEAR_TOP),          # bottom ear
+        bottom_ear,                                       # bottom ear + blind bore
         cyl(POST_R, POST_BOT, Z_TOPEAR_BOT),              # captured pivot post
         # spine: welds the two ears together outside the barrel band
         sector(SPINE_R_IN, BODY_R, -SPINE_HALF_NOTCH, SPINE_HALF_NOTCH,
@@ -279,10 +292,10 @@ def _fork(hinge_no):
     body = fuse(parts)
 
     cuts = [
-        # 0.40 x 45 chamfer on the post tip: the ring left outside the cone
-        cut(cyl(POST_R + 0.3, POST_BOT - 0.01, POST_BOT + 0.4),
+        # 0.40 x 45 chamfer on the post tip: the ring left outside the cone.
+        # Kept at r 2.60 < BORE_R 2.70 so it cannot touch the capture bore wall.
+        cut(cyl(POST_R + 0.10, POST_BOT - 0.05, POST_BOT + 0.4),
             [cone(POST_R - 0.4, POST_R, POST_BOT, POST_BOT + 0.4)]),
-        cyl(BORE_R, CAPTURE_BOT, Z_BOTEAR_TOP + 0.01),    # blind capture bore
     ]
     # markings: hinge number, and the L / S / R ticks the segment points at
     cuts.append(text_cutter(str(hinge_no), 4.0, ENGRAVE, -6.5, 0.0, Z_TOP, rot=180))
@@ -311,27 +324,35 @@ def _barrel():
         # neck, full band height: this face is the hard stop
         box(NECK_R_STEP, BODY_R, -NECK_W / 2, NECK_W / 2, Z_BARREL_BOT, Z_BARREL_TOP),
     ]
-    # flare 5.00 x 5.80 at r 10 -> 12.00 x 12.00 at r 13
+    # flare 5.00 x 5.80 spanning z 3.00..8.80 at r 10, opening to the 12.00 x
+    # 12.00 body section spanning z 0..12 at r 13.  The two rectangles are NOT
+    # concentric (5.90 vs 6.00), so the small one is offset -0.10 on the YZ
+    # plane and the whole loft is then seated on the body centre at z = 6.00.
     flare = (
         cq.Workplane("YZ")
         .workplane(offset=BODY_R)
+        .moveTo(0.0, -0.10)
         .rect(NECK_W, Z_BARREL_TOP - Z_BARREL_BOT)
         .workplane(offset=3.0)
+        .moveTo(0.0, 0.0)
         .rect(SEG_W, SEG_H)
         .loft()
-        .translate((0, 0, (Z_BARREL_TOP + Z_BARREL_BOT) / 2))
+        .translate((0, 0, SEG_H / 2))
     )
-    # loft() built about the local z of the YZ plane; re-seat it on the play frame
-    bb = flare.val().BoundingBox()
-    flare = flare.translate((0, 0, -bb.zmin))
     parts.append(flare)
     body = fuse(parts)
 
     cuts = [cyl(BORE_R, Z_BARREL_BOT - 0.1, Z_BARREL_TOP + 0.1)]
-    half = (7.2 - NOTCH_APEX_R) * math.tan(math.radians(NOTCH_HALF_ANGLE))
+    r_out = BARREL_R + 0.7  # run the V past the OD so the mouth cuts clean
+    half = (r_out - NOTCH_APEX_R) * math.tan(math.radians(NOTCH_HALF_ANGLE))
+    # The notch floor drops 0.20 BELOW the detent arm's underside.  Cutting it
+    # at Z_NOTCH_BOT -- which is what the brief's "Z extent 3.20 -> 6.20, full
+    # notch sub-band" literally says -- makes the floor exactly coplanar with
+    # the seated nose's bottom face: 0.00 mm, and every one of the 18 noses
+    # prints fused to the barrel it is supposed to click against.
     for ang in (45.0, 135.0, 225.0, 315.0):
-        v = poly([(NOTCH_APEX_R, 0.0), (7.2, half), (7.2, -half)],
-                 Z_NOTCH_BOT, Z_NOTCH_TOP)
+        v = poly([(NOTCH_APEX_R, 0.0), (r_out, half), (r_out, -half)],
+                 Z_NECK_TOP, Z_NOTCH_TOP + 0.1)
         cuts.append(rot_z(v, ang))
     return cut(body, cuts)
 
@@ -539,17 +560,29 @@ def score_rail():
     for i in range(12):  # round track
         cuts.append(cyl(ROUND_HOLE_R, -0.1, top + 0.1, 10.0 + 10.0 * i, 75.0))
 
+    # Engraving bands, top of the rail down.  These are chosen so that no two
+    # engraved solids touch: two cut solids that meet exactly tangentially leave
+    # a zero-thickness knife edge and the mesh comes out non-manifold.  The
+    # brief's own placement put the rounds-per-player note at y = 66.5, straight
+    # through the 0-20 score numerals -- glyphs of "13" and of that note met at
+    # (139.15, 67.86) and did exactly that.  The note moves onto the round-track
+    # line (y = 75, X >= 130) where the brief says it belongs.
+    #   y 79.0  "ROUND" heading, right of the track
+    #   y 75.0  round holes (X 10..120) + rounds-per-player note (X >= 130)
+    #   y 70.3  round numerals 1-12          (68.80 .. 71.80; holes start 72.30)
+    #   y 66.5  score numerals 0-20          (64.75 .. 68.25; p1 lane ends 63.20)
+    #   y 2.80  score numerals 21-40         ( 1.05 ..  4.55; p4 lane ends  4.80)
     for i in range(21):
         cuts.append(text_cutter(str(i), 3.5, 0.50, 10.0 + 10.0 * i, 66.5, top))
     for i in range(20):
-        cuts.append(text_cutter(str(21 + i), 3.5, 0.50, 10.0 + 10.0 * i, 3.2, top))
+        cuts.append(text_cutter(str(21 + i), 3.5, 0.50, 10.0 + 10.0 * i, 2.8, top))
     for p, y in list(UPPER_LANE_Y.items()) + list(LOWER_LANE_Y.items()):
         cuts.append(_silhouette(p, 5.0, top - 0.50, top + 0.1).translate((4.6, y, 0)))
     for i in range(12):
-        cuts.append(text_cutter(str(i + 1), 3.0, 0.50, 10.0 + 10.0 * i, 69.0, top))
-    cuts.append(text_cutter("ROUND", 3.5, 0.50, 130.0, 75.0, top, halign="left"))
+        cuts.append(text_cutter(str(i + 1), 3.0, 0.50, 10.0 + 10.0 * i, 70.3, top))
+    cuts.append(text_cutter("ROUND", 3.5, 0.50, 130.0, 79.0, top, halign="left"))
     cuts.append(text_cutter("2P: 12  3P: 9  4P: 8 ROUNDS", 3.5, 0.50,
-                            130.0, 66.5, top, halign="left"))
+                            130.0, 75.0, top, halign="left"))
     return cut(body, cuts)
 
 
@@ -569,26 +602,157 @@ def parts_table():
     return t
 
 
+# --------------------------------------------------------------------------
+# verification -- measured off the exported mesh, not off the CAD kernel.
+# OCC's BoundingBox pads curved faces (it reported 14.98 for a 14.50 mm part),
+# so every number reported below is read back out of the .stl that will
+# actually be sliced.
+# --------------------------------------------------------------------------
+def read_stl(path):
+    data = path.read_bytes()
+    n = struct.unpack("<I", data[80:84])[0]
+    if len(data) != 84 + 50 * n:
+        raise ValueError(f"{path.name}: not a binary STL of {n} facets")
+    tris = []
+    for i in range(n):
+        off = 84 + 50 * i + 12
+        v = struct.unpack("<9f", data[off:off + 36])
+        tris.append((v[0:3], v[3:6], v[6:9]))
+    return tris
+
+
+def mesh_report(path):
+    """bbox, facet count, and manifold check (every edge used exactly twice)."""
+    tris = read_stl(path)
+    lo = [1e18] * 3
+    hi = [-1e18] * 3
+    edges = {}
+    q = lambda p: (round(p[0], 4), round(p[1], 4), round(p[2], 4))
+    for t in tris:
+        for p in t:
+            for k in range(3):
+                lo[k] = min(lo[k], p[k])
+                hi[k] = max(hi[k], p[k])
+        a, b, c = q(t[0]), q(t[1]), q(t[2])
+        for e in ((a, b), (b, c), (c, a)):
+            edges[frozenset(e)] = edges.get(frozenset(e), 0) + 1
+    bad = sum(1 for v in edges.values() if v != 2)
+    return {
+        "facets": len(tris),
+        "bbox": [round(hi[k] - lo[k], 3) for k in range(3)],
+        "nonmanifold_edges": bad,
+    }
+
+
+def _min_gap(a, b):
+    from OCP.BRepExtrema import BRepExtrema_DistShapeShape
+    e = BRepExtrema_DistShapeShape(a.wrapped, b.wrapped)
+    e.Perform()
+    return e.Value()
+
+
+def _placed_segments():
+    out = []
+    for k in range(1, 11):
+        ax, ay = NODES[k - 1]
+        bx, by = NODES[k]
+        h = math.degrees(math.atan2(by - ay, bx - ax))
+        out.append(rot_z(_segment(k), h).translate((ax, ay, 0)).val())
+    return out
+
+
+def rule_interference():
+    """The rule is 10 shells that must never touch.  Shared volume between two
+    of them is a welded joint; a 0.00 mm gap is the same joint one layer thin.
+    Both are checked -- the printable floor is 0.20 mm, the value the brief
+    uses for every other clearance in the part."""
+    solids = _placed_segments()
+    clashes, gaps = [], []
+    for i in range(len(solids)):
+        for j in range(i + 1, len(solids)):
+            bi, bj = solids[i].BoundingBox(), solids[j].BoundingBox()
+            if (bi.xmax + 1.0 < bj.xmin or bj.xmax + 1.0 < bi.xmin
+                    or bi.ymax + 1.0 < bj.ymin or bj.ymax + 1.0 < bi.ymin):
+                continue  # far apart in XY, cannot touch
+            v = solids[i].intersect(solids[j]).Volume()
+            if abs(v) > 1e-6:
+                clashes.append([i + 1, j + 1, round(v, 4)])
+            gaps.append([i + 1, j + 1, round(_min_gap(solids[i], solids[j]), 4)])
+    return clashes, sorted(gaps, key=lambda g: g[2])
+
+
+def hinge_sweep():
+    """Drive hinge 1 through its whole travel and watch the mechanism work.
+
+    Clash volume is the interference a RIGID model reports, i.e. exactly the
+    material the compliant arms have to get out of the way of:
+      0 at a detent (joint rests free), >0 between detents (noses riding the
+      barrel OD, arms deflected), and >0 again past the hard stop.
+    """
+    s1 = _segment(1).val()
+    s2 = _segment(2).val()
+    out = []
+    for d in (0.0, 2.0, 2.5, 22.5, 45.0, 67.5, 88.0, 90.0, 92.0, 92.5, 95.0):
+        placed = (cq.Workplane(obj=s2).rotate((0, 0, 0), (0, 0, 1), d)
+                  .translate((P, 0, 0)).val())
+        out.append([d, round(s1.intersect(placed).Volume(), 4)])
+    return out
+
+
 def main():
-    built, report = [], []
+    rows, results = [], {}
+    fine = {"folding_rule_10seg": (0.015, 0.12)}  # the mechanism gets a finer mesh
     for name, fn in parts_table():
         t0 = time.time()
         wp = zero_xy(fn())
         path = OUT / f"{name}.stl"
-        cq.exporters.export(wp, str(path), tolerance=0.04, angularTolerance=0.2)
-        bb = wp.val().BoundingBox()
+        tol, ang = fine.get(name, (0.04, 0.2))
+        cq.exporters.export(wp, str(path), tolerance=tol, angularTolerance=ang)
         vol = sum(s.Volume() for s in wp.val().Solids())
         n_shell = len(wp.val().Solids())
-        ok = path.stat().st_size > 0 and vol > 0 and max(bb.xlen, bb.ylen) <= BED
-        report.append(
-            f"{name:22s} {bb.xlen:7.2f} x {bb.ylen:7.2f} x {bb.zlen:6.2f}  "
-            f"vol={vol / 1000:8.2f} cm3  shells={n_shell:2d}  "
-            f"{path.stat().st_size / 1024:8.1f} kB  {time.time() - t0:5.1f}s  "
-            f"{'OK' if ok else 'CHECK'}"
+        m = mesh_report(path)
+        kb = path.stat().st_size / 1024
+        ok = (kb > 0 and vol > 0 and m["facets"] > 0
+              and m["nonmanifold_edges"] == 0
+              and max(m["bbox"][0], m["bbox"][1]) <= BED)
+        results[name] = dict(m, volume_cm3=round(vol / 1000, 2), shells=n_shell,
+                             kb=round(kb, 1), ok=ok)
+        rows.append(
+            f"{name:22s} {m['bbox'][0]:7.2f} x {m['bbox'][1]:7.2f} x "
+            f"{m['bbox'][2]:6.2f}  vol={vol / 1000:7.2f} cm3  shells={n_shell:2d}  "
+            f"facets={m['facets']:6d}  nonmanifold={m['nonmanifold_edges']:3d}  "
+            f"{kb:8.1f} kB  {time.time() - t0:5.1f}s  {'OK' if ok else 'CHECK'}"
         )
-        print(report[-1], flush=True)
-        built.append(name)
-    print(f"\n{len(built)} parts -> {OUT}")
+        print(rows[-1], flush=True)
+
+    print("\nrule: 10 shells, pairwise interference and clearance ...", flush=True)
+    clash, gaps = rule_interference()
+    print("  clashes:", clash if clash else "none -- all 10 shells disjoint")
+    print(f"  tightest printed gap anywhere in the rule: {gaps[0][2]:.3f} mm "
+          f"(shells {gaps[0][0]}-{gaps[0][1]})")
+    print(f"  detent V printed flank gap: {NOTCH_FLANK_GAP:.2f} mm")
+
+    print("\nrule: hinge 1 driven through its travel (rigid-model clash vol) ...",
+          flush=True)
+    sweep = hinge_sweep()
+    for d, v in sweep:
+        tag = ("detent seated, free" if v == 0 and (abs(d) < 2.1 or 87 < d < 92.1)
+               else "arms deflected, riding the OD" if v > 0 and d < 90
+               else "hard stop engaged" if v > 0 else "free")
+        print(f"  {d:6.2f} deg  clash {v:8.4f} mm3   {tag}")
+
+    bad = [n for n, r in results.items() if not r["ok"]]
+    if clash or gaps[0][2] < 0.19:
+        bad.append("folding_rule_10seg:mechanism")
+    print(f"\n{len(results)} parts -> {OUT}   failures: {bad or 'none'}")
+    (OUT / "_verify.json").write_text(json.dumps({
+        "parts": results,
+        "rule_shell_clashes": clash,
+        "rule_min_gaps_mm": gaps[:6],
+        "hinge_sweep_clash_mm3": sweep,
+        "detent_flank_gap_mm": round(NOTCH_FLANK_GAP, 3),
+    }, indent=1))
+    return list(results), clash, bad
     return built
 
 
