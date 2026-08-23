@@ -1,0 +1,20 @@
+{
+  "slug": "metes-and-bounds",
+  "title": "Metes and Bounds",
+  "mech": "One print-in-place ten-segment folding rule whose nine hinges each click into exactly three detent positions (left / straight / right), so the whole board state is the shape of a single printed piece and one hinge change swings every segment past it.",
+  "blurb": "Two to four surveyors bend the same printed folding rule one hinge per turn; you score only for your own stakes the fence is wrapping at the moment you finish bending it.",
+  "idea": "The entire board state is one printed object: a ten-segment folding rule with nine print-in-place knuckle hinges, each holding a compliant three-position detent at left, straight and right. Its root end seats in a socket on a 7x7 node board, so station plus nine hinge letters completely describes the fence. On your turn you change exactly one hinge, which swings every segment downstream of it onto new grid edges, then you may drive a stake into an empty parcel the fence now turns around, then you score one point for each of your own stakes currently sitting in a parcel with two or more fenced sides. Nobody else scores on your turn, so the fight is over reachability, not the final position: you never get to put the fence where you want it, only one hinge away from where the previous player left it. Legality is enforced by the plastic rather than by a referee -- an off-board bend has nothing to rest on, and a self-crossing bend will not lie flat because two segments cannot share a node, so the printed part physically refuses illegal moves. The strategic core is real area-adjacency scoring over a self-avoiding lattice path: a stake cluster near the root end is fat but easy for an opponent to strand with a single root-side swing, while a cluster near the free end is cheap to serve but sits where self-avoidance runs out of legal bends first. RESTATION -- lifting the root end into another node socket -- is the escape valve, and it costs a full turn.",
+  "identity": "like Quoridor + a print-in-place ten-segment folding rule with nine three-position detent hinges, where the single shared fence every player bends one hinge at a time IS the entire board state",
+  "bill": {
+    "rule": ["folding_rule_10seg"],
+    "board": ["survey_board_7x7"],
+    "stakes_p1": ["stake_p1_a", "stake_p1_b", "stake_p1_c", "stake_p1_d", "stake_p1_e", "stake_p1_f"],
+    "stakes_p2": ["stake_p2_a", "stake_p2_b", "stake_p2_c", "stake_p2_d", "stake_p2_e", "stake_p2_f"],
+    "stakes_p3": ["stake_p3_a", "stake_p3_b", "stake_p3_c", "stake_p3_d", "stake_p3_e", "stake_p3_f"],
+    "stakes_p4": ["stake_p4_a", "stake_p4_b", "stake_p4_c", "stake_p4_d", "stake_p4_e", "stake_p4_f"],
+    "score": ["score_rail", "score_peg_p1", "score_peg_p2", "score_peg_p3", "score_peg_p4"]
+  },
+  "seats": "2-4",
+  "t_min": "15",
+  "t_max": "25"
+}

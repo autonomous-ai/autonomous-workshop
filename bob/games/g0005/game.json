@@ -2,18 +2,19 @@
   "players": "2-4",
   "target_minutes": 20,
   "action_types": [
-    "push",
+    "push_head_first",
+    "push_tail_first",
     "probe"
   ],
   "rules": {
-    "win": "Play ends when the last player's rack is empty; that final push resolves in full. Score 1 point per captured tile in your score tray that is NOT your own colour, and 0 for tiles of your own colour. Most points wins. Tiebreak in order: fewest of your own tiles left in the rail, then fewest of your own tiles in other players' score trays, then most unspent probe chips, then the tied player nearest the start player's left going clockwise."
+    "win": "The game ends at the end of the round in which any player's rack goes empty; the last push resolves in full. Score 1 point per tile in your score tray that is NOT your own colour, and 0 for tiles of your own colour. Tiles left in the rail or in a rack score for nobody. Most points wins. Tiebreak in order: fewest tiles of your own colour still in the rail, then fewest tiles of your own colour in other players' score trays, then most unspent probe chips, then the tied player sitting furthest clockwise from the start player."
   },
   "components": [
     {
       "id": "tile_01",
       "name": "Pole tile",
       "qty": 48,
-      "size_mm": "24 x 18 x 10"
+      "size_mm": "23 x 18 x 10"
     },
     {
       "id": "rail_01",
@@ -23,7 +24,7 @@
     },
     {
       "id": "magnet_01",
-      "name": "N35 disc magnet",
+      "name": "N42 disc magnet",
       "qty": 32,
       "size_mm": "6 dia x 3"
     },
@@ -58,16 +59,10 @@
       "size_mm": "96 x 60 x 18"
     },
     {
-      "id": "probe_01",
-      "name": "Probe wand",
-      "qty": 1,
-      "size_mm": "110 x 14 x 12"
-    },
-    {
-      "id": "probe_magnet_01",
-      "name": "Probe magnet",
-      "qty": 1,
-      "size_mm": "6 dia x 3"
+      "id": "pin_01",
+      "name": "Load pin",
+      "qty": 4,
+      "size_mm": "5 dia x 60"
     },
     {
       "id": "chip_01",

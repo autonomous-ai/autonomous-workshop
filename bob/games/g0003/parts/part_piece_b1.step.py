@@ -1,0 +1,10 @@
+"""piece_b1 — CLEARANCE (g0003). Contract: ../brief.md §2 pieces (H = 32.25 from the nominal H_top; re-sliced per copy, §5.2).
+
+Print orientation: bed datum at Z = 0.
+"""
+
+import clearance_lib as lib
+
+
+def gen_step():
+    return lib.print_piece("piece_b1")

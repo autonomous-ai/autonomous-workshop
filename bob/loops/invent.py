@@ -1173,7 +1173,14 @@ def _handle_build_gated(step):
     mesh_checked = False
     cad_py = os.environ.get("BOB_CAD_PY", "").strip()
     check_mesh = os.path.join(_home(), "skills", "cad", "scripts", "check_mesh")
-    stls = [f for f in files if f.lower().endswith(".stl")]
+    # Per-PART only, never the assembly: assembled.stl is the viewer
+    # artifact and prints as its pieces, not as one 470 mm object — the
+    # vibe-ideas gate rule ("envelope: per-part vs sorted extents, never
+    # the assembly bbox"). g0003's first gate run failed its own assembly
+    # mesh against the bed (2026-08-23), a false positive by construction.
+    slug_stl = "%s.stl" % slug
+    stls = [f for f in files if f.lower().endswith(".stl")
+            and f not in ("assembled.stl", slug_stl)]
     if cad_py and os.path.isfile(check_mesh) and stls:
         import subprocess as _sp
         mesh_checked = True

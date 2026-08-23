@@ -129,6 +129,10 @@
         "repair_used": 0,
         "rework_used": 0
       },
+      "crashes": {
+        "count": 1,
+        "state": "tabled"
+      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -137,9 +141,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T22:50:14.101510+00:00",
+        "expires": "2026-08-23T00:56:41.804319+00:00",
         "holder": "invent",
-        "id": "5d8eab24cd054b4aac31ae552ee164f9"
+        "id": "740f1ca0468549acaab00b9965b1b4fc"
       },
       "log": [
         {
@@ -233,12 +237,13 @@
       },
       "slug": "g0002",
       "state": "tabled",
+      "table_retries": 1,
       "title": "Re-Pin"
     },
     "g0003": {
       "budgets": {
         "clarify_used": 1,
-        "repair_used": 0,
+        "repair_used": 1,
         "rework_used": 0
       },
       "created": "2026-08-22T16:49:32.455641+00:00",
@@ -248,7 +253,10 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -333,6 +341,24 @@
           "from": "parked",
           "note": "human unpark: brief-writer 15-min chat default starved twice; now files+35min",
           "to": "briefed"
+        },
+        {
+          "at": "2026-08-22T23:30:14.167215+00:00",
+          "from": "briefed",
+          "note": "parts brief written; build next",
+          "to": "built"
+        },
+        {
+          "at": "2026-08-23T00:28:21.126742+00:00",
+          "from": "built",
+          "note": "134 part file(s) built",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T00:28:47.256355+00:00",
+          "from": "build_gated",
+          "note": "build check FAIL -> repair: check_mesh FAIL parts/assembled.stl:  float)\n  FAIL  fits 220x220x250 bed               303.0x470.5x100.0 mm\n  PASS  small triangles                    9904 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n; check_mesh FAIL parts/part_yoke.stl: ot float)\n  FAIL  fits 220x220x250 bed               224.0x57.0x34.0 mm\n  PASS  small triangles                    4871 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n",
+          "to": "built"
         }
       ],
       "reward": {
@@ -340,7 +366,7 @@
         "latest": 0.0
       },
       "slug": "g0003",
-      "state": "briefed",
+      "state": "built",
       "title": "Clearance"
     },
     "g0004": {
@@ -402,9 +428,8 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-22T23:31:06.181122+00:00",
-        "holder": "invent",
-        "id": "26ce9188a8d74fb28800676e3c9247d1"
+        "expires": null,
+        "holder": null
       },
       "log": [
         {
@@ -436,6 +461,12 @@
           "from": "rules_gated",
           "note": "rules lens FAIL -> rework: Push orientation choice likely collapses to 'always head-first' (rework): pushing head-first (disc leading) never resolves worse than tail-first at the new joint \u2014 triggering a KICK always benefits the pusher (capture, or at worst a free reposition), and a CLAMP has no stated downside \u2014 while it ALSO leaves the uninformative bare tail exposed at the mouth. Tail-first only trades away this free upside to expose your own disc's polarity to future Probes and to a matching-pole kick from the next player at that mouth. Evidence: 'Choose which end goes in first: head first (disc leading, into the rail) or tail first (bare end leading, which leaves your disc facing out of the mouth).' The rules never show a concrete scenario where tail-first is correct, so a first-week player finds 'always head-first' and the game never punishes it.; Start-player draw has no termination guarantee (clarify): every player's 12 tiles are numbered 1-12 (bill: 'a number 1-12'), and setup step 6 lets each player freely pick which tile to stand up, with no random draw or simultaneous blind reveal required. Any player (or all of them) can keep showing their own '12' every round, forcing 'Re-do it if the highest is tied' indefinitely. Evidence: 'Each player stands one tile from their rack on the table, number up. Highest number goes first. Re-do it if the highest is tied.'",
           "to": "ruled"
+        },
+        {
+          "at": "2026-08-22T23:03:15.478601+00:00",
+          "from": "ruled",
+          "note": "rules written; gate next",
+          "to": "rules_gated"
         }
       ],
       "reward": {
@@ -443,7 +474,7 @@
         "latest": 0.0
       },
       "slug": "g0005",
-      "state": "ruled",
+      "state": "rules_gated",
       "title": "Kick"
     }
   },

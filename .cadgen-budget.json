@@ -1,0 +1,18 @@
+{
+  "startedAt": 1787444533.742979,
+  "totalSeconds": 1800.0,
+  "measure": "wall",
+  "label": "g0003-cad",
+  "steps": [
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "smoke.py"
+      ],
+      "seconds": 4.626,
+      "cap": 300.0,
+      "exit": 1,
+      "outcome": "error"
+    }
+  ]
+}

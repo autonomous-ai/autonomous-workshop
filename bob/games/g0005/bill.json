@@ -2,7 +2,7 @@
   {
     "name": "Pole tile",
     "qty": 48,
-    "size_mm": "24 x 18 x 10",
+    "size_mm": "23 x 18 x 10",
     "per_player": true,
     "signature": true
   },
@@ -13,7 +13,7 @@
     "per_player": false
   },
   {
-    "name": "N35 disc magnet",
+    "name": "N42 disc magnet",
     "qty": 32,
     "size_mm": "6 dia x 3",
     "per_player": true
@@ -49,16 +49,10 @@
     "per_player": false
   },
   {
-    "name": "Probe wand",
-    "qty": 1,
-    "size_mm": "110 x 14 x 12",
-    "per_player": false
-  },
-  {
-    "name": "Probe magnet",
-    "qty": 1,
-    "size_mm": "6 dia x 3",
-    "per_player": false
+    "name": "Load pin",
+    "qty": 4,
+    "size_mm": "5 dia x 60",
+    "per_player": true
   },
   {
     "name": "Probe chip",
