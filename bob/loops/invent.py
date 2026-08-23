@@ -1752,16 +1752,25 @@ def _handle_published(step):
                          "`bob mark-published %s <id>` after the flip."
                    % (design_id, listing_slug, slug))
         return
-    if receipt.get("dry_run") or (not design_id and not listing_slug):
-        _warn("%s: holding at published — receipt has no platform id "
+    if not design_id or receipt.get("dry_run"):
+        # A slug alone is NOT a listing: the dry-run manifest carries the
+        # game's own slug, and the old code advanced on it, announcing
+        # "design g0003" for a listing that did not exist (2026-08-23).
+        # Only a platform-issued design id counts.
+        _warn("%s: holding at published — no platform design id "
               "(dry_run=%s, pushed=%s). Publish for real, or run "
               "`bob mark-published %s <design_id>` after a manual import."
               % (slug, receipt.get("dry_run"), receipt.get("pushed"), slug))
         queue.release(slug)
         return
+    if status not in ("public", "live", "published"):
+        queue.park(slug, "draft on the Factory (design %s, status %r) — "
+                         "awaiting the owner's publish click"
+                   % (design_id, status))
+        return
     queue.advance(slug, "live",
-                  "listing live (design %s) — L4 owns market/human signal "
-                  "from here" % (design_id or listing_slug))
+                  "listing public (design %s) — L4 owns market/human "
+                  "signal from here" % design_id)
 
 
 # --- Dispatch ----------------------------------------------------------------------

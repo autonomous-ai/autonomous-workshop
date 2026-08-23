@@ -22,7 +22,7 @@
   "ticks": 0
  },
  "2026-08-23": {
-  "cost_usd": 24.741718,
+  "cost_usd": 25.20709,
   "steps": [
    {
     "cost_usd": 2.084543,
@@ -318,6 +318,38 @@
     "wall_s": 46.339,
     "num_turns": 1,
     "cost_usd": 0.0884838,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#13",
+    "model": "claude-sonnet-5",
+    "wall_s": 53.615,
+    "num_turns": 1,
+    "cost_usd": 0.0996658,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#14",
+    "model": "claude-sonnet-5",
+    "wall_s": 72.488,
+    "num_turns": 1,
+    "cost_usd": 0.13854640000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#15",
+    "model": "claude-sonnet-5",
+    "wall_s": 40.301,
+    "num_turns": 1,
+    "cost_usd": 0.1082204,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#16",
+    "model": "claude-sonnet-5",
+    "wall_s": 54.449,
+    "num_turns": 1,
+    "cost_usd": 0.1189404,
     "subtype": "success"
    }
   ],

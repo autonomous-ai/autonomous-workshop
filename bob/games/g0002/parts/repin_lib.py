@@ -675,7 +675,12 @@ LANE_X = (-6.4, -3.2, 0.0, 3.2, 6.4)
 # chambers from the plug's front face, and C11 fixes the blade shoulder there.
 # So lifter i lives at BLADE_LEN - CHAMBER_X[i]; inserted, it lands on bore i.
 KEY_LIFTER_Z = tuple(BLADE_LEN - x for x in CHAMBER_X)
-LANE_W = 2.80
+LANE_W = 2.00
+# Five lanes at 3.20 pitch inside a 17.40 blade leave 3.48 mm per lane for the
+# slot *and* its walls.  At LANE_W 2.80 the slots (2.80 + 2 x 0.30 gap = 3.40)
+# overlapped: the blade became one 16.2 mm void with 0.6 mm outer walls, which is
+# under one 0.4 nozzle bead of structure on the part that carries the turning
+# torque.  2.00 gives 0.60 webs between lanes and 1.00 outer walls.
 BAR_SPINE = (2.0, 5.0)                # blade-local y band of every slider spine
 LAND_Z = 1.80                         # only one land can be under a D6.20 pin
 ROD_CRANK_Y = 21.5                    # corridor ceiling.  Every rod's arm swings
@@ -684,6 +689,8 @@ ROD_CRANK_Y = 21.5                    # corridor ceiling.  Every rod's arm swing
                                       # the highest arm (land 1 + arm + two print
                                       # gaps = 18.4) with the crank band on top.
 PIP = cadfits.print_in_place_gap("sliding", layer_height=0.20, material="PLA")
+assert LANE_X[1] - LANE_X[0] - (LANE_W + 2 * PIP["xy"]) >= 0.55       # lane web
+assert (BLADE_W - (LANE_X[-1] - LANE_X[0]) - (LANE_W + 2 * PIP["xy"])) / 2 >= 0.95
 BOW_L, BOW_W, BOW_H = 46.0, 40.0, 26.0
 KEY_LEN = BLADE_LEN + BOW_L           # 142.0
 
@@ -798,9 +805,14 @@ def build_key(settings=(1, 2, 3, 4, 5), seated: bool = False):
         frame -= (Pos(x, (ROD_CRANK_Y + BOW_H) / 2, (BLADE_LEN + 4.0 + KEY_LEN) / 2)
                   * Box(LANE_W + 2 * g, BOW_H - ROD_CRANK_Y,
                         KEY_LEN - BLADE_LEN - 4.0, align=Align.CENTER))
-        # crank slot + D5.40 roof guide at the chamber
-        frame -= (Pos(x / 2, (ROD_CRANK_Y - 3.0 + BLADE_H + 1.0) / 2, KEY_LIFTER_Z[i])
-                  * Box(abs(x) + LANE_W + 1.0, BLADE_H + 4.0 - ROD_CRANK_Y,
+        # crank slot + D5.40 roof guide at the chamber.  The slot has to hold the
+        # crank (lane x -> centreline) *and* the D4.80 head at x = 0, so it spans
+        # from whichever of the two reaches further out on each side.
+        cx0 = min(x - LANE_W / 2 - g, -(LIFTER_D / 2 + g + 0.2))
+        cx1 = max(x + LANE_W / 2 + g, +(LIFTER_D / 2 + g + 0.2))
+        frame -= (Pos((cx0 + cx1) / 2, (ROD_CRANK_Y - 3.0 + BLADE_H + 1.0) / 2,
+                      KEY_LIFTER_Z[i])
+                  * Box(cx1 - cx0, BLADE_H + 4.0 - ROD_CRANK_Y,
                         ROD_T + 2 * g, align=Align.CENTER))
         frame -= (Rot(-90, 0, 0) * Pos(0, -KEY_LIFTER_Z[i], ROD_CRANK_Y)
                   * Cylinder(LIFTER_D / 2 + g, BLADE_H,

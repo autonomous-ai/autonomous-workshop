@@ -116,6 +116,19 @@
       "cap": 480.0,
       "exit": 0,
       "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/check_motion",
+        ".",
+        "--manifest",
+        "measure/motion.json"
+      ],
+      "seconds": 93.995,
+      "cap": 900.0,
+      "exit": 1,
+      "outcome": "error"
     }
   ]
 }

@@ -297,10 +297,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "listing": {
         "design_id": "6a8aba7a57e4d5db73f56e54",
         "slug": "clearance",
@@ -528,6 +525,12 @@
           "from": "published",
           "note": "listing live (design g0003) \u2014 L4 owns market/human signal from here",
           "to": "live"
+        },
+        {
+          "at": "2026-08-23T09:35:00+00:00",
+          "from": "live",
+          "note": "correction: state said live off a dry-run slug. Truth: design 6a8aba7a57e4d5db73f56e54 slug clearance is a DRAFT on the Factory awaiting the owner publish click.",
+          "to": "parked"
         }
       ],
       "reward": {
@@ -562,7 +565,7 @@
         "latest": 81.47676240568458
       },
       "slug": "g0003",
-      "state": "live",
+      "state": "parked",
       "title": "Clearance"
     },
     "g0004": {
