@@ -1,0 +1,10 @@
+{
+  "games": 200,
+  "label": "random_vs_random",
+  "natural": 200,
+  "shared": 3,
+  "win_credit": [
+    0.507,
+    0.492
+  ]
+}

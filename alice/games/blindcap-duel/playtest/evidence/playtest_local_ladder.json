@@ -1,0 +1,10 @@
+{
+  "games": 120,
+  "label": "greedy_vs_random",
+  "natural": 120,
+  "shared": 0,
+  "win_credit": [
+    0.967,
+    0.033
+  ]
+}
