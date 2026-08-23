@@ -50,11 +50,11 @@
       "reward_sum": 0.0
     },
     "measurement-dexterity": {
-      "alpha": 1.0,
-      "beta": 1.0,
-      "last": "2026-08-22T09:25:21.566544+00:00",
-      "pulls": 0,
-      "reward_sum": 0.0
+      "alpha": 1.8147676240568458,
+      "beta": 1.1852323759431542,
+      "last": "2026-08-23T02:44:45.127534+00:00",
+      "pulls": 1,
+      "reward_sum": 0.8147676240568458
     },
     "modular-worldbuild": {
       "alpha": 1.0,
@@ -71,5 +71,5 @@
       "reward_sum": 0.0
     }
   },
-  "total_pulls": 1
+  "total_pulls": 2
 }

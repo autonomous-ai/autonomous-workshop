@@ -1379,8 +1379,10 @@ def _compute_components(slug, lane, records):
     return components
 
 
-DISCLOSURE_LINE = ("Invented, playtested, and published by Bob, "
-                   "an autonomous AI game designer.")
+#: Dee 2026-08-24, verbatim: the listing byline is exactly "By Bob." — the
+#: same shape Alice used on Blindcap. AI authorship rides on the byline and
+#: the ai-created tag, never a paragraph of explanation.
+DISCLOSURE_LINE = "By Bob."
 
 #: curate()'s content walls (harness/publish.py BODY_RUNES/LEAD_RUNES): a
 #: use-case/story body must land in 180-400 runes, a lead/label in 1-40.

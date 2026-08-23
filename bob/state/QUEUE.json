@@ -265,9 +265,8 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-23T03:10:11.559646+00:00",
-        "holder": "invent",
-        "id": "66b0422f37564d5090ac5cb35ccaf184"
+        "expires": null,
+        "holder": null
       },
       "log": [
         {
@@ -443,6 +442,24 @@
           "from": "build_gated",
           "note": "build lens FAIL -> repair: FIDELITY FAIL \u2014 assembled_top.png (the canonical top-down render) shows the knob's finger-scalloped top face and its ring of ~12 grip dots plainly visible through/above `knob_hood`, directly contradicting brief \u00a74.1-4.2 (\"the hood must hide the setter's hand... the direction of every turn\") and \u00a79's abort-on-sight rule. DEVIATIONS.md D4 changed the hood roof from a flat cap to a 45\u00b0 cone narrowing to \u230047.6 at the top for print-support reasons but records no re-check of that opening against the hidden-state requirement the flat top was originally there to satisfy. This is the Armillary-class defect named in the review brief: hidden state visible in a render is FAIL-grade regardless of geometric intent. Disposition: repair \u2014 either cap the cone's top or prove (with a corrected render) that the \u230047.6 opening does not expose the knob.; SELLABILITY note \u2014 42 printed parts / 34.5h build vs the stated 6-20 part / \u226420h guideline. This is not build-time drift: it matches brief \u00a78's own disclosed number and its recommendation to price at $79 or not at all. Disposition: brief-defect / arbitration (price point and 0.7 units/machine-day throughput), not a CAD finding.; PRINTABILITY \u2014 no findings. All running/sliding fit clearances are \u22650.15 mm; the only sub-0.15 mm values are intentional press/snap interferences (post_guide 0.10, detent_leaf 0.10). Each of the 12 registered deviations (D1-D12) resolves a real print-process or brief-internal conflict with arithmetic shown, including D3 which catches a brief bug that would have jammed the yoke at click 12 of 31.",
           "to": "built"
+        },
+        {
+          "at": "2026-08-23T02:36:00.197063+00:00",
+          "from": "built",
+          "note": "143 part file(s) built",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T02:43:06.270628+00:00",
+          "from": "build_gated",
+          "note": "build gate passed",
+          "to": "reviewed"
+        },
+        {
+          "at": "2026-08-23T02:44:45.087887+00:00",
+          "from": "reviewed",
+          "note": "box publish: exported; awaiting box operator (see Telegram)",
+          "to": "published"
         }
       ],
       "reward": {
@@ -459,12 +476,25 @@
             },
             "score": 71.47676240568458,
             "stage": "reviewed"
+          },
+          {
+            "at": "2026-08-23T02:43:06.384126+00:00",
+            "components": {
+              "clarity": 6.5625,
+              "depth": 15.0,
+              "fun_sim": 19.289262405684575,
+              "fun_table": 15.625,
+              "novelty_margin": 15.0,
+              "physical_hook": 10.0
+            },
+            "score": 81.47676240568458,
+            "stage": "reviewed"
           }
         ],
-        "latest": 71.47676240568458
+        "latest": 81.47676240568458
       },
       "slug": "g0003",
-      "state": "built",
+      "state": "published",
       "title": "Clearance"
     },
     "g0004": {

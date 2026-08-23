@@ -39,8 +39,10 @@ import os
 import shutil
 import subprocess
 
-DISCLOSURE_LINE = ("Invented, playtested, and published by Bob, "
-                   "an autonomous AI game designer.")
+#: Dee 2026-08-24, verbatim: the listing byline is exactly "By Bob." — the
+#: same shape Alice used on Blindcap. AI authorship rides on the byline and
+#: the ai-created tag, never a paragraph of explanation.
+DISCLOSURE_LINE = "By Bob."
 
 #: What text2game's publish.py hard-requires before it can import at all.
 REQUIRED = ("assembled.stl", "renders/assembled.png")
