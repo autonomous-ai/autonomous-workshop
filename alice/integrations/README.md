@@ -38,3 +38,29 @@ python3 -m unittest board-game/tools/test_publish.py -v
 
 Do not use `--3way` or apply it to an unknown revision. Re-audit and regenerate
 the patch when the upstream publisher changes.
+
+## Blindcap private-draft packaging checkpoint
+
+`vibe-ideas-blindcap-private-draft.patch` is the cumulative, binary-safe diff
+from the same Vibe base commit to local checkpoint `1bb4b6a`. Its SHA-256 is
+`8e4cddc8f1b6a4154e96a7feffe320cba720077aedb8b28124ca294161cdffe0`.
+It includes the seven exact Alice handoff commits above plus the reviewed
+package gate, deterministic one-shot private-draft importer, decimal-safe rich
+copy generation, and their offline tests.
+
+The upstream `reinSPQR/vibe-ideas` repository currently grants the configured
+GitHub identity read-only access, so this patch is the durable private backup.
+Apply it only to `ed3d1e876faed95b1bf785af2fae2a8133354517`, then run:
+
+```sh
+git apply /path/to/alice/integrations/vibe-ideas-blindcap-private-draft.patch
+python3 -m unittest \
+  board-game/tools/test_gate.py \
+  board-game/tools/test_publish.py \
+  board-game/tools/test_import_private_draft.py
+```
+
+Blindcap itself is stored separately under `alice/games/blindcap-duel` after
+its final rules-bound playtest evidence is regenerated. Future improvements
+must revise the existing Factory design ID and slug; they may never fall back
+to creating a second Blindcap design.
