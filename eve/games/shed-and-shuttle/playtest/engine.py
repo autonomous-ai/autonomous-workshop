@@ -234,3 +234,112 @@ def run(trials: int = 4000, seed: int = 0) -> FunEvidence:
 if __name__ == "__main__":
     ev = run(trials=4000, seed=0)
     print(ev)
+
+
+# ---- LIVE interface (LLM-player table) -------------------------------------
+# Faithful to rules.md: shared 12-lane board, up to 4 tiles a lane. On your
+# turn: pull the loaded bar, load any OTHER bar at notch 1|2 (a new set of open
+# lanes), then place one tile into any open non-full lane (mandatory) or
+# discard if every open lane is full. 8 turns each seat. Winner = lane-majority
+# score with lowest-slot tie-break (rules.md §6); shared win -> None (not
+# decisive). Pure funcs; deterministic from seed; used by the LLM-player table.
+
+@dataclass(frozen=True)
+class LiveState:
+    shed: tuple          # (bar_letter, notch) currently loaded
+    lanes: tuple         # 12 tuples of player ids (0..n-1)
+    turn: int            # cumulative turns taken
+    tiles_left: tuple    # per player
+
+
+def new_game(n_players: int = 4, seed: int = 0) -> LiveState:
+    return LiveState(
+        shed=("A", 1),
+        lanes=tuple(() for _ in range(N_LANES)),
+        turn=0,
+        tiles_left=tuple([TILES_PER_PLAYER] * n_players),
+    )
+
+
+def current_player(state: LiveState) -> int:
+    return state.turn % len(state.tiles_left)
+
+
+def _open_playable(state: LiveState, bar: str, notch: int) -> list:
+    opens = open_lanes(bar, notch)
+    return [ln for ln in opens if len(state.lanes[ln - 1]) < TILES_PER_PLAYER // 2]
+
+
+def legal_moves(state: LiveState) -> list:
+    cur_bar, _ = state.shed
+    moves = []
+    for bar in BAR_PROFILES:
+        if bar == cur_bar:
+            continue
+        for notch in (1, 2):
+            playable = _open_playable(state, bar, notch)
+            if playable:
+                moves.extend((bar, notch, ln) for ln in playable)
+            else:
+                moves.append((bar, notch, None))
+    return moves
+
+
+def apply(state: LiveState, move) -> LiveState:
+    bar, notch, lane = move
+    me = current_player(state)
+    if lane is None:
+        lanes = state.lanes
+    else:
+        slots = state.lanes[lane - 1] + (me,)
+        lanes = tuple(state.lanes[i] if i != lane - 1 else slots
+                      for i in range(N_LANES))
+    tiles_left = list(state.tiles_left)
+    tiles_left[me] -= 1
+    return LiveState(
+        shed=(bar, notch),
+        lanes=lanes,
+        turn=state.turn + 1,
+        tiles_left=tuple(tiles_left),
+    )
+
+
+def is_over(state: LiveState) -> bool:
+    return state.turn >= len(state.tiles_left) * TILES_PER_PLAYER
+
+
+def _score_state(state: LiveState) -> list:
+    scores = [0] * len(state.tiles_left)
+    for lane_idx in range(N_LANES):
+        slots = state.lanes[lane_idx]
+        counts = Counter(x for x in slots if x is not None)
+        if not counts:
+            continue
+        top = max(counts.values())
+        tied = [pl for pl, c in counts.items() if c == top]
+        winner_pl = min(tied) if len(tied) > 1 else tied[0]
+        scores[winner_pl] += LANE_VALUES[lane_idx]
+    return scores
+
+
+def winner(state: LiveState):
+    if not is_over(state):
+        return None
+    scores = _score_state(state)
+    top = max(scores)
+    leaders = [p for p, s in enumerate(scores) if s == top]
+    return leaders[0] if len(leaders) == 1 else None
+
+
+def describe(state: LiveState, seat: int) -> str:
+    cur_bar, cur_notch = state.shed
+    lines = [
+        f"Seat {seat} of {len(state.tiles_left)}. Game: 'Shed and Shuttle'.",
+        f"Loaded shed: bar {cur_bar} at notch {cur_notch}. "
+        f"Your tiles left: {state.tiles_left[seat]}.",
+        "Lanes (lane: slots [by seat]; value):",
+    ]
+    for ln in range(1, N_LANES + 1):
+        lines.append(f"  lane {ln} (value {LANE_VALUES[ln-1]}): {list(state.lanes[ln - 1])}")
+    lines.append(f"Cumulative scores by seat: {_score_state(state)}")
+    return "\n".join(lines)

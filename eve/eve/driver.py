@@ -162,7 +162,10 @@ def _run_panel(cfg, m, fn_run_agent, slug: str) -> dict:
 
 def _run_playtest(cfg, m, fn_run_agent, slug: str) -> dict:
     """Playtest agent builds the engine + table; the driver measures FUN with
-    the real (no-LLM) fun gate. Only a real llm_table/human evidence passes."""
+    the real (no-LLM) fun gate. Only a real llm_table/human evidence passes.
+    After the playtest agent writes the engine, we also run a real LLM-player
+    table (claude seats over the live interface) when opt-in; a genuine table
+    pass is what sets ship. Scripted evidence is recorded but never ships."""
     gdir = _game_dir(cfg, slug)
     prompt = promptlib.playtest_prompt(cfg, game_dir=str(gdir))
     try:
@@ -171,27 +174,42 @@ def _run_playtest(cfg, m, fn_run_agent, slug: str) -> dict:
         # coding the engine starved -> stop this step, keep the game in playtest
         _queue(cfg, m).release(slug)
         return {"role": "playtest", "game": slug, "result": "starved"}
-    out = _load_json(gdir / "stage_out.json")
-    if not out:
-        _queue(cfg, m).release(slug)
-        return {"role": "playtest", "game": slug, "result": "no_evidence"}
-    er = out.get("engine_run") or {}
-    evidence = playtest.FunEvidence(
-        source=str(er.get("source") or "scripted"),
-        games_played=int(er.get("games_played") or er.get("trials") or 0),
-        first_seat_wins=float(er.get("first_seat_wins") or 1.0),
-        ends=bool(er.get("ends", False)),
-        decisiveness=float(er.get("decisiveness") or 0.0),
-        ask_to_play_again=float(er.get("ask_to_play_again") or 0.0),
-        note=str(er.get("note") or out.get("interpretation") or ""),
-    )
     q = _queue(cfg, m)
-    q.record(slug, fun_evidence=q.get(slug).fun_evidence + [{
-        "source": evidence.source, "games_played": evidence.games_played,
-        "first_seat_wins": evidence.first_seat_wins, "ends": evidence.ends,
-        "decisiveness": evidence.decisiveness,
-        "ask_to_play_again": evidence.ask_to_play_again,
-        "note": evidence.note}])
+    out = _load_json(gdir / "stage_out.json")
+    evidence = None
+    if out:
+        er = out.get("engine_run") or {}
+        scripted = playtest.FunEvidence(
+            source=str(er.get("source") or "scripted"),
+            games_played=int(er.get("games_played") or er.get("trials") or 0),
+            first_seat_wins=float(er.get("first_seat_wins") or 1.0),
+            ends=bool(er.get("ends", False)),
+            decisiveness=float(er.get("decisiveness") or 0.0),
+            ask_to_play_again=float(er.get("ask_to_play_again") or 0.0),
+            note=str(er.get("note") or out.get("interpretation") or ""),
+        )
+        q.record(slug, fun_evidence=q.get(slug).fun_evidence + [{
+            "source": scripted.source, "games_played": scripted.games_played,
+            "first_seat_wins": scripted.first_seat_wins, "ends": scripted.ends,
+            "decisiveness": scripted.decisiveness,
+            "ask_to_play_again": scripted.ask_to_play_again,
+            "note": scripted.note}])
+        evidence = scripted
+    # Real LLM-player table over the LIVE engine. Honest: returns standby when the
+    # engine lacks a live interface or the table is disabled; standby never ships.
+    game = q.get(slug)
+    table = playtest.run_player_table(game, cfg)
+    if table.source in ("llm_table", "human"):
+        q.record(slug, fun_evidence=q.get(slug).fun_evidence + [{
+            "source": table.source, "games_played": table.games_played,
+            "first_seat_wins": table.first_seat_wins, "ends": table.ends,
+            "decisiveness": table.decisiveness,
+            "ask_to_play_again": table.ask_to_play_again,
+            "note": table.note}])
+        evidence = table
+    if evidence is None:
+        q.release(slug)
+        return {"role": "playtest", "game": slug, "result": "no_evidence"}
     gate = playtest.fun_gate(q.get(slug), evidence)
     if gate.passed:
         from .reward import RewardLedger

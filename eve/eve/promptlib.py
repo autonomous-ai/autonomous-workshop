@@ -181,23 +181,42 @@ playability must fail. Write stage_out.json and stop."""
 
 
 def playtest_prompt(cfg, *, game_dir: str) -> str:
-    """Stage 'playtest': author a scripted engine and run it + a player table."""
+    """Stage 'playtest': author BOTH a scripted engine AND a live-interface engine
+    so a real LLM-player table can measure FUN (FUN = a player asks to play again)."""
     return f"""You are Eve's **playtest engineer**. Measure whether the game in {game_dir}
 (idea.json, rules.md, brief.md, build/) is actually FUN. The bar is PLAYTEST.md:
 **FUN = a player asks to play again**.
 
-1. Read the rules, then write a scripted engine `<dir>/playtest/engine.py` that
-   implements the real game (turn loop, win condition) and exposes
-   `def run(trials, seed) -> FunEvidence` returning a FunEvidence with source
-   'scripted', measured first_seat_wins, ends, decisiveness, ask_to_play_again.
-   The scripted sim must model the rules, not a neutral random model.
-2. Run thousands of trials; record the honest numbers.
-3. Write `<dir>/stage_out.json`:
-   {{"engine_run": {{
-       "trials": N, "first_seat_wins": 0.x, "ends": true,
-       "decisiveness": 0.x, "ask_to_play_again": 0.x}},
-     "interpretation": "one line: is first-seat balanced, does it end, does the
-                          printed mechanism produce a real decodecision"}}
+Write `<dir>/playtest/engine.py` implementing the REAL game with TWO surfaces:
+
+(A) SCRIPTED sim (thousands of trials):
+    `def run(trials, seed) -> FunEvidence` returning a FunEvidence with source
+    'scripted', measured first_seat_wins, ends, decisiveness,
+    ask_to_play_again. The sim must model the rules, not a neutral random model.
+    Run thousands of trials and report the honest numbers.
+
+(B) LIVE interface for the LLM-player table — the SAME real mechanics, as pure,
+    deterministic-from-(n_players,seed) functions (follow games/toggle/playtest/
+    engine.py as the canonical format):
+      - new_game(n_players, seed) -> state
+      - current_player(state) -> seat index
+      - describe(state, seat) -> str (that seat's observable view of the board)
+      - legal_moves(state) -> list (each move is a plain value, e.g. a tuple;
+        an LLM picks BY INDEX, so keep the list short and each move repr-able)
+      - apply(state, move) -> NEW state (pure; never mutate the input)
+      - is_over(state) -> bool
+      - winner(state) -> seat index, or None on a shared/non-decisive win
+    The live interface MUST be deterministic from (n_players, seed) with no
+    outside randomness and no free LLM queries inside legal_moves/apply.
+    Open/secret info: describe() reveals only what that seat would legitimately
+    see; the seat chooses a move by index from legal_moves.
+
+Then run the scripted sim, record the honest numbers, and write `<dir>/stage_out.json`: {{
+  "engine_run": {{
+      "trials": N, "first_seat_wins": 0.x, "ends": true,
+      "decisiveness": 0.x, "ask_to_play_again": 0.x}},
+  "interpretation": "one line: is first-seat balanced, does it end, does the
+                       printed mechanism produce a real decodecision"}}
 
 BARS (fun gate, no-LLM, will fail on these)
 - first_seat_wins must be < 0.60 (dominant first player = design defect).
