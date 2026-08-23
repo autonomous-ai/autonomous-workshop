@@ -35,6 +35,8 @@ class Base(unittest.TestCase):
         "FAKE_ARGV_OUT",
         "BOB_IDEATE_MODEL",
         "BOB_RULES_LENS_MODEL",
+        "BOB_IDEATOR_MODEL",
+        "BOB_BOB_IDEATOR_MODEL",
     )
 
     def setUp(self):
@@ -127,6 +129,25 @@ class TestModelResolution(Base):
     def test_dashes_map_to_underscores_in_phase_env(self):
         os.environ["BOB_RULES_LENS_MODEL"] = "claude-opus-5"
         self.assertEqual(agents.resolve_model("rules-lens"), "claude-opus-5")
+
+    def test_bob_role_strips_one_leading_prefix(self):
+        os.environ["BOB_IDEATOR_MODEL"] = "claude-opus-5"
+        self.assertEqual(
+            agents.resolve_model("bob-ideator"), "claude-opus-5"
+        )
+
+    def test_doubled_bob_role_name_is_fallback_only(self):
+        os.environ["BOB_BOB_IDEATOR_MODEL"] = "legacy-model"
+        self.assertEqual(agents.resolve_model("bob-ideator"), "legacy-model")
+        os.environ["BOB_IDEATOR_MODEL"] = "canonical-model"
+        with self.assertRaises(agents.AgentError) as ctx:
+            agents.resolve_model("bob-ideator")
+        self.assertIn("disagree", str(ctx.exception))
+
+    def test_matching_canonical_and_doubled_model_names_are_accepted(self):
+        os.environ["BOB_IDEATOR_MODEL"] = "same-model"
+        os.environ["BOB_BOB_IDEATOR_MODEL"] = "same-model"
+        self.assertEqual(agents.resolve_model("bob-ideator"), "same-model")
 
     def test_resolved_model_lands_in_cli_argv_and_daybook(self):
         argv_out = os.path.join(self.home, "argv.json")

@@ -1,6 +1,6 @@
 """Reward function + ledger for Eve's self-improvement.
 
-Each game is an *episode*; each stage-advance is a *step*; publishing a
+Each game is an *episode*; each stage-advance is a *step*; launching a
 gated game is the *terminal* with reward. The meta-loop's objective is to
 maximize expected discounted return per unit time while holding the quality
 bar fixed (cadence is a constraint, not a reward).

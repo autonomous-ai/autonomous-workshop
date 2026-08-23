@@ -26,6 +26,8 @@ class IntegrityTestCase(unittest.TestCase):
                     os.path.join(self._tmp.name, "harness", "reward.py"))
         shutil.copy(os.path.join(REPO, "docs", "REWARD.md"),
                     os.path.join(self._tmp.name, "docs", "REWARD.md"))
+        shutil.copy(os.path.join(REPO, "TASTE.md"),
+                    os.path.join(self._tmp.name, "TASTE.md"))
 
     def tearDown(self):
         if self._old_home is None:
@@ -108,6 +110,7 @@ class IntegrityTestCase(unittest.TestCase):
     def test_allowlist_constants_exported(self):
         self.assertIn("harness/reward.py", integrity.FORBIDDEN)
         self.assertIn("harness/integrity.py", integrity.FORBIDDEN)
+        self.assertIn("TASTE.md", integrity.FORBIDDEN)
         self.assertIn("knowledge/TASTE.md", integrity.FORBIDDEN)
         self.assertIn("state/**", integrity.FORBIDDEN)
         self.assertTrue(any("REWARD_BASELINE" in p for p in integrity.FORBIDDEN))
@@ -119,12 +122,20 @@ class IntegrityTestCase(unittest.TestCase):
                    "knowledge/PROPOSALS.md"]
         for p in allowed:
             self.assertTrue(integrity.improve_write_allowed(p), p)
-        denied = ["harness/reward.py", "harness/integrity.py",
+        denied = ["harness/reward.py", "harness/integrity.py", "TASTE.md",
                   "knowledge/TASTE.md", "state/REWARD_BASELINE.json",
                   "state/BANDIT.json", "state/x/deep.json",
                   "knowledge/other.md", "bob.py", ".claude/agents/evil.py"]
         for p in denied:
             self.assertFalse(integrity.improve_write_allowed(p), p)
+
+    def test_missing_root_taste_is_violation(self):
+        os.remove(os.path.join(self._tmp.name, "TASTE.md"))
+        violations = integrity.audit()
+        self.assertTrue(
+            any("taste-authority" in violation for violation in violations),
+            violations,
+        )
 
     def test_traversal_and_absolute_paths_denied(self):
         # 'corpus/../harness/reward.py' matched corpus/** by string

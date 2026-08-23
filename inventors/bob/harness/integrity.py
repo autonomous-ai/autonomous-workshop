@@ -26,7 +26,7 @@ import os
 import posixpath
 from datetime import datetime, timezone
 
-from harness import ledger  # pinned API (CONTRACTS §2): rows()
+from harness import workshop_runtime, ledger  # pinned APIs (CONTRACTS §2)
 
 # --- (b) improve-loop write authority -----------------------------------
 # loops/meta.py MUST check every intended write against these BEFORE
@@ -46,6 +46,7 @@ IMPROVE_MAY_WRITE = [
 # this auditor.
 FORBIDDEN = [
     "harness/reward.py",
+    "TASTE.md",
     "knowledge/TASTE.md",
     "state/**",
     "harness/integrity.py",
@@ -282,7 +283,7 @@ def _check_reward_frozen(violations):
 def _check_allowlist(violations):
     # Self-consistency: the seal on the judge must actually be excluded
     # from the improver's write authority. Belt for meta.py's suspenders.
-    for probe in ("harness/reward.py", "harness/integrity.py",
+    for probe in ("harness/reward.py", "harness/integrity.py", "TASTE.md",
                   "knowledge/TASTE.md", "state/REWARD_BASELINE.json",
                   "state/BANDIT.json", "state/QUEUE.json"):
         if improve_write_allowed(probe):
@@ -290,6 +291,21 @@ def _check_allowlist(violations):
                 "improve-allowlist: %r is writable by the improve loop — "
                 "IMPROVE_MAY_WRITE/FORBIDDEN have been tampered with. "
                 "Restore harness/integrity.py from git." % probe)
+
+
+def _check_taste_authority(violations):
+    """Require one valid, content-addressable creative constitution at root."""
+
+    try:
+        runtime = workshop_runtime.require_workshop()
+        taste = runtime.load_taste(_home())
+        taste.assert_valid()
+    except Exception as exc:
+        violations.append(
+            "taste-authority: root TASTE.md is missing or invalid (%s). "
+            "Restore Bob's human-owned creative constitution; "
+            "knowledge/TASTE.md is evidence only and cannot replace it." % exc
+        )
 
 
 def _check_edition_lanes(violations):
@@ -364,17 +380,17 @@ def _check_divergence(violations):
             "divergence: could not read reward ledger (%s). Fix the ledger "
             "before trusting any scores." % e)
         return
-    publish_ft = {}
+    sent_ft = {}
     human_scores = {}
     for row in all_rows:
         slug = row.get("slug")
         if not slug:
             continue
-        if row.get("kind") == "publish":
+        if row.get("kind") in ("send", "publish"):
             comps = row.get("components") or {}
             if "fun_table" in comps:
                 try:
-                    publish_ft[slug] = float(comps["fun_table"])
+                    sent_ft[slug] = float(comps["fun_table"])
                 except (TypeError, ValueError):
                     pass
         elif row.get("kind") == "human_table":
@@ -383,7 +399,7 @@ def _check_divergence(violations):
             except (TypeError, ValueError):
                 pass
     xs, ys = [], []
-    for slug, ft in publish_ft.items():
+    for slug, ft in sent_ft.items():
         if slug in human_scores:
             xs.append(ft)
             ys.append(sum(human_scores[slug]) / len(human_scores[slug]))
@@ -413,6 +429,7 @@ def audit():
     violations = []
     _check_reward_frozen(violations)
     _check_allowlist(violations)
+    _check_taste_authority(violations)
     _check_edition_lanes(violations)
     _check_heartbeat(violations)
     _check_divergence(violations)

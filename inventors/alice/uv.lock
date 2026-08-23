@@ -7,13 +7,13 @@ name = "autonomous-alice"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "autonomous-inventor-core" },
+    { name = "inventor-workshop" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "autonomous-inventor-core", editable = "../../foundation" }]
+requires-dist = [{ name = "inventor-workshop", editable = "../../workshop" }]
 
 [[package]]
-name = "autonomous-inventor-core"
-version = "0.1.0"
-source = { editable = "../../foundation" }
+name = "inventor-workshop"
+version = "0.3.0"
+source = { editable = "../../workshop" }

@@ -57,37 +57,42 @@ def _game_dir(cfg, slug: str) -> Path:
     return cfg.games_dir / slug
 
 
-def _auto_publish_draft(cfg, game, journal) -> dict:
-    """On a fresh `ship`, push a store *draft* (Dee flips live in one click).
-    Best-effort and idempotent (publish.py skips when already published), so
-    a transient store/network failure never fails the ship itself. Gated by
-    EVE_AUTO_PUBLISH (default on) so a 24/7 daemon keeps every finished game
+def _auto_send_draft(cfg, game, journal) -> dict:
+    """On a fresh ``ship``, Pack and send a Shop Door draft.
+
+    Best-effort and idempotent, so a transient Door/network failure never
+    fails the ship itself. Gated by EVE_AUTO_SEND (default on) so a 24/7 daemon
+    keeps every finished game
     appearing on the site without a human in the loop.
     """
-    import os
-    if os.environ.get("EVE_AUTO_PUBLISH", "1") != "1":
-        return {"action": "publish_skipped", "reason": "EVE_AUTO_PUBLISH=0"}
+    from .config import env_with_fallbacks
+
+    auto_send = env_with_fallbacks(
+        "EVE_AUTO_SEND", "EVE_AUTO_LAUNCH", "EVE_AUTO_PUBLISH", default="1"
+    )
+    if auto_send != "1":
+        return {"action": "send_skipped", "reason": "EVE_AUTO_SEND=0"}
     try:
-        from . import publish
-        result = publish.publish_to_store(cfg, game, status="draft",
-                                          journal=journal)
-        # ``publish_to_store`` reports core ambiguity/refusal as data so the
-        # ship remains durable. Classify that data before writing the operator
-        # journal: a non-throwing failure is still not a publication.
+        from . import send
+        result = send.send_to_shop(cfg, game, status="draft", journal=journal)
+        # ``send_to_shop`` reports Workshop ambiguity/refusal as data so the
+        # ship remains durable. A non-throwing failure is still not a send.
         info = result.get("info") or {}
-        already_published = result.get("already_published") or {}
-        receipt = result.get("receipt") or already_published.get("receipt") or {}
+        prior_send = result.get("already_sent") or result.get("already_launched") or {}
+        stamp = result.get("stamp") or result.get("receipt") or prior_send.get("stamp") or prior_send.get("receipt") or {}
         ident = (
             info.get("id")
             or info.get("slug")
-            or receipt.get("design_id")
-            or already_published.get("id")
+            or stamp.get("design_id")
+            or prior_send.get("id")
         )
-        intent_id = result.get("intent_id") or already_published.get("intent_id")
+        send_id = result.get("send_id") or result.get("intent_id") or prior_send.get("send_id") or prior_send.get("intent_id")
         state = (
             result.get("state")
+            or result.get("send_state")
             or result.get("intent_state")
-            or already_published.get("intent_state")
+            or prior_send.get("send_state")
+            or prior_send.get("intent_state")
         )
         blocked = bool(result.get("blocked"))
         skipped = bool(result.get("skipped"))
@@ -97,20 +102,20 @@ def _auto_publish_draft(cfg, game, journal) -> dict:
         if blocked:
             journal.append(
                 "meta",
-                action="auto_publish_blocked",
+                action="auto_send_blocked",
                 game=game.slug,
-                published=False,
+                sent=False,
                 blocked=True,
-                intent_id=intent_id,
+                send_id=send_id,
                 state=state,
                 error=error,
             )
             return {
-                "action": "publish_blocked",
+                "action": "send_blocked",
                 "game": game.slug,
                 "ok": False,
                 "blocked": True,
-                "intent_id": intent_id,
+                "send_id": send_id,
                 "state": state,
                 "error": error,
             }
@@ -118,20 +123,20 @@ def _auto_publish_draft(cfg, game, journal) -> dict:
         if not succeeded and not skipped:
             journal.append(
                 "meta",
-                action="auto_publish_refused",
+                action="auto_send_refused",
                 game=game.slug,
-                published=False,
+                sent=False,
                 blocked=False,
-                intent_id=intent_id,
+                send_id=send_id,
                 state=state,
                 error=error,
             )
             return {
-                "action": "publish_refused",
+                "action": "send_refused",
                 "game": game.slug,
                 "ok": False,
                 "blocked": False,
-                "intent_id": intent_id,
+                "send_id": send_id,
                 "state": state,
                 "error": error,
             }
@@ -139,11 +144,11 @@ def _auto_publish_draft(cfg, game, journal) -> dict:
         if skipped:
             journal.append(
                 "meta",
-                action="auto_publish_skipped",
+                action="auto_send_skipped",
                 game=game.slug,
-                published=False,
+                sent=False,
                 blocked=False,
-                intent_id=intent_id,
+                send_id=send_id,
                 state=state,
                 id=ident,
                 reason=result.get("reason"),
@@ -151,26 +156,29 @@ def _auto_publish_draft(cfg, game, journal) -> dict:
         else:
             journal.append(
                 "meta",
-                action="auto_published",
+                action="auto_sent",
                 game=game.slug,
-                published=True,
+                sent=True,
                 blocked=False,
-                intent_id=intent_id,
+                send_id=send_id,
                 state=state,
                 id=ident,
             )
-        return {"action": "publish_draft", "game": game.slug,
+        return {"action": "send_draft", "game": game.slug,
                 "ok": succeeded or skipped, "id": ident,
                 "skipped": skipped, "blocked": False,
-                "intent_id": intent_id, "state": state}
-    except Exception as exc:   # never let a publish hiccup take down a ship
-        journal.append("meta", action="auto_publish_failed", game=game.slug,
+                "send_id": send_id, "state": state}
+    except Exception as exc:   # never let a send hiccup take down a ship
+        journal.append("meta", action="auto_send_failed", game=game.slug,
                        error=str(exc)[-300:])
-        return {"action": "publish_failed", "game": game.slug,
+        return {"action": "send_failed", "game": game.slug,
                 "error": str(exc)[-300:]}
 
 
-# --- ideator (brand-new game, from 'spark' or stage 'queued') --------------
+_auto_launch_draft = _auto_send_draft
+
+
+# --- ideator (brand-new game from an invent action or stage 'queued') ------
 
 
 def _run_ideator(cfg, m: "meta_mod.Meta", fn_run_agent) -> dict:
@@ -252,18 +260,18 @@ def _run_builder(cfg, m, fn_run_agent, slug: str) -> dict:
     out = _load_json(gdir / "stage_out.json")
     if not out or not out.get("built"):
         raise DriverStop(f"builder for {slug} produced no staged parts (no build/)")
-    # Shared core owns the immutable artifact identity. Eve still owns stage
+    # Workshop owns the immutable artifact identity. Eve still owns stage
     # progression and the print gate; this snapshot is evidence, not a second
     # lifecycle write.
-    from inventor_core.errors import CoreError
-    from .core_adapter import snapshot_built_game
+    from inventor_workshop.errors import WorkshopError
+    from .workshop_bridge import snapshot_built_game
     try:
-        artifact = snapshot_built_game(gdir)
-    except (CoreError, OSError) as exc:
-        # A tree that core cannot safely identify must never advance to a print
+        artifact = snapshot_built_game(gdir, title=_queue(cfg, m).get(slug).title)
+    except (WorkshopError, OSError) as exc:
+        # A tree that Workshop cannot safely identify must never advance to a print
         # gate (for example, a builder-created symlink or credential file).
         raise DriverStop(
-            f"builder for {slug} produced an unpublishable artifact: {exc}"
+            f"builder for {slug} produced an artifact Workshop cannot Pack: {exc}"
         ) from exc
     m.journal.append(
         "artifact_snapshot",
@@ -271,7 +279,7 @@ def _run_builder(cfg, m, fn_run_agent, slug: str) -> dict:
         artifact_sha256=artifact["artifact_sha256"],
         entries=len(artifact["entries"]),
         total_bytes=artifact["total_bytes"],
-        producer="inventor_core",
+        producer="inventor_workshop",
     )
     m.record_stage(slug, "build")   # next tick runs the deterministic print gate
     return {
@@ -355,7 +363,7 @@ def _run_playtest(cfg, m, fn_run_agent, slug: str) -> dict:
         RewardLedger(cfg, journal=m.journal).record(
             slug, "fun_pass", evidence=str(evidence))
         shipped = q.ship(slug)
-        _auto_publish_draft(cfg, shipped, m.journal)
+        _auto_send_draft(cfg, shipped, m.journal)
         return {"role": "playtest", "game": slug, "result": "fun_pass",
                 "evidence": evidence.source}
     m.journal.append("meta", action="fun_failed", game=slug,
@@ -446,12 +454,31 @@ def _run_agent_once(fn_run_agent, role: str, prompt: str, cwd):
         return fn_run_agent(role, prompt, cwd=cwd)
 
 
+def _taste_bound_runner(cfg, fn_run_agent):
+    """Require and preserve Eve's exact root Taste around every model call."""
+    from inventor_workshop import load_taste
+
+    def run(role, prompt, **kwargs):
+        taste = load_taste(Path(cfg.root))
+        marker = "TASTE_SHA256=%s" % taste.sha256
+        if marker not in prompt or taste.content not in prompt:
+            raise DriverStop(
+                "refusing to run %s without Eve's exact root Taste binding" % role
+            )
+        try:
+            return fn_run_agent(role, prompt, **kwargs)
+        finally:
+            taste.assert_current()
+
+    return run
+
+
 def evolve(cfg, *, max_steps: int = 1, fn_run_agent=None) -> dict:
     """Advance up to `max_steps` units of work; returns a summary.
 
     Executes deterministic gates via meta.tick and LLM roles via fn_run_agent
     (injectable for mocks/tests; defaults to agents.run_agent)."""
-    fn_run_agent = fn_run_agent or agents.run_agent
+    fn_run_agent = _taste_bound_runner(cfg, fn_run_agent or agents.run_agent)
     m = meta_mod.Meta(cfg)
     m.heartbeat()
     ok, problems = m.audit_ok()
@@ -492,10 +519,10 @@ def evolve(cfg, *, max_steps: int = 1, fn_run_agent=None) -> dict:
             _log(f"dispatch {role}: {json.dumps(result, default=str)[:200]}")
             continue
 
-        # quiet / spark when below floor but idle is not actionable here
+        # quiet / invent when below floor but idle is not actionable here
         done.append(out)
         _log(f"{action}")
-        if action == "spark":
+        if action in ("invent", "spark"):  # ``spark`` reads old queued output.
             # below the inflight floor -> invent a new game now
             try:
                 res = _run_ideator(cfg, m, fn_run_agent)
@@ -507,7 +534,7 @@ def evolve(cfg, *, max_steps: int = 1, fn_run_agent=None) -> dict:
                 done.append({"action": "starved", "role": "ideator"})
                 break
             done.append(res)
-            _log(f"spark->ideator: {json.dumps(res, default=str)[:200]}")
+            _log(f"invent->ideator: {json.dumps(res, default=str)[:200]}")
             continue
         break                            # quiet or terminal
 

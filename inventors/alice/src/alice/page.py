@@ -1,4 +1,4 @@
-"""Postcondition checks for the existing Factory product-page pipeline.
+"""Postcondition checks for the existing Shop Door product-page pipeline.
 
 Alice does not generate merchandising content here. The out-of-band pipeline
 does. Alice waits for the public design record and verifies that the finished
@@ -38,7 +38,7 @@ class PageVerification:
     story_count: int
 
 
-def verify_factory_product_page(
+def verify_shop_door_page(
     design: Mapping[str, Any],
     *,
     public_base_url: str = "https://www.autonomous.ai/factory/product",
@@ -150,3 +150,7 @@ def verify_factory_product_page(
         video_count=video_count,
         story_count=story_count,
     )
+
+
+# Read-only import compatibility for integrations built before Workshop 0.3.
+verify_factory_product_page = verify_shop_door_page

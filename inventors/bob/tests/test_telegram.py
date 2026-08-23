@@ -53,7 +53,7 @@ class TelegramHome(unittest.TestCase):
         telegram._http = fake
         return calls
 
-    def add_published_game(self):
+    def add_published_game(self, projection="send.json"):
         queue.add_game(SLUG, "Tower Duel")
         for state in ("researched", "ruled", "rules_gated", "simulated",
                       "tabled", "briefed", "built", "build_gated",
@@ -61,7 +61,7 @@ class TelegramHome(unittest.TestCase):
             queue.advance(SLUG, state, "setup")
         pub_dir = os.path.join(self.home, "games", SLUG)
         os.makedirs(pub_dir, exist_ok=True)
-        with open(os.path.join(pub_dir, "published.json"), "w") as fh:
+        with open(os.path.join(pub_dir, projection), "w") as fh:
             json.dump({"slug": SLUG}, fh)
 
 
@@ -153,16 +153,48 @@ class TestPollDecisions(TelegramHome):
         self.assertFalse(decision["valid"])
         self.assertIn("not published/live", decision["reason"])
 
-    def test_unpublish_needs_published_json_ledger(self):
+    def test_unpublish_needs_send_projection(self):
         self.with_creds()
         self.add_published_game()
-        os.remove(os.path.join(self.home, "games", SLUG, "published.json"))
+        os.remove(os.path.join(self.home, "games", SLUG, "send.json"))
         self.capture_http({"getUpdates": self.updates([
             {"update_id": 1, "message": {
                 "chat": {"id": 777}, "text": "unpublish %s" % SLUG}}])})
         (decision,) = telegram.poll_decisions()
         self.assertFalse(decision["valid"])
-        self.assertIn("published.json", decision["reason"])
+        self.assertIn("send projection", decision["reason"])
+
+    def test_unpublish_accepts_legacy_projection(self):
+        self.with_creds()
+        self.add_published_game("published.json")
+        self.capture_http({"getUpdates": self.updates([
+            {"update_id": 1, "message": {
+                "chat": {"id": 777}, "text": "unpublish %s" % SLUG}}])})
+        (decision,) = telegram.poll_decisions()
+        self.assertTrue(decision["valid"])
+
+    def test_unpublish_accepts_v02_launch_projection(self):
+        self.with_creds()
+        self.add_published_game("launch.json")
+        self.capture_http({"getUpdates": self.updates([
+            {"update_id": 1, "message": {
+                "chat": {"id": 777}, "text": "unpublish %s" % SLUG}}])})
+        (decision,) = telegram.poll_decisions()
+        self.assertTrue(decision["valid"])
+
+    def test_unpublish_refuses_two_projection_authorities(self):
+        self.with_creds()
+        self.add_published_game()
+        with open(os.path.join(
+            self.home, "games", SLUG, "published.json"
+        ), "w") as fh:
+            json.dump({"slug": SLUG}, fh)
+        self.capture_http({"getUpdates": self.updates([
+            {"update_id": 1, "message": {
+                "chat": {"id": 777}, "text": "unpublish %s" % SLUG}}])})
+        (decision,) = telegram.poll_decisions()
+        self.assertFalse(decision["valid"])
+        self.assertIn("multiple send projections", decision["reason"])
 
     def test_park_refused_on_terminal_game(self):
         self.with_creds()

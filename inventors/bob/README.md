@@ -1,125 +1,163 @@
 # Bob
 
-Bob invents 3D-printable board games. He runs 24/7 on one Mac, studies five
-thousand years of games and the best design books ever written, invents games
-that could not exist before 3D printing, plays each one thousands of times
-before a human ever sees it, and publishes the survivors to
-[autonomous.ai/factory](https://www.autonomous.ai/factory) as an AI creator —
-full product page, buy button, print-on-order. Quality over quantity: one
-good game per week beats ten mediocre ones per day.
+Bob invents beautiful, 3D-printable board games. He studies game history,
+develops new physical mechanisms, plays each design thousands of times, and
+keeps only the games that survive deterministic checks and adversarial review.
+[`TASTE.md`](TASTE.md) is his creative constitution.
 
-Two receipts started this: two chess sets sold on the Factory before Bob
-existed. People pay for games you can hold.
+Bob is one inventor built on the repository-wide Inventor Workshop. The
+customer promise stays deliberately short:
 
-[`TASTE.md`](TASTE.md) defines Bob's creative constitution and links its
-protected owner-evidence ledger.
-
-## How Bob works
-
-```
-bob.py tick   (launchd, every 30 min)
-  └─ audit clean? budget left? quota clear?
-       └─ advance ONE step of ONE game        (invent loop, closest-to-publish first)
-            else: study one history/book unit  (scholar + librarian loops)
-            else: weekly architecture sweep    (architect loop)
+```text
+WISH  --------------------------  WAIT  ----------------------  RECEIVE
+  |                                                                  ^
+  +--> Bob's TASTE + workflow                                        |
+              |                                                      |
+              v                                                      |
+       MAKE -> INSPECT -> PACK -> SEND -------------------------------+
 ```
 
-A game moves through: spark → rules → **machine-played** (≥1,000 simulated
-games, policy ladder) → **LLM-tabled** (seated players choosing moves by index
-through the real engine — they cannot cheat and cannot be polite) → parts
-brief → CAD build → deterministic print gate → judged → **published
-automatically** when the frozen reward function says it's ready. Every stage
-gets cheaper-to-kill the earlier it is; nothing expensive happens before the
-game has been played.
+`BOX` means the physical thing a customer receives. Bob's current adapter can
+send a game to an optional Shop Door; manufacturing and delivery are the next
+part of the customer path, not something this code pretends is complete.
 
-The reward function (docs/REWARD.md) is frozen and checksummed. Generator
-agents never see its weights — they get playtest findings, not a score to
-flatter. Sales, human "can we play again?" reports, and the owner's verbatim
-verdicts outrank everything a model believes about its own work.
+## How Bob uses the Workshop
 
-Self-improvement runs weekly with authority tiers: prompt/lesson edits land
-directly, code changes become PRs, and touching the reward, the taste file,
-or the baselines reverts the whole session. Repeated lessons must graduate to
-code — never advisory text twice.
+```text
+Wish + TASTE.md
+      |
+      v
+MAKE  Bob explores rules, mechanics, play engines, and printable geometry
+      |
+      v
+INSPECT
+      rules checks -> 1,000+ simulations -> seated LLM games -> CAD checks
+      -> isolated judges -> frozen reward threshold
+      |
+      v
+PACK  pack_artifact(...) -> PackedArtifact
+      inspect_pack(...) verifies the exact bytes and SHA-256
+      |
+      v
+SEND  Sender records intent in Clockwork before any remote effect
+      |
+      +--> private draft --> ShopDoor --> Stamp
+      |
+      +--> optional priced public send --> ShopDoor --> Stamp
+```
+
+Bob's inspectors are specific to board games; the Workshop supplies the shared
+Taste binding, canonical pack, durable Clockwork, Sender, ShopDoor adapter, and
+typed Stamp. A mutable JSON file, a remote design id, command output, or a human
+assertion is never proof that sending succeeded.
+
+The durable Bob state machine predates the Workshop language and keeps its exact
+on-disk names for safe upgrades:
+
+```text
+sparked -> researched -> ruled -> rules_gated -> simulated -> tabled
+        -> briefed -> built -> build_gated -> reviewed -> published -> live
+```
+
+Those are Bob's persisted queue values, not extra shared Workshop stages. In
+the developer story they group naturally as:
+
+- `MAKE`: idea search through CAD build
+- `INSPECT`: rules, simulation, table, build, and reward checks
+- `PACK`: canonical content-addressed artifact
+- `SEND`: private draft, plus an optional explicit public Shop Door action
+
+`bob.py tick` advances one step of one game. It runs an integrity audit first,
+then checks budget and leases. When no game can move, Bob studies one source or
+runs the weekly architecture loop. Files under `corpus/`, `state/`, and
+`games/` are the message bus; agents never edit the queue or reward function.
 
 ## Layout
 
-| Path | What |
+| Path | What it contains |
 |---|---|
-| `ARCHITECTURE.md` | the full design + the research it stands on |
-| `docs/REWARD.md` · `docs/CONTRACTS.md` | the frozen reward spec · module contracts |
-| `docs/research/` | 8 research reports (Anthropic engineering, sibling inventors, game science, publish contract) |
-| `harness/` | queue, budgets, reward, ledger, bandit, runner, integrity, publish, telegram, novelty |
-| `loops/` | invent, playtest+simmetrics, tablerun, scholar, architect, meta |
-| `.claude/agents/` | the roster: ideator, rules writer, lenses, engine writer, table seats, judges, scholar, librarian, architect, improver, auditor |
-| `corpus/` | what Bob has learned about games (cards, study queues, direction arms) |
-| `knowledge/` | TASTE.md (owner's words, append-only), lessons, proposals |
-| `state/` | queue, reward ledger, bandit, daybook — the durable memory |
-| `games/<slug>/` | one game: idea, rules, engine, sim reports, table transcripts, parts, page kit |
-| `ops/` | launchd plists, install/uninstall, watchdog |
+| `TASTE.md` | Bob's sole runtime creative constitution |
+| `ARCHITECTURE.md` | the design, gates, loops, and Workshop mapping |
+| `docs/REWARD.md` | the frozen board-game reward specification |
+| `docs/CONTRACTS.md` | Bob's module and state contracts |
+| `harness/` | queue, budgets, reward, ledger, Workshop adapter, send boundary |
+| `loops/` | Make and Inspection work, playtests, study, architecture, improvement |
+| `games/<slug>/` | one game's wishes, rules, engines, parts, reviews, and page kit |
+| `state/` | durable queue, ledger, Clockwork, credentials, and heartbeat |
+| `ops/` | launchd install, uninstall, and watchdog |
 
-Bob uses the repository-level `foundation/` for two production contracts. Every
-publish payload is a canonical, content-addressed Foundation packet (including the
-embedded `_inventor-artifact.json`), even in autonomous dry-run mode. The live
-Panda path runs through Foundation's durable SQLite publication outbox, which records
-an effect intent before HTTP, blocks retries after timeouts/5xx responses, and
-requires an owner-, history-, listing-, price-, currency-, SKU-, packet-, and
-artifact-bound receipt before Bob records `live`. Bob's creative queue and CLI
-remain his own; `state/inventor-core.sqlite3` is the publication safety ledger.
-The Foundation product identity is stable per Bob slug. If an import is ambiguous,
-editing the source cannot allocate a fresh retry lane; corrected bytes require
-a new slug until Panda exposes a content/idempotency receipt.
-
-## Run it
+## Run Bob
 
 ```bash
 cd inventors/bob
-python3 -m unittest discover -s tests      # everything green, no network, no tokens
-python3 bob.py seed                        # first run: bandit arms + study queues
-python3 bob.py tick                        # one step, by hand
-python3 bob.py status                      # queue, spend, heartbeat
-ops/install.sh                             # go 24/7 (launchd) — ops/uninstall.sh reverts
+python3 -m unittest discover -s tests -t .
+python3 bob.py seed
+python3 bob.py tick
+python3 bob.py status
+ops/install.sh
 ```
 
-Publishing starts in dry-run (`BOB_PUBLISH_DRY_RUN=1` default). Going live
-needs the `bob` marketplace account credentials in `state/panda-auth.json` —
-minting that account is a one-time human act (docs/research/publish-contract.md §2).
-The dry-run `published.json` is stamped `publication_authority: none`: it is a
-rehearsal report, not an effect receipt. After credentials are installed, run
-`BOB_PUBLISH_DRY_RUN=0 python3 bob.py publish <slug>` to replace it with a
-Foundation-backed draft receipt; the queue safely remains in `published` while the
-durable Foundation outbox prevents duplicate imports.
-`published` is a waiting state and is never scheduled into `live`. After an
-ambiguous Foundation-recorded flip, run `python3 bob.py reconcile-public <slug>`;
-the command never resends `/publish` (its marketplace readback is GET; auth
-may rotate first). A human admindash click made without Bob's
-price-bound Foundation intent cannot be proven from Panda's current response and
-therefore does not advance the queue. Only an authenticated receipt for the
-same Foundation intent, owner, artifact, history, active USD listing, price, and SKU
-advances Bob to `live`.
+The autonomous route is Workshop-only and defaults to an offline rehearsal:
 
-The checked-in `g0003` / Clearance draft is historical and intentionally
-stranded: it was imported before Foundation recorded publication intents, carries no
-Foundation artifact identity, and its Panda receipt belongs to Dee rather than a Bob
-principal. Bob will neither adopt it nor retry that slug. Its current owner
-must resolve, unpublish, or archive the legacy draft separately; deployment
-must provision and pin a distinct Bob marketplace principal, then re-import
-the product under a new slug so Foundation records the first effect.
+```bash
+BOB_SEND_DRY_RUN=1 python3 bob.py tick
+BOB_SEND_DRY_RUN=0 python3 bob.py send <slug>
+BOB_SEND_DRY_RUN=0 python3 bob.py send <slug> --price-cents 5900
+```
 
-The official Panda origin is pinned by default. Staging requires both
-`BOB_PANDA_API` and an explicit comma-separated
-`BOB_PANDA_ALLOWED_ORIGINS`; an unpinned override fails closed. The monorepo
-layout is resolved automatically, or a deployment may set
-`BOB_CORE_SRC=/absolute/path/to/foundation/src`.
+The last command performs the optional public Shop Door action. The default
+`bob send <slug>` stops at a private draft. `BOB_SHOP_PUBLIC=1` lets the
+scheduled loop request the priced public action after Inspection is green.
+After an ambiguous public send, `python3 bob.py reconcile-public <slug>` reads
+back the recorded intent and never repeats the effect.
 
-Every auto-publish pings Telegram with the listing link and a one-tap
-UNPUBLISH. The human is a kill switch, not a turnstile.
+Canonical operator settings are:
+
+```text
+BOB_SEND_DRY_RUN=1
+BOB_SEND_VIA=workshop
+BOB_SHOP_PUBLIC=0
+BOB_SHOP_API=https://panda-social-api.autonomous.ai/api/v1
+BOB_SHOP_ALLOWED_ORIGINS=https://panda-social-api.autonomous.ai
+BOB_SHOP_OWNER_ID=<Bob's pinned marketplace owner id>
+BOB_WORKSHOP_SRC=/absolute/path/to/workshop/src   # nonstandard layouts only
+```
+
+The provider hostname retains its historical name; the canonical interface in
+Bob's code is `ShopDoor`. Credentials live at `state/shop-auth.json` (mode
+0600). Clockwork lives at `state/inventor-workshop.sqlite3`. New games emit
+`games/<slug>/send.json` and `games/<slug>/pack/`.
+
+Old names are accepted only at a conflict-checked compatibility edge:
+
+- `BOB_PUBLISH_*`, `BOB_AUTO_FLIP`, `BOB_PORTAL_*`, `BOB_PANDA_*`,
+  `PORTAL_OWNER_ID`, and `PANDA_OWNER_ID`
+- `BOB_FOUNDATION_SRC` and `BOB_CORE_SRC`
+- `portal-auth.json`, `panda-auth.json`, `inventor-foundation.sqlite3`, and
+  `inventor-core.sqlite3`
+- `launch.json`, `published.json`, `launch_payload/`, and `publish_payload/`
+- `harness.publish` and `bob publish`
+
+Bob continues one legacy authority in place. If canonical and legacy sources,
+settings, credentials, projections, or state files disagree, he refuses to
+send until an operator resolves the split.
+
+The historical text2game server also happened to be called the "box." It is
+not the customer's physical `BOX`. `bob export <slug>` may assemble its old
+payload for manual investigation, but the autonomous loop never exports,
+SSHes, or treats its stdout/design id as a Stamp. The obsolete
+`mark-published` command fails closed.
+
+The checked-in `g0003` / Clearance draft remains intentionally stranded. It
+predates Bob's Workshop intent and artifact identity and belongs to a different
+principal. Its current owner must resolve that remote draft separately; Bob
+will not adopt it or retry the slug.
 
 ## The rules Bob lives by
 
-1. The evaluator is the product; the generator is a replaceable mutation operator.
-2. Budgets live in code. An agent that can read its budget will negotiate with it.
-3. Nothing expensive before the game has been played (6 wasted CAD repair rounds taught this).
-4. A verdict binds to the version it judged, by hash.
-5. An absent verdict is a FAIL, never a pass.
-6. Kill early, kill cheap, and write the reason down — the reason is training data.
+1. The evaluator is the product; the generator is replaceable.
+2. Budgets live in code, outside agent prompts.
+3. Nothing expensive happens before the game has been played.
+4. Every verdict binds to the exact artifact SHA-256 it inspected.
+5. An absent verdict is a failure, never a pass.
+6. Kill early, kill cheap, and record why—the reason becomes training data.

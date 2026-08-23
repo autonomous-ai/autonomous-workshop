@@ -1,8 +1,10 @@
-# TASTE — the owner's own words
+# Owner evidence archive (legacy `knowledge/TASTE.md`)
 
 Every line is a HUMAN rejection or ruling, verbatim where possible. This file
-outranks every heuristic any agent has learned. The ideator reads it before
-inventing anything. Only a human appends here; `improve` may never touch it.
+is protected source evidence, not Bob's runtime creative authority and not an
+extra prompt fragment. The immediate repository-root [`TASTE.md`](../TASTE.md)
+is the sole constitution loaded and content-addressed into Bob's Make requests.
+Only a human appends evidence here; `improve` may never touch either file.
 
 Inherited from prior inventor runs (vibe-ideas, org playtest program):
 

@@ -23,11 +23,11 @@ def _render(template: Path):
         root = Path(directory)
         checkout = root / "checkout & launchd test"
         user_home = root / "home & launchd test"
-        core_source = root / "Foundation & launchd test" / "src"
+        workshop_source = root / "Workshop & launchd test" / "src"
         checkout.mkdir()
         user_home.mkdir()
-        (core_source / "inventor_core").mkdir(parents=True)
-        (core_source / "inventor_core" / "__init__.py").write_text(
+        (workshop_source / "inventor_workshop").mkdir(parents=True)
+        (workshop_source / "inventor_workshop" / "__init__.py").write_text(
             '__version__ = "test"\n', encoding="utf-8"
         )
         output = root / "rendered.plist"
@@ -43,8 +43,8 @@ def _render(template: Path):
                 str(checkout),
                 "--home",
                 str(user_home),
-                "--core-src",
-                str(core_source),
+                "--workshop-src",
+                str(workshop_source),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -56,7 +56,7 @@ def _render(template: Path):
             plistlib.loads(raw),
             str(checkout.resolve()),
             str(user_home.resolve()),
-            str(core_source.resolve()),
+            str(workshop_source.resolve()),
             raw,
             stat.S_IMODE(output.stat().st_mode),
         )
@@ -64,7 +64,7 @@ def _render(template: Path):
 
 class LaunchdRenderTests(unittest.TestCase):
     def test_main_job_uses_current_checkout_and_one_step_drive(self):
-        plist, checkout, user_home, core_source, raw, mode = _render(MAIN_TEMPLATE)
+        plist, checkout, user_home, workshop_source, raw, mode = _render(MAIN_TEMPLATE)
         self.assertEqual(plist["Label"], "ai.autonomous.eve")
         self.assertEqual(
             plist["ProgramArguments"],
@@ -87,19 +87,19 @@ class LaunchdRenderTests(unittest.TestCase):
             )
         )
         self.assertEqual(
-            plist["EnvironmentVariables"]["EVE_CORE_SRC"], core_source
+            plist["EnvironmentVariables"]["EVE_WORKSHOP_SRC"], workshop_source
         )
         self.assertEqual(
-            plist["EnvironmentVariables"]["PYTHONPATH"], core_source
+            plist["EnvironmentVariables"]["PYTHONPATH"], workshop_source
         )
-        self.assertIn(core_source.replace("&", "&amp;").encode(), raw)
-        self.assertNotIn(core_source.encode(), raw)
+        self.assertIn(workshop_source.replace("&", "&amp;").encode(), raw)
+        self.assertNotIn(workshop_source.encode(), raw)
         self.assertEqual(mode, 0o600)
         self.assertIn(b"&amp;", raw)
         self.assertNotIn(b"/Users/d", raw)
 
     def test_watchdog_job_uses_current_checkout(self):
-        plist, checkout, _user_home, _core_source, raw, _mode = _render(WATCHDOG_TEMPLATE)
+        plist, checkout, _user_home, _workshop_source, raw, _mode = _render(WATCHDOG_TEMPLATE)
         self.assertEqual(plist["Label"], "ai.autonomous.eve.watchdog")
         self.assertEqual(
             plist["ProgramArguments"],
@@ -116,10 +116,10 @@ class LaunchdRenderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="eve-plist-reject-") as directory:
             root = Path(directory)
             user_home = root / "home"
-            core_source = root / "core" / "src"
+            workshop_source = root / "workshop" / "src"
             user_home.mkdir()
-            (core_source / "inventor_core").mkdir(parents=True)
-            (core_source / "inventor_core" / "__init__.py").write_text(
+            (workshop_source / "inventor_workshop").mkdir(parents=True)
+            (workshop_source / "inventor_workshop" / "__init__.py").write_text(
                 "", encoding="utf-8"
             )
             output = root / "rendered.plist"
@@ -135,8 +135,8 @@ class LaunchdRenderTests(unittest.TestCase):
                     "relative/checkout",
                     "--home",
                     str(user_home),
-                    "--core-src",
-                    str(core_source),
+                    "--workshop-src",
+                    str(workshop_source),
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -144,15 +144,15 @@ class LaunchdRenderTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(output.exists())
 
-    def test_renderer_rejects_core_source_without_package(self):
-        with tempfile.TemporaryDirectory(prefix="eve-plist-core-reject-") as directory:
+    def test_renderer_rejects_workshop_source_without_package(self):
+        with tempfile.TemporaryDirectory(prefix="eve-plist-workshop-reject-") as directory:
             root = Path(directory)
             checkout = root / "checkout"
             user_home = root / "home"
-            core_source = root / "core" / "src"
+            workshop_source = root / "workshop" / "src"
             checkout.mkdir()
             user_home.mkdir()
-            core_source.mkdir(parents=True)
+            workshop_source.mkdir(parents=True)
             output = root / "rendered.plist"
             result = subprocess.run(
                 [
@@ -166,14 +166,91 @@ class LaunchdRenderTests(unittest.TestCase):
                     str(checkout),
                     "--home",
                     str(user_home),
-                    "--core-src",
-                    str(core_source),
+                    "--workshop-src",
+                    str(workshop_source),
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn(b"does not contain inventor_core", result.stderr)
+            self.assertIn(b"does not contain inventor_workshop", result.stderr)
+            self.assertFalse(output.exists())
+
+    def test_renderer_accepts_the_legacy_source_flag_as_a_guarded_fallback(self):
+        with tempfile.TemporaryDirectory(prefix="eve-plist-legacy-source-") as directory:
+            root = Path(directory)
+            checkout = root / "checkout"
+            user_home = root / "home"
+            workshop_source = root / "workshop" / "src"
+            checkout.mkdir()
+            user_home.mkdir()
+            (workshop_source / "inventor_workshop").mkdir(parents=True)
+            (workshop_source / "inventor_workshop" / "__init__.py").write_text(
+                "", encoding="utf-8"
+            )
+            output = root / "rendered.plist"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(RENDERER),
+                    "--template",
+                    str(MAIN_TEMPLATE),
+                    "--output",
+                    str(output),
+                    "--repo",
+                    str(checkout),
+                    "--home",
+                    str(user_home),
+                    "--core-src",
+                    str(workshop_source),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr.decode())
+            self.assertTrue(output.exists())
+
+    def test_renderer_refuses_conflicting_source_flags(self):
+        with tempfile.TemporaryDirectory(prefix="eve-plist-source-conflict-") as directory:
+            root = Path(directory)
+            checkout = root / "checkout"
+            user_home = root / "home"
+            current = root / "workshop-current" / "src"
+            former = root / "workshop-former" / "src"
+            checkout.mkdir()
+            user_home.mkdir()
+            for source in (current, former):
+                (source / "inventor_workshop").mkdir(parents=True)
+                (source / "inventor_workshop" / "__init__.py").write_text(
+                    "", encoding="utf-8"
+                )
+            output = root / "rendered.plist"
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(RENDERER),
+                    "--template",
+                    str(MAIN_TEMPLATE),
+                    "--output",
+                    str(output),
+                    "--repo",
+                    str(checkout),
+                    "--home",
+                    str(user_home),
+                    "--workshop-src",
+                    str(current),
+                    "--core-src",
+                    str(former),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"conflicts with legacy", result.stderr)
             self.assertFalse(output.exists())
 
 
@@ -194,13 +271,13 @@ class LaunchdInstallTests(unittest.TestCase):
         self.assertIn(".plist.in", text)
         self.assertIn("--repo", text)
         self.assertIn("--home", text)
-        self.assertIn("--core-src", text)
+        self.assertIn("--workshop-src", text)
         self.assertIn("plutil -lint", text)
         self.assertIn("launchctl bootstrap", text)
-        self.assertIn("inventor_core", text)
-        self.assertIn("EVE_CORE_SRC", text)
+        self.assertIn("inventor_workshop", text)
+        self.assertIn("EVE_WORKSHOP_SRC", text)
         self.assertIn("PYTHONPATH", text)
-        self.assertIn("inventor_core.__file__", text)
+        self.assertIn("inventor_workshop.__file__", text)
         self.assertNotIn('cp "$PLIST_SRC" "$PLIST_DST"', text)
 
     def test_launchd_docs_name_the_real_command(self):

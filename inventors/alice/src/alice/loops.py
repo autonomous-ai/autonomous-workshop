@@ -9,6 +9,25 @@ from typing import Any, Mapping
 from .domain import CandidateState, WorkItem
 
 
+# New work is named for what happens in the Workshop.  These aliases are only
+# for replaying durable tasks created by Alice releases before the vocabulary
+# migration; schedulers must never enqueue the legacy spellings again.
+PACK_PRODUCT = "pack.product"
+SEND_TO_SHOP = "send.to_shop"
+SEND_VERIFY_SHOP = "send.verify_shop"
+LEGACY_TASK_KIND_ALIASES = {
+    "publish.packet": PACK_PRODUCT,
+    "publish.invoke_pipeline": SEND_TO_SHOP,
+    "publish.verify_page": SEND_VERIFY_SHOP,
+}
+
+
+def canonical_task_kind(action: str) -> str:
+    """Return the current name for a possibly durable legacy task kind."""
+
+    return LEGACY_TASK_KIND_ALIASES.get(action, action)
+
+
 @dataclass(frozen=True, slots=True)
 class LoopSpec:
     name: str
@@ -120,7 +139,7 @@ STATE_WORK: dict[str, tuple[WorkItem, ...]] = {
         WorkItem(
             "physical",
             "physical.create_rich_draft",
-            "publisher",
+            "sender",
             "Invoke the existing Vibe Ideas publish.py operator for this exact production workspace and keep the result private; bind its rich page, design, history, project URL, and project hash for physical review.",
             depends_on=("physical.cad", "physical.dfm"),
         ),
@@ -136,11 +155,11 @@ STATE_WORK: dict[str, tuple[WorkItem, ...]] = {
         WorkItem("market", "release.evaluate", "alice_director", "Apply the pinned deterministic release policy to immutable human, manufacturing, market, and safety evidence.", depends_on=("market.validate_offer", "market.final_safety_ip")),
     ),
     CandidateState.PUBLISH_READY: (
-        WorkItem("publish", "publish.packet", "publisher", "Assemble and hash the exact rules, assets, CAD, BOM, evidence, price, and disclosures."),
-        WorkItem("publish", "publish.invoke_pipeline", "publisher", "Submit the verified product packet to the existing Vibe/Factory publishing pipeline and persist its durable run id.", depends_on=("publish.packet",)),
+        WorkItem("send", PACK_PRODUCT, "packer", "Pack and hash the exact inspected rules, assets, CAD, BOM, evidence, price, and disclosures."),
+        WorkItem("send", SEND_TO_SHOP, "sender", "Send the inspected Pack through the Shop Door and persist its durable run id.", depends_on=(PACK_PRODUCT,)),
     ),
     CandidateState.PAGE_READY: (
-        WorkItem("publish", "publish.verify_page", "publisher", "Verify the pipeline receipt, finished product URL, visuals, 3D viewer, copy, video where produced, specs, price, buy/remix actions, and packet identity."),
+        WorkItem("send", SEND_VERIFY_SHOP, "sender", "Inspect the Shop Door receipt, product URL, visuals, 3D viewer, copy, video where produced, specs, price, buy/remix actions, and Pack identity."),
     ),
     CandidateState.REWORK: (
         WorkItem("learning", "candidate.choose_mutation", "alice_director", "Choose one auditable improvement action from the learning policy and state the falsifiable expectation."),
@@ -449,16 +468,22 @@ OUTPUT_CONTRACTS: dict[str, dict[str, Any]] = {
     "candidate.apply_mutation": {
         "required": ["candidate", "action", "expectation"],
     },
-    "publish.packet": {
+    PACK_PRODUCT: {
         "required": [
             "publication_packet",
             "packet_hash",
-            "core_packet",
+            "_workshop_pack",
             "policy_hash",
             "release_decision",
         ],
     },
 }
+
+# Durable task compatibility: old rows retain their original kind and payload
+# hash, while validation uses the same current contract.
+for _legacy_action, _current_action in LEGACY_TASK_KIND_ALIASES.items():
+    if _current_action in OUTPUT_CONTRACTS:
+        OUTPUT_CONTRACTS[_legacy_action] = OUTPUT_CONTRACTS[_current_action]
 
 
 LEGAL_BOOK_ACCESS_BASES = frozenset(

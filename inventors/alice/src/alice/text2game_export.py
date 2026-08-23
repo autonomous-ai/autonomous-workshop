@@ -3,8 +3,8 @@
 ``nohope88/text2game`` is useful upstream R&D: it invents rules, builds
 CadQuery geometry, renders the assembled game, and slices every printable
 part.  Its own ``publish.py`` is intentionally *not* used here.  The existing
-Vibe Ideas operator already creates the richer Factory draft and Alice's
-``PageBuilderAdapter`` adds the exact remote readback and single-writer fence.
+Vibe Ideas operator already creates the richer Shop Door draft and Alice's
+``ShopDoorAdapter`` adds the exact remote readback and single-writer fence.
 
 This module owns the seam between those systems.  It accepts an immutable
 Alice rules artifact plus the exact source hashes independently accepted by
@@ -129,7 +129,7 @@ class Text2GameExportRequest:
 
 @dataclass(frozen=True, slots=True)
 class Text2GameExportReceipt:
-    """Immutable local handoff plus the lineage PageBuilderAdapter consumes."""
+    """Immutable local handoff plus the lineage ShopDoorAdapter consumes."""
 
     destination: Path
     candidate_id: str
@@ -782,7 +782,7 @@ def _structured_rules(value: Mapping[str, Any]) -> dict[str, Any]:
 def _validate_vibe_page_inputs(idea: Mapping[str, Any]) -> None:
     """Mirror the existing publisher's hard copy windows before any effect.
 
-    The Factory backend refuses rich-page bodies outside 180..400 characters.
+    The Shop Door backend refuses rich-page bodies outside 180..400 characters.
     Vibe's publisher deliberately drops undersized chunks, so a seemingly
     complete idea can otherwise import without ``use_case`` or story blocks
     and fail Alice's authenticated postflight only after the write.
@@ -1281,7 +1281,7 @@ def _source_destination(
         return f"_text2game/{relative}"
     if len(path.parts) == 2 and path.parts[0] == "fe_parts" and path.suffix == ".stl":
         return relative
-    # G-code is printer/profile-specific and can exceed the Factory readback
+    # G-code is printer/profile-specific and can exceed the Shop Door readback
     # cap. It is verified as slice evidence but deliberately not shipped in a
     # general STL/STEP product bundle. Unknown accepted diagnostics stay local
     # for the same least-publication reason; their hashes remain in provenance.

@@ -1,4 +1,4 @@
-# Bob → Panda Social: the exact publish contract
+# Historical Shop Door protocol research: Panda Social
 
 Research date: 2026-08-22. Sources: reinSPQR/vibe-ideas @ main (cloned to
 /tmp/bob-research-publish), autonomous-ai/panda-social-backend docs fetched via
@@ -6,7 +6,20 @@ Research date: 2026-08-22. Sources: reinSPQR/vibe-ideas @ main (cloned to
 APP_LOGIN_INTEGRATION.md, worker-contract.md, swagger.json), and org canon at
 /Users/d/code/autonomous-org/projects/vibe/README.md.
 
-TLDR: Bob publishes over plain HTTPS as its own AI-creator account — `POST
+> **Current Bob vocabulary (2026-08-23):** this is a historical protocol
+> evidence report, so it deliberately retains the Panda Social service name,
+> repository names, endpoint verbs such as `/publish`, and measured legacy
+> settings. Bob's canonical runtime interface is **ShopDoor**. Workshop's
+> **Sender** records the intent in **Clockwork** before HTTP and accepts a
+> validated **Stamp** as remote evidence. New operator settings are
+> `BOB_SHOP_API`, `BOB_SHOP_ALLOWED_ORIGINS`, and `BOB_SHOP_OWNER_ID`; new
+> durable paths are `send.json`, `pack/`, `shop-auth.json`, and
+> `inventor-workshop.sqlite3`. Portal/Panda, publish-prefixed, Foundation/Core,
+> launch-path, and old credential names are conflict-checked compatibility
+> reads only.
+
+Historical protocol summary: the provider accepts plain HTTPS from Bob's own
+AI-creator account — `POST
 /api/v1/designs/import` (multipart, **always `status=draft`**; the default is
 `public`), then the Design Content API for the rules page, then STOP. The
 draft→public flip (`POST /designs/{slug}/publish`, which also sets the sale

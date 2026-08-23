@@ -8,6 +8,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from inventor_workshop import load_taste
+
 from alice.cli import (
     ADAPTER_DIAGNOSTICS_CONTRACT_VERSION,
     PROVIDER_DIAGNOSTICS_CONTRACT_VERSION,
@@ -15,7 +17,7 @@ from alice.cli import (
     _readiness,
     main,
 )
-from alice.config import load_config, resolve_runtime_paths
+from alice.config import DATA_ROOT, load_config, resolve_runtime_paths
 from alice.policy import release_policy_from_config
 from alice.store import DurableStore
 
@@ -58,6 +60,7 @@ def diagnostic_engine(config, adapters):
         provider=DiagnosticProvider(),
         adapters=adapters,
         store=DiagnosticStore(),
+        taste=load_taste(DATA_ROOT),
         release_policy=release_policy_from_config(config),
         factory_capabilities=lambda: (_ for _ in ()).throw(
             AssertionError("readiness must not infer capabilities from engine presence")
@@ -180,9 +183,9 @@ class CLITests(unittest.TestCase):
         )
         sentinel = object()
         with patch(
-            "alice.cli.VibeHttpClient.from_environment",
+            "alice.cli.ShopDoorHttpClient.from_environment",
             return_value=SimpleNamespace(get_design=lambda _design_id: {}),
-        ), patch("alice.cli.PageBuilderAdapter", return_value=sentinel) as constructor:
+        ), patch("alice.cli.ShopDoorAdapter", return_value=sentinel) as constructor:
             adapters = _adapters(config, object())
 
         self.assertIs(adapters["page_builder"], sentinel)
@@ -325,8 +328,8 @@ class CLITests(unittest.TestCase):
             "market_validation",
             "outcomes",
             "page_builder",
-            "publishing_pipeline",
-            "factory_order",
+            "shop_door",
+            "delivery",
             "print_fulfillment",
         )
         publish_capabilities = {
@@ -368,7 +371,7 @@ class CLITests(unittest.TestCase):
             name: DiagnosticAdapter(
                 name,
                 publish_capabilities
-                if name == "publishing_pipeline"
+                if name == "shop_door"
                 else print_capabilities
                 if name == "print_fulfillment"
                 else domain_capabilities.get(name, ()),
@@ -381,14 +384,14 @@ class CLITests(unittest.TestCase):
 
         self.assertFalse(without_contract["ready_for_mode"])
         self.assertNotIn(
-            "order_to_print_job", without_contract["observed_factory_capabilities"]
+            "order_to_print_job", without_contract["observed_shop_capabilities"]
         )
         self.assertIn(
             "capability:order_to_print_job", without_contract["missing_for_mode"]
         )
 
-        adapters["factory_order"] = DiagnosticAdapter(
-            "factory_order", ["paid_order_readback"]
+        adapters["delivery"] = DiagnosticAdapter(
+            "delivery", ["paid_order_readback"]
         )
         adapters["print_fulfillment"] = DiagnosticAdapter(
             "print_fulfillment",
@@ -403,7 +406,7 @@ class CLITests(unittest.TestCase):
 
         self.assertTrue(with_contract["ready_for_mode"])
         self.assertIn(
-            "order_to_print_job", with_contract["observed_factory_capabilities"]
+            "order_to_print_job", with_contract["observed_shop_capabilities"]
         )
 
     def test_draft_readiness_fails_closed_when_store_integrity_fails(self) -> None:

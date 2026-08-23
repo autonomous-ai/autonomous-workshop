@@ -39,7 +39,7 @@ COMMAND_ADAPTER_NAMES = frozenset(
         "cad",
         "market_validation",
         "outcomes",
-        "factory_order",
+        "delivery",
         "print_fulfillment",
     }
 )
@@ -512,12 +512,14 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
         "library": library,
         "market_signals": market_signals,
     }
+    override: dict[str, Any] | None = None
     if path:
         with Path(path).open(encoding="utf-8") as handle:
             override = json.load(handle)
         if not isinstance(override, dict):
             raise ValueError("configuration root must be an object")
         config = _merge(config, override)
+    _normalize_legacy_adapter_config(config, override)
 
     env_map: dict[str, tuple[str, str, Any]] = {
         "ALICE_DATABASE": ("runtime", "database", str),
@@ -544,6 +546,49 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
         raise ValueError("runtime.effect_mode must be dry-run, draft, or live")
     _validate_config(config)
     return config
+
+
+def _normalize_legacy_adapter_config(
+    config: dict[str, Any], override: Mapping[str, Any] | None
+) -> None:
+    """Read old Delivery configuration without keeping old names active."""
+
+    adapters = config.get("adapters")
+    if not isinstance(adapters, dict):
+        return
+    override_adapters = (
+        override.get("adapters") if isinstance(override, Mapping) else None
+    )
+    if not isinstance(override_adapters, Mapping):
+        override_adapters = {}
+
+    legacy_command = override_adapters.get("factory_order_command")
+    if "factory_order_command" in override_adapters:
+        if (
+            "delivery_command" in override_adapters
+            and override_adapters.get("delivery_command") != legacy_command
+        ):
+            raise ValueError(
+                "adapters.delivery_command conflicts with legacy "
+                "adapters.factory_order_command"
+            )
+        adapters["delivery_command"] = copy.deepcopy(legacy_command)
+    adapters.pop("factory_order_command", None)
+
+    environments = adapters.get("command_allowed_environment")
+    if not isinstance(environments, dict) or "factory_order" not in environments:
+        return
+    legacy_environment = environments["factory_order"]
+    if (
+        "delivery" in environments
+        and environments["delivery"] != legacy_environment
+    ):
+        raise ValueError(
+            "adapters.command_allowed_environment.delivery conflicts with legacy "
+            "factory_order"
+        )
+    environments.setdefault("delivery", legacy_environment)
+    del environments["factory_order"]
 
 
 def resolve_runtime_paths(config: dict[str, Any], root: str | Path) -> dict[str, Any]:

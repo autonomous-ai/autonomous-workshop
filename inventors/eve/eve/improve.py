@@ -48,7 +48,8 @@ GRADUATION_MODULES = {
     "arch": "eve.arch",
     "books": "eve.books",
     "playtest": "eve.playtest",
-    "publish": "eve.publish",
+    "send": "eve.send",
+    "launch": "eve.launch",  # compatibility for graduated historical lessons
     "meta": "eve.meta",
 }
 

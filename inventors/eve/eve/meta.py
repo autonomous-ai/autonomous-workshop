@@ -1,7 +1,7 @@
 """meta.py — Eve's meta-loop: the 24/7 supervisor.
 
 Eve is a meta-loop: it runs several smaller loops and feeds their outputs into
-one another. This module is the *core* that keeps them running — the scheduler,
+one another. This module is the workshop steward that keeps them running — the scheduler,
 the heartbeat, the cadence constraints, and the reward-recording bookkeeping.
 Everything here is deterministic, no-LLM. The *work* of each step (inventing,
 writing rules, building CAD, running a real player table) is done by subagents
@@ -84,7 +84,7 @@ def _parse_reset_hint(hint: str) -> Optional[datetime]:
 
 
 class Meta:
-    """Scheduler + heartbeat + cadence + reward-recording core."""
+    """Scheduler + heartbeat + cadence + reward-recording workshop steward."""
 
     def __init__(self, cfg, journal=None):
         self.cfg = cfg
@@ -244,14 +244,14 @@ class Meta:
 
         Returns a dispatch dict the driver executes, or None when there is no
         actionable game. Deterministic: selects the oldest active game (or
-        signals a spark when the queue is empty / below the inflight floor).
+        signals new invention when the queue is empty / below the inflight floor).
         """
         from .queue import Queue
         q = Queue(self.cfg, journal=self.journal)
         game = q.next()
         if game is not None:
             return self._plan_stage(game)
-        return {"action": "spark", "phase": "invent"} if self._below_floor(q) else None
+        return {"action": "invent", "phase": "invent"} if self._below_floor(q) else None
 
     def _below_floor(self, q) -> bool:
         max_inflight = int(os.environ.get("EVE_MAX_INFLIGHT", "2"))
@@ -378,7 +378,7 @@ class Meta:
 
         # 1) Finishing beats starting: advance the in-flight game pipeline.
         decision = self.next_game_action()
-        if decision is not None and decision.get("action") != "spark":
+        if decision is not None and decision.get("action") != "invent":
             if decision["action"] == "gate":
                 from .queue import Queue
                 game = Queue(self.cfg, journal=self.journal).get(decision["game"])
@@ -394,7 +394,7 @@ class Meta:
 
         # Pipeline idle (or below the inflight floor): honor the cadence loops
         # BEFORE inventing a fresh game, so Loop D (books) and the weekly
-        # improve are never starved by an always-hot spark. Eve invents a new
+        # improve are never starved by an always-hot queue. Eve invents a new
         # game only when the rest of the meta is current (quality>quantity).
         # 2) Loop D: one book per day (dispatch the reader agent).
         if self.books_due():
@@ -418,7 +418,7 @@ class Meta:
 
         # 5) All of the meta is current and the queue is below the inflight
         #    floor -> invent a new game to keep the loop alive.
-        if decision is not None and decision.get("action") == "spark":
+        if decision is not None and decision.get("action") == "invent":
             return decision
 
         self.journal.append("meta", action="quiet", note="everything current")

@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <!--
-  Main driver agent. StartInterval 1800s (30 min): each launch runs
+  Main driver agent. StartInterval 1800s (30 min): each scheduled run executes
   the one-step `eve drive` command, which advances at most one unit (one gate,
   book study, improvement session, or game stage) and exits. A slow steady
   cadence beats a daily monolith that loses the whole spend when killed
@@ -40,13 +40,13 @@
     <dict>
         <key>PATH</key>
         <string>__USER_HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-        <!-- Bind the service to the exact Foundation source tree that the
+        <!-- Bind the service to the exact Workshop source tree that the
              installer validated. This cannot silently fall back to a stale
-             globally installed autonomous-inventor-core package. -->
-        <key>EVE_CORE_SRC</key>
-        <string>__CORE_SRC__</string>
+             globally installed inventor-workshop package. -->
+        <key>EVE_WORKSHOP_SRC</key>
+        <string>__WORKSHOP_SRC__</string>
         <key>PYTHONPATH</key>
-        <string>__CORE_SRC__</string>
+        <string>__WORKSHOP_SRC__</string>
     </dict>
 
     <!-- Both streams retain the historical tick.log name. The watchdog greps

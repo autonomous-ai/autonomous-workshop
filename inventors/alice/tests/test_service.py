@@ -30,6 +30,7 @@ from alice.service import (
     WorkerAlreadyRunning,
     WorkerLock,
     _isolated_module_argv,
+    _parser,
     _positive_float,
     _run_guard_tick,
     configured_tick_timeout_floor,
@@ -54,7 +55,7 @@ POLICY_HASH = "c" * 64
 BASE_TIME = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
 IDENTITY = RuntimeIdentity(SOURCE_SHA, CONFIG_SHA, POLICY_HASH, "draft")
 ALICE_ROOT = Path(__file__).resolve().parents[1]
-CORE_SOURCE_ROOT = ALICE_ROOT.parents[1] / "foundation" / "src"
+WORKSHOP_SOURCE_ROOT = ALICE_ROOT.parents[1] / "workshop" / "src"
 
 
 WATCHDOG_PATH = Path(__file__).resolve().parents[1] / "ops" / "watchdog.py"
@@ -155,12 +156,12 @@ class EnvironmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "alice.env"
             path.write_text(
-                "ALICE_FACTORY_TOKEN='file-secret'\nALICE_POLL_SECONDS=19\n",
+                "WORKSHOP_SHOP_TOKEN='file-secret'\nALICE_POLL_SECONDS=19\n",
                 encoding="utf-8",
             )
             path.chmod(0o600)
             before = dict(os.environ)
-            os.environ["ALICE_FACTORY_TOKEN"] = "inherited-secret"
+            os.environ["WORKSHOP_SHOP_TOKEN"] = "inherited-secret"
             os.environ["ALICE_EFFECT_MODE"] = "live"
             try:
                 loaded = load_env_file(path.resolve())
@@ -169,7 +170,7 @@ class EnvironmentTests(unittest.TestCase):
                 os.environ.clear()
                 os.environ.update(before)
 
-            self.assertEqual(child["ALICE_FACTORY_TOKEN"], "file-secret")
+            self.assertEqual(child["WORKSHOP_SHOP_TOKEN"], "file-secret")
             self.assertNotIn("ALICE_EFFECT_MODE", child)
             self.assertEqual(loaded["ALICE_POLL_SECONDS"], "19")
 
@@ -406,6 +407,23 @@ class ProcessBoundaryTests(unittest.TestCase):
 
 
 class IdentityTests(unittest.TestCase):
+    def test_old_shared_source_options_are_read_only_workshop_aliases(self) -> None:
+        common = [
+            "identity",
+            "--config",
+            "/config.json",
+            "--env-file",
+            "/alice.env",
+            "--root",
+            "/runtime",
+            "--source-root",
+            "/alice",
+        ]
+        for option in ("--foundation-source-root", "--core-source-root"):
+            with self.subTest(option=option):
+                parsed = _parser().parse_args([*common, option, "/workshop/src"])
+                self.assertEqual(parsed.workshop_source_root, "/workshop/src")
+
     def _git(self, root: Path, *arguments: str) -> None:
         subprocess.run(
             ["git", "-C", str(root), *arguments],
@@ -415,16 +433,16 @@ class IdentityTests(unittest.TestCase):
             stderr=subprocess.DEVNULL,
         )
 
-    def _core_fixture(self, repository: Path) -> tuple[Path, Path]:
-        core_source = repository / "core" / "src"
-        core_package = core_source / "inventor_core"
-        core_package.mkdir(parents=True)
-        (core_package / "__init__.py").write_text(
-            '__version__ = "0.1.0"\n', encoding="utf-8"
+    def _workshop_fixture(self, repository: Path) -> tuple[Path, Path]:
+        workshop_source = repository / "workshop" / "src"
+        workshop_package = workshop_source / "inventor_workshop"
+        workshop_package.mkdir(parents=True)
+        (workshop_package / "__init__.py").write_text(
+            '__version__ = "0.3.0"\n', encoding="utf-8"
         )
-        core_module = core_package / "artifacts.py"
-        core_module.write_text("CORE_PIN = 1\n", encoding="utf-8")
-        return core_source, core_module
+        workshop_module = workshop_package / "artifacts.py"
+        workshop_module.write_text("WORKSHOP_PIN = 1\n", encoding="utf-8")
+        return workshop_source, workshop_module
 
     def test_source_tree_hash_covers_every_tracked_file_and_requires_clean_tree(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -434,29 +452,29 @@ class IdentityTests(unittest.TestCase):
             (alice / "a.py").write_text("one\n", encoding="utf-8")
             (alice / "nested").mkdir()
             (alice / "nested" / "b.json").write_text("{}\n", encoding="utf-8")
-            core_source, core_module = self._core_fixture(root)
+            workshop_source, workshop_module = self._workshop_fixture(root)
             self._git(root, "init", "-q")
             self._git(root, "config", "user.email", "alice@example.invalid")
             self._git(root, "config", "user.name", "Alice Test")
-            self._git(root, "add", "alice", "core")
+            self._git(root, "add", "alice", "workshop")
             self._git(root, "commit", "-qm", "fixture")
             environment = sanitized_environment({})
 
-            first = source_tree_sha256(alice, core_source, environment)
+            first = source_tree_sha256(alice, workshop_source, environment)
             self.assertEqual(len(first), 64)
             (alice / "nested" / "b.json").write_text('{"changed":true}\n', encoding="utf-8")
             with self.assertRaisesRegex(ServiceError, "not clean"):
-                source_tree_sha256(alice, core_source, environment)
+                source_tree_sha256(alice, workshop_source, environment)
             self._git(root, "checkout", "--", "alice/nested/b.json")
             (alice / "untracked.txt").write_text("new\n", encoding="utf-8")
             with self.assertRaisesRegex(ServiceError, "not clean"):
-                source_tree_sha256(alice, core_source, environment)
+                source_tree_sha256(alice, workshop_source, environment)
             (alice / "untracked.txt").unlink()
-            core_module.write_text("CORE_PIN = 2\n", encoding="utf-8")
+            workshop_module.write_text("WORKSHOP_PIN = 2\n", encoding="utf-8")
             with self.assertRaisesRegex(
-                ServiceError, "Inventor Foundation source tree is not clean"
+                ServiceError, "Inventor Workshop source tree is not clean"
             ):
-                source_tree_sha256(alice, core_source, environment)
+                source_tree_sha256(alice, workshop_source, environment)
 
     def test_resolved_config_hash_uses_env_file_values_not_inherited_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -476,14 +494,14 @@ class IdentityTests(unittest.TestCase):
                         config=config,
                         root=root,
                         source_root=ALICE_ROOT,
-                        core_source_root=CORE_SOURCE_ROOT,
+                        workshop_source_root=WORKSHOP_SOURCE_ROOT,
                         environment=sanitized_environment({"ALICE_POLL_SECONDS": "17"}),
                     )
                     second = resolve_runtime_identity(
                         config=config,
                         root=root,
                         source_root=ALICE_ROOT,
-                        core_source_root=CORE_SOURCE_ROOT,
+                        workshop_source_root=WORKSHOP_SOURCE_ROOT,
                         environment=sanitized_environment({"ALICE_POLL_SECONDS": "18"}),
                     )
             finally:
@@ -506,7 +524,7 @@ class IdentityTests(unittest.TestCase):
                         config=config,
                         root=root,
                         source_root=ALICE_ROOT,
-                        core_source_root=CORE_SOURCE_ROOT,
+                        workshop_source_root=WORKSHOP_SOURCE_ROOT,
                         environment=sanitized_environment({}),
                     )
 
@@ -518,20 +536,20 @@ class IdentityTests(unittest.TestCase):
             source.mkdir()
             tracked = source / "a.py"
             tracked.write_text("PINNED = 1\n", encoding="utf-8")
-            core_source, _core_module = self._core_fixture(repository)
+            workshop_source, _workshop_module = self._workshop_fixture(repository)
             config = repository / "operator.json"
             config.write_text("{}\n", encoding="utf-8")
             self._git(repository, "init", "-q")
             self._git(repository, "config", "user.email", "alice@example.invalid")
             self._git(repository, "config", "user.name", "Alice Test")
-            self._git(repository, "add", "source", "core")
+            self._git(repository, "add", "source", "workshop")
             self._git(repository, "commit", "-qm", "fixture")
 
             snapshot, identity = materialize_execution_snapshot(
                 config=config,
                 root=runtime,
                 source_root=source,
-                core_source_root=core_source,
+                workshop_source_root=workshop_source,
                 environment=sanitized_environment({}),
             )
             self.assertEqual(
@@ -555,11 +573,11 @@ class IdentityTests(unittest.TestCase):
                     config=config,
                     root=runtime,
                     source_root=source,
-                    core_source_root=core_source,
+                    workshop_source_root=workshop_source,
                     environment=sanitized_environment({}),
                 )
 
-    def test_execution_snapshot_seals_shared_core_and_binds_its_bytes(self) -> None:
+    def test_execution_snapshot_seals_shared_workshop_and_binds_its_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = Path(directory).resolve()
             source = repository / "source"
@@ -569,58 +587,58 @@ class IdentityTests(unittest.TestCase):
             (alice_package / "__init__.py").write_text("", encoding="utf-8")
             (alice_package / "__main__.py").write_text(
                 "from pathlib import Path\n"
-                "import inventor_core\n"
-                "from inventor_core.artifacts import CORE_PIN\n"
-                "print(f'{CORE_PIN}|{Path(inventor_core.__file__).resolve()}')\n",
+                "import inventor_workshop\n"
+                "from inventor_workshop.artifacts import WORKSHOP_PIN\n"
+                "print(f'{WORKSHOP_PIN}|{Path(inventor_workshop.__file__).resolve()}')\n",
                 encoding="utf-8",
             )
-            core_source, core_module = self._core_fixture(repository)
+            workshop_source, workshop_module = self._workshop_fixture(repository)
             config = repository / "operator.json"
             config.write_text("{}\n", encoding="utf-8")
             self._git(repository, "init", "-q")
             self._git(repository, "config", "user.email", "alice@example.invalid")
             self._git(repository, "config", "user.name", "Alice Test")
-            self._git(repository, "add", "source", "core")
+            self._git(repository, "add", "source", "workshop")
             self._git(repository, "commit", "-qm", "fixture")
 
             snapshot, identity = materialize_execution_snapshot(
                 config=config,
                 root=runtime,
                 source_root=source,
-                core_source_root=core_source,
+                workshop_source_root=workshop_source,
                 environment=sanitized_environment({}),
             )
-            sealed_core = snapshot.source_path / "inventor_core" / "artifacts.py"
+            sealed_workshop = snapshot.source_path / "inventor_workshop" / "artifacts.py"
             self.assertEqual(
-                sealed_core.read_text(encoding="utf-8"), "CORE_PIN = 1\n"
+                sealed_workshop.read_text(encoding="utf-8"), "WORKSHOP_PIN = 1\n"
             )
-            self.assertEqual(stat.S_IMODE(sealed_core.stat().st_mode), 0o400)
+            self.assertEqual(stat.S_IMODE(sealed_workshop.stat().st_mode), 0o400)
             verify_execution_snapshot(
                 snapshot, root=runtime, expected_identity=identity
             )
 
-            core_module.write_text("CORE_PIN = 2\n", encoding="utf-8")
+            workshop_module.write_text("WORKSHOP_PIN = 2\n", encoding="utf-8")
             with self.assertRaisesRegex(
-                ServiceError, "Inventor Foundation source tree is not clean"
+                ServiceError, "Inventor Workshop source tree is not clean"
             ):
                 resolve_runtime_identity(
                     config=config,
                     root=runtime,
                     source_root=source,
-                    core_source_root=core_source,
+                    workshop_source_root=workshop_source,
                     environment=sanitized_environment({}),
                 )
 
             # The old release remains self-consistent and contains only the
-            # core bytes captured before the mutable checkout changed.
+            # Workshop bytes captured before the mutable checkout changed.
             verify_execution_snapshot(snapshot, root=runtime, expected_identity=identity)
             self.assertEqual(
-                sealed_core.read_text(encoding="utf-8"), "CORE_PIN = 1\n"
+                sealed_workshop.read_text(encoding="utf-8"), "WORKSHOP_PIN = 1\n"
             )
 
             # Isolated mode alone still processes executable .pth files. Model
             # an editable-install startup hook that pre-caches a counterfeit
-            # core before our bootstrap. The control proves the hook is live;
+            # Workshop before our bootstrap. The control proves the hook is live;
             # the sealed child must disable site before it can execute.
             poison_venv = repository / "poison-venv"
             created = subprocess.run(
@@ -649,14 +667,14 @@ class IdentityTests(unittest.TestCase):
             )
             poison_site.mkdir(parents=True, exist_ok=True)
             pth_marker = repository / "executable-pth-ran"
-            (poison_site / "preimport_core.pth").write_text(
+            (poison_site / "preimport_workshop.pth").write_text(
                 "import pathlib,sys,types;"
                 f"pathlib.Path({str(pth_marker)!r}).write_text('executed');"
-                "m=types.ModuleType('inventor_core');"
+                "m=types.ModuleType('inventor_workshop');"
                 "m.__file__='pth://poison';m.__path__=[];"
-                "a=types.ModuleType('inventor_core.artifacts');a.CORE_PIN=999;"
-                "sys.modules['inventor_core']=m;"
-                "sys.modules['inventor_core.artifacts']=a\n",
+                "a=types.ModuleType('inventor_workshop.artifacts');a.WORKSHOP_PIN=999;"
+                "sys.modules['inventor_workshop']=m;"
+                "sys.modules['inventor_workshop.artifacts']=a\n",
                 encoding="utf-8",
             )
             control = subprocess.run(
@@ -688,7 +706,7 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(marker, "1")
             self.assertEqual(
                 Path(imported_path),
-                snapshot.source_path / "inventor_core" / "__init__.py",
+                snapshot.source_path / "inventor_workshop" / "__init__.py",
             )
 
     def test_execution_snapshot_keeps_staging_root_writable_until_publish(self) -> None:
@@ -698,13 +716,13 @@ class IdentityTests(unittest.TestCase):
             runtime = repository / "runtime"
             source.mkdir()
             (source / "a.py").write_text("PINNED = 1\n", encoding="utf-8")
-            core_source, _core_module = self._core_fixture(repository)
+            workshop_source, _workshop_module = self._workshop_fixture(repository)
             config = repository / "operator.json"
             config.write_text("{}\n", encoding="utf-8")
             self._git(repository, "init", "-q")
             self._git(repository, "config", "user.email", "alice@example.invalid")
             self._git(repository, "config", "user.name", "Alice Test")
-            self._git(repository, "add", "source", "core")
+            self._git(repository, "add", "source", "workshop")
             self._git(repository, "commit", "-qm", "fixture")
 
             real_replace = os.replace
@@ -724,7 +742,7 @@ class IdentityTests(unittest.TestCase):
                     config=config,
                     root=runtime,
                     source_root=source,
-                    core_source_root=core_source,
+                    workshop_source_root=workshop_source,
                     environment=sanitized_environment({}),
                 )
 
@@ -743,13 +761,13 @@ class IdentityTests(unittest.TestCase):
             nested = source / "nested"
             nested.mkdir()
             (nested / "a.py").write_text("PINNED = 1\n", encoding="utf-8")
-            core_source, _core_module = self._core_fixture(repository)
+            workshop_source, _workshop_module = self._workshop_fixture(repository)
             config = repository / "operator.json"
             config.write_text("{}\n", encoding="utf-8")
             self._git(repository, "init", "-q")
             self._git(repository, "config", "user.email", "alice@example.invalid")
             self._git(repository, "config", "user.name", "Alice Test")
-            self._git(repository, "add", "source", "core")
+            self._git(repository, "add", "source", "workshop")
             self._git(repository, "commit", "-qm", "fixture")
 
             real_replace = os.replace
@@ -766,7 +784,7 @@ class IdentityTests(unittest.TestCase):
                         config=config,
                         root=runtime,
                         source_root=source,
-                        core_source_root=core_source,
+                        workshop_source_root=workshop_source,
                         environment=sanitized_environment({}),
                     )
 
@@ -1228,7 +1246,7 @@ class LaunchdArtifactTests(unittest.TestCase):
                 rate_state=root / "alert-rate.json",
                 watchdog_state=root / "watchdog-health.json",
                 source_root=alice_root,
-                core_source_root=CORE_SOURCE_ROOT,
+                workshop_source_root=WORKSHOP_SOURCE_ROOT,
                 identity=IDENTITY,
                 poll_seconds=30,
                 stale_seconds=300,
@@ -1256,8 +1274,8 @@ class LaunchdArtifactTests(unittest.TestCase):
             self.assertIn("<string>-S</string>", worker_text)
             self.assertNotIn("<string>-m</string>", worker_text)
             self.assertIn("/var/service/releases/", worker_text)
-            self.assertIn("--core-source-root", worker_text)
-            self.assertIn(str(CORE_SOURCE_ROOT), worker_text)
+            self.assertIn("--workshop-source-root", worker_text)
+            self.assertIn(str(WORKSHOP_SOURCE_ROOT), worker_text)
             self.assertNotIn("alice.service</string>\n    <string>probe", watcher_text)
             self.assertGreaterEqual(combined.count("<string>/dev/null</string>"), 4)
 
@@ -1273,13 +1291,13 @@ class LaunchdArtifactTests(unittest.TestCase):
         self.assertIn("trap 'rollback 143' TERM", install)
         self.assertIn("prior jobs were restored", install)
         self.assertIn("runtime state was retained", install)
-        self.assertIn("autonomous-inventor-core 0.1.0", install)
-        self.assertIn("--core-source-root", install)
+        self.assertIn("inventor-workshop 0.3.0", install)
+        self.assertIn("--workshop-source-root", install)
         self.assertIn("import ast, importlib.metadata", install)
         self.assertIn("__version__", install)
         self.assertIn("importlib.metadata.version", install)
-        self.assertNotIn("importlib.metadata, inventor_core", install)
-        self.assertNotIn("import inventor_core", install)
+        self.assertNotIn("importlib.metadata, inventor_workshop", install)
+        self.assertNotIn("import inventor_workshop", install)
 
     @unittest.skipUnless(Path("/bin/zsh").exists(), "macOS installer behavior")
     def test_failed_post_start_health_check_rolls_back_jobs_but_keeps_runtime(self) -> None:
@@ -1298,7 +1316,7 @@ class LaunchdArtifactTests(unittest.TestCase):
             config.write_text("{}\n", encoding="utf-8")
             env_file = root / "alice.env"
             secret = "installer-secret-must-not-echo"
-            env_file.write_text(f"ALICE_FACTORY_TOKEN={secret}\n", encoding="utf-8")
+            env_file.write_text(f"WORKSHOP_SHOP_TOKEN={secret}\n", encoding="utf-8")
             env_file.chmod(0o600)
             runtime_service = root / "runtime" / "var" / "service"
             runtime_service.mkdir(parents=True)

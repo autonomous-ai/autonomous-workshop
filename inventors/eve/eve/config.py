@@ -1,7 +1,7 @@
 """Configuration and environment loading for Eve.
 
-Values have sane defaults so the core is runnable offline; anything that
-needs a credential (Claude CLI, Telegram, Panda backend) is read from
+Values have sane defaults so Eve's workshop is runnable offline; anything that
+needs a credential (Claude CLI, Telegram, Shop Door) is read from
 environment / .env and degrades to an explicit "*_configured" flag.
 """
 from __future__ import annotations
@@ -29,6 +29,37 @@ def repo_root() -> Path:
     return REPO_ROOT
 
 
+def env_with_fallbacks(primary: str, *fallbacks: str, default: str = "") -> str:
+    """Read one canonical environment value with conflict-safe old names.
+
+    Every explicitly set spelling participates, including an empty value. This
+    prevents a scheduled Eve process from silently choosing between two Shop
+    identities, endpoints, or credentials during migration.
+    """
+
+    observed = [
+        (name, os.environ[name].strip())
+        for name in (primary,) + fallbacks
+        if name in os.environ
+    ]
+    if observed:
+        selected = observed[0][1]
+        conflicts = [name for name, value in observed[1:] if value != selected]
+        if conflicts:
+            raise ValueError(
+                "%s conflicts with %s; remove old names or make them identical"
+                % (primary, ", ".join(conflicts))
+            )
+        return selected
+    return default
+
+
+def env_with_legacy(primary: str, legacy: str, default: str = "") -> str:
+    """Compatibility wrapper for callers migrating one environment name."""
+
+    return env_with_fallbacks(primary, legacy, default=default)
+
+
 @dataclass
 class Config:
     # --- paths -----------------------------------------------------------
@@ -40,7 +71,9 @@ class Config:
     ledger_path: Path = field(default_factory=lambda: REPO_ROOT / "loops" / "ledger.json")
     queue_path: Path = field(default_factory=lambda: REPO_ROOT / "loops" / "queue.json")
     journal_path: Path = field(default_factory=lambda: REPO_ROOT / "loops" / "journal.md")
-    taste_path: Path = field(default_factory=lambda: REPO_ROOT / "taste" / "taste.md")
+    # Root TASTE.md is the one creative authority loaded by Workshop and
+    # bound into every model prompt. No shadow Taste file may override it.
+    taste_path: Path = field(default_factory=lambda: REPO_ROOT / "TASTE.md")
     arch_state: Path = field(default_factory=lambda: REPO_ROOT / "loops" / "arch" / "state.json")
     corpus_state: Path = field(default_factory=lambda: REPO_ROOT / "loops" / "corpus" / "state.json")
 
@@ -78,11 +111,13 @@ class Config:
     table_parallel: int = 2              # concurrent seats (bounded by DAYBOOK quota)
     table_seed: int = 11                 # base rng seed for replayability
 
-    # --- Vibe / Panda store publish (see publish.py) -----------------------
-    store_base_url: str = "https://panda-social-api.autonomous.ai"
-    store_bearer: str = ""          # platform bearer token (API calls)
-    panda_owner_id: str = ""        # 24-hex owner id for imported designs
-    store_configured: bool = False
+    # --- Send / Shop Door (see send.py) ------------------------------------
+    # The default URL is the current external shop. Eve sees only the narrow,
+    # provider-neutral Shop Door exposed by Workshop.
+    shop_api: str = "https://panda-social-api.autonomous.ai"
+    shop_token: str = ""
+    shop_owner_id: str = ""
+    shop_configured: bool = False
 
     @classmethod
     def load(cls) -> "Config":
@@ -106,10 +141,24 @@ class Config:
         c.builder_max_minutes = int(os.environ.get("EVE_BUILDER_MAX_MINUTES", c.builder_max_minutes))
         c.brief_max_minutes = int(os.environ.get("EVE_BRIEF_MAX_MINUTES", c.brief_max_minutes))
         c.telegram_configured = bool(os.environ.get("EVE_TELEGRAM_TOKEN"))
-        c.store_base_url = os.environ.get("EVE_STORE_BASE_URL", c.store_base_url)
-        c.store_bearer = os.environ.get("EVE_STORE_BEARER", "").strip()
-        c.panda_owner_id = os.environ.get("PANDA_OWNER_ID", "").strip()
-        c.store_configured = bool(c.store_bearer)
+        c.shop_api = env_with_fallbacks(
+            "EVE_SHOP_API",
+            "EVE_PORTAL_API",
+            "EVE_STORE_BASE_URL",
+            default=c.shop_api,
+        )
+        c.shop_token = env_with_fallbacks(
+            "EVE_SHOP_TOKEN",
+            "EVE_PORTAL_TOKEN",
+            "EVE_STORE_BEARER",
+        )
+        c.shop_owner_id = env_with_fallbacks(
+            "EVE_SHOP_OWNER_ID",
+            "EVE_PORTAL_OWNER_ID",
+            "EVE_STORE_OWNER_ID",
+            "PANDA_OWNER_ID",
+        )
+        c.shop_configured = bool(c.shop_token and c.shop_owner_id)
         c.playtest_configured = bool(
             os.environ.get("PLAYTEST_BASE_URL")
             and os.environ.get("PLAYTEST_API_KEY")
@@ -121,6 +170,72 @@ class Config:
         c.table_parallel = int(os.environ.get("EVE_TABLE_PARALLEL", c.table_parallel))
         c.table_seed = int(os.environ.get("EVE_TABLE_SEED", c.table_seed))
         return c
+
+    # Compatibility attributes are deliberately properties, not stored
+    # dataclass fields. New code and serialized configuration use ``shop_*``.
+    @property
+    def portal_api(self) -> str:
+        return self.shop_api
+
+    @portal_api.setter
+    def portal_api(self, value: str) -> None:
+        self.shop_api = value
+
+    @property
+    def portal_token(self) -> str:
+        return self.shop_token
+
+    @portal_token.setter
+    def portal_token(self, value: str) -> None:
+        self.shop_token = value
+
+    @property
+    def portal_owner_id(self) -> str:
+        return self.shop_owner_id
+
+    @portal_owner_id.setter
+    def portal_owner_id(self, value: str) -> None:
+        self.shop_owner_id = value
+
+    @property
+    def portal_configured(self) -> bool:
+        return self.shop_configured
+
+    @portal_configured.setter
+    def portal_configured(self, value: bool) -> None:
+        self.shop_configured = bool(value)
+
+    @property
+    def store_base_url(self) -> str:
+        return self.shop_api
+
+    @store_base_url.setter
+    def store_base_url(self, value: str) -> None:
+        self.shop_api = value
+
+    @property
+    def store_bearer(self) -> str:
+        return self.shop_token
+
+    @store_bearer.setter
+    def store_bearer(self, value: str) -> None:
+        self.shop_token = value
+
+    @property
+    def panda_owner_id(self) -> str:
+        return self.shop_owner_id
+
+    @panda_owner_id.setter
+    def panda_owner_id(self, value: str) -> None:
+        self.shop_owner_id = value
+
+    @property
+    def store_configured(self) -> bool:
+        return self.shop_configured
+
+    @store_configured.setter
+    def store_configured(self, value: bool) -> None:
+        self.shop_configured = bool(value)
 
 
 class _ConfigExtras:

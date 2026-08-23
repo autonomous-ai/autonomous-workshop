@@ -43,10 +43,10 @@ def _rendered_plist(template):
         root = Path(directory)
         checkout = root / "checkout & launchd test"
         user_home = root / "home & launchd test"
-        core_source = root / "core & launchd test"
+        workshop_source = root / "workshop & launchd test"
         checkout.mkdir()
         user_home.mkdir()
-        core_source.mkdir()
+        workshop_source.mkdir()
         output = root / "rendered.plist"
         proc = subprocess.run(
             [
@@ -60,8 +60,8 @@ def _rendered_plist(template):
                 str(checkout),
                 "--home",
                 str(user_home),
-                "--core-src",
-                str(core_source),
+                "--workshop-src",
+                str(workshop_source),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -73,7 +73,7 @@ def _rendered_plist(template):
             plistlib.loads(raw),
             str(checkout.resolve()),
             str(user_home.resolve()),
-            str(core_source.resolve()),
+            str(workshop_source.resolve()),
             raw,
             stat.S_IMODE(output.stat().st_mode),
         )
@@ -85,7 +85,7 @@ class TestMainPlist(unittest.TestCase):
             self.plist,
             self.repo,
             self.home,
-            self.core_source,
+            self.workshop_source,
             self.raw,
             self.mode,
         ) = _rendered_plist(MAIN_PLIST)
@@ -118,14 +118,14 @@ class TestMainPlist(unittest.TestCase):
         path = self.plist["EnvironmentVariables"]["PATH"]
         self.assertTrue(path.startswith(os.path.join(self.home, ".local/bin") + ":"))
 
-    def test_scheduled_tick_uses_validated_core_source(self):
+    def test_scheduled_tick_uses_validated_workshop_source(self):
         self.assertEqual(
-            self.plist["EnvironmentVariables"]["BOB_CORE_SRC"],
-            self.core_source,
+            self.plist["EnvironmentVariables"]["BOB_WORKSHOP_SRC"],
+            self.workshop_source,
         )
-        escaped_core = self.core_source.replace("&", "&amp;").encode()
-        self.assertIn(escaped_core, self.raw)
-        self.assertNotIn(self.core_source.encode(), self.raw)
+        escaped_workshop = self.workshop_source.replace("&", "&amp;").encode()
+        self.assertIn(escaped_workshop, self.raw)
+        self.assertNotIn(self.workshop_source.encode(), self.raw)
 
     def test_render_is_private_and_xml_safe(self):
         self.assertEqual(self.mode, 0o600)
@@ -139,7 +139,7 @@ class TestWatchdogPlist(unittest.TestCase):
             self.plist,
             self.repo,
             self.home,
-            self.core_source,
+            self.workshop_source,
             self.raw,
             self.mode,
         ) = _rendered_plist(WATCHDOG_PLIST)
@@ -213,10 +213,10 @@ class TestInstallScriptContent(unittest.TestCase):
     def test_refuses_when_harness_broken(self):
         self.assertIn("import harness", self.text)
 
-    def test_refuses_when_shared_core_is_missing(self):
-        self.assertIn("BOB_CORE_SRC", self.text)
-        self.assertIn("require_core", self.text)
-        self.assertIn("inventor_core", self.text)
+    def test_refuses_when_shared_workshop_is_missing(self):
+        self.assertIn("BOB_WORKSHOP_SRC", self.text)
+        self.assertIn("require_workshop", self.text)
+        self.assertIn("inventor_workshop", self.text)
 
     def test_creates_log_dir(self):
         self.assertIn("state/logs", self.text)
@@ -230,7 +230,7 @@ class TestInstallScriptContent(unittest.TestCase):
         self.assertIn(".plist.in", self.text)
         self.assertIn("--repo", self.text)
         self.assertIn("--home", self.text)
-        self.assertIn('--core-src "$CORE_SRC"', self.text)
+        self.assertIn('--workshop-src "$WORKSHOP_SRC"', self.text)
         self.assertNotIn('cp "$PLIST_SRC" "$PLIST_DST"', self.text)
 
 

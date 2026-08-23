@@ -23,6 +23,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from inventor_workshop import load_taste
+from inventor_workshop.errors import ManifestError
+
 BANNED = ["revolutionary", "empower", "supercharge", "unlock", "transform",
           "leverage", "synergy", "introducing", "excited to announce"]
 
@@ -62,17 +65,41 @@ def _contract_json(d: dict) -> str:
     return "\n```json\n" + json.dumps(d, indent=2) + "\n```\n"
 
 
+def taste_block(cfg) -> str:
+    """Bind Eve's one root Taste into a model-visible prompt.
+
+    ``Config.taste_path`` remains explicit for callers, but it may only point
+    at the same root file Workshop loaded. This prevents a stale shadow file
+    from quietly becoming the creative authority.
+    """
+
+    taste = load_taste(Path(cfg.root))
+    configured = Path(cfg.taste_path).resolve()
+    if configured != taste.path:
+        raise ManifestError(
+            "Eve taste_path must be the inventor root TASTE.md: %s" % taste.path
+        )
+    return (
+        "ROOT TASTE — CREATIVE AUTHORITY\n"
+        "TASTE_SHA256=%s\n"
+        "Every ruling below outranks learned heuristics and may not be edited.\n\n"
+        % taste.sha256
+    ) + taste.content
+
+
 # --- the roles -------------------------------------------------------------
 
 
 def ideator_prompt(cfg, *, out_dir: str) -> str:
-    """Stage 'queued' (or 'spark'): invent a brand-new, never-existed game.
+    """Stage 'queued' (or an invent action): make a brand-new game.
 
     Writes games/<slug>/idea.json with the full concept + rules + bill.
     """
     return f"""You are Eve's **ideator** — an autonomous board-game inventor. Invent ONE
 new 3D-printable board game that has never existed before. Quality over quantity:
 a single genuinely novel, load-bearing-mechanism game, not a themed skin.
+
+{taste_block(cfg)}
 
 You have tools and a working directory. Create a folder and write your output there.
 
@@ -119,6 +146,8 @@ def brief_prompt(cfg, *, game_dir: str) -> str:
 (idea.json has the concept + bill; rules.md has the full rules) and produce a
 physical print brief that a CAD builder can execute without guessing.
 
+{taste_block(cfg)}
+
 Read idea.json and rules.md, then write:
 1. `<dir>/brief.md` — every dimension in mm for every part, every interface
    between parts (how they join: slide-fit, snap, living-hinge film thickness),
@@ -140,8 +169,10 @@ Write stage_out.json and stop. Do not write CAD yet."""
 
 def builder_prompt(cfg, *, game_dir: str) -> str:
     """Stage 'draft': author parametric CAD and generate the STL build."""
-    return f"""You are Eve's **CAD builder**. Turn the brief in {game_dir} (brief.md,
+    return f"""You are Eve's **CAD builder** in Eve's Make stage. Turn the brief in {game_dir} (brief.md,
 stage_out.json, game.json) into real 3D-printable parts.
+
+{taste_block(cfg)}
 
 1. Write a parametric script `<dir>/cad/build_parts.py` that generates every
    part id in the bill as an STL into `<dir>/build/<part_id>.stl`. Feel free to
@@ -163,9 +194,11 @@ Write stage_out.json and stop."""
 
 def panel_prompt(cfg, *, game_dir: str) -> str:
     """Stage 'panel': three independent blind lenses rate the design."""
-    return f"""You are Eve's **blind panel**. Rate the finished game package in {game_dir}
+    return f"""You are Eve's **blind panel** in Eve's Inspect stage. Rate the finished game package in {game_dir}
 (rules.md, brief.md, build/, game.json, playtest evidence if present) through THREE
 independent lenses. You see the artifact, not the other lenses.
+
+{taste_block(cfg)}
 
 Write `<dir>/stage_out.json`:
 {{"lenses": {{
@@ -183,9 +216,11 @@ playability must fail. Write stage_out.json and stop."""
 def playtest_prompt(cfg, *, game_dir: str) -> str:
     """Stage 'playtest': author BOTH a scripted engine AND a live-interface engine
     so a real LLM-player table can measure FUN (FUN = a player asks to play again)."""
-    return f"""You are Eve's **playtest engineer**. Measure whether the game in {game_dir}
+    return f"""You are Eve's **playtest engineer** in Eve's Inspect stage. Measure whether the game in {game_dir}
 (idea.json, rules.md, brief.md, build/) is actually FUN. The bar is PLAYTEST.md:
 **FUN = a player asks to play again**.
+
+{taste_block(cfg)}
 
 Write `<dir>/playtest/engine.py` implementing the REAL game with TWO surfaces:
 
@@ -237,6 +272,8 @@ def reader_prompt(cfg, *, book: dict) -> str:
     return f"""You are Eve's **book reader** (Loop D). Study ONE great book about
 tabletop and board gaming and distill it into reusable design learnings that
 feed Eve's other loops (ideator, rules, brief, playtest/fun).
+
+{taste_block(cfg)}
 
 BOOK
 - title: {book.get("title")}

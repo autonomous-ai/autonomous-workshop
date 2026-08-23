@@ -9,6 +9,18 @@ print-on-demand production and shipping. The portfolio target is one
 publishable game per week, with quality gates allowed to slow that cadence.
 Throughput is a diagnostic, never the reward.
 
+The customer contract stays deliberately smaller than Alice's machinery:
+
+```text
+WISH --------------- WAIT ------------- RECEIVE
+                        |
+           MAKE -> INSPECT -> PACK -> SEND
+```
+
+Taste guides Make. Alice owns her niche-specific Make and Inspect work;
+Workshop supplies the content-addressed Pack. A future delivery Door turns a
+paid Wish into the physical Box.
+
 ## The system
 
 The diagram is the target closed loop, not the activation state of this
@@ -30,9 +42,9 @@ flowchart TD
   V --> P2["Exact-history prototype + production run"]
   P2 --> M["Safety, IP, market, economics"]
   M --> G{"Pinned draft policy"}
-  G -->|pass| DRAFT["Complete private Factory draft"]
+  G -->|pass| DRAFT["Complete private Shop Door draft"]
   DRAFT --> REVIEW["Dee one-click review and public flip"]
-  REVIEW --> F["Public Factory product"]
+  REVIEW --> F["Public Shop Door product"]
   F --> W["Existing rich product-page observer"]
   G -->|repair| L["Learning policy"]
   G -->|kill| A["Archive with evidence"]
@@ -96,7 +108,7 @@ Alice is an orchestrator-worker system with bounded, adversarial specialization:
 | Falsification | novelty adversary, exploit hunter, safety/IP | Their job is to kill weak claims, not help the pitch |
 | Play | optimizer, social, explorer, playtest director, human researcher | Different player incentives expose different failures |
 | Make | industrial designer, CAD builder, DFM verifier | Digital plausibility must become a printable object |
-| Sell | merchant, publisher | Economics and effects are distinct from invention |
+| Send | merchant, packer, sender | Economics, Pack identity, and Door effects are distinct from invention |
 | Improve | meta-scientist | Harness experiments run in shadow mode |
 
 Multi-agent work is used only for independent search, proposals, personas, and
@@ -171,13 +183,14 @@ adapter print and review that exact design/history. A render is not a print.
 Production validation requires a receipt tied to the same artifact hashes,
 project hash, design id, history id, and project URL.
 
-### 7. Market and publishing loop
+### 7. Market, Pack, and Send loop
 
 The merchant checks the exact offer and economics; safety/IP reviews the exact
 production packet. The policy engine makes the eligibility decision. The
-publisher hashes rules, assets, CAD, BOM, evidence, price, and disclosures into
-one immutable packet. In the current product boundary, `draft` Alice creates and
-verifies the complete private Factory page, then stops. Dee reviews that exact
+packer hashes rules, assets, CAD, BOM, evidence, price, and disclosures into
+one immutable Pack. The sender can move only that inspected Pack through the
+Shop Door. In the current product boundary, `draft` Alice creates and
+verifies the complete private Shop Door page, then stops. Dee reviews that exact
 draft and uses the existing one-click public control. Alice never regenerates
 the product after the print gate.
 
@@ -188,12 +201,12 @@ reusing the exact private draft design/history that was hash-checked, printed,
 and reviewed. One atomic write must compare that exact history/project and
 complete rich page, apply the reviewed SKU, price, and USD currency, and echo
 the packet and policy hashes. The deployed downstream observer may enrich the
-public Factory page further. Alice does not recreate either the draft page
+public Shop Door page further. Alice does not recreate either the draft page
 builder or that downstream merchandising system.
 
 Alice persists the operation before each remote write, never retries an
 ambiguous create/publish response, and reconciles by reading the design back.
-For the later automatic path, Alice polls the anonymous Factory design record
+For the later automatic path, Alice polls the anonymous Shop Door design record
 until the page contract is complete and the exact price is visible. Only then
 does the candidate reach `page_ready`; a final receipt-bound transition marks it
 `published`. Until that path is explicitly activated, every game has Dee's

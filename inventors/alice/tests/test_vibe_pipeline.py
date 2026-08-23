@@ -9,7 +9,7 @@ from unittest.mock import patch
 from alice.adapters import AdapterError, adapter_input_sha256
 from alice.cli import _adapters
 from alice.config import load_config
-from alice.core_integration import build_core_packet_binding
+from alice.workshop_bridge import build_workshop_pack_binding
 from alice.store import DurableStore, IdempotencyConflictError
 from alice.vibe_pipeline import (
     ALICE_REVISION_BOUND_RELEASE_CAPABILITIES,
@@ -19,12 +19,14 @@ from alice.vibe_pipeline import (
     REVISION_BOUND_PUBLISH_CAPABILITY,
     AmbiguousVibeEffect,
     ExistingVibeDesignRequest,
-    VibeHttpClient,
+    ShopDoorHttpClient,
+    VibeHttpClient as LegacyVibeHttpClient,
     VibePageIncomplete,
     VibePipeline,
     VibePipelineError,
     VibePipelineRequest,
-    VibePublishingAdapter,
+    ShopDoorSender,
+    VibePublishingAdapter as LegacyVibePublishingAdapter,
 )
 
 
@@ -193,6 +195,10 @@ class _Response:
 
 
 class VibePipelineTests(unittest.TestCase):
+    def test_old_vibe_boundary_names_are_only_shop_door_aliases(self) -> None:
+        self.assertIs(LegacyVibeHttpClient, ShopDoorHttpClient)
+        self.assertIs(LegacyVibePublishingAdapter, ShopDoorSender)
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.store = DurableStore(Path(self.temporary.name) / "alice.sqlite3")
@@ -219,9 +225,9 @@ class VibePipelineTests(unittest.TestCase):
             "listing": {"sku": "VB-1"},
         }
         self.packet_hash = self.store.sha256_json(self.production_manifest)
-        self.core_packet = build_core_packet_binding(
+        self.workshop_pack = build_workshop_pack_binding(
             self.production_manifest,
-            alice_packet_sha256=self.packet_hash,
+            alice_product_sha256=self.packet_hash,
         )
         self.metadata_release_decision = {
             "allowed": True,
@@ -329,7 +335,7 @@ class VibePipelineTests(unittest.TestCase):
                         "content": {
                             "publication_packet": self.production_manifest,
                             "packet_hash": self.packet_hash,
-                            "core_packet": self.core_packet,
+                            "_workshop_pack": self.workshop_pack,
                             "policy_hash": self.policy_hash,
                             "release_decision": self.release_decision,
                         },
@@ -428,7 +434,7 @@ class VibePipelineTests(unittest.TestCase):
                 self.assertEqual(self.transport.publish_calls, [])
 
     def test_release_capabilities_are_exposed_only_for_bound_backend(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
 
         self.assertEqual(
             adapter.release_capabilities(),
@@ -442,7 +448,7 @@ class VibePipelineTests(unittest.TestCase):
             self.assertEqual(adapter.release_capabilities(), ())
 
     def test_release_capabilities_fail_closed_on_malformed_read(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         with patch.object(self.transport, "capabilities", return_value=None):
             self.assertEqual(adapter.release_capabilities(), ())
 
@@ -533,11 +539,13 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(stored.state, "in_flight")
         self.assertEqual(stored.response["stage"], "public_waiting")
 
-    def test_worker_adapter_publishes_packet_bound_existing_design(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+    def test_shop_door_sends_pack_bound_existing_design(self) -> None:
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
+        dependencies = payload["dependencies"]
+        dependencies["pack.product"] = dependencies.pop("publish.packet")  # type: ignore[union-attr]
 
-        invoked = adapter.invoke("publish.invoke_pipeline", payload)
+        invoked = adapter.invoke("send.to_shop", payload)
         page_ready = self.store.transition_candidate(
             self.candidate.id,
             "page_ready",
@@ -545,7 +553,7 @@ class VibePipelineTests(unittest.TestCase):
             expected_version=self.candidate.version,
         )
         verified = adapter.invoke(
-            "publish.verify_page",
+            "send.verify_shop",
             {
                 "candidate_id": page_ready.id,
                 "candidate_version": page_ready.version,
@@ -558,11 +566,13 @@ class VibePipelineTests(unittest.TestCase):
             },
         )
 
-        expected_hash = payload["dependencies"]["publish.packet"]["result"]["content"]["packet_hash"]  # type: ignore[index]
+        expected_hash = payload["dependencies"]["pack.product"]["result"]["content"]["packet_hash"]  # type: ignore[index]
         self.assertEqual(invoked.status, "passed")
+        self.assertEqual(invoked.adapter, "shop_door")
+        self.assertEqual(invoked.evidence_class, "shop_door")
         self.assertEqual(
             invoked.input_sha256,
-            adapter_input_sha256("publish.invoke_pipeline", payload),
+            adapter_input_sha256("send.to_shop", payload),
         )
         self.assertEqual(invoked.payload["packet_hash"], expected_hash)
         self.assertEqual(verified.status, "passed")
@@ -571,7 +581,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.job_calls, 0)
 
     def test_worker_adapter_rejects_a_forged_packet_hash_before_publish(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         content["packet_hash"] = "f" * 64  # type: ignore[index]
@@ -581,22 +591,46 @@ class VibePipelineTests(unittest.TestCase):
 
         self.assertEqual(self.transport.publish_calls, [])
 
-    def test_worker_adapter_rejects_a_forged_core_packet_before_publish(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+    def test_worker_adapter_reads_but_does_not_require_old_pack_key(self) -> None:
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
-        binding = dict(content["core_packet"])  # type: ignore[index]
-        binding["packet_sha256"] = "f" * 64
-        content["core_packet"] = binding  # type: ignore[index]
+        content["workshop_packet"] = content.pop("_workshop_pack")  # type: ignore[index]
 
-        with self.assertRaisesRegex(AdapterError, "core publication packet binding"):
+        receipt = adapter.invoke("publish.invoke_pipeline", payload)
+
+        self.assertEqual(receipt.status, "passed")
+
+    def test_worker_adapter_rejects_multiple_pack_authorities(self) -> None:
+        adapter = ShopDoorSender(self.pipeline())
+        payload = self.adapter_payload()
+        content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
+        content["workshop_packet"] = content["_workshop_pack"]  # type: ignore[index]
+
+        with self.assertRaisesRegex(AdapterError, "exactly one Workshop Pack"):
+            adapter.invoke("publish.invoke_pipeline", payload)
+
+        self.assertEqual(self.transport.capability_calls, 0)
+        self.assertEqual(self.transport.publish_calls, [])
+
+    def test_worker_adapter_rejects_a_forged_workshop_pack_before_send(self) -> None:
+        adapter = ShopDoorSender(self.pipeline())
+        payload = self.adapter_payload()
+        content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
+        binding = dict(content["_workshop_pack"])  # type: ignore[index]
+        binding["pack_sha256"] = "f" * 64
+        content["_workshop_pack"] = binding  # type: ignore[index]
+
+        with self.assertRaisesRegex(
+            AdapterError, "Workshop Pack binding"
+        ):
             adapter.invoke("publish.invoke_pipeline", payload)
 
         self.assertEqual(self.transport.capability_calls, 0)
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_agent_packet_envelope_before_publish(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         dependency = payload["dependencies"]["publish.packet"]  # type: ignore[index]
         canonical_content = dependency["result"]["content"]  # type: ignore[index]
@@ -612,7 +646,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_packet_for_another_candidate_version(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         packet = content["publication_packet"]  # type: ignore[index]
@@ -625,7 +659,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_disallowed_release_decision(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         decision = dict(content["release_decision"])  # type: ignore[index]
@@ -638,7 +672,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_non_live_release_before_publish(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         decision = dict(content["release_decision"])  # type: ignore[index]
@@ -652,7 +686,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_stale_release_version_before_publish(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         decision = dict(content["release_decision"])  # type: ignore[index]
@@ -666,7 +700,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_worker_adapter_rejects_release_for_another_candidate(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         payload = self.adapter_payload()
         content = payload["dependencies"]["publish.packet"]["result"]["content"]  # type: ignore[index]
         decision = dict(content["release_decision"])  # type: ignore[index]
@@ -680,7 +714,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(self.transport.publish_calls, [])
 
     def test_verify_rejects_a_newer_public_history_without_republishing(self) -> None:
-        adapter = VibePublishingAdapter(self.pipeline())
+        adapter = ShopDoorSender(self.pipeline())
         adapter.invoke("publish.invoke_pipeline", self.adapter_payload())
         page_ready = self.store.transition_candidate(
             self.candidate.id,
@@ -858,7 +892,7 @@ class VibePipelineTests(unittest.TestCase):
         self.assertEqual(len(self.transport.publish_calls), 1)
 
     def test_http_public_observer_is_anonymous_and_writes_carry_key(self) -> None:
-        client = VibeHttpClient("https://vibe.example", "top-secret")
+        client = ShopDoorHttpClient("https://vibe.example", "top-secret")
         with patch.object(
             client._opener,
             "open",
@@ -888,15 +922,27 @@ class VibePipelineTests(unittest.TestCase):
         ):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
-                    VibeHttpClient(value, "top-secret")
+                    ShopDoorHttpClient(value, "top-secret")
 
     def test_cli_can_select_the_builtin_vibe_adapter(self) -> None:
         config = load_config()
         config["adapters"]["vibe"]["enabled"] = True
         config["runtime"]["effect_mode"] = "live"
-        with patch.dict("os.environ", {"ALICE_FACTORY_TOKEN": "dedicated-token"}):
+        with patch.dict("os.environ", {"WORKSHOP_SHOP_TOKEN": "dedicated-token"}):
             adapters = _adapters(config, self.store)
-        self.assertIsInstance(adapters["publishing_pipeline"], VibePublishingAdapter)
+        self.assertIsInstance(adapters["shop_door"], ShopDoorSender)
+
+    def test_cli_reads_the_old_shop_token_name_without_emitting_it(self) -> None:
+        config = load_config()
+        config["adapters"]["vibe"]["enabled"] = True
+        config["runtime"]["effect_mode"] = "live"
+        with patch.dict(
+            "os.environ",
+            {"ALICE_FACTORY_TOKEN": "legacy-token"},
+            clear=True,
+        ):
+            adapters = _adapters(config, self.store)
+        self.assertIsInstance(adapters["shop_door"], ShopDoorSender)
 
 
 if __name__ == "__main__":

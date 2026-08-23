@@ -27,10 +27,64 @@ class ConfigTests(unittest.TestCase):
         self.assertNotIn("allowed_environment", config["agents"])
         self.assertEqual(config["adapters"]["command_allowed_environment"], {})
         self.assertNotIn("factory_publish_command", config["adapters"])
+        self.assertEqual(config["adapters"]["delivery_command"], [])
+        self.assertNotIn("factory_order_command", config["adapters"])
         self.assertNotIn("artifacts", config["runtime"])
         self.assertNotIn("outbox", config["runtime"])
         self.assertIs(config["adapters"]["text2game"]["enabled"], False)
         self.assertEqual(config["adapters"]["text2game"]["command"], [])
+        shop_environment = config["adapters"]["page_builder"][
+            "allowed_environment"
+        ]
+        self.assertIn("WORKSHOP_SHOP_OWNER_ID", shop_environment)
+        self.assertIn("WORKSHOP_SHOP_BACKEND_DIR", shop_environment)
+        self.assertNotIn("VIBE_PORTAL_OWNER_ID", shop_environment)
+        self.assertNotIn("PANDA_OWNER_ID", shop_environment)
+        self.assertEqual(
+            config["adapters"]["page_builder"]["token_env"],
+            "WORKSHOP_SHOP_TOKEN",
+        )
+        self.assertEqual(
+            config["adapters"]["vibe"]["token_env"],
+            "WORKSHOP_SHOP_TOKEN",
+        )
+
+    def test_legacy_factory_order_config_is_read_as_delivery_only(self) -> None:
+        config = load_config(
+            self.override(
+                {
+                    "adapters": {
+                        "factory_order_command": ["/bin/legacy-delivery"],
+                        "command_allowed_environment": {
+                            "factory_order": ["PATH"]
+                        },
+                    }
+                }
+            )
+        )
+
+        self.assertEqual(
+            config["adapters"]["delivery_command"],
+            ["/bin/legacy-delivery"],
+        )
+        self.assertEqual(
+            config["adapters"]["command_allowed_environment"],
+            {"delivery": ["PATH"]},
+        )
+        self.assertNotIn("factory_order_command", config["adapters"])
+
+    def test_conflicting_delivery_and_legacy_config_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "conflicts with legacy"):
+            load_config(
+                self.override(
+                    {
+                        "adapters": {
+                            "delivery_command": ["/bin/current"],
+                            "factory_order_command": ["/bin/legacy"],
+                        }
+                    }
+                )
+            )
 
     def test_removed_knobs_are_rejected_instead_of_silently_ignored(self) -> None:
         removed = (

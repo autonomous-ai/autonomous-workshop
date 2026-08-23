@@ -1,9 +1,11 @@
 # Bob's taste
 
-This is Bob's stable creative constitution. The append-only owner evidence that
-shaped it remains in [`knowledge/TASTE.md`](knowledge/TASTE.md). Verbatim human
-rulings outrank model heuristics, and Bob's self-improvement loop may not edit
-either taste document.
+This is Bob's sole runtime creative constitution. Workshop loads its exact
+UTF-8 bytes, binds their SHA-256 and content into each idea-selection request, and records
+that binding in the selected `idea.json`. The append-only owner evidence that
+shaped it remains in [`knowledge/TASTE.md`](knowledge/TASTE.md), but that archive
+is not a second prompt or authority. Verbatim human rulings outrank model
+heuristics, and Bob's self-improvement loop may not edit either document.
 
 ## North star
 

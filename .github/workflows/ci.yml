@@ -1,4 +1,4 @@
-# Inventor CI — deterministic, credential-free gates for the shared Foundation and
+# Inventor CI — deterministic, credential-free gates for the shared Workshop and
 # every native inventor harness. Imported upstream snapshots are validated by
 # their pinned provenance records rather than by installing their undeclared
 # or environment-specific dependency trees.
@@ -21,15 +21,32 @@ jobs:
         with:
           python-version: "3.13"
       - name: reject tracked secrets and backups
-        run: python foundation/tools/scan_secrets.py
+        run: python workshop/tools/scan_secrets.py
+      - name: verify canonical making skills are discoverable
+        env:
+          PYTHONPATH: workshop/src
+        run: python -m inventor_workshop skills list
+      - name: verify reviewed making-skill fingerprints
+        run: python workshop/tools/verify_skill_locks.py
+      - name: verify installed schemas are discoverable
+        env:
+          PYTHONPATH: workshop/src
+        run: python -m inventor_workshop schemas list
       - name: validate inventor registry
         env:
-          PYTHONPATH: foundation/src
-        run: python -m inventor_core registry --root inventors --check-entrypoints
+          PYTHONPATH: workshop/src
+        run: python -m inventor_workshop inventors --root inventors --check-entrypoints
+      - name: install declared-check dependencies
+        working-directory: inventors/eve
+        run: python -m pip install --disable-pip-version-check -r requirements-test.txt
+      - name: run inventor contribution checks
+        env:
+          PYTHONPATH: workshop/src
+        run: python -m inventor_workshop check inventors --run
       - name: verify pinned inventor snapshot bytes and modes
-        run: python foundation/tools/verify_snapshot_locks.py
+        run: python workshop/tools/verify_snapshot_locks.py
 
-  foundation-test:
+  workshop-test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
@@ -41,11 +58,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Foundation contract tests
+      - name: Workshop contract tests
         env:
-          PYTHONPATH: foundation/src
+          PYTHONPATH: workshop/src
           PYTHONWARNINGS: error
-        run: python -m unittest discover -s foundation/tests -p 'test_*.py' -v
+        run: python -m unittest discover -s workshop/tests -p 'test_*.py' -v
+      - name: installed Workshop carries skills, schemas, and runnable scaffolds
+        if: matrix.python-version == '3.13'
+        run: |
+          python -m pip install ./workshop
+          cd "$RUNNER_TEMP"
+          workshop skills list
+          workshop schemas list
+          mkdir -p "$RUNNER_TEMP/generated-inventors"
+          workshop new ci-inventor --name CI --niche "offline printable tests" --root "$RUNNER_TEMP/generated-inventors"
+          python -m pip install --no-deps "$RUNNER_TEMP/generated-inventors/ci-inventor"
+          mkdir -p "$RUNNER_TEMP/away"
+          cd "$RUNNER_TEMP/away"
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor doctor
+          test ! -e "$RUNNER_TEMP/ci-runtime"
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor make first-product
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor status
 
   bob-test:
     runs-on: ubuntu-latest
@@ -64,8 +97,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: install Inventor Foundation
-        run: python -m pip install ../../foundation
+      - name: install Inventor Workshop
+        run: python -m pip install ../../workshop
       - name: unit tests (stdlib unittest only, no pytest)
         run: python -m unittest discover -s tests -v
 
@@ -86,9 +119,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: inventors/eve/requirements-test.txt
-      - name: install shared Foundation and pinned Eve test dependencies
+      - name: install shared Workshop and pinned Eve test dependencies
         run: |
-          python -m pip install ../../foundation
+          python -m pip install ../../workshop
           python -m pip install --disable-pip-version-check -r requirements-test.txt
           python -m pip check
       - name: deterministic offline tests
@@ -112,8 +145,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: install Alice and shared inventor Foundation
-        run: python -m pip install ../../foundation .
+      - name: install Alice and shared Inventor Workshop
+        run: python -m pip install ../../workshop .
       - name: unit tests (warnings are errors)
         env:
           PYTHONWARNINGS: error
@@ -140,8 +173,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: install Alice and shared inventor Foundation
-        run: python -m pip install ../../foundation .
+      - name: install Alice and shared Inventor Workshop
+        run: python -m pip install ../../workshop .
       - name: service snapshot tests on the declared deployment OS
         env:
           PYTHONWARNINGS: error

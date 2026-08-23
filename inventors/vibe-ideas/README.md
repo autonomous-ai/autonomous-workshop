@@ -3,7 +3,7 @@
 > **Monorepo snapshot.** This folder contains the inventor code imported from
 > `reinSPQR/vibe-ideas` at commit `ed3d1e8`. It is the richest board-game
 > workflow donor, but remains a reference until queue fencing and gate verdict
-> checks use `../../foundation`. See [UPSTREAM.md](UPSTREAM.md) for provenance,
+> checks use `../../workshop`. See [UPSTREAM.md](UPSTREAM.md) for provenance,
 > licensing, and migration blockers. The original operating guide follows.
 
 [`TASTE.md`](TASTE.md) is the root creative contract and links the protected

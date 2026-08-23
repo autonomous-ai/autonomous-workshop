@@ -1,5 +1,5 @@
 """End-to-end driver test: an injected agent writes each role's real contract
-file, so `evolve()` drives a brand-new game from spark all the way to `ship`
+file, so `evolve()` drives a brand-new game from invention all the way to `ship`
 without ever calling the Claude CLI (no tokens, fully isolated in tmp_path).
 
 This mirrors the handoff's goal: prove the *executor* (driver.py) can walk the
@@ -94,6 +94,7 @@ def _mock_agent(role, prompt, *, cwd=None, max_minutes=None):
 @pytest.fixture()
 def cfg(tmp_path: Path):
     """A fully isolated Config rooted at tmp_path."""
+    shutil.copy(config.REPO_ROOT / "TASTE.md", tmp_path / "TASTE.md")
     seed_dir = tmp_path / "corpus" / "seed"
     seed_dir.mkdir(parents=True)
     shutil.copy(config.REPO_ROOT / "corpus" / "seed" / "corpus.json",
@@ -108,7 +109,7 @@ def cfg(tmp_path: Path):
         ledger_path=tmp_path / "loops" / "ledger.json",
         queue_path=tmp_path / "loops" / "queue.json",
         journal_path=tmp_path / "loops" / "journal.md",
-        taste_path=tmp_path / "taste" / "taste.md",
+        taste_path=tmp_path / "TASTE.md",
         arch_state=tmp_path / "loops" / "arch" / "state.json",
         corpus_state=tmp_path / "loops" / "corpus" / "state.json",
     )
@@ -129,7 +130,7 @@ def test_evolve_drives_new_game_to_ship(cfg):
     # The shipped game carries real playtest evidence (fun_pass leave a trace).
     shipped_game = next(g for g in shipped if g.slug == IDEA["slug"])
     assert shipped_game.fun_evidence, "shipped game must have fun_evidence"
-    # Eve's normal builder path must enter Foundation and retain its exact
+    # Eve's normal Make path must enter Workshop and retain its exact
     # artifact identity before the local print gate advances.
     manifest_path = cfg.games_dir / IDEA["slug"] / "_inventor-artifact.json"
     manifest = json.loads(manifest_path.read_text())
@@ -140,7 +141,7 @@ def test_evolve_drives_new_game_to_ship(cfg):
         if row.get("event") == "artifact_snapshot"
         and row.get("game") == IDEA["slug"]
     ]
-    assert snapshots and snapshots[-1]["producer"] == "inventor_core"
+    assert snapshots and snapshots[-1]["producer"] == "inventor_workshop"
 
 
 def test_driver_audit_clean_after_ship(cfg):
@@ -318,106 +319,114 @@ def test_quota_pause_falls_back_to_60min_without_hint(cfg):
     assert m.tick(run_agent=True)["action"] == "quota"
 
 
-def test_auto_publish_draft_is_best_effort_and_idempotent(cfg, monkeypatch):
-    """_auto_publish_draft never fails the ship and reports honestly:
-    EVE_AUTO_PUBLISH=0 skips; store-not-configured returns ok=True as a
-    skipped/bypass (the pipeline the org already runs); and a publish
-    exception is swallowed so a ship is never taken down by the store."""
+def test_auto_send_draft_is_best_effort_and_idempotent(cfg, monkeypatch):
+    """Auto-Send never lets a Shop Door problem undo a shipped game."""
     from eve import journal
     from eve.queue import Queue
     q = Queue(cfg)
     g = q.add("autumn-corridor", title="Autumn Corridor", idea="a corridor")
     j = journal.open_journal(cfg)
 
-    # 1) env gate off -> skip, store never touched
-    monkeypatch.setenv("EVE_AUTO_PUBLISH", "0")
-    res = driver._auto_publish_draft(cfg, g, j)
-    assert res["action"] == "publish_skipped"
-    assert res["reason"] == "EVE_AUTO_PUBLISH=0"
+    # 1) env gate off -> skip, Shop Door never touched
+    monkeypatch.setenv("EVE_AUTO_SEND", "0")
+    res = driver._auto_send_draft(cfg, g, j)
+    assert res["action"] == "send_skipped"
+    assert res["reason"] == "EVE_AUTO_SEND=0"
 
-    # 2) env gate on, but store unconfigured -> idempotent skip, no crash
-    monkeypatch.setenv("EVE_AUTO_PUBLISH", "1")
-    res = driver._auto_publish_draft(cfg, g, j)
-    assert res["action"] == "publish_draft"
-    assert res["ok"] is True, "unconfigured store is a safe skip, not a failure"
+    # 2) env gate on, but Shop Door unconfigured -> idempotent skip, no crash
+    monkeypatch.setenv("EVE_AUTO_SEND", "1")
+    res = driver._auto_send_draft(cfg, g, j)
+    assert res["action"] == "send_draft"
+    assert res["ok"] is True, "unconfigured Shop Door is a safe skip"
     assert res["skipped"] is True
-    assert journal.open_journal(cfg).read()[-1]["action"] == "auto_publish_skipped"
+    assert journal.open_journal(cfg).read()[-1]["action"] == "auto_send_skipped"
 
-    # 3) a publish exception is swallowed so a ship is never taken down
+    # 3) a Send exception is swallowed so a ship is never taken down
     def boom(cfg, game, **kw):
-        raise RuntimeError("store on fire")
-    from eve import publish
-    monkeypatch.setattr(publish, "publish_to_store", boom)
-    res = driver._auto_publish_draft(cfg, g, j)
-    assert res["action"] == "publish_failed"
-    assert "store on fire" in res["error"]
+        raise RuntimeError("Shop Door on fire")
+    from eve import send
+    monkeypatch.setattr(send, "send_to_shop", boom)
+    res = driver._auto_send_draft(cfg, g, j)
+    assert res["action"] == "send_failed"
+    assert "Shop Door on fire" in res["error"]
+
+
+def test_auto_send_refuses_conflicting_environment_names(cfg, monkeypatch):
+    from eve.queue import Queue
+
+    game = Queue(cfg).add("autumn-corridor", title="Autumn Corridor")
+    monkeypatch.setenv("EVE_AUTO_SEND", "1")
+    monkeypatch.setenv("EVE_AUTO_PUBLISH", "0")
+
+    with pytest.raises(ValueError, match="EVE_AUTO_SEND conflicts"):
+        driver._auto_send_draft(cfg, game, journal.open_journal(cfg))
 
 
 @pytest.mark.parametrize(
-    "publisher_result,expected_action,expected_journal_action,blocked",
+    "send_result,expected_action,expected_journal_action,blocked",
     [
         (
             {
                 "ok": False,
                 "blocked": True,
-                "intent_id": "intent-ambiguous",
+                "send_id": "intent-ambiguous",
                 "state": "unknown",
-                "error": "Panda may have accepted the import",
+                "error": "Shop Door may have accepted the import",
             },
-            "publish_blocked",
-            "auto_publish_blocked",
+            "send_blocked",
+            "auto_send_blocked",
             True,
         ),
         (
             {
                 "ok": False,
                 "blocked": False,
-                "intent_id": "intent-local",
+                "send_id": "intent-local",
                 "state": "planned",
                 "error": "artifact violates a local secret rule",
             },
-            "publish_refused",
-            "auto_publish_refused",
+            "send_refused",
+            "auto_send_refused",
             False,
         ),
     ],
 )
-def test_auto_publish_surfaces_nonthrowing_core_failure(
+def test_auto_send_surfaces_nonthrowing_workshop_failure(
     cfg,
     monkeypatch,
-    publisher_result,
+    send_result,
     expected_action,
     expected_journal_action,
     blocked,
 ):
-    """A durable core failure must never be journaled as a publication."""
-    from eve import publish
+    """A durable Workshop failure must never be journaled as a send."""
+    from eve import send
     from eve.queue import Queue
 
     game = Queue(cfg).add(
         "autumn-corridor", title="Autumn Corridor", idea="a corridor"
     )
     active_journal = journal.open_journal(cfg)
-    monkeypatch.setenv("EVE_AUTO_PUBLISH", "1")
+    monkeypatch.setenv("EVE_AUTO_SEND", "1")
     monkeypatch.setattr(
-        publish,
-        "publish_to_store",
-        lambda cfg, game, **kwargs: dict(publisher_result),
+        send,
+        "send_to_shop",
+        lambda cfg, game, **kwargs: dict(send_result),
     )
 
-    result = driver._auto_publish_draft(cfg, game, active_journal)
+    result = driver._auto_send_draft(cfg, game, active_journal)
 
     assert result["action"] == expected_action
     assert result["ok"] is False
     assert result["blocked"] is blocked
-    assert result["intent_id"] == publisher_result["intent_id"]
-    assert result["state"] == publisher_result["state"]
+    assert result["send_id"] == send_result["send_id"]
+    assert result["state"] == send_result["state"]
     event = active_journal.read()[-1]
     assert event["action"] == expected_journal_action
-    assert event["published"] is False
+    assert event["sent"] is False
     assert event["blocked"] is blocked
-    assert event["intent_id"] == publisher_result["intent_id"]
-    assert event["state"] == publisher_result["state"]
+    assert event["send_id"] == send_result["send_id"]
+    assert event["state"] == send_result["state"]
     assert not any(
-        row.get("action") == "auto_published" for row in active_journal.read()
+        row.get("action") == "auto_sent" for row in active_journal.read()
     )

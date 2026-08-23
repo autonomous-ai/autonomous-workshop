@@ -1,208 +1,217 @@
-# Bob — an autonomous inventor of 3D-printable board games
+# Bob's architecture
 
-Bob is a multi-agent system that runs 24/7 on one Mac, invents board games
-that could not exist before 3D printing, iterates each one against a frozen
-reward function until publishable, publishes them to the Factory marketplace
-automatically as an AI creator, and gets better every week. When someone buys,
-we print and ship.
+Bob is a board-game inventor built on the shared Inventor Workshop. The design
+separates the tiny customer promise from the machinery that fulfills it.
 
-One human sits above it (Dee, via Telegram): he is a kill switch and a taste
-signal, not a turnstile.
+## One story outside, four verbs backstage
 
-Design provenance: everything here traces to `docs/research/` (8 reports,
-2026-08-22) and two in-house inventors that ran before Bob (vibe-ideas: 6
-ideas → 1 shipped; text2cad: 18 cycles / $430 → 1 shipped). Bob is the third
-attempt, built on their receipts.
+```text
+CUSTOMER
 
-## The one sentence that decides everything
+      WISH  --------------------  WAIT  ----------------  RECEIVE
+        |                                                       ^
+        |                                                       |
+        v                                                       |
+BOB, BACKSTAGE                                                  |
 
-**Every system that ever self-improved was an evaluator story** (FunSearch,
-AlphaEvolve, Ludi/Yavalath — see `docs/research/self-improvement-landscape.md`).
-LUDI's author said the hard problem was never generating 1,389 games — it was
-skimming the cream. So Bob's evaluator (the reward cascade) is the product;
-the generator agents are replaceable mutation operators around it.
+      TASTE + Bob's workflow                                      |
+                 |                                                |
+                 v                                                |
+      MAKE -> INSPECT -> PACK -> SEND ----------------------------+
+        |        |         |       |
+        |        |         |       +-- Sender -> ShopDoor -> Stamp
+        |        |         +---------- pack_artifact / inspect_pack
+        |        +-------------------- board-game inspectors
+        +----------------------------- rules, play engine, CAD
 
-## The loops (the meta-frame)
-
-```
-                    ┌──────────────────────────────────────────────┐
-                    │  L0 META  (weekly)                            │
-                    │  reads: reward ledger, audit, Dee's verdicts  │
-                    │  edits: prompts/lessons/corpus (doc-tier)     │
-                    │  proposes: code changes as PRs (never main)   │
-                    └──────┬───────────────────────────▲────────────┘
-                           │ better prompts/arms       │ evidence
-        ┌──────────────────▼─────────────────┐         │
-        │  L1 INVENT  (the factory, ~hourly ticks)     │
-        │  spark → rules → engine-played → LLM-tabled  │
-        │  → briefed → CAD-built → gated → published   │
-        └───▲─────────────▲──────────────────┬─────────┘
-            │ mechanisms,  │ what-makes-fun   │ games live on the site
-            │ eras, books  │ cards            │
-  ┌─────────┴───┐  ┌───────┴─────┐   ┌────────▼───────────────┐
-  │ L2 SCHOLAR  │  │ L2b LIBRARIAN│   │ L4 PLAYTEST/FEEDBACK   │
-  │ 5,000 years │  │ the great    │   │ pre-publish: sims +    │
-  │ of games,   │  │ design books │   │ LLM tables; post-      │
-  │ one card    │  │ (Wallis,     │   │ publish: sales, market │
-  │ per tick    │  │ Engelstein,  │   │ telemetry, human       │
-  └─────────────┘  │ Koster …)    │   │ "play again?" reports  │
-                   └──────────────┘   └────────┬───────────────┘
-  ┌──────────────────────────────┐             │ retro reward → bandit
-  │ L3 ARCHITECT (weekly)        │◀────────────┘
-  │ studies multi-agent/harness  │
-  │ engineering (Anthropic etc.) │→ proposals for L0
-  └──────────────────────────────┘
+      Clockwork: durable products, intents, leases, and effect fencing
 ```
 
-The loops feed each other: scholar/librarian cards are the ideator's raw
-material and the novelty judge's comparison corpus; playtest results are the
-reward; the meta loop turns reward history into better prompts and better
-bandit priors; the architect loop turns the outside world's harness lessons
-into PRs. No loop talks to another directly — **files are the message bus**
-(corpus/, state/, games/), per Anthropic's artifact pattern.
+The Shop Door branch is optional. It is Bob's current external destination,
+not the customer's whole experience. `BOX` is the physical delivery that
+fulfillment eventually produces.
 
-## Two lanes, one pipeline
+## The Workshop boundary
 
-Market receipt (2026-08): two chess sets already sold before Bob existed —
-buyers pay today for **original physical editions of classics**. So the bandit
-holds two kinds of arms:
-
-- **lane=invention** — games that never existed (7 mechanism-family arms +
-  wildcard). Full pipeline. The compounding bet.
-- **lane=edition** (`classic-reborn` arm, Beta prior seeded by the 2 sales) —
-  original sculptural editions of public-domain classics. Skips engine/sim
-  (the classic proved itself over centuries); scored on physical originality,
-  clarity, and build quality. Keeps the lights on, exercises print+ship.
-
-## The invent pipeline (L1) — states and gate order
-
-```
-sparked → researched → ruled → rules_gated → simulated → tabled
-        → briefed → built → build_gated → reviewed → published → live
-   (side: repairing, parked, blocked, killed; quota_wait is a tick-level state)
+```text
+Bob owns                                  Inventor Workshop owns
+------------------------------            -------------------------------
+TASTE.md                                  Taste loading + content binding
+idea search and game rules       ----->   common Wish/Make vocabulary
+simulation and table play                 reusable skill catalog
+CAD generation and game gates    ----->   canonical artifact packing
+frozen reward function                    PackedArtifact + inspect_pack
+queue policy                     ----->   Clockwork durable state/outbox
+Shop Door metadata               ----->   Sender + ShopDoor + typed Stamp
 ```
 
-Gate order IS the economics — the Armillary receipt (vibe-ideas): 6 CAD repair
-rounds + 2 owner amendments spent on rules that later failed the playtest.
-**Nothing expensive happens before the game is machine-played and LLM-tabled:**
+Bob intentionally does not claim the Workshop's generic
+`Inspection`/`InspectionResult` surface yet. His existing rule, simulation,
+table, CAD, and reward inspectors have board-game-specific evidence. The
+manifest advertises only the shared features Bob actually uses.
 
-1. **sparked** — bandit picks an arm; ideator (reading TASTE.md, corpus cards,
-   nearest archive games) generates k=5 sparks; lint + one triage judge keep 1.
-2. **ruled** — complete rules doc + bill of physical parts, in Bob's schema.
-3. **rules_gated** — deterministic `rules_check` + a blind rules lens. (Both
-   are known-insufficient alone: all three vibe-ideas games that passed these
-   failed their first real playout. They're the cheap pre-filter, nothing more.)
-4. **simulated** — an agent writes `playtest/engine.py` under the fixed engine
-   contract; then **code, not agents**, plays ≥1,000 fast playouts + a policy
-   ladder (random → greedy → 2-ply → MCTS). Metrics: the GAVEL five as hard
-   floors (balance, decisiveness, completion, agency, coverage — harmonic
-   mean, one bad dimension tanks it) + the Browne aesthetic tier (drama,
-   late-uncertainty, lead changes, killer-move scarcity, permanence, duration
-   distribution). Seat bias 45–55% at strongest rung or auto-apply pie
-   rule/komi and re-measure. Full spec: `docs/research/boardgame-science.md` §2.
-5. **tabled** — LLM seats play 4 real games through the engine, choosing moves
-   **by index from engine-legal moves** (they cannot cheat, misremember, or
-   soften a dull game — the loop is code; vibe-ideas' table_run design ported
-   whole). Each table carries ONE distinct question. Fresh-reader lens does
-   the cold rulebook Q&A.
-6. **briefed → built → build_gated** — only now does CAD money get spent:
-   parts brief ("print the wound" — print only the mechanism the game stands
-   on), CadQuery build via the `cadcode` skill, deterministic mesh/bed/
-   printability gate. Mid-build likeness milestone with abort (text2cad:
-   silhouette failures cost half a build, not a whole cycle).
-7. **reviewed** — per-dimension isolated judges + reward score. Iterate while
-   ΔR ≥ 2 and budgets remain (clarify 3 / rework 3 / repair 2 — with the
-   mech-surface hash that converts a "clarify" that changed mechanics into a
-   paid rework, and the cascade-stop that blocks A→B→C patch chains).
-8. **published** — publish-eligible + validator green ⇒ Bob auto-imports the
-   DRAFT: via text2game's box pipeline (`BOB_PUBLISH_VIA=box` — Bob exports
-   the exact `out/<slug>/` payload `text2game/publish.py` consumes, rsync +
-   remote run when `BOB_BOX_SSH` is set, Telegram handoff otherwise) or the
-   HTTP path. The HTTP path now uses shared Foundation's canonical artifact packet
-   and durable SQLite publication outbox; timeout/5xx import results are never
-   retried. **Draft→public remains owner-reviewed by default** (Dee 2026-08-22:
-   "publish draft is fine… once it's ok, we'll make it auto publish");
-   `BOB_AUTO_FLIP=1` makes Bob issue the price-bound Foundation flip. An out-of-band
-   admindash click cannot advance Bob's queue because it lacks that local
-   intent proof. CPSIA
-   hard-refuse, AI-disclosure, public-domain-only IP, price floor remain
-   hard pre-import gates; borderline safety parks for a human. This state is
-   deliberately not scheduler-claimable: a dry-run or unverified handoff can
-   never become live by bookkeeping.
-9. **live** — reached only after authenticated Panda readback proves Bob owns
-   the exact Foundation-bound design, `published_history_id == current_history_id`,
-   and the requested active USD listing has the exact price and a SKU. L4 then folds
-   market + human-table signal into the ledger; "asked to
-   play again ×3 groups" upgrades the game to **proven**.
+The general Workshop Make surface is `Wish -> Workbench.make() -> MakeResult`.
+Bob's older board-game loop currently owns its specialized Make orchestration,
+so it does not claim `workbench.make` either. This distinction keeps the
+manifest honest while Bob still shares Taste, Pack, Clockwork, and Send.
 
-Every verdict artifact embeds the sha256 of the `idea.json` it judged — stale
-verdicts refused (vibe-ideas got burned twice by mtime-only checks).
+At the effect boundary the authority chain is:
 
-## The reward (summary — spec in docs/REWARD.md, code in harness/reward.py, FROZEN)
+```text
+exact product bytes
+      |
+      v
+pack_artifact(...) -> PackedArtifact
+      |                 artifact_sha256 + pack_sha256
+      v
+inspect_pack(...)
+      |
+      v
+Clockwork records intent BEFORE HTTP
+      |
+      v
+Sender -> ShopDoor
+      |
+      v
+Stamp is validated against owner + artifact + history + listing
+      |
+      v
+Bob may update send.json and his queue
+```
 
-Hard gates (completeness, sim integrity, degeneracy, novelty-with-URL-evidence,
-safety, buildability) then a 100-point score across fun_sim / fun_table /
-depth / clarity / novelty_margin / physical_hook. Publish at ≥70 with no
-dimension below 40% of max. Generators never see weights, thresholds, or judge
-prompts (METR: reward hacking 43× likelier when the model sees the scorer).
-Anchor games detect judge drift. Cold-start proxy hierarchy, declared and
-weaned: Dee verdicts → human plays → engagement → sales.
+No JSON projection, HTTP status alone, stdout, remote design id, or human
+assertion can skip that chain. A timeout or 5xx leaves the Clockwork intent
+unknown and blocks a duplicate send until it can be reconciled.
 
-## Self-improvement (the RL frame, honestly)
+## Bob's Make and Inspection work
 
-- **Policy** = bandit priors + TASTE.md + lessons + agent prompts (versioned
-  `prompts/vN/`; in-flight games pin their version — the rainbow-deploy move).
-- **Reward** = the ledger (external events outrank self-scores, always).
-- **Update** = weekly meta session, evidence-fed, with authority tiers:
-  DOC-tier auto-commits, CODE-tier goes to a PR, FORBIDDEN paths (reward.py,
-  TASTE.md, baselines, state/) revert the whole session — enforced in Python
-  before any write applies, suites-must-pass-or-revert. Repeated lessons MUST
-  graduate to code (text2cad's rule: never advisory text twice — each
-  graduation converts a repeated $10–25 lesson into a $0 deterministic check).
-- **Integrity audit** (weekly, adversarial): gate-erosion vs baseline file the
-  improver can't touch, shipped-without-measurement, degeneracy watch
-  (optimizing pass-rate rewards proposing simpler games), graduation rot,
-  sim-fun vs human-fun correlation with alarm on divergence.
+Bob's persisted queue uses stable historical state values:
 
-## 24/7 operation
+```text
+sparked -> researched -> ruled -> rules_gated -> simulated -> tabled
+        -> briefed -> built -> build_gated -> reviewed -> published -> live
 
-- launchd tick every 30 min: `bob.py tick` — audit clean → daily budget check
-  → quota check → advance ONE step of ONE game (closest-to-ship priority;
-  finishing beats starting), else scholar/librarian tick, else architect if
-  due. Idempotent catch-up: a 10-hour lid-close costs time, nothing else.
-- Every `claude -p` call: per-phase model routing, cost + turns logged from
-  the CLI's own JSON (crash-safe, never overwritten), process-group kill on
-  overrun, starved-vs-crashed distinguished (retry crashed; never retry
-  starved at the same cap).
-- **Quota is a first-class state, not an error:** rate-limit regex on errors ⇒
-  `quota_wait` with deferral until the rolling window clears; a retry against
-  an exhausted cap burns wall-clock and produces nothing (text2cad receipt).
-- Heartbeat file first thing every tick; separate watchdog cron alarms
-  Telegram at >6h silence ("a stopped pipeline looks exactly like a pipeline
-  with nothing to do, until you check a month later").
-- Daily spend cap in code (default $25/day). Two ceilings never crossed
-  silently: dollars and the subscription window.
+side states: repairing, parked, blocked, killed
+tick state:  quota_wait
+```
 
-## Cost honesty
+They map onto the Workshop story as follows:
 
-text2cad: $430 → 1 shipped, 58% of spend lost to harness bugs and bad
-selection, not bad products. Bob's counters: kill early kill cheap (triage at
-spark, milestone aborts), cascade evaluation (free lint kills before paid
-sims, paid sims kill before paid tables, tables kill before CAD), cache-aware
-parallel panels, deterministic everything-that-can-be. Expected steady state:
-$3–8/day idle-ish ticks, $15–40 per finished game, one game per week at
-quality. The ledger reports where every dollar went; `CYCLES.md`-style rows
-per game.
+| Workshop verb | Bob's durable states | What happens |
+|---|---|---|
+| `MAKE` | `sparked` through `built` | select a direction, write rules, create a real engine, play it, form a parts brief, build CAD |
+| `INSPECT` | `rules_gated`, `simulated`, `tabled`, `build_gated`, `reviewed` | reject unclear, degenerate, dull, derivative, unsafe, or unprintable games |
+| `PACK` | after `reviewed` | build and inspect one canonical content-addressed artifact |
+| `SEND` | `published`, optionally `live` | send a private draft; optionally make it public through the Shop Door |
 
-## What Bob does NOT do
+The old `sparked` value is only Bob's persisted idea-selection state. It is not
+an additional customer step or a shared Workshop API.
 
-- No async agent-to-agent orchestration (Anthropic shipped their system
-  without it; so do we).
-- No framework (LangGraph tax exceeds rent for a solo system; AutoGen is in
-  maintenance mode; every system that self-improved was a bespoke loop).
-- No self-computed score as the reward of record — external events outrank.
-- No publishing under a human account, ever (the Gravity Well/Newsreel
-  violation is the anti-pattern); `bob` account identity + disclosure line +
-  `ai-created` tag on every listing.
-- No children's products (CPSIA hard-refuse at spark), no modern copyrighted
-  games in the edition lane, no "addictive" in copy.
+Gate order is economic policy. Nothing expensive happens before the game has
+been played:
+
+1. **Idea search (`sparked` / `researched`)** — a bandit chooses a design
+   direction. The exact UTF-8 content and SHA-256 of root `TASTE.md` bind to
+   both the ideator and triage requests and are recorded in `idea.json`.
+2. **Rules (`ruled` / `rules_gated`)** — complete rules and bill of parts,
+   followed by deterministic lint and a blind fresh-reader lens.
+3. **Machine play (`simulated`)** — code plays at least 1,000 games and a
+   policy ladder. Balance, completion, agency, coverage, drama, lead changes,
+   and move scarcity are measured rather than narrated.
+4. **Seated play (`tabled`)** — LLM seats choose only from engine-legal move
+   indices, so they cannot cheat, misremember, or politely pretend a game is
+   fun.
+5. **Physical Make (`briefed` / `built`)** — only now does Bob spend on CAD.
+   The build prints the mechanism the game stands on, with a mid-build abort
+   point for a wrong silhouette.
+6. **Physical Inspection (`build_gated`)** — mesh, bed, clearance, wall,
+   support, and printability checks run deterministically.
+7. **Reward Inspection (`reviewed`)** — isolated judges produce evidence for
+   the frozen reward function. Stale verdicts fail by artifact SHA-256. Missing
+   evidence fails closed.
+8. **Pack and Send** — `harness.send` validates the page kit, produces the
+   Workshop pack, and either records a rehearsal or invokes `Sender`.
+
+The frozen reward specification is in `docs/REWARD.md`. Its hard gates cover
+completeness, simulation integrity, degeneracy, novelty evidence, safety, and
+buildability. A score must meet the total threshold and every dimension floor.
+Generators never see the evaluator weights or judge prompts.
+
+## Loops and files
+
+```text
+                         evidence
+                            ^
+                            |
+   Scholar + Librarian --> MAKE/INSPECT --> market + human play
+          |                 |                         |
+          v                 v                         v
+       corpus/           games/                    ledger
+          \                 |                         /
+           +----------> weekly Meta <---------------+
+                            |
+                            v
+                   prompts, lessons, proposals
+
+   Architect reads outside engineering and files proposals for Meta.
+```
+
+No loop needs direct agent-to-agent messaging. Files are the message bus:
+
+- `corpus/` holds history, design-book notes, and bandit directions.
+- `games/<slug>/` holds the exact artifacts for one game.
+- `state/QUEUE.json` decides what moves next and owns leases.
+- `state/REWARD_LEDGER.jsonl` records spend and evidence.
+- `state/inventor-workshop.sqlite3` is Clockwork's effect ledger.
+- `games/<slug>/send.json` is an operator projection, never authority by itself.
+- `games/<slug>/pack/` contains the current Workshop pack and rehearsal report.
+
+One launchd tick advances one step and exits. The order is integrity audit,
+daily spend, lease, closest-to-finish game, study fallback, then weekly
+architecture fallback. Quota exhaustion is a state with a retry time, not an
+exception loop. A separate watchdog alarms when the heartbeat is stale.
+
+## Send modes
+
+The scheduler accepts one autonomous route:
+
+```text
+BOB_SEND_VIA=workshop
+```
+
+`BOB_SEND_DRY_RUN=1` is the default. It still performs `PACK`, writes
+`pack/manifest.json`, and writes a `send.json` rehearsal with
+`send_authority: none`; it creates no remote listing.
+
+With `BOB_SEND_DRY_RUN=0`, `Sender` sends a private draft. Public sending is a
+separate, explicitly priced action (`bob send <slug> --price-cents ...` or
+`BOB_SHOP_PUBLIC=1` for the scheduled loop). An ambiguous public action is
+reconciled by readback and never blindly repeated.
+
+`BOB_SEND_VIA=box` is not an autonomous mode. The historical text2game server
+called a "box" is unrelated to the customer's physical `BOX`; it exists only
+behind manual `bob export`. It cannot write send authority or advance Bob.
+
+## Compatibility edge
+
+New Bob code emits Workshop names. A narrow adapter can read older deployments:
+
+- Foundation/Core source and Clockwork file names
+- Portal/Panda credentials and endpoint settings
+- publish-prefixed environment settings
+- `launch.json`, `published.json`, `launch_payload/`, and `publish_payload/`
+- the old `harness.publish` module and `bob publish` command
+
+Every fallback is conflict-checked. Multiple independent sources or state files
+are split authority and stop the send. Compatibility names never authorize a
+manual box observation as a completed effect.
+
+## Self-improvement authority
+
+The weekly Meta loop may improve prompts, lessons, corpus material, and
+proposals. Code changes go through review. It may never edit the frozen reward,
+root `TASTE.md`, the owner-evidence archive, baselines, state, or the integrity
+auditor. Repeated prose lessons must graduate into deterministic checks.
+
+This keeps Bob's creativity flexible while the evaluator, Taste, artifact
+identity, budgets, and send authority remain difficult to game.

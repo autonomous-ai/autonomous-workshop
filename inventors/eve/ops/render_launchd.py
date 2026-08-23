@@ -57,22 +57,31 @@ def render_plist(
     output: Path,
     repository: str,
     user_home: str,
-    core_source: str,
+    workshop_source: str,
 ) -> None:
     repository = _plain_directory(repository, "repository")
     user_home = _plain_directory(user_home, "user home")
-    core_source = _plain_directory(core_source, "core source")
-    core_package = Path(core_source) / "inventor_core"
-    core_init = core_package / "__init__.py"
+    workshop_source = _plain_directory(workshop_source, "Workshop source")
+    workshop_package = Path(workshop_source) / "inventor_workshop"
+    workshop_init = workshop_package / "__init__.py"
     try:
-        package_metadata = core_package.lstat()
-        init_metadata = core_init.lstat()
+        package_metadata = workshop_package.lstat()
+        init_metadata = workshop_init.lstat()
     except OSError as exc:
-        raise RenderError("core source does not contain inventor_core") from exc
-    if not stat.S_ISDIR(package_metadata.st_mode) or core_package.is_symlink():
-        raise RenderError("core inventor_core package must be a non-symlink directory")
-    if not stat.S_ISREG(init_metadata.st_mode) or core_init.is_symlink():
-        raise RenderError("core inventor_core/__init__.py must be a regular file")
+        raise RenderError(
+            "Workshop source does not contain inventor_workshop"
+        ) from exc
+    if (
+        not stat.S_ISDIR(package_metadata.st_mode)
+        or workshop_package.is_symlink()
+    ):
+        raise RenderError(
+            "inventor_workshop package must be a non-symlink directory"
+        )
+    if not stat.S_ISREG(init_metadata.st_mode) or workshop_init.is_symlink():
+        raise RenderError(
+            "inventor_workshop/__init__.py must be a regular file"
+        )
     if not template.is_absolute() or not output.is_absolute():
         raise RenderError("template and output paths must be absolute")
     try:
@@ -91,7 +100,7 @@ def render_plist(
         {
             "__REPO__": repository,
             "__USER_HOME__": user_home,
-            "__CORE_SRC__": core_source,
+            "__WORKSHOP_SRC__": workshop_source,
         },
     )
     payload = plistlib.dumps(rendered, fmt=plistlib.FMT_XML, sort_keys=False)
@@ -124,15 +133,29 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repo", required=True)
     parser.add_argument("--home", required=True)
-    parser.add_argument("--core-src", required=True)
+    parser.add_argument("--workshop-src")
+    parser.add_argument("--core-src", dest="legacy_core_src", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
+        workshop_source = args.workshop_src
+        if args.workshop_src and args.legacy_core_src:
+            current = _plain_directory(args.workshop_src, "Workshop source")
+            legacy = _plain_directory(args.legacy_core_src, "legacy core source")
+            if current != legacy:
+                raise RenderError(
+                    "--workshop-src conflicts with legacy --core-src"
+                )
+            workshop_source = current
+        elif args.legacy_core_src:
+            workshop_source = args.legacy_core_src
+        if not workshop_source:
+            raise RenderError("--workshop-src is required")
         render_plist(
             template=args.template,
             output=args.output,
             repository=args.repo,
             user_home=args.home,
-            core_source=args.core_src,
+            workshop_source=workshop_source,
         )
     except (OSError, plistlib.InvalidFileException, RenderError) as exc:
         parser.exit(1, f"render_launchd: {exc}\n")

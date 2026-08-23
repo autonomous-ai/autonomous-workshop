@@ -19,7 +19,11 @@ from .store import PublicationRecord
 
 
 VIBE_PUBLICATION_TARGET = "vibe_pipeline"
-FACTORY_ORDER_ADAPTER = "factory_order"
+DELIVERY_ADAPTER = "delivery"
+# Durable receipts written before the vocabulary migration retain this value.
+LEGACY_FACTORY_ORDER_ADAPTER = "factory_order"
+# Import compatibility for integrations that imported the old constant.
+FACTORY_ORDER_ADAPTER = LEGACY_FACTORY_ORDER_ADAPTER
 PRINT_FULFILLMENT_ADAPTER = "print_fulfillment"
 
 
@@ -672,18 +676,19 @@ def confirmed_publication_binding(record: PublicationRecord) -> PublicationBindi
 
 
 def build_fulfillment_intents(
-    factory_order_result: AdapterReceipt | Mapping[str, Any],
+    delivery_result: AdapterReceipt | Mapping[str, Any],
     publications: Iterable[PublicationRecord],
 ) -> tuple[FulfillmentIntent, ...]:
-    """Convert a passed factory-order result into one intent per paid order."""
+    """Convert a passed Delivery result into one intent per paid order."""
 
     payload = _passed_adapter_payload(
-        factory_order_result,
-        adapter=FACTORY_ORDER_ADAPTER,
+        delivery_result,
+        adapter=DELIVERY_ADAPTER,
+        legacy_adapters=(LEGACY_FACTORY_ORDER_ADAPTER,),
         evidence_class="market",
     )
     orders_value = payload.get("orders")
-    _require_closed_keys(payload, {"orders"}, "factory-order payload")
+    _require_closed_keys(payload, {"orders"}, "Delivery payload")
     if not isinstance(orders_value, list) or any(
         not isinstance(item, Mapping) for item in orders_value
     ):
@@ -851,6 +856,7 @@ def _passed_adapter_payload(
     value: AdapterReceipt | Mapping[str, Any],
     *,
     adapter: str,
+    legacy_adapters: tuple[str, ...] = (),
     evidence_class: str,
 ) -> Mapping[str, Any]:
     if isinstance(value, AdapterReceipt):
@@ -872,7 +878,7 @@ def _passed_adapter_payload(
             receipt = value
     else:
         raise FulfillmentValidationError("adapter result must be an adapter receipt")
-    if receipt.get("adapter") != adapter:
+    if receipt.get("adapter") not in {adapter, *legacy_adapters}:
         raise FulfillmentValidationError(f"expected passed {adapter!r} adapter receipt")
     if receipt.get("status") != "passed":
         raise FulfillmentValidationError("adapter receipt status is not passed")
@@ -1521,6 +1527,8 @@ def _url(value: Any, name: str) -> str:
 
 
 __all__ = [
+    "DELIVERY_ADAPTER",
+    "LEGACY_FACTORY_ORDER_ADAPTER",
     "FACTORY_ORDER_ADAPTER",
     "PRINT_FULFILLMENT_ADAPTER",
     "VIBE_PUBLICATION_TARGET",

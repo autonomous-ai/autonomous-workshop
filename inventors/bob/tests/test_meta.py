@@ -107,11 +107,13 @@ class TestForbiddenRejectsWholeSession(Base):
     def test_state_glob_and_taste_are_forbidden(self):
         self.plant_reply(reply([
             {"path": "state/BANDIT.json", "content": "{}"},
+            {"path": "TASTE.md", "content": "my constitution now"},
             {"path": "knowledge/TASTE.md", "content": "my taste now"},
         ]))
         r = meta.improve()
         self.assertEqual(r["outcome"], "rejected_forbidden")
         self.assertIsNone(self.read_text("state/BANDIT.json"))
+        self.assertIsNone(self.read_text("TASTE.md"))
 
     def test_path_escape_is_forbidden(self):
         self.plant_reply(reply([

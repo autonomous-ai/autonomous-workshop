@@ -174,7 +174,7 @@ def order(record: PublicationRecord, *, order_id="order-1", quantity=1):
 
 
 def order_result(orders):
-    return adapter_receipt("factory_order", "market", {"orders": orders})
+    return adapter_receipt("delivery", "market", {"orders": orders})
 
 
 def print_job(intent, *, job_id=None):
@@ -351,6 +351,15 @@ class FulfillmentIntentTests(unittest.TestCase):
 
     def test_empty_paid_order_poll_is_a_normal_noop(self) -> None:
         self.assertEqual(build_fulfillment_intents(order_result([]), []), ())
+
+    def test_legacy_factory_order_receipt_remains_readable(self) -> None:
+        self.assertEqual(
+            build_fulfillment_intents(
+                adapter_receipt("factory_order", "market", {"orders": []}),
+                [],
+            ),
+            (),
+        )
 
     def test_rejects_every_invalid_required_order_field(self) -> None:
         record = publication()

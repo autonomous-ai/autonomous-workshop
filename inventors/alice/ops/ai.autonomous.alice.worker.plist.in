@@ -21,8 +21,8 @@
     <string>__ROOT__</string>
     <string>--source-root</string>
     <string>__SOURCE_ROOT__</string>
-    <string>--core-source-root</string>
-    <string>__CORE_SOURCE_ROOT__</string>
+    <string>--workshop-source-root</string>
+    <string>__WORKSHOP_SOURCE_ROOT__</string>
     <string>--state</string>
     <string>__STATE__</string>
     <string>--lock</string>

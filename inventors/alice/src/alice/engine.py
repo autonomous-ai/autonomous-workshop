@@ -12,7 +12,10 @@ import uuid
 from dataclasses import asdict
 from typing import Any, Mapping
 
+from inventor_workshop import Taste, load_taste
+
 from .adapters import AdapterError, CommandAdapter, adapter_input_sha256
+from .config import DATA_ROOT
 from .domain import TERMINAL_STATES, WorkItem
 from .fulfillment import (
     FulfillmentValidationError,
@@ -22,7 +25,17 @@ from .fulfillment import (
     validate_print_job_receipts,
     validate_qa_ship_receipts,
 )
-from .loops import LOOPS, OUTPUT_CONTRACTS, validate_output_semantics, work_for_state
+from .loops import (
+    LEGACY_TASK_KIND_ALIASES,
+    LOOPS,
+    OUTPUT_CONTRACTS,
+    PACK_PRODUCT,
+    SEND_TO_SHOP,
+    SEND_VERIFY_SHOP,
+    canonical_task_kind,
+    validate_output_semantics,
+    work_for_state,
+)
 from .page_builder import PageBuilderError, validate_printable_artifact_hashes
 from .learning import ContextualThompsonBandit
 from .policy import next_progress_state, release_policy_from_config
@@ -62,6 +75,13 @@ _CANDIDATE_PHYSICAL_EFFECT_STATES = {
     "physical.production_run": "physical_ready",
 }
 
+# Input-only compatibility for older deployment dictionaries. ``self.adapters``
+# contains only the current keys after construction.
+_LEGACY_ADAPTER_KEYS = {
+    "publishing_pipeline": "shop_door",
+    "factory_order": "delivery",
+}
+
 
 class AliceEngine:
     def __init__(
@@ -72,12 +92,14 @@ class AliceEngine:
         *,
         worker_id: str | None = None,
         adapters: Mapping[str, Any] | None = None,
+        taste: Taste | None = None,
     ) -> None:
         self.store = store
         self.provider = provider
         self.config = config
         self.worker_id = worker_id or f"{socket.gethostname()}-{uuid.uuid4().hex[:8]}"
-        self.adapters = dict(adapters or {})
+        self.adapters = _canonical_adapter_map(adapters or {})
+        self.taste = taste or load_taste(DATA_ROOT)
         self.release_policy = release_policy_from_config(config)
 
     def schedule(self, *, now: float | None = None) -> int:
@@ -97,7 +119,7 @@ class AliceEngine:
             if spec.name == "orders":
                 if not self._effect_mode_allows("orders.poll_paid"):
                     continue
-                if "order_to_print_job" not in set(self._factory_capabilities()):
+                if "order_to_print_job" not in set(self._shop_capabilities()):
                     # Missing commerce credentials are a deployment preflight
                     # condition, not 288 failed polling tasks per day.
                     continue
@@ -135,7 +157,9 @@ class AliceEngine:
 
     def _schedule_graph(self, loop_name: str, run_id: str, *, now: float) -> None:
         spec = LOOPS[loop_name]
-        tasks = {task.kind: task for task in self.store.list_tasks(run_id=run_id, limit=100)}
+        tasks = _tasks_by_current_kind(
+            self.store.list_tasks(run_id=run_id, limit=100)
+        )
         for item in spec.work:
             if item.action in tasks:
                 continue
@@ -172,10 +196,9 @@ class AliceEngine:
         if candidate.state in TERMINAL_STATES:
             return
         run_id = f"candidate:{candidate.id}:v{candidate.version}"
-        tasks = {
-            task.kind: task
-            for task in self.store.list_tasks(run_id=run_id, limit=100)
-        }
+        tasks = _tasks_by_current_kind(
+            self.store.list_tasks(run_id=run_id, limit=100)
+        )
         for item in work_for_state(candidate.state, candidate.id):
             if item.action in tasks:
                 continue
@@ -416,22 +439,23 @@ class AliceEngine:
     def _execute(self, task: TaskRecord) -> dict[str, Any]:
         self._validate_task_fence(task)
         self._enforce_effect_mode(task.kind)
-        if task.kind == "release.evaluate":
+        current_kind = canonical_task_kind(task.kind)
+        if current_kind == "release.evaluate":
             content = self._evaluate_release(task)
-            _validate_required(content, OUTPUT_CONTRACTS[task.kind])
+            _validate_required(content, OUTPUT_CONTRACTS[current_kind])
             return {"executor": "release_policy", "content": content}
-        if task.kind == "publish.packet":
+        if current_kind == PACK_PRODUCT:
             self._require_current_live_capabilities()
             content = self._build_publication_packet(task)
-            _validate_required(content, OUTPUT_CONTRACTS[task.kind])
+            _validate_required(content, OUTPUT_CONTRACTS[current_kind])
             return {"executor": "release_policy", "content": content}
-        if task.kind == "candidate.choose_mutation":
+        if current_kind == "candidate.choose_mutation":
             content = self._choose_mutation(task)
-            _validate_required(content, OUTPUT_CONTRACTS[task.kind])
+            _validate_required(content, OUTPUT_CONTRACTS[current_kind])
             return {"executor": "learning_policy", "content": content}
-        if task.kind == "policy.shadow":
+        if current_kind == "policy.shadow":
             content = self._update_learning_policy(task)
-            _validate_required(content, OUTPUT_CONTRACTS[task.kind])
+            _validate_required(content, OUTPUT_CONTRACTS[current_kind])
             return {"executor": "learning_policy", "content": content}
         adapter = self._adapter_for(task.kind)
         required_adapter = _required_adapter_name(task.kind)
@@ -441,7 +465,7 @@ class AliceEngine:
                 "a model response cannot stand in for an external effect or receipt"
             )
         if adapter is not None:
-            if task.kind == "publish.invoke_pipeline":
+            if current_kind == SEND_TO_SHOP:
                 self._require_current_live_capabilities()
             adapter_operation = task.kind
             adapter_payload = dict(task.payload)
@@ -492,6 +516,7 @@ class AliceEngine:
         role = ROLE_CARDS.get(role_name)
         if role is None:
             raise EngineError(f"unknown role {role_name!r}")
+        self.taste.assert_current()
         request = AgentRequest(
             request_id=f"{task.id}:{task.lease_attempt_id}",
             role=role_name,
@@ -509,6 +534,7 @@ class AliceEngine:
                 "library_manifest": task.payload.get("library_manifest"),
                 "market_signals": task.payload.get("market_signals"),
                 "recent_knowledge": self._recent_knowledge(task),
+                "taste": self.taste.to_binding(),
                 "work_payload": task.payload.get("work_payload", {}),
                 "evidence_rule": (
                     "Identify every surrogate. Never label model or fixture output as "
@@ -518,6 +544,7 @@ class AliceEngine:
             output_contract=OUTPUT_CONTRACTS.get(task.kind, {}),
         )
         response = self.provider.run(request)
+        self.taste.assert_current()
         response_content = _bind_agent_lineage(task, response.content)
         _validate_required(response_content, OUTPUT_CONTRACTS.get(task.kind, {}))
         _validate_action_semantics(task.kind, response_content)
@@ -562,7 +589,7 @@ class AliceEngine:
         allowed_actions = {
             item.action for item in work_for_state(candidate.state, candidate.id)
         }
-        if task.kind not in allowed_actions:
+        if canonical_task_kind(task.kind) not in allowed_actions:
             raise EngineError(
                 f"stale candidate task {task.kind!r}; "
                 f"candidate is now {candidate.state!r}"
@@ -703,7 +730,7 @@ class AliceEngine:
             decision = assess_release(
                 snapshots,
                 effect_mode=str(self.config["runtime"]["effect_mode"]),
-                factory_capabilities=self._factory_capabilities(),
+                factory_capabilities=self._shop_capabilities(),
                 policy=self.release_policy,
             )
         except ReleaseAssemblyError as exc:
@@ -715,7 +742,7 @@ class AliceEngine:
 
     def _build_publication_packet(self, task: TaskRecord) -> dict[str, Any]:
         if task.candidate_id is None:
-            raise EngineError("publish.packet is not bound to a candidate")
+            raise EngineError("pack.product is not bound to a candidate")
         candidate = self.store.get_candidate(task.candidate_id)
         decision = candidate.metadata.get("release_decision")
         if not isinstance(decision, Mapping):
@@ -734,11 +761,11 @@ class AliceEngine:
         except ReleaseAssemblyError as exc:
             raise EngineError(f"publication packet assembly failed: {exc}") from exc
 
-    def _factory_capabilities(self) -> tuple[str, ...]:
+    def _shop_capabilities(self) -> tuple[str, ...]:
         capabilities: set[str] = set()
-        publisher = self.adapters.get("publishing_pipeline")
+        sender = self.adapters.get("shop_door")
         capability_reader = (
-            getattr(publisher, "release_capabilities", None) if publisher else None
+            getattr(sender, "release_capabilities", None) if sender else None
         )
         try:
             declared = capability_reader() if callable(capability_reader) else ()
@@ -751,9 +778,7 @@ class AliceEngine:
         ):
             capabilities.update(declared)
 
-        order_capabilities = self._adapter_diagnostic_capabilities(
-            "factory_order"
-        )
+        order_capabilities = self._adapter_diagnostic_capabilities("delivery")
         fulfillment_capabilities = self._adapter_diagnostic_capabilities(
             "print_fulfillment"
         )
@@ -795,14 +820,19 @@ class AliceEngine:
             return set()
         return set(declared)
 
-    def factory_capabilities(self) -> tuple[str, ...]:
-        """Return currently observed live capabilities for readiness checks."""
+    def shop_capabilities(self) -> tuple[str, ...]:
+        """Return currently observed Shop and Delivery capabilities."""
 
-        return self._factory_capabilities()
+        return self._shop_capabilities()
+
+    def factory_capabilities(self) -> tuple[str, ...]:
+        """Compatibility alias for callers predating Workshop vocabulary."""
+
+        return self.shop_capabilities()
 
     def _require_current_live_capabilities(self) -> None:
         required = set(self.release_policy.config.required_factory_capabilities)
-        current = set(self._factory_capabilities())
+        current = set(self._shop_capabilities())
         missing = sorted(required - current)
         if missing:
             raise EngineError(
@@ -992,6 +1022,7 @@ class AliceEngine:
         return snapshot
 
     def _adapter_for(self, action: str) -> CommandAdapter | None:
+        action = canonical_task_kind(action)
         if action == "library.read":
             return self.adapters.get("library")
         if action in {
@@ -1015,10 +1046,12 @@ class AliceEngine:
             return self.adapters.get("print_fulfillment")
         if action.startswith("orders."):
             if action == "orders.poll_paid":
-                return self.adapters.get("factory_order")
+                return self.adapters.get("delivery")
             return self.adapters.get("print_fulfillment")
-        if action in {"publish.effect", "publish.invoke_pipeline", "publish.verify_page"}:
-            return self.adapters.get("publishing_pipeline")
+        if action in {SEND_TO_SHOP, SEND_VERIFY_SHOP}:
+            return self.adapters.get("shop_door")
+        if action == "publish.effect":  # durable compatibility only
+            return self.adapters.get("shop_door")
         if action == "market.validate_offer":
             return self.adapters.get("market_validation")
         if action == "outcomes.ingest":
@@ -1655,10 +1688,9 @@ class AliceEngine:
         if not work:
             return
         run_id = f"candidate:{candidate.id}:v{candidate.version}"
-        tasks = {
-            task.kind: task
-            for task in self.store.list_tasks(run_id=run_id, limit=1_000)
-        }
+        tasks = _tasks_by_current_kind(
+            self.store.list_tasks(run_id=run_id, limit=1_000)
+        )
         required_actions = {item.action for item in work}
         if set(tasks) < required_actions or any(
             tasks[action].state != "succeeded" for action in required_actions
@@ -1724,9 +1756,26 @@ class AliceEngine:
             "human_validated": "manufacturing",
             "physical_ready": "manufacturing",
             "production_validated": "release_policy",
-            "publish_ready": "publishing_pipeline",
-            "page_ready": "publishing_pipeline",
         }.get(candidate.state)
+        if candidate.state in {"publish_ready", "page_ready"}:
+            terminal_kind = (
+                SEND_TO_SHOP
+                if candidate.state == "publish_ready"
+                else SEND_VERIFY_SHOP
+            )
+            terminal_artifact = next(
+                (
+                    artifact
+                    for artifact in artifacts
+                    if canonical_task_kind(artifact.action) == terminal_kind
+                ),
+                None,
+            )
+            if terminal_artifact is not None and terminal_artifact.evidence_class in {
+                "shop_door",
+                "publishing_pipeline",
+            }:
+                source = terminal_artifact.evidence_class
         if source is None:
             return
         receipt: dict[str, Any] = {
@@ -1750,9 +1799,9 @@ class AliceEngine:
             receipt["artifact_manifest_sha256"] = manifest_sha256
         elif candidate.state in {"publish_ready", "page_ready"}:
             terminal_action = (
-                "publish.invoke_pipeline"
+                SEND_TO_SHOP
                 if candidate.state == "publish_ready"
-                else "publish.verify_page"
+                else SEND_VERIFY_SHOP
             )
             pipeline_content, _, _ = _result_content_provenance(
                 tasks[terminal_action].result
@@ -1903,7 +1952,7 @@ _ADAPTER_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
             "operator_stdout_sha256",
         }
     ),
-    "publish.invoke_pipeline": frozenset(
+    SEND_TO_SHOP: frozenset(
         {
             "operation_key",
             "publication_id",
@@ -1918,7 +1967,7 @@ _ADAPTER_OPTIONAL_FIELDS: dict[str, frozenset[str]] = {
             "currency",
         }
     ),
-    "publish.verify_page": frozenset(
+    SEND_VERIFY_SHOP: frozenset(
         {
             "operation_key",
             "publication_id",
@@ -1973,7 +2022,7 @@ def _validate_adapter_payload_shape(
     if required_adapter is None:
         return
     allowed = set(contract.get("required", ()))
-    allowed.update(_ADAPTER_OPTIONAL_FIELDS.get(action, ()))
+    allowed.update(_ADAPTER_OPTIONAL_FIELDS.get(canonical_task_kind(action), ()))
     if not allowed:
         raise EngineError(f"{action} has no closed durable adapter payload contract")
     unexpected = sorted(set(content) - allowed)
@@ -2398,6 +2447,7 @@ def _validate_3d_game_candidate(candidate: Mapping[str, Any]) -> None:
 def _priority(item: WorkItem) -> int:
     return {
         "orders": 100,
+        "send": 90,
         "publish": 90,
         "human": 70,
         "physical": 60,
@@ -2477,7 +2527,10 @@ def _stage_gate_failure(
     artifacts: list[ArtifactSnapshot],
     config: Mapping[str, Any],
 ) -> dict[str, Any] | None:
-    content = {artifact.action: artifact.content for artifact in artifacts}
+    content = {
+        canonical_task_kind(artifact.action): artifact.content
+        for artifact in artifacts
+    }
     failures: list[str] = []
     if state == "proposed":
         safety = content["candidate.safety_ip"]
@@ -2554,12 +2607,12 @@ def _stage_gate_failure(
             )
     elif state in {"publish_ready", "page_ready"}:
         terminal = (
-            content.get("publish.invoke_pipeline")
+            content.get(SEND_TO_SHOP)
             if state == "publish_ready"
-            else content.get("publish.verify_page")
+            else content.get(SEND_VERIFY_SHOP)
         )
         if not isinstance(terminal, Mapping):
-            failures.append("publishing_receipt_missing")
+            failures.append("shop_door_stamp_missing")
     if not failures:
         return None
     return {"codes": sorted(set(failures)), "state": state}
@@ -2568,11 +2621,12 @@ def _stage_gate_failure(
 def _required_effect_mode(action: str) -> str | None:
     """Return the minimum mode allowed to run a mutating operation."""
 
+    action = canonical_task_kind(action)
     if action in {
         "release.evaluate",
-        "publish.packet",
+        PACK_PRODUCT,
         "publish.effect",
-        "publish.invoke_pipeline",
+        SEND_TO_SHOP,
         "orders.poll_paid",
         "orders.create_print_job",
         "orders.qa_ship",
@@ -2588,6 +2642,37 @@ def _required_effect_mode(action: str) -> str | None:
     }:
         return "draft"
     return None
+
+
+def _canonical_adapter_map(adapters: Mapping[str, Any]) -> dict[str, Any]:
+    """Normalize old configured adapter keys without exposing them as current."""
+
+    normalized = dict(adapters)
+    for legacy, current in _LEGACY_ADAPTER_KEYS.items():
+        if legacy not in normalized:
+            continue
+        if current in normalized and normalized[current] is not normalized[legacy]:
+            raise EngineError(
+                f"adapter keys {current!r} and its legacy alias {legacy!r} conflict"
+            )
+        normalized.setdefault(current, normalized[legacy])
+        del normalized[legacy]
+    return normalized
+
+
+def _tasks_by_current_kind(tasks: Any) -> dict[str, TaskRecord]:
+    """Index current and durable legacy tasks under the current work-graph name."""
+
+    result: dict[str, TaskRecord] = {}
+    for task in tasks:
+        current = canonical_task_kind(task.kind)
+        existing = result.get(current)
+        if existing is not None and existing.id != task.id:
+            raise EngineError(
+                f"run contains both current and legacy forms of {current!r}"
+            )
+        result[current] = task
+    return result
 
 
 class _LeaseHeartbeat:
@@ -2645,6 +2730,7 @@ class _LeaseHeartbeat:
 
 
 def _required_adapter_name(action: str) -> str | None:
+    action = canonical_task_kind(action)
     if action == "library.read":
         return "library"
     if action in {"history.scan_traditional", "history.scan_modern"}:
@@ -2669,11 +2755,11 @@ def _required_adapter_name(action: str) -> str | None:
     if action in {"physical.prototype_print", "physical.production_run"}:
         return "print_fulfillment"
     if action == "orders.poll_paid":
-        return "factory_order"
+        return "delivery"
     if action.startswith("orders."):
         return "print_fulfillment"
-    if action in {"publish.invoke_pipeline", "publish.verify_page"}:
-        return "publishing_pipeline"
+    if action in {SEND_TO_SHOP, SEND_VERIFY_SHOP}:
+        return "shop_door"
     if action == "market.validate_offer":
         return "market_validation"
     if action == "outcomes.ingest":
@@ -2682,6 +2768,8 @@ def _required_adapter_name(action: str) -> str | None:
 
 
 def _required_evidence_class(action: str) -> str | None:
+    legacy_action = action
+    action = canonical_task_kind(action)
     if action in {
         "concept.prior_art",
         "candidate.prior_art",
@@ -2707,11 +2795,15 @@ def _required_evidence_class(action: str) -> str | None:
         "orders.outcome",
     }:
         return "manufacturing"
-    if action == "physical.create_rich_draft" or action in {
+    if legacy_action in {
         "publish.invoke_pipeline",
         "publish.verify_page",
     }:
         return "publishing_pipeline"
+    if action == "physical.create_rich_draft":
+        return "shop_door"
+    if action in {SEND_TO_SHOP, SEND_VERIFY_SHOP}:
+        return "shop_door"
     if action in {"market.validate_offer", "orders.poll_paid"}:
         return "market"
     if action == "outcomes.ingest":

@@ -69,7 +69,7 @@
       "diagnostic_design_id": "",
       "diagnostic_owner_id": "",
       "base_url": "https://panda-social-api.autonomous.ai/api/v1",
-      "token_env": "ALICE_FACTORY_TOKEN",
+      "token_env": "WORKSHOP_SHOP_TOKEN",
       "allowed_project_hosts": [],
       "allowed_environment": [
         "PATH",
@@ -77,10 +77,10 @@
         "LANG",
         "LC_ALL",
         "TMPDIR",
-        "PANDA_OWNER_ID",
-        "PANDA_BACKEND_DIR",
+        "WORKSHOP_SHOP_OWNER_ID",
+        "WORKSHOP_SHOP_BACKEND_DIR",
         "GOOGLE_APPLICATION_CREDENTIALS",
-        "PANDA_APP_URL"
+        "WORKSHOP_SHOP_APP_URL"
       ],
       "timeout_seconds": 3600,
       "readback_timeout_seconds": 180
@@ -88,7 +88,7 @@
     "vibe": {
       "enabled": false,
       "base_url": "https://panda-social-api.autonomous.ai/api/v1",
-      "token_env": "ALICE_FACTORY_TOKEN",
+      "token_env": "WORKSHOP_SHOP_TOKEN",
       "timeout_seconds": 180,
       "poll_interval_seconds": 5,
       "max_job_polls": 4320,
@@ -103,7 +103,7 @@
     "cad_command": [],
     "market_validation_command": [],
     "outcomes_command": [],
-    "factory_order_command": [],
+    "delivery_command": [],
     "print_fulfillment_command": [],
     "command_allowed_environment": {},
     "required_live_capabilities": []

@@ -4,7 +4,7 @@ CONTRACTS §2: `send(text, buttons=None)` and `poll_decisions()`. The design
 stance comes from ARCHITECTURE.md: the human "is a kill switch and a taste
 signal, not a turnstile". So this module never blocks the pipeline waiting
 for a reply, and it never EXECUTES a decision — it parses, state-checks, and
-returns them. Execution belongs to the caller (bob.py / publish.py): a chat
+returns them. Execution belongs to the caller (bob.py / harness.send): a chat
 parser that can unpublish a game by itself is one regex bug away from being
 an unaudited write path into the queue.
 
@@ -43,6 +43,12 @@ OFFSET_FILE = ".tg-offset"
 # 30s: Telegram answers sendMessage in well under a second; a hung socket
 # should fail the tick, not stall the 30-min launchd cadence.
 HTTP_TIMEOUT_S = 30
+SEND_PROJECTION_FILE = "send.json"
+LEGACY_LAUNCH_PROJECTION_FILE = "launch.json"
+LEGACY_PUBLICATION_PROJECTION_FILE = "published.json"
+
+# v0.2 source compatibility for operator scripts.
+LAUNCH_PROJECTION_FILE = LEGACY_LAUNCH_PROJECTION_FILE
 
 
 def _home():
@@ -144,9 +150,21 @@ def _state_check(verb, slug, games):
         if state not in ("published", "live"):
             return False, ("'%s' is %s, not published/live — nothing to "
                            "unpublish" % (slug, state))
-        pub = os.path.join(_home(), "games", slug, "published.json")
-        if not os.path.exists(pub):
-            return False, ("'%s' has no published.json ledger — it never "
+        game_dir = os.path.join(_home(), "games", slug)
+        projections = [
+            os.path.join(game_dir, SEND_PROJECTION_FILE),
+            os.path.join(game_dir, LEGACY_LAUNCH_PROJECTION_FILE),
+            os.path.join(game_dir, LEGACY_PUBLICATION_PROJECTION_FILE),
+        ]
+        existing = [path for path in projections if os.path.exists(path)]
+        if len(existing) > 1:
+            return False, (
+                "'%s' has multiple send projections (%s); resolve the split "
+                "authority before using the kill switch"
+                % (slug, ", ".join(os.path.basename(path) for path in existing))
+            )
+        if not existing:
+            return False, ("'%s' has no send projection — it never "
                            "left the building" % slug)
         return True, ""
     if verb == "park":

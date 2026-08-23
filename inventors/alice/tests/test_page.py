@@ -1,6 +1,6 @@
 import unittest
 
-from alice.page import verify_factory_product_page
+from alice.page import verify_factory_product_page, verify_shop_door_page
 
 
 def complete_design():
@@ -43,8 +43,11 @@ def complete_design():
 
 
 class PageTests(unittest.TestCase):
+    def test_old_verifier_name_is_only_a_shop_door_alias(self) -> None:
+        self.assertIs(verify_factory_product_page, verify_shop_door_page)
+
     def test_complete_pipeline_record_passes(self) -> None:
-        result = verify_factory_product_page(complete_design(), expected_price_cents=4900)
+        result = verify_shop_door_page(complete_design(), expected_price_cents=4900)
         self.assertTrue(result.complete, result.failures)
         self.assertEqual(result.image_count, 5)
 
@@ -61,23 +64,23 @@ class PageTests(unittest.TestCase):
                     design.pop("description")
                 else:
                     design["description"] = description
-                result = verify_factory_product_page(design)
+                result = verify_shop_door_page(design)
                 self.assertFalse(result.complete)
                 self.assertIn(expected_failure, result.failures)
 
     def test_missing_pipeline_enrichment_fails(self) -> None:
         design = complete_design()
         design["story_blocks"] = []
-        result = verify_factory_product_page(design)
+        result = verify_shop_door_page(design)
         self.assertFalse(result.complete)
         self.assertIn("story_blocks_below_three", result.failures)
 
     def test_price_drift_fails(self) -> None:
-        result = verify_factory_product_page(complete_design(), expected_price_cents=9900)
+        result = verify_shop_door_page(complete_design(), expected_price_cents=9900)
         self.assertIn("listing_price_mismatch", result.failures)
 
     def test_currency_drift_fails_when_usd_was_reviewed(self) -> None:
-        result = verify_factory_product_page(
+        result = verify_shop_door_page(
             complete_design(), expected_currency="USD"
         )
         self.assertIn("listing_currency_mismatch", result.failures)
@@ -85,7 +88,7 @@ class PageTests(unittest.TestCase):
     def test_missing_category_is_visible_but_does_not_block_a_complete_page(self) -> None:
         design = complete_design()
         design["category"] = None
-        result = verify_factory_product_page(design)
+        result = verify_shop_door_page(design)
         self.assertTrue(result.complete, result.failures)
         self.assertIn("category_missing", result.warnings)
 

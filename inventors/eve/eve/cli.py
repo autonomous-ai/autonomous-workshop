@@ -101,11 +101,10 @@ def cmd_improve(_args):
     return 0
 
 
-def cmd_publish(args):
-    """Manual publish of a shipped game (the autonomous flip lives in the
-    pipeline). Taps the org's existing product-page pipeline; offline-safe."""
+def cmd_send(args):
+    """Manually Pack and send a shipped game through the Shop Door."""
     from eve.queue import Queue
-    from eve import publish
+    from eve import send
     q = Queue(_cfg())
     game = q.get(args.slug)
     if game is None:
@@ -115,9 +114,12 @@ def cmd_publish(args):
         print("refusing: %s is %s, not 'ship'" % (args.slug, game.stage))
         return 1
     cfg = _cfg()
-    result = publish.publish_to_store(cfg, game, status="draft")
+    result = send.send_to_shop(cfg, game, status="draft")
     print(json.dumps(result, indent=2, default=str))
     return 0
+
+
+cmd_launch = cmd_send
 
 
 def cmd_seed(_args):
@@ -157,9 +159,15 @@ def main(argv=None):
     p.set_defaults(fn=cmd_drive)
     sub.add_parser("audit").set_defaults(fn=cmd_audit)
     sub.add_parser("improve").set_defaults(fn=cmd_improve)
-    p = sub.add_parser("publish")
+    # ``launch`` remains a parser alias for existing automation; ``send`` is
+    # the canonical command and the only implementation path.
+    p = sub.add_parser(
+        "send",
+        aliases=["launch"],
+        help="send a finished Pack through the optional Shop Door",
+    )
     p.add_argument("slug")
-    p.set_defaults(fn=cmd_publish)
+    p.set_defaults(fn=cmd_send)
     sub.add_parser("seed").set_defaults(fn=cmd_seed)
     p = sub.add_parser("daemon")
     p.add_argument("action", choices=["install", "uninstall", "status"])

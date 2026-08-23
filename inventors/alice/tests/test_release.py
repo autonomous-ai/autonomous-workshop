@@ -3,7 +3,7 @@ import hashlib
 import unittest
 from unittest.mock import patch
 
-from inventor_core.artifacts import build_publish_packet as core_build_publish_packet
+from inventor_workshop.pack import pack_artifact as workshop_pack_artifact
 
 from alice.fulfillment import (
     build_manufacturing_spec_from_manifest,
@@ -688,9 +688,9 @@ class ReleaseAssemblyTests(unittest.TestCase):
         decision["candidate_version"] = 4
 
         with patch(
-            "alice.core_integration.build_publish_packet",
-            wraps=core_build_publish_packet,
-        ) as core_builder:
+            "alice.workshop_bridge.pack_artifact",
+            wraps=workshop_pack_artifact,
+        ) as workshop_packer:
             packet = build_publication_packet(
                 candidate_id="game-1",
                 candidate_version=5,
@@ -701,15 +701,15 @@ class ReleaseAssemblyTests(unittest.TestCase):
         self.assertEqual(packet["publication_packet"], decision["production_manifest"])
         self.assertEqual(packet["packet_hash"], decision["production_packet_hash"])
         self.assertEqual(
-            packet["core_packet"]["source_sha256"],
+            packet["_workshop_pack"]["source_sha256"],
             decision["production_packet_hash"],
         )
         self.assertEqual(
-            packet["core_packet"]["artifact_manifest"]["entries"][0]["sha256"],
+            packet["_workshop_pack"]["artifact_manifest"]["entries"][0]["sha256"],
             decision["production_packet_hash"],
         )
-        self.assertEqual(packet["core_packet"]["packet_entries"], 2)
-        core_builder.assert_called_once()
+        self.assertEqual(packet["_workshop_pack"]["pack_entries"], 2)
+        workshop_packer.assert_called_once()
 
     def test_string_manufacturing_receipt_is_rejected(self):
         artifacts = release_artifacts()

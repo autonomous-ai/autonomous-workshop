@@ -12,6 +12,7 @@
 **/*.bak
 **/*.bak-*
 **/*.bak.*
+**/state/portal-auth.json
 **/state/panda-auth.json
 
 # runtime noise (state that matters — QUEUE, ledger, bandit, DAYBOOK — IS committed)
@@ -30,8 +31,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 .venv*/
-/foundation/build/
-/foundation/dist/
+/workshop/build/
+/workshop/dist/
 
 # macOS
 .DS_Store

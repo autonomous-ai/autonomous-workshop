@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Mapping
 
+from .loops import SEND_TO_SHOP, SEND_VERIFY_SHOP, canonical_task_kind
 from .policy import validate_transition
 from .policy import ReleasePolicy
 from .store import CandidateRecord, DurableStore
@@ -21,8 +22,14 @@ ALLOWED_SOURCES: dict[tuple[str, str], frozenset[str]] = {
     ("human_validated", "physical_ready"): frozenset({"manufacturing"}),
     ("physical_ready", "production_validated"): frozenset({"manufacturing"}),
     ("production_validated", "publish_ready"): frozenset({"release_policy"}),
-    ("publish_ready", "page_ready"): frozenset({"publishing_pipeline"}),
-    ("page_ready", "published"): frozenset({"publishing_pipeline"}),
+    # ``publishing_pipeline`` remains accepted only for durable evidence
+    # written before the Pack/Send vocabulary migration.
+    ("publish_ready", "page_ready"): frozenset(
+        {"shop_door", "publishing_pipeline"}
+    ),
+    ("page_ready", "published"): frozenset(
+        {"shop_door", "publishing_pipeline"}
+    ),
 }
 
 
@@ -215,12 +222,17 @@ def _validate_terminal_task_binding(
 
     expected_action = {
         "publish_ready": "release.evaluate",
-        "page_ready": "publish.invoke_pipeline",
-        "published": "publish.verify_page",
+        "page_ready": SEND_TO_SHOP,
+        "published": SEND_VERIFY_SHOP,
     }.get(target_state)
     if expected_action is None:
         return
-    entries = [entry for entry in manifest if entry.get("action") == expected_action]
+    entries = [
+        entry
+        for entry in manifest
+        if isinstance(entry.get("action"), str)
+        and canonical_task_kind(str(entry["action"])) == expected_action
+    ]
     if len(entries) != 1:
         raise ValueError(
             f"transition to {target_state!r} needs exactly one durable "
@@ -234,10 +246,12 @@ def _validate_terminal_task_binding(
     expected_executor = (
         "release_policy" if target_state == "publish_ready" else "adapter"
     )
-    expected_class = (
-        "release_policy" if target_state == "publish_ready" else "publishing_pipeline"
+    expected_classes = (
+        {"release_policy"}
+        if target_state == "publish_ready"
+        else {"shop_door", "publishing_pipeline"}
     )
-    if executor != expected_executor or evidence_class != expected_class:
+    if executor != expected_executor or evidence_class not in expected_classes:
         raise ValueError("terminal transition task has the wrong provenance")
     for key, expected in content.items():
         receipt_key = (
@@ -316,6 +330,7 @@ def _validate_durable_manifest(
         "blind_human": "blind_human",
         "manufacturing": "manufacturing",
         "release_policy": "release_policy",
+        "shop_door": "shop_door",
         "publishing_pipeline": "publishing_pipeline",
     }.get(evidence.source)
     if required_class is not None:

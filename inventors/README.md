@@ -1,11 +1,11 @@
 # Inventors
 
-Each immediate subfolder is one autonomous inventor. It contains that
-inventor's complete code, `inventor.json`, `TASTE.md`, operating guide, tests,
+Each immediate subfolder is one inventor or reviewed reference snapshot. It
+contains that inventor's complete code, `inventor.json`, `TASTE.md`, operating guide, tests,
 creative thesis, and niche-specific adapters. `TASTE.md` is the inventor's
 human-owned creative constitution: agents read it, outcomes may motivate a
 proposed revision, and self-improvement code cannot rewrite it. Inventors may depend on
-[`../foundation`](../foundation/README.md); Foundation never imports an
+[`../workshop`](../workshop/README.md); Workshop never imports an
 inventor.
 
 | Inventor | Focus | Status |
@@ -20,14 +20,13 @@ inventor.
 Create the next inventor from the repository root:
 
 ```bash
-python3 -m pip install -e foundation
-inventor-foundation new deduction-games \
+python3 -m pip install -e workshop
+workshop new deduction-games \
   --name Ada \
   --niche "two-player printable deduction games" \
   --root inventors
 ```
 
-The command writes `inventors/deduction-games/`. Keep shared lifecycle,
-artifact, evidence, publication, and creation-skill infrastructure in
-Foundation; keep the new inventor's taste, prompts, generators, evaluators, and
-reward hypothesis in its own folder.
+The command writes `inventors/deduction-games/`. Reuse Workshop's Clockwork,
+Make, Inspect, Pack, Send, and Door machinery; keep the new inventor's
+Taste, prompts, generators, evaluators, and reward hypothesis in its own folder.

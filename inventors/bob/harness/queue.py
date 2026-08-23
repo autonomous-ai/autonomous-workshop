@@ -52,7 +52,7 @@ TERMINAL = frozenset(["live", "parked", "blocked", "killed"])
 # A `published` game is deliberately waiting, not terminal: it is a draft or a
 # dry-run receipt awaiting an explicit authenticated flip/reconciliation.
 # Scheduling it used to advance unconditionally to `live`, including when
-# published.json said pushed=false. It may still be parked by an operator.
+# A send projection with no verified public Stamp may still be parked by an operator.
 WAITING = frozenset(["published"])
 
 ALL_STATES = PIPELINE + ["parked", "blocked", "killed"]

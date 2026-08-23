@@ -16,7 +16,7 @@ export PATH
 SCRIPT_DIR="${0:A:h}"
 ALICE_DIR="${SCRIPT_DIR:h}"
 REPO_ROOT="${ALICE_DIR:h:h}"
-CORE_SOURCE_ROOT="$REPO_ROOT/foundation/src"
+WORKSHOP_SOURCE_ROOT="$REPO_ROOT/workshop/src"
 PYTHON="$ALICE_DIR/.venv/bin/python"
 CONFIG=""
 ENV_FILE=""
@@ -63,6 +63,6 @@ fi
   --env-file "$ENV_FILE" \
   --root "$ROOT" \
   --source-root "$ALICE_DIR" \
-  --core-source-root "$CORE_SOURCE_ROOT" \
+  --workshop-source-root "$WORKSHOP_SOURCE_ROOT" \
   --state "$ROOT/var/service/health.json" \
   --watchdog-state "$ROOT/var/service/watchdog-health.json"

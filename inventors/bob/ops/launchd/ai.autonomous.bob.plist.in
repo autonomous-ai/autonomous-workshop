@@ -38,10 +38,10 @@
     <dict>
         <key>PATH</key>
         <string>__USER_HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
-        <!-- Keep the scheduled process on the exact Foundation tree that
+        <!-- Keep the scheduled process on the exact Workshop tree that
              install.sh validated, including nonstandard deployments. -->
-        <key>BOB_CORE_SRC</key>
-        <string>__CORE_SRC__</string>
+        <key>BOB_WORKSHOP_SRC</key>
+        <string>__WORKSHOP_SRC__</string>
     </dict>
 
     <!-- Both streams to one log: the watchdog greps its tail for Traceback,

@@ -54,6 +54,16 @@ class LedgerTestCase(unittest.TestCase):
         with open(self._ledger_file()) as f:
             self.assertEqual(len(f.readlines()), 3)
 
+    def test_send_is_canonical_and_publish_remains_readable(self):
+        self.assertEqual(
+            ledger.append({"slug": "new", "kind": "send"})["kind"],
+            "send",
+        )
+        self.assertEqual(
+            ledger.append({"slug": "old", "kind": "publish"})["kind"],
+            "publish",
+        )
+
     def test_rows_filters(self):
         old = (datetime.now(timezone.utc) - timedelta(days=3)).isoformat()
         ledger.append({"slug": "old-game", "kind": "publish", "at": old})

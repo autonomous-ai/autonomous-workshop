@@ -7,7 +7,7 @@ tree is created per engine operation, reviewed rules/components are staged
 before the first call, and every phase crosses a durable ``sending`` fence.
 
 This module never invokes either text2game publisher, never changes Vibe's
-``QUEUE.json``, and never performs a public Factory write.  Its only handoff is
+``QUEUE.json``, and never performs a public Shop Door write. Its only handoff is
 the deterministic :mod:`alice.text2game_export` workspace consumed by the
 existing private-draft PageBuilder adapter.
 """
@@ -68,6 +68,9 @@ _FORBIDDEN_ENVIRONMENT_PREFIXES = (
     "ALICE_FACTORY_",
     "GCS_",
     "MONGO",
+    "VIBE_PORTAL_",
+    "WORKSHOP_SHOP_",
+    # Historical operator credentials remain forbidden during migration.
     "PANDA_",
     "TELEGRAM_",
 )

@@ -21,11 +21,11 @@ external evidence.
 ## Current activation status
 
 The checked-in repository is **not operational yet**. No launchd service has
-been installed and Alice has not created a real Factory draft. It contains no
+been installed and Alice has not created a real Shop Door draft. It contains no
 production token, external evidence command, or operational
 order/print/QA/ship adapter; its dedicated Codex home is not authenticated; the
 connected text2game adapter is disabled and its external CAD/slicer/calibration
-prerequisites have not been staged; and the current Factory deployment does not
+prerequisites have not been staged; and the current Shop Door deployment does not
 advertise the three atomic public-write contracts required by Alice.
 `alice doctor` therefore refuses `draft` while its invention, evidence, CAD,
 printing, rich-draft, or authenticated readback dependencies are absent. The
@@ -34,7 +34,7 @@ The Vibe adapter makes zero public POSTs unless
 revision/packet, SKU/price/currency, and rich-page bindings can all be proved.
 
 The current activation target is `draft`: automatically create the complete
-private Factory product page and stop. Dee reviews it and uses the existing
+private Shop Door product page and stop. Dee reviews it and uses the existing
 one-click publish control. The checked-in default keeps
 `auto_publish_when_eligible=false`; do not change that value as part of draft
 activation.
@@ -43,7 +43,7 @@ Going from reviewed drafts to automatic public release later requires three
 separate operator actions:
 
 1. authenticate Alice's dedicated model seat and configure every real evidence
-   and factory adapter;
+   and Shop Door adapter;
 2. deploy a backend publish contract that advertises
    `packet_hash_bound_publish`, `sku_currency_bound_publish`, and
    `rich_page_bound_publish`; atomically rejects a stale history/project or an
@@ -113,9 +113,9 @@ their diagnostics.
 The supported local deployment is one launchd worker plus an independent
 watchdog. Each tick runs in a fresh bounded process group. The service writes a
 private heartbeat, pins the complete committed Alice source tree, the tracked
-`foundation/src/inventor_core` package from the same repository, the resolved config,
-and the release policy, and refuses a dirty Alice or Foundation checkout or a
-changed runtime identity. Both Alice and Foundation are copied into one owner-only
+`workshop/src/inventor_workshop` package from the same repository, the resolved config,
+and the release policy, and refuses a dirty Alice or Workshop checkout or a
+changed runtime identity. Both Alice and Workshop are copied into one owner-only
 execution snapshot; isolated children import from that snapshot rather than
 the mutable editable install. Every sealed worker, doctor, guardian, and tick
 interpreter starts with `-I -S`: Python site initialization and executable
@@ -128,17 +128,17 @@ Create an absolute, owner-only environment file and an absolute draft config,
 then run the installer from a clean committed checkout:
 
 ```bash
-python -m pip install -e ./foundation -e ./inventors/alice
+python -m pip install -e ./workshop -e ./inventors/alice
 ```
 
 The installer requires that Alice's virtual environment contain the declared
-`autonomous-inventor-core==0.1.0` distribution metadata and the statically
+`inventor-workshop==0.3.0` distribution metadata and the statically
 parsed `__version__` declaration from the explicit source tree; it fails before
-touching launchd if the shared Foundation is absent or version-mismatched. It does not
-import mutable Foundation code to perform that check. Preflight captures the explicit
-Foundation checkout into the same runtime identity, and every worker identity
+touching launchd if the shared Workshop is absent or version-mismatched. It does not
+import mutable Workshop code to perform that check. Preflight captures the explicit
+Workshop checkout into the same runtime identity, and every worker identity
 check hashes that mutable checkout while child execution imports only the
-sealed copy. Changing Foundation therefore stops the installed worker until a new
+sealed copy. Changing Workshop therefore stops the installed worker until a new
 verified service release and cannot alter an existing sealed child.
 
 ```bash
@@ -305,7 +305,7 @@ does not install them:
    Security follow-up: that historical text2cad pin tracks
    `.env.bak-pre-modelmix`. Alice's allowlist never reads or copies it, but the
    repository owners must remove it and rotate the Telegram, admin, MongoDB,
-   and Panda credentials it contained before operational activation.
+   and legacy backend credentials it contained before operational activation.
 3. Install Pillow, CadQuery, trimesh, NumPy, and Matplotlib into the absolute
    `command` interpreter, because the pinned phase modules import them directly.
    Configure `cad_python` as the exact Python 3.12 CAD environment with the same
@@ -326,8 +326,8 @@ does not install them:
    config fields, not ambient environment variables. Keep
    `adapters.text2game.allowed_environment` to the process basics and intentional
    non-secret dials such as `BED_X`/`BED_Y`, with their values in the owner-only
-   service environment file. Publisher, MongoDB, GCS, Factory, Google
-   credential, Panda, admin, Telegram, dynamic-loader, and Git-injection
+   service environment file. Publisher, MongoDB, GCS, Shop Door, Google
+   credential, legacy backend, admin, Telegram, dynamic-loader, and Git-injection
    variables are rejected at this boundary. Text2game's `.env` and other
    credential-like files are never copied from the source checkout.
 
@@ -343,7 +343,7 @@ deterministic `consistency.py` over Alice's staged design before phase 1, so an
 incompatible accepted game fails without spending a model call.
 
 Passing these checks enables CAD/DFM work; it is not a print receipt, deployment
-record, or Factory draft. Prototype/production, market, human-playtest, and
+record, or Shop Door draft. Prototype/production, market, human-playtest, and
 private-draft adapters must still pass their own readiness and evidence gates.
 
 The existing board-game rich-page draft adapter and Vibe public adapter are
@@ -394,8 +394,8 @@ the exact hash-pinned `board-game/tools/bin/publishdesign` binary.
 The diagnostic design must already be a private draft owned by
 `diagnostic_owner_id`, have a current history, have no published history, and be
 readable through the authenticated owner API. It is a read-only authentication
-probe, not the game being published. `PANDA_OWNER_ID` must match that owner.
-Provide `PANDA_BACKEND_DIR` and `GOOGLE_APPLICATION_CREDENTIALS` explicitly in
+probe, not the game being published. `WORKSHOP_SHOP_OWNER_ID` must match that owner.
+Provide `WORKSHOP_SHOP_BACKEND_DIR` and `GOOGLE_APPLICATION_CREDENTIALS` explicitly in
 the owner-only service environment; the backend `.env` and GCS credential JSON
 must be owner-only regular files. A Vibe-workspace `.env` is forbidden, and
 Telegram variables are forced empty. Artifact readback is anonymous but
@@ -447,13 +447,13 @@ token only in the named environment variable:
 ```
 
 ```bash
-export ALICE_FACTORY_TOKEN='<dedicated Alice owner token>'
+export WORKSHOP_SHOP_TOKEN='<dedicated Alice owner token>'
 alice --config /secure/path/alice-live.json doctor
 ```
 
 The default endpoint is
 `https://panda-social-api.autonomous.ai/api/v1`, the shared origin used by the
-current Vibe and public Factory routes. Never put the token in `live.json`.
+current Vibe and public Shop Door routes. Never put the token in `live.json`.
 
 An absent adapter is not evidence. Simulation cannot impersonate a blind human
 table, a render cannot impersonate a print, and a model cannot impersonate an
@@ -469,11 +469,11 @@ order or shipment.
    exporter must not advance or claim the Vibe queue itself.
 3. After Alice's actual gate accepts that workspace, use the audited
    `alice-text2game-export-v1` handoff to run the existing
-   `vibe-ideas` rich-page operator through `PageBuilderAdapter`.
+   `vibe-ideas` rich-page operator through `ShopDoorAdapter`.
 4. Alice authenticates back to the private design, verifies `status=draft`, the
    exact design/history/project/artifact hashes, and the complete rules, use
    case, story, specs, and covers.
-5. Alice stops. Dee reviews that Factory draft and clicks the existing publish
+5. Alice stops. Dee reviews that Shop Door draft and clicks the existing publish
    control. No Alice public POST is enabled in this mode.
 
 ## Future automatic publication runbook
@@ -497,12 +497,12 @@ current checkout can publish.
    receipt after a write is `ambiguous`; never retry it. Read
    remote state and reconcile the original operation.
 6. The existing deployed observer may enrich the product page. Alice polls
-   the anonymous Factory design record and verifies its listing, exact price,
+   the anonymous Shop Door design record and verifies its listing, exact price,
    visuals, story, use case, print specifications, and assembly data.
 7. Only a complete page receipt advances `publish_ready -> page_ready ->
    published`.
 
-The publisher does not generate a parallel set of copy, images, or videos.
+The sender does not generate a parallel set of copy, images, or videos.
 
 ## Human and physical gates
 
@@ -531,7 +531,7 @@ adapter in this repository. Effectful CAD diagnostics must advertise
 for a real machine receipt.
 
 Live order fulfillment adds another contract. The authenticated
-`factory_order` diagnostic must advertise `paid_order_readback`, and the
+`delivery` diagnostic must advertise `paid_order_readback`, and the
 authenticated `print_fulfillment` diagnostic must advertise all of
 `authenticated_manufacturing_readback`, `idempotent_print_by_operation_key`,
 `reconcile_print_by_operation_key`, and

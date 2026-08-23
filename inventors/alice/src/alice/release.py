@@ -8,7 +8,10 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
-from .core_integration import CoreIntegrationError, build_core_packet_binding
+from .workshop_bridge import (
+    WorkshopBridgeError,
+    build_workshop_pack_binding,
+)
 from .fulfillment import (
     FulfillmentValidationError,
     manufacturing_spec_from_manifest,
@@ -751,7 +754,9 @@ def assess_release(
         _require_adapter_class(by_action[action], "simulation")
     _require_adapter_class(by_action["human.collect_blind_results"], "blind_human")
     _require_adapter_class(
-        by_action["physical.create_rich_draft"], "publishing_pipeline"
+        by_action["physical.create_rich_draft"],
+        # Existing ledgers may contain the older evidence-class spelling.
+        {"shop_door", "publishing_pipeline"},
     )
     _require_adapter_class(by_action["physical.production_run"], "manufacturing")
     _require_adapter_class(by_action["physical.prototype_print"], "manufacturing")
@@ -911,18 +916,18 @@ def build_publication_packet(
         raise ReleaseAssemblyError("production manifest candidate version mismatch")
     policy_hash = _sha(release_decision, "policy_hash")
     try:
-        core_packet = build_core_packet_binding(
+        workshop_pack = build_workshop_pack_binding(
             packet,
-            alice_packet_sha256=production_hash,
+            alice_product_sha256=production_hash,
         )
-    except CoreIntegrationError as exc:
+    except WorkshopBridgeError as exc:
         raise ReleaseAssemblyError(
-            f"Foundation publication assembly failed: {exc}"
+            f"Workshop Pack assembly failed: {exc}"
         ) from exc
     return {
         "publication_packet": dict(packet),
         "packet_hash": production_hash,
-        "core_packet": core_packet,
+        "_workshop_pack": workshop_pack,
         "policy_hash": policy_hash,
         "release_decision": {
             "allowed": True,
@@ -1017,9 +1022,9 @@ def _require_validated_price(
     if not isinstance(currency, str) or not currency:
         raise ReleaseAssemblyError("market validation lacks currency")
     if currency != "USD" or price.get("currency") != "USD":
-        raise ReleaseAssemblyError("Factory publication price must be USD")
+        raise ReleaseAssemblyError("Shop Door price must be USD")
     if price_cents > 1_000_000:
-        raise ReleaseAssemblyError("Factory publication price exceeds Vibe maximum")
+        raise ReleaseAssemblyError("Shop Door price exceeds the supported maximum")
     if price.get("price_cents") != price_cents or price.get("currency") != currency:
         raise ReleaseAssemblyError(
             "production manifest price does not match market validation"
@@ -1249,10 +1254,14 @@ def _unique_latest_actions(
     return result
 
 
-def _require_adapter_class(artifact: ArtifactSnapshot, expected: str) -> None:
-    if artifact.executor != "adapter" or artifact.evidence_class != expected:
+def _require_adapter_class(
+    artifact: ArtifactSnapshot, expected: str | set[str]
+) -> None:
+    expected_classes = {expected} if isinstance(expected, str) else expected
+    if artifact.executor != "adapter" or artifact.evidence_class not in expected_classes:
+        label = "/".join(sorted(expected_classes))
         raise ReleaseAssemblyError(
-            f"{artifact.action} needs a passed {expected!r} adapter receipt"
+            f"{artifact.action} needs a passed {label!r} adapter receipt"
         )
 
 

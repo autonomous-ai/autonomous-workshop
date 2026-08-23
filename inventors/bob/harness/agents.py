@@ -127,18 +127,31 @@ def _atomic_write(path, data):
 def resolve_model(name, explicit=None):
     """Model resolution order: explicit arg > BOB_<PHASE>_MODEL > default.
 
-    PHASE is the agent name uppercased with dashes -> underscores, so the
-    agent file name ("rules-lens") maps 1:1 to its env knob
-    (BOB_RULES_LENS_MODEL). Per-phase routing is the whole cost model:
+    PHASE strips one leading ``bob-`` from Bob-owned role names, then maps
+    dashes to underscores. Thus ``bob-ideator`` uses
+    ``BOB_IDEATOR_MODEL`` rather than the accidental doubled-prefix
+    ``BOB_BOB_IDEATOR_MODEL``. The doubled spelling remains a fallback for
+    deployed env files, but setting both spellings differently fails closed.
+    Other role names still map directly (``rules-lens`` uses
+    ``BOB_RULES_LENS_MODEL``). Per-phase routing is the whole cost model:
     text2cad ran Opus only where "spec/code errors cascade downstream" and
     Sonnet everywhere re-gated/rescored anyway.
     """
     if explicit:
         return explicit
-    phase = name.upper().replace("-", "_")
-    env = os.environ.get("BOB_{}_MODEL".format(phase))
-    if env:
-        return env
+    raw_phase = name.upper().replace("-", "_")
+    phase = raw_phase[4:] if raw_phase.startswith("BOB_") else raw_phase
+    canonical_name = "BOB_{}_MODEL".format(phase)
+    legacy_name = "BOB_{}_MODEL".format(raw_phase)
+    canonical = os.environ.get(canonical_name)
+    legacy = os.environ.get(legacy_name) if legacy_name != canonical_name else None
+    if canonical is not None and legacy is not None and canonical != legacy:
+        raise AgentError(
+            "%s and legacy %s disagree" % (canonical_name, legacy_name)
+        )
+    selected = canonical if canonical is not None else legacy
+    if selected:
+        return selected
     return DEFAULT_MODEL
 
 

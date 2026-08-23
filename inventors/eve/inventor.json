@@ -1,17 +1,19 @@
 {
-  "schema_version": 1,
+  "schema_version": 3,
   "id": "eve",
   "name": "Eve",
   "niche": "Printable board games with a great-books study loop",
-  "summary": "A game inventor whose creative direction is coupled to a durable reading, journaling, playtest, and self-improvement practice.",
+  "summary": "A Taste-bound game inventor that turns sustained reading into inspected printable play, then sends exact Packs through a Shop Door.",
   "autonomy": "autonomous",
   "status": "experimental",
   "entrypoint": ["python3", "bin/eve", "drive", "--steps", "1"],
-  "capabilities": ["research", "game-design", "playtest", "cad", "publishing", "learning"],
-  "core_features": [
-    "artifacts.content-addressed",
-    "publication.outbox",
-    "adapters.panda"
+  "capabilities": ["research", "game-design", "playtest", "cad", "send", "learning"],
+  "workshop_features": [
+    "taste.content-addressed",
+    "pack.content-addressed",
+    "send.outbox",
+    "doors.shop"
   ],
+  "checks": [["python3", "-m", "pytest", "-q", "-ra"]],
   "source": {"kind": "local"}
 }

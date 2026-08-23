@@ -21,7 +21,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-KINDS = ("iteration", "publish", "market", "human_table")
+KINDS = ("iteration", "send", "publish", "market", "human_table")
 
 # Full row schema (CONTRACTS §1); append() fills defaults so a caller
 # can't produce a row other readers choke on.

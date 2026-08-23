@@ -2,12 +2,12 @@
 
 Eve is an autonomous, 24/7 multi-agent system that invents **3D-printable**
 board games that have never existed before, carries each one through rules,
-print, and fun gates until it is *actually good*, then auto-publishes it to
-the Autonomous site. The moment it sells, we print and ship it — the chess
+print, and fun checks until it is *actually good*, then Packs and Sends a draft
+through the Shop Door to the Autonomous site. The moment it sells, we print and ship it — the chess
 sets already sold (two of them; the SF set is one) are the early proof of
 that loop, and they are the bar Eve is aiming at.
 
-Eve is the **meta-loop**: a supervisory core that continuously provisions and
+Eve is the **meta-loop**: a workshop steward that continuously provisions and
 feeds a set of smaller loops, each of which studies one thing or advances one
 game. The loops feed each other — a study loop's output is a gate another loop
 is held to; a playtest failure is a lesson that graduates into the harness.
@@ -57,7 +57,7 @@ loop's output changes what another loop is held to.
 
 ```
          ┌────────────────────────────────────────────────────────────────┐
-         │  META-LOOP (Eve core) — supervisor, 24/7                       │
+         │  META-LOOP (Eve's workshop) — supervisor, 24/7                 │
          │  schedules loops + per-game pipeline steps                     │
          │  owns rewards, ledger, cadence, self-improvement               │
          └───┬────────────────────────────────────────────────────────────┘
@@ -74,8 +74,8 @@ loop's output changes what another loop is held to.
             ▼                     ▼                     ▼ lens + ideator
      ┌───────────────────────────────────────────────────────────────────┐
      │ LOOP C — per-game invention pipeline (one game at a time)          │
-     │ invent ▶ rules ▶ build ▶ gates ▶ playtest ▶ fun ▶ publish          │
-     │   ▲  playtest + COGS feedback (repair rounds, lesson record)      │
+     │ invent ▶ rules ▶ playtest + COGS feedback ▶ repair                │
+     │                  MAKE ▶ INSPECT ▶ PACK ▶ SEND                     │
      └───────────────────────────────────────────────────────────────────┘
      (B and D also feed the SAME improvement path: every repeated loss or
       repeated book/arch lesson graduates into Eve's own policy.)
@@ -157,8 +157,9 @@ One game at a time, advanced one stage per meta-loop step. Stages:
 7. **Playtest + fun gate** — the load-bearing measurement. **FUN = a player
    asks to play again**, first against real LLM-players, ultimately against
    humans in the org's `PLAYTEST.md` protocol (≥3 groups). No fun-pass, no
-   publish — this is where Eve refuses to ship a "tuned" but un-fun game.
-8. **Publish** — a game that passed every gate publishes to the
+   Send — this is where Eve refuses to ship a "tuned" but un-fun game.
+8. **Pack + Send** — a game that passed every check goes through the Shop Door
+   to the
    site/storefront as a **draft** (one-click human review flips it live); with its
    rules, renders, and measured COGS; a sale starts
    print-and-ship. The 3D-printable body (fits the real bed, watertight,
@@ -175,7 +176,7 @@ signals that keep Eve honest.
 ## 3. The reward function (self-improvement as RL)
 
 Eve treats each game as an **episode**, each stage-advance as a **step**, and
-publishing a good game as the **terminal** that ends the episode with reward.
+sending a good game as the **terminal** that ends the episode with reward.
 The meta-loop's objective is to **maximize expected discounted return per unit
 time** while holding the quality bar fixed — it must get *better at inventing*
 over its lifetime, not faster at shipping slop.
@@ -185,7 +186,7 @@ over its lifetime, not faster at shipping slop.
 The org's own failure modes are exactly the RL failure modes:
 
 - a reward that only counts *shipped* games rewards flooding cheap slop →
-  punish publish of gated quality only, and hold the bar fixed;
+  reward Send of inspected quality only, and hold the bar fixed;
 - a reward that can be inflated by the agent writing its own score →
   the ledger is *written by code*, never by a model, and audited;
 - rewarding progress forever → an agent that loops forever polishing →
@@ -208,7 +209,7 @@ configuration.
 | `fun_pass` | real/per-protocol playtest shows FUN | +4.0 | **highest** — load-bearing |
 | `print_pass` | deterministic build gate green | +1.5 | stage reward |
 | `cogs_ok` | measured COGS within budget | +1.5 · (budget/measured cap) | shaped, money-aware |
-| `ship` | published after all gates (terminal) | +10.0 | terminal |
+| `ship` | Packed and Sent after all checks (terminal) | +10.0 | terminal |
 | `repair_fail` | a repair round exhausted budget | −0.5 | per incident |
 | `rework` | a rules rework round | −0.3 | per incident |
 | `dead_game` | killed with a stated reason | −2.0 | terminal, cheap kill |
@@ -262,7 +263,7 @@ The org's hard-won rules, applied to Eve:
   will tune to it. Build/integrity gates are code.
 - **Blind panels.** Lenses that rate a game are independent and cannot see
   each other's verdicts, so one agent can't be talked into another's opinion.
-- **Grade the outcome, not the transcript.** Publish requires external fun
+- **Grade the outcome, not the transcript.** Send requires external fun
   evidence; "we thought it was fun" is not a measurement.
 - **Multiple trials.** Playtest runs many scripted and player-table games, not
   one anecdote.
@@ -279,8 +280,7 @@ eve/
   DESIGN.md            this document
   README.md            how to run it
   AGENTS.md            rules agents must follow
-  pyproject.toml       package + CLI entry points
-  eve/                 the Python core (all state/reward logic lives here)
+  eve/                 Eve's Python engine (state/reward logic lives here)
     __init__.py
     meta.py            the 24/7 supervisor: scheduler, provisioning, journal
     queue.py           the game queue: state, claims, leases (unit = game)
@@ -291,21 +291,23 @@ eve/
     arch.py            Loop B: multi-agent architecture study
     books.py           Loop D: great-books study (bibliophile)
     improve.py         self-improvement session (loss-directed, tiered)
-    publish.py         publish a shipped game to the site
+    workshop_bridge.py exact artifact identity, Pack, Clockwork, Sender
+    send.py             stage a shipped game and send a Shop Door draft
+    launch.py           compatibility aliases only
     journal.py         append-only event narration
     config.py          .env / defaults loading
-  agents/              Claude Code subagent definitions (the roles)
+  .claude/agents/      Claude Code subagent definitions (the roles)
   games/<slug>/        one game per directory
   corpus/seed/         the bundled history + great-books study seeds
   loops/               loop state (arch, books, corpus checkpoints)
-  taste/taste.md       the owner's verbatim rejection reasons
-  tools/               standalone scripts (gate, publish, audit, dashboard)
+  TASTE.md             root creative constitution; exact runtime authority
+  tools/               standalone scripts (inspect, send, audit, dashboard)
   bin/                 eve / eve-daemon entry points
   tests/               pytest suite for the deterministic parts
 ```
 
 The loops deliberately reuse the org's two proven repos where they already
 edge forward: CAD build is a client of the `cadcode` skill (vibe-ideas), the
-fun protocol is the org's `PLAYTEST.md`, and publish targets Panda Social /
-the Vibe storefront. Eve does not reimplement those; it orchestrates and
+fun protocol is the org's `PLAYTEST.md`, and Sender reaches the current
+Vibe storefront through a Shop Door. Eve does not reimplement those; it orchestrates and
 improves around them.

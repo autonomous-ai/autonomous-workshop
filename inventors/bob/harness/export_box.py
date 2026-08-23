@@ -1,4 +1,4 @@
-"""Export a finished game in text2game's publish contract, and hand it off.
+"""Legacy/manual export in text2game's historical publish contract.
 
 Dee (2026-08-22): "here's the repo for automating the publishing pipeline —
 github.com/nohope88/text2game." That pipeline's publish.py is the PROVEN
@@ -9,10 +9,13 @@ account, and admindash — none of which live on this Mac, and none of which
 Bob should carry (the import API doc's own division: the client holds no
 infrastructure secrets).
 
-So Bob does the half he can do perfectly — assemble the EXACT out/<slug>/
-payload text2game's publish.py consumes — and pushes it to the box when
-BOB_BOX_SSH is configured, or hands the operator two copy-paste commands
-when it is not. Contract mirrored from text2game/publish.py @ 2026-08-22:
+Bob's autonomous send path never invokes this module. Workshop's canonical
+pack, durable Sender intent, Shop Door adapter, and validated Stamp are the
+only send authority. This module remains so an operator can assemble
+the EXACT out/<slug>/ payload text2game's publish.py consumed and, deliberately,
+push it to the old box. Neither operation writes send.json, advances Bob's
+queue, or turns box stdout/a design id into a Stamp. Contract mirrored from
+text2game/publish.py @ 2026-08-22:
 
     out/<slug>/
       discover.md            WINNER: <slug> / pitch line   (title + desc source)
@@ -193,11 +196,13 @@ def export_text2game(slug):
 
 
 def push_box(slug, timeout_s=900):
-    """rsync the export to the panda box and run text2game's publish.py.
+    """Manually rsync to the legacy box and run its historical publish.py.
 
     Needs BOB_BOX_SSH (an ssh alias/host the Mac can reach). Returns the
     publish stdout tail on success, None when unconfigured, and raises
-    RuntimeError on a transport/remote failure (callers park, not crash).
+    RuntimeError on a transport/remote failure. The return value is an operator
+    observation only: it never writes Bob's send projection or queue and can
+    never substitute for a Workshop-backed Shop Door Stamp.
     """
     host = os.environ.get("BOB_BOX_SSH", "").strip()
     if not host:

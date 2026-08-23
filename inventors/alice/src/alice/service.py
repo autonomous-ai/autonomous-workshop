@@ -748,35 +748,35 @@ def _capture_alice_source_tree(
     return SourceCapture(tuple(entries), _source_capture_sha256(entries))
 
 
-def _capture_core_source_tree(
-    core_source_root: Path, environment: Mapping[str, str]
+def _capture_workshop_source_tree(
+    workshop_source_root: Path, environment: Mapping[str, str]
 ) -> SourceCapture:
-    """Capture the clean, tracked core package under its sealed import prefix."""
+    """Capture the clean, tracked Workshop under its sealed import prefix."""
 
-    core_source_root = _require_absolute(
-        core_source_root, "Inventor Foundation source root"
+    workshop_source_root = _require_absolute(
+        workshop_source_root, "Inventor Workshop source root"
     )
-    _check_path_components(core_source_root)
-    if not core_source_root.is_dir():
-        raise ServiceError("Inventor Foundation source root must be a directory")
-    package_root = core_source_root / "inventor_core"
+    _check_path_components(workshop_source_root)
+    if not workshop_source_root.is_dir():
+        raise ServiceError("Inventor Workshop source root must be a directory")
+    package_root = workshop_source_root / "inventor_workshop"
     _check_path_components(package_root)
     if not package_root.is_dir():
-        raise ServiceError("Inventor Foundation source package is unavailable")
+        raise ServiceError("Inventor Workshop source package is unavailable")
 
     repository_text = _git_output(
-        core_source_root, ["rev-parse", "--show-toplevel"], environment=environment
+        workshop_source_root, ["rev-parse", "--show-toplevel"], environment=environment
     )
     try:
         repository_root = Path(repository_text.decode("utf-8").strip())
     except UnicodeDecodeError as exc:
-        raise ServiceError("git returned an invalid Foundation repository path") from exc
+        raise ServiceError("git returned an invalid Workshop repository path") from exc
     _check_path_components(repository_root)
     try:
         relative_package = package_root.relative_to(repository_root)
     except ValueError as exc:
         raise ServiceError(
-            "Inventor Foundation source is outside its repository"
+            "Inventor Workshop source is outside its repository"
         ) from exc
     pathspec = str(relative_package)
 
@@ -788,7 +788,7 @@ def _capture_core_source_tree(
         )
 
     if status():
-        raise ServiceError("Inventor Foundation source tree is not clean")
+        raise ServiceError("Inventor Workshop source tree is not clean")
     listing = _git_output(
         repository_root,
         ["ls-files", "--full-name", "-z", "--", pathspec],
@@ -796,63 +796,63 @@ def _capture_core_source_tree(
     )
     names = [item for item in listing.split(b"\0") if item]
     if not names:
-        raise ServiceError("Inventor Foundation source package has no tracked files")
+        raise ServiceError("Inventor Workshop source package has no tracked files")
     entries: list[SourceEntry] = []
     total = 0
     for encoded_name in sorted(names):
         try:
             name = encoded_name.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise ServiceError("Inventor Foundation source path is not UTF-8") from exc
+            raise ServiceError("Inventor Workshop source path is not UTF-8") from exc
         candidate = repository_root / name
         try:
             relative = candidate.relative_to(package_root)
         except ValueError as exc:
-            raise ServiceError("git returned a path outside Inventor Foundation") from exc
+            raise ServiceError("git returned a path outside Inventor Workshop") from exc
         if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
-            raise ServiceError("Inventor Foundation contains an unsafe source path")
+            raise ServiceError("Inventor Workshop contains an unsafe source path")
         content = _secure_read_file(
             candidate,
             maximum_bytes=SOURCE_FILE_MAX_BYTES,
-            purpose="Inventor Foundation source file",
+            purpose="Inventor Workshop source file",
         )
         total += len(content)
         if total > SOURCE_TREE_MAX_BYTES:
-            raise ServiceError("Inventor Foundation exceeds its verification bound")
+            raise ServiceError("Inventor Workshop exceeds its verification bound")
         mode = stat.S_IMODE(candidate.lstat().st_mode) & 0o111
         entries.append(
             SourceEntry(
-                (Path("src") / "inventor_core" / relative).as_posix(),
+                (Path("src") / "inventor_workshop" / relative).as_posix(),
                 content,
                 bool(mode),
             )
         )
     entries.sort(key=lambda entry: entry.relative_name)
     if not any(
-        entry.relative_name == "src/inventor_core/__init__.py" for entry in entries
+        entry.relative_name == "src/inventor_workshop/__init__.py" for entry in entries
     ):
-        raise ServiceError("Inventor Foundation source package is incomplete")
+        raise ServiceError("Inventor Workshop source package is incomplete")
     if status():
-        raise ServiceError("Inventor Foundation source tree changed during verification")
+        raise ServiceError("Inventor Workshop source tree changed during verification")
     return SourceCapture(tuple(entries), _source_capture_sha256(entries))
 
 
 def _capture_source_tree(
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
 ) -> SourceCapture:
-    """Capture Alice and the exact Foundation that her sealed child imports."""
+    """Capture Alice and the exact Workshop that her sealed child imports."""
 
     alice_capture = _capture_alice_source_tree(source_root, environment)
-    core_capture = _capture_core_source_tree(core_source_root, environment)
+    workshop_capture = _capture_workshop_source_tree(workshop_source_root, environment)
     combined = sorted(
-        (*alice_capture.entries, *core_capture.entries),
+        (*alice_capture.entries, *workshop_capture.entries),
         key=lambda entry: entry.relative_name,
     )
     names = [entry.relative_name for entry in combined]
     if len(names) != len(set(names)):
-        raise ServiceError("Alice and Foundation source paths collide")
+        raise ServiceError("Alice and Workshop source paths collide")
     if sum(len(entry.content) for entry in combined) > SOURCE_TREE_MAX_BYTES:
         raise ServiceError("Alice runtime source tree exceeds its verification bound")
     return SourceCapture(tuple(combined), _source_capture_sha256(combined))
@@ -876,12 +876,12 @@ def _source_capture_sha256(entries: Sequence[SourceEntry]) -> str:
 
 def source_tree_sha256(
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
 ) -> str:
-    """Hash Alice's clean tree plus the exact imported Foundation sources."""
+    """Hash Alice's clean tree plus the exact imported Workshop sources."""
 
-    return _capture_source_tree(source_root, core_source_root, environment).sha256
+    return _capture_source_tree(source_root, workshop_source_root, environment).sha256
 
 
 def _canonical_json_bytes(value: object) -> bytes:
@@ -929,7 +929,7 @@ def _resolve_runtime_inputs(
     config: Path,
     root: Path,
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
 ) -> tuple[RuntimeIdentity, dict[str, object], SourceCapture]:
     """Resolve config only under the sanitized environment and bind its source."""
@@ -937,13 +937,13 @@ def _resolve_runtime_inputs(
     config = _require_absolute(config, "config path")
     root = _require_absolute(root, "runtime root")
     source_root = _require_absolute(source_root, "Alice source root")
-    core_source_root = _require_absolute(
-        core_source_root, "Inventor Foundation source root"
+    workshop_source_root = _require_absolute(
+        workshop_source_root, "Inventor Workshop source root"
     )
     _check_path_components(config)
     _check_path_components(root, allow_missing_leaf=True, allow_missing_parents=True)
     _check_path_components(source_root)
-    _check_path_components(core_source_root)
+    _check_path_components(workshop_source_root)
     config_bytes = _secure_read_file(
         config, maximum_bytes=CONFIG_FILE_MAX_BYTES, purpose="config file"
     )
@@ -965,18 +965,18 @@ def _resolve_runtime_inputs(
         if effect_mode not in _EFFECT_MODES:
             raise ServiceError("resolved effect mode is invalid")
         before_source = _capture_source_tree(
-            source_root, core_source_root, environment
+            source_root, workshop_source_root, environment
         )
         if _secure_read_file(
             config, maximum_bytes=CONFIG_FILE_MAX_BYTES, purpose="config file"
         ) != config_bytes:
             raise ServiceError("config file changed during resolution")
         after_source = source_tree_sha256(
-            source_root, core_source_root, environment
+            source_root, workshop_source_root, environment
         )
         if before_source.sha256 != after_source:
             raise ServiceError(
-                "Alice or Foundation source tree changed during config resolution"
+                "Alice or Workshop source tree changed during config resolution"
             )
         identity = RuntimeIdentity(
             source_tree_sha256=before_source.sha256,
@@ -1001,7 +1001,7 @@ def resolve_runtime_identity(
     config: Path,
     root: Path,
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
 ) -> RuntimeIdentity:
     """Resolve config only under the sanitized environment and bind its source."""
@@ -1010,7 +1010,7 @@ def resolve_runtime_identity(
         config=config,
         root=root,
         source_root=source_root,
-        core_source_root=core_source_root,
+        workshop_source_root=workshop_source_root,
         environment=environment,
     )
     return identity
@@ -1080,7 +1080,7 @@ def materialize_execution_snapshot(
     config: Path,
     root: Path,
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
     expected_identity: RuntimeIdentity | None = None,
 ) -> tuple[ExecutionSnapshot, RuntimeIdentity]:
@@ -1088,7 +1088,7 @@ def materialize_execution_snapshot(
 
     for prohibited_root, label in (
         (source_root, "Alice source tree"),
-        (core_source_root, "Inventor Foundation source tree"),
+        (workshop_source_root, "Inventor Workshop source tree"),
     ):
         try:
             root.relative_to(prohibited_root)
@@ -1100,7 +1100,7 @@ def materialize_execution_snapshot(
         config=config,
         root=root,
         source_root=source_root,
-        core_source_root=core_source_root,
+        workshop_source_root=workshop_source_root,
         environment=environment,
     )
     if expected_identity is not None and identity != expected_identity:
@@ -1162,12 +1162,12 @@ def materialize_execution_snapshot(
         config=config,
         root=root,
         source_root=source_root,
-        core_source_root=core_source_root,
+        workshop_source_root=workshop_source_root,
         environment=environment,
     )
     if final_identity != identity:
         raise IdentityMismatch(
-            "Alice, Foundation source, or configuration changed during release sealing"
+            "Alice, Workshop source, or configuration changed during release sealing"
         )
     return snapshot, identity
 
@@ -1336,7 +1336,7 @@ def _isolated_module_argv(
     )
     # -I alone still imports site and executes installation-controlled .pth
     # files before this bootstrap can prepend the sealed release. Alice and
-    # inventor_core are stdlib-only and both live in the snapshot, so disable
+    # inventor_workshop are stdlib-only and both live in the snapshot, so disable
     # site initialization entirely before any application module can be cached.
     return [
         str(python),
@@ -1946,7 +1946,7 @@ def render_plists(
     rate_state: Path,
     watchdog_state: Path,
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     identity: RuntimeIdentity,
     poll_seconds: float,
     stale_seconds: float,
@@ -1962,7 +1962,7 @@ def render_plists(
         "PYTHON": str(python),
         "STATE": str(state),
         "SOURCE_ROOT": str(source_root),
-        "CORE_SOURCE_ROOT": str(core_source_root),
+        "WORKSHOP_SOURCE_ROOT": str(workshop_source_root),
         "SOURCE_TREE_SHA256": identity.source_tree_sha256,
         "CONFIG_SHA256": identity.config_sha256,
         "POLICY_HASH": identity.policy_hash,
@@ -2070,7 +2070,7 @@ def configured_tick_timeout_floor(config: Mapping[str, object]) -> float:
             "cad_command",
             "market_validation_command",
             "outcomes_command",
-            "factory_order_command",
+            "delivery_command",
             "print_fulfillment_command",
         )
         if any(adapters.get(key) for key in command_keys):
@@ -2152,7 +2152,17 @@ def _runtime_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--env-file", required=True)
     parser.add_argument("--root", required=True)
     parser.add_argument("--source-root", required=True)
-    parser.add_argument("--core-source-root", required=True)
+    parser.add_argument(
+        "--workshop-source-root",
+        "--foundation-source-root",
+        "--core-source-root",
+        dest="workshop_source_root",
+        required=True,
+        help=(
+            "absolute Inventor Workshop source root "
+            "(older option names remain read-only compatibility aliases)"
+        ),
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -2242,13 +2252,13 @@ def _runtime_context(
     env_file = _require_absolute(args.env_file, "environment file")
     root = _require_absolute(args.root, "runtime root")
     source_root = _require_absolute(args.source_root, "Alice source root")
-    core_source_root = _require_absolute(
-        args.core_source_root, "Inventor Foundation source root"
+    workshop_source_root = _require_absolute(
+        args.workshop_source_root, "Inventor Workshop source root"
     )
     _check_path_components(config)
     _check_path_components(env_file)
     _check_path_components(source_root)
-    _check_path_components(core_source_root)
+    _check_path_components(workshop_source_root)
     _check_path_components(root, allow_missing_leaf=True, allow_missing_parents=True)
     env_values = load_env_file(env_file)
     environment = sanitized_environment(env_values)
@@ -2257,7 +2267,7 @@ def _runtime_context(
         env_file,
         root,
         source_root,
-        core_source_root,
+        workshop_source_root,
         env_values,
         environment,
     )
@@ -2267,14 +2277,14 @@ def _resolve_from_context(
     config: Path,
     root: Path,
     source_root: Path,
-    core_source_root: Path,
+    workshop_source_root: Path,
     environment: Mapping[str, str],
 ) -> RuntimeIdentity:
     return resolve_runtime_identity(
         config=config,
         root=root,
         source_root=source_root,
-        core_source_root=core_source_root,
+        workshop_source_root=workshop_source_root,
         environment=environment,
     )
 
@@ -2394,7 +2404,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 env_file,
                 root,
                 source_root,
-                core_source_root,
+                workshop_source_root,
                 _env_values,
                 environment,
             ) = _runtime_context(args)
@@ -2402,11 +2412,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config=config,
                 root=root,
                 source_root=source_root,
-                core_source_root=core_source_root,
+                workshop_source_root=workshop_source_root,
                 environment=environment,
             )
             identity_resolver = lambda: _resolve_from_context(
-                config, root, source_root, core_source_root, environment
+                config, root, source_root, workshop_source_root, environment
             )
             if hasattr(args, "max_tick_seconds"):
                 args.max_tick_seconds = effective_max_tick_seconds(
@@ -2426,7 +2436,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config=config,
                 root=root,
                 source_root=source_root,
-                core_source_root=core_source_root,
+                workshop_source_root=workshop_source_root,
                 environment=environment,
                 expected_identity=identity,
             )
@@ -2474,7 +2484,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config=config,
                 root=root,
                 source_root=source_root,
-                core_source_root=core_source_root,
+                workshop_source_root=workshop_source_root,
                 environment=environment,
                 expected_identity=expected,
             )
@@ -2657,7 +2667,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     args.watchdog_state, "watchdog receipt"
                 ),
                 source_root=source_root,
-                core_source_root=core_source_root,
+                workshop_source_root=workshop_source_root,
                 identity=identity,
                 poll_seconds=args.poll_seconds,
                 stale_seconds=args.stale_seconds,

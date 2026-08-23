@@ -29,7 +29,7 @@ STAGES = [
     "build",        # per-piece build + deterministic gate
     "panel",        # blind lenses: printability/fidelity/playability
     "playtest",     # fun gate: LLM-player table, then humans
-    "ship",         # all gates green, published
+    "ship",         # all checks green, ready to Pack and Send
     "killed",       # terminal — killed with a stated reason
 ]
 
@@ -47,14 +47,14 @@ class Game:
     bill: Optional[dict] = None
     cogs_usd: Optional[float] = None
     fun_evidence: list = field(default_factory=list)  # playtest results
-    # --- presentation / catalog (publish.py reads these) --------
+    # --- presentation / catalog (send.py reads these) -----------
     mech: str = ""                 # one-line mechanism, e.g. 'living-hinge detent'
     blurb: str = ""                # one-line catalog blurb
     seats: str = "2-4"
     t_min: str = "15"
     t_max: str = "25"
     flag: str = ""                 # 'featured' triggers the featured treatment
-    price_usd: float = 0.0          # 0 -> publish._default_price()
+    price_usd: float = 0.0          # 0 -> send._default_price()
     rules_text: str = ""           # full rulebook text for the writeup
     brief: str = ""                # dimension/interfaces/print plan
     repair_used: int = 0
@@ -96,7 +96,7 @@ class Queue:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(games, indent=2))
 
-    # --- core ops ----------------------------------------------------------
+    # --- state operations -------------------------------------------------
     def add(self, slug: str, title: str = "", idea: str = "", identity: str = "") -> Game:
         games = self._load()
         if any(g["slug"] == slug for g in games):

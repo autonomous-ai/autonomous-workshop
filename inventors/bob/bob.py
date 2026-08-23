@@ -285,37 +285,39 @@ def cmd_improve(_args):
     return 0
 
 
-def cmd_publish(args):
-    """Manual flip for a game the pipeline parked at the publish edge —
-    the human override path. The autonomous flip lives in loops/invent.py."""
-    from harness import publish
-    errors = publish.validate(args.slug)
+def cmd_send(args):
+    """Pack an inspected game and send it through Workshop's Shop Door."""
+    from harness import send
+    errors = send.validate(args.slug)
     if errors:
         print("validator red:")
         for e in errors:
             print("  - %s" % e)
         return 1
-    publish.import_draft(args.slug)
-    publish.curate(args.slug)
+    send.send_draft(args.slug)
+    send.curate(args.slug)
     if args.price_cents:
-        publish.flip_public(args.slug, args.price_cents)
-        print("published %s at %d cents" % (args.slug, args.price_cents))
+        send.flip_public(args.slug, args.price_cents)
+        print("sent %s to the shop at %d cents" % (args.slug, args.price_cents))
     else:
-        print("draft imported + curated; pass --price-cents to flip public")
+        print("sent as a private draft; pass --price-cents to make it public")
     return 0
 
 
+cmd_publish = cmd_send  # v0.2 CLI compatibility
+
+
 def cmd_unpublish(args):
-    from harness import publish
-    publish.unpublish(args.slug)
+    from harness import send
+    send.unpublish(args.slug)
     print("unpublished %s" % args.slug)
     return 0
 
 
 def cmd_reconcile_public(args):
-    """Read Panda state; never re-sends the non-idempotent-facing flip."""
-    from harness import publish
-    record = publish.reconcile_public(args.slug)
+    """Read Shop Door state; never repeats the public-send effect."""
+    from harness import send
+    record = send.reconcile_public(args.slug)
     design = record.get("design") or {}
     print("verified public: %s (%s)" %
           (design.get("slug", args.slug), design.get("current_history_id")))
@@ -323,8 +325,11 @@ def cmd_reconcile_public(args):
 
 
 def cmd_export(args):
-    """Export a game in text2game's out/<slug>/ publish contract (Dee
-    2026-08-22: tap the existing publishing pipeline, don't rebuild it)."""
+    """Build the legacy text2game payload for explicit operator inspection.
+
+    This compatibility command never changes Bob's queue or send projection;
+    only ``send`` through Workshop may establish send authority.
+    """
     from harness import export_box
     manifest = export_box.export_text2game(args.slug)
     print(json.dumps(manifest, indent=2))
@@ -332,21 +337,20 @@ def cmd_export(args):
 
 
 def cmd_mark_published(args):
-    """Record the box's import receipt after a manual handoff publish."""
-    path = os.path.join(queue.bob_home(), "games", args.slug, "published.json")
-    try:
-        with open(path) as handle:
-            info = json.load(handle)
-    except (OSError, ValueError):
-        info = {}
-    info.update({"design_id": args.design_id, "pushed": True,
-                 "confirmed_by": "human"})
-    tmp = "%s.tmp.%d" % (path, os.getpid())
-    with open(tmp, "w") as handle:
-        json.dump(info, handle, indent=2)
-    os.replace(tmp, path)
-    print("recorded design_id %s for %s" % (args.design_id, args.slug))
-    return 0
+    """Refuse the obsolete box-receipt shortcut without mutating state.
+
+    Kept as a compatibility command so an old runbook fails explicitly rather
+    than silently treating a design id or human assertion as a Workshop
+    receipt.
+    """
+    sys.stderr.write(
+        "REFUSING to mark %s published from a manual/box observation: only "
+        "`bob send %s` may create the Workshop product, durable Sender "
+        "intent, and validated Shop Door Stamp required for Bob's published "
+        "state. Historical box effects must remain external observations.\n"
+        % (args.slug, args.slug)
+    )
+    return 2
 
 
 def cmd_seed(_args):
@@ -383,10 +387,14 @@ def main(argv=None):
     sub.add_parser("status").set_defaults(fn=cmd_status)
     sub.add_parser("audit").set_defaults(fn=cmd_audit)
     sub.add_parser("improve").set_defaults(fn=cmd_improve)
-    p = sub.add_parser("publish")
+    p = sub.add_parser("send")
     p.add_argument("slug")
     p.add_argument("--price-cents", type=int, default=0)
-    p.set_defaults(fn=cmd_publish)
+    p.set_defaults(fn=cmd_send)
+    p = sub.add_parser("publish", help="compatibility alias for send")
+    p.add_argument("slug")
+    p.add_argument("--price-cents", type=int, default=0)
+    p.set_defaults(fn=cmd_send)
     p = sub.add_parser("unpublish")
     p.add_argument("slug")
     p.set_defaults(fn=cmd_unpublish)

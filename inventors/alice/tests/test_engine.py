@@ -5,6 +5,9 @@ import hashlib
 import json
 from pathlib import Path
 
+from inventor_workshop import load_taste
+from inventor_workshop.errors import ManifestError
+
 from alice.adapters import AdapterError, AdapterReceipt, adapter_input_sha256
 from alice.config import load_config
 from alice.engine import AliceEngine, EngineError
@@ -42,6 +45,17 @@ class CapturingAgentProvider:
             content={"summary": "captured"},
             confidence=0.8,
         )
+
+
+class TasteMutatingProvider(CapturingAgentProvider):
+    def __init__(self, taste_path: Path):
+        super().__init__()
+        self.taste_path = taste_path
+
+    def run(self, request):
+        response = super().run(request)
+        self.taste_path.write_text("# Mutated taste\n", encoding="utf-8")
+        return response
 
 
 class RecordingAdapter:
@@ -125,7 +139,7 @@ class FulfillmentLifecycleAdapter:
     def invoke(self, operation, payload):
         self.calls.append(operation)
         if operation == "orders.poll_paid":
-            adapter = "factory_order"
+            adapter = "delivery"
             evidence_class = "market"
             result = {"orders": [dict(self.paid_order)]}
         elif operation in {
@@ -533,12 +547,45 @@ class EngineTests(unittest.TestCase):
         engine._execute(task)
 
         knowledge = provider.requests[0].context["recent_knowledge"]
+        taste = provider.requests[0].context["taste"]
+        self.assertEqual(taste["path"], "TASTE.md")
+        self.assertEqual(taste["sha256"], engine.taste.sha256)
+        self.assertIn("Alice's taste", taste["content"])
         self.assertEqual(knowledge[0]["action"], "history.scan_traditional")
         self.assertEqual(
             knowledge[0]["content"]["summary"], "A cited sowing-game pattern"
         )
 
-    def test_candidate_effect_waits_for_its_packet_dependency(self) -> None:
+    def test_taste_change_during_agent_call_rejects_the_result(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            taste_root = Path(temporary)
+            taste_path = taste_root / "TASTE.md"
+            taste_path.write_text("# Stable taste\n", encoding="utf-8")
+            taste = load_taste(taste_root)
+            task = self.store.enqueue_task(
+                "opportunity.frame",
+                {
+                    "loop": "invention",
+                    "action": "opportunity.frame",
+                    "role": "alice_director",
+                    "objective": "frame an opportunity",
+                    "depends_on": [],
+                    "dependencies": {},
+                    "work_payload": {},
+                },
+                idempotency_key="taste-mutation",
+            )
+            engine = AliceEngine(
+                self.store,
+                TasteMutatingProvider(taste_path),
+                self.config,
+                taste=taste,
+            )
+
+            with self.assertRaisesRegex(ManifestError, "changed during Make"):
+                engine._execute(task)
+
+    def test_send_waits_for_its_pack_dependency(self) -> None:
         self.config["runtime"]["effect_mode"] = "live"
         candidate = self.store.create_candidate(
             {"title": "River Council"},
@@ -554,14 +601,14 @@ class EngineTests(unittest.TestCase):
 
         self.engine.schedule(now=4_000_000)
         tasks = self.store.list_tasks(run_id=run_id, limit=100)
-        self.assertEqual([task.kind for task in tasks], ["publish.packet"])
+        self.assertEqual([task.kind for task in tasks], ["pack.product"])
 
         packet = self.store.lease_task(
             "packet-worker",
             lease_seconds=60,
             now=4_000_000.1,
         )
-        self.assertEqual(packet.kind, "publish.packet")
+        self.assertEqual(packet.kind, "pack.product")
         completed_packet = self.store.complete_task(
             packet.id,
             "packet-worker",
@@ -580,11 +627,11 @@ class EngineTests(unittest.TestCase):
         )
         self.engine.schedule(now=4_000_000.3)
         tasks = self.store.list_tasks(run_id=run_id, limit=100)
-        invoke = next(task for task in tasks if task.kind == "publish.invoke_pipeline")
-        dependency = invoke.payload["dependencies"]["publish.packet"]
+        invoke = next(task for task in tasks if task.kind == "send.to_shop")
+        dependency = invoke.payload["dependencies"]["pack.product"]
         self.assertEqual(dependency["output_sha256"], completed_packet.output_sha256)
 
-    def test_dry_run_rejects_publish_before_adapter_invocation(self) -> None:
+    def test_dry_run_rejects_legacy_publish_task_before_adapter_invocation(self) -> None:
         content = {"title": "River Council"}
         candidate = self.store.create_candidate(content, candidate_id="dry-publish")
         candidate = self.store.transition_candidate(
@@ -620,7 +667,7 @@ class EngineTests(unittest.TestCase):
 
         self.assertEqual(adapter.calls, [])
 
-    def test_stale_candidate_effect_is_rejected_before_adapter_invocation(self) -> None:
+    def test_stale_legacy_publish_task_is_rejected_before_adapter_invocation(self) -> None:
         self.config["runtime"]["effect_mode"] = "live"
         content = {"title": "River Council"}
         candidate = self.store.create_candidate(content, candidate_id="stale-publish")
@@ -663,7 +710,7 @@ class EngineTests(unittest.TestCase):
 
         self.assertEqual(adapter.calls, [])
 
-    def test_verified_pipeline_receipts_advance_to_published_automatically(self) -> None:
+    def test_verified_shop_door_stamps_advance_automatically(self) -> None:
         candidate = self.store.create_candidate(
             {"title": "River Council"},
             candidate_id="pipeline-candidate",
@@ -681,11 +728,11 @@ class EngineTests(unittest.TestCase):
         }
         run_id = f"candidate:{candidate.id}:v2"
         packet = self.store.enqueue_task(
-            "publish.packet",
+            "pack.product",
             {
                 "candidate_id": candidate.id,
                 "candidate_version": 2,
-                "role": "publisher",
+                "role": "packer",
             },
             idempotency_key="pipeline-packet-result",
             run_id=run_id,
@@ -694,10 +741,10 @@ class EngineTests(unittest.TestCase):
         )
 
         invoke = self.store.enqueue_task(
-            "publish.invoke_pipeline",
+            "send.to_shop",
             {
                 "candidate_id": candidate.id,
-                "role": "publisher",
+                "role": "sender",
                 "candidate_version": 2,
             },
             idempotency_key="pipeline-invoke-result",
@@ -732,7 +779,7 @@ class EngineTests(unittest.TestCase):
                 "executor": "adapter",
                 "receipt": {
                     "status": "passed",
-                    "evidence_class": "publishing_pipeline",
+                    "evidence_class": "shop_door",
                     "payload": receipt,
                 },
             },
@@ -745,7 +792,7 @@ class EngineTests(unittest.TestCase):
             for task in self.store.list_tasks(
                 run_id=f"candidate:{candidate.id}:v3", limit=100
             )
-            if task.kind == "publish.verify_page"
+            if task.kind == "send.verify_shop"
         )
         leased = self.store.lease_task("pipeline-worker-2")
         self.assertEqual(leased.id, verify.id)
@@ -757,7 +804,7 @@ class EngineTests(unittest.TestCase):
                 "executor": "adapter",
                 "receipt": {
                     "status": "passed",
-                    "evidence_class": "publishing_pipeline",
+                    "evidence_class": "shop_door",
                     "payload": receipt,
                 },
             },
@@ -1102,7 +1149,7 @@ class EngineTests(unittest.TestCase):
             self.config,
             worker_id="fulfillment-worker",
             adapters={
-                "factory_order": adapter,
+                "delivery": adapter,
                 "print_fulfillment": adapter,
             },
         )

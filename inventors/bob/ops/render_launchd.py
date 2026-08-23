@@ -57,11 +57,11 @@ def render_plist(
     output: Path,
     repository: str,
     user_home: str,
-    core_source: str,
+    workshop_source: str,
 ) -> None:
     repository = _plain_directory(repository, "repository")
     user_home = _plain_directory(user_home, "user home")
-    core_source = _plain_directory(core_source, "core source")
+    workshop_source = _plain_directory(workshop_source, "Workshop source")
     if not template.is_absolute() or not output.is_absolute():
         raise RenderError("template and output paths must be absolute")
     try:
@@ -80,7 +80,7 @@ def render_plist(
         {
             "__REPO__": repository,
             "__USER_HOME__": user_home,
-            "__CORE_SRC__": core_source,
+            "__WORKSHOP_SRC__": workshop_source,
         },
     )
     payload = plistlib.dumps(rendered, fmt=plistlib.FMT_XML, sort_keys=False)
@@ -113,7 +113,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repo", required=True)
     parser.add_argument("--home", required=True)
-    parser.add_argument("--core-src", required=True)
+    parser.add_argument("--workshop-src", required=True)
     args = parser.parse_args()
     try:
         render_plist(
@@ -121,7 +121,7 @@ def main() -> int:
             output=args.output,
             repository=args.repo,
             user_home=args.home,
-            core_source=args.core_src,
+            workshop_source=args.workshop_src,
         )
     except (OSError, plistlib.InvalidFileException, RenderError) as exc:
         parser.exit(1, f"render_launchd: {exc}\n")

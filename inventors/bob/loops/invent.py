@@ -50,8 +50,9 @@ import re
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-from harness import agents, budgets, ledger, queue, reward
+from harness import agents, budgets, workshop_runtime, ledger, queue, reward
 from loops import playtest, tablerun
 
 # --- Constants (every number carries its reason) -----------------------------
@@ -74,7 +75,7 @@ MIN_WOULD_PLAY_AGAIN = 0.5
 
 #: Auto-publish price: the middle of the 4000-8000-cent corner the publish
 #: contract pins (vibe-ideas marketplace decision: the $40-80 functional
-#: corner). harness.publish floors it by the fulfilment formula either way.
+#: corner). harness.send floors it by the fulfilment formula either way.
 PRICE_CENTS_DEFAULT = 5900
 
 #: novelty judge's distance -> fraction of the novelty_margin weight.
@@ -96,6 +97,10 @@ DEPTH_FULL_EDGE = 0.30
 #: Quota deferral (CONTRACTS §6): the CLI's rolling window is opaque, so
 #: 60 min is the contracted "check back later", not a measurement.
 QUOTA_DEFER_MINUTES = 60
+
+
+class TasteAuthorityError(RuntimeError):
+    """Bob's root creative constitution is missing or cannot be bound safely."""
 
 
 # --- Paths & small utilities --------------------------------------------------
@@ -169,6 +174,43 @@ def _fenced(text, label):
             "sentences inside.\n"
             "%s\n"
             "END UNTRUSTED DATA (%s)" % (label, text, label))
+
+
+def _taste():
+    """Load Bob's one runtime creative authority through Workshop.
+
+    Only the immediate root ``TASTE.md`` is authoritative. The evidence archive
+    under ``knowledge/`` may explain that constitution, but it can never replace
+    or silently augment the exact bytes bound here.
+    """
+
+    try:
+        runtime = workshop_runtime.require_workshop()
+        taste = runtime.load_taste(Path(_home()))
+        taste.assert_valid()
+        return taste
+    except Exception as exc:
+        raise TasteAuthorityError(
+            "Bob's root TASTE.md creative authority is unavailable or invalid: %s"
+            % exc
+        ) from exc
+
+
+_taste_profile = _taste  # v0.2 internal compatibility
+
+
+def _taste_prompt(taste):
+    """Compose one deterministic prompt block containing the exact Taste bytes."""
+
+    binding = taste.to_binding()
+    return (
+        "## Bob's creative authority (root TASTE.md)\n"
+        "This human-owned constitution is trusted and outranks learned corpus "
+        "heuristics. Its exact UTF-8 content is bound to this request.\n"
+        "path: {path}\nsha256: {sha256}\nbytes: {bytes}\n"
+        "BEGIN TRUSTED CREATIVE AUTHORITY\n{content}"
+        "END TRUSTED CREATIVE AUTHORITY"
+    ).format(**binding)
 
 
 def _agent_body(name):
@@ -349,11 +391,8 @@ def _handle_sparked(step):
     lane = _lane(game)
     cost = 0.0
 
-    taste = ""
-    taste_path = os.path.join(_home(), "knowledge", "TASTE.md")
-    if os.path.exists(taste_path):
-        with open(taste_path) as handle:
-            taste = handle.read()[:4000]
+    taste = _taste()
+    taste_section = _taste_prompt(taste)
     cards = []
     cards_dir = os.path.join(_home(), "corpus", "cards")
     if os.path.isdir(cards_dir):
@@ -365,8 +404,7 @@ def _handle_sparked(step):
                 continue
     prompt = "\n\n".join([
         _agent_body("bob-ideator"),
-        "## The owner's taste (knowledge/TASTE.md — outranks everything)\n%s"
-        % _fenced(taste or "(empty)", "TASTE.md"),
+        taste_section,
         "## Corpus cards (what the scholar loops have learned so far)\n%s"
         % _fenced("\n\n".join(cards) or "(no cards yet)", "corpus cards"),
         "## Your arm for this call\n%s\nlane: %s"
@@ -396,6 +434,7 @@ def _handle_sparked(step):
         for i, s in enumerate(sparks))
     prompt = "\n\n".join([
         _agent_body("bob-triage-judge"),
+        taste_section,
         "## The sparks\n" + _fenced(numbered, "ideator sparks"),
         "## Output contract\nReply with JSON only: {\"pick\": <index of the "
         "one survivor, or -1 to kill all>, \"safety_pass\": <false if the "
@@ -444,10 +483,19 @@ def _handle_sparked(step):
     idea["slug"] = slug
     idea["lane"] = lane
     idea["direction"] = direction
+    try:
+        taste.assert_current()
+    except Exception as exc:
+        raise TasteAuthorityError(
+            "root TASTE.md changed during spark selection; discard the request "
+            "and retry against one exact creative authority: %s" % exc
+        ) from exc
+    idea["taste"] = taste.to_binding()
     _write_json(os.path.join(_game_dir(slug), "idea.json"), idea)
     sha = _idea_sha(slug)
     _write_json(os.path.join(_game_dir(slug), "review", "safety.json"), {
         "idea_sha": sha, "safety_pass": True,
+        "taste_sha256": idea["taste"]["sha256"],
         "judge": "bob-triage-judge",
         "reasons": verdict.get("reasons", ""),
     })
@@ -1401,7 +1449,7 @@ def _compute_components(slug, lane, records):
 #: the ai-created tag, never a paragraph of explanation.
 DISCLOSURE_LINE = "By Bob."
 
-#: curate()'s content walls (harness/publish.py BODY_RUNES/LEAD_RUNES): a
+#: curate()'s content walls (harness/send.py BODY_RUNES/LEAD_RUNES): a
 #: use-case/story body must land in 180-400 runes, a lead/label in 1-40.
 #: The fallback listing has to clear them DETERMINISTICALLY — the agentless
 #: path previously omitted use_case/story_blocks entirely, so curate()
@@ -1426,7 +1474,7 @@ def _wall_body(seed_text):
 def _page_kit(slug, game):
     """The product-page kit: RULES.md (zip copy of rules.md — the platform
     contract wants the canonical uppercase name) + listing.json (the store
-    metadata harness/publish.py reads). The page copy itself is generated by
+    metadata harness/send.py reads). The page copy itself is generated by
     the platform's own content pipeline after import (Dee 2026-08-22:
     "that pipeline should exist already ... just tap into it"); listing.json
     carries the seed the pipeline works from. bob-page-writer polishes when
@@ -1526,62 +1574,61 @@ def _page_kit(slug, game):
     return warnings
 
 
-def _publish(slug, game, score_value):
-    """Auto-publish (Dee 2026-08-22 ruling): Bob flips it public himself,
-    Telegram gets the notice + the undo. BOB_PUBLISH_DRY_RUN defaults to 1
-    (no creds yet): dry runs write a published.json stub and advance —
-    the pipeline's behavior is identical either way, only the HTTP is not."""
-    dry = os.environ.get("BOB_PUBLISH_DRY_RUN", "1") != "0"
+def _send_setting(primary, legacy, default):
+    """Read one renamed operator setting without accepting split truth."""
+
+    current = os.environ.get(primary)
+    old = os.environ.get(legacy)
+    if current is not None and old is not None and current.strip() != old.strip():
+        raise ValueError("%s and legacy %s disagree" % (primary, legacy))
+    return (current if current is not None else old if old is not None else default).strip()
+
+
+def _send(slug, game, score_value):
+    """MAKE has passed INSPECT; now PACK and SEND through Workshop.
+
+    ``BOB_SEND_DRY_RUN`` defaults to 1 while credentials are being
+    provisioned.  The old text2game box exporter remains available through
+    ``bob export`` for an operator investigating historical products, but it
+    is not send authority and is never invoked by the autonomous loop.
+    """
+    try:
+        dry = _send_setting(
+            "BOB_SEND_DRY_RUN", "BOB_PUBLISH_DRY_RUN", "1"
+        ) != "0"
+        via = _send_setting(
+            "BOB_SEND_VIA", "BOB_PUBLISH_VIA", "workshop"
+        ).lower() or "workshop"
+    except ValueError as exc:
+        queue.park(slug, "send configuration conflict: %s" % exc)
+        return
     sha = _idea_sha(slug)
     title = game.get("title", slug)
     kit_warnings = _page_kit(slug, game)
 
-    # BOB_PUBLISH_VIA=box (Dee 2026-08-22): publish through text2game's
-    # proven box-bound pipeline instead of the HTTP path. Bob exports the
-    # exact out/<slug>/ payload text2game/publish.py consumes; with
-    # BOB_BOX_SSH set the handoff is fully automatic (rsync + remote
-    # ./publish.py), otherwise the operator gets two copy-paste commands
-    # over Telegram. The draft->public flip stays in admindash either way —
-    # that pipeline's discipline, not ours to change from here.
-    if os.environ.get("BOB_PUBLISH_VIA", "").strip() == "box":
-        from harness import export_box
-        try:
-            manifest = export_box.export_text2game(slug)
-        except Exception as exc:  # noqa: BLE001 — an export bug parks, never crashes
-            queue.park(slug, "text2game export failed: %s: %s"
-                       % (type(exc).__name__, exc))
-            return
-        if not manifest["complete"]:
-            queue.park(slug, "text2game export incomplete — missing: %s"
-                       % "; ".join(manifest["missing"]))
-            return
-        pushed = None
-        try:
-            pushed = export_box.push_box(slug)
-        except Exception as exc:  # noqa: BLE001 — box unreachable = handoff, not crash
-            _warn("box push failed for %s: %s" % (slug, exc))
-        _write_json(os.path.join(_game_dir(slug), "published.json"), {
-            "via": "text2game-box",
-            "idea_sha": sha,
-            "score": score_value,
-            "pushed": bool(pushed),
-            "box_output": pushed,
-            "page_kit_warnings": kit_warnings,
-            "handoff_instructions": None if pushed else manifest["instructions"],
-        })
-        queue.advance(slug, "published",
-                      "box publish: %s" % ("pushed + imported on the box"
-                                           if pushed else "exported; awaiting"
-                                           " box operator (see Telegram)"))
-        if pushed:
-            _telegram_notice("[bob] DRAFT imported via box: %s (R=%.1f) — "
-                             "one click in admindash publishes it.\n%s"
-                             % (title, score_value, pushed[-300:]))
-        else:
-            _telegram_notice("[bob] EXPORT READY: %s (R=%.1f). Run on the "
-                             "panda box:\n%s"
-                             % (title, score_value,
-                                "\n".join(manifest["instructions"])))
+    if via == "box":
+        # The box can create a real remote effect without Workshop's local
+        # pack/product/intent/Stamp chain. Running it here would let an
+        # unauthenticated stdout string advance Bob's authoritative queue.
+        # Keep the exporter for explicit operator use, but make autonomous
+        # selection fail closed and visibly outside every send-complete state.
+        reason = (
+            "BOB_SEND_VIA=box is legacy manual compatibility only; the "
+            "autonomous loop will not export, SSH, or treat box output as a "
+            "Stamp. Run `bob export %s` manually for the historical "
+            "payload, or set BOB_SEND_VIA=workshop so Sender records "
+            "the durable intent and validates the Shop Door Stamp" % slug
+        )
+        queue.park(slug, reason)
+        _telegram_notice("[bob] SEND BLOCKED: %s (R=%.1f). %s"
+                         % (title, score_value, reason))
+        return
+    if via != "workshop":
+        queue.park(
+            slug,
+            "unknown BOB_SEND_VIA=%r; only 'workshop' is an autonomous "
+            "send path ('box' is manual export compatibility only)" % via,
+        )
         return
 
     if dry:
@@ -1590,48 +1637,48 @@ def _publish(slug, game, score_value):
         # content drift before an operator ever arms the network path. The
         # harness keeps Bob's existing stub + queue semantics.
         try:
-            from harness import publish
-            publish.build_zip(slug)
-            packet_identity = publish.core_packet_identity(slug)
-        except Exception as exc:  # noqa: BLE001 — publication walls park safely
-            queue.park(slug, "core dry-run publication failed: %s: %s"
+            from harness import send
+            send.pack_game(slug)
+            pack_identity = send.workshop_pack_identity(slug)
+        except Exception as exc:  # noqa: BLE001 — send walls park safely
+            queue.park(slug, "Workshop dry-run send failed: %s: %s"
                        % (type(exc).__name__, exc))
             return
-        _write_json(os.path.join(_game_dir(slug), "published.json"), {
+        send.write_send_projection(slug, {
             "dry_run": True,
             # Operator projection only.  It proves a rehearsal happened, not
-            # a remote effect; harness.publish consults core when real effects
-            # are later armed and may replace this record with a draft receipt.
-            "publication_authority": "none",
+            # a remote effect; harness.send consults Workshop when effects are
+            # later armed and may replace this record with a draft Stamp.
+            "send_authority": "none",
             "idea_sha": sha,
             "score": score_value,
             "page_kit_warnings": kit_warnings,
-            "core_artifact_sha256": packet_identity["artifact_sha256"],
-            "core_packet_sha256": packet_identity["packet_sha256"],
-            "core_contract": "inventor_core.artifacts/v1",
-            "note": "BOB_PUBLISH_DRY_RUN=1 — stub only; no listing exists. "
-                    "Set BOB_PUBLISH_DRY_RUN=0 with creds to flip for real.",
+            "workshop_artifact_sha256": pack_identity["artifact_sha256"],
+            "workshop_pack_sha256": pack_identity["pack_sha256"],
+            "workshop_contract": "inventor_workshop.artifacts/v1",
+            "note": "BOB_SEND_DRY_RUN=1 — rehearsal only; no listing exists. "
+                    "Set BOB_SEND_DRY_RUN=0 with creds to send for real.",
         })
         queue.advance(slug, "published",
-                      "dry-run publish: core packet + published.json stub written")
-        _telegram_notice("[bob] DRY-RUN publish: %s (R=%.1f). No listing "
+                      "dry-run send: Workshop pack + send.json written")
+        _telegram_notice("[bob] DRY-RUN send: %s (R=%.1f). No listing "
                          "created. `bob unpublish %s` is a no-op."
                          % (title, score_value, slug))
         return
     try:
-        from harness import publish
+        from harness import send
     except ImportError:
-        queue.park(slug, "publish-eligible but harness/publish.py is not "
-                         "built — integrate the publish module or set "
-                         "BOB_PUBLISH_DRY_RUN=1")
+        queue.park(slug, "send-eligible but harness/send.py is not "
+                         "available — restore Bob's send boundary or set "
+                         "BOB_SEND_DRY_RUN=1")
         return
-    errors = publish.validate(slug)
+    errors = send.validate(slug)
     if errors:
-        queue.park(slug, "publish validator red: %s" % "; ".join(errors))
+        queue.park(slug, "send validator red: %s" % "; ".join(errors))
         return
-    publish.import_draft(slug)   # advances reviewed -> published itself
+    send.send_draft(slug)   # advances reviewed -> published itself
     try:
-        publish.curate(slug)
+        send.curate(slug)
     except Exception as exc:  # noqa: BLE001 — page copy never blocks a flip
         # The design itself is already imported and correct; only the
         # curated page copy failed, and the platform's own content
@@ -1644,8 +1691,15 @@ def _publish(slug, game, score_value):
     # auto publish." The flip is opt-in via BOB_AUTO_FLIP=1 — until quality
     # is proven on real listings, Bob imports + curates and the human's one
     # click in admindash takes it public.
-    if os.environ.get("BOB_AUTO_FLIP", "0") == "1":
-        publish.flip_public(slug, PRICE_CENTS_DEFAULT)  # published -> live
+    try:
+        make_public = _send_setting(
+            "BOB_SHOP_PUBLIC", "BOB_AUTO_FLIP", "0"
+        ) == "1"
+    except ValueError as exc:
+        queue.park(slug, "Shop Door configuration conflict: %s" % exc)
+        return
+    if make_public:
+        send.flip_public(slug, PRICE_CENTS_DEFAULT)  # published -> live
         # NO queue.advance here: import_draft and flip_public each advance
         # the queue themselves — a third advance was the live -> published
         # ValueError that crashed every real publish (pre-launch verify
@@ -1657,6 +1711,9 @@ def _publish(slug, game, score_value):
         _telegram_notice("[bob] DRAFT imported: %s (R=%.1f). One click in "
                          "admindash publishes it. Suggested price: %d cents."
                          % (title, score_value, PRICE_CENTS_DEFAULT))
+
+
+_launch = _send  # v0.2 internal compatibility
 
 
 def _handle_reviewed(step):
@@ -1701,7 +1758,7 @@ def _handle_reviewed(step):
                 score=score_value, components=components, delta=delta)
 
     if eligible:
-        _publish(slug, game, score_value)
+        _send(slug, game, score_value)
         current = queue.load()["games"].get(slug) or {}
         # Dry runs and import-only stops land at `published`; a real flip
         # lands at `live` (flip_public advances published -> live). Both
@@ -1710,7 +1767,7 @@ def _handle_reviewed(step):
             _ledger_row(slug, "published", 0.0,
                         "published at R=%.1f" % score_value,
                         score=score_value, components=components,
-                        delta=delta, kind="publish")
+                        delta=delta, kind="send")
             _bandit_terminal(game, score_value / 100.0)
         return
 
@@ -1736,9 +1793,9 @@ def _handle_reviewed(step):
 
 
 # `published` is deliberately a WAITING state, not a dispatch state. The old
-# handoff handler trusted mutable published.json fields and could mark an
-# out-of-band/manual listing live. Only publish.flip_public() or
-# publish.reconcile_public() may advance published -> live after Foundation
+# handoff handler trusted mutable projection fields and could mark an
+# out-of-band/manual listing live. Only send.flip_public() or
+# send.reconcile_public() may advance published -> live after Workshop
 # proves the exact owner, artifact, history, active USD listing, price, and SKU.
 # --- Dispatch ----------------------------------------------------------------------
 

@@ -20,6 +20,7 @@ from alice.page_builder import (
     PageBuilderAdapter,
     PageBuilderError,
     PageBuilderReadback,
+    ShopDoorAdapter,
     build_publishdesign_preflight_receipt,
     snapshot_project,
 )
@@ -98,6 +99,9 @@ class PageBuilderReadbackSecurityTests(unittest.TestCase):
 
 
 class PageBuilderAdapterTests(unittest.TestCase):
+    def test_old_adapter_name_is_only_a_shop_door_alias(self) -> None:
+        self.assertIs(PageBuilderAdapter, ShopDoorAdapter)
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.workspace = Path(self.temporary.name)
@@ -202,10 +206,10 @@ print(f"publish: {slug} -> import ok")
         self._git("add", ".")
         self._git("commit", "--quiet", "-m", "pinned vibe fixture")
         self._refresh_pins()
-        self.backend = self.workspace / "panda-social-backend"
+        self.backend = self.workspace / "shop-door-backend"
         self.backend.mkdir()
         (self.backend / "go.mod").write_text(
-            "module example.invalid/panda-social-backend\n", encoding="utf-8"
+            "module example.invalid/shop-door-backend\n", encoding="utf-8"
         )
         (self.backend / ".env").write_text(
             "MONGODB_URI=mongodb://fixture.invalid\n", encoding="utf-8"
@@ -215,8 +219,8 @@ print(f"publish: {slug} -> import ok")
         self.gcs_credentials.write_text('{"type":"service_account"}\n', encoding="utf-8")
         self.gcs_credentials.chmod(0o600)
         self.local_environment = {
-            "PANDA_OWNER_ID": "a" * 24,
-            "PANDA_BACKEND_DIR": str(self.backend),
+            "WORKSHOP_SHOP_OWNER_ID": "a" * 24,
+            "WORKSHOP_SHOP_BACKEND_DIR": str(self.backend),
             "GOOGLE_APPLICATION_CREDENTIALS": str(self.gcs_credentials),
         }
         self.publishdesign_preflight_receipt = (
@@ -510,7 +514,7 @@ print(f"publish: {slug} -> import ok")
         receipt = self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
 
         self.assertEqual(receipt.status, "passed")
-        self.assertEqual(receipt.evidence_class, "publishing_pipeline")
+        self.assertEqual(receipt.evidence_class, "shop_door")
         self.assertEqual(
             receipt.input_sha256,
             adapter_input_sha256(PAGE_BUILDER_OPERATION, payload),
@@ -862,11 +866,13 @@ print(f"publish: {slug} -> import ok")
         cases = {
             "owner": {
                 **self.local_environment,
-                "PANDA_OWNER_ID": "b" * 24,
+                "WORKSHOP_SHOP_OWNER_ID": "b" * 24,
             },
             "backend": {
                 **self.local_environment,
-                "PANDA_BACKEND_DIR": str(self.workspace / "missing-backend"),
+                "WORKSHOP_SHOP_BACKEND_DIR": str(
+                    self.workspace / "missing-backend"
+                ),
             },
             "credentials": {
                 **self.local_environment,
@@ -879,7 +885,7 @@ print(f"publish: {slug} -> import ok")
             with self.subTest(label=label):
                 with self.assertRaisesRegex(
                     ValueError,
-                    "PANDA_OWNER_ID|PANDA_BACKEND_DIR|GOOGLE_APPLICATION_CREDENTIALS",
+                    "WORKSHOP_SHOP_OWNER_ID|WORKSHOP_SHOP_BACKEND_DIR|GOOGLE_APPLICATION_CREDENTIALS",
                 ):
                     self.adapter_with_environment(environment)
 
@@ -1015,6 +1021,55 @@ print(f"publish: {slug} -> import ok")
         self.assertNotIn("TELEGRAM_BOT_TOKEN", adapter.environment)
         self.assertNotIn("TELEGRAM_CHAT_ID", adapter.environment)
 
+    def test_old_backend_environment_is_normalized_to_shop_door_names(self) -> None:
+        legacy_environment = {
+            "PANDA_OWNER_ID": self.local_environment["WORKSHOP_SHOP_OWNER_ID"],
+            "PANDA_BACKEND_DIR": self.local_environment[
+                "WORKSHOP_SHOP_BACKEND_DIR"
+            ],
+            "GOOGLE_APPLICATION_CREDENTIALS": self.local_environment[
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            ],
+        }
+
+        adapter = self.adapter_with_environment(legacy_environment)
+
+        self.assertEqual(
+            adapter.environment["WORKSHOP_SHOP_OWNER_ID"],
+            self.local_environment["WORKSHOP_SHOP_OWNER_ID"],
+        )
+        self.assertNotIn("PANDA_OWNER_ID", adapter.environment)
+
+    def test_intermediate_portal_environment_is_read_but_not_emitted(self) -> None:
+        legacy_environment = {
+            "VIBE_PORTAL_OWNER_ID": self.local_environment[
+                "WORKSHOP_SHOP_OWNER_ID"
+            ],
+            "VIBE_PORTAL_BACKEND_DIR": self.local_environment[
+                "WORKSHOP_SHOP_BACKEND_DIR"
+            ],
+            "GOOGLE_APPLICATION_CREDENTIALS": self.local_environment[
+                "GOOGLE_APPLICATION_CREDENTIALS"
+            ],
+        }
+
+        adapter = self.adapter_with_environment(legacy_environment)
+
+        self.assertEqual(
+            adapter.environment["WORKSHOP_SHOP_OWNER_ID"],
+            self.local_environment["WORKSHOP_SHOP_OWNER_ID"],
+        )
+        self.assertNotIn("VIBE_PORTAL_OWNER_ID", adapter.environment)
+
+    def test_conflicting_shop_door_environment_names_fail_closed(self) -> None:
+        environment = {
+            **self.local_environment,
+            "PANDA_OWNER_ID": "b" * 24,
+        }
+
+        with self.assertRaisesRegex(ValueError, "legacy Shop Door alias"):
+            self.adapter_with_environment(environment)
+
     def test_diagnostics_require_an_authenticated_matching_owner_read(self) -> None:
         adapter = self.adapter(diagnostic_design_id="river-council")
 
@@ -1107,7 +1162,7 @@ print(f"publish: {slug} -> import ok")
         try:
             with patch.dict(
                 "os.environ",
-                {"ALICE_FACTORY_TOKEN": "test-token", **self.local_environment},
+                {"WORKSHOP_SHOP_TOKEN": "test-token", **self.local_environment},
             ):
                 adapters = _adapters(config, store)
             self.assertIsInstance(adapters["page_builder"], PageBuilderAdapter)
@@ -1116,7 +1171,7 @@ print(f"publish: {slug} -> import ok")
             with self.assertRaisesRegex(SystemExit, "private remote draft"):
                 with patch.dict(
                     "os.environ",
-                    {"ALICE_FACTORY_TOKEN": "test-token", **self.local_environment},
+                    {"WORKSHOP_SHOP_TOKEN": "test-token", **self.local_environment},
                 ):
                     _adapters(config, store)
         finally:

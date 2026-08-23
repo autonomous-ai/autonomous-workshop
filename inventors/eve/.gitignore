@@ -3,8 +3,18 @@ __pycache__/
 .env
 loops/
 corpus/db/
+state/clockwork.sqlite3
+state/clockwork.sqlite3-shm
+state/clockwork.sqlite3-wal
+state/clockwork.sqlite3-journal
+state/packs/
+
+# Durable migration fallbacks; existing Eve installations may still use these.
+state/inventor-workshop.sqlite3*
+state/inventor-foundation.sqlite3*
 state/inventor-core.sqlite3
 state/inventor-core.sqlite3-shm
 state/inventor-core.sqlite3-wal
 state/inventor-core.sqlite3-journal
 state/publication-packets/
+state/launch-packets/

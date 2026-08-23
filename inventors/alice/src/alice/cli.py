@@ -18,7 +18,7 @@ from .evals import run_release_policy_suite
 from .learning import ContextualThompsonBandit
 from .page_builder import (
     PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION,
-    PageBuilderAdapter,
+    ShopDoorAdapter,
     PageBuilderReadback,
 )
 from .policy import release_policy_from_config
@@ -29,9 +29,9 @@ from .transitions import TransitionEvidence, advance_with_evidence
 from .vibe_pipeline import (
     ALICE_REVISION_BOUND_RELEASE_CAPABILITIES,
     REQUIRED_PUBLIC_WRITE_CAPABILITIES,
-    VibeHttpClient,
+    ShopDoorHttpClient,
+    ShopDoorSender,
     VibePipeline,
-    VibePublishingAdapter,
 )
 
 
@@ -51,7 +51,7 @@ PRINT_PRODUCTION_RECOVERY_CAPABILITIES = frozenset(
         "reconcile_production_by_operation_key",
     }
 )
-FACTORY_ORDER_READINESS_CAPABILITIES = frozenset({"paid_order_readback"})
+DELIVERY_READINESS_CAPABILITIES = frozenset({"paid_order_readback"})
 PRINT_FULFILLMENT_READINESS_CAPABILITIES = frozenset(
     {
         "authenticated_manufacturing_readback",
@@ -349,8 +349,8 @@ def _readiness(
         "market_validation",
         "outcomes",
         "page_builder",
-        "publishing_pipeline",
-        "factory_order",
+        "shop_door",
+        "delivery",
         "print_fulfillment",
     )
     configured = {name: name in engine.adapters for name in adapter_names}
@@ -380,14 +380,14 @@ def _readiness(
         if status["ready"]:
             observed_capabilities.update(status["capabilities"])
     observed_capabilities.discard("order_to_print_job")
-    order_capabilities = set(diagnostics["factory_order"]["capabilities"])
+    order_capabilities = set(diagnostics["delivery"]["capabilities"])
     fulfillment_capabilities = set(
         diagnostics["print_fulfillment"]["capabilities"]
     )
     if (
-        diagnostics["factory_order"]["ready"]
+        diagnostics["delivery"]["ready"]
         and diagnostics["print_fulfillment"]["ready"]
-        and FACTORY_ORDER_READINESS_CAPABILITIES.issubset(order_capabilities)
+        and DELIVERY_READINESS_CAPABILITIES.issubset(order_capabilities)
         and PRINT_FULFILLMENT_READINESS_CAPABILITIES.issubset(
             fulfillment_capabilities
         )
@@ -461,9 +461,9 @@ def _readiness(
         "adapters": configured,
         "adapters_configured": configured,
         "adapter_diagnostics": diagnostics,
-        "observed_factory_capabilities": sorted(observed_capabilities),
-        "required_factory_capabilities": sorted(required_capabilities),
-        "missing_factory_capabilities": missing_capabilities,
+        "observed_shop_capabilities": sorted(observed_capabilities),
+        "required_shop_capabilities": sorted(required_capabilities),
+        "missing_shop_capabilities": missing_capabilities,
         "runtime_ready": provider["runtime_ready"],
         "full_loop_ready": integrity_ready
         and provider["effect_ready"]
@@ -489,6 +489,12 @@ def _runtime_integrity_diagnostics(engine: AliceEngine) -> dict[str, Any]:
     quick_check: str | None = None
     event_chain_valid = False
     events_checked = 0
+    taste_sha256: str | None = None
+    try:
+        engine.taste.assert_current()
+        taste_sha256 = engine.taste.sha256
+    except Exception as exc:
+        failures.append(f"taste:{type(exc).__name__}")
     try:
         quick_check = engine.store.quick_check()
         if quick_check != "ok":
@@ -519,6 +525,7 @@ def _runtime_integrity_diagnostics(engine: AliceEngine) -> dict[str, Any]:
         "quick_check": quick_check,
         "event_chain_valid": event_chain_valid,
         "events_checked": events_checked,
+        "taste_sha256": taste_sha256,
         "release_policy_eval_passed": eval_passed,
         "release_policy_eval_cases": eval_cases,
         "release_policy_eval_suite": eval_suite,
@@ -538,8 +545,8 @@ def _required_adapter_capabilities(name: str, mode: str) -> frozenset[str]:
         if mode == "live":
             required.update(PRINT_FULFILLMENT_READINESS_CAPABILITIES)
         return frozenset(required)
-    if name == "factory_order" and mode == "live":
-        return FACTORY_ORDER_READINESS_CAPABILITIES
+    if name == "delivery" and mode == "live":
+        return DELIVERY_READINESS_CAPABILITIES
     return frozenset(required)
 
 
@@ -660,7 +667,7 @@ def _adapter_diagnostics(name: str, adapter: Any | None) -> dict[str, Any]:
             "reason": "not_configured",
         }
 
-    if isinstance(adapter, VibePublishingAdapter):
+    if isinstance(adapter, ShopDoorSender):
         try:
             backend_capabilities = adapter.pipeline.transport.capabilities()
             authenticated = True
@@ -724,7 +731,7 @@ def _adapter_diagnostics(name: str, adapter: Any | None) -> dict[str, Any]:
         COMMAND_ADAPTER_CONTRACT_VERSION
         if isinstance(adapter, CommandAdapter)
         else PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION
-        if isinstance(adapter, PageBuilderAdapter)
+        if isinstance(adapter, ShopDoorAdapter)
         else ADAPTER_DIAGNOSTICS_CONTRACT_VERSION
     )
     capabilities = raw.get("capabilities")
@@ -772,7 +779,7 @@ def _adapters(
         "cad": ("cad_command", "manufacturing"),
         "market_validation": ("market_validation_command", "market"),
         "outcomes": ("outcomes_command", "external"),
-        "factory_order": ("factory_order_command", "market"),
+        "delivery": ("delivery_command", "market"),
         "print_fulfillment": ("print_fulfillment_command", "manufacturing"),
     }
     command_environment = values["command_allowed_environment"]
@@ -862,7 +869,7 @@ def _adapters(
             raise SystemExit(
                 "text2game export and page_builder must use the same Vibe workspace"
             )
-        readback_transport = VibeHttpClient.from_environment(
+        readback_transport = ShopDoorHttpClient.from_environment(
             str(page_builder["base_url"]),
             str(page_builder["token_env"]),
             timeout_seconds=int(page_builder["readback_timeout_seconds"]),
@@ -872,7 +879,7 @@ def _adapters(
             timeout_seconds=int(page_builder["readback_timeout_seconds"]),
             allowed_project_hosts=page_builder["allowed_project_hosts"],
         )
-        result["page_builder"] = PageBuilderAdapter(
+        result["page_builder"] = ShopDoorAdapter(
             workspace,
             [str(value) for value in operator_command],
             readback,
@@ -903,7 +910,7 @@ def _adapters(
                 "adapters.vibe is a public-write adapter and requires "
                 "runtime.effect_mode='live'"
             )
-        transport = VibeHttpClient.from_environment(
+        transport = ShopDoorHttpClient.from_environment(
             str(vibe["base_url"]),
             str(vibe["token_env"]),
             timeout_seconds=int(vibe["timeout_seconds"]),
@@ -915,7 +922,7 @@ def _adapters(
             max_job_polls=int(vibe["max_job_polls"]),
             max_page_polls=int(vibe["max_page_polls"]),
         )
-        result["publishing_pipeline"] = VibePublishingAdapter(pipeline)
+        result["shop_door"] = ShopDoorSender(pipeline)
     return result
 
 

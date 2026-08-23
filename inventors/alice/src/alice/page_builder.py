@@ -1,9 +1,9 @@
-"""Narrow handoff to the existing Vibe Ideas rich-page draft operator.
+"""Narrow handoff to the existing Vibe Ideas Shop Door operator.
 
 The operator owned by ``reinSPQR/vibe-ideas`` is
 ``board-game/tools/publish.py <slug>``.  It packages an already-built game,
-imports it through Panda Social's production backend, and authors the private
-draft's use-case, story blocks, print specs, rules file, and cover images.  This
+imports it through the Shop Door backend, and authors the private draft's use-case,
+story blocks, print specs, rules file, and cover images.  This
 module deliberately does none of those jobs.  It only:
 
 * binds the invocation to one candidate version and one exact local project;
@@ -43,6 +43,22 @@ from .providers import (
     run_bounded_process,
 )
 from .store import DurableStore, StateConflictError
+
+
+# Alice speaks Workshop's Shop Door vocabulary. The imported Vibe operator
+# still consumes its historical environment names, so translation happens only
+# at that subprocess boundary. Both generations of historical names are read
+# for deployed configurations, but Alice never emits them in her own state.
+_SHOP_ENV_ALIASES = {
+    "WORKSHOP_SHOP_OWNER_ID": ("VIBE_PORTAL_OWNER_ID", "PANDA_OWNER_ID"),
+    "WORKSHOP_SHOP_BACKEND_DIR": ("VIBE_PORTAL_BACKEND_DIR", "PANDA_BACKEND_DIR"),
+    "WORKSHOP_SHOP_APP_URL": ("VIBE_PORTAL_APP_URL", "PANDA_APP_URL"),
+}
+_SHOP_ENV_TO_OPERATOR_ENV = {
+    "WORKSHOP_SHOP_OWNER_ID": "PANDA_OWNER_ID",
+    "WORKSHOP_SHOP_BACKEND_DIR": "PANDA_BACKEND_DIR",
+    "WORKSHOP_SHOP_APP_URL": "PANDA_APP_URL",
+}
 
 
 PAGE_BUILDER_OPERATION = "physical.create_rich_draft"
@@ -642,8 +658,8 @@ def _verify_text2game_export_handoff(
     }
 
 
-class PageBuilderAdapter:
-    """Run the existing private-draft page builder against one exact workspace.
+class ShopDoorAdapter:
+    """Send one inspected product through the existing private Shop Door.
 
     ``operator_command`` must be exactly one absolute interpreter plus the
     existing entry point, for example
@@ -687,10 +703,10 @@ class PageBuilderAdapter:
             "LANG",
             "LC_ALL",
             "TMPDIR",
-            "PANDA_OWNER_ID",
-            "PANDA_BACKEND_DIR",
+            "WORKSHOP_SHOP_OWNER_ID",
+            "WORKSHOP_SHOP_BACKEND_DIR",
             "GOOGLE_APPLICATION_CREDENTIALS",
-            "PANDA_APP_URL",
+            "WORKSHOP_SHOP_APP_URL",
         ),
     ) -> None:
         configured_workspace = Path(workspace).expanduser()
@@ -858,6 +874,24 @@ class PageBuilderAdapter:
             for name in allowed_environment
             if name in os.environ
         }
+        allowed_environment_names = frozenset(allowed_environment)
+        for workshop_name, aliases in _SHOP_ENV_ALIASES.items():
+            semantic_names = (workshop_name, *aliases)
+            if allowed_environment_names.isdisjoint(semantic_names):
+                continue
+            configured = {
+                name: os.environ[name]
+                for name in semantic_names
+                if name in os.environ
+            }
+            if len(set(configured.values())) > 1:
+                raise ValueError(
+                    f"{workshop_name} conflicts with a legacy Shop Door alias"
+                )
+            for name in semantic_names:
+                self.environment.pop(name, None)
+            if configured:
+                self.environment[workshop_name] = next(iter(configured.values()))
         try:
             self._assert_interpreter_isolation_support()
             self._assert_workspace_integrity()
@@ -1012,22 +1046,24 @@ class PageBuilderAdapter:
             raise PageBuilderError(
                 "page-builder workspace .env is forbidden; configure explicit inputs"
             )
-        owner_id = self.environment.get("PANDA_OWNER_ID")
+        owner_id = self.environment.get("WORKSHOP_SHOP_OWNER_ID")
         if owner_id != self.diagnostic_owner_id:
             raise PageBuilderError(
-                "PANDA_OWNER_ID must exactly match diagnostic_owner_id"
+                "WORKSHOP_SHOP_OWNER_ID must exactly match diagnostic_owner_id"
             )
-        backend_value = self.environment.get("PANDA_BACKEND_DIR", "")
+        backend_value = self.environment.get("WORKSHOP_SHOP_BACKEND_DIR", "")
         backend = Path(backend_value).expanduser()
         if not backend_value or not backend.is_absolute():
-            raise PageBuilderError("PANDA_BACKEND_DIR must be an explicit absolute path")
+            raise PageBuilderError(
+                "WORKSHOP_SHOP_BACKEND_DIR must be an explicit absolute path"
+            )
         try:
             backend_metadata = backend.lstat()
         except OSError as exc:
-            raise PageBuilderError("PANDA_BACKEND_DIR is unavailable") from exc
+            raise PageBuilderError("WORKSHOP_SHOP_BACKEND_DIR is unavailable") from exc
         if not stat.S_ISDIR(backend_metadata.st_mode) or backend.is_symlink():
             raise PageBuilderError(
-                "PANDA_BACKEND_DIR must be a real non-symlink directory"
+                "WORKSHOP_SHOP_BACKEND_DIR must be a real non-symlink directory"
             )
         for name in ("go.mod", ".env"):
             dependency = backend / name
@@ -1035,7 +1071,7 @@ class PageBuilderAdapter:
                 metadata = dependency.lstat()
             except OSError as exc:
                 raise PageBuilderError(
-                    f"PANDA_BACKEND_DIR is missing required {name}"
+                    f"WORKSHOP_SHOP_BACKEND_DIR is missing required {name}"
                 ) from exc
             if (
                 not stat.S_ISREG(metadata.st_mode)
@@ -1051,7 +1087,7 @@ class PageBuilderAdapter:
                 )
             ):
                 raise PageBuilderError(
-                    f"PANDA_BACKEND_DIR {name} must be a readable"
+                    f"WORKSHOP_SHOP_BACKEND_DIR {name} must be a readable"
                     + (" owner-only" if name == ".env" else "")
                     + " regular file"
                 )
@@ -1178,7 +1214,7 @@ class PageBuilderAdapter:
             )
 
         try:
-            backend = Path(self.environment["PANDA_BACKEND_DIR"]).resolve(
+            backend = Path(self.environment["WORKSHOP_SHOP_BACKEND_DIR"]).resolve(
                 strict=True
             )
             credentials = Path(
@@ -1216,10 +1252,10 @@ class PageBuilderAdapter:
                 "diagnostic_owner_id": self.diagnostic_owner_id,
                 "backend_dir": str(backend),
                 "backend_go_mod_sha256": _regular_file_sha256(
-                    backend / "go.mod", "PANDA backend go.mod"
+                    backend / "go.mod", "Shop Door backend go.mod"
                 ),
                 "backend_env_sha256": _regular_file_sha256(
-                    backend / ".env", "PANDA backend .env"
+                    backend / ".env", "Shop Door backend .env"
                 ),
                 "gcs_credentials": str(credentials),
                 "gcs_credentials_sha256": _regular_file_sha256(
@@ -1598,6 +1634,9 @@ class PageBuilderAdapter:
             ) from exc
 
         env = dict(self.environment)
+        for workshop_name, operator_name in _SHOP_ENV_TO_OPERATOR_ENV.items():
+            if workshop_name in env:
+                env[operator_name] = env.pop(workshop_name)
         env["ALICE_OPERATION_KEY"] = operation_key
         env["ALICE_INPUT_SHA256"] = input_sha256
         env["ALICE_PROJECT_SHA256"] = snapshot.project_sha256
@@ -1806,7 +1845,7 @@ class PageBuilderAdapter:
             raise PageBuilderError("backend draft is missing cover visuals")
 
         # The local slug names the production workspace; the remote slug can be
-        # collision-suffixed by Panda.  Preserve both instead of pretending the
+        # collision-suffixed by the Vibe backend. Preserve both instead of pretending the
         # remote canonical URL stayed identical.
         normalized = {
             "schema_version": SIDECAR_SCHEMA_VERSION,
@@ -2149,7 +2188,7 @@ def _adapter_receipt(
         adapter="existing_rich_page_builder",
         run_id=str(payload["history_id"]),
         status="passed",
-        evidence_class="publishing_pipeline",
+        evidence_class="shop_door",
         payload=dict(payload),
         input_sha256=input_sha256,
         elapsed_seconds=time.monotonic() - started,
@@ -2175,6 +2214,10 @@ def _http_url(value: Any, label: str) -> str:
     return result
 
 
+# Compatibility import for extensions built before Workshop 0.3.
+PageBuilderAdapter = ShopDoorAdapter
+
+
 __all__ = [
     "AmbiguousPageBuilderEffect",
     "DraftReadback",
@@ -2187,6 +2230,7 @@ __all__ = [
     "PageBuilderReadback",
     "ProjectSnapshot",
     "PublishDesignPreflightError",
+    "ShopDoorAdapter",
     "build_publishdesign_preflight_receipt",
     "is_printable_cad_artifact_path",
     "snapshot_project",

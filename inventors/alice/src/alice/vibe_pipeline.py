@@ -24,18 +24,21 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Mapping, Protocol
 
 from .adapters import AdapterError, AdapterReceipt, adapter_input_sha256
-from .core_integration import CoreIntegrationError, validate_core_packet_binding
+from .workshop_bridge import (
+    WorkshopBridgeError,
+    validate_workshop_pack_binding,
+)
 from .page import (
     PageVerification,
     has_exact_alice_product_description_suffix,
-    verify_factory_product_page,
+    verify_shop_door_page,
 )
 from .store import DurableStore, PublicationRecord, StateConflictError
 
 
 PUBLICATION_TARGET = "vibe_pipeline"
 # This is the capability name already used by Alice's future hash-bound
-# Factory contract.  For this adapter it means more than accepting extra JSON:
+# Shop Door contract. For this adapter it means more than accepting extra JSON:
 # the endpoint must atomically compare expected_history_id and echo the bound
 # history, packet, and policy hashes in its success receipt.
 REVISION_BOUND_PUBLISH_CAPABILITY = "packet_hash_bound_publish"
@@ -79,7 +82,7 @@ class VibeHTTPError(VibePipelineError):
     def __init__(self, status: int, detail: str) -> None:
         self.status = status
         self.detail = detail
-        super().__init__(f"Vibe HTTP {status}: {detail}")
+        super().__init__(f"Shop Door HTTP {status}: {detail}")
 
 
 class VibeReadError(VibePipelineError):
@@ -102,7 +105,7 @@ class AmbiguousVibeEffect(VibePipelineError):
 
 
 class _RejectRedirects(urllib.request.HTTPRedirectHandler):
-    """Do not forward Vibe bearer credentials across HTTP redirects."""
+    """Do not forward Shop Door bearer credentials across HTTP redirects."""
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
         return None
@@ -138,7 +141,7 @@ class VibePageIncomplete(VibePollingTimeout):
         self.verification = verification
         failures = () if verification is None else verification.failures
         super().__init__(
-            "public Factory page did not become complete before the poll limit: "
+            "public Shop Door page did not become complete before the poll limit: "
             + ", ".join(failures),
             receipt,
         )
@@ -497,8 +500,8 @@ class VibeTransport(Protocol):
     def get_public_design(self, slug_or_id: str) -> Mapping[str, Any]: ...
 
 
-class VibeHttpClient:
-    """Dependency-free HTTP transport for the live ``/api/v1`` routes."""
+class ShopDoorHttpClient:
+    """Dependency-free HTTP transport for the live Shop Door routes."""
 
     def __init__(self, base_url: str, token: str, *, timeout_seconds: int = 180) -> None:
         parsed = urllib.parse.urlsplit(base_url)
@@ -511,10 +514,10 @@ class VibeHttpClient:
             or parsed.fragment
         ):
             raise ValueError(
-                "Vibe base_url must be a credential-free HTTPS origin/path"
+                "Shop Door base_url must be a credential-free HTTPS origin/path"
             )
         if not token:
-            raise ValueError("Vibe bearer token is required")
+            raise ValueError("Shop Door bearer token is required")
         base = base_url.rstrip("/")
         self.api_base_url = base if base.endswith("/api/v1") else f"{base}/api/v1"
         self._token = token
@@ -523,7 +526,7 @@ class VibeHttpClient:
 
     def __repr__(self) -> str:
         return (
-            f"VibeHttpClient(api_base_url={self.api_base_url!r}, "
+            f"ShopDoorHttpClient(api_base_url={self.api_base_url!r}, "
             f"timeout_seconds={self.timeout_seconds!r}, token=<redacted>)"
         )
 
@@ -531,14 +534,22 @@ class VibeHttpClient:
     def from_environment(
         cls,
         base_url: str,
-        token_env: str = "ALICE_FACTORY_TOKEN",
+        token_env: str = "WORKSHOP_SHOP_TOKEN",
         *,
         timeout_seconds: int = 180,
-    ) -> "VibeHttpClient":
+    ) -> "ShopDoorHttpClient":
         token = os.environ.get(token_env)
+        if token_env == "WORKSHOP_SHOP_TOKEN":
+            legacy = os.environ.get("ALICE_FACTORY_TOKEN")
+            if token and legacy and token != legacy:
+                raise VibePipelineError(
+                    "WORKSHOP_SHOP_TOKEN conflicts with its legacy token alias"
+                )
+            if token is None:
+                token = legacy
         if not token:
             raise VibePipelineError(
-                f"Vibe token environment variable {token_env!r} is missing"
+                f"Shop Door token environment variable {token_env!r} is missing"
             )
         return cls(base_url, token, timeout_seconds=timeout_seconds)
 
@@ -558,7 +569,7 @@ class VibeHttpClient:
         if not isinstance(values, list) or not all(
             isinstance(value, str) for value in values
         ):
-            raise VibeReadError("Vibe capabilities response is invalid")
+            raise VibeReadError("Shop Door capabilities response is invalid")
         return frozenset(values)
 
     def get_design(self, slug_or_id: str) -> Mapping[str, Any]:
@@ -630,12 +641,12 @@ class VibeHttpClient:
             # rejection.  Neither class is retried here.
             if exc.status >= 500:
                 raise AmbiguousVibeEffect(
-                    "Vibe write returned a server error; reconcile before retry"
+                    "Shop Door write returned a server error; reconcile before retry"
                 ) from exc
             raise
         except (VibeReadError, ValueError) as exc:
             raise AmbiguousVibeEffect(
-                "Vibe write lost a valid receipt; reconcile before retry"
+                "Shop Door write lost a valid stamp; reconcile before retry"
             ) from exc
 
     def _read(self, path: str, *, authenticated: bool) -> Mapping[str, Any]:
@@ -672,18 +683,22 @@ class VibeHttpClient:
                 exc.code, f"response_body_sha256={detail_sha256}"
             ) from exc
         except (TimeoutError, urllib.error.URLError, OSError) as exc:
-            raise VibeReadError("Vibe request timed out or disconnected") from exc
+            raise VibeReadError("Shop Door request timed out or disconnected") from exc
         try:
             raw = json.loads(response_body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise VibeReadError("Vibe returned invalid JSON") from exc
+            raise VibeReadError("Shop Door returned invalid JSON") from exc
         if not isinstance(raw, Mapping):
-            raise VibeReadError("Vibe response must be a JSON object")
+            raise VibeReadError("Shop Door response must be a JSON object")
         return dict(raw)
 
 
 PauseHandler = Callable[[Mapping[str, Any]], Mapping[str, Any] | None]
 PageVerifier = Callable[..., PageVerification]
+
+
+# Compatibility import for integrations built before Workshop 0.3.
+VibeHttpClient = ShopDoorHttpClient
 
 
 class VibePipeline:
@@ -694,7 +709,7 @@ class VibePipeline:
         store: DurableStore,
         transport: VibeTransport,
         *,
-        page_verifier: PageVerifier = verify_factory_product_page,
+        page_verifier: PageVerifier = verify_shop_door_page,
         poll_interval_seconds: float = 5.0,
         max_job_polls: int = 4_320,
         max_page_polls: int = 360,
@@ -1765,13 +1780,13 @@ class VibePipeline:
             self.sleep(self.poll_interval_seconds)
 
 
-class VibePublishingAdapter:
-    """Map Alice publish tasks to the existing verified-design Vibe path."""
+class ShopDoorSender:
+    """Send Alice's inspected Pack through the verified-design Shop Door."""
 
     def __init__(self, pipeline: VibePipeline) -> None:
         self.pipeline = pipeline
-        self.name = "publishing_pipeline"
-        self.evidence_class = "publishing_pipeline"
+        self.name = "shop_door"
+        self.evidence_class = "shop_door"
 
     def release_capabilities(self) -> tuple[str, ...]:
         """Report policy capabilities only when live revision binding is proven."""
@@ -1787,7 +1802,9 @@ class VibePublishingAdapter:
     def invoke(self, operation: str, payload: dict[str, Any]) -> AdapterReceipt:
         started = time.monotonic()
         input_sha256 = adapter_input_sha256(operation, payload)
-        if operation == "publish.invoke_pipeline":
+        # The publish.* cases dispatch immutable queued work from older Alice
+        # releases. New work reaches this Door only through send.* operations.
+        if operation in {"send.to_shop", "publish.invoke_pipeline"}:
             request = self._existing_request(payload)
             try:
                 receipt = self.pipeline.publish_existing(request)
@@ -1796,16 +1813,21 @@ class VibePublishingAdapter:
                 # may be leased again safely. Remote writes remain fenced in
                 # the publication record and are never repeated.
                 raise AdapterError(str(exc)) from exc
-        elif operation == "publish.verify_page":
+        elif operation in {"send.verify_shop", "publish.verify_page"}:
             receipt = self._verify_again(payload)
         else:
-            raise AdapterError(f"unsupported Vibe publishing operation {operation!r}")
+            raise AdapterError(f"unsupported Shop Door operation {operation!r}")
         evidence = receipt.evidence_receipt()
         return AdapterReceipt(
             adapter=self.name,
             run_id=receipt.publication_id,
             status="passed",
-            evidence_class=self.evidence_class,
+            evidence_class=(
+                # Keep a replayed row's historical evidence vocabulary stable.
+                "publishing_pipeline"
+                if operation.startswith("publish.")
+                else self.evidence_class
+            ),
             payload=evidence,
             input_sha256=input_sha256,
             elapsed_seconds=time.monotonic() - started,
@@ -1835,10 +1857,13 @@ class VibePublishingAdapter:
             raise AdapterError("publish task candidate metadata is not current")
         dependencies = payload.get("dependencies")
         packet_dependency = (
-            dependencies.get("publish.packet")
+            dependencies.get("pack.product")
             if isinstance(dependencies, Mapping)
             else None
         )
+        if packet_dependency is None and isinstance(dependencies, Mapping):
+            # Durable compatibility for tasks queued before Pack vocabulary.
+            packet_dependency = dependencies.get("publish.packet")
         result = (
             packet_dependency.get("result")
             if isinstance(packet_dependency, Mapping)
@@ -1846,7 +1871,7 @@ class VibePublishingAdapter:
         )
         if not isinstance(result, Mapping) or result.get("executor") != "release_policy":
             raise AdapterError(
-                "publish.packet must come from the deterministic release_policy executor"
+                "pack.product must come from the deterministic release_policy executor"
             )
         content = result.get("content")
         if not isinstance(content, Mapping):
@@ -1936,13 +1961,31 @@ class VibePublishingAdapter:
                 "release decision artifact_manifest_sha256 mismatch"
             )
         try:
-            validate_core_packet_binding(
+            bindings = {
+                name: content[name]
+                for name in (
+                    "_workshop_pack",
+                    "workshop_packet",
+                    "_foundation_pack",
+                    "foundation_packet",
+                    "_core_pack",
+                    "core_packet",
+                )
+                if content.get(name) is not None
+            }
+            if len(bindings) != 1:
+                raise WorkshopBridgeError(
+                    "send bundle must contain exactly one Workshop Pack binding"
+                )
+            validate_workshop_pack_binding(
                 packet,
-                alice_packet_sha256=packet_hash,
-                binding=content.get("core_packet"),
+                alice_product_sha256=packet_hash,
+                binding=next(iter(bindings.values())),
             )
-        except CoreIntegrationError as exc:
-            raise AdapterError(f"core publication packet binding failed: {exc}") from exc
+        except WorkshopBridgeError as exc:
+            raise AdapterError(
+                f"Workshop Pack binding failed: {exc}"
+            ) from exc
         price_cents = price.get("price_cents")
         operation_key = (
             f"alice:vibe:{candidate_id}:v{version}:{packet_hash}"
@@ -1997,7 +2040,7 @@ class VibePublishingAdapter:
         if not publications:
             raise AdapterError("candidate has no confirmed Vibe publication")
         record = publications[-1]
-        # publish.invoke_pipeline advances publish_ready -> page_ready after its
+        # send.to_shop advances publish_ready -> page_ready after its
         # receipt lands, so the immutable publication must name exactly the
         # immediately preceding candidate version. Product content must remain
         # byte-for-byte identical across that lifecycle-only transition.
@@ -2099,12 +2142,12 @@ class VibePublishingAdapter:
         try:
             design = self.pipeline.transport.get_public_design(target)
         except (VibeReadError, VibeHTTPError) as exc:
-            raise AdapterError(f"could not reread the public Factory page: {exc}") from exc
+            raise AdapterError(f"could not reread the public Shop Door page: {exc}") from exc
         if not self.pipeline._published_revision_matches(
             record, design, receipt.price_cents
         ):
             raise AdapterError(
-                "public Factory page is not the revision bound by the publication receipt"
+                "public Shop Door page is not the revision bound by the send stamp"
             )
         verification = self.pipeline.page_verifier(
             design,
@@ -2113,7 +2156,7 @@ class VibePublishingAdapter:
         )
         if not verification.complete:
             raise AdapterError(
-                "public Factory page no longer satisfies its contract: "
+                "public Shop Door page no longer satisfies its contract: "
                 + ", ".join(verification.failures)
             )
         return VibePipelineReceipt(
@@ -2132,3 +2175,7 @@ class VibePublishingAdapter:
             page_url=verification.page_url,
             verification=verification,
         )
+
+
+# Compatibility import for integrations built before Workshop 0.3.
+VibePublishingAdapter = ShopDoorSender

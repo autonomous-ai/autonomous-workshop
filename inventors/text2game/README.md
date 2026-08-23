@@ -2,7 +2,7 @@
 
 > **Monorepo snapshot.** This folder contains the inventor code imported from
 > `nohope88/text2game` at commit `9b007f6`. It is a human-checkpointed creation
-> pipeline, not yet a Foundation-connected unattended inventor: several upstream
+> pipeline, not yet a Workshop-connected unattended inventor: several upstream
 > failure/unknown paths continue by design. See [UPSTREAM.md](UPSTREAM.md) for
 > provenance, licensing, and migration blockers. The original operating guide
 > follows.

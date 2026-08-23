@@ -36,9 +36,17 @@ ROLE_CARDS: dict[str, RoleCard] = {
         RoleCard("dfm_verifier", "Check geometry, fit, tolerances, printability, assembly, yield, and cost."),
         RoleCard("safety_ip", "Gate product safety, claims, provenance, prior art, and copied expression."),
         RoleCard("merchant", "Validate audience, price, landed cost, margin, packaging, and support burden."),
-        RoleCard("publisher", "Publish an immutable approved packet idempotently; never weaken a gate."),
+        RoleCard("packer", "Pack the exact inspected product and its evidence without changing either."),
+        RoleCard("sender", "Send one immutable approved Pack through a Door idempotently; never weaken an inspection."),
         RoleCard("fulfillment_planner", "Turn a paid order into a hash-matched print, QA, pack, ship, and outcome record."),
         RoleCard("meta_scientist", "Compare harness variants in shadow trials and propose audited policy changes."),
         RoleCard("archivist", "Compact context into cited knowledge without rewriting the event history."),
     )
 }
+
+# Durable compatibility only: queued tasks from older Alice releases may still
+# carry this role name. New work graphs use ``packer`` and ``sender``.
+ROLE_CARDS["publisher"] = RoleCard(
+    "publisher",
+    "Replay a legacy send task without changing its immutable approved input.",
+)

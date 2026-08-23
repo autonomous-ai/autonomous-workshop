@@ -1,0 +1,4 @@
+include setup.py
+recursive-include schemas *.json
+recursive-include skills *
+global-exclude __pycache__ *.pyc *.pyo .DS_Store

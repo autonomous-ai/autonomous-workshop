@@ -1,4 +1,4 @@
-"""Idempotent publication boundary for Factory and the Alice catalog."""
+"""Legacy dry-run product writer for Alice's pre-Workshop state."""
 
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ class PublicationReceipt:
 
 
 class Publisher:
-    """Legacy dry-run packet writer; Factory effects live only in Vibe."""
+    """Legacy dry-run packet writer; sends now go through ``ShopDoorSender``."""
 
     def __init__(
         self,
@@ -79,7 +79,7 @@ class Publisher:
         if mode != "dry-run":
             raise ValueError(
                 "legacy Publisher is dry-run only; draft/live effects must use "
-                "the bound VibePublishingAdapter"
+                "the bound ShopDoorSender"
             )
         if command:
             raise ValueError("legacy Publisher does not accept an effect command")

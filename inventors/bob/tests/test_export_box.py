@@ -3,13 +3,18 @@ contract exactly — that script is the proven publish path (Dee 2026-08-22)
 and it is not ours to edit, so OUR side carries the whole burden of fit."""
 
 import json
+import io
 import os
 import shutil
 import tempfile
 import unittest
+from contextlib import redirect_stderr
+from types import SimpleNamespace
 from unittest import mock
 
+import bob
 from harness import export_box
+from harness import queue
 
 
 class ExportTest(unittest.TestCase):
@@ -100,6 +105,7 @@ class ExportTest(unittest.TestCase):
     def test_push_box_rsync_then_remote_publish(self):
         self._full_game()
         export_box.export_text2game(self.slug)
+        queue.add_game(self.slug, "Crank")
         os.environ["BOB_BOX_SSH"] = "panda-box"
         self.addCleanup(os.environ.pop, "BOB_BOX_SSH", None)
         calls = []
@@ -115,6 +121,23 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(calls[0][0], "rsync")
         self.assertEqual(calls[1][0], "ssh")
         self.assertIn("./publish.py %s" % self.slug, calls[1][-1])
+        self.assertEqual(queue.load()["games"][self.slug]["state"], "sparked")
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "send.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "launch.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "published.json")))
+
+    def test_obsolete_mark_published_refuses_without_mutating_state(self):
+        errors = io.StringIO()
+        with redirect_stderr(errors):
+            result = bob.cmd_mark_published(SimpleNamespace(
+                slug=self.slug, design_id="legacy-design"
+            ))
+        self.assertEqual(result, 2)
+        self.assertIn("REFUSING", errors.getvalue())
+        self.assertIn("durable Sender intent", errors.getvalue())
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "send.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "launch.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.gdir, "published.json")))
 
 
 if __name__ == "__main__":

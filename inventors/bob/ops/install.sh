@@ -15,7 +15,22 @@ AGENTS_DIR="$USER_HOME/Library/LaunchAgents"
 GUI_DOMAIN="gui/$(id -u)"
 LABELS="ai.autonomous.bob ai.autonomous.bob.watchdog"
 RENDERER="$REPO/ops/render_launchd.py"
-CORE_SRC="${BOB_CORE_SRC:-$REPO/../../foundation/src}"
+if [ -n "${BOB_WORKSHOP_SRC:-}" ] && [ -n "${BOB_CORE_SRC:-}" ] && \
+   [ "$BOB_WORKSHOP_SRC" != "$BOB_CORE_SRC" ]; then
+    echo "REFUSING to install: BOB_WORKSHOP_SRC and legacy BOB_CORE_SRC disagree." >&2
+    exit 1
+fi
+if [ -n "${BOB_WORKSHOP_SRC:-}" ] && [ -n "${BOB_FOUNDATION_SRC:-}" ] && \
+   [ "$BOB_WORKSHOP_SRC" != "$BOB_FOUNDATION_SRC" ]; then
+    echo "REFUSING to install: BOB_WORKSHOP_SRC and legacy BOB_FOUNDATION_SRC disagree." >&2
+    exit 1
+fi
+if [ -n "${BOB_FOUNDATION_SRC:-}" ] && [ -n "${BOB_CORE_SRC:-}" ] && \
+   [ "$BOB_FOUNDATION_SRC" != "$BOB_CORE_SRC" ]; then
+    echo "REFUSING to install: legacy BOB_FOUNDATION_SRC and BOB_CORE_SRC disagree." >&2
+    exit 1
+fi
+WORKSHOP_SRC="${BOB_WORKSHOP_SRC:-${BOB_FOUNDATION_SRC:-${BOB_CORE_SRC:-$REPO/../../workshop/src}}}"
 
 # --- Refusal guards (catch broken deploys before launchd loops on them) -----
 if [ ! -f "$REPO/bob.py" ]; then
@@ -32,11 +47,11 @@ if ! (cd "$REPO" && /usr/bin/python3 -c 'import harness') >/dev/null 2>&1; then
     echo "  cd '$REPO' && /usr/bin/python3 -c 'import harness'" >&2
     exit 1
 fi
-if ! (cd "$REPO" && BOB_CORE_SRC="$CORE_SRC" /usr/bin/python3 -c \
-    'from harness.core_runtime import require_core; require_core()') >/dev/null 2>&1; then
-    echo "REFUSING to install: shared inventor_core is unavailable at $CORE_SRC." >&2
-    echo "Bob's artifact and Panda outbox contracts require Inventor Foundation." >&2
-    echo "Fix: deploy foundation at the monorepo root, or set BOB_CORE_SRC to foundation/src." >&2
+if ! (cd "$REPO" && BOB_WORKSHOP_SRC="$WORKSHOP_SRC" /usr/bin/python3 -c \
+    'from harness.workshop_runtime import require_workshop; require_workshop()') >/dev/null 2>&1; then
+    echo "REFUSING to install: inventor_workshop is unavailable at $WORKSHOP_SRC." >&2
+    echo "Bob's Pack and Sender contracts require Inventor Workshop." >&2
+    echo "Fix: deploy workshop at the monorepo root, or set BOB_WORKSHOP_SRC to workshop/src." >&2
     exit 1
 fi
 if [ ! -f "$RENDERER" ]; then
@@ -59,7 +74,7 @@ for LABEL in $LABELS; do
         --output "$PLIST_DST" \
         --repo "$REPO" \
         --home "$USER_HOME" \
-        --core-src "$CORE_SRC"
+        --workshop-src "$WORKSHOP_SRC"
     /usr/bin/plutil -lint "$PLIST_DST" >/dev/null
     # bootout first so re-install picks up plist changes; ignore "not loaded".
     launchctl bootout "$GUI_DOMAIN/$LABEL" 2>/dev/null || true

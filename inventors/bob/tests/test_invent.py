@@ -4,7 +4,7 @@ BOB_MOCK_AGENTS=1 canned replies (no network, no wallet, per CONTRACTS §5).
 Coverage per the build contract:
 - one INVENTION game sparked -> tabled: artifacts written, idea_sha embedded
   in every verdict, ledger rows appended — then on through the real table
-  loop, build, review, and the dry-run auto-publish to live;
+  loop, build, review, and the Workshop dry-run Pack/Send rehearsal;
 - the gate refusal: a failing sim PARKS with the reason;
 - one EDITION game sparked -> briefed via the legal skip path;
 - tick()'s failure routing (AgentError releases, state unchanged).
@@ -19,6 +19,7 @@ import tempfile
 import threading
 import types
 import unittest
+from unittest import mock
 
 from harness import ledger, queue
 from loops import invent
@@ -26,8 +27,11 @@ from loops import invent
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _ENGINES = os.path.join(_ROOT, "tests", "fixtures", "engines")
 
-_ENV_KEYS = ("BOB_HOME", "BOB_MOCK_AGENTS", "BOB_SIM_GAMES", "BOB_SIM_SEED",
-             "BOB_PUBLISH_DRY_RUN")
+_ENV_KEYS = (
+    "BOB_HOME", "BOB_MOCK_AGENTS", "BOB_SIM_GAMES", "BOB_SIM_SEED",
+    "BOB_SEND_DRY_RUN", "BOB_PUBLISH_DRY_RUN", "BOB_SEND_VIA",
+    "BOB_PUBLISH_VIA", "BOB_SHOP_PUBLIC", "BOB_AUTO_FLIP",
+)
 
 # One reply per agent: the pipeline's mock session. rules_md is >200 chars
 # and mentions every bill component by name (the deterministic lint checks
@@ -119,7 +123,10 @@ class _HomeCase(unittest.TestCase):
         os.environ["BOB_MOCK_AGENTS"] = "1"
         os.environ["BOB_SIM_GAMES"] = "600"  # goodgame's verified floor size
         os.environ["BOB_SIM_SEED"] = "0"
-        os.environ["BOB_PUBLISH_DRY_RUN"] = "1"
+        os.environ["BOB_SEND_DRY_RUN"] = "1"
+        shutil.copy(
+            os.path.join(_ROOT, "TASTE.md"), os.path.join(self.home, "TASTE.md")
+        )
         self.fixtures = os.path.join(self.home, "tests", "fixtures")
         os.makedirs(self.fixtures)
 
@@ -154,9 +161,17 @@ class _HomeCase(unittest.TestCase):
             return json.load(handle)
 
 
+class TasteAuthorityTest(_HomeCase):
+    def test_missing_root_taste_fails_closed(self):
+        os.remove(os.path.join(self.home, "TASTE.md"))
+        with self.assertRaises(invent.TasteAuthorityError) as ctx:
+            invent._taste()
+        self.assertIn("root TASTE.md", str(ctx.exception))
+
+
 class InventionPipelineTest(_HomeCase):
     """One invention game, sparked -> tabled (the contract point), then on
-    through the real table loop, build, review, and the dry-run publish."""
+    through the real table loop, build, review, and the dry-run send."""
 
     def test_sparked_to_tabled_then_published_dry(self):
         slug = "lanewar"
@@ -164,16 +179,44 @@ class InventionPipelineTest(_HomeCase):
             "family": "blocking-race", "players": "2", "weight": "light"})
         self._plant_all(["bob-ideator", "bob-triage-judge"])
 
-        self._tick_once("sparked")
+        legacy_taste = "LEGACY EVIDENCE MUST NOT BECOME RUNTIME AUTHORITY"
+        os.makedirs(os.path.join(self.home, "knowledge"), exist_ok=True)
+        with open(os.path.join(self.home, "knowledge", "TASTE.md"), "w") as handle:
+            handle.write(legacy_taste)
+        prompts = {}
+        original_run_agent = invent.agents.run_agent
+
+        def capture_prompt(name, prompt, **kwargs):
+            prompts[name] = prompt
+            return original_run_agent(name, prompt, **kwargs)
+
+        with mock.patch.object(
+            invent.agents, "run_agent", side_effect=capture_prompt
+        ):
+            self._tick_once("sparked")
         self.assertEqual(self._state(slug), "researched")
         idea = self._read(slug, "idea.json")
         self.assertEqual(idea["title"], "Lane War")
         self.assertEqual(idea["lane"], "invention")
+        with open(os.path.join(self.home, "TASTE.md"), "rb") as handle:
+            taste_bytes = handle.read()
+        taste_text = taste_bytes.decode("utf-8")
+        taste_sha = hashlib.sha256(taste_bytes).hexdigest()
+        self.assertEqual(idea["taste"]["path"], "TASTE.md")
+        self.assertEqual(idea["taste"]["content"], taste_text)
+        self.assertEqual(idea["taste"]["sha256"], taste_sha)
+        self.assertEqual(idea["taste"]["bytes"], len(taste_bytes))
+        for agent_name in ("bob-ideator", "bob-triage-judge"):
+            self.assertIn(taste_text, prompts[agent_name])
+            self.assertIn(taste_sha, prompts[agent_name])
+            self.assertIn("root TASTE.md", prompts[agent_name])
+            self.assertNotIn(legacy_taste, prompts[agent_name])
         idea_path = os.path.join(self.home, "games", slug, "idea.json")
         with open(idea_path, "rb") as handle:
             sha = hashlib.sha256(handle.read()).hexdigest()
         safety = self._read(slug, "review", "safety.json")
         self.assertEqual(safety["idea_sha"], sha)
+        self.assertEqual(safety["taste_sha256"], taste_sha)
         self.assertTrue(safety["safety_pass"])
         # Queue picked up the chosen spark's title.
         self.assertEqual(queue.load()["games"][slug]["title"], "Lane War")
@@ -263,16 +306,16 @@ class InventionPipelineTest(_HomeCase):
         self.assertTrue(score["publish_eligible"], score)
         self.assertTrue(all(score["gates"].values()), score["gates"])
         self.assertGreaterEqual(score["score"], 70.0)
-        stub = self._read(slug, "published.json")
-        self.assertTrue(stub["dry_run"])  # BOB_PUBLISH_DRY_RUN=1 default
-        self.assertEqual(stub["publication_authority"], "none")
+        stub = self._read(slug, "send.json")
+        self.assertTrue(stub["dry_run"])  # BOB_SEND_DRY_RUN=1 default
+        self.assertEqual(stub["send_authority"], "none")
         self.assertEqual(stub["idea_sha"], sha)
-        self.assertEqual(stub["core_contract"],
-                         "inventor_core.artifacts/v1")
-        self.assertEqual(len(stub["core_artifact_sha256"]), 64)
-        self.assertEqual(len(stub["core_packet_sha256"]), 64)
+        self.assertEqual(stub["workshop_contract"],
+                         "inventor_workshop.artifacts/v1")
+        self.assertEqual(len(stub["workshop_artifact_sha256"]), 64)
+        self.assertEqual(len(stub["workshop_pack_sha256"]), 64)
         publish_rows = [row for row in ledger.rows(slug=slug)
-                        if row["kind"] == "publish"]
+                        if row["kind"] == "send"]
         self.assertEqual(len(publish_rows), 1)
         self.assertGreaterEqual(publish_rows[0]["score"], 70.0)
 
@@ -692,7 +735,7 @@ class PageKitTest(_HomeCase):
         self.assertLessEqual(len(listing["tags"]), 10)
 
     def test_fallback_listing_clears_curate_walls(self):
-        from harness import publish
+        from harness import send
         slug = "fallback"
         self._game_dir_with_bill(slug)
         # No bob-page-writer fixture: the agent path degrades to the
@@ -701,15 +744,15 @@ class PageKitTest(_HomeCase):
         listing = self._read(slug, "listing.json")
         self.assertIn("use_case", listing)
         self.assertEqual(len(listing["story_blocks"]), 2)
-        walls = publish._content_walls(listing["use_case"],
+        walls = send._content_walls(listing["use_case"],
                                        listing["story_blocks"])
         self.assertEqual(walls, [], walls)
         self.assertIn("ai-created", listing["tags"])
 
 
-class RealPublishSingleAdvanceTest(_HomeCase):
-    """The live-path regression: import_draft advances reviewed->published
-    and flip_public advances published->live, so _publish must NOT advance
+class RealSendSingleAdvanceTest(_HomeCase):
+    """The live-path regression: send_draft advances reviewed->published
+    and flip_public advances published->live, so _send must NOT advance
     again (the third advance was an illegal live->published ValueError on
     EVERY real publish) — and a curate() failure degrades, never blocks."""
 
@@ -755,18 +798,18 @@ class RealPublishSingleAdvanceTest(_HomeCase):
           {"aggregate": {"would_play_again_fraction": 1.0}})
         return sha
 
-    def test_real_publish_advances_once_and_tolerates_curate_failure(self):
-        # BOB_AUTO_FLIP=1 exercises the full flip path (the future default,
+    def test_real_send_advances_once_and_tolerates_curate_failure(self):
+        # BOB_SHOP_PUBLIC=1 exercises the optional Shop Door public path,
         # off today per Dee's draft-first ruling 2026-08-22).
-        from harness import publish
+        from harness import send
         slug = "liveone"
         self._reviewed_game(slug)
-        os.environ["BOB_PUBLISH_DRY_RUN"] = "0"
-        os.environ["BOB_AUTO_FLIP"] = "1"
-        self.addCleanup(os.environ.pop, "BOB_AUTO_FLIP", None)
+        os.environ["BOB_SEND_DRY_RUN"] = "0"
+        os.environ["BOB_SHOP_PUBLIC"] = "1"
+        self.addCleanup(os.environ.pop, "BOB_SHOP_PUBLIC", None)
         calls = []
-        saved = {name: getattr(publish, name)
-                 for name in ("validate", "import_draft", "curate",
+        saved = {name: getattr(send, name)
+                 for name in ("validate", "send_draft", "curate",
                               "flip_public")}
 
         def fake_import(s):
@@ -775,21 +818,21 @@ class RealPublishSingleAdvanceTest(_HomeCase):
 
         def fake_curate(s):
             calls.append("curate")
-            raise publish.PublishError("content walls (mock)")
+            raise send.SendError("content walls (mock)")
 
         def fake_flip(s, price_cents):
             calls.append("flip:%d" % price_cents)
             queue.advance(s, "live", "flipped public (mock)")
 
-        publish.validate = lambda s: []
-        publish.import_draft = fake_import
-        publish.curate = fake_curate
-        publish.flip_public = fake_flip
+        send.validate = lambda s: []
+        send.send_draft = fake_import
+        send.curate = fake_curate
+        send.flip_public = fake_flip
         try:
             self._tick_once("reviewed")  # must not raise ValueError
         finally:
             for name, fn in saved.items():
-                setattr(publish, name, fn)
+                setattr(send, name, fn)
 
         self.assertEqual(
             calls, ["import", "curate",
@@ -798,41 +841,74 @@ class RealPublishSingleAdvanceTest(_HomeCase):
         self.assertEqual(game["state"], "live")
         # The win still lands on the ledger even though the flip (not
         # invent) moved the queue to live.
-        publish_rows = [row for row in ledger.rows(slug=slug)
-                        if row["kind"] == "publish"]
-        self.assertEqual(len(publish_rows), 1)
+        send_rows = [row for row in ledger.rows(slug=slug)
+                     if row["kind"] == "send"]
+        self.assertEqual(len(send_rows), 1)
 
 
     def test_draft_first_default_stops_before_the_flip(self):
         # Dee 2026-08-22 (second ruling): "publish draft is fine. it's one
         # click for me to review for now." Default = import + curate, NO
         # flip_public; the game rests at published awaiting the human click.
-        from harness import publish
+        from harness import send
         slug = "draftone"
         self._reviewed_game(slug)
-        os.environ["BOB_PUBLISH_DRY_RUN"] = "0"
-        os.environ.pop("BOB_AUTO_FLIP", None)
+        os.environ["BOB_SEND_DRY_RUN"] = "0"
+        os.environ.pop("BOB_SHOP_PUBLIC", None)
         calls = []
-        saved = {name: getattr(publish, name)
-                 for name in ("validate", "import_draft", "curate",
+        saved = {name: getattr(send, name)
+                 for name in ("validate", "send_draft", "curate",
                               "flip_public")}
 
         def fake_import(s):
             calls.append("import")
             queue.advance(s, "published", "draft imported (mock)")
 
-        publish.validate = lambda s: []
-        publish.import_draft = fake_import
-        publish.curate = lambda s: calls.append("curate")
-        publish.flip_public = \
+        send.validate = lambda s: []
+        send.send_draft = fake_import
+        send.curate = lambda s: calls.append("curate")
+        send.flip_public = \
             lambda s, price_cents: calls.append("flip:%d" % price_cents)
         try:
             self._tick_once("reviewed")
         finally:
             for name, fn in saved.items():
-                setattr(publish, name, fn)
+                setattr(send, name, fn)
         self.assertEqual(calls, ["import", "curate"])
         self.assertEqual(queue.load()["games"][slug]["state"], "published")
+
+    def test_legacy_box_mode_parks_without_export_ssh_or_send_authority(self):
+        """Box output is an observation, never a Workshop Stamp."""
+        from harness import export_box
+
+        slug = "boxblocked"
+        self._reviewed_game(slug)
+        os.environ["BOB_SEND_VIA"] = "box"
+        with mock.patch.object(export_box, "export_text2game") as export, \
+             mock.patch.object(export_box, "push_box") as push:
+            self._tick_once("reviewed")
+
+        game = queue.load()["games"][slug]
+        self.assertEqual(game["state"], "parked")
+        self.assertIn("legacy manual compatibility only", game["log"][-1]["note"])
+        export.assert_not_called()
+        push.assert_not_called()
+        self.assertFalse(os.path.exists(os.path.join(
+            self.home, "games", slug, "send.json")))
+        self.assertFalse(any(
+            row["kind"] == "send" for row in ledger.rows(slug=slug)
+        ))
+
+    def test_unknown_send_mode_fails_closed(self):
+        slug = "wrongmode"
+        self._reviewed_game(slug)
+        os.environ["BOB_SEND_VIA"] = "surprise"
+        self._tick_once("reviewed")
+        game = queue.load()["games"][slug]
+        self.assertEqual(game["state"], "parked")
+        self.assertIn("unknown BOB_SEND_VIA", game["log"][-1]["note"])
+        self.assertFalse(os.path.exists(os.path.join(
+            self.home, "games", slug, "send.json")))
 
 
 class FencedJudgePromptTest(_HomeCase):

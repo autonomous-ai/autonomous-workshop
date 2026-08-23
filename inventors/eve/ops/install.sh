@@ -15,7 +15,21 @@ AGENTS_DIR="$USER_HOME/Library/LaunchAgents"
 GUI_DOMAIN="gui/$(id -u)"
 LABELS="ai.autonomous.eve ai.autonomous.eve.watchdog"
 RENDERER="$REPO/ops/render_launchd.py"
-CORE_SRC="${EVE_CORE_SRC:-$REPO/../../foundation/src}"
+WORKSHOP_SRC_CURRENT="${EVE_WORKSHOP_SRC:-}"
+WORKSHOP_SRC_LEGACY="${EVE_CORE_SRC:-}"
+if [ -n "$WORKSHOP_SRC_CURRENT" ] && [ -n "$WORKSHOP_SRC_LEGACY" ] && \
+   [ "$WORKSHOP_SRC_CURRENT" != "$WORKSHOP_SRC_LEGACY" ]; then
+    WORKSHOP_SRC_CURRENT_REAL="$(cd "$WORKSHOP_SRC_CURRENT" 2>/dev/null && pwd -P)" || true
+    WORKSHOP_SRC_LEGACY_REAL="$(cd "$WORKSHOP_SRC_LEGACY" 2>/dev/null && pwd -P)" || true
+    if [ -z "$WORKSHOP_SRC_CURRENT_REAL" ] || \
+       [ -z "$WORKSHOP_SRC_LEGACY_REAL" ] || \
+       [ "$WORKSHOP_SRC_CURRENT_REAL" != "$WORKSHOP_SRC_LEGACY_REAL" ]; then
+        echo "REFUSING to install: EVE_WORKSHOP_SRC conflicts with legacy EVE_CORE_SRC." >&2
+        exit 1
+    fi
+    WORKSHOP_SRC_CURRENT="$WORKSHOP_SRC_CURRENT_REAL"
+fi
+WORKSHOP_SRC="${WORKSHOP_SRC_CURRENT:-${WORKSHOP_SRC_LEGACY:-$REPO/../../workshop/src}}"
 
 # --- Refusal guards (catch broken deploys before launchd loops on them) -----
 if [ ! -f "$REPO/bin/eve" ]; then
@@ -25,32 +39,32 @@ if [ ! -f "$REPO/bin/eve" ]; then
     echo "Fix: deploy Eve's CLI first, then re-run ops/install.sh." >&2
     exit 1
 fi
-case "$CORE_SRC" in
+case "$WORKSHOP_SRC" in
     /*) ;;
     *)
-        echo "REFUSING to install: EVE_CORE_SRC must be an absolute path." >&2
+        echo "REFUSING to install: EVE_WORKSHOP_SRC must be an absolute path." >&2
         exit 1
         ;;
 esac
-if [ ! -d "$CORE_SRC" ]; then
-    echo "REFUSING to install: Foundation source directory is missing: $CORE_SRC" >&2
-    echo "Fix: deploy repository-root foundation, or set EVE_CORE_SRC=/absolute/path/to/foundation/src." >&2
+if [ ! -d "$WORKSHOP_SRC" ]; then
+    echo "REFUSING to install: Workshop source directory is missing: $WORKSHOP_SRC" >&2
+    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
     exit 1
 fi
-CORE_SRC="$(cd "$CORE_SRC" && pwd -P)"
-if [ ! -f "$CORE_SRC/inventor_core/__init__.py" ]; then
-    echo "REFUSING to install: inventor_core is unavailable at $CORE_SRC." >&2
-    echo "Fix: deploy repository-root foundation, or set EVE_CORE_SRC=/absolute/path/to/foundation/src." >&2
+WORKSHOP_SRC="$(cd "$WORKSHOP_SRC" && pwd -P)"
+if [ ! -f "$WORKSHOP_SRC/inventor_workshop/__init__.py" ]; then
+    echo "REFUSING to install: inventor_workshop is unavailable at $WORKSHOP_SRC." >&2
+    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
     exit 1
 fi
 if ! (
     cd "$REPO" &&
-    EVE_CORE_SRC="$CORE_SRC" PYTHONPATH="$CORE_SRC" /usr/bin/python3 -c \
-        'import os; from pathlib import Path; import eve.cli, eve.meta, inventor_core; expected=(Path(os.environ["EVE_CORE_SRC"])/"inventor_core"/"__init__.py").resolve(strict=True); actual=Path(inventor_core.__file__).resolve(strict=True); raise SystemExit(0 if actual == expected else "wrong inventor_core: %s" % actual)'
+    EVE_WORKSHOP_SRC="$WORKSHOP_SRC" PYTHONPATH="$WORKSHOP_SRC" /usr/bin/python3 -c \
+        'import os; from pathlib import Path; import eve.cli, eve.meta, inventor_workshop; expected=(Path(os.environ["EVE_WORKSHOP_SRC"])/"inventor_workshop"/"__init__.py").resolve(strict=True); actual=Path(inventor_workshop.__file__).resolve(strict=True); raise SystemExit(0 if actual == expected else "wrong inventor_workshop: %s" % actual)'
 ) >/dev/null 2>&1; then
-    echo "REFUSING to install: Eve cannot import the exact Foundation at $CORE_SRC." >&2
+    echo "REFUSING to install: Eve cannot import the exact Workshop at $WORKSHOP_SRC." >&2
     echo "Every scheduled drive must reach this checkout's artifact boundary." >&2
-    echo "Fix: deploy repository-root foundation, or set EVE_CORE_SRC=/absolute/path/to/foundation/src." >&2
+    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
     exit 1
 fi
 if [ ! -f "$RENDERER" ]; then
@@ -73,7 +87,7 @@ for LABEL in $LABELS; do
         --output "$PLIST_DST" \
         --repo "$REPO" \
         --home "$USER_HOME" \
-        --core-src "$CORE_SRC"
+        --workshop-src "$WORKSHOP_SRC"
     /usr/bin/plutil -lint "$PLIST_DST" >/dev/null
     # bootout first so re-install picks up plist changes; ignore "not loaded".
     launchctl bootout "$GUI_DOMAIN/$LABEL" 2>/dev/null || true
