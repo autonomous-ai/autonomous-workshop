@@ -8,136 +8,73 @@ hypotheses stay with each inventor.
 
 ```text
 inventors/
-  alice/  bob/  eve/
-  text2cad/  text2game/  vibe-ideas/
+  alice/       one complete inventor
+  <others>/    more inventors built the same way
 foundation/
   src/  skills/  schemas/  docs/  tests/
 ```
 
-## Architecture blueprint
+## Architecture blueprint: Alice on Foundation
 
-Inventors depend on Foundation. Foundation never imports an inventor.
-
-```text
-+--------------------------- inventors/ -----------------------------+
-|                                                                    |
-|  alice/        books + history + reward policy                     |
-|  bob/          literature + simulation + table play                |
-|  eve/          great-books loop + journal + concepts               |
-|  text2cad/     registered upstream snapshot                        |
-|  text2game/    registered upstream snapshot                        |
-|  vibe-ideas/   registered upstream snapshot                        |
-|  <new>/        TASTE + niche logic + prompts + evaluators           |
-|                                                                    |
-|  Each inventor owns its identity, taste, creative process,         |
-|  domain gates, adapters, tests, and reward hypothesis.             |
-+--------------------------------+-----------------------------------+
-                                 |
-                                 | imports and uses
-                                 v
-+-------------------------- foundation/ -----------------------------+
-|                                                                    |
-|  Registry + scaffolder                                             |
-|       |                                                            |
-|       v                                                            |
-|  Lifecycle + state  <----- narrow ports for agents, CAD, evals,    |
-|       |                    publishing, and fulfillment              |
-|       v                                                            |
-|  Artifact identity + evidence gates <----- creation/CAD skills      |
-|       |                                                            |
-|       v                                                            |
-|  Publication outbox + exact receipts + effect fencing              |
-|                                                                    |
-|  Foundation owns shared invariants. It never imports an inventor.  |
-+------------+----------------------+----------------------+----------+
-             |                      |                      |
-             v                      v                      v
-      model providers       CAD/slicer/physical       Panda/Factory
-                                test systems             and Store
-```
-
-### Build a new inventor on top
+This is the target design. Alice provides the creative judgment; Foundation
+provides the reusable machinery that lets that judgment operate safely.
 
 ```text
-inventor-foundation new deduction-games --name Ada --niche ... --root inventors
-                                      |
-                                      v
-                           +--------------------+
-                           | atomic scaffolder  |
-                           +---------+----------+
-                                     |
-                                     v
-+---------------- inventors/deduction-games/ ----------------+
-|                                                            |
-|  inventor.json       identity, niche, capabilities          |
-|  TASTE.md            human-owned creative constitution      |
-|       |                                                    |
-|       v                                                    |
-|  prompts + roles + generators + reward hypothesis           |
-|       |                                                    |
-|       v                                                    |
-|  workflow.py         default or stricter PipelineSpec       |
-|       ^                                                    |
-|       |                                                    |
-|  adapters/           models, CAD, evaluation, publishing    |
-|  tests/              golden artifacts + behavior tests      |
-|  CLI                 init, create, status                   |
-|  .runtime/           stable local state; never committed    |
-+----------------------------+-------------------------------+
-                             |
-                             | imports
-                             v
-+---------------------- Inventor Foundation -----------------+
-|  Pipeline + policy floors                                  |
-|       +--> InventorStore: revisions, leases, budgets        |
-|       +--> artifact and gate contracts                      |
-|       +--> CAD release bundles                              |
-|       +--> publication outbox and receipts                  |
-|       `--> narrow adapter ports                             |
-|                                                            |
-|  Inventor may add stages or stricter gates.                 |
-|  Inventor may not weaken Foundation safety floors.          |
-+------------------------------------------------------------+
++--------------------------------------------------------------+
+| ALICE - INVENTOR-SPECIFIC                                    |
+| owns what to invent and what "good" feels like               |
+|                                                              |
+| TASTE.md                  values and creative boundaries      |
+| prompts + roles           how Alice thinks                    |
+| game logic + evaluators   what Alice makes and tests          |
+| workflow                  composes Foundation APIs            |
++-------------------------------+------------------------------+
+                                |
+                                | imports stable APIs
+                                v
++--------------------------------------------------------------+
+| FOUNDATION - SHARED BY EVERY INVENTOR                        |
+| owns how work runs safely and repeatably                     |
+|                                                              |
+| state + leases + budgets   artifacts + evidence gates         |
+| CAD + creation skills     publication + exact receipts        |
+| registry + scaffolding    port interfaces                     |
++-------------------------------+------------------------------+
+                                |
+                                | calls ports
+                                v
++--------------------------------------------------------------+
+| ADAPTER IMPLEMENTATIONS                                      |
+| connect Foundation ports to provider APIs                    |
++-------------------------------+------------------------------+
+                                |
+                                | call
+                                v
++--------------------------------------------------------------+
+| EXTERNAL SERVICES                                            |
+| AI models | CAD, slicer, printer | Panda and Factory          |
++--------------------------------------------------------------+
 ```
 
-### Shared invention-to-publication path
+Alice owns **what to invent** and **what good feels like**. Foundation owns
+**how the work is persisted, evidenced, budgeted, and published**. Adapters own
+the connection to external systems; Foundation owns the interfaces they
+implement.
 
-```text
-[Idea] -> [Research] -> [Rules] -> [Simulation] -> [CAD/product build]
-                                                        |
-                                                        v
-                                      [Content-addressed artifact]
-                                                        |
-                                                        v
-                                      [Pinned evidence gates]
-                                         /            \
-                           missing/stale/fail          all pass
-                                     |                    |
-                                     v                    v
-                      [hold / repair / park / kill]   [reviewed]
-                                                          |
-                                                          v
-                                      [canonical packet + artifact hash]
-                                                          |
-                                                          v
-                                          [outbox: planned -> sending]
-                                             /          |          \
-                                  valid receipt   proven no effect   ambiguous
-                                      |                 |               |
-                                      v                 v               v
-                         [receipt-bound draft]      [rejected]       [unknown]
-                                      |                            never retry
-                                      v
-                         [publish + authenticated readback]
-                                  /                 \
-                              exact                 ambiguous
-                                |                       |
-                                v                       v
-                             [live]               [live_unknown]
-                                                  GET-only reconcile
-```
+At runtime, Alice asks Foundation to act. Foundation authorizes and records the
+operation, an adapter performs it, and the result returns through Foundation
+for verification before Alice can advance.
 
-The deeper contract, ownership, evidence, and failure-mode details live in
+To build another inventor, replace the Alice layer with a new identity,
+`TASTE.md`, prompts, domain logic, and tests. Foundation and its external ports
+stay the same. Foundation never imports Alice—or any other inventor.
+
+Alice's migration is incremental: today she uses Foundation's
+content-addressed artifact and canonical packet boundary while retaining her
+mature local workflow and state. See the [current adoption
+map](foundation/docs/ADOPTION.md) for the exact implemented boundary.
+
+The deeper lifecycle, evidence, and failure-mode contracts live in
 [Foundation architecture](foundation/docs/ARCHITECTURE.md).
 
 ## Inventor registry
@@ -218,7 +155,7 @@ current history and requested active USD listing with SKU are observed. Backend
 idempotency/content receipts and scoped inventor principals remain prerequisites
 for unattended publication.
 
-Create a new niche inventor without cloning Alice, Bob, or Eve:
+Create a new niche inventor without cloning an existing inventor:
 
 ```bash
 PYTHONPATH=foundation/src python3 -m inventor_core new deduction-games \
