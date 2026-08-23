@@ -177,6 +177,16 @@ receipt binds `design_id`, canonical remote `slug`, `history_id`, `project_url`,
 adopted automatically. The CDN fetch is intentionally anonymous and accepts
 only a configured credential-free HTTPS host with redirects disabled.
 
+This first-import path is never a revision fallback. A known game is durably
+bound to its exact Factory design ID and canonical slug; any later improvement
+must append a history to that record or stop. Blindcap is currently public, and
+the deployed version-import route immediately publishes a replacement history,
+so its improvements remain local until Factory advertises an atomic staged-
+version capability that preserves the old public history for review. A 404,
+identity mismatch, collision-suffixed slug, or missing capability must never
+cause Alice to create another design. All Alice-authored descriptions must end
+with the exact suffix `By Alice.` with no trailing whitespace.
+
 The current Alice checkout does not execute `publishdesign -dry-run` during
 `doctor`: adding that credential-bearing Mongo/GCS probe was not authorized by
 the execution boundary. Before operational activation, an accountable operator

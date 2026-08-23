@@ -60,6 +60,12 @@ and the other real evidence boundaries. The default fixture cannot invent or
 provide external evidence and is rejected in `draft` and `live`. No production
 token or operational fulfillment adapter is checked in.
 
+Alice's first shipped game, **Blindcap: Duel**, is preserved under
+[`games/blindcap-duel`](games/blindcap-duel). It was completed through the
+manual Vibe/CAD handoff while the unattended runtime remained disabled, so it
+is evidence of the product workflow rather than evidence that the 24/7 service
+is activated.
+
 `auto_publish_when_eligible` is false by default: a verified **private** Factory
 draft is the current release boundary, and Dee publishes it manually after
 review. Future automatic public publishing remains fail-closed until Factory
@@ -111,3 +117,9 @@ The pre-Alice market context is real but deliberately narrow: two distinct
 Francisco is one of them. Unit counts are not yet recorded. This context cannot
 unlock a release or train Alice's learner; it only says the category has an
 early willingness-to-pay signal.
+
+An improvement to a published game always appends a version to the same exact
+Factory design ID and slug. Alice must block if that revision-only operation is
+unavailable; she may never fall back to a first import or create a duplicate
+listing. Every Alice-authored Factory description ends with the exact suffix
+`By Alice.`.
