@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
@@ -54,6 +55,32 @@ def _parse(value: str) -> Optional[datetime]:
     if when.tzinfo is None:
         when = when.replace(tzinfo=timezone.utc)
     return when
+
+
+_RESET_HINT_RE = re.compile(r"^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$", re.IGNORECASE)
+
+
+def _parse_reset_hint(hint: str) -> Optional[datetime]:
+    """Turn a wall-clock reset hint like '6:20pm' into the next UTC datetime
+    it describes, using the machine's local timezone. Returns None if unparsable."""
+    m = _RESET_HINT_RE.match((hint or "").strip())
+    if not m:
+        return None
+    hh = int(m.group(1))
+    mm = int(m.group(2) or 0)
+    ampm = (m.group(3) or "").lower()
+    if ampm == "pm" and hh != 12:
+        hh += 12
+    elif ampm == "am" and hh == 12:
+        hh = 0
+    now = datetime.now().astimezone()
+    try:
+        target = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    except ValueError:
+        return None
+    if target <= now:
+        target += timedelta(days=1)
+    return target.astimezone(timezone.utc)
 
 
 class Meta:
@@ -91,6 +118,35 @@ class Meta:
         if when is None:
             return None
         return (_now() - when).total_seconds() / 86400.0
+
+    # --- quota pause -----------------------------------------------------
+    def pause_for_quota(self, exc) -> None:
+        """Persist DAYBOOK quota_until from a QuotaExhausted's reset hint so
+        the tick loop no-ops (instead of re-invoking a costly brief) until the
+        subscription window reopens. Falls back to now + 60 min when the CLI
+        did not disclose the reset time."""
+        until = _now() + timedelta(minutes=60)
+        hint = getattr(exc, "reset_hint", None)
+        if hint:
+            parsed = _parse_reset_hint(hint)
+            if parsed is not None:
+                until = parsed
+        book = self._read_daybook()
+        book["quota_until"] = _iso(until)
+        self._write_daybook(book)
+        self.journal.append("meta", action="quota_paused",
+                            until=_iso(until), hint=hint)
+
+    def quota_until(self) -> Optional[datetime]:
+        return _parse(self._read_daybook().get("quota_until"))
+
+    def quota_paused(self) -> dict:
+        """Return the pause window when the daybook says we are still blocked;
+        empty dict when it is safe to run LLM work again."""
+        until = self.quota_until()
+        if until is not None and _now() < until:
+            return {"until": until, "until_iso": _iso(until)}
+        return {}
 
     def audit_ok(self):
         """The ledger must be verifiable before any work (never improve from
@@ -312,6 +368,13 @@ class Meta:
             self.journal.append("meta", action="halted", reason="audit_failed",
                                 problems=problems[:3])
             return {"action": "halted", "problems": problems}
+
+        # Quota pause: never invoke a costly LLM step into a closed window.
+        paused = self.quota_paused()
+        if paused:
+            self.journal.append("meta", action="quota_paused",
+                                until=paused["until_iso"])
+            return {"action": "quota", "until": paused["until_iso"]}
 
         # 1) Finishing beats starting: advance the in-flight game pipeline.
         decision = self.next_game_action()

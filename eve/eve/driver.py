@@ -336,9 +336,8 @@ def evolve(cfg, *, max_steps: int = 1, fn_run_agent=None) -> dict:
                 break
             try:
                 result = ROLE_FN[role](cfg, m, fn_run_agent, _safe_slug(out.get("game")))
-            except agents.QuotaExhausted:
-                m.journal.append("meta", action="quota",
-                                 note="DAYBOOK quota_until 60m; loop pauses")
+            except agents.QuotaExhausted as exc:
+                m.pause_for_quota(exc)
                 _queue(cfg, m).release(out.get("game"))
                 done.append({"action": "quota"})
                 break
@@ -360,7 +359,8 @@ def evolve(cfg, *, max_steps: int = 1, fn_run_agent=None) -> dict:
             # below the inflight floor -> invent a new game now
             try:
                 res = _run_ideator(cfg, m, fn_run_agent)
-            except agents.QuotaExhausted:
+            except agents.QuotaExhausted as exc:
+                m.pause_for_quota(exc)
                 done.append({"action": "quota"})
                 break
             except agents.Starved:

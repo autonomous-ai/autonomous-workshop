@@ -264,3 +264,41 @@ def test_evolve_dispatches_reader_when_pipeline_idle(cfg):
     assert meta.Meta(cfg).books_due() is False
     prog = books.progress(cfg)
     assert prog["books"]["done"] == 1 and books.reading_list(cfg)[0]["title"] == first
+
+
+def test_quota_pause_persists_hint_and_tick_noops(cfg):
+    """A QuotaExhausted with a reset hint pauses the daybook until that local
+    wall-clock reset, and tick() refuses LLM dispatch while paused (no costly
+    re-invocation every 30 min)."""
+    from eve import agents, meta
+
+    exc = agents.QuotaExhausted("hit the limit")
+    exc.reset_hint = "6:20pm"
+    m = meta.Meta(cfg)
+    m.pause_for_quota(exc)
+
+    until = m.quota_until()
+    assert until is not None
+    # Machine tz is +07, so 6:20pm local == 11:20 UTC.
+    assert until.hour == 11 and until.minute == 20, until
+
+    # While paused, a tick must refuse to dispatch any agent work.
+    out = m.tick(run_agent=True)
+    assert out["action"] == "quota", out
+    assert until in (m.quota_until(),)
+
+
+def test_quota_pause_falls_back_to_60min_without_hint(cfg):
+    from eve import agents, meta
+    import datetime
+    exc = agents.QuotaExhausted("hit the limit")
+    exc.reset_hint = None      # CLI did not disclose a reset time
+    m = meta.Meta(cfg)
+    m.pause_for_quota(exc)
+    until = m.quota_until()
+    assert until is not None
+    # now + 60 min (within a small slack window).
+    slack = datetime.timedelta(seconds=120)
+    assert until - datetime.timedelta(minutes=60) - datetime.datetime.now(
+        datetime.timezone.utc) < slack
+    assert m.tick(run_agent=True)["action"] == "quota"

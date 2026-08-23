@@ -66,6 +66,29 @@ AgentResult = namedtuple(
 )
 
 QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit|session limit|session_limit", re.IGNORECASE)
+# Claude CLI discloses the reset time in the license/session message, e.g.
+# "You've hit your session limit · resets 6:20pm (Asia/Saigon)". Capture the
+# wall-clock hint so the driver can pause the daybook until the window reopens
+# instead of re-invoking an expensive brief every 30 minutes.
+RESET_RE = re.compile(r"resets?\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)", re.IGNORECASE)
+
+
+def quota_reset_hint(blob: str):
+    """Return the wall-clock reset hint (e.g. '6:20pm') from a quota message,
+    or None when the CLI did not disclose it."""
+    m = RESET_RE.search(blob or "")
+    return m.group(1).strip() if m else None
+
+
+def _raise_quota(name: str, blob: str) -> None:
+    """Raise QuotaExhausted with the reset hint attached (never swallow it)."""
+    exc = QuotaExhausted(
+        "Agent '{}' hit the usage/rate limit. Set DAYBOOK quota_until "
+        "= now + 60 min; never retry into a wall.".format(name)
+    )
+    exc.reset_hint = quota_reset_hint(blob)
+    raise exc
+
 
 KILL_GRACE_S = 5.0
 
@@ -351,11 +374,7 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
         blob = (stdout or "") + "\n" + (stderr or "")
         if QUOTA_RE.search(blob):
             _log_call(name, resolved, wall_s, None, 0.0, "quota")
-            raise QuotaExhausted(
-                "Agent '{}' hit the usage/rate limit (unparseable CLI "
-                "output). Set DAYBOOK quota_until = now + 60 min; never "
-                "retry into the wall.".format(name)
-            )
+            _raise_quota(name, blob)
         _log_call(name, resolved, wall_s, None, 0.0, "crashed_no_json")
         raise AgentError(
             "Agent '{}' produced no parseable JSON (exit {}). Retry once; "
@@ -383,10 +402,7 @@ def run_agent(name, prompt, *, model=None, max_minutes=15, cwd=None, max_turns=4
         blob = text + "\n" + (stderr or "")
         if QUOTA_RE.search(blob):
             _log_call(name, resolved, wall_s, num_turns, cost, "quota")
-            raise QuotaExhausted(
-                "Agent '{}' hit the usage/rate limit. Set DAYBOOK "
-                "quota_until = now + 60 min; never retry into a wall.".format(name)
-            )
+            _raise_quota(name, blob)
         _log_call(name, resolved, wall_s, num_turns, cost, subtype)
         raise AgentError(
             "Agent '{}' crashed (subtype={}). Transient — retry once; if "
