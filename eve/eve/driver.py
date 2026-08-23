@@ -116,7 +116,8 @@ def _queue(cfg, m):
 def _run_brief2(cfg, m, fn_run_agent, slug: str) -> dict:
     gdir = _game_dir(cfg, slug)
     prompt = promptlib.brief_prompt(cfg, game_dir=str(gdir))
-    fn_run_agent("brief", prompt, cwd=str(gdir))
+    fn_run_agent("brief", prompt, cwd=str(gdir),
+                 max_minutes=cfg.brief_max_minutes)
     out = _load_json(gdir / "stage_out.json")
     if not out:
         raise DriverStop(f"brief-agent for {slug} wrote no stage_out.json")
