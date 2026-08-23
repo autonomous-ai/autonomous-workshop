@@ -129,10 +129,6 @@
         "repair_used": 0,
         "rework_used": 0
       },
-      "crashes": {
-        "count": 1,
-        "state": "tabled"
-      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -140,11 +136,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": "2026-08-23T00:56:41.804319+00:00",
-        "holder": "invent",
-        "id": "740f1ca0468549acaab00b9965b1b4fc"
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -229,6 +221,18 @@
           "from": "parked",
           "note": "human unpark: seat ceiling 3->6 min + seat-crash tolerance now live; both prior deaths were the same starved seat call",
           "to": "tabled"
+        },
+        {
+          "at": "2026-08-23T00:57:40.589498+00:00",
+          "from": "tabled",
+          "note": "parked: crashed 2 times in a row at tabled: NameError: name 'gdir' is not defined",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T02:20:00+00:00",
+          "from": "parked",
+          "note": "human unpark: table_retries reset: both burned runs were instrument bugs (Sonnet pricing, then a NameError in the retry patch)",
+          "to": "tabled"
         }
       ],
       "reward": {
@@ -237,13 +241,13 @@
       },
       "slug": "g0002",
       "state": "tabled",
-      "table_retries": 1,
+      "table_retries": 0,
       "title": "Re-Pin"
     },
     "g0003": {
       "budgets": {
         "clarify_used": 1,
-        "repair_used": 1,
+        "repair_used": 2,
         "rework_used": 0
       },
       "created": "2026-08-22T16:49:32.455641+00:00",
@@ -253,10 +257,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -359,6 +360,30 @@
           "from": "build_gated",
           "note": "build check FAIL -> repair: check_mesh FAIL parts/assembled.stl:  float)\n  FAIL  fits 220x220x250 bed               303.0x470.5x100.0 mm\n  PASS  small triangles                    9904 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n; check_mesh FAIL parts/part_yoke.stl: ot float)\n  FAIL  fits 220x220x250 bed               224.0x57.0x34.0 mm\n  PASS  small triangles                    4871 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n",
           "to": "built"
+        },
+        {
+          "at": "2026-08-23T00:47:17.019285+00:00",
+          "from": "built",
+          "note": "136 part file(s) built",
+          "to": "build_gated"
+        },
+        {
+          "at": "2026-08-23T00:47:21.353631+00:00",
+          "from": "build_gated",
+          "note": "build check FAIL -> repair: check_mesh FAIL parts/part_yoke.stl: ot float)\n  FAIL  fits 220x220x250 bed               224.0x57.0x34.0 mm\n  PASS  small triangles                    4871 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n",
+          "to": "built"
+        },
+        {
+          "at": "2026-08-23T01:09:44.430593+00:00",
+          "from": "built",
+          "note": "parked: crashed 2 times in a row at built: AgentError: Agent 'bob-builder' crashed (subtype=success). Transient \u2014 retry once; if it recurs, park the game and file the transcript: /Users/d/code/inventors/bob/state/transcripts/20260823T010944.419047-bob-builder.json",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T02:20:00+00:00",
+          "from": "parked",
+          "note": "human unpark: builder crash was the session-limit window misclassified; rotated-fit gate now live",
+          "to": "build_gated"
         }
       ],
       "reward": {
@@ -366,7 +391,7 @@
         "latest": 0.0
       },
       "slug": "g0003",
-      "state": "built",
+      "state": "build_gated",
       "title": "Clearance"
     },
     "g0004": {
@@ -427,10 +452,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T18:51:21.446656+00:00",
@@ -467,6 +489,24 @@
           "from": "ruled",
           "note": "rules written; gate next",
           "to": "rules_gated"
+        },
+        {
+          "at": "2026-08-23T01:01:26.344440+00:00",
+          "from": "rules_gated",
+          "note": "rules gate passed",
+          "to": "simulated"
+        },
+        {
+          "at": "2026-08-23T01:11:05.728280+00:00",
+          "from": "simulated",
+          "note": "parked: crashed 2 times in a row at simulated: AgentError: Agent 'bob-engine-writer' crashed (subtype=success). Transient \u2014 retry once; if it recurs, park the game and file the transcript: /Users/d/code/inventors/bob/state/transcripts/20260823T011105.716076-bob-engine-writer.json",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T02:20:00+00:00",
+          "from": "parked",
+          "note": "human unpark: engine-writer crash was the session-limit window misclassified",
+          "to": "simulated"
         }
       ],
       "reward": {
@@ -474,7 +514,7 @@
         "latest": 0.0
       },
       "slug": "g0005",
-      "state": "rules_gated",
+      "state": "simulated",
       "title": "Kick"
     }
   },

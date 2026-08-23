@@ -2,7 +2,6 @@
   "build_pass": false,
   "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
   "issues": [
-    "check_mesh FAIL parts/assembled.stl:  float)\n  FAIL  fits 220x220x250 bed               303.0x470.5x100.0 mm\n  PASS  small triangles                    9904 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n",
     "check_mesh FAIL parts/part_yoke.stl: ot float)\n  FAIL  fits 220x220x250 bed               224.0x57.0x34.0 mm\n  PASS  small triangles                    4871 under 0.8 mm edge scale (thin walls / nozzle limit)\nRESULT: NOT PRINTABLE AS-IS\n"
   ],
   "mesh_checked": true,

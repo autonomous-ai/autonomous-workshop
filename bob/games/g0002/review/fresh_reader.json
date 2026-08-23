@@ -1,14 +1,12 @@
 {
   "findings": [
-    "AMBIGUOUS - who takes the first turn in round 2+: Setup \u00a73 step 6 says 'the player to the Locksmith's left takes the first turn,' but this line sits only in the initial Setup list. The 'Between rounds' reset paragraph (end of \u00a73) lists what resets (time rail, Locksmith lane, cut rail, shutters, seat passes left) but never explicitly restates 'then left-of-Locksmith goes first' for round 2 onward. Reasonable to infer it repeats, but the text never says so.",
-    "Re-read required on the reading algorithm: the worked example in \u00a75 ('Pins: 3 7 2 5 1 / Key: 3 7 4 5 1 \u2192 Reading: 2') needed a second pass to confirm the reading is an unbroken run from chamber 1 and ignores any later accidental matches (chambers 4-5 also matched but don't count).",
-    "Re-read required on \u00a74 steps 3-4: had to cross-check 'Locksmith income... happens on a Hold as well as on a failed Probe' against 'After a Hold they may not [re-pin]' to separate the two effects (income yes, re-pin window no) for a Hold.",
-    "The text's own teach-time claim ('about 5 minutes to teach') looks optimistic for first-time players: the staircase-cam reading rule, the Probe/Hold/Re-pin economy, and the 4-step tiebreak each need a physical demo, not just a read-through. ~15 min (5 core concepts x ~2 min explain+demo, plus the 2 re-reads above) is more realistic for 3 friends who've never held the lock.",
-    "All other tested rulings were directly answerable with citations: pin-rung exhaustion in the case (\u00a78, 'take a different rung... hard limit'), voided round on empty/double-pinned chamber (\u00a78), jam handling (\u00a75 Probe rulings), detent-miss becoming a Hold on second failed attempt (\u00a75), last-turn OPEN resolving before the +5 (\u00a78 Timing), the 4-step tiebreak guaranteeing a single winner (\u00a77), and 2p/3p/4p round-count and Locksmith-frequency rules (\u00a73.5, \u00a78)."
+    "Re-pin window on the first Probe of a round is contradictory: turn structure step 4 (section 4) says any 'failed Probe' opens a re-pin window with no exception, but the Re-pin action rules say the Locksmith 'may not re-pin ... after the opening Probe.' Unclear whether the first Probe of every round is categorically barred from triggering a re-pin, or whether that line just restates that the Locksmith can't yet afford the 2-point cost.",
+    "Tiebreak step 3, 'Highest single opening score (the biggest rail number anyone banked)', does not say whether 'anyone' is scoped to the tied players or to any player in the game. If scoped to all players, it can fail to separate two tied players when a third, non-tied player holds the highest banked opening.",
+    "Tiebreak steps 2 ('most locks opened as a Cracker across the whole game') and 3 ('highest single opening score') require per-player history across all rounds, but no printed component (score board, round board, deduction card) records either history \u2014 the score board only shows current point totals, not counts of opens or past opening values."
   ],
   "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
   "judge": "bob-fresh-reader",
-  "misses": 1,
+  "misses": 3,
   "questions": 12,
   "teach_minutes": 15
 }

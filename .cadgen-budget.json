@@ -1,18 +1,40 @@
 {
-  "startedAt": 1787444533.742979,
-  "totalSeconds": 1800.0,
+  "startedAt": 1787446860.2240791,
+  "totalSeconds": 2700.0,
   "measure": "wall",
-  "label": "g0003-cad",
+  "label": "g0003-export",
   "steps": [
     {
       "argv": [
-        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
-        "smoke.py"
+        "bash",
+        "/tmp/g0003_export.sh"
       ],
-      "seconds": 4.626,
-      "cap": 300.0,
-      "exit": 1,
-      "outcome": "error"
+      "seconds": 71.53,
+      "cap": 1200.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "bash",
+        "/tmp/g0003_mesh.sh"
+      ],
+      "seconds": 4.958,
+      "cap": 900.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/inspect",
+        "validate",
+        "part_yoke.step"
+      ],
+      "seconds": 420.02,
+      "cap": 420.0,
+      "exit": 124,
+      "outcome": "timeout"
     }
   ]
 }

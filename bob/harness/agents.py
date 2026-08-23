@@ -80,7 +80,7 @@ AgentResult = namedtuple(
 
 # Rate-limit fingerprints per CONTRACTS §6. Case-insensitive because the CLI
 # has emitted "Usage limit reached" and "rate limit" in different casings.
-QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit", re.IGNORECASE)
+QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit|session limit|hit your (session|usage|weekly)? ?limit", re.IGNORECASE)
 
 # 5s between SIGTERM and SIGKILL: long enough for the CLI to flush its JSON
 # result line, short enough that an overrun tick doesn't blow the launchd

@@ -1044,7 +1044,7 @@ def _handle_tabled(step):
             entry["table_retries"] = int(entry.get("table_retries", 0)) + 1
             retries = entry["table_retries"]
         for stale in ("table_report.json",):
-            path = os.path.join(gdir, "playtest", stale)
+            path = os.path.join(_game_dir(slug), "playtest", stale)
             if os.path.exists(path):
                 os.remove(path)
         if retries >= 2:
@@ -1191,8 +1191,29 @@ def _handle_build_gated(step):
                              "--bed", "220x220x250"],
                             capture_output=True, text=True, timeout=300)
                 if r.returncode != 0:
+                    out = r.stdout + r.stderr
+                    # check_mesh tests axis-aligned orientations only. A
+                    # part can still fit ROTATED in XY: sufficient 45° test
+                    # (x+y)/sqrt(2) <= bed side (g0003's 224x57 yoke, a real
+                    # print-shop rotation, failed the instrument not the
+                    # bed, 2026-08-23). Bed-fit-only failures that pass the
+                    # rotated test downgrade to a warning the slicer note
+                    # carries; every other failure still blocks.
+                    m = re.search(r"FAIL\s+fits [\dx]+ bed\s+"
+                                  r"([\d.]+)x([\d.]+)x([\d.]+) mm", out)
+                    only_bed = (out.count("FAIL") == 1 and m is not None)
+                    if only_bed:
+                        x, y, z = (float(m.group(i)) for i in (1, 2, 3))
+                        a, b = sorted((x, y))[-2:]
+                        if z <= 250.0 and (a + b) / 1.4142 <= 220.0:
+                            mesh_warnings.append(
+                                "parts/%s exceeds the bed axis-aligned "
+                                "(%.0fx%.0fx%.0f) but fits rotated 45 "
+                                "degrees in XY — slicer must rotate it"
+                                % (name, x, y, z))
+                            continue
                     problems.append("check_mesh FAIL parts/%s: %s"
-                                    % (name, (r.stdout + r.stderr)[-200:]))
+                                    % (name, out[-200:]))
             except Exception as exc:  # noqa: BLE001 — a dead venv is a skip, not a crash
                 mesh_checked = False
                 mesh_warnings.append("check_mesh errored (%s) — mesh checks "

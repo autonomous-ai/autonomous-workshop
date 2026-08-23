@@ -1,11 +1,12 @@
 import sys, time
 sys.path.insert(0,'.'); sys.path.insert(0,'../../../skills/cad/scripts')
 import clearance_lib as L
-which = sys.argv[1:] or ["column_screw","detent_leaf","golden_stub"]
-fns = {"gantry_base":L.build_gantry_base,"column_screw":L.build_column_screw,
- "detent_leaf":L.build_detent_leaf,"post_guide":L.build_post_guide,"yoke":L.build_yoke,
- "stop_ring":L.build_stop_ring,"knob_hood":L.build_knob_hood,"rail":L.build_rail,
- "piece":lambda: L.build_piece(32.75,4),"golden_stub":L.build_golden_stub,"bar":L.build_bar}
+NAMES = ["gantry_base","screw_shroud","column_screw","detent_leaf","post_guide",
+         "yoke","stop_ring","knob_hood","rail","golden_stub"]
+which = sys.argv[1:] or NAMES
+fns = {n: getattr(L, f"print_{n}") for n in NAMES}
+fns["piece"] = lambda: L.print_piece("piece_a1")
+fns["bar"] = L.build_bar
 for n in which:
     t=time.time()
     try:
