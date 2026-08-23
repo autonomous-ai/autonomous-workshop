@@ -20,6 +20,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from .page import (
+    ALICE_PRODUCT_DESCRIPTION_SUFFIX,
+    has_exact_alice_product_description_suffix,
+)
+
 
 MAX_ARCHIVE_BYTES = 95 * 1024 * 1024
 REQUIRED_LIVE_CAPABILITIES = frozenset(
@@ -139,6 +144,11 @@ class FactoryClient:
         license_name: str = "",
         prompt: str = "",
     ) -> FactoryDraftReceipt:
+        if not has_exact_alice_product_description_suffix(description):
+            raise ValueError(
+                "description must end with the exact attribution "
+                f"{ALICE_PRODUCT_DESCRIPTION_SUFFIX!r} and no trailing whitespace"
+            )
         archive_path = Path(archive)
         archive_bytes = archive_path.read_bytes()
         if not archive_bytes:
@@ -199,7 +209,16 @@ class FactoryClient:
         )
 
     def get_design(self, slug: str) -> dict[str, Any]:
-        return self._json_request("GET", f"/api/v1/designs/{urllib.parse.quote(slug)}")
+        design = self._json_request(
+            "GET", f"/api/v1/designs/{urllib.parse.quote(slug)}"
+        )
+        if not has_exact_alice_product_description_suffix(
+            design.get("description")
+        ):
+            raise FactoryError(
+                "Factory design description lacks Alice's exact attribution"
+            )
+        return design
 
     def request_slice(self, receipt: FactoryDraftReceipt) -> dict[str, Any]:
         """Queue slicing once. Poll with get_slice; never repeat this request."""

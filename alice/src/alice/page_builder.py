@@ -36,6 +36,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Protocol, Sequence
 
 from .adapters import AdapterError, AdapterReceipt, adapter_input_sha256
+from .page import has_exact_alice_product_description_suffix
 from .providers import (
     BoundedProcessOutputLimit,
     BoundedProcessTimeout,
@@ -1364,6 +1365,13 @@ class PageBuilderAdapter:
             ),
             (
                 isinstance(design, Mapping)
+                and has_exact_alice_product_description_suffix(
+                    design.get("description")
+                ),
+                "diagnostic_design_description_attribution_invalid",
+            ),
+            (
+                isinstance(design, Mapping)
                 and design.get("owner_id") == self.diagnostic_owner_id,
                 "diagnostic_design_owner_mismatch",
             ),
@@ -1741,6 +1749,12 @@ class PageBuilderAdapter:
             raise PageBuilderError("backend draft slug does not match operator receipt")
         if remote.get("status") != "draft":
             raise PageBuilderError("rich-page handoff must remain a private draft")
+        if not has_exact_alice_product_description_suffix(
+            remote.get("description")
+        ):
+            raise PageBuilderError(
+                "backend draft description lacks Alice's exact attribution"
+            )
         if remote.get("owner_id") != self.diagnostic_owner_id:
             raise PageBuilderError("backend draft owner does not match configured owner")
         if remote.get("current_history_id") != history_id:

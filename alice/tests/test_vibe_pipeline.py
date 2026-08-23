@@ -32,7 +32,7 @@ def complete_design(*, price_cents: int = 9_999) -> dict[str, object]:
         "id": "design-1",
         "slug": "arrows-across-the-river",
         "title": "Arrows Across the River",
-        "description": "A complete strategy game.",
+        "description": "A complete strategy game.\n\nBy Alice.",
         "status": "public",
         "rich_page_complete": True,
         "current_history_id": "history-1",
@@ -90,6 +90,7 @@ class FakeTransport:
         self.authenticated_design = {
             "id": "design-1",
             "slug": "arrows-across-the-river",
+            "description": "A complete strategy game.\n\nBy Alice.",
             "status": "draft",
             "current_history_id": "history-1",
             "project_url": "https://cdn.example/project/",
@@ -466,6 +467,16 @@ class VibePipelineTests(unittest.TestCase):
         self.transport.authenticated_design["project_sha256"] = "f" * 64
 
         with self.assertRaisesRegex(VibePipelineError, "project_sha256 mismatch"):
+            self.pipeline().publish_existing(self.existing_request())
+
+        self.assertEqual(self.transport.publish_calls, [])
+
+    def test_authenticated_description_attribution_fails_before_publish(self) -> None:
+        self.transport.authenticated_design["description"] = (
+            "A complete strategy game.\n\nBy Alice. "
+        )
+
+        with self.assertRaisesRegex(VibePipelineError, "exact attribution"):
             self.pipeline().publish_existing(self.existing_request())
 
         self.assertEqual(self.transport.publish_calls, [])

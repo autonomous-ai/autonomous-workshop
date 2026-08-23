@@ -24,7 +24,11 @@ from dataclasses import asdict, dataclass
 from typing import Any, Callable, Mapping, Protocol
 
 from .adapters import AdapterError, AdapterReceipt, adapter_input_sha256
-from .page import PageVerification, verify_factory_product_page
+from .page import (
+    PageVerification,
+    has_exact_alice_product_description_suffix,
+    verify_factory_product_page,
+)
 from .store import DurableStore, PublicationRecord, StateConflictError
 
 
@@ -1031,6 +1035,13 @@ class VibePipeline:
         for key, value in expected:
             if design.get(key) != value:
                 self._mark_failed(record, f"authenticated design {key} mismatch")
+        if not has_exact_alice_product_description_suffix(
+            design.get("description")
+        ):
+            self._mark_failed(
+                record,
+                "authenticated design description lacks Alice's exact attribution",
+            )
         existing = intent.get("existing_design")
         if not isinstance(existing, Mapping):
             self._mark_failed(record, "existing-design manufacturing binding is missing")

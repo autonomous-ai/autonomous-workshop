@@ -11,6 +11,22 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 
+ALICE_PRODUCT_DESCRIPTION_SUFFIX = "By Alice."
+
+
+def has_exact_alice_product_description_suffix(description: Any) -> bool:
+    """Return whether a product description has Alice's exact final attribution."""
+
+    return (
+        isinstance(description, str)
+        and description.rstrip() == description
+        and not description.endswith(
+            f"Note: {ALICE_PRODUCT_DESCRIPTION_SUFFIX}"
+        )
+        and description.endswith(ALICE_PRODUCT_DESCRIPTION_SUFFIX)
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class PageVerification:
     complete: bool
@@ -41,6 +57,9 @@ def verify_factory_product_page(
     for key in ("id", "title", "description", "project_url"):
         if not design.get(key):
             failures.append(f"{key}_missing")
+    description = design.get("description")
+    if description and not has_exact_alice_product_description_suffix(description):
+        failures.append("description_attribution_invalid")
     category = design.get("category")
     if not isinstance(category, Mapping) or not category.get("slug"):
         # The current Vibe pipeline can produce a complete customer-facing page

@@ -8,7 +8,7 @@ def complete_design():
         "id": "d1",
         "slug": "river-council",
         "title": "River Council",
-        "description": "A complete game.",
+        "description": "A complete game.\n\nBy Alice.",
         "status": "public",
         "category": {"slug": "games", "name": "Games"},
         "project_url": "https://cdn.example/project/",
@@ -47,6 +47,23 @@ class PageTests(unittest.TestCase):
         result = verify_factory_product_page(complete_design(), expected_price_cents=4900)
         self.assertTrue(result.complete, result.failures)
         self.assertEqual(result.image_count, 5)
+
+    def test_description_requires_exact_alice_attribution(self) -> None:
+        cases = (
+            (None, "description_missing"),
+            ("A complete game.\n\nNote: By Alice.", "description_attribution_invalid"),
+            ("A complete game.\n\nBy Alice. ", "description_attribution_invalid"),
+        )
+        for description, expected_failure in cases:
+            with self.subTest(description=description):
+                design = complete_design()
+                if description is None:
+                    design.pop("description")
+                else:
+                    design["description"] = description
+                result = verify_factory_product_page(design)
+                self.assertFalse(result.complete)
+                self.assertIn(expected_failure, result.failures)
 
     def test_missing_pipeline_enrichment_fails(self) -> None:
         design = complete_design()

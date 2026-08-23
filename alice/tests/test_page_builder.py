@@ -36,7 +36,7 @@ class FakeDraftReadback:
             "id": "design-1",
             "slug": "river-council",
             "title": "River Council",
-            "description": "A complete physical strategy game.",
+            "description": "A complete physical strategy game.\n\nBy Alice.",
             "status": "draft",
             "owner_id": "a" * 24,
             "current_history_id": "history-1",
@@ -553,6 +553,18 @@ print(f"publish: {slug} -> import ok")
         )
         self.assertEqual(binding["source_repo_commit"], "4" * 40)
 
+    def test_authenticated_draft_readback_requires_exact_alice_attribution(self) -> None:
+        self.readback.design["description"] = (
+            "A complete physical strategy game.\n\nNote: By Alice."
+        )
+
+        with self.assertRaisesRegex(
+            AmbiguousPageBuilderEffect, "exact receipt/readback"
+        ):
+            self.adapter().invoke(PAGE_BUILDER_OPERATION, self.payload())
+
+        self.assertEqual(self.readback.file_calls, [])
+
     def test_text2game_root_idea_drift_is_rejected_before_the_operator(self) -> None:
         payload = self.add_text2game_handoff(self.payload())
         (self.idea / "idea.json").write_text(
@@ -1031,6 +1043,10 @@ print(f"publish: {slug} -> import ok")
             (
                 {"published_history_id": "history-1"},
                 "diagnostic_design_has_published_history",
+            ),
+            (
+                {"description": "A complete game without attribution."},
+                "diagnostic_design_description_attribution_invalid",
             ),
         )
         for changes, reason in cases:

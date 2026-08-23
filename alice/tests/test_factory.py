@@ -52,13 +52,50 @@ class FactoryTests(unittest.TestCase):
                     archive,
                     import_key="key-1",
                     title="River Council",
-                    description="A game",
+                    description="A game\n\nBy Alice.",
                     category="games",
                 )
             request = opened.call_args.args[0]
             self.assertIn(b'name="status"\r\n\r\ndraft', request.data)
+            self.assertIn(
+                b'name="description"\r\n\r\nA game\n\nBy Alice.\r\n',
+                request.data,
+            )
             self.assertEqual(request.headers["Idempotency-key"], "key-1")
             self.assertEqual(receipt.status, "draft")
+
+    def test_create_draft_rejects_inexact_attribution_before_reading_archive(self) -> None:
+        client = FactoryClient("https://factory.example", "secret")
+        missing_archive = Path("/does/not/exist.zip")
+        for description in (
+            "A game",
+            "A game\n\nNote: By Alice.",
+            "A game\n\nBy Alice.\n",
+        ):
+            with self.subTest(description=description):
+                with self.assertRaisesRegex(ValueError, "exact attribution"):
+                    client.create_draft(
+                        missing_archive,
+                        import_key="key-1",
+                        title="River Council",
+                        description=description,
+                        category="games",
+                    )
+
+    def test_design_readback_requires_exact_alice_attribution(self) -> None:
+        client = FactoryClient("https://factory.example", "secret")
+        with patch.object(
+            client._opener,
+            "open",
+            return_value=_Response(
+                {
+                    "id": "d1",
+                    "description": "A game\n\nNote: By Alice.",
+                }
+            ),
+        ):
+            with self.assertRaisesRegex(FactoryError, "exact attribution"):
+                client.get_design("river-council")
 
     def test_live_publish_refuses_current_backend_capabilities(self) -> None:
         receipt = FactoryDraftReceipt("k", "r", "d", "slug", "draft", "h", None, "a", {})
