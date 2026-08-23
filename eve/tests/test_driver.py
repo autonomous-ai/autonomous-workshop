@@ -302,3 +302,37 @@ def test_quota_pause_falls_back_to_60min_without_hint(cfg):
     assert until - datetime.timedelta(minutes=60) - datetime.datetime.now(
         datetime.timezone.utc) < slack
     assert m.tick(run_agent=True)["action"] == "quota"
+
+
+def test_auto_publish_draft_is_best_effort_and_idempotent(cfg, monkeypatch):
+    """_auto_publish_draft never fails the ship and reports honestly:
+    EVE_AUTO_PUBLISH=0 skips; store-not-configured returns ok=True as a
+    skipped/bypass (the pipeline the org already runs); and a publish
+    exception is swallowed so a ship is never taken down by the store."""
+    from eve import journal
+    from eve.queue import Queue
+    q = Queue(cfg)
+    g = q.add("autumn-corridor", title="Autumn Corridor", idea="a corridor")
+    j = journal.open_journal(cfg)
+
+    # 1) env gate off -> skip, store never touched
+    monkeypatch.setenv("EVE_AUTO_PUBLISH", "0")
+    res = driver._auto_publish_draft(cfg, g, j)
+    assert res["action"] == "publish_skipped"
+    assert res["reason"] == "EVE_AUTO_PUBLISH=0"
+
+    # 2) env gate on, but store unconfigured -> idempotent skip, no crash
+    monkeypatch.setenv("EVE_AUTO_PUBLISH", "1")
+    res = driver._auto_publish_draft(cfg, g, j)
+    assert res["action"] == "publish_draft"
+    assert res["ok"] is True, "unconfigured store is a safe skip, not a failure"
+    assert res["skipped"] is True
+
+    # 3) a publish exception is swallowed so a ship is never taken down
+    def boom(cfg, game, **kw):
+        raise RuntimeError("store on fire")
+    from eve import publish
+    monkeypatch.setattr(publish, "publish_to_store", boom)
+    res = driver._auto_publish_draft(cfg, g, j)
+    assert res["action"] == "publish_failed"
+    assert "store on fire" in res["error"]

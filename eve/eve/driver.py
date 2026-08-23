@@ -57,6 +57,38 @@ def _game_dir(cfg, slug: str) -> Path:
     return cfg.games_dir / slug
 
 
+def _auto_publish_draft(cfg, game, journal) -> dict:
+    """On a fresh `ship`, push a store *draft* (Dee flips live in one click).
+    Best-effort and idempotent (publish.py skips when already published), so
+    a transient store/network failure never fails the ship itself. Gated by
+    EVE_AUTO_PUBLISH (default on) so a 24/7 daemon keeps every finished game
+    appearing on the site without a human in the loop.
+    """
+    import os
+    if os.environ.get("EVE_AUTO_PUBLISH", "1") != "1":
+        return {"action": "publish_skipped", "reason": "EVE_AUTO_PUBLISH=0"}
+    try:
+        from . import publish
+        result = publish.publish_to_store(cfg, game, status="draft",
+                                          journal=journal)
+        # honest result: publish_to_store returns ok/skipped top-level and the
+        # platform id inside info (or already_published when idempotent)
+        info = result.get("info") or {}
+        ok = bool(result.get("ok")) or bool(result.get("skipped"))
+        ident = info.get("id") or info.get("slug") or \
+            (result.get("already_published") or {}).get("id")
+        journal.append("meta", action="auto_published", game=game.slug,
+                       published=ok, id=ident)
+        return {"action": "publish_draft", "game": game.slug,
+                "ok": ok, "id": ident,
+                "skipped": bool(result.get("skipped"))}
+    except Exception as exc:   # never let a publish hiccup take down a ship
+        journal.append("meta", action="auto_publish_failed", game=game.slug,
+                       error=str(exc)[-300:])
+        return {"action": "publish_failed", "game": game.slug,
+                "error": str(exc)[-300:]}
+
+
 # --- ideator (brand-new game, from 'spark' or stage 'queued') --------------
 
 
@@ -215,7 +247,8 @@ def _run_playtest(cfg, m, fn_run_agent, slug: str) -> dict:
         from .reward import RewardLedger
         RewardLedger(cfg, journal=m.journal).record(
             slug, "fun_pass", evidence=str(evidence))
-        q.ship(slug)
+        shipped = q.ship(slug)
+        _auto_publish_draft(cfg, shipped, m.journal)
         return {"role": "playtest", "game": slug, "result": "fun_pass",
                 "evidence": evidence.source}
     m.journal.append("meta", action="fun_failed", game=slug,
