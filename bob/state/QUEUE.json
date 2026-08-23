@@ -129,10 +129,6 @@
         "repair_used": 0,
         "rework_used": 0
       },
-      "crashes": {
-        "count": 1,
-        "state": "tabled"
-      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -140,10 +136,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T14:31:29.804089+00:00",
@@ -240,6 +233,18 @@
           "from": "parked",
           "note": "human unpark: table_retries reset: both burned runs were instrument bugs (Sonnet pricing, then a NameError in the retry patch)",
           "to": "tabled"
+        },
+        {
+          "at": "2026-08-23T03:22:43.836234+00:00",
+          "from": "tabled",
+          "note": "parked: table run aborted (cost_cap) twice \u2014 cannot afford a verdict; raise BOB_TABLE_COST_CAP_USD or cheapen the seats",
+          "to": "parked"
+        },
+        {
+          "at": "2026-08-23T10:40:00+00:00",
+          "from": "parked",
+          "note": "human unpark: verdict budget is now reserved \u2014 turns can no longer eat the money the votes need",
+          "to": "tabled"
         }
       ],
       "reward": {
@@ -248,7 +253,7 @@
       },
       "slug": "g0002",
       "state": "tabled",
-      "table_retries": 1,
+      "table_retries": 0,
       "title": "Re-Pin"
     },
     "g0003": {

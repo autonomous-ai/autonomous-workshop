@@ -232,21 +232,28 @@ class ConfusionFallbackTest(_TableCase):
         again = tablerun.run_tables("tablegame", seed=3)
         self.assertEqual(report, again)
 
-    def test_cost_cap_aborts_with_partial_report(self):
-        """Review 2026-08-22 (CRITICAL): paid seat calls had no dollar
-        ceiling. Mock calls cost a fixed $0.01, so a $0.03 cap must stop
-        the run after ~3 calls — mid table 0 — and write a PARTIAL report
-        that downstream reads as failure (no votes = no yes-fraction)."""
-        os.environ["BOB_TABLE_COST_CAP_USD"] = "0.03"
+    def test_turn_budget_spent_still_buys_verdicts(self):
+        """2026-08-23: the verdict IS the product; turns are only how we
+        reach a position to judge. g0002 blew two full runs buying moves
+        and never once asked a seat whether they would play again. A tiny
+        cap must now truncate the GAME and still return votes, flagged."""
+        os.environ["BOB_TABLE_COST_CAP_USD"] = "0.10"
         self._plant_reply("1\nPLAY_AGAIN: YES\nAGENCY: YES\nANSWER: fine.")
         report = tablerun.run_tables("tablegame", seed=7)
-        self.assertEqual(report["aborted"], "cost_cap")
-        self.assertEqual(report["tables"], [])  # no table completed
-        self.assertEqual(report["aggregate"]["seats_total"], 0)
-        self.assertEqual(report["aggregate"]["would_play_again_fraction"], 0.0)
-        # Stopped at the breach, not after: 3 calls x $0.01.
-        self.assertLessEqual(report["cost_usd"], 0.03 + 1e-9)
-        # The partial report still lands on disk for the caller.
+        self.assertTrue(report["truncated_games"])
+        self.assertGreaterEqual(len(report["tables"]), 1)
+        # Votes exist — that is the whole point of the reserve.
+        self.assertGreater(report["aggregate"]["seats_total"], 0)
+        # The unfinished game is recorded as a finding, never hidden — the
+        # per-table transcript carries the confusion events.
+        with open(os.path.join(self.gdir, "playtest", "table_0.json")) as fh:
+            t0 = json.load(fh)
+        whys = " ".join(e.get("why", "") for e in
+                        t0.get("verdicts", {}).get("confusion_events", []))
+        self.assertIn("turn budget spent", whys)
+        # The hard ceiling stops the run; a single in-flight call may cross
+        # it (cost is only known after the call returns), never more.
+        self.assertLessEqual(report["cost_usd"], 0.10 + 0.02)
         with open(os.path.join(self.gdir, "playtest",
                                "table_report.json")) as handle:
             self.assertEqual(json.load(handle), report)
@@ -259,11 +266,13 @@ class ConfusionFallbackTest(_TableCase):
         os.environ["BOB_TABLE_COST_CAP_USD"] = "0.15"
         self._plant_reply("1\nPLAY_AGAIN: YES\nAGENCY: YES\nANSWER: fine.")
         report = tablerun.run_tables("tablegame", seed=7)
-        self.assertEqual(report["aborted"], "cost_cap")
-        self.assertEqual(len(report["tables"]), 1)  # table 0 only
-        # Table 0's votes are kept; the half-played table 1 is discarded.
-        self.assertEqual(report["aggregate"]["seats_total"], 2)
+        # With the verdict reserve, a $0.15 cap buys fewer turns per table
+        # but every table it starts returns votes. The hard ceiling still
+        # ends the run, and no run may exceed it.
+        self.assertGreaterEqual(len(report["tables"]), 1)
+        self.assertGreater(report["aggregate"]["seats_total"], 0)
         self.assertEqual(report["aggregate"]["would_play_again_fraction"], 1.0)
+        self.assertLessEqual(report["cost_usd"], 0.15 + 1e-9)
 
     def test_turn_cap_env_bounds_table_length(self):
         """min(move_cap, BOB_TABLE_MAX_TURNS) is the effective table

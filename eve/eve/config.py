@@ -71,8 +71,8 @@ class Config:
     playtest_configured: bool = False
 
     # --- Vibe / Panda store publish (see publish.py) -----------------------
-    store_base_url: str = "https://api.autonomous.ai"
-    store_upload_base: str = "http://localhost:8090"   # admindash for /uploads
+    store_base_url: str = "https://panda-social-api.autonomous.ai"
+    store_upload_base: str = "http://178.128.89.39:8090"   # admindash for /uploads
     store_upload_token: str = ""    # admindash bearer (uploads -> CDN)
     store_bearer: str = ""          # platform bearer token (API calls)
     panda_owner_id: str = ""        # 24-hex owner id for imported designs

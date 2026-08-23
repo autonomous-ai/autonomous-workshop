@@ -124,6 +124,13 @@ MIN_MOVE_CAP = 12
 #: stay readable artifacts, not logs.
 COMMENT_CHARS = 240
 
+#: What one seat verdict call costs, measured on Haiku seats through the
+#: CLI (~$0.05 each; the CLI's cached system prompt dominates a tiny seat
+#: prompt). Used only to RESERVE money so verdicts always run — an
+#: over-estimate just means turns stop a little sooner, which is the safe
+#: direction.
+VERDICT_COST_ESTIMATE = 0.06
+
 #: The agent every seat runs as; its prompt file is .claude/agents/
 #: bob-table-player.md and its mock fixture tests/fixtures/bob-table-player.txt.
 SEAT_AGENT = "bob-table-player"
@@ -339,6 +346,12 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
     votes_yes = 0
     votes_total = 0
     aborted = None  # "cost_cap" when the run stopped on the dollar ceiling
+    truncated = False  # a table whose game ran out of TURN money, verdicts kept
+    # Reserve enough for every seat's verdict in every remaining table: the
+    # verdict IS the measurement, the turns are only how we get a position
+    # to judge. Turns may spend everything above this line and no more.
+    verdict_reserve = VERDICT_COST_ESTIMATE * n_players * n_tables
+    turn_ceiling = max(cost_cap * 0.25, cost_cap - verdict_reserve)
 
     for k in range(n_tables):
         # Re-check the ceiling between tables: a run that spent its cap on
@@ -408,15 +421,20 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
             })
             state = engine.apply(state, legal[idx])
             turn += 1
-            if total_cost >= cost_cap:
-                # Paid past the ceiling mid-table: stop cleanly. The move
-                # just bought is recorded; the table is discarded (its
-                # verdicts never ran, and callers treat missing votes as
-                # failure, so a partial table cannot inflate anything).
-                aborted = "cost_cap"
+            if total_cost >= turn_ceiling:
+                # Out of TURN money — but the verdicts are the product, so
+                # the reserve below is untouched and they still run. The
+                # unfinished game is itself a duration finding (Browne),
+                # recorded as truncated rather than thrown away. g0002 blew
+                # two whole runs ($10) buying moves and never once asking a
+                # player whether they would play again (2026-08-23).
+                truncated = True
+                confusion_events.append({
+                    "turn": turn, "seat": None,
+                    "why": "turn budget spent at %d moves — game unfinished; "
+                           "verdicts taken from the position reached" % turn,
+                })
                 break
-        if aborted:
-            break
 
         terminated = bool(engine.is_over(state))
         winners = list(engine.winners(state)) if terminated else []
@@ -431,6 +449,7 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
         answers = []
         for spec in seats:
             if total_cost >= cost_cap:
+                # Only the HARD ceiling (reserve included) stops a verdict.
                 aborted = "cost_cap"
                 break
             vprompt = _verdict_prompt(
@@ -512,6 +531,8 @@ def run_tables(slug, home=None, n_tables=N_TABLES, seed=0):
         # the tables completed before the breach).
         "aborted": aborted,
         "cost_cap_usd": cost_cap,
+        "turn_ceiling_usd": round(turn_ceiling, 4),
+        "truncated_games": truncated,
         "tables": table_rows,
         "aggregate": {
             # Fail-closed fraction: an unclear vote is NOT a yes. A game

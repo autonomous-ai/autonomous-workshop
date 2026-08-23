@@ -216,6 +216,7 @@ def store_description(game) -> str:
         measured.append(f"measured print+ship cost about ${cogs:.2f}")
     if measured:
         body += " " + "; ".join(measured) + "."
+    body = f"{body} By Eve."
     # hard ban-word sweep (org brand voice)
     for w in BANNED:
         body = re.sub(re.escape(w), w.replace(" ", "-"), body, flags=re.I)
@@ -298,9 +299,9 @@ def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
               "-F", f"title={_one_line(game.title or game.slug)[:120]}",
               "-F", f"description={store_description(game)}",
               "-F", "status=" + status,
-              "-F", "license=CC-BY-NC-SA",
+              "-F", "license=CC-BY-NC",
               "-F", "category=tabletop",
-              "-F", "tags=eve,3d-print,board-game"]
+              "-F", "tags=eve,board-game,3d-print"]
     fields += ["-F", "prompt=" + _one_line(getattr(game, "identity", "") or "")]
     for u in th_urls:
         fields += ["-F", f"thumbnail_urls={u}"]
@@ -308,7 +309,7 @@ def import_design(cfg, game, *, status: str = "draft", journal=None) -> dict:
     r = subprocess.run(
         ["curl", "-s", "-X", "POST",
          "-H", f"Authorization: Bearer {cfg.store_bearer}",
-         *fields, f"{cfg.store_base_url}/designs/import"],
+         *fields, f"{cfg.store_base_url}/api/v1/designs/import"],
         capture_output=True, text=True, timeout=180)
     out = r.stdout.strip()
     try:
