@@ -1,82 +1,114 @@
 {
-  "2026-08-22": {
-    "cost_usd": 3.239454,
-    "steps": [
-      {
-        "cost_usd": 1.153921,
-        "model": "claude-opus-5",
-        "name": "ideator",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 393.97
-      },
-      {
-        "cost_usd": 2.085533,
-        "model": "claude-opus-5",
-        "name": "ideator#2",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 789.932
-      }
-    ],
-    "ticks": 0
-  },
-  "2026-08-23": {
-    "cost_usd": 7.718974,
-    "steps": [
-      {
-        "cost_usd": 2.084543,
-        "model": "claude-opus-5",
-        "name": "brief",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 685.082
-      },
-      {
-        "cost_usd": 0.131327,
-        "model": "claude-sonnet-5",
-        "name": "reader",
-        "num_turns": 5,
-        "subtype": "success",
-        "wall_s": 32.745
-      },
-      {
-        "cost_usd": 0.0,
-        "model": "claude-opus-5",
-        "name": "builder",
-        "num_turns": null,
-        "subtype": "killed_overrun",
-        "wall_s": 900.5
-      },
-      {
-        "cost_usd": 4.152387999999999,
-        "model": "claude-opus-5",
-        "name": "builder#2",
-        "num_turns": 38,
-        "subtype": "success",
-        "wall_s": 1021.017
-      },
-      {
-        "cost_usd": 1.3507165,
-        "model": "claude-opus-5",
-        "name": "panel",
-        "num_turns": 11,
-        "subtype": "success",
-        "wall_s": 272.893
-      },
-      {
-        "cost_usd": 0.0,
-        "model": "claude-opus-5",
-        "name": "ideator",
-        "num_turns": 1,
-        "subtype": "success",
-        "wall_s": 2.022
-      }
-    ],
-    "ticks": 0
-  },
-  "heartbeat": "2026-08-23T01:21:48+00:00",
-  "last_books_study": "2026-08-23T00:19:43+00:00",
-  "last_improve": "2026-08-23T00:24:56+00:00",
-  "last_ship_check": "2026-08-23T01:13:04+00:00"
+ "2026-08-22": {
+  "cost_usd": 3.239454,
+  "steps": [
+   {
+    "cost_usd": 1.153921,
+    "model": "claude-opus-5",
+    "name": "ideator",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 393.97
+   },
+   {
+    "cost_usd": 2.085533,
+    "model": "claude-opus-5",
+    "name": "ideator#2",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 789.932
+   }
+  ],
+  "ticks": 0
+ },
+ "2026-08-23": {
+  "cost_usd": 19.368681,
+  "steps": [
+   {
+    "cost_usd": 2.084543,
+    "model": "claude-opus-5",
+    "name": "brief",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 685.082
+   },
+   {
+    "cost_usd": 0.131327,
+    "model": "claude-sonnet-5",
+    "name": "reader",
+    "num_turns": 5,
+    "subtype": "success",
+    "wall_s": 32.745
+   },
+   {
+    "cost_usd": 0.0,
+    "model": "claude-opus-5",
+    "name": "builder",
+    "num_turns": null,
+    "subtype": "killed_overrun",
+    "wall_s": 900.5
+   },
+   {
+    "cost_usd": 4.152387999999999,
+    "model": "claude-opus-5",
+    "name": "builder#2",
+    "num_turns": 38,
+    "subtype": "success",
+    "wall_s": 1021.017
+   },
+   {
+    "cost_usd": 1.3507165,
+    "model": "claude-opus-5",
+    "name": "panel",
+    "num_turns": 11,
+    "subtype": "success",
+    "wall_s": 272.893
+   },
+   {
+    "cost_usd": 0.0,
+    "model": "claude-opus-5",
+    "name": "ideator",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 2.022
+   },
+   {
+    "cost_usd": 1.1152055,
+    "model": "claude-opus-5",
+    "name": "ideator#2",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 371.211
+   },
+   {
+    "cost_usd": 1.7578240000000003,
+    "model": "claude-opus-5",
+    "name": "brief#2",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 582.25
+   },
+   {
+    "cost_usd": 0.8227700000000001,
+    "model": "claude-opus-5",
+    "name": "ideator#3",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 246.834
+   },
+   {
+    "name": "builder#3",
+    "model": "claude-opus-5",
+    "wall_s": 2581.158,
+    "num_turns": 41,
+    "cost_usd": 7.953907,
+    "subtype": "error_max_turns"
+   }
+  ],
+  "ticks": 0
+ },
+ "heartbeat": "2026-08-23T02:18:50+00:00",
+ "last_books_study": "2026-08-23T00:19:43+00:00",
+ "last_improve": "2026-08-23T00:24:56+00:00",
+ "last_ship_check": "2026-08-23T01:13:04+00:00"
 }

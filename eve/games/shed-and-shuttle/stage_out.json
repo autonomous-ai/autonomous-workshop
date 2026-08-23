@@ -1,0 +1,572 @@
+{
+  "brief": "# Shed and Shuttle \u2014 Physical Print Brief\n\n**47 physical parts. 6 distinct printed geometries. No support anywhere. No fasteners,\nno glue, no springs, no magnets.**\n\nEverything below is in millimetres. Every part prints with one flat face on the bed.\n\n---\n\n## 0. Global datum and Z stack\n\nAll Z values are measured from **Z = 0 at the top surface of the deck lane floor**\n(the surface a thread tile sits nearly flush with, and the surface a shuttle slides on).\nPositive Z is up, out of the box, toward the player.\n\n| Z (mm) | Feature |\n|---|---|\n| +3.0 | Top of lane walls; top of a **raised** warp post |\n| 0.0 | **DATUM** \u2014 deck lane floor (top face of deck plate) |\n| \u22120.2 | Top face of a seated thread tile (0.2 below flush) |\n| \u22122.4 | Tile pocket floor |\n| \u22124.0 | Deck plate underside (plate is 4.0 thick) |\n| \u22124.6 | Comb arm top face, **finger raised** (0.6 clearance to deck underside) |\n| \u22126.0 | Comb spine top face |\n| \u22127.6 | Comb arm top face, **finger at rest** |\n| \u221210.0 | Comb arm underside = comb spine underside (coplanar; this is the comb's print bed plane) |\n| \u221210.8 | **Cam plane** \u2014 top of a *flat* cam cell, bottom of the follower rib |\n| \u22127.8 | Top of a *raised* cam cell (3.0 above the cam plane) |\n| \u221214.8 | Cam bar underside |\n| \u221215.0 | Underframe channel floor, top face |\n| \u221217.5 | Underframe underside \u2014 table surface |\n\nAssembled height **20.5 mm**. Assembled footprint **233.0 \u00d7 210.0 mm**.\n\nThe whole mechanism is one number: **post travel = 3.0 mm**, driven by a **3.0 mm cam step**.\n\n---\n\n## 1. Part list (47 parts, 6 geometries)\n\n| Geometry | Part ids | Qty | Footprint L\u00d7W\u00d7H (mm) | Material | Bed orientation |\n|---|---|---|---|---|---|\n| Deck | `part_deck` | 1 | 215.0 \u00d7 142.0 \u00d7 7.0 | PLA | underside on bed, lanes up |\n| Underframe + bar rail | `part_bar_rail` | 1 | 233.0 \u00d7 210.0 \u00d7 14.5 | PLA | outer floor on bed, channel up |\n| Warp comb | `part_warp_comb` | 1 | 206.0 \u00d7 46.0 \u00d7 10.0 | **PETG** | arm/spine underside on bed, posts up |\n| Cam bar | `part_bar_a` \u2026 `part_bar_h` | 8 | 226.0 \u00d7 14.0 \u00d7 7.0 | PLA | base on bed, cam teeth up |\n| Shuttle | `part_shuttle_p1` \u2026 `p4` | 4 | 26.0 \u00d7 12.4 \u00d7 7.5 | PLA (player colour) | hull underside on bed, fin up |\n| Thread tile | `part_tile_p{1-4}_{1-8}` | 32 | 18.0 \u00d7 11.6 \u00d7 2.2 | PLA (player colour) | flat, either face on bed |\n\nTotal **47** part ids. Bar limit is 60.\n\n---\n\n## 2. `part_deck` \u2014 the play surface\n\n**Envelope 215.0 (X) \u00d7 142.0 (Y) \u00d7 7.0 (Z), plate 4.0 thick + 3.0 lane walls.**\n\nX is across the twelve lanes. Y runs away from the player: **y = 0 is the near edge**\n(where a shuttle is launched), **y = 142 is the far edge**.\n\n### 2.1 Lane grid (X)\n\n| Item | mm |\n|---|---|\n| Lane floor width | 13.0 |\n| Wall between lanes | 3.0 |\n| **Lane pitch** | **16.0** |\n| Lane band total (13 walls + 12 floors) | 195.0 |\n| Border, each side in X | 10.0 |\n| Lane 1 floor centre | x = 19.5 |\n| Lane *n* floor centre | x = 19.5 + 16.0\u00b7(n\u22121) |\n| Lane 12 floor centre | x = 195.5 |\n\nLane walls are 3.0 wide \u00d7 3.0 tall, top edge broken with a 0.5 \u00d7 45\u00b0 chamfer.\nOuter walls (x 10.0\u201313.0 and 202.0\u2013205.0) are full-height walls too.\n\n### 2.2 Lane features (Y), identical in all 12 lanes\n\n| Feature | Y range / centre | Size | Depth from datum |\n|---|---|---|---|\n| Launch apron (shuttle rest) | y 0 \u2192 28.0 | full 13.0 lane width | flat at Z 0 |\n| Near-edge entry chamfer | y 0 \u2192 3.0 | 2.0 \u00d7 45\u00b0 down-and-out | \u2014 |\n| **Warp post hole** | centre y = 34.0 | \u2300 **6.6** through the 4.0 plate | through |\n| Post hole top lead-in | \u2014 | 0.4 \u00d7 45\u00b0 chamfer | \u2014 |\n| Tile pocket 1 | centre y = 52.0 | 18.5 (Y) \u00d7 12.0 (X) | 2.4 deep |\n| Tile pocket 2 | centre y = 74.0 | \" | \" |\n| Tile pocket 3 | centre y = 96.0 | \" | \" |\n| Tile pocket 4 | centre y = 118.0 | \" | \" |\n| Tile lift notch (each pocket) | near end of pocket | 6.0 (X) \u00d7 3.0 (Y) | 1.5 further, i.e. 3.9 total |\n| Shuttle run-out | y 128.0 \u2192 142.0 | flat at Z 0 | \u2014 |\n\nTile pocket pitch **22.0**. Pocket corners R1.0. Pocket floor leaves **1.6 mm** of plate.\nSlot 1 is nearest the player, slot 4 farthest \u2014 matches rules \u00a73.2.\n\n### 2.3 Printed graphics (embossed, no second colour needed)\n\n| Where | Content | Height |\n|---|---|---|\n| Far-edge plate, y 128\u2013142, one per lane | lane number (5 mm tall) over lane value (7 mm tall) | +0.6 raised |\n| Values, lanes 1\u219212 | 3, 1, 4, 2, 5, 1, 2, 4, 1, 3, 5, 2 | \u2014 |\n| Near-edge border, y 0\u201310 | title text `SHED AND SHUTTLE` | +0.6 raised |\n| Left border, beside each lane | slot ticks 1\u20134 | +0.4 raised |\n\nAll embossing is on upward faces; it prints as ordinary top surface, no support.\n\n### 2.4 Joining slots in the deck border\n\nThe deck underside is **completely flat** (that is what makes it printable with no\nsupport). Everything below it attaches by tabs coming **up through the plate** and\nhooking on the top face.\n\n| Slot | Count | Position | Size (X \u00d7 Y) | Mates with |\n|---|---|---|---|---|\n| Underframe snap slot | 6 | x = 30 / 107.5 / 185 at y = 6.0 and y = 136.0 | 8.0 \u00d7 3.0 | `part_bar_rail` snap tabs |\n| Comb ear slot | 2 | x = 5.0 and x = 210.0, centre y = 69.0 | 6.0 \u00d7 3.0 | `part_warp_comb` spine ears |\n\nEach slot has a 0.5 \u00d7 45\u00b0 top-face chamfer as the snap ramp, and a 0.5 deep \u00d7 1.5\nwide relief pocket on the top face so the hook sits flush and the shuttle never\nmeets it (all slots are outside the lane band anyway).\n\n---\n\n## 3. `part_warp_comb` \u2014 the twelve compliant fingers\n\n**Envelope 206.0 (X) \u00d7 46.0 (Y) \u00d7 10.0 (Z). One monolithic piece. PETG.**\n\nThis is the whole rules engine. It prints **flat, underside on the bed, posts pointing\nup.** The living-hinge films lie in the first three layers of the print, so no support\ncan reach them \u2014 there is nothing overhanging on this part at all.\n\n### 3.1 Layout\n\n| Feature | Y range | Notes |\n|---|---|---|\n| Finger tip pad (carries post + follower rib) | y 28.0 \u2192 40.0 | |\n| Rigid arm | y 40.0 \u2192 58.0 | continues the tip pad; arm runs y 28.0 \u2192 58.0 = **30.0 total** |\n| **Living-hinge film** | y 58.0 \u2192 64.0 | **6.0 long** |\n| Spine | y 64.0 \u2192 74.0 | 10.0 deep, 4.0 thick |\n\nTotal comb Y extent 28.0 \u2192 74.0 = 46.0.\nFingers are on **16.0 pitch**, aligned to the deck lanes: finger *n* centre at\nx = 19.5 + 16.0\u00b7(n\u22121), same as the lane centres.\n\n### 3.2 Finger cross-section \u2014 the numbers that matter\n\n| Item | mm |\n|---|---|\n| **Living-hinge film thickness** | **0.60** (3 layers at 0.20) |\n| Film width (X) | 9.0 |\n| Film length (Y) | 6.0 |\n| Film fillet into arm and into spine | R1.5, blended on the **top** face only |\n| Rigid arm thickness | 2.4 |\n| Rigid arm width (X) | 9.0 |\n| Gap between adjacent arms | 7.0 (16.0 pitch \u2212 9.0) |\n| Arm underside | flat at Z \u221210.0 (bed plane) |\n| Spine thickness | 4.0 |\n| Spine underside | flat at Z \u221210.0 \u2014 coplanar with the arms |\n\nThe film sits at the **bottom** of the section: film underside at Z \u221210.0, film top at\nZ \u22129.4. The arm's extra 1.8 mm of thickness is added above. The finger therefore\npivots about a neutral axis 0.30 mm above the bed plane.\n\n### 3.3 Warp post (12 off, one per finger)\n\n| Item | mm |\n|---|---|\n| Diameter | **6.0** |\n| Centre | finger centreline, y = 34.0 |\n| Height above arm top face | 7.6 (rises from Z \u22127.6 to Z 0.0 at rest) |\n| Top | dome R3.0 truncated to a 2.0 flat |\n| Fillet to arm | R1.0 |\n| Travel | **3.0** (top goes from Z 0.0 flush to Z +3.0 proud) |\n\nAt rest the post top is **flush with the lane floor** \u2014 a shuttle glides over it.\nRaised, 3.0 mm of \u23006.0 post stands across a 13.0 mm lane; the shuttle hull is 4.5 mm\ntall, so it cannot pass and cannot climb it.\n\n### 3.4 Cam follower rib (12 off)\n\n| Item | mm |\n|---|---|\n| Width (X) | 5.0 |\n| Length (Y) | 9.0, centred on y = 34.0 |\n| Proud of arm underside | 0.8 (bottom at Z \u221210.8, the cam plane) |\n| Bottom edges | R1.5 rolled both ends in Y and both sides in X |\n\nNarrow on purpose: a 5.0 rib always sits fully on a 7.0 cam plateau, so a lifted post\nreaches full 3.0 travel and never perches half-way on a ramp.\n\n### 3.5 Mounting ears (2 off, at the spine ends)\n\n| Item | mm |\n|---|---|\n| Ear post cross-section | 5.8 (X) \u00d7 2.8 (Y) |\n| Ear post height | 7.0, rising from spine top (Z \u22126.0) to Z +1.0 |\n| Hook | 1.0 proud, 45\u00b0 lead ramp, 0.4 land under the hook |\n| Ear centres | x = 5.0 and x = 210.0, y = 69.0 |\n| Spine overall X | 206.0 (extends into the deck border on both sides) |\n\nPush the comb up from below; the two ears click through the deck border slots\n(\u00a72.4) and the spine underside lands on the underframe ledge at Z \u221210.0.\nThat is the \"snap the warp comb into the underside of the deck\" step in rules \u00a72.\n\n### 3.6 Spring behaviour \u2014 the check\n\n- Post travel 3.0 over a 24.0 arm (film end to post centre) \u2192 hinge rotation **0.125 rad**.\n- Film curvature 0.125 / 6.0 = 0.0208 /mm \u2192 **peak surface strain 0.62 %**.\n  PETG yields around 3\u20134 % strain. Margin \u2248 **5\u00d7**, and this part cycles thousands of\n  times per game. Do not print the comb in PLA \u2014 PLA creeps and this is the one part\n  that must still spring after a year on a shelf.\n- Restoring force at the post \u2248 **0.28 N per finger** (E \u2248 2000 MPa). Twelve fingers\n  \u2248 3.4 N pressing down on the cam bar; bar push force through a 33.7\u00b0 ramp \u2248 **5 N**.\n  That is a light two-finger push, and it is 90\u00d7 the weight of a post, so posts drop\n  back down on their own every time.\n\n---\n\n## 4. `part_bar_a` \u2026 `part_bar_h` \u2014 the eight cam bars\n\n**Envelope 226.0 (X) \u00d7 14.0 (Y) \u00d7 7.0 (Z). Prints flat, base on the bed, teeth up.**\n\n### 4.1 Body\n\n| Item | mm |\n|---|---|\n| Base thickness | 4.0 (Z \u221214.8 \u2192 \u221210.8) |\n| Body width (Y) | 14.0 |\n| Cam body length | 208.0 (13 cells \u00d7 16.0) |\n| Handle | 18.0 long \u00d7 14.0 \u00d7 7.0, at the **+X (right) end** |\n| Total length | **226.0** |\n| Handle grip | three 1.5 half-round ribs across the top, 4.0 pitch |\n| Nose (\u2212X end) | 4.0 long lead taper, 3.0 rise blended to the base |\n| Retention rails | 1.5 \u00d7 1.5 along both bottom edges, full length of the cam body |\n\n### 4.2 Cam cell profile\n\nCells are numbered 1\u202613 from the **\u2212X (nose) end**. Cell *k* spans bar-local x\n16.0\u00b7(k\u22121) \u2192 16.0\u00b7k, measured from the nose face.\n\n| Cell type | Profile |\n|---|---|\n| `O` \u2014 flat | top at the cam plane (Z \u221210.8) across the full 16.0 |\n| `X` \u2014 raised | 4.5 up-ramp + **7.0 plateau** + 4.5 down-ramp; plateau top at Z \u22127.8 |\n\n- Ramp angle **33.7\u00b0** from horizontal (3.0 rise over 4.5 run). Upward-facing slope:\n  self-supporting, no support material, no stair-stepping problem at 0.20 layers.\n- **Merge rule:** where two or more `X` cells are adjacent, delete the ramps between\n  them and run one continuous plateau. Two adjacent `X` cells become a single\n  plateau 7.0 + 4.5 + 4.5 + 7.0 = 23.0 long. This halves the push force and stops the\n  bar from clicking through phantom detents.\n- All plateau and ramp edges break 0.4 \u00d7 45\u00b0.\n\n### 4.3 The eight profiles\n\n`X` = raised cell (post up, lane closed). `O` = flat cell (post down, lane open).\nCells run 1 \u2192 13 from the nose.\n\n| Bar | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| A | O | X | X | O | X | X | O | X | O | X | X | O | X |\n| B | X | O | X | O | X | O | X | X | O | X | O | X | X |\n| C | O | O | X | X | O | X | X | O | X | X | O | O | X |\n| D | X | X | O | X | O | X | O | O | X | O | X | X | O |\n| E | O | X | O | X | X | O | X | O | X | O | X | X | O |\n| F | X | O | O | X | X | O | O | X | X | O | X | O | X |\n| G | O | X | X | X | O | O | X | X | O | X | O | X | O |\n| H | X | X | O | O | X | O | X | O | O | X | X | O | X |\n\nVerified against rules \u00a73.1: bar A notch 1 leaves cells 1, 4, 7, 9, 12 flat \u2192 open\nlanes 1 4 7 9 12 \u2713; bar A notch 2 puts cell *i*+1 under finger *i*, flat at cells\n4, 7, 9, 12 \u2192 open lanes 3 6 8 11 \u2713.\n\n### 4.4 Side legend and identity\n\nOn the **+Y face** of the bar (the face a seated player sees), emboss **+0.6 proud**:\n\n- The bar letter, 8.0 tall, on the handle.\n- Thirteen marks, 5.0 tall, one centred on each cell: `O` for flat, `X` for raised.\n- A small arrow at cell 1 pointing at the nose, so the reading direction is never\n  ambiguous.\n\nEmboss the letter again on the handle top face, 8.0 tall, so bars are readable in the rail.\n\n### 4.5 Notch detents\n\n| Item | mm |\n|---|---|\n| Scallop on the bar's **\u2212Y** side face | 6.0 long (X) \u00d7 1.0 deep \u00d7 3.0 tall, ends R1.0 |\n| Notch-1 scallop, bar-local x from the nose | 24.0 |\n| Notch-2 scallop, bar-local x from the nose | 40.0 |\n| Detent separation | **16.0** \u2014 exactly one lane |\n\nThe scallops engage a spring bump on the underframe (\u00a75.3). Notch 1 = cells 1\u201312 sit\nunder fingers 1\u201312. Notch 2 = the bar is pushed **16.0 mm further in (\u2212X)**, so cells\n2\u201313 sit under fingers 1\u201312.\n\n### 4.6 Where the bar sits in each notch\n\n| State | Bar nose at deck x | Handle end at deck x | Protrudes past deck (215 wide) |\n|---|---|---|---|\n| Notch 1 | 11.5 | 237.5 | 22.5 out the right side |\n| Notch 2 | \u22124.5 | 221.5 | 4.5 out the left, 6.5 out the right |\n\nBoth ends of the channel are open. The left protrusion is caught by the underframe's\n12.0 mm left shroud; the right protrusion is the handle you grab. Seeing how far the\nbar sticks out is a free, honest read on which notch is loaded.\n\n---\n\n## 5. `part_bar_rail` \u2014 underframe, cam channel and bar rack\n\n**Envelope 233.0 (X) \u00d7 210.0 (Y) \u00d7 14.5 (Z). Prints flat, outer floor on the bed,\nchannel and rack openings facing up. Largest part; still 23 mm clear of the bed edge\non every side.**\n\nOne part does three jobs: it is the channel the cam bar slides in, the ledge the comb\nsits on, and the rack that holds the seven unloaded bars.\n\n### 5.1 Frame\n\n| Item | mm |\n|---|---|\n| Floor thickness | 2.5 |\n| Under-deck section | X 0 \u2192 233.0, Y 0 \u2192 142.0 |\n| Wall height above the floor, under-deck section | 11.0 (top at deck underside, Z \u22124.0) |\n| Perimeter wall thickness | 3.0 |\n| Left shroud (captures the bar nose at notch 2) | X 0 \u2192 12.0 |\n| Right mouth (bar entry) | X 221.0 \u2192 233.0, flared 3.0 \u00d7 45\u00b0 |\n| Deck registration: deck occupies | X 12.0 \u2192 227.0, Y 0 \u2192 142.0 |\n| Internal ribs | 3.0 wide, at y = 100 and y = 128, full height, X-spanning, for stiffness |\n\n### 5.2 Cam channel\n\n| Item | mm |\n|---|---|\n| Channel centreline | y = 34.0 (directly under the warp posts) |\n| Channel floor, top face | Z \u221215.0 |\n| Channel clear width | **14.5** (bar is 14.0 \u2192 0.25 clearance per side) |\n| Channel wall height | 5.0 above the floor |\n| Channel length | full 233.0, open at both ends |\n| Retention groove, both walls | 1.7 wide \u00d7 1.7 tall undercut, 0.4 above the floor |\n\nThe retention grooves take the bar's 1.5 \u00d7 1.5 bottom rails. The groove roof is a\n1.7 mm bridge over a 1.7 mm gap \u2014 trivially printable, and it is the only bridging\nanywhere in the model. The bar cannot lift out; you can turn the whole loom over.\n\n### 5.3 Detent spring\n\n| Item | mm |\n|---|---|\n| Compliant leaf, cut into the **+Y** channel wall | 26.0 long \u00d7 1.4 thick \u00d7 5.0 tall |\n| Leaf slot behind it | 2.0 wide |\n| Bump | hemisphere R1.0, 1.0 proud, at the leaf's midpoint |\n| Bump centre, deck x | 35.5 |\n\nThe bump drops into whichever bar scallop is presented. It gives an audible click and\nabout 3 N of hold \u2014 enough that the bar stays put when you throw a shuttle, light\nenough to pull one-handed.\n\n### 5.4 Comb ledge\n\n| Item | mm |\n|---|---|\n| Ledge top face | Z \u221210.0 (5.0 above the channel floor) |\n| Ledge span | y 64.0 \u2192 74.0, X 3.0 \u2192 230.0 |\n| Locating pins, 2 off | \u23003.0 \u00d7 3.0 tall, at x = 40.0 and x = 175.0, y = 69.0 |\n| Matching holes in the comb spine | \u23003.3 blind, 3.2 deep, from the spine underside |\n\nThe spine drops onto the ledge, the two pins set X and Y, the two ears (\u00a73.5) hold Z.\n\n### 5.5 Deck snap tabs\n\n| Item | mm |\n|---|---|\n| Tabs | 6 off, 7.8 (X) \u00d7 2.8 (Y) |\n| Positions | x = 42 / 119.5 / 197 (deck-local 30 / 107.5 / 185), at y = 6.0 and y = 136.0 |\n| Height above the wall top | 5.0 (Z \u22124.0 \u2192 +1.0) |\n| Hook | 1.0 proud, 45\u00b0 lead ramp |\n| Tab root fillet | R1.0 |\n\nPress the deck straight down onto the underframe; six tabs come up through the deck\nborder slots and click on the top face. It comes apart by squeezing all six inward \u2014\ndeliberately stiff, because this joint holds the whole mechanism in register.\n\n### 5.6 Bar rack (holds the seven unloaded bars)\n\nOccupies the far apron, **y 142.0 \u2192 210.0**, beyond the deck's far edge.\n\n| Item | mm |\n|---|---|\n| Slots | 7 |\n| Slot pitch (Y) | 9.0 |\n| Slot clear width (Y) | 7.6 (bar's 7.0 max section + 0.6) |\n| Divider wall thickness | 1.4 |\n| Slot depth (Z) | 10.0, floor at Z \u221215.0, lip at Z \u22125.0 |\n| Slot length (X) | 228.0, open at both ends |\n| First slot centre | y = 150.0; slot *n* centre y = 150.0 + 9.0\u00b7(n\u22121); last at y = 204.0 |\n| Thumb cut-out | 30.0 (X) \u00d7 full rack depth, centred at x = 116.5, cut 6.0 down from the lip |\n\nBars stand **on edge**, teeth facing +Y, so 4.0 mm of each bar sticks above the lip and\nyou can pinch one out. The thumb cut-out lets you sweep a middle bar sideways instead\nof digging. Emboss the letters `A B C D E F G H` along the rack's outer face as a\nreminder that the eighth bar lives in the deck.\n\n---\n\n## 6. `part_shuttle_p1` \u2026 `p4` \u2014 the shuttles\n\n**Envelope 26.0 (X-along-lane) \u00d7 12.4 (across) \u00d7 7.5 tall. Prints flat, hull underside\non the bed, fin up. One per player, in that player's colour.**\n\n| Item | mm |\n|---|---|\n| Hull length | 26.0 |\n| Hull width | **12.4** (lane floor is 13.0 \u2192 0.3 clearance per side) |\n| Hull height | **4.5** above the lane floor |\n| Nose face | **vertical from Z 0 to Z 3.5**, then swept back 8.0 to the top face |\n| Tail | mirror of the nose |\n| Underside | flat, with a 0.5 \u00d7 45\u00b0 chamfer all round |\n| Grip fin | 20.0 long \u00d7 3.0 wide \u00d7 3.0 tall on the hull top face, ends R1.5 |\n| Total height | 7.5 |\n| Player mark | 1\u20134 pips, \u23003.0, +0.6 proud on the fin's side |\n\nThe vertical nose face is the point of the part. A pure boat-shaped wedge would ride\nup over a 3.0 mm post; a flat face 3.5 mm tall cannot. The taper starts only above the\npost's maximum height, so the shuttle still looks and feels like a shuttle.\n\nSeated tiles sit at Z \u22120.2, so the flat hull underside sweeps 0.2 mm clear of every\ntile it passes. The shuttle never touches a tile and never needs to.\n\n---\n\n## 7. `part_tile_p{1-4}_{1-8}` \u2014 the thread tiles\n\n**32 tiles: 8 each in 4 colours. Envelope 18.0 \u00d7 11.6 \u00d7 2.2. Prints flat.**\n\n| Item | mm |\n|---|---|\n| Length (Y, along the lane) | 18.0 (pocket is 18.5 \u2192 0.25 clearance per end) |\n| Width (X) | 11.6 (pocket is 12.0 \u2192 0.2 clearance per side) |\n| Thickness | 2.2 (pocket is 2.4 deep \u2192 seats 0.2 below flush) |\n| Corner radius | R1.0 |\n| Bottom edge chamfer | 0.4 \u00d7 45\u00b0, so it drops in without fishing |\n| Top-face finger scoop | 8.0 \u00d7 3.0, 1.0 deep, at the near end, aligned with the pocket's lift notch |\n| Player mark | 1\u20134 pips, \u23002.5, **recessed 0.6** on the top face |\n| Weave texture | 0.4 pitch, 0.3 deep cross-hatch over the top face |\n\nPips are recessed rather than raised so the shuttle passing overhead never catches\none, and so the tiles are readable by touch and by colourblind players.\n\nColours: P1 red, P2 blue, P3 green, P4 yellow \u2014 matching the shuttles and matching the\nworked example in rules \u00a76.\n\n---\n\n## 8. Interfaces \u2014 how the six geometries meet\n\n| # | Joint | Type | Numbers |\n|---|---|---|---|\n| 1 | Comb spine \u2192 deck border | **snap**, 2 ears | ear 5.8 \u00d7 2.8 into slot 6.0 \u00d7 3.0; hook 1.0; assembles once, not meant to be undone |\n| 2 | Comb spine \u2192 underframe ledge | **rest + 2 locating pins** | \u23003.0 pin into \u23003.3 hole; spine underside lands at Z \u221210.0 |\n| 3 | Underframe \u2192 deck | **snap**, 6 tabs | tab 7.8 \u00d7 2.8 into slot 8.0 \u00d7 3.0; hook 1.0; squeeze all six to release |\n| 4 | Cam bar \u2192 channel | **sliding fit + T-rail capture** | 14.0 bar in 14.5 channel (0.25/side); 1.5 \u00d7 1.5 rail in 1.7 \u00d7 1.7 groove |\n| 5 | Cam bar \u2192 detent | **spring bump into scallop** | R1.0 bump, 1.0 proud, into a 6.0 \u00d7 1.0 scallop; two scallops 16.0 apart |\n| 6 | Cam bar \u2192 follower rib | **cam contact** | 5.0 rib on a 7.0 plateau; 3.0 lift; 33.7\u00b0 ramps |\n| 7 | Warp post \u2192 deck hole | **sliding fit, and the load path** | \u23006.0 post in \u23006.6 hole (0.3 radial); the hole, not the flexure, takes the shuttle's push |\n| 8 | Shuttle \u2192 lane | **sliding fit** | 12.4 hull in a 13.0 floor (0.3/side); 3.0 walls guide it |\n| 9 | Tile \u2192 pocket | **drop-in clearance fit** | 0.25 end, 0.2 side, seats 0.2 below flush |\n| 10 | Living hinge \u2192 arm and spine | **monolithic**, no joint | 0.60 film, R1.5 blend on the top face only |\n\nJoint 7 is the one to get right. The shuttle hits a raised post with a horizontal\nshove; that shove is reacted by the 4.0 mm-thick deck plate around the \u23006.6 hole, not\nby the 0.60 mm hinge film. The flexure only ever carries the post's own weight and the\ncam's lift. Do not open the post hole past \u23006.8 or the post starts to lever the finger.\n\n---\n\n## 9. Print plan\n\n### 9.1 Machine\n\n| Item | Value |\n|---|---|\n| Bed | 256 \u00d7 256 \u00d7 256 (Bambu X1C / P1S class); anything \u2265 235 \u00d7 215 works |\n| Largest footprint | `part_bar_rail` at 233 \u00d7 210 \u2014 use a **skirt, not a brim** |\n| Nozzle | 0.4 |\n| **Support** | **none, on any part** |\n| Rafts | none |\n\n### 9.2 Per-part settings\n\n| Part | Layer | Walls | Infill | Bed orientation | Notes |\n|---|---|---|---|---|---|\n| `part_deck` | 0.20 | 3 | 15 % gyroid | flat underside down, lanes up | top surface is the play surface \u2014 5 top layers, ironing on |\n| `part_bar_rail` | 0.24 | 3 | 12 % gyroid | outer floor down, channel up | first layer 0.28; 233 \u00d7 210, watch corner lift on PLA |\n| `part_warp_comb` | **0.20** | 3 | **100 %** | arm + spine underside down, posts up | see 9.3 |\n| `part_bar_*` (\u00d78) | 0.20 | 3 | 25 % gyroid | base down, cam teeth up | all 8 fit one plate, 18.0 pitch in Y |\n| `part_shuttle_*` (\u00d74) | 0.20 | 3 | 30 % | hull underside down, fin up | print all 4 of a colour together with the tiles |\n| `part_tile_*` (\u00d732) | 0.20 | 3 | 30 % | flat, scoop up | 8 per colour per plate |\n\n### 9.3 The comb \u2014 the one part with a real constraint\n\n- **Layer height 0.20 exactly.** The living-hinge film is **0.60 thick = 3 layers**.\n  Any layer height that does not divide 0.60 leaves a fractional layer and the film\n  becomes the weakest thing on the plate.\n- **Orientation: the arm and spine undersides go flat on the bed; the twelve posts\n  point up.** This is the only orientation in which the part has *zero* overhang, so\n  the slicer generates no support at all and **nothing can touch a hinge film**. Check\n  the sliced preview: support volume for this part must be 0.00 mm\u00b3.\n- The film is printed as layers 1, 2 and 3 \u2014 solid, no infill, no gaps. Set\n  **100 % infill** for the whole part; it is only ~12 g.\n- The film bends about an axis 0.30 mm above the bed. Layer lines run **along** the\n  finger, across the bending direction, which is the standard printed-flexure case at\n  0.62 % strain \u2014 well inside PETG's elastic range.\n- **PETG, not PLA.** PLA at this strain creeps: after a few weeks the posts stop\n  returning fully flush and the game quietly breaks. Print at 240 \u00b0C / 80 \u00b0C bed,\n  fan 40 %, and do not dry-store it near a window.\n- No ironing on this part \u2014 ironing over a 0.60 film can drag it.\n\n### 9.4 Recommended filament\n\n| Part | Material | Colour |\n|---|---|---|\n| Deck, underframe | PLA (matte) | warm grey or natural linen |\n| Warp comb | **PETG** | any; it is never seen except as twelve post tops |\n| Cam bars \u00d78 | PLA | off-white, so the embossed `O`/`X` legend reads |\n| Shuttles + tiles | PLA | red, blue, green, yellow \u2014 one spool each |\n\nTotal filament \u2248 **355 g**: deck 95 g, underframe 130 g, comb 12 g, bars 8 \u00d7 11 g,\nshuttles 4 \u00d7 2 g, tiles 32 \u00d7 0.6 g. Roughly 26 h of print time across 5 plates.\n\n### 9.5 Plate plan (5 plates)\n\n1. `part_bar_rail` \u2014 alone, 233 \u00d7 210.\n2. `part_deck` + `part_warp_comb` \u2014 215 \u00d7 142 and 206 \u00d7 46 side by side in Y.\n3. All 8 cam bars \u2014 226 \u00d7 144, 18.0 pitch.\n4. Colours 1 and 2: 16 tiles + 2 shuttles.\n5. Colours 3 and 4: 16 tiles + 2 shuttles.\n\n### 9.6 Assembly (once, about two minutes)\n\n1. Slide any cam bar into the underframe channel from the right until the T-rails\n   engage; leave it at notch 1.\n2. Drop the comb onto the ledge \u2014 the two \u23003.0 pins set it.\n3. Press the deck down onto the underframe until all six tabs click, and the comb's\n   two ears click through the border slots at the same time.\n4. **Check:** with a flat cam cell under every finger, all twelve post tops must sit\n   flush with the lane floor \u2014 run a straightedge across. With bar A at notch 1,\n   exactly lanes 1, 4, 7, 9 and 12 must be flat and the other seven proud by 3.0.\n5. Fill the rack with the seven remaining bars, teeth facing away from you.\n\n---\n\n## 10. Bar compliance check\n\n| Bar | Requirement | This design |\n|---|---|---|\n| Bed fit | every part orientable within ~246 \u00d7 246 | largest is 233 \u00d7 210 \u2713 |\n| Living hinge | film 0.4\u20130.6 thick | **0.60**, = 3 \u00d7 0.20 layers \u2713 |\n| Hinge and support | no support may touch a film | comb has **zero overhang** in its print orientation; support volume must slice to 0 \u2713 |\n| Part count | \u2264 60 physical parts | **47** \u2713 |\n| Concreteness | mm everywhere | every dimension above is mm \u2713 |\n",
+  "bill": {
+    "loom": [
+      "part_warp_comb",
+      "part_deck",
+      "part_bar_rail"
+    ],
+    "cam_bars": [
+      "part_bar_a",
+      "part_bar_b",
+      "part_bar_c",
+      "part_bar_d",
+      "part_bar_e",
+      "part_bar_f",
+      "part_bar_g",
+      "part_bar_h"
+    ],
+    "shuttles": [
+      "part_shuttle_p1",
+      "part_shuttle_p2",
+      "part_shuttle_p3",
+      "part_shuttle_p4"
+    ],
+    "thread_tiles_p1": [
+      "part_tile_p1_1",
+      "part_tile_p1_2",
+      "part_tile_p1_3",
+      "part_tile_p1_4",
+      "part_tile_p1_5",
+      "part_tile_p1_6",
+      "part_tile_p1_7",
+      "part_tile_p1_8"
+    ],
+    "thread_tiles_p2": [
+      "part_tile_p2_1",
+      "part_tile_p2_2",
+      "part_tile_p2_3",
+      "part_tile_p2_4",
+      "part_tile_p2_5",
+      "part_tile_p2_6",
+      "part_tile_p2_7",
+      "part_tile_p2_8"
+    ],
+    "thread_tiles_p3": [
+      "part_tile_p3_1",
+      "part_tile_p3_2",
+      "part_tile_p3_3",
+      "part_tile_p3_4",
+      "part_tile_p3_5",
+      "part_tile_p3_6",
+      "part_tile_p3_7",
+      "part_tile_p3_8"
+    ],
+    "thread_tiles_p4": [
+      "part_tile_p4_1",
+      "part_tile_p4_2",
+      "part_tile_p4_3",
+      "part_tile_p4_4",
+      "part_tile_p4_5",
+      "part_tile_p4_6",
+      "part_tile_p4_7",
+      "part_tile_p4_8"
+    ]
+  },
+  "bill_dimensioned": {
+    "loom": [
+      "part_warp_comb (206.0 x 46.0 x 10.0 mm)",
+      "part_deck (215.0 x 142.0 x 7.0 mm)",
+      "part_bar_rail (233.0 x 210.0 x 14.5 mm)"
+    ],
+    "cam_bars": [
+      "part_bar_a (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_b (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_c (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_d (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_e (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_f (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_g (226.0 x 14.0 x 7.0 mm)",
+      "part_bar_h (226.0 x 14.0 x 7.0 mm)"
+    ],
+    "shuttles": [
+      "part_shuttle_p1 (26.0 x 12.4 x 7.5 mm)",
+      "part_shuttle_p2 (26.0 x 12.4 x 7.5 mm)",
+      "part_shuttle_p3 (26.0 x 12.4 x 7.5 mm)",
+      "part_shuttle_p4 (26.0 x 12.4 x 7.5 mm)"
+    ],
+    "thread_tiles_p1": [
+      "part_tile_p1_1 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_2 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_3 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_4 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_5 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_6 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_7 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p1_8 (18.0 x 11.6 x 2.2 mm)"
+    ],
+    "thread_tiles_p2": [
+      "part_tile_p2_1 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_2 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_3 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_4 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_5 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_6 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_7 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p2_8 (18.0 x 11.6 x 2.2 mm)"
+    ],
+    "thread_tiles_p3": [
+      "part_tile_p3_1 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_2 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_3 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_4 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_5 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_6 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_7 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p3_8 (18.0 x 11.6 x 2.2 mm)"
+    ],
+    "thread_tiles_p4": [
+      "part_tile_p4_1 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_2 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_3 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_4 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_5 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_6 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_7 (18.0 x 11.6 x 2.2 mm)",
+      "part_tile_p4_8 (18.0 x 11.6 x 2.2 mm)"
+    ]
+  },
+  "parts": {
+    "part_warp_comb": {
+      "group": "loom",
+      "dimensions_mm": "206.0 x 46.0 x 10.0 mm",
+      "material": "PETG",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "arm+spine underside on bed, 12 posts up; zero overhang, no support may touch the 0.60mm hinge films",
+      "notes": "12 flexure fingers on 16.0mm pitch. Living-hinge film 0.60 x 9.0 x 6.0mm (3 layers at 0.20mm). Rigid arm 2.4 x 9.0 x 30.0mm. Warp post dia 6.0 x 7.6mm above arm, 3.0mm travel, flush at rest. Cam follower rib 5.0 x 9.0 x 0.8mm. Peak hinge strain 0.62%."
+    },
+    "part_deck": {
+      "group": "loom",
+      "dimensions_mm": "215.0 x 142.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat underside on bed, lanes and tile pockets up",
+      "notes": "Plate 4.0mm + lane walls 3.0mm. 12 lanes: floor 13.0 wide, walls 3.0, pitch 16.0, band 195.0, border 10.0/side. Per lane: launch apron y0-28, post hole dia 6.6 at y34, four tile pockets 18.5 x 12.0 x 2.4 deep at y 52/74/96/118 (pitch 22.0), run-out y128-142. Lane values 3,1,4,2,5,1,2,4,1,3,5,2 embossed +0.6. Six 8.0x3.0 snap slots + two 6.0x3.0 comb-ear slots in the border."
+    },
+    "part_bar_rail": {
+      "group": "loom",
+      "dimensions_mm": "233.0 x 210.0 x 14.5 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.24,
+      "support": "none",
+      "bed_orientation": "outer floor on bed, cam channel and rack slots up",
+      "notes": "Underframe + cam channel + 7-slot bar rack in one piece. Floor 2.5mm, walls 11.0mm. Channel centreline y34.0, clear width 14.5, 1.7x1.7 T-grooves, open both ends. Detent leaf 26.0 x 1.4 x 5.0 with R1.0 bump at x35.5. Comb ledge at Z-10.0 with two dia 3.0 pins. Six deck snap tabs 7.8x2.8, hook 1.0. Rack y142-210: 7 slots, pitch 9.0, clear 7.6, depth 10.0, length 228.0."
+    },
+    "part_bar_a": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "O X X O X X O X O X X O X"
+    },
+    "part_bar_b": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "X O X O X O X X O X O X X"
+    },
+    "part_bar_c": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "O O X X O X X O X X O O X"
+    },
+    "part_bar_d": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "X X O X O X O O X O X X O"
+    },
+    "part_bar_e": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "O X O X X O X O X O X X O"
+    },
+    "part_bar_f": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "X O O X X O O X X O X O X"
+    },
+    "part_bar_g": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "O X X X O O X X O X O X O"
+    },
+    "part_bar_h": {
+      "group": "cam_bars",
+      "dimensions_mm": "226.0 x 14.0 x 7.0 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "base on bed, cam teeth up (33.7 deg upward ramps are self-supporting)",
+      "notes": "Base 4.0 x 14.0, cam body 208.0 (13 cells at 16.0), handle 18.0. Flat cell top at cam plane; raised cell = 4.5 ramp + 7.0 plateau + 4.5 ramp, 3.0 rise, 33.7 deg. Adjacent raised cells MERGE into one plateau. Two detent scallops 6.0 x 1.0 at bar-local x 24.0 and 40.0 (16.0 apart = one lane). O/X legend embossed +0.6 on the +Y face. Bottom retention rails 1.5 x 1.5.",
+      "cam_cells_1_to_13": "X X O O X O X O O X X O X"
+    },
+    "part_shuttle_p1": {
+      "group": "shuttles",
+      "dimensions_mm": "26.0 x 12.4 x 7.5 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "hull underside on bed, grip fin up",
+      "notes": "Hull 26.0 x 12.4 x 4.5 in a 13.0 lane (0.3/side clearance). Nose face VERTICAL from Z0 to Z3.5 then swept back 8.0 - a wedge nose would ride over a 3.0mm post. Grip fin 20.0 x 3.0 x 3.0. Player pips dia 3.0 raised 0.6."
+    },
+    "part_shuttle_p2": {
+      "group": "shuttles",
+      "dimensions_mm": "26.0 x 12.4 x 7.5 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "hull underside on bed, grip fin up",
+      "notes": "Hull 26.0 x 12.4 x 4.5 in a 13.0 lane (0.3/side clearance). Nose face VERTICAL from Z0 to Z3.5 then swept back 8.0 - a wedge nose would ride over a 3.0mm post. Grip fin 20.0 x 3.0 x 3.0. Player pips dia 3.0 raised 0.6."
+    },
+    "part_shuttle_p3": {
+      "group": "shuttles",
+      "dimensions_mm": "26.0 x 12.4 x 7.5 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "hull underside on bed, grip fin up",
+      "notes": "Hull 26.0 x 12.4 x 4.5 in a 13.0 lane (0.3/side clearance). Nose face VERTICAL from Z0 to Z3.5 then swept back 8.0 - a wedge nose would ride over a 3.0mm post. Grip fin 20.0 x 3.0 x 3.0. Player pips dia 3.0 raised 0.6."
+    },
+    "part_shuttle_p4": {
+      "group": "shuttles",
+      "dimensions_mm": "26.0 x 12.4 x 7.5 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "hull underside on bed, grip fin up",
+      "notes": "Hull 26.0 x 12.4 x 4.5 in a 13.0 lane (0.3/side clearance). Nose face VERTICAL from Z0 to Z3.5 then swept back 8.0 - a wedge nose would ride over a 3.0mm post. Grip fin 20.0 x 3.0 x 3.0. Player pips dia 3.0 raised 0.6."
+    },
+    "part_tile_p1_1": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_2": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_3": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_4": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_5": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_6": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_7": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p1_8": {
+      "group": "thread_tiles_p1",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_1": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_2": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_3": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_4": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_5": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_6": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_7": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p2_8": {
+      "group": "thread_tiles_p2",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_1": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_2": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_3": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_4": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_5": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_6": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_7": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p3_8": {
+      "group": "thread_tiles_p3",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_1": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_2": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_3": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_4": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_5": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_6": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_7": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    },
+    "part_tile_p4_8": {
+      "group": "thread_tiles_p4",
+      "dimensions_mm": "18.0 x 11.6 x 2.2 mm",
+      "material": "PLA",
+      "layer_height_mm": 0.2,
+      "support": "none",
+      "bed_orientation": "flat on bed, finger scoop up",
+      "notes": "18.0 x 11.6 x 2.2 in an 18.5 x 12.0 x 2.4 pocket; seats 0.2mm below flush so the shuttle sweeps clear. R1.0 corners, 0.4 bottom chamfer, 8.0 x 3.0 x 1.0 finger scoop, player pips RECESSED 0.6, cross-hatch weave texture 0.4 pitch / 0.3 deep."
+    }
+  },
+  "totals": {
+    "part_count": 47,
+    "distinct_geometries": 6,
+    "largest_footprint_mm": "233.0 x 210.0 (part_bar_rail)",
+    "bed_required_mm": "256 x 256 (min 235 x 215)",
+    "support_required": "none on any part",
+    "living_hinge_film_mm": 0.6,
+    "filament_estimate_g": 355,
+    "plates": 5
+  }
+}
