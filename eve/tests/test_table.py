@@ -100,3 +100,23 @@ def test_no_live_engine_returns_standby(tmp_path):
 
 
 import types
+
+
+def _monkey_session_limit(monkeypatch):
+    """Every seat returns the CLI's real session-limit text (Claude 429)."""
+    def _run(name, prompt, **kw):
+        return _Result(
+            text="You've hit your session limit · resets 6:20pm (Asia/Saigon)",
+            cost_usd=0.0, minutes=0.0, num_turns=1,
+            transcript_path=None, subtype="success")
+    monkeypatch.setattr(agents, "run_agent", _run)
+
+
+def test_session_limit_is_recorded_honestly_not_as_invalid_move(monkeypatch, table_cfg):
+    _monkey_session_limit(monkeypatch)
+    game = types.SimpleNamespace(slug="shed-and-shuttle")
+    ev = playtest.run_player_table(game, table_cfg)
+    assert ev.source == "standby"
+    assert "session limit" in ev.note, ev.note
+    assert "no valid move" not in ev.note
+    assert playtest.fun_gate(None, ev).passed is False

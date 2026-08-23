@@ -180,7 +180,9 @@ def _parse_choose(text: str):
     m = re.search(r"CHOOSE\s*(\d+)", text or "", re.I)
     if m:
         return int(m.group(1))
-    m2 = re.search(r"\b([0-9])\b", text or "")
+    # Bare-number reply ("3") is acceptable; a digit inside prose (e.g. a
+    # session-limit message's "6:20pm") is NOT a deliberate move choice.
+    m2 = re.fullmatch(r"\s*(\d+)\s*", text or "")
     return int(m2.group(1)) if m2 else None
 
 

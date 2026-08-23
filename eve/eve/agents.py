@@ -65,7 +65,7 @@ AgentResult = namedtuple(
     ["text", "cost_usd", "minutes", "num_turns", "transcript_path", "subtype"],
 )
 
-QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit", re.IGNORECASE)
+QUOTA_RE = re.compile(r"usage limit|limit reached|rate limit|session limit|session_limit", re.IGNORECASE)
 
 KILL_GRACE_S = 5.0
 
