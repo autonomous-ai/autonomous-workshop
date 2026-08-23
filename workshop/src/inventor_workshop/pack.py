@@ -18,6 +18,8 @@ from .artifacts import (
     MAX_EXPANDED_BYTES,
     MAX_FILE_BYTES,
     MAX_PACK_BYTES,
+    _assert_path_has_no_secret,
+    _validate_pack_limit,
     assert_packable_content,
     build_artifact_manifest,
     build_pack,
@@ -428,6 +430,125 @@ class PackedArtifact:
         }
 
 
+@dataclass(frozen=True)
+class PackPlan:
+    """Exact, read-only size plan for one canonical Workshop Pack.
+
+    A plan inventories and hashes eligible product files, but it does not
+    create transport bytes or claim that later secret/content checks passed.
+    It is intended for an inventor's Make/feedback loop before Pack.
+    """
+
+    artifact_sha256: str
+    product_bytes: int
+    pack_bytes: int
+    entries: int
+    limit_bytes: int
+    largest_files: Tuple[Tuple[str, int], ...]
+
+    def __post_init__(self) -> None:
+        require_sha256(self.artifact_sha256, "Pack plan artifact_sha256")
+        for value, label, minimum in (
+            (self.product_bytes, "product_bytes", 0),
+            (self.pack_bytes, "pack_bytes", 1),
+            (self.entries, "entries", 2),
+            (self.limit_bytes, "limit_bytes", 1),
+        ):
+            if type(value) is not int or value < minimum:
+                raise ContractError("Pack plan %s is invalid" % label)
+        if (
+            not isinstance(self.largest_files, tuple)
+            or any(
+                not isinstance(item, tuple)
+                or len(item) != 2
+                or not isinstance(item[0], str)
+                or not item[0]
+                or type(item[1]) is not int
+                or item[1] < 0
+                for item in self.largest_files
+            )
+        ):
+            raise ContractError("Pack plan largest_files is invalid")
+        for path, _ in self.largest_files:
+            _safe_pack_path(path)
+            _assert_path_has_no_secret(path)
+        if self.limit_bytes > MAX_PACK_BYTES:
+            raise ContractError("Pack plan limit exceeds the canonical 50 MB limit")
+
+    @property
+    def fits(self) -> bool:
+        return self.pack_bytes <= self.limit_bytes
+
+    @property
+    def over_by(self) -> int:
+        return max(0, self.pack_bytes - self.limit_bytes)
+
+    def to_dict(self) -> Mapping[str, object]:
+        return {
+            "schema_version": 1,
+            "artifact_sha256": self.artifact_sha256,
+            "product_bytes": self.product_bytes,
+            "pack_bytes": self.pack_bytes,
+            "entries": self.entries,
+            "limit_bytes": self.limit_bytes,
+            "fits": self.fits,
+            "over_by": self.over_by,
+            "largest_files": [
+                {"path": path, "bytes": size}
+                for path, size in self.largest_files
+            ],
+        }
+
+
+def plan_pack(
+    artifact_root: Path,
+    *,
+    extra_excludes: Iterable[str] = (),
+    maximum_bytes: int = MAX_PACK_BYTES,
+    largest: int = 5,
+) -> PackPlan:
+    """Return the exact canonical Pack size without writing a ZIP."""
+
+    maximum_bytes = _validate_pack_limit(maximum_bytes)
+    if type(largest) is not int or largest < 0 or largest > 100:
+        raise ContractError("Pack plan largest must be an integer from 0 to 100")
+    manifest = seal_artifact(
+        artifact_root,
+        created_at="content-addressed",
+        extra_excludes=extra_excludes,
+    )
+    manifest_content = (
+        json.dumps(
+            manifest.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        + b"\n"
+    )
+    members = [(entry.path, entry.bytes) for entry in manifest.entries]
+    members.append(("_inventor-artifact.json", len(manifest_content)))
+    pack_bytes = 22 + sum(
+        size + 76 + 2 * len(path.encode("utf-8"))
+        for path, size in members
+    )
+    biggest = tuple(
+        (entry.path, entry.bytes)
+        for entry in sorted(
+            manifest.entries,
+            key=lambda entry: (-entry.bytes, entry.path),
+        )[:largest]
+    )
+    return PackPlan(
+        artifact_sha256=manifest.artifact_sha256,
+        product_bytes=manifest.total_bytes,
+        pack_bytes=pack_bytes,
+        entries=len(manifest.entries) + 1,
+        limit_bytes=maximum_bytes,
+        largest_files=biggest,
+    )
+
+
 def seal_artifact(
     artifact_root: Path,
     *,
@@ -459,8 +580,14 @@ def pack_artifact(
     destination: Path,
     *,
     extra_excludes: Iterable[str] = (),
+    maximum_bytes: int = MAX_PACK_BYTES,
 ) -> PackedArtifact:
     """Build, atomically write, and re-inspect one canonical Pack."""
 
-    build_pack(artifact_root, destination, extra_excludes=extra_excludes)
+    build_pack(
+        artifact_root,
+        destination,
+        extra_excludes=extra_excludes,
+        maximum_bytes=maximum_bytes,
+    )
     return inspect_pack(destination)

@@ -1,4 +1,5 @@
 import hashlib
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,10 +13,14 @@ from inventor_workshop.cad import (
     VerificationCheck,
     VerificationReceipt,
 )
+from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.creation import CadBuildResult, CreationBrief, Forge, ProductForge
 from inventor_workshop.errors import ArtifactError, ContractError, ManifestError
+from inventor_workshop.inspection import Inspection
+from inventor_workshop.clockwork import Clockwork, Workflow, WorkflowSpec
 from inventor_workshop.make import MakeResult
 from inventor_workshop.models import GateResult
+from inventor_workshop.pack import pack_artifact
 
 
 CONFIG_SHA256 = "b" * 64
@@ -96,6 +101,9 @@ class FakeCad:
                 )
         (root / "evidence/rules.json").write_text(
             '{"rules_consistent":true}\n', encoding="utf-8"
+        )
+        (root / "evidence/cad.json").write_text(
+            '{"cad_checks":"passed"}\n', encoding="utf-8"
         )
         return CadBuildResult(
             1,
@@ -214,6 +222,28 @@ class FakeEvaluator:
         return (result,)
 
 
+class SeparateEvidenceEvaluator:
+    def __init__(self):
+        self.evidence_path = None
+
+    def evaluate(self, artifact_root, artifact_sha256):
+        if self.evidence_path is None:
+            raise AssertionError("test must prepare the separate evidence first")
+        return (
+            GateResult.create(
+                "quality",
+                True,
+                artifact_sha256,
+                {"reviewed": True},
+                "quality-reviewer",
+                "1.0.0",
+                CONFIG_SHA256,
+                "reviews/quality.json",
+                file_sha256(self.evidence_path),
+            ),
+        )
+
+
 class ForgeTest(unittest.TestCase):
     def inventor(self, temporary, taste_bytes=b"# Ada's taste\nTactile and legible.\n"):
         root = Path(temporary) / "ada"
@@ -307,6 +337,232 @@ class ForgeTest(unittest.TestCase):
             self.assertIs(legacy.wish, legacy.brief)
             self.assertIs(legacy.inspections, legacy.gates)
             self.assertEqual(set(legacy.to_dict()) & {"brief", "gates"}, set())
+
+    def test_workbench_inspect_accepts_a_separate_evidence_manifest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            inventor = self.inventor(temporary)
+            evaluator = SeparateEvidenceEvaluator()
+            workbench = Forge(
+                FakeAgent(), FakeCad(), FakeVerifier(), evaluator
+            )
+            made = workbench.make(
+                CreationBrief.create("game", "Create a game."),
+                inventor,
+                root / "run",
+                1,
+            )
+
+            evidence_root = root / "inspection-evidence"
+            shutil.copytree(
+                made.cad_build.artifact_root / "evidence",
+                evidence_root / "evidence",
+            )
+            review = evidence_root / "reviews/quality.json"
+            review.parent.mkdir()
+            review.write_text(
+                '{"passed":true,"reviewer":"fixture"}\n', encoding="utf-8"
+            )
+            evaluator.evidence_path = review
+            evidence_manifest = build_artifact_manifest(
+                evidence_root, created_at="content-addressed"
+            )
+
+            inspection = workbench.inspect(
+                made, evidence_manifest=evidence_manifest
+            )
+            self.assertEqual(
+                inspection.evidence_artifact_sha256,
+                evidence_manifest.artifact_sha256,
+            )
+            self.assertFalse(
+                (made.cad_build.artifact_root / "reviews/quality.json").exists()
+            )
+            self.assertEqual(
+                inspection.results[0].evidence_ref, "reviews/quality.json"
+            )
+
+    def test_workbench_rejects_untyped_evidence_before_running_doors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor = self.inventor(temporary)
+            evaluator = FakeEvaluator()
+            verifier = FakeVerifier()
+            workbench = Forge(FakeAgent(), FakeCad(), verifier, evaluator)
+            made = workbench.make(
+                CreationBrief.create("game", "Create a game."),
+                inventor,
+                Path(temporary) / "run",
+                1,
+            )
+            with self.assertRaisesRegex(ContractError, "must be an ArtifactManifest"):
+                workbench.inspect(made, evidence_manifest={})
+            self.assertEqual(evaluator.calls, 0)
+            self.assertIsNone(verifier.artifact_sha256)
+
+    def test_legacy_create_retains_failed_inspection_feedback(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor = self.inventor(temporary)
+            workbench = Forge(
+                FakeAgent(), FakeCad(), FakeVerifier(), FakeEvaluator(passed=False)
+            )
+            result = workbench.create(
+                CreationBrief.create("game", "Create a game."),
+                inventor,
+                Path(temporary) / "run",
+                1,
+            )
+            self.assertEqual(len(result.inspections), 1)
+            self.assertFalse(result.inspections[0].passed)
+
+    def test_make_result_binds_cad_report_and_release_as_distinct_hashes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor = self.inventor(temporary)
+            verifier = FakeVerifier()
+            workbench = Forge(
+                FakeAgent(), FakeCad(), verifier, FakeEvaluator()
+            )
+            made = workbench.make(
+                CreationBrief.create("game", "Create a game."),
+                inventor,
+                Path(temporary) / "run",
+                1,
+            )
+            release = verifier.verify(
+                made.cad_build.artifact_root,
+                made.artifact_manifest.artifact_sha256,
+            )
+            report_digest = file_sha256(
+                made.cad_build.artifact_root / "evidence/cad.json"
+            )
+            self.assertNotEqual(report_digest, release.sha256)
+            cad_result = GateResult.create(
+                "cad",
+                True,
+                made.artifact_manifest.artifact_sha256,
+                {"cad_release_sha256": release.sha256},
+                "cad-review",
+                "1.0.0",
+                CONFIG_SHA256,
+                "evidence/cad.json",
+                report_digest,
+            )
+
+            result = MakeResult(
+                1,
+                wish=made.wish,
+                taste=made.taste,
+                concept=made.concept,
+                concept_sha256=made.concept_sha256,
+                cad_build=made.cad_build,
+                artifact_manifest=made.artifact_manifest,
+                cad_release=release,
+                inspections=(cad_result,),
+            )
+            self.assertEqual(result.inspections, (cad_result,))
+
+            detached_release = GateResult.create(
+                "cad",
+                True,
+                made.artifact_manifest.artifact_sha256,
+                {"cad_release_sha256": "e" * 64},
+                "cad-review",
+                "1.0.0",
+                CONFIG_SHA256,
+                "evidence/cad.json",
+                report_digest,
+            )
+            with self.assertRaisesRegex(ContractError, "validated release bundle"):
+                MakeResult(
+                    1,
+                    wish=made.wish,
+                    taste=made.taste,
+                    concept=made.concept,
+                    concept_sha256=made.concept_sha256,
+                    cad_build=made.cad_build,
+                    artifact_manifest=made.artifact_manifest,
+                    cad_release=release,
+                    inspections=(detached_release,),
+                )
+
+    def test_canonical_board_game_workflow_accepts_real_cad_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor = self.inventor(temporary)
+            verifier = FakeVerifier()
+            workbench = Forge(
+                FakeAgent(), FakeCad(), verifier, FakeEvaluator()
+            )
+            made = workbench.make(
+                CreationBrief.create("river-loom", "Create a board game."),
+                inventor,
+                Path(temporary) / "run",
+                1,
+            )
+            release = verifier.verify(
+                made.cad_build.artifact_root,
+                made.artifact_manifest.artifact_sha256,
+            )
+            spec = WorkflowSpec.board_game()
+            results = []
+            for inspection_id in spec.required_gates["inspect"]:
+                policy = spec.gate_policies[inspection_id]
+                evidence_ref = (
+                    "evidence/cad.json"
+                    if inspection_id == "cad"
+                    else "evidence/rules.json"
+                )
+                evidence = (
+                    {"cad_release_sha256": release.sha256}
+                    if inspection_id == "cad"
+                    else {"passed": True}
+                )
+                results.append(
+                    GateResult.create(
+                        inspection_id,
+                        True,
+                        made.artifact_manifest.artifact_sha256,
+                        evidence,
+                        policy.evaluator,
+                        policy.evaluator_version,
+                        policy.config_sha256,
+                        evidence_ref,
+                        file_sha256(made.cad_build.artifact_root / evidence_ref),
+                    )
+                )
+            inspection = Inspection(
+                made.artifact_manifest,
+                tuple(results),
+                release,
+            )
+            clockwork = Clockwork(Path(temporary) / "clockwork.sqlite3")
+            workflow = Workflow(spec)
+            workflow.register(
+                clockwork,
+                made.wish.product_id,
+                artifact_sha256=made.artifact_manifest.artifact_sha256,
+            )
+
+            inspected = workflow.advance(
+                clockwork,
+                made.wish.product_id,
+                "inspect",
+                0,
+                inspection=inspection,
+            )
+            self.assertEqual(inspected["stage"], "inspect")
+            packed = pack_artifact(
+                made.cad_build.artifact_root,
+                Path(temporary) / "river-loom.pack.zip",
+            )
+            packed_product = workflow.advance(
+                clockwork,
+                made.wish.product_id,
+                "pack",
+                1,
+                packed=packed,
+            )
+            self.assertEqual(packed_product["stage"], "pack")
+            event = clockwork.events(made.wish.product_id)[-1]
+            self.assertEqual(event["payload"]["pack_sha256"], packed.pack_sha256)
 
     def test_gate_for_other_artifact_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:

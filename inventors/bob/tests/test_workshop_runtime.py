@@ -120,8 +120,8 @@ class TestCanonicalWorkshopSurface(unittest.TestCase):
     def test_adapter_exposes_v03_words(self):
         runtime = workshop_runtime.require_workshop()
         for name in (
-            "pack_artifact", "inspect_pack", "Clockwork", "ShopDoor",
-            "Sender", "Stamp", "load_taste",
+            "pack_artifact", "plan_pack", "inspect_pack", "MakerMark",
+            "Clockwork", "ShopDoor", "Sender", "Stamp", "load_taste",
         ):
             self.assertTrue(getattr(runtime, name), name)
 

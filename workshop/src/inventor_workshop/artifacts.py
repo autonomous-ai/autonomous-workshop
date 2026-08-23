@@ -107,6 +107,30 @@ def _has_control_characters(value: str) -> bool:
     return any(ord(character) < 32 or ord(character) == 127 for character in value)
 
 
+def _assert_path_has_no_secret(relative_path: str) -> None:
+    """Reject credential-shaped paths without echoing their sensitive bytes."""
+
+    encoded_path = relative_path.encode("utf-8")
+    for rule, pattern in SECRET_PATTERNS.items():
+        if pattern.search(encoded_path):
+            raise ArtifactError(
+                "artifact filename matches secret rule %s" % rule
+            )
+
+
+def _validate_pack_limit(maximum_bytes: int) -> int:
+    """Validate an optional lower ceiling against the canonical Pack limit."""
+
+    if type(maximum_bytes) is not int or maximum_bytes <= 0:
+        raise ArtifactError("Pack limit must be a positive integer")
+    if maximum_bytes > MAX_PACK_BYTES:
+        raise ArtifactError(
+            "Pack limit cannot exceed the canonical 50 MB limit (%d bytes)"
+            % MAX_PACK_BYTES
+        )
+    return maximum_bytes
+
+
 def _open_regular_no_follow(root: Path, relative: Path) -> Tuple[int, os.stat_result]:
     """Resolve every path component through no-follow directory descriptors."""
     label = relative.as_posix()
@@ -595,15 +619,11 @@ def assert_packable_content(relative_path: str, content: bytes) -> None:
         or not isinstance(content, bytes)
     ):
         raise ArtifactError("Packable content requires a path and bytes")
+    _assert_path_has_no_secret(relative_path)
     relative = Path(*relative_path.split("/"))
     if _excluded(relative, set()):
         raise ArtifactError("artifact entry is excluded from publication: %s" % relative_path)
-    encoded_path = relative_path.encode("utf-8")
     for rule, pattern in SECRET_PATTERNS.items():
-        if pattern.search(encoded_path):
-            raise ArtifactError(
-                "artifact filename matches secret rule %s" % rule
-            )
         if pattern.search(content):
             raise ArtifactError(
                 "artifact file %s matches secret rule %s" % (relative_path, rule)
@@ -622,15 +642,19 @@ def _source_files(root: Path, extra_excludes: Iterable[str] = ()) -> List[Tuple[
         for dirname in sorted(dirnames):
             absolute = base / dirname
             relative = absolute.relative_to(root)
-            if absolute.is_symlink():
-                raise ArtifactError("artifact contains symlink: %s" % relative.as_posix())
             if dirname.lower() in DEFAULT_EXCLUDED_DIRS or _excluded(relative, excluded):
                 continue
+            _assert_path_has_no_secret(relative.as_posix())
+            if absolute.is_symlink():
+                raise ArtifactError("artifact contains symlink: %s" % relative.as_posix())
             kept_dirs.append(dirname)
         dirnames[:] = kept_dirs
         for filename in sorted(filenames):
             absolute = base / filename
             relative = absolute.relative_to(root)
+            if _excluded(relative, excluded):
+                continue
+            _assert_path_has_no_secret(relative.as_posix())
             if (
                 "\\" in relative.as_posix()
                 or _has_control_characters(relative.as_posix())
@@ -639,8 +663,6 @@ def _source_files(root: Path, extra_excludes: Iterable[str] = ()) -> List[Tuple[
                 raise ArtifactError("artifact contains an unsafe path: %s" % relative.as_posix())
             if absolute.is_symlink():
                 raise ArtifactError("artifact contains symlink: %s" % relative.as_posix())
-            if _excluded(relative, excluded):
-                continue
             if not absolute.is_file():
                 raise ArtifactError("artifact entry is not a regular file: %s" % relative)
             result.append((relative, absolute))
@@ -713,6 +735,7 @@ def build_pack(
     inventor machine.
     """
 
+    maximum_bytes = _validate_pack_limit(maximum_bytes)
     root = Path(root).resolve()
     extra_excludes = _normalize_extra_excludes(extra_excludes)
     requested_destination = Path(destination)
@@ -733,13 +756,37 @@ def build_pack(
         pass
     else:
         raise ArtifactError("Pack destination must be outside the artifact root")
-    if not isinstance(maximum_bytes, int) or isinstance(maximum_bytes, bool) or maximum_bytes <= 0:
-        raise ArtifactError("Pack limit must be a positive integer")
     files = _source_files(root, extra_excludes)
     manifest = build_artifact_manifest(root, extra_excludes, created_at="content-addressed")
     manifest_by_path = {entry.path: entry for entry in manifest.entries}
     if [relative.as_posix() for relative, _ in files] != [entry.path for entry in manifest.entries]:
         raise ArtifactError("artifact file inventory changed while packaging")
+    # Workshop Packs use ZIP_STORED with no comments or extra fields, so the
+    # final byte count is knowable before a temporary file is written.  Fail
+    # early with an actionable inventory instead of spending time copying a
+    # tree only to report one opaque number at the end.
+    manifest_content = _canonical(manifest.to_dict()) + b"\n"
+    planned_members = [
+        (entry.path, entry.bytes) for entry in manifest.entries
+    ] + [("_inventor-artifact.json", len(manifest_content))]
+    planned_bytes = 22 + sum(
+        size + 76 + 2 * len(path.encode("utf-8"))
+        for path, size in planned_members
+    )
+    if planned_bytes > maximum_bytes:
+        largest = sorted(
+            manifest.entries,
+            key=lambda entry: (-entry.bytes, entry.path),
+        )[:5]
+        inventory = ", ".join(
+            "%s (%d bytes)" % (entry.path, entry.bytes)
+            for entry in largest
+        )
+        raise ArtifactError(
+            "Pack would be %d bytes; configured limit is %d; largest eligible "
+            "files: %s. Stage product-only files or use extra_excludes."
+            % (planned_bytes, maximum_bytes, inventory or "none")
+        )
     staging = _PackStaging.create(destination.parent, destination.name)
     fd = staging.fd
     opened_identity = staging.identity
@@ -787,7 +834,7 @@ def build_pack(
                 info.compress_type = zipfile.ZIP_STORED
                 info.create_system = 3
                 info.external_attr = (0o644 & 0xFFFF) << 16
-                archive.writestr(info, _canonical(manifest.to_dict()) + b"\n")
+                archive.writestr(info, manifest_content)
             handle.flush()
             os.fsync(fd)
         completed = os.fstat(fd)

@@ -8,11 +8,12 @@ import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
+from .artifacts import MAX_PACK_BYTES
 from .clockwork import Clockwork
 from .contribution import check_target, manifests_for_target
 from .errors import WorkshopError
 from .manifest import discover_inventors, inventor_collection, validate_entrypoints
-from .pack import pack_artifact, seal_artifact
+from .pack import pack_artifact, plan_pack, seal_artifact
 from .scaffold import scaffold_inventor
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
@@ -44,7 +45,12 @@ def _manifest(args: argparse.Namespace) -> int:
 
 
 def _pack(args: argparse.Namespace) -> int:
-    packed = pack_artifact(args.source, args.output, extra_excludes=args.exclude)
+    packed = pack_artifact(
+        args.source,
+        args.output,
+        extra_excludes=args.exclude,
+        maximum_bytes=args.maximum_bytes,
+    )
     print(
         json.dumps(
             {
@@ -59,6 +65,17 @@ def _pack(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def _plan_pack(args: argparse.Namespace) -> int:
+    plan = plan_pack(
+        args.source,
+        extra_excludes=args.exclude,
+        maximum_bytes=args.maximum_bytes,
+        largest=args.largest,
+    )
+    print(json.dumps(plan.to_dict(), indent=2, sort_keys=True))
+    return 0 if plan.fits else 1
 
 
 def _init_state(args: argparse.Namespace) -> int:
@@ -154,7 +171,17 @@ def parser() -> argparse.ArgumentParser:
     pack.add_argument("source", type=Path)
     pack.add_argument("output", type=Path)
     pack.add_argument("--exclude", action="append", default=[])
+    pack.add_argument("--maximum-bytes", type=int, default=MAX_PACK_BYTES)
     pack.set_defaults(handler=_pack)
+
+    plan = subcommands.add_parser(
+        "plan-pack", help="preview exact Pack size and largest eligible files"
+    )
+    plan.add_argument("source", type=Path)
+    plan.add_argument("--exclude", action="append", default=[])
+    plan.add_argument("--maximum-bytes", type=int, default=MAX_PACK_BYTES)
+    plan.add_argument("--largest", type=int, default=5)
+    plan.set_defaults(handler=_plan_pack)
 
     clockwork = subcommands.add_parser(
         "clockwork", help="initialize or audit durable Workshop state"

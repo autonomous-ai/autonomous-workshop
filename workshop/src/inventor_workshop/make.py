@@ -307,10 +307,6 @@ class MakeResult:
             raise ContractError("make inspector returned duplicate inspection ids")
         for result in self.inspections:
             result.assert_valid()
-            if not result.passed:
-                raise ContractError(
-                    "InspectionResult %s did not pass" % result.inspection_id
-                )
             if result.artifact_sha256 != self.artifact_manifest.artifact_sha256:
                 raise ContractError(
                     "InspectionResult %s belongs to different artifact bytes"
@@ -324,7 +320,6 @@ class MakeResult:
             if result.inspection_id == "cad" and (
                 self.cad_release is None
                 or result.evidence.get("cad_release_sha256") != self.cad_release.sha256
-                or result.evidence_sha256 != self.cad_release.sha256
             ):
                 raise ContractError(
                     "CAD inspection does not bind the validated release bundle"
@@ -442,12 +437,28 @@ class Workbench:
             inspections=(),
         )
 
-    def inspect(self, made: MakeResult) -> Inspection:
-        """Run the configured inspector against one completed MakeResult."""
+    def inspect(
+        self,
+        made: MakeResult,
+        *,
+        evidence_manifest: Optional[ArtifactManifest] = None,
+    ) -> Inspection:
+        """Run the configured inspector against one completed MakeResult.
+
+        ``evidence_manifest`` may name a separately sealed inspection root.
+        Omitting it preserves the original contract where evidence lives in
+        the product artifact itself.
+        """
 
         if not isinstance(made, MakeResult):
             raise ContractError("Workbench.inspect requires a MakeResult")
         made.assert_valid()
+        if evidence_manifest is not None:
+            if not isinstance(evidence_manifest, ArtifactManifest):
+                raise ContractError(
+                    "Workbench.inspect evidence_manifest must be an ArtifactManifest"
+                )
+            evidence_manifest.assert_valid()
         if made.inspections:
             raise ContractError(
                 "Workbench.inspect requires an uninspected MakeResult"
@@ -483,7 +494,12 @@ class Workbench:
         if after.to_dict() != made.artifact_manifest.to_dict():
             raise ArtifactError("artifact changed during Inspect")
         made.taste.assert_current()
-        return Inspection(made.artifact_manifest, results, cad_release)
+        return Inspection(
+            made.artifact_manifest,
+            results,
+            cad_release,
+            evidence_manifest=evidence_manifest,
+        )
 
     def create(
         self,

@@ -12,6 +12,7 @@ from .errors import ContractError
 SCHEMA_NAMES = (
     "inventor.schema.json",
     "inspection-result.schema.json",
+    "maker-mark.schema.json",
     "stamp.schema.json",
 )
 

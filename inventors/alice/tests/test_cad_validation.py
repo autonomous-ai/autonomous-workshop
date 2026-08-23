@@ -17,9 +17,11 @@ from alice.cad_validation import (
     PrinterCalibrationProfile,
     PrinterTarget,
     StlInspectionLimits,
+    StlPathInspectionError,
     derive_assembled_fit,
     derive_print_in_place_fit,
     evaluate_motion_condition,
+    inspect_stl_path,
     inspect_stl_topology,
     self_check_calibration_profile,
     validate_motion_outcome,
@@ -236,6 +238,26 @@ class PrinterCalibrationTests(unittest.TestCase):
 
 
 class StlTopologyTests(unittest.TestCase):
+    def test_alice_public_topology_surface_is_the_shared_workshop(self) -> None:
+        from inventor_workshop.cad import (
+            KernelBodyObservation as WorkshopKernelBodyObservation,
+            StlInspectionLimits as WorkshopStlInspectionLimits,
+            StlPathInspectionError as WorkshopStlPathInspectionError,
+            StlTopologyReceipt as WorkshopStlTopologyReceipt,
+            inspect_stl_path as workshop_inspect_stl_path,
+            inspect_stl_topology as workshop_inspect_stl_topology,
+        )
+
+        self.assertIs(KernelBodyObservation, WorkshopKernelBodyObservation)
+        self.assertIs(StlInspectionLimits, WorkshopStlInspectionLimits)
+        self.assertIs(StlPathInspectionError, WorkshopStlPathInspectionError)
+        self.assertIs(inspect_stl_path, workshop_inspect_stl_path)
+        self.assertIs(inspect_stl_topology, workshop_inspect_stl_topology)
+        self.assertIs(
+            type(inspect_stl_topology(binary_stl(tetrahedron()), expected_shell_count=1)),
+            WorkshopStlTopologyReceipt,
+        )
+
     def test_binary_tetrahedron_passes_declared_topology_and_binds_exact_source(self) -> None:
         source = binary_stl(tetrahedron(), header=b"solid binary-header-is-valid")
         receipt = inspect_stl_topology(

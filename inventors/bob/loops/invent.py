@@ -52,6 +52,8 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from inventor_workshop.cad import fits_bed_envelope, inspect_stl_path
+
 from harness import agents, budgets, workshop_runtime, ledger, queue, reward
 from loops import playtest, tablerun
 
@@ -1214,8 +1216,9 @@ def _handle_build_gated(step):
     """Deterministic build checks + the build lens. FAIL charges a REPAIR
     round and rewinds to built ('past two rounds the problem is usually the
     spec' — text2cad); the build gate sends the BUILD back, never the rules.
-    v1 deterministic checks are file-level (exists, non-empty); mesh/bed/
-    watertight checks land with the cadcode integration."""
+    A build can pass only when every printable part has a reproducible
+    Workshop mesh receipt, fits Bob's bed envelope, and the blind lens passes.
+    The assembly STL remains a viewer artifact rather than a printable part."""
     slug = step.slug
     gdir = _game_dir(slug)
     sha = _idea_sha(slug)
@@ -1229,15 +1232,10 @@ def _handle_build_gated(step):
     for name in files:
         if os.path.getsize(os.path.join(parts_dir, name)) == 0:
             problems.append("parts/%s is empty" % name)
-    # Mesh half of G6, via the vendored cad skill (peterat617/text-to-3d,
-    # the toolchain that built Arrows Across The River): check_mesh per STL
-    # — watertight, bed fit, overhangs. Needs the .venv-cad interpreter
-    # (BOB_CAD_PY); absent, the gate records the skip as a WARNING and the
-    # build lens carries the load. A skipped check is never a silent pass.
+    # Mesh half of G6 uses Workshop's stdlib exact-byte topology check.  This
+    # cannot be skipped because an LLM lens is not geometric evidence.
     mesh_warnings = []
-    mesh_checked = False
-    cad_py = os.environ.get("BOB_CAD_PY", "").strip()
-    check_mesh = os.path.join(_home(), "skills", "cad", "scripts", "check_mesh")
+    mesh_receipts = []
     # Per-PART only, never the assembly: assembled.stl is the viewer
     # artifact and prints as its pieces, not as one 470 mm object — the
     # vibe-ideas gate rule ("envelope: per-part vs sorted extents, never
@@ -1246,51 +1244,59 @@ def _handle_build_gated(step):
     slug_stl = "%s.stl" % slug
     stls = [f for f in files if f.lower().endswith(".stl")
             and f not in ("assembled.stl", slug_stl)]
-    if cad_py and os.path.isfile(check_mesh) and stls:
-        import subprocess as _sp
-        mesh_checked = True
-        for name in stls:
-            try:
-                r = _sp.run([cad_py, check_mesh,
-                             os.path.join(parts_dir, name),
-                             "--bed", "220x220x250"],
-                            capture_output=True, text=True, timeout=300)
-                if r.returncode != 0:
-                    out = r.stdout + r.stderr
-                    # check_mesh tests axis-aligned orientations only. A
-                    # part can still fit ROTATED in XY: sufficient 45° test
-                    # (x+y)/sqrt(2) <= bed side (g0003's 224x57 yoke, a real
-                    # print-shop rotation, failed the instrument not the
-                    # bed, 2026-08-23). Bed-fit-only failures that pass the
-                    # rotated test downgrade to a warning the slicer note
-                    # carries; every other failure still blocks.
-                    m = re.search(r"FAIL\s+fits [\dx]+ bed\s+"
-                                  r"([\d.]+)x([\d.]+)x([\d.]+) mm", out)
-                    only_bed = (out.count("FAIL") == 1 and m is not None)
-                    if only_bed:
-                        x, y, z = (float(m.group(i)) for i in (1, 2, 3))
-                        a, b = sorted((x, y))[-2:]
-                        if z <= 250.0 and (a + b) / 1.4142 <= 220.0:
-                            mesh_warnings.append(
-                                "parts/%s exceeds the bed axis-aligned "
-                                "(%.0fx%.0fx%.0f) but fits rotated 45 "
-                                "degrees in XY — slicer must rotate it"
-                                % (name, x, y, z))
-                            continue
-                    problems.append("check_mesh FAIL parts/%s: %s"
-                                    % (name, out[-200:]))
-            except Exception as exc:  # noqa: BLE001 — a dead venv is a skip, not a crash
-                mesh_checked = False
-                mesh_warnings.append("check_mesh errored (%s) — mesh checks "
-                                     "incomplete" % exc.__class__.__name__)
-                break
-    elif stls:
-        mesh_warnings.append("mesh checks SKIPPED — set BOB_CAD_PY to a "
-                             "python>=3.10 venv with cadgen==0.4.19 "
-                             "(skills/PROVENANCE.md)")
+    for name in stls:
+        path = os.path.join(parts_dir, name)
+        try:
+            receipt = inspect_stl_path(path, expected_shell_count=1)
+        except OSError as exc:
+            error_code = getattr(exc, "code", exc.__class__.__name__)
+            problems.append("parts/%s could not be safely inspected: %s" %
+                            (name, error_code))
+            mesh_receipts.append({"file": name, "receipt": None,
+                                  "read_error": exc.__class__.__name__,
+                                  "path_error": error_code,
+                                  "fits_bed": False})
+            continue
+        fits_bed = bool(
+            receipt.status == "passed"
+            and receipt.bounds_min_mm is not None
+            and receipt.bounds_max_mm is not None
+            and fits_bed_envelope(
+                receipt.bounds_min_mm, receipt.bounds_max_mm,
+                (220.0, 220.0, 250.0))
+        )
+        mesh_receipts.append({
+            "file": name,
+            "receipt": receipt.to_dict(),
+            "receipt_sha256": receipt.receipt_sha256,
+            "fits_bed": fits_bed,
+        })
+        if receipt.status != "passed":
+            reasons = receipt.failure_reasons + receipt.hold_reasons
+            problems.append("Workshop topology %s parts/%s: %s" %
+                            (receipt.status.upper(), name,
+                             ", ".join(reasons) or "no conclusive receipt"))
+        elif not fits_bed:
+            problems.append("Workshop envelope FAIL parts/%s: does not fit "
+                            "220x220x250 mm" % name)
+        else:
+            x = receipt.bounds_max_mm[0] - receipt.bounds_min_mm[0]
+            y = receipt.bounds_max_mm[1] - receipt.bounds_min_mm[1]
+            z = receipt.bounds_max_mm[2] - receipt.bounds_min_mm[2]
+            if not (x <= 220.0 and y <= 220.0):
+                mesh_warnings.append(
+                    "parts/%s needs rotated XY placement (%.0fx%.0fx%.0f); "
+                    "the slicer must preserve it" % (name, x, y, z))
+    if not stls:
+        problems.append("parts/ has no printable part STL meshes")
+    mesh_checked = bool(stls) and all(
+        item.get("receipt") is not None for item in mesh_receipts)
+    deterministic_mesh_pass = bool(stls) and not problems
     if problems:
         record = {"idea_sha": sha, "build_pass": False,
-                  "mesh_checked": mesh_checked, "warnings": mesh_warnings,
+                  "deterministic_mesh_pass": deterministic_mesh_pass,
+                  "lens_pass": False, "mesh_checked": mesh_checked,
+                  "mesh_receipts": mesh_receipts, "warnings": mesh_warnings,
                   "survives_as_cardboard": None, "issues": problems}
         _write_json(os.path.join(gdir, "review", "build_gate.json"), record)
         _ledger_row(slug, "build_gated", 0.0,
@@ -1315,14 +1321,19 @@ def _handle_build_gated(step):
     v = str((verdict or {}).get("verdict", "")).upper()
     record = {
         "idea_sha": sha, "judge": "bob-build-lens",
-        "build_pass": v == "PASS",
+        "build_pass": deterministic_mesh_pass and v == "PASS",
+        "deterministic_mesh_pass": deterministic_mesh_pass,
+        "lens_pass": v == "PASS",
+        "mesh_checked": mesh_checked,
+        "mesh_receipts": mesh_receipts,
+        "warnings": mesh_warnings,
         "survives_as_cardboard": (verdict or {}).get("survives_as_cardboard"),
         "issues": (verdict or {}).get("issues") or [],
     }
     _write_json(os.path.join(gdir, "review", "build_gate.json"), record)
     _ledger_row(slug, "build_gated", result.cost_usd,
                 "build lens %s" % (v or "UNKNOWN"))
-    if v == "PASS":
+    if record["build_pass"]:
         queue.advance(slug, "reviewed", "build gate passed")
     elif v == "FAIL":
         if _spend_or_terminate(slug, "repair",

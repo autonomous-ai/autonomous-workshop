@@ -289,6 +289,7 @@ class Pipeline:
         expected_owner_id: Optional[str] = None,
         lease_token: Optional[str] = None,
         note: str = "",
+        inspection_evidence_sha256: Optional[str] = None,
     ) -> Dict[str, Any]:
         product = store.get_product(product_id)
         source = product["stage"]
@@ -329,19 +330,22 @@ class Pipeline:
                 )
             cad_release.assert_artifact(next_artifact)
             cad_gate = by_id["cad"]
-            if (
-                cad_gate.evidence.get("cad_release_sha256") != cad_release.sha256
-                or cad_gate.evidence_sha256 != cad_release.sha256
-            ):
+            if cad_gate.evidence.get("cad_release_sha256") != cad_release.sha256:
                 raise TransitionError("CAD gate does not bind the validated release bundle")
         for gate_id, gate in by_id.items():
+            if gate.artifact_sha256 != next_artifact:
+                raise TransitionError("gate %s belongs to different artifact bytes" % gate_id)
+            # Non-required results are retained as artifact-bound feedback in
+            # the transition event. They do not license this transition, so a
+            # failure (or the absence of a pinned gate policy) must not turn an
+            # otherwise passing required set into a rejection.
+            if gate_id not in required:
+                continue
             policy = self._gate_policies.get(gate_id)
             if policy is None:
                 raise TransitionError("gate %s has no pinned evaluator policy" % gate_id)
             if not gate.passed:
                 raise TransitionError("gate %s did not pass" % gate_id)
-            if gate.artifact_sha256 != next_artifact:
-                raise TransitionError("gate %s belongs to different artifact bytes" % gate_id)
             if (
                 gate.evaluator != policy.evaluator
                 or gate.evaluator_version != policy.evaluator_version
@@ -448,6 +452,14 @@ class Pipeline:
                 for gate in sorted(by_id.values(), key=lambda item: item.gate_id)
             ],
         }
+        if by_id:
+            payload["required_inspection_ids"] = sorted(required)
+        if inspection_evidence_sha256 is not None:
+            require_sha256(
+                inspection_evidence_sha256,
+                "inspection evidence artifact_sha256",
+            )
+            payload["inspection_evidence_sha256"] = inspection_evidence_sha256
         if receipt:
             payload["stamp"] = receipt.to_dict()
         if publication_packet_sha256:

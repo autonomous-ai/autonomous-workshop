@@ -27,7 +27,9 @@ class WorkshopUnavailable(RuntimeError):
 @dataclass(frozen=True)
 class WorkshopRuntime:
     pack_artifact: Any
+    plan_pack: Any
     inspect_pack: Any
+    MakerMark: Any
     Clockwork: Any
     ShopDoor: Any
     Sender: Any
@@ -181,7 +183,9 @@ def require_workshop() -> WorkshopRuntime:
         _require_loaded_workshop_from(source)
     return WorkshopRuntime(
         pack_artifact=_symbol(workshop, "pack_artifact", "build_publish_packet"),
+        plan_pack=_symbol(workshop, "plan_pack"),
         inspect_pack=_symbol(workshop, "inspect_pack", "inspect_publish_packet"),
+        MakerMark=_symbol(workshop, "MakerMark"),
         Clockwork=_symbol(workshop, "Clockwork", "InventorStore"),
         ShopDoor=_symbol(workshop, "ShopDoor", "Portal"),
         Sender=_symbol(workshop, "Sender", "Launchpad"),

@@ -11,11 +11,45 @@ from __future__ import annotations
 
 import json
 import shutil
+import types
 from pathlib import Path
 
 import pytest
 
-from eve import config, corpus, driver, journal, queue
+from eve import config, corpus, driver, gates, journal, queue
+
+
+TETRA_STL = b"""solid eve
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0
+      vertex 0 0 1
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 1
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 0 1 0
+      vertex 0 0 1
+    endloop
+  endfacet
+endsolid eve
+"""
 
 # A fresh, corpus-valid, non-colliding idea. Backpack-rail + vexing-pin is
 # deliberately unlike any owned mechanic/theme token (gates.py/gates novelty).
@@ -73,7 +107,7 @@ def _mock_agent(role, prompt, *, cwd=None, max_minutes=None):
         b = cwd / "build"
         b.mkdir(exist_ok=True)
         for name in ["rail_01", "carriage_01", "dial_01", "tk_01"]:
-            (b / f"{name}.stl").write_bytes(b"solid mock\n  facet normal 0 0 0\nendsolid mock\n")
+            (b / f"{name}.stl").write_bytes(TETRA_STL)
     elif role == "panel":
         (cwd / "stage_out.json").write_text(json.dumps(
             {"verdict": "pass", "lenses": ["printability", "fidelity", "playability"],
@@ -150,6 +184,38 @@ def test_driver_audit_clean_after_ship(cfg):
     from eve.reward import audit
     problems = audit(cfg)
     assert problems == [], f"ledger should be verifiable, got: {problems}"
+
+
+def test_print_gate_rejects_malformed_nonempty_stl(tmp_path):
+    game_dir = tmp_path / "games" / "broken-mesh"
+    build = game_dir / "build"
+    build.mkdir(parents=True)
+    (build / "looks-present.stl").write_bytes(
+        b"solid mock\n  facet normal 0 0 0\nendsolid mock\n")
+
+    result = gates.print_gate(
+        types.SimpleNamespace(slug="broken-mesh"), game_dir=game_dir)
+
+    assert result.measurable is True
+    assert result.passed is False
+    assert any("Workshop STL topology" in reason for reason in result.reasons)
+    assert any("missing_ascii_outer_loop" in reason for reason in result.reasons)
+
+
+def test_print_gate_uses_workshop_no_follow_mesh_reader(tmp_path):
+    game_dir = tmp_path / "games" / "linked-mesh"
+    build = game_dir / "build"
+    build.mkdir(parents=True)
+    target = game_dir / "outside-mesh"
+    target.write_text("solid target\nendsolid target\n")
+    (build / "linked.stl").symlink_to(target)
+
+    result = gates.print_gate(
+        types.SimpleNamespace(slug="linked-mesh"), game_dir=game_dir)
+
+    assert result.measurable is True
+    assert result.passed is False
+    assert any("path_is_symlink" in reason for reason in result.reasons)
 
 
 # --- gate-failure must KILL, not re-judge forever --------------------------

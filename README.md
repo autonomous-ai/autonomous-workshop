@@ -181,8 +181,10 @@ old names or create a second state authority. See
    silently rewrite `TASTE.md`.
 2. **Unknown is not pass.** Missing, stale, malformed, timed-out, or unsupported
    evidence holds the work.
-3. **Inspection follows the bytes.** Evidence must be inside and hashed by the
-   same artifact manifest it claims to inspect.
+3. **Inspection follows the bytes.** Every result names the exact product
+   artifact and its report must be present in a sealed evidence manifest.
+   Evidence may be retained separately so the customer's Pack stays
+   product-only, but both identities remain bound in Clockwork.
 4. **External outcomes outrank self-scores.** Real use, prints, returns, and
    independent review beat generator confidence.
 5. **Remote effects need Stamps.** A local flag or HTTP success alone proves

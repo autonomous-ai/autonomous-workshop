@@ -238,12 +238,14 @@ def wish(product_id):
             template_literal=template_literal,
         ),
         "src/{package}/__main__.py".format(package=package): """import argparse
+import hashlib
 import json
 import os
 import sysconfig
+from datetime import datetime, timezone
 from pathlib import Path
 
-from inventor_workshop import Clockwork, discover_skills, load_taste
+from inventor_workshop import Clockwork, MakerMark, discover_skills, load_taste
 from inventor_workshop.offline import offline_workbench
 from .workflow import WORKFLOW, wish
 
@@ -291,6 +293,7 @@ def doctor():
 
 
 def make(product_id):
+    started_at = datetime.now(timezone.utc).isoformat()
     clockwork = Clockwork(database_path())
     try:
         clockwork.get_product(product_id)
@@ -307,6 +310,35 @@ def make(product_id):
         budget_micros=1,
     )
     inspection = workbench.inspect(made)
+    wish_sha256 = hashlib.sha256(
+        json.dumps(
+            made.wish.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    mark = MakerMark(
+        schema_version=1,
+        inventor_id="{inventor_id}",
+        run_id="offline-" + made.artifact_manifest.artifact_sha256[:24],
+        mode="offline",
+        tool="workshop-offline-muse",
+        tool_version="0.3.0",
+        authenticated=False,
+        taste_sha256=made.taste.sha256,
+        artifact_sha256=made.artifact_manifest.artifact_sha256,
+        input_sha256={{"wish": wish_sha256}},
+        agent_calls=1,
+        actual_cost_micros=0,
+        synthetic_cost_micros=0,
+        started_at=started_at,
+        completed_at=datetime.now(timezone.utc).isoformat(),
+        limitations=(
+            "Deterministic offline starter; no authenticated live model was used.",
+            "Not production CAD and no physical print or human test was performed.",
+        ),
+    )
+    mark.assert_artifact(made.artifact_manifest.artifact_sha256)
     product = WORKFLOW.register(
         clockwork,
         product_id,
@@ -330,6 +362,10 @@ def make(product_id):
     )
     (run_root / "inspection.json").write_text(
         json.dumps(inspection.to_dict(), indent=2, sort_keys=True) + "\\n",
+        encoding="utf-8",
+    )
+    (run_root / "maker-mark.json").write_text(
+        mark.to_json() + "\\n",
         encoding="utf-8",
     )
     print("made and inspected %s -> %s" % (product_id, inspection.artifact_sha256))
@@ -405,6 +441,9 @@ class SmokeTest(unittest.TestCase):
                 inspected = json.loads(
                     (run / "inspection.json").read_text(encoding="utf-8")
                 )
+                maker_mark = json.loads(
+                    (run / "maker-mark.json").read_text(encoding="utf-8")
+                )
                 self.assertEqual(
                     made["artifact_manifest"]["artifact_sha256"],
                     inspected["artifact_sha256"],
@@ -414,6 +453,11 @@ class SmokeTest(unittest.TestCase):
                     ["workshop-starter"],
                 )
                 self.assertIsNotNone(inspected["cad_release_sha256"])
+                self.assertEqual(
+                    maker_mark["artifact_sha256"],
+                    made["artifact_manifest"]["artifact_sha256"],
+                )
+                self.assertEqual(maker_mark["mode"], "offline")
 
     def test_doctor_is_read_only(self):
         with tempfile.TemporaryDirectory() as temporary:

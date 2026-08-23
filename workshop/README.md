@@ -10,6 +10,7 @@ Wish + Taste
      |
      v
 Workbench.make() --> MakeResult
+                         +--> MakerMark (how it was made)
                          |
               Workbench.inspect()
                          |
@@ -51,6 +52,7 @@ from inventor_workshop import (
     Workbench,
     load_taste,
     pack_artifact,
+    plan_pack,
 )
 
 wish = Wish.create("product-42", "A beautiful printable object")
@@ -63,6 +65,12 @@ made = workbench.make(wish, inventor_root, run_root, budget_micros=2_000_000)
 # Make and Inspect are separate boundaries. Inspect binds every result and
 # evidence file to the exact content-addressed artifact made above.
 inspection = workbench.inspect(made)
+
+# Let an inventor revise an oversized product selection before writing a ZIP.
+# The optional maximum can lower, but never raise, Pack's canonical 50 MB ceiling.
+plan = plan_pack(made.cad_build.artifact_root)
+if not plan.fits:
+    print(plan.to_dict()["largest_files"])
 
 packed = pack_artifact(made.cad_build.artifact_root, output_zip)
 clockwork = Clockwork(runtime_root / "clockwork.sqlite3")
@@ -94,7 +102,8 @@ product should also be sold, configure `ShopDoor` separately and use
 | `Taste` | exact UTF-8 bytes and SHA-256 of root `TASTE.md` |
 | `Wish` | bounded, typed intent passed into Make |
 | `Workbench` | injected model/CAD Doors, explicit Inspect boundary, budget, fresh workspace, Taste continuity |
-| `Inspection` | every result passes, names the exact artifact hash, and points to matching evidence inside its manifest |
+| `MakerMark` | exact output artifact, tool mode/version, authentication, inputs, calls, costs, and limitations for one Make run |
+| `Inspection` | passed or failed feedback names the exact product hash and points to matching evidence in a sealed evidence manifest; required failed checks cannot advance |
 | `PackedArtifact` | deterministic ZIP ordering, timestamps, permissions, inventory, secret scan, and SHA-256 |
 | `Clockwork` | revision fencing, event chain, leases, budgets, durable outbox, and ambiguous-effect holds |
 | `Sender` | generic record-before-send outbox, unknown-effect holds and reconciliation; draft-first Shop helpers |
@@ -132,7 +141,7 @@ workshop schemas list
 ```
 
 The distribution ships `inventor.schema.json`, `inspection-result.schema.json`,
-and `stamp.schema.json`.
+`maker-mark.schema.json`, and `stamp.schema.json`.
 Schema v1 (`core_features`) and v2 (`foundation_features`) remain readable for
 migration; new scaffolds emit only schema v3.
 

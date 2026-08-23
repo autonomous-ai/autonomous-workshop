@@ -28,9 +28,15 @@ from inventor_workshop import (
     discover_schemas,
     inspect_pack,
     pack_artifact,
+    plan_pack,
     seal_artifact,
 )
-from inventor_workshop.errors import AmbiguousSendError, ContractError, TransitionError
+from inventor_workshop.errors import (
+    AmbiguousSendError,
+    ArtifactError,
+    ContractError,
+    TransitionError,
+)
 
 
 SHA = "a" * 64
@@ -151,6 +157,98 @@ class WorkshopApiTest(unittest.TestCase):
                     packed.artifact_sha256,
                 )
 
+    def test_pack_transition_requires_and_records_structured_pack(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "artifact"
+            root.mkdir()
+            (root / "thing.txt").write_text("one thing\n", encoding="utf-8")
+            packed = pack_artifact(root, Path(temporary) / "thing.pack.zip")
+            other_root = Path(temporary) / "other-artifact"
+            other_root.mkdir()
+            (other_root / "thing.txt").write_text("other thing\n", encoding="utf-8")
+            other = pack_artifact(other_root, Path(temporary) / "other.pack.zip")
+            workflow = Workflow(
+                WorkflowSpec(
+                    initial_stage="inspect",
+                    stages=("inspect", "pack"),
+                    edges={"inspect": ("pack",), "pack": ()},
+                    required_gates={},
+                    gate_policies={},
+                )
+            )
+
+            missing_clockwork = Clockwork(Path(temporary) / "missing.sqlite3")
+            workflow.register(
+                missing_clockwork,
+                "missing",
+                artifact_sha256=packed.artifact_sha256,
+            )
+            with self.assertRaisesRegex(TransitionError, "requires a validated PackedArtifact"):
+                workflow.advance(missing_clockwork, "missing", "pack", 0)
+
+            wrong_clockwork = Clockwork(Path(temporary) / "wrong.sqlite3")
+            workflow.register(
+                wrong_clockwork,
+                "wrong",
+                artifact_sha256=packed.artifact_sha256,
+            )
+            with self.assertRaisesRegex(TransitionError, "different artifact bytes"):
+                workflow.advance(
+                    wrong_clockwork,
+                    "wrong",
+                    "pack",
+                    0,
+                    packed=other,
+                )
+
+            clockwork = Clockwork(Path(temporary) / "clockwork.sqlite3")
+            workflow.register(
+                clockwork,
+                "thing",
+                artifact_sha256=packed.artifact_sha256,
+            )
+            product = workflow.advance(
+                clockwork,
+                "thing",
+                "pack",
+                0,
+                packed=packed,
+            )
+            self.assertEqual(product["stage"], "pack")
+            event = clockwork.events("thing")[-1]
+            self.assertEqual(
+                event["payload"],
+                {
+                    "note": "",
+                    "inspections": [],
+                    "pack_sha256": packed.pack_sha256,
+                },
+            )
+
+    def test_pack_plan_predicts_exact_bytes_and_explains_oversize(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "artifact"
+            root.mkdir()
+            (root / "small.txt").write_text("small\n", encoding="utf-8")
+            (root / "large.bin").write_bytes(b"x" * 1024)
+            destination = Path(temporary) / "thing.pack.zip"
+            plan = plan_pack(root, maximum_bytes=512)
+            self.assertFalse(plan.fits)
+            self.assertGreater(plan.over_by, 0)
+            self.assertEqual(plan.largest_files[0], ("large.bin", 1024))
+            with self.assertRaisesRegex(
+                ArtifactError,
+                "largest eligible files: large.bin .*Stage product-only files",
+            ):
+                pack_artifact(root, destination, maximum_bytes=512)
+            packed = pack_artifact(
+                root, destination, extra_excludes=("large.bin",)
+            )
+            fitted = plan_pack(root, extra_excludes=("large.bin",))
+            self.assertTrue(fitted.fits)
+            self.assertEqual(fitted.pack_bytes, packed.bytes)
+            self.assertEqual(fitted.artifact_sha256, packed.artifact_sha256)
+
     def test_schemas_ship_as_a_discoverable_contract(self):
         schemas = {path.name: path for path in discover_schemas()}
         self.assertEqual(
@@ -158,6 +256,7 @@ class WorkshopApiTest(unittest.TestCase):
             [
                 "inventor.schema.json",
                 "inspection-result.schema.json",
+                "maker-mark.schema.json",
                 "stamp.schema.json",
             ],
         )
@@ -166,6 +265,14 @@ class WorkshopApiTest(unittest.TestCase):
         )
         inspection_schema = json.loads(
             schemas["inspection-result.schema.json"].read_text(encoding="utf-8")
+        )
+        maker_mark_schema = json.loads(
+            schemas["maker-mark.schema.json"].read_text(encoding="utf-8")
+        )
+        self.assertEqual(maker_mark_schema["properties"]["schema_version"]["const"], 1)
+        self.assertEqual(
+            maker_mark_schema["properties"]["mode"]["enum"],
+            ["live", "fixture", "offline", "replay"],
         )
         stamp = Stamp(
             packet_sha256="a" * 64,

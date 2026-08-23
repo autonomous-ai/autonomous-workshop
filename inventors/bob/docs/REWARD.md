@@ -75,7 +75,7 @@ print+ship muscle; inventions are why Bob exists.
 | G3 degeneracy | L1 sim | no policy wins ≥85% from seat 1; greedy-vs-greedy not a forced draw; first-player win rate within 40–60% (2p) |
 | G4 novelty | L2 judge | no existing game a buyer would confuse it with — kill requires a **URL the judge actually opened** (BGG / marketplace); corpus nearest-neighbors named either way |
 | G5 safety | L0 + human | 14+ general audience only; child-targeted theme + small parts = hard refuse at spark (CPSIA class); no third-party IP |
-| G6 buildable | L1 build gate | when parts exist: watertight, bed-fit, part count ≤ bill, printable per deterministic checks |
+| G6 buildable | L1 build gate | when parts exist: each no-follow, bounded regular-file STL is watertight and fits the bed at some exact XY rectangle angle; part count ≤ bill; printable per deterministic checks |
 
 ## Score components (weights live in reward.py, not here — generators must not learn them)
 

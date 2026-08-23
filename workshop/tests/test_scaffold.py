@@ -80,6 +80,12 @@ class ScaffoldTest(unittest.TestCase):
                 text=True,
             )
             self.assertIn("made and inspected first-product -> ", made.stdout)
+            maker_mark = runtime / "runs/first-product/maker-mark.json"
+            self.assertTrue(maker_mark.is_file())
+            self.assertIn(
+                '"artifact_sha256"',
+                maker_mark.read_text(encoding="utf-8"),
+            )
             status = subprocess.run(
                 [sys.executable, "-m", "word_games", "status"],
                 cwd=str(Path(temporary) / "two"),

@@ -11,7 +11,16 @@ from .artifacts import (
     build_pack,
     build_publish_packet,
 )
-from .cad import CadReleaseBundle
+from .cad import (
+    CadReleaseBundle,
+    KernelBodyObservation,
+    StlInspectionLimits,
+    StlPathInspectionError,
+    StlTopologyReceipt,
+    fits_bed_envelope,
+    inspect_stl_path,
+    inspect_stl_topology,
+)
 from .clockwork import Clockwork, InspectionPolicy, Workflow, WorkflowSpec
 from .make import (
     CadBuildResult,
@@ -41,6 +50,7 @@ from .manifest import (
     discover_inventors,
     load_manifest,
 )
+from .maker_mark import MAKER_MARK_MODES, MakerMark
 from .models import (
     GateResult,
     InspectionResult,
@@ -49,7 +59,7 @@ from .models import (
     SendResult,
     Stamp,
 )
-from .pack import PackedArtifact, inspect_pack, pack_artifact, seal_artifact
+from .pack import PackPlan, PackedArtifact, inspect_pack, pack_artifact, plan_pack, seal_artifact
 from .ports import (
     AgentPort,
     CadPort,
@@ -82,9 +92,13 @@ __all__ = [
     "InspectionPolicy",
     "InspectionResult",
     "InventorManifest",
+    "KernelBodyObservation",
     "MakeResult",
+    "MAKER_MARK_MODES",
+    "MakerMark",
     "ModelDoor",
     "PackedArtifact",
+    "PackPlan",
     "SendResult",
     "SendDoor",
     "SendError",
@@ -94,6 +108,9 @@ __all__ = [
     "SkillFingerprint",
     "Stamp",
     "StampError",
+    "StlInspectionLimits",
+    "StlPathInspectionError",
+    "StlTopologyReceipt",
     "Taste",
     "WORKSHOP_FEATURES",
     "Wish",
@@ -105,10 +122,14 @@ __all__ = [
     "discover_skills",
     "discover_schemas",
     "fingerprint_skill_tree",
+    "fits_bed_envelope",
     "inspect_pack",
+    "inspect_stl_path",
+    "inspect_stl_topology",
     "load_manifest",
     "load_taste",
     "pack_artifact",
+    "plan_pack",
     "build_pack",
     "resolve_schemas_root",
     "seal_artifact",

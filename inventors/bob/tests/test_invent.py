@@ -49,6 +49,38 @@ _RULES_MD = (
     "the later seat.\n"
 )
 
+_TETRA_STL = """solid bob
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0
+      vertex 0 0 1
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 1
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 0 1 0
+      vertex 0 0 1
+    endloop
+  endfacet
+endsolid bob
+"""
+
 _FIXTURES = {
     "bob-ideator": json.dumps([
         {"title": "Lane War", "concept": "pick-a-lane blocking race with "
@@ -98,7 +130,8 @@ _FIXTURES = {
     # Mock builder cannot use tools, so it hands the loop a parts map.
     "bob-builder": json.dumps(
         {"parts": {"lane_token.py": "# CadQuery source for the weighted "
-                                    "lane token (fixture stand-in)"}}),
+                                    "lane token (fixture stand-in)",
+                   "lane_token.stl": _TETRA_STL}}),
     "bob-build-lens": json.dumps(
         {"verdict": "PASS", "survives_as_cardboard": False, "issues": []}),
 }
@@ -297,6 +330,14 @@ class InventionPipelineTest(_HomeCase):
         self.assertEqual(self._state(slug), "reviewed")
         build_gate = self._read(slug, "review", "build_gate.json")
         self.assertTrue(build_gate["build_pass"])
+        self.assertTrue(build_gate["deterministic_mesh_pass"])
+        self.assertTrue(build_gate["lens_pass"])
+        self.assertTrue(build_gate["mesh_checked"])
+        self.assertEqual(len(build_gate["mesh_receipts"]), 1)
+        self.assertEqual(
+            build_gate["mesh_receipts"][0]["receipt"]["status"], "passed")
+        self.assertEqual(
+            len(build_gate["mesh_receipts"][0]["receipt_sha256"]), 64)
         self.assertEqual(build_gate["idea_sha"], sha)
 
         self._tick_once("reviewed")
@@ -323,6 +364,65 @@ class InventionPipelineTest(_HomeCase):
         # publish/readback may make a game live.
         self.assertIsNone(queue.claim_next("test"))
         self.assertEqual(self._state(slug), "published")
+
+
+class BuildMeshGateTest(_HomeCase):
+    def test_lens_cannot_rescue_a_malformed_nonempty_mesh(self):
+        slug = "meshlooksreal"
+        queue.add_game(slug, "Mesh Looks Real", direction={
+            "family": "blocking-race", "players": "2", "weight": "light"})
+        for state in ("researched", "ruled", "rules_gated", "simulated",
+                      "tabled", "briefed", "built", "build_gated"):
+            queue.advance(slug, state, "test setup")
+        gdir = os.path.join(self.home, "games", slug)
+        os.makedirs(os.path.join(gdir, "parts"))
+        os.makedirs(os.path.join(gdir, "review"))
+        with open(os.path.join(gdir, "idea.json"), "w") as handle:
+            json.dump({"slug": slug, "title": "Mesh Looks Real"}, handle)
+        with open(os.path.join(gdir, "parts", "token.stl"), "wb") as handle:
+            handle.write(b"solid token\nfacet normal 0 0 0\nendsolid token\n")
+        # Even a planted PASS lens must not be consulted before deterministic
+        # topology succeeds.
+        self._plant("bob-build-lens", _FIXTURES["bob-build-lens"])
+
+        self._tick_once("build_gated")
+
+        record = self._read(slug, "review", "build_gate.json")
+        self.assertFalse(record["build_pass"])
+        self.assertFalse(record["deterministic_mesh_pass"])
+        self.assertFalse(record["lens_pass"])
+        self.assertEqual(record["mesh_receipts"][0]["receipt"]["status"], "held")
+        self.assertIn(
+            "missing_ascii_outer_loop",
+            record["mesh_receipts"][0]["receipt"]["hold_reasons"],
+        )
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlinks unavailable")
+    def test_build_gate_uses_workshop_no_follow_mesh_reader(self):
+        slug = "meshlink"
+        queue.add_game(slug, "Mesh Link", direction={
+            "family": "blocking-race", "players": "2", "weight": "light"})
+        for state in ("researched", "ruled", "rules_gated", "simulated",
+                      "tabled", "briefed", "built", "build_gated"):
+            queue.advance(slug, state, "test setup")
+        gdir = os.path.join(self.home, "games", slug)
+        parts = os.path.join(gdir, "parts")
+        os.makedirs(parts)
+        os.makedirs(os.path.join(gdir, "review"))
+        with open(os.path.join(gdir, "idea.json"), "w") as handle:
+            json.dump({"slug": slug, "title": "Mesh Link"}, handle)
+        target = os.path.join(gdir, "outside-mesh")
+        with open(target, "w") as handle:
+            handle.write(_TETRA_STL)
+        os.symlink(target, os.path.join(parts, "token.stl"))
+
+        self._tick_once("build_gated")
+
+        record = self._read(slug, "review", "build_gate.json")
+        self.assertFalse(record["deterministic_mesh_pass"])
+        self.assertEqual(
+            record["mesh_receipts"][0]["path_error"], "path_is_symlink")
+        self.assertIsNone(record["mesh_receipts"][0]["receipt"])
 
 
 class FailingSimParksTest(_HomeCase):

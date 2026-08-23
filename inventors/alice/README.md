@@ -67,7 +67,8 @@ all pass the pinned policy.
   durable reconciliation fences. The export preserves the exact accepted rules,
   source/CAD hashes, storefront idea, and complete project lineage. Peter-
   derived calibrated-fit, strict STL-topology, and fail-closed motion validators
-  independently check its output.
+  independently check its output. File-based topology checks use Workshop's
+  bounded, no-follow regular-file reader before binding receipts to exact bytes.
 - Dry-run, draft, and live effect modes with immutable inputs and durable
   operation keys. The first operational milestone is `draft`: Alice creates the
   complete private Shop Door product page, then stops for Dee's one-click review

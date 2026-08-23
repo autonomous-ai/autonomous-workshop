@@ -123,11 +123,27 @@ Migrate by:
 This closes the old gap where a valid-looking result could name the artifact
 hash without proving its evidence belonged to the sealed artifact.
 
+For a CAD result, hash its real evidence file normally and put that digest in
+`evidence_sha256`. Bind the release separately with
+`evidence["cad_release_sha256"] = cad_release.sha256`. The report file digest
+is not the release-bundle digest.
+
 ## Pack and Send migration
 
 Use `pack_artifact()` instead of inventor-local ZIP builders. It preserves the
 same deterministic and secret-scanning floors while returning canonical
 `PackedArtifact` names.
+
+Canonical callers must pass that object into the state change:
+
+```python
+workflow.advance(clockwork, product_id, "pack", revision, packed=packed)
+```
+
+Workflow revalidates the Pack, compares its artifact identity with the product
+accepted by Inspect, and records `pack_sha256` in the Clockwork event. The old
+`Pipeline` remains a compatibility layer; new `Workflow` paths do not accept a
+bare Pack hash for this transition.
 
 Use `Sender` with a qualified Door. Preserve one logical send intent across
 draft/live/reconciliation. Do not re-send after a timeout, unexpected status,

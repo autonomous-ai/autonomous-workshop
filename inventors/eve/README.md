@@ -38,7 +38,9 @@ queued -> novelty -> rules -> brief -> draft -> build -> panel -> playtest -> sh
 any nonterminal stage ---------------- stated terminal failure -----------> killed
 ```
 
-Deterministic novelty, rules, and print gates run in code. Agent stages must
+Deterministic novelty, rules, and print gates run in code. The print gate reads
+each STL through Workshop's bounded, no-follow regular-file inspector and tests
+arbitrary XY bounding-rectangle rotation against Eve's bed. Agent stages must
 write structured JSON into the game folder; free-form prose is not accepted as
 a stage result. The fun gate requires recorded LLM-table or human evidence, and
 the reward ledger is audited before a scheduled drive can advance work. A game

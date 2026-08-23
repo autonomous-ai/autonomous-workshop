@@ -191,13 +191,20 @@ class LifecycleTest(unittest.TestCase):
                 expected_owner_id="owner",
             )
 
-    def test_supplied_failed_gate_never_gets_ignored(self):
+    def test_supplied_optional_failure_is_retained_as_feedback(self):
         required = self.gate("geometry", True, ARTIFACT)
         safety = self.gate("safety", False, ARTIFACT)
-        with self.assertRaises(TransitionError):
-            self.pipeline.advance(
-                self.store, "game", "validated", 0, gates=(required, safety)
-            )
+        product = self.pipeline.advance(
+            self.store, "game", "validated", 0, gates=(required, safety)
+        )
+        self.assertEqual(product["stage"], "validated")
+        payload = self.store.events("game")[-1]["payload"]
+        self.assertEqual(payload["required_inspection_ids"], ["geometry"])
+        by_id = {
+            result["inspection_id"]: result
+            for result in payload["inspections"]
+        }
+        self.assertFalse(by_id["safety"]["passed"])
 
     def test_gate_policy_rejects_stale_and_future_evidence(self):
         self.spec = PipelineSpec(
@@ -369,7 +376,6 @@ class BoardGameLifecycleTest(unittest.TestCase):
                 if cad_release is None:
                     raise AssertionError("cad gate fixture needs a release bundle")
                 evidence = {"cad_release_sha256": cad_release.sha256}
-                evidence_sha = cad_release.sha256
             results.append(
                 GateResult.create(
                     name,
@@ -428,19 +434,26 @@ class BoardGameLifecycleTest(unittest.TestCase):
                 + (fake_cad,),
             )
         cad_release = self.cad_release(ARTIFACT)
+        validated_gates = self.gates(
+            ARTIFACT,
+            "rules-lint",
+            "cad",
+            "printability",
+            cad_release=cad_release,
+        )
+        cad_gate = next(gate for gate in validated_gates if gate.gate_id == "cad")
+        self.assertEqual(
+            cad_gate.evidence["cad_release_sha256"], cad_release.sha256
+        )
+        self.assertEqual(cad_gate.evidence_sha256, EVIDENCE)
+        self.assertNotEqual(cad_gate.evidence_sha256, cad_release.sha256)
         self.pipeline.advance(
             self.store,
             "game",
             "validated",
             4,
             ARTIFACT,
-            self.gates(
-                ARTIFACT,
-                "rules-lint",
-                "cad",
-                "printability",
-                cad_release=cad_release,
-            ),
+            validated_gates,
             cad_release=cad_release,
         )
         with self.assertRaises(TransitionError):

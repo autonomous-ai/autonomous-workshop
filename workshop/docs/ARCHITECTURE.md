@@ -66,6 +66,13 @@ The result is `MakeResult`: concept identity, CAD build, and artifact manifest.
 Its canonical CAD release is absent and its `inspections` tuple is empty until
 the legacy combined `create()` compatibility path is used.
 
+`MakerMark` sits beside that result and records how one candidate run was made:
+exact tool and version, live/fixture/offline/replay mode, authentication, Taste
+and input hashes, the exact output artifact hash, agent-call count, actual
+versus synthetic cost, timestamps, and limitations. Non-live modes can never authenticate or report actual cost;
+live mode can never report synthetic cost. The mark is provenance only—not an
+Inspection or a production-readiness claim.
+
 ### Inspect
 
 `Workbench.inspect(made)` invokes the CAD Inspection Door and domain Inspection
@@ -79,17 +86,33 @@ release. An `InspectionResult` names:
 - evidence path and evidence SHA-256;
 - UTC observation time.
 
-`Inspection` additionally proves that each evidence path and hash exists in
-the same `ArtifactManifest`. Canonical `Workflow.advance()` requires this
-bundle for any transition with required checks. Detached evaluator claims
+`Inspection` additionally proves that each evidence path and hash exists in a
+sealed evidence manifest. By default that is the product's own
+`ArtifactManifest`; a product-only Pack can instead use
+`Workbench.inspect(made, evidence_manifest=sealed_review_evidence)`. Part paths
+remain bound to the product manifest while review and validator paths resolve
+in the selected evidence manifest. Canonical `Workflow.advance()` requires
+this bundle for any transition with required checks. Detached evaluator claims
 cannot cross that boundary.
 
+Passed and failed results are both durable feedback. Only the ids required by
+the target stage license a transition and therefore must pass pinned policy and
+freshness checks. Optional failures stay in the event's `inspections` list;
+`required_inspection_ids` records which subset actually approved the move.
+
+A CAD result carries two independent hashes. Its `evidence_sha256` is the
+digest of the report file named by `evidence_ref`; that file must be present in
+the selected sealed evidence manifest. Its structured evidence also names
+`cad_release_sha256`, the digest of the validated `CadReleaseBundle`. Requiring
+those two hashes to equal would make an artifact-bound report circular, so the
+Workshop validates each identity at its own boundary.
+
 ```text
-artifact bytes ---- SHA-256 ----+
+product bytes ----- SHA-256 ----+
                                 |
 evidence file ----- SHA-256 ----+--> Inspection --> checked transition
                                 |
-ArtifactManifest inventory -----+
+evidence manifest - SHA-256 ----+
 ```
 
 ### Pack
@@ -98,6 +121,12 @@ ArtifactManifest inventory -----+
 tree. Ordering, timestamps, permissions, ZIP form, inventory, file limits, and
 secret patterns are checked. `inspect_pack()` reads the exact Pack bytes once
 and returns both Pack and artifact identities.
+
+The canonical state change is
+`Workflow.advance(..., "pack", ..., packed=packed)`. Workflow re-inspects the
+structured Pack, requires its artifact SHA-256 to equal the product already
+accepted by Inspect, and records its `pack_sha256` in Clockwork's hash-chained
+transition event. A caller-authored hash alone cannot cross this boundary.
 
 The Pack is backstage transport. It is never called the customer's Box.
 
@@ -166,6 +195,7 @@ inventors/<id>/
 workshop/
   src/inventor_workshop/
     make.py             Wish -> MakeResult
+    maker_mark.py       exact creation provenance
     inspection.py       artifact-bound evidence
     pack.py             reproducible exact bytes
     send.py             Doors, durable send, Stamps

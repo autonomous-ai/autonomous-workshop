@@ -11,7 +11,7 @@ Three gates:
                     mechanics or themes.
   * rules_gate    — mechanical completeness: a bill of pieces, complete rules,
                     and a declared complexity budget within limits.
-  * print_gate    — if meshes exist, bed-fit / volume / watertight checks
+  * print_gate    — if meshes exist, shared topology / volume / bed checks
                     aggregated per part; if no meshes are present yet it
                     reports "not measurable" and does not fail (so earlier
                     stages can advance).
@@ -21,6 +21,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Optional
+
+from inventor_workshop.cad import fits_bed_envelope, inspect_stl_path
 
 # Bed: Bambu P2S nominal 256mm, 5mm margin per side (matches vibe-ideas).
 BED_X_MM = 246.0
@@ -103,29 +105,43 @@ def rules_gate(game) -> GateResult:
 
 # --- print -----------------------------------------------------------------
 def _mesh_states(game_dir: Path) -> list[dict]:
-    """Return per-part mesh presence + simple geometric stats if meshes exist."""
+    """Return exact-byte Workshop topology receipts for every part mesh."""
     out = []
     build_dir = game_dir / "build"
     if not build_dir.exists():
         return out
     for stl in sorted(build_dir.glob("*.stl")):
-        # Parse the ASCII 'solid' header only for presence + rough size via
-        # file bytes; real watertight/volume checks need the org's cadcode.
-        stat = stl.stat()
+        try:
+            receipt = inspect_stl_path(stl, expected_shell_count=1)
+        except OSError as exc:
+            error_code = getattr(exc, "code", type(exc).__name__)
+            out.append({"file": stl.name, "status": "failed",
+                        "reasons": ["mesh could not be safely inspected: %s" % error_code],
+                        "receipt": None, "fits_bed": False})
+            continue
+        fits_bed = bool(
+            receipt.status == "passed"
+            and receipt.bounds_min_mm is not None
+            and receipt.bounds_max_mm is not None
+            and fits_bed_envelope(
+                receipt.bounds_min_mm,
+                receipt.bounds_max_mm,
+                (BED_X_MM, BED_Y_MM, BED_Z_MM),
+            )
+        )
         out.append({
             "file": stl.name,
-            "bytes": stat.st_size,
-            "present": True,
+            "status": receipt.status,
+            "reasons": list(receipt.failure_reasons + receipt.hold_reasons),
+            "receipt": receipt.to_dict(),
+            "receipt_sha256": receipt.receipt_sha256,
+            "fits_bed": fits_bed,
         })
     return out
 
 
 def print_gate(game, game_dir: Optional[Path] = None) -> GateResult:
-    """Deterministic bed/volume checks when meshes exist; else 'not measurable'.
-
-    Full watertight/slice checks live in the org's cadcode gate.py; this gate
-    is Eve's own layer and reports honestly when there is nothing to measure.
-    """
+    """Require every part to pass Workshop topology and bed-envelope checks."""
     if game_dir is None:
         # nothing to inspect -> not measurable, do not fail (early stages)
         return GateResult(False, [], measurable=False)
@@ -133,11 +149,20 @@ def print_gate(game, game_dir: Optional[Path] = None) -> GateResult:
     if not parts:
         return GateResult(False, ["no meshes in build/ — not measurable yet"], measurable=False)
     reasons = []
-    ok = True
-    for p in parts:
-        if p["bytes"] == 0:
-            ok = False
-            reasons.append(f"{p['file']} is empty")
-    if not ok:
+    for part in parts:
+        if part["status"] != "passed":
+            detail = ", ".join(part["reasons"]) or part["status"]
+            reasons.append(
+                "%s failed Workshop STL topology: %s" % (part["file"], detail)
+            )
+        elif not part["fits_bed"]:
+            reasons.append(
+                "%s exceeds Eve's %.0fx%.0fx%.0f mm bed envelope"
+                % (part["file"], BED_X_MM, BED_Y_MM, BED_Z_MM)
+            )
+    if reasons:
         return GateResult(False, reasons)
-    return GateResult(True, [f"{len(parts)} parts present with non-zero meshes"])
+    return GateResult(
+        True,
+        ["%d parts passed Workshop topology and bed-envelope checks" % len(parts)],
+    )

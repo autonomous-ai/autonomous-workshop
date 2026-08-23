@@ -133,6 +133,54 @@ Then call `WORKBENCH.inspect(made)` as a distinct stage. Inspect must bind its
 CAD release, results, and evidence files to the exact artifact bytes returned
 by Make.
 
+Every candidate loop should also leave a `maker-mark.json` beside its evidence.
+Build the mark from what the adapter actually observed, never from the mode the
+run merely requested:
+
+```python
+from inventor_workshop import MakerMark
+
+mark = MakerMark(
+    schema_version=1,
+    inventor_id="deduction-games",
+    run_id=run_id,
+    mode=observed_mode,              # live | fixture | offline | replay
+    tool=observed_tool,
+    tool_version=exact_tool_version,
+    authenticated=tool_session_was_authenticated,
+    taste_sha256=taste.sha256,
+    artifact_sha256=made.artifact_manifest.artifact_sha256,
+    input_sha256={"wish": wish_sha256},
+    agent_calls=observed_agent_calls,
+    actual_cost_micros=actual_cost_micros,
+    synthetic_cost_micros=synthetic_cost_micros,
+    started_at=started_at,
+    completed_at=completed_at,
+    limitations=tuple(observed_limitations),
+)
+(candidate_root / "maker-mark.json").write_text(
+    mark.to_json() + "\n", encoding="utf-8"
+)
+```
+
+Fixture, offline, and replay marks are always unauthenticated and report zero
+actual cost; their estimates belong in `synthetic_cost_micros`. They may still
+record many deterministic agent-role calls. Live marks report zero synthetic
+cost. Only `mark.may_claim_live_creation` supports saying an authenticated live
+agent tool made the candidate. It does not claim printability, beauty,
+inspection, physical testing, or production readiness.
+
+Before trusting a mark beside a selected product, call
+`mark.assert_artifact(selected_artifact_sha256)`. Moving a valid mark beside
+different output bytes must fail that check.
+
+For the CAD result, keep the report and release identities distinct:
+
+- `evidence_ref` and `evidence_sha256` identify a real report inside the
+  selected sealed evidence manifest;
+- `evidence["cad_release_sha256"]` identifies the validated
+  `CadReleaseBundle` carried by the `Inspection`.
+
 Workshop ships three versioned making skills:
 
 ```bash
@@ -147,9 +195,29 @@ workshop skills path
 Discovery does not equal adoption. Invoke the chosen skill from the runtime,
 pin its fingerprint, and test that boundary before declaring its feature.
 
-An `Inspection` rejects failed results, mismatched artifact hashes, missing
-evidence paths, and evidence hash drift. Missing or unmeasurable is a hold, not
-a pass.
+An `Inspection` preserves both passed and failed results as artifact-bound
+feedback. It rejects mismatched artifact hashes, missing evidence paths, and
+evidence hash drift. `Workflow` blocks a transition when a result required by
+that target is missing or failed; an optional failure remains visible in the
+event without vetoing the required passing set. Missing or unmeasurable is a
+hold, not a pass.
+
+When review evidence should not ship in the customer's Pack, seal it separately
+and pass the typed manifest through the normal boundary:
+
+```python
+evidence_manifest = seal_artifact(
+    inspection_root, created_at="content-addressed"
+)
+inspection = WORKBENCH.inspect(
+    made, evidence_manifest=evidence_manifest
+)
+```
+
+Every result still names the product artifact hash. Its evidence path and hash
+resolve in `evidence_manifest`; CAD part paths continue to resolve in the
+product manifest. Omitting the keyword keeps the single-manifest compatibility
+behavior.
 
 ## 6. Pack and Send only when needed
 
@@ -158,7 +226,18 @@ hand-build a ZIP in each inventor.
 
 ```python
 packed = pack_artifact(artifact_root, output_zip)
+WORKFLOW.advance(
+    clockwork,
+    product_id,
+    "pack",
+    expected_revision,
+    packed=packed,
+)
 ```
+
+The canonical Pack transition requires the structured `PackedArtifact`,
+revalidates its exact bytes and artifact identity, and records `pack_sha256`
+in Clockwork. Do not advance to Pack with a loose path or caller-authored hash.
 
 If the Wish is fulfilled directly, send through a `DeliveryDoor`. If the thing
 will be sold, use a `ShopDoor`. A shop is optional; it is not the main product
@@ -216,7 +295,8 @@ At minimum, prove:
 - `doctor` and `status` do not create state;
 - the offline Make works without credentials;
 - a changed Taste or artifact fails closed;
-- missing, failed, stale, or mismatched Inspection evidence cannot advance;
+- missing, failed, stale, or mismatched required Inspection evidence cannot
+  advance;
 - budgets and leases cannot be bypassed by another entry point;
 - Pack excludes credentials and mutable runtime state;
 - a Door timeout or malformed response cannot be treated as a Stamp;
