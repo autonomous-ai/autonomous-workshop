@@ -1,0 +1,68 @@
+{
+  "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
+  "move_cap": 1028,
+  "moves": [
+    {
+      "choice_index": 1,
+      "comment": "Looking at this game theory puzzle: I'm the Locksmith trying to prevent the lock from being opened. The key insights are:\n\n1. **Scoring**: If the lock never opens this round, I get +1 per surviving turn plus a +5 bonus (potential +8 total).",
+      "confused": false,
+      "legal_count": 792,
+      "seat": 1,
+      "turn": 0
+    }
+  ],
+  "n_players": 4,
+  "question": "Which rule or situation confused you most, if any?",
+  "seats": [
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "persona": "a cautious first-timer who plays what the rules literally say",
+      "seat": 0
+    },
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "persona": "an experienced boardgamer who compares everything to games they know",
+      "seat": 1
+    },
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "persona": "an impatient player who wants every turn to matter",
+      "seat": 2
+    },
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "persona": "a competitive player who hunts for the strongest line every turn",
+      "seat": 3
+    }
+  ],
+  "seed": 1,
+  "terminated": false,
+  "verdicts": {
+    "agency": [
+      false,
+      true,
+      false,
+      false
+    ],
+    "answers": [
+      "The game state contradicts itself\u2014it says \"the game just ended\" but also \"no turn has been taken this round yet\" and \"waiting on seat 1.\" More fundamentally, as a Cracker with no control over the lock's setup and facing pure guess-work agai",
+      "The clearest confusion is the Cracker's opening mechanic \u2014 the rules don't explain what action a Cracker takes on their turn or what combination/guess constitutes successfully opening the lock. Without knowing the challenge-and-feedback loo",
+      "The game ended with zero turns played. I couldn't evaluate the decisions or the role, so I can't judge whether the mechanism works\u2014I only see a ruleset, not how it feels at the table.",
+      "The game state contradicts itself\u2014it says both \"the game just ended\" and \"waiting on seat 1\"\u2014so I can't tell if something broke or if there's a rule I'm missing about when rounds terminate."
+    ],
+    "confusion_events": [
+      {
+        "seat": null,
+        "turn": 1,
+        "why": "turn budget spent at 1 moves \u2014 game unfinished; verdicts taken from the position reached"
+      }
+    ],
+    "would_play_again": [
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "winners": []
+}

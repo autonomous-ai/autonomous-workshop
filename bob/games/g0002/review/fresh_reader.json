@@ -1,11 +1,11 @@
 {
   "findings": [
-    "Section 6 worked example: prose says Dee's score of 3 comes from 'six failed turns paid 6, two re-pins cost 4' (6-4=2), but that contradicts both the stated final score (3) and the turn-by-turn table, which needs 7 income-paying turns (6 failed Probes at turns 1,2,4,5,6,7 plus the Hold at turn 3, per rule 4.3 which pays Locksmith income on a Hold too) minus 4 for two re-pins to reach 3. The recap sentence omits the Hold's income and doesn't add up on its own \u2014 a reader checking the arithmetic from prose alone gets the wrong number.",
-    "The rulebook's closing claim ('about 5 minutes to teach') looks optimistic given the actual rule density: a 6-step turn loop, 4 actions (Load has 5 steps, Probe has 5 steps plus 6 physical rulings, Re-pin has 4 steps), a 4-row scoring table with a separate bonus clause, and a 4-step tiebreak. A realistic first teach is closer to 12-15 minutes, which puts it past the 10-minute bar for a mid-weight game rather than comfortably under it."
+    "AMBIGUOUS \u2014 Section 5 Re-pin says \"you may not re-pin ... after the opening Probe,\" but Section 4 (turn structure) says the re-pin window opens after ANY failed Probe, including the round's first. \"Opening Probe\" is never defined: it could mean (a) an OPEN-result Probe (redundant \u2014 round is already over) or (b) literally the first Probe of the round (which would contradict Section 4 and isn't followed in the worked example, where re-pins first appear on turn 4, not turn 1, without saying turn 1 was ineligible). A table will stall the first time a Locksmith tries to re-pin after turn 1's failed Probe.",
+    "UNANSWERABLE \u2014 Setup step 4: \"The player who most recently locked themselves out ... takes the Locksmith seat. If nobody can remember, the tallest player takes it.\" No rule covers a genuine tie (two players both remember, same recency, or both equally can't recall a specific timeframe) \u2014 the fallback to \"tallest\" only triggers when NOBODY can remember, not when there's a tie among rememberers."
   ],
   "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
   "judge": "bob-fresh-reader",
-  "misses": 1,
+  "misses": 2,
   "questions": 12,
-  "teach_minutes": 14
+  "teach_minutes": 15
 }

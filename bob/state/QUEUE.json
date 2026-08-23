@@ -129,6 +129,10 @@
         "repair_used": 0,
         "rework_used": 0
       },
+      "crashes": {
+        "count": 2,
+        "state": "built"
+      },
       "created": "2026-08-22T14:31:29.804089+00:00",
       "direction": {
         "family": "asymmetric-machine",
@@ -137,9 +141,8 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-23T04:12:50.364477+00:00",
-        "holder": "invent",
-        "id": "c94dada8960244d5ab857f99d09ca543"
+        "expires": null,
+        "holder": null
       },
       "log": [
         {
@@ -249,6 +252,24 @@
           "from": "parked",
           "note": "human unpark: verdict budget is now reserved \u2014 turns can no longer eat the money the votes need",
           "to": "tabled"
+        },
+        {
+          "at": "2026-08-23T06:26:00.862487+00:00",
+          "from": "tabled",
+          "note": "tables pass: would-play-again 0.69",
+          "to": "briefed"
+        },
+        {
+          "at": "2026-08-23T06:43:33.307344+00:00",
+          "from": "briefed",
+          "note": "parts brief written; build next",
+          "to": "built"
+        },
+        {
+          "at": "2026-08-23T08:13:45.126832+00:00",
+          "from": "built",
+          "note": "parked: crashed 2 times in a row at built: AgentError: Agent 'bob-builder' overran its 45-minute wall ceiling and was killed (SIGTERM then SIGKILL after 5.0s grace). Retry once with a smaller task or a bigger ceiling \u2014 a ceiling that binds is the real constraint, not a safety limit.",
+          "to": "parked"
         }
       ],
       "reward": {
@@ -256,7 +277,7 @@
         "latest": 0.0
       },
       "slug": "g0002",
-      "state": "tabled",
+      "state": "parked",
       "table_retries": 0,
       "title": "Re-Pin"
     },
@@ -273,10 +294,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T16:49:32.455641+00:00",
@@ -475,6 +493,12 @@
           "from": "published",
           "note": "listing live \u2014 L4 owns market/human signal from here",
           "to": "live"
+        },
+        {
+          "at": "2026-08-23T16:00:00+00:00",
+          "from": "live",
+          "note": "correction: state said live but published.json has pushed=false and no platform id \u2014 no listing exists. Held at published until a real import returns an id.",
+          "to": "published"
         }
       ],
       "reward": {
@@ -509,7 +533,7 @@
         "latest": 81.47676240568458
       },
       "slug": "g0003",
-      "state": "live",
+      "state": "published",
       "title": "Clearance"
     },
     "g0004": {
@@ -570,7 +594,10 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
       "log": [
         {
           "at": "2026-08-22T18:51:21.446656+00:00",
@@ -625,6 +652,12 @@
           "from": "parked",
           "note": "human unpark: engine-writer crash was the session-limit window misclassified",
           "to": "simulated"
+        },
+        {
+          "at": "2026-08-23T08:41:17.863564+00:00",
+          "from": "simulated",
+          "note": "sim floors clear at every player count",
+          "to": "tabled"
         }
       ],
       "reward": {
@@ -632,7 +665,7 @@
         "latest": 0.0
       },
       "slug": "g0005",
-      "state": "simulated",
+      "state": "tabled",
       "title": "Kick"
     }
   },

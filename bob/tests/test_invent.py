@@ -272,7 +272,11 @@ class InventionPipelineTest(_HomeCase):
         self.assertGreaterEqual(publish_rows[0]["score"], 70.0)
 
         self._tick_once("published")
-        self.assertEqual(self._state(slug), "live")
+        # 2026-08-23: a DRY publish must NOT reach live. `live` claims a
+        # listing exists on the storefront; a dry run has no platform id,
+        # so the game holds at published (g0003 receipt: the queue said
+        # live while published.json carried pushed=false).
+        self.assertEqual(self._state(slug), "published")
 
 
 class FailingSimParksTest(_HomeCase):

@@ -1702,12 +1702,32 @@ def _handle_reviewed(step):
 # --- published: hand off to L4 ----------------------------------------------------
 
 def _handle_published(step):
-    """Published means the listing exists; going live is bookkeeping. The
-    hop exists (rather than publishing straight to live) so a failed flip
-    can never leave a game falsely marked live; L4 folds market and human
-    signal into the ledger from live onward."""
-    queue.advance(step.slug, "live",
-                  "listing live — L4 owns market/human signal from here")
+    """`live` requires PROOF a listing exists — never a handoff stub.
+
+    2026-08-23: g0003 sat at `live` with published.json carrying
+    `pushed: false` and a list of commands for a human to run. The queue
+    said the game was on the storefront; nothing had been uploaded. That is
+    the same species of lie as an absent lens verdict counting as a pass,
+    and the queue is the one artifact that must never tell one.
+
+    Proof is a design id or slug returned by the platform. A dry run, an
+    un-pushed box export, or a missing receipt HOLDS the game at
+    `published` — visible in status, waiting for the real import."""
+    slug = step.slug
+    receipt = _read_json_or_none(
+        os.path.join(_game_dir(slug), "published.json")) or {}
+    design_id = receipt.get("id") or receipt.get("design_id")
+    listing_slug = receipt.get("slug")
+    if receipt.get("dry_run") or (not design_id and not listing_slug):
+        _warn("%s: holding at published — receipt has no platform id "
+              "(dry_run=%s, pushed=%s). Publish for real, or run "
+              "`bob mark-published %s <design_id>` after a manual import."
+              % (slug, receipt.get("dry_run"), receipt.get("pushed"), slug))
+        queue.release(slug)
+        return
+    queue.advance(slug, "live",
+                  "listing live (design %s) — L4 owns market/human signal "
+                  "from here" % (design_id or listing_slug))
 
 
 # --- Dispatch ----------------------------------------------------------------------
