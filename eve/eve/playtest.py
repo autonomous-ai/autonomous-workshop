@@ -184,6 +184,17 @@ def _parse_choose(text: str):
     return int(m2.group(1)) if m2 else None
 
 
+_SESSION_LIMIT_MARKS = (
+    "session limit", "session_limit", "resets", "rate limit", "rate-limit",
+    "too many requests", "quota", "403", "429", "capacity",
+)
+
+
+def _is_session_limited(text: str) -> bool:
+    low = (text or "").lower()
+    return any(m in low for m in _SESSION_LIMIT_MARKS)
+
+
 def _seat_choose(g, me, rules, obs, moves, hist, agents_mod, break_):
     lines = [f"[{i}] {m}" for i, m in enumerate(moves)]
     prompt = (
@@ -217,8 +228,10 @@ def _play_live_game(g, eng, rules, players, seed, agents_mod, run_table) -> dict
         prompt = _seat_choose(g, me, rules, obs, moves, hist, agents_mod, break_)
         legit = False
         idx = None
+        replies = []
         for attempt in range(MAX_RETRIES + 1):
             text = _seat_reply(prompt, break_)
+            replies.append(text or "")
             idx = _parse_choose(text)
             if idx is not None and 0 <= idx < len(moves):
                 legit = True
@@ -227,9 +240,12 @@ def _play_live_game(g, eng, rules, players, seed, agents_mod, run_table) -> dict
                 prompt += ("\nThat was not a valid move index. Reply CHOOSE n "
                            "with one of the listed indices.")
         if not legit:
+            note = ("seat returned no valid move for consecutive turns" if not
+                    any(_is_session_limited(t) for t in replies)
+                    else "seat could not respond (Claude session limit; standby)")
             return {"game": g, "ended": False, "winner_seat": None,
                     "decisive": False, "ask_to_play_again": [False] * players,
-                    "legit": False, "note": "seat returned no valid move for consecutive turns"}
+                    "legit": False, "note": note}
         s = eng.apply(s, moves[idx])
         hist.append(f"r{guard}: seat{me}->{moves[idx]}")
     if not eng.is_over(s):
