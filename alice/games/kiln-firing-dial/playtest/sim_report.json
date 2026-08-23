@@ -1,0 +1,133 @@
+{
+  "by_players": {
+    "2": {
+      "branching": {
+        "forced_fraction": 0.12062499999999998,
+        "median": 5.0
+      },
+      "browne": {
+        "drama": 0.8711340206185567,
+        "duration": {
+          "cv": 0.0,
+          "false_start_share": 0.0,
+          "median": 16.0
+        },
+        "killer_scarcity": 0.8325,
+        "late_uncertainty": 0.6646666666666664,
+        "lead_changes_mean": 2.68
+      },
+      "gavel": {
+        "agency": 0.879375,
+        "balance": 0.9099999999999999,
+        "completion": 1.0,
+        "coverage": null,
+        "decisiveness": 0.97,
+        "harmonic_mean": 0.9374267151188402
+      },
+      "ladder": {
+        "baseline": 0.5,
+        "edges": {
+          "greedy>random": 0.275,
+          "lookahead1>greedy": 0.15000000000000002,
+          "lookahead1>random": 0.25
+        },
+        "matrix": {
+          "greedy": {
+            "lookahead1": 0.4666666666666667,
+            "random": 0.775
+          },
+          "lookahead1": {
+            "greedy": 0.65,
+            "random": 0.75
+          },
+          "random": {
+            "greedy": 0.375,
+            "lookahead1": 0.225
+          }
+        },
+        "mirror_seat_winrates": {
+          "greedy": [
+            0.495,
+            0.505
+          ],
+          "lookahead1": [
+            0.515,
+            0.485
+          ],
+          "random": [
+            0.455,
+            0.545
+          ]
+        },
+        "policies": [
+          "random",
+          "greedy",
+          "lookahead1"
+        ],
+        "runaway_max_seat_winrate": 0.545,
+        "strongest_rung": "lookahead1",
+        "strongest_seat_spread": 0.030000000000000027
+      },
+      "move_cap": 64,
+      "n_games": 200,
+      "n_players": 2,
+      "notes": {
+        "coverage": "skipped: engine contract exposes no board sites; None is excluded from the harmonic mean, never treated as a pass"
+      },
+      "probe_median_length": 16.0,
+      "seat_winrates_random": [
+        0.455,
+        0.545
+      ],
+      "seed": 7,
+      "thresholds": {
+        "MAX_FORCED_FRACTION": 0.25,
+        "MAX_RUNAWAY": 0.85,
+        "MAX_SEAT_EDGE": 0.1,
+        "MIN_COMPLETION": 0.98,
+        "MIN_DECISIVENESS": 0.9,
+        "MIN_MEDIAN_BRANCHING": 3.0,
+        "MIN_SKILL_EDGE": 0.15,
+        "MOVE_CAP_MULT": 4
+      },
+      "verdicts": {
+        "all_pass": true,
+        "balance_ok": true,
+        "branching_ok": true,
+        "completion_ok": true,
+        "decisiveness_ok": true,
+        "forced_ok": true,
+        "runaway_ok": true,
+        "seat_bias_ok": true,
+        "skill_ladder_ok": true
+      }
+    }
+  },
+  "engine_assumptions": [
+    "A band whose constraint has no legal socket for the active player falls back to any empty socket (prevents a deadlock; registered, not guessed).",
+    "Each player draws exactly two distinct objective tiles at setup; they rest hidden behind the player's screen until scoring. The two tiles are never the same shape.",
+    "Private objectives may overlap spatially; a player may satisfy both.",
+    "The 16-placement game always fills the tray with exactly 8 discs per player, so public disc totals are always equal and there is no material-parity imbalance.",
+    "The firing dial is public: its 16-band shuffle is fixed at setup and both players see every revealed band in order."
+  ],
+  "idea_sha": "c1652397cd95a539edb3f6d5f2170cf2f3cd00b1f41adfac516fa5dbdbbfa849",
+  "n_games": 200,
+  "seed": 7,
+  "slug": "kiln-firing-dial",
+  "thresholds": {
+    "MAX_FORCED_FRACTION": 0.25,
+    "MAX_RUNAWAY": 0.85,
+    "MAX_SEAT_EDGE": 0.1,
+    "MIN_COMPLETION": 0.98,
+    "MIN_DECISIVENESS": 0.9,
+    "MIN_MEDIAN_BRANCHING": 3.0,
+    "MIN_SKILL_EDGE": 0.15,
+    "MOVE_CAP_MULT": 4
+  },
+  "verdicts": {
+    "all_pass": true,
+    "per_players": {
+      "2": true
+    }
+  }
+}

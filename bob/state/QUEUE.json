@@ -137,9 +137,9 @@
         "weight": "light"
       },
       "lease": {
-        "expires": "2026-08-23T10:01:54.152496+00:00",
+        "expires": "2026-08-23T10:10:07.990024+00:00",
         "holder": "invent",
-        "id": "7335d4a71b734312ab7b65933346ba86"
+        "id": "a86f04e7412e4d71b323361d60f8a485"
       },
       "log": [
         {
@@ -297,7 +297,10 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": null,
+      "lease": {
+        "expires": null,
+        "holder": null
+      },
       "listing": {
         "design_id": "6a8aba7a57e4d5db73f56e54",
         "slug": "clearance",
@@ -519,6 +522,12 @@
           "from": "published",
           "note": "REAL import: design 6a8aba7a57e4d5db73f56e54, slug clearance, status draft, page curated (4 story blocks). Awaiting Dee one-click publish.",
           "to": "published"
+        },
+        {
+          "at": "2026-08-23T09:25:02.835908+00:00",
+          "from": "published",
+          "note": "listing live (design g0003) \u2014 L4 owns market/human signal from here",
+          "to": "live"
         }
       ],
       "reward": {
@@ -553,7 +562,7 @@
         "latest": 81.47676240568458
       },
       "slug": "g0003",
-      "state": "published",
+      "state": "live",
       "title": "Clearance"
     },
     "g0004": {
@@ -614,10 +623,7 @@
         "players": "2-4",
         "weight": "light"
       },
-      "lease": {
-        "expires": null,
-        "holder": null
-      },
+      "lease": null,
       "log": [
         {
           "at": "2026-08-22T18:51:21.446656+00:00",

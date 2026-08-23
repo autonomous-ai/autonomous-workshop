@@ -604,6 +604,16 @@ def build_shell():
         for sx in (-1, 1):
             body -= (Pos(sx * 26.0, 6.0, zc)
                      * Box(12.0, 26.0, 8.0, align=Align.CENTER))
+    # Skirt vents.  The foot plate top (y = -30), the body cylinder and each
+    # skirt web close a lens-shaped pocket x = 18.41..28, y = -30..-21.33 that
+    # runs the full 105 mm length: a sealed internal void (check_mesh read the
+    # shell as 3 connected shells).  Five windows per web open it to air, so the
+    # slicer sees one enclosed volume and the skirt still ties the foot to the
+    # body.  Verified by re-running check_mesh: 1 shell.
+    for zc in (20.0, 40.0, 60.0, 80.0, 100.0):
+        for sx in (-1, 1):
+            body -= (Pos(sx * 30.0, -25.6, zc)
+                     * Box(8.0, 6.0, 12.0, align=Align.CENTER))
     return body
 
 
@@ -668,7 +678,11 @@ KEY_LIFTER_Z = tuple(BLADE_LEN - x for x in CHAMBER_X)
 LANE_W = 2.80
 BAR_SPINE = (2.0, 5.0)                # blade-local y band of every slider spine
 LAND_Z = 1.80                         # only one land can be under a D6.20 pin
-ROD_CRANK_Y = 18.0
+ROD_CRANK_Y = 21.5                    # corridor ceiling.  Every rod's arm swings
+                                      # 8.4 in y under it and the cranks cross lanes
+                                      # just below it, so the ceiling has to clear
+                                      # the highest arm (land 1 + arm + two print
+                                      # gaps = 18.4) with the crank band on top.
 PIP = cadfits.print_in_place_gap("sliding", layer_height=0.20, material="PLA")
 BOW_L, BOW_W, BOW_H = 46.0, 40.0, 26.0
 KEY_LEN = BLADE_LEN + BOW_L           # 142.0
@@ -677,7 +691,6 @@ KEY_LEN = BLADE_LEN + BOW_L           # 142.0
 Z_FOOT = 104.0                      # every rod foot rides its staircase here,
                                       # in the bow, so a 28 mm staircase never has
                                       # to fit in front of chamber 1 (z = 24)
-ARM_Y = 8.0                           # rod arm sits this far above the spine band
 ROD_T = 3.00                          # rod thickness along z
 ROD_ARM_H = 3.00
 
@@ -691,34 +704,64 @@ ROD_LEN = (BLADE_H + LIFTER_H[0]) - _land_y(1)      # foot underside -> head top
 
 
 def _bar_origin(setting: int) -> float:
-    return Z_FOOT - SLIDER_PITCH * (setting - 1)
+    """Blade-local z of the bar's front end when it is set to ``setting``.
+
+    The staircase runs *tall-at-the-back*: land ``s`` sits at
+    ``o + PITCH * (RUNGS - s)``, so the land under the rod foot (always z =
+    Z_FOOT) is the tallest one the rod ever meets and every land in front of the
+    foot is at least one rung lower.  The rod's arm can then run flat at foot
+    height the whole way to its chamber.  The other ordering — the brief's
+    natural 1-at-the-front — puts lands up to 8.4 mm *above* the foot under that
+    arm, which is what the ARM_Y riser was trying and failing to jump.
+    """
+    return Z_FOOT - SLIDER_PITCH * (RUNGS - setting)
 
 
-def _slider_bar(i: int, setting: int = 1):
+BAR_Z0 = min(_bar_origin(s) for s in range(1, RUNGS + 1))    # 76.0, front-most land
+BAR_TAB_DZ = 33.0                     # thumb tab, bar-local; stays in the bow slot,
+                                      # and clear of the rod arm's rear end
+assert BAR_Z0 + BAR_TAB_DZ > BLADE_LEN + 6.0
+assert _bar_origin(RUNGS) + BAR_TAB_DZ + 2.5 <= BLADE_LEN + BOW_L
+
+
+def _slider_bar(i: int, setting: int = 1, seated: bool = False):
     """One stepped slider: 8 flat lands, 4.00 pitch, 28.0 travel, plus a thumb
-    tab that reads against the lane numerals engraved on the bow."""
+    tab that reads against the lane numerals engraved on the bow.
+
+    ``seated`` = resting on the corridor floor, which is where it lives in play
+    and where every land height in §4 is measured.  Unseated is the printed
+    pose: lifted one print-in-place gap so the slicer bridges under it instead
+    of welding it to the floor.
+    """
     x, o = LANE_X[i], _bar_origin(setting)
-    bar = (Pos(x, (BAR_SPINE[0] + BAR_SPINE[1]) / 2, o + (34.0 - 3.0) / 2)
-           * Box(LANE_W, BAR_SPINE[1] - BAR_SPINE[0], 37.0, align=Align.CENTER))
+    dy = 0.0 if seated else PIP["z"]
+    bar = (Pos(x, (BAR_SPINE[0] + BAR_SPINE[1]) / 2 + dy, o + 17.0)
+           * Box(LANE_W, BAR_SPINE[1] - BAR_SPINE[0], 40.0, align=Align.CENTER))
     for s in range(1, RUNGS + 1):
-        bar += (Pos(x, (BAR_SPINE[1] + _land_y(s)) / 2, o + SLIDER_PITCH * (s - 1))
+        bar += (Pos(x, (BAR_SPINE[1] + _land_y(s)) / 2 + dy,
+                    o + SLIDER_PITCH * (RUNGS - s))
                 * Box(LANE_W, _land_y(s) - BAR_SPINE[1], 3.0, align=Align.CENTER))
-    bar += (Pos(x, (BAR_SPINE[1] + BOW_H - 1.0) / 2, o + 31.0)
+    bar += (Pos(x, (BAR_SPINE[1] + BOW_H - 1.0) / 2 + dy, o + BAR_TAB_DZ)
             * Box(LANE_W, BOW_H - 1.0 - BAR_SPINE[1], 5.0, align=Align.CENTER))
     return bar
 
 
 def _lifter_rod(i: int, setting: int, seated: bool = False):
     """L-shaped: foot on the staircase in the bow, arm back to the chamber,
-    cranked post to the centreline, D4.80 head through the plug's aperture."""
+    cranked post to the centreline, D4.80 head through the plug's aperture.
+
+    Unseated the rod stands two gaps high — one because its bar is lifted off
+    the floor, one because it is lifted off its bar.  Both close on the first
+    drop, which is why every height in §4 is quoted seated.
+    """
     x, zc = LANE_X[i], KEY_LIFTER_Z[i]
-    y0 = _land_y(setting) + (0.0 if seated else PIP["z"])   # print-in-place gap
+    y0 = _land_y(setting) + (0.0 if seated else 2 * PIP["z"])
     w = LANE_W - 2 * PIP["xy"]
-    rod = (Pos(x, y0 + ROD_ARM_H / 2, Z_FOOT) * Box(w, ROD_ARM_H, 5.0, align=Align.CENTER))
-    rod += (Pos(x, y0 + ARM_Y + ROD_ARM_H / 2, (zc + Z_FOOT) / 2)
-            * Box(w, ROD_ARM_H, Z_FOOT - zc, align=Align.CENTER))
-    rod += (Pos(x, y0 + (ARM_Y + ROD_ARM_H) / 2, Z_FOOT - 2.5)
-            * Box(w, ARM_Y + ROD_ARM_H, 5.0, align=Align.CENTER))          # riser
+    # foot and arm are one flat bar at land height: nothing in front of the foot
+    # is ever taller than the land the foot is on (see _bar_origin).
+    z_rear = Z_FOOT + 1.5                      # 1.0 clear of the thumb tab at set 1
+    rod = (Pos(x, y0 + ROD_ARM_H / 2, (zc + z_rear) / 2)
+           * Box(w, ROD_ARM_H, z_rear - zc, align=Align.CENTER))
     rod += (Pos(x, (y0 + ROD_CRANK_Y) / 2, zc)
             * Box(w, ROD_CRANK_Y - y0, ROD_T, align=Align.CENTER))         # post
     if x:
@@ -745,17 +788,12 @@ def build_key(settings=(1, 2, 3, 4, 5), seated: bool = False):
               * Box(BOW_W, BLADE_H + 6.0, 3.0, align=Align.CENTER))     # shoulder stop
     g = PIP["xy"]
     for i, x in enumerate(LANE_X):
-        zlo = _bar_origin(RUNGS) - 5.0
-        # staircase + arm corridor, one lane wide, the full length it can reach
+        # staircase + arm corridor, one lane wide, from the front face of this
+        # lane's post (which is ROD_T thick about its chamber) to the bow end.
+        zlo = min(BAR_Z0 - 5.0, KEY_LIFTER_Z[i] - ROD_T / 2 - g)
         frame -= (Pos(x, (BAR_SPINE[0] + ROD_CRANK_Y) / 2, (zlo + KEY_LEN) / 2)
                   * Box(LANE_W + 2 * g, ROD_CRANK_Y - BAR_SPINE[0],
                         KEY_LEN - zlo, align=Align.CENTER))
-        if KEY_LIFTER_Z[i] < zlo:            # chambers behind the staircase are already
-                                         # inside the cut above; only the ones in
-                                         # front of it need the extra corridor
-            frame -= (Pos(x, (BAR_SPINE[0] + ROD_CRANK_Y) / 2, (KEY_LIFTER_Z[i] + zlo) / 2)
-                      * Box(LANE_W + 2 * g, ROD_CRANK_Y - BAR_SPINE[0],
-                            zlo - KEY_LIFTER_Z[i], align=Align.CENTER))
         # thumb slot through the bow roof
         frame -= (Pos(x, (ROD_CRANK_Y + BOW_H) / 2, (BLADE_LEN + 4.0 + KEY_LEN) / 2)
                   * Box(LANE_W + 2 * g, BOW_H - ROD_CRANK_Y,
@@ -767,28 +805,39 @@ def build_key(settings=(1, 2, 3, 4, 5), seated: bool = False):
         frame -= (Rot(-90, 0, 0) * Pos(0, -KEY_LIFTER_Z[i], ROD_CRANK_Y)
                   * Cylinder(LIFTER_D / 2 + g, BLADE_H,
                              align=(Align.CENTER, Align.CENTER, Align.MIN)))
-        # 8 detent notches in the corridor floor, 4.00 pitch
+        # 8 witness grooves in the corridor floor, 4.00 pitch: the bar's front
+        # edge reads against them.  [DEV] not a sprung click - see DEVIATIONS.
         for s in range(1, RUNGS + 1):
-            frame -= (Pos(x, BAR_SPINE[0], Z_FOOT + SLIDER_PITCH * (s - 1) - 28.0)
+            frame -= (Pos(x, BAR_SPINE[0], _bar_origin(s))
                       * Box(LANE_W, 0.8, 1.2, align=Align.CENTER))
-        # lane numerals 1-8 on the bow roof, readable across the table
+        # lane numerals 1-8 on the bow roof beside the thumb tab, readable
+        # across the table
         pl = Plane(origin=(0, BOW_H, 0), x_dir=(1, 0, 0), z_dir=(0, 1, 0))
         for s in range(1, RUNGS + 1):
             frame -= extrude(pl * Pos(x + LANE_W / 2 + 1.7,
-                                      -(Z_FOOT + SLIDER_PITCH * (s - 1) - 28.0 + 3.0), 0)
+                                      -(_bar_origin(s) + BAR_TAB_DZ), 0)
                              * Text(str(s), font_size=2.6,
                                     align=(Align.CENTER, Align.CENTER)), -0.5)
     return (frame,
-            [_slider_bar(i, settings[i]) for i in range(N_CHAMBERS)],
+            [_slider_bar(i, settings[i], seated) for i in range(N_CHAMBERS)],
             [_lifter_rod(i, settings[i], seated) for i in range(N_CHAMBERS)])
 
 
-def print_key(settings=(1, 2, 3, 4, 5), seated: bool = False):
+def key_shape(settings=(1, 2, 3, 4, 5), seated: bool = False):
+    """The whole key in the blade-local frame, as one compound of 11 bodies."""
     frame, bars, rods = build_key(settings, seated)
     out = frame
     for b in bars + rods:
         out += b
     return out
+
+
+def print_key(settings=(RUNGS,) * N_CHAMBERS, seated: bool = False):
+    """Blade flat (brief §3): blade-local +Y becomes the print Z, so every land
+    is a horizontal face set by a layer count and the print-in-place gaps are
+    vertical.  Printed with every slider at 8, the setting whose lifters stand
+    lowest, so the plate height is the bow and not a raised lifter."""
+    return bed(Rot(90, 0, 0) * key_shape(settings, seated))
 
 
 # ---------------------------------------------------------------------------
@@ -1134,7 +1183,7 @@ def asm_key(settings=(1, 2, 3, 4, 5)):
     """Key fully home: shoulder on the plug's front face, blade on the keyway
     floor.  The blade is built tip-first, so it goes in mirrored about z."""
     return (TO_ASM * Pos(0, KEYWAY_FLOOR_Y, BLADE_LEN) * Rot(0, 180, 0)
-            * print_key(settings, seated=True))
+            * key_shape(settings, seated=True))
 
 
 # ---------------------------------------------------------------------------

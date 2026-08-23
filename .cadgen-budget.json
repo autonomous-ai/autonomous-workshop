@@ -1,7 +1,121 @@
 {
-  "startedAt": 1787476657.606005,
+  "startedAt": 1787477144.5054662,
   "totalSeconds": 1800,
   "measure": "wall",
   "label": null,
-  "steps": []
+  "steps": [
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/check_fit",
+        ".",
+        "--bed",
+        "251x251x251"
+      ],
+      "seconds": 0.068,
+      "cap": 720.0,
+      "exit": 2,
+      "outcome": "error"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/check_fit",
+        ".",
+        "--bed",
+        "251",
+        "251"
+      ],
+      "seconds": 42.925,
+      "cap": 720.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/inspect",
+        "validate",
+        "repin.step"
+      ],
+      "seconds": 77.569,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/inspect",
+        "interfere",
+        "repin.step"
+      ],
+      "seconds": 54.425,
+      "cap": 480.0,
+      "exit": 2,
+      "outcome": "error"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/check_mesh",
+        "part_board_01.stl",
+        "part_cap_01.stl",
+        "part_case_01.stl",
+        "part_gp1_plug.stl",
+        "part_gp1_shell.stl",
+        "part_hood_01.stl",
+        "part_key_01.stl",
+        "part_latch_01.stl",
+        "part_lever_01.stl",
+        "part_lid_01.stl",
+        "part_peg_01.stl",
+        "part_pin_r1.stl",
+        "part_pin_r2.stl",
+        "part_pin_r3.stl",
+        "part_pin_r4.stl",
+        "part_pin_r5.stl",
+        "part_pin_r6.stl",
+        "part_pin_r7.stl",
+        "part_pin_r8.stl",
+        "part_plug_01.stl",
+        "part_shell_01.stl",
+        "part_slug_01.stl",
+        "part_tray_01.stl",
+        "assembled.stl",
+        "--bed",
+        "220x220x250"
+      ],
+      "seconds": 0.127,
+      "cap": 600.0,
+      "exit": 2,
+      "outcome": "error"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/gen",
+        "part_shell_01.step.py",
+        "repin.step.py",
+        "--write"
+      ],
+      "seconds": 61.039,
+      "cap": 600.0,
+      "exit": 0,
+      "outcome": "ok"
+    },
+    {
+      "argv": [
+        "/Users/d/code/inventors/bob/.venv-cad/bin/python",
+        "../../../skills/cad/scripts/export",
+        "part_shell_01.step",
+        "--stl",
+        "part_shell_01.stl"
+      ],
+      "seconds": 2.459,
+      "cap": 480.0,
+      "exit": 0,
+      "outcome": "ok"
+    }
+  ]
 }

@@ -1733,8 +1733,25 @@ def _handle_published(step):
     slug = step.slug
     receipt = _read_json_or_none(
         os.path.join(_game_dir(slug), "published.json")) or {}
-    design_id = receipt.get("id") or receipt.get("design_id")
-    listing_slug = receipt.get("slug")
+    # The import response nests the object under "design"; older receipts
+    # (box handoff, dry run) are flat. Read both.
+    design = receipt.get("design") if isinstance(
+        receipt.get("design"), dict) else receipt
+    design_id = design.get("id") or design.get("design_id")
+    listing_slug = design.get("slug")
+    status = design.get("status")
+    if design_id and status == "draft":
+        # A real draft exists and only a human can flip it public. Holding
+        # it in the schedulable set makes it win the closest-to-done
+        # priority race every tick and STARVE every game behind it
+        # (2026-08-23: Clearance blocked Re-Pin and Kick this way). Park is
+        # the honest place for "done until a person acts" — it shows in
+        # status and costs no tick.
+        queue.park(slug, "DRAFT LIVE on the Factory (design %s, slug %s) — "
+                         "awaiting the owner's publish click in admindash. "
+                         "`bob mark-published %s <id>` after the flip."
+                   % (design_id, listing_slug, slug))
+        return
     if receipt.get("dry_run") or (not design_id and not listing_slug):
         _warn("%s: holding at published — receipt has no platform id "
               "(dry_run=%s, pushed=%s). Publish for real, or run "

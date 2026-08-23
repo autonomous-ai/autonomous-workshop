@@ -1,218 +1,330 @@
 {
-  "2026-08-22": {
-    "cost_usd": 3.239454,
-    "steps": [
-      {
-        "cost_usd": 1.153921,
-        "model": "claude-opus-5",
-        "name": "ideator",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 393.97
-      },
-      {
-        "cost_usd": 2.085533,
-        "model": "claude-opus-5",
-        "name": "ideator#2",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 789.932
-      }
-    ],
-    "ticks": 0
-  },
-  "2026-08-23": {
-    "cost_usd": 23.320161,
-    "steps": [
-      {
-        "cost_usd": 2.084543,
-        "model": "claude-opus-5",
-        "name": "brief",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 685.082
-      },
-      {
-        "cost_usd": 0.131327,
-        "model": "claude-sonnet-5",
-        "name": "reader",
-        "num_turns": 5,
-        "subtype": "success",
-        "wall_s": 32.745
-      },
-      {
-        "cost_usd": 0.0,
-        "model": "claude-opus-5",
-        "name": "builder",
-        "num_turns": null,
-        "subtype": "killed_overrun",
-        "wall_s": 900.5
-      },
-      {
-        "cost_usd": 4.152387999999999,
-        "model": "claude-opus-5",
-        "name": "builder#2",
-        "num_turns": 38,
-        "subtype": "success",
-        "wall_s": 1021.017
-      },
-      {
-        "cost_usd": 1.3507165,
-        "model": "claude-opus-5",
-        "name": "panel",
-        "num_turns": 11,
-        "subtype": "success",
-        "wall_s": 272.893
-      },
-      {
-        "cost_usd": 0.0,
-        "model": "claude-opus-5",
-        "name": "ideator",
-        "num_turns": 1,
-        "subtype": "success",
-        "wall_s": 2.022
-      },
-      {
-        "cost_usd": 1.1152055,
-        "model": "claude-opus-5",
-        "name": "ideator#2",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 371.211
-      },
-      {
-        "cost_usd": 1.7578240000000003,
-        "model": "claude-opus-5",
-        "name": "brief#2",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 582.25
-      },
-      {
-        "cost_usd": 0.8227700000000001,
-        "model": "claude-opus-5",
-        "name": "ideator#3",
-        "num_turns": 7,
-        "subtype": "success",
-        "wall_s": 246.834
-      },
-      {
-        "cost_usd": 7.953907,
-        "model": "claude-opus-5",
-        "name": "builder#3",
-        "num_turns": 41,
-        "subtype": "error_max_turns",
-        "wall_s": 2581.158
-      },
-      {
-        "cost_usd": 0.7759975000000001,
-        "model": "claude-opus-5",
-        "name": "builder#4",
-        "num_turns": 13,
-        "subtype": "success",
-        "wall_s": 265.885
-      },
-      {
-        "cost_usd": 1.0802619999999998,
-        "model": "claude-opus-5",
-        "name": "panel#2",
-        "num_turns": 9,
-        "subtype": "success",
-        "wall_s": 206.069
-      },
-      {
-        "cost_usd": 0.7575498000000002,
-        "model": "claude-sonnet-5",
-        "name": "playtest",
-        "num_turns": 22,
-        "subtype": "success",
-        "wall_s": 580.002
-      },
-      {
-        "cost_usd": 0.22255180000000002,
-        "model": "claude-sonnet-5",
-        "name": "playtest#2",
-        "num_turns": 10,
-        "subtype": "success",
-        "wall_s": 239.568
-      },
-      {
-        "cost_usd": 0.14978840000000002,
-        "model": "claude-sonnet-5",
-        "name": "playtest#3",
-        "num_turns": 5,
-        "subtype": "success",
-        "wall_s": 80.36
-      },
-      {
-        "cost_usd": 0.1727596,
-        "model": "claude-sonnet-5",
-        "name": "playtest#4",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 88.274
-      },
-      {
-        "cost_usd": 0.1359248,
-        "model": "claude-sonnet-5",
-        "name": "playtest#5",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 70.386
-      },
-      {
-        "cost_usd": 0.16040760000000004,
-        "model": "claude-sonnet-5",
-        "name": "playtest#6",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 82.851
-      },
-      {
-        "cost_usd": 0.0881228,
-        "model": "claude-sonnet-5",
-        "name": "playtest#7",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 69.57
-      },
-      {
-        "cost_usd": 0.1127368,
-        "model": "claude-sonnet-5",
-        "name": "playtest#8",
-        "num_turns": 5,
-        "subtype": "success",
-        "wall_s": 91.03
-      },
-      {
-        "cost_usd": 0.1353646,
-        "model": "claude-sonnet-5",
-        "name": "playtest#9",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 73.765
-      },
-      {
-        "cost_usd": 0.0,
-        "model": "claude-opus-5",
-        "name": "brief#3",
-        "num_turns": null,
-        "subtype": "killed_overrun",
-        "wall_s": 900.656
-      },
-      {
-        "cost_usd": 0.1600134,
-        "model": "claude-sonnet-5",
-        "name": "playtest#10",
-        "num_turns": 6,
-        "subtype": "success",
-        "wall_s": 64.082
-      }
-    ],
-    "ticks": 0
-  },
-  "heartbeat": "2026-08-23T09:19:41+00:00",
-  "last_books_study": "2026-08-23T00:19:43+00:00",
-  "last_improve": "2026-08-23T00:24:56+00:00",
-  "last_ship_check": "2026-08-23T01:13:04+00:00"
+ "2026-08-22": {
+  "cost_usd": 3.239454,
+  "steps": [
+   {
+    "cost_usd": 1.153921,
+    "model": "claude-opus-5",
+    "name": "ideator",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 393.97
+   },
+   {
+    "cost_usd": 2.085533,
+    "model": "claude-opus-5",
+    "name": "ideator#2",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 789.932
+   }
+  ],
+  "ticks": 0
+ },
+ "2026-08-23": {
+  "cost_usd": 24.741718,
+  "steps": [
+   {
+    "cost_usd": 2.084543,
+    "model": "claude-opus-5",
+    "name": "brief",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 685.082
+   },
+   {
+    "cost_usd": 0.131327,
+    "model": "claude-sonnet-5",
+    "name": "reader",
+    "num_turns": 5,
+    "subtype": "success",
+    "wall_s": 32.745
+   },
+   {
+    "cost_usd": 0.0,
+    "model": "claude-opus-5",
+    "name": "builder",
+    "num_turns": null,
+    "subtype": "killed_overrun",
+    "wall_s": 900.5
+   },
+   {
+    "cost_usd": 4.152387999999999,
+    "model": "claude-opus-5",
+    "name": "builder#2",
+    "num_turns": 38,
+    "subtype": "success",
+    "wall_s": 1021.017
+   },
+   {
+    "cost_usd": 1.3507165,
+    "model": "claude-opus-5",
+    "name": "panel",
+    "num_turns": 11,
+    "subtype": "success",
+    "wall_s": 272.893
+   },
+   {
+    "cost_usd": 0.0,
+    "model": "claude-opus-5",
+    "name": "ideator",
+    "num_turns": 1,
+    "subtype": "success",
+    "wall_s": 2.022
+   },
+   {
+    "cost_usd": 1.1152055,
+    "model": "claude-opus-5",
+    "name": "ideator#2",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 371.211
+   },
+   {
+    "cost_usd": 1.7578240000000003,
+    "model": "claude-opus-5",
+    "name": "brief#2",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 582.25
+   },
+   {
+    "cost_usd": 0.8227700000000001,
+    "model": "claude-opus-5",
+    "name": "ideator#3",
+    "num_turns": 7,
+    "subtype": "success",
+    "wall_s": 246.834
+   },
+   {
+    "cost_usd": 7.953907,
+    "model": "claude-opus-5",
+    "name": "builder#3",
+    "num_turns": 41,
+    "subtype": "error_max_turns",
+    "wall_s": 2581.158
+   },
+   {
+    "cost_usd": 0.7759975000000001,
+    "model": "claude-opus-5",
+    "name": "builder#4",
+    "num_turns": 13,
+    "subtype": "success",
+    "wall_s": 265.885
+   },
+   {
+    "cost_usd": 1.0802619999999998,
+    "model": "claude-opus-5",
+    "name": "panel#2",
+    "num_turns": 9,
+    "subtype": "success",
+    "wall_s": 206.069
+   },
+   {
+    "cost_usd": 0.7575498000000002,
+    "model": "claude-sonnet-5",
+    "name": "playtest",
+    "num_turns": 22,
+    "subtype": "success",
+    "wall_s": 580.002
+   },
+   {
+    "cost_usd": 0.22255180000000002,
+    "model": "claude-sonnet-5",
+    "name": "playtest#2",
+    "num_turns": 10,
+    "subtype": "success",
+    "wall_s": 239.568
+   },
+   {
+    "cost_usd": 0.14978840000000002,
+    "model": "claude-sonnet-5",
+    "name": "playtest#3",
+    "num_turns": 5,
+    "subtype": "success",
+    "wall_s": 80.36
+   },
+   {
+    "cost_usd": 0.1727596,
+    "model": "claude-sonnet-5",
+    "name": "playtest#4",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 88.274
+   },
+   {
+    "cost_usd": 0.1359248,
+    "model": "claude-sonnet-5",
+    "name": "playtest#5",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 70.386
+   },
+   {
+    "cost_usd": 0.16040760000000004,
+    "model": "claude-sonnet-5",
+    "name": "playtest#6",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 82.851
+   },
+   {
+    "cost_usd": 0.0881228,
+    "model": "claude-sonnet-5",
+    "name": "playtest#7",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 69.57
+   },
+   {
+    "cost_usd": 0.1127368,
+    "model": "claude-sonnet-5",
+    "name": "playtest#8",
+    "num_turns": 5,
+    "subtype": "success",
+    "wall_s": 91.03
+   },
+   {
+    "cost_usd": 0.1353646,
+    "model": "claude-sonnet-5",
+    "name": "playtest#9",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 73.765
+   },
+   {
+    "cost_usd": 0.0,
+    "model": "claude-opus-5",
+    "name": "brief#3",
+    "num_turns": null,
+    "subtype": "killed_overrun",
+    "wall_s": 900.656
+   },
+   {
+    "cost_usd": 0.1600134,
+    "model": "claude-sonnet-5",
+    "name": "playtest#10",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 64.082
+   },
+   {
+    "cost_usd": 0.16433299999999998,
+    "model": "claude-sonnet-5",
+    "name": "playtest#11",
+    "num_turns": 6,
+    "subtype": "success",
+    "wall_s": 158.182
+   },
+   {
+    "name": "playtest#12",
+    "model": "claude-sonnet-5",
+    "wall_s": 64.538,
+    "num_turns": 6,
+    "cost_usd": 0.12482459999999998,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat",
+    "model": "claude-sonnet-5",
+    "wall_s": 11.446,
+    "num_turns": 1,
+    "cost_usd": 0.0801484,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#2",
+    "model": "claude-sonnet-5",
+    "wall_s": 27.66,
+    "num_turns": 2,
+    "cost_usd": 0.11832419999999999,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#3",
+    "model": "claude-sonnet-5",
+    "wall_s": 30.304,
+    "num_turns": 1,
+    "cost_usd": 0.0742682,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#4",
+    "model": "claude-sonnet-5",
+    "wall_s": 35.488,
+    "num_turns": 1,
+    "cost_usd": 0.10211440000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#5",
+    "model": "claude-sonnet-5",
+    "wall_s": 39.03,
+    "num_turns": 1,
+    "cost_usd": 0.10989639999999999,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#6",
+    "model": "claude-sonnet-5",
+    "wall_s": 37.618,
+    "num_turns": 1,
+    "cost_usd": 0.0842746,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#7",
+    "model": "claude-sonnet-5",
+    "wall_s": 58.622,
+    "num_turns": 1,
+    "cost_usd": 0.10390460000000001,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#8",
+    "model": "claude-sonnet-5",
+    "wall_s": 42.528,
+    "num_turns": 1,
+    "cost_usd": 0.11000639999999999,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#9",
+    "model": "claude-sonnet-5",
+    "wall_s": 40.098,
+    "num_turns": 1,
+    "cost_usd": 0.0831018,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#10",
+    "model": "claude-sonnet-5",
+    "wall_s": 38.049,
+    "num_turns": 1,
+    "cost_usd": 0.0812378,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#11",
+    "model": "claude-sonnet-5",
+    "wall_s": 37.597,
+    "num_turns": 2,
+    "cost_usd": 0.0966394,
+    "subtype": "success"
+   },
+   {
+    "name": "table-seat#12",
+    "model": "claude-sonnet-5",
+    "wall_s": 46.339,
+    "num_turns": 1,
+    "cost_usd": 0.0884838,
+    "subtype": "success"
+   }
+  ],
+  "ticks": 0
+ },
+ "heartbeat": "2026-08-23T09:30:29+00:00",
+ "last_books_study": "2026-08-23T00:19:43+00:00",
+ "last_improve": "2026-08-23T00:24:56+00:00",
+ "last_ship_check": "2026-08-23T01:13:04+00:00"
 }
