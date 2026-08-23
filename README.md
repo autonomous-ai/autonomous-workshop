@@ -1,10 +1,10 @@
-# Autonomous inventors
+# Inventor Foundation
 
-This is the team monorepo for autonomous AI inventors. It has two main surfaces:
-[`inventors/`](inventors/) contains one self-contained folder per inventor, and
-[`foundation/`](foundation/) contains the shared library they are built on.
-Niche, personality, taste, prompts, mechanisms, and reward hypotheses stay with
-the inventor.
+This repository is the architecture and working blueprint for building
+autonomous AI inventors. [`foundation/`](foundation/) is the reusable paved
+road; [`inventors/`](inventors/) contains working implementations and reference
+designs built on top. Niche, personality, taste, prompts, mechanisms, and reward
+hypotheses stay with each inventor.
 
 ```text
 inventors/
@@ -14,10 +14,131 @@ foundation/
   src/  skills/  schemas/  docs/  tests/
 ```
 
-Existing launchd deployments must be redeployed from the inventor's `ops/`
-runbook after this move because rendered service files contain absolute checkout
-paths. External cron or operator configuration must likewise point into
-`inventors/<id>/`.
+## Architecture blueprint
+
+Inventors depend on Foundation. Foundation never imports an inventor.
+
+```text
++--------------------------- inventors/ -----------------------------+
+|                                                                    |
+|  alice/        books + history + reward policy                     |
+|  bob/          literature + simulation + table play                |
+|  eve/          great-books loop + journal + concepts               |
+|  text2cad/     registered upstream snapshot                        |
+|  text2game/    registered upstream snapshot                        |
+|  vibe-ideas/   registered upstream snapshot                        |
+|  <new>/        TASTE + niche logic + prompts + evaluators           |
+|                                                                    |
+|  Each inventor owns its identity, taste, creative process,         |
+|  domain gates, adapters, tests, and reward hypothesis.             |
++--------------------------------+-----------------------------------+
+                                 |
+                                 | imports and uses
+                                 v
++-------------------------- foundation/ -----------------------------+
+|                                                                    |
+|  Registry + scaffolder                                             |
+|       |                                                            |
+|       v                                                            |
+|  Lifecycle + state  <----- narrow ports for agents, CAD, evals,    |
+|       |                    publishing, and fulfillment              |
+|       v                                                            |
+|  Artifact identity + evidence gates <----- creation/CAD skills      |
+|       |                                                            |
+|       v                                                            |
+|  Publication outbox + exact receipts + effect fencing              |
+|                                                                    |
+|  Foundation owns shared invariants. It never imports an inventor.  |
++------------+----------------------+----------------------+----------+
+             |                      |                      |
+             v                      v                      v
+      model providers       CAD/slicer/physical       Panda/Factory
+                                test systems             and Store
+```
+
+### Build a new inventor on top
+
+```text
+inventor-foundation new deduction-games --name Ada --niche ... --root inventors
+                                      |
+                                      v
+                           +--------------------+
+                           | atomic scaffolder  |
+                           +---------+----------+
+                                     |
+                                     v
++---------------- inventors/deduction-games/ ----------------+
+|                                                            |
+|  inventor.json       identity, niche, capabilities          |
+|  TASTE.md            human-owned creative constitution      |
+|       |                                                    |
+|       v                                                    |
+|  prompts + roles + generators + reward hypothesis           |
+|       |                                                    |
+|       v                                                    |
+|  workflow.py         default or stricter PipelineSpec       |
+|       ^                                                    |
+|       |                                                    |
+|  adapters/           models, CAD, evaluation, publishing    |
+|  tests/              golden artifacts + behavior tests      |
+|  CLI                 init, create, status                   |
+|  .runtime/           stable local state; never committed    |
++----------------------------+-------------------------------+
+                             |
+                             | imports
+                             v
++---------------------- Inventor Foundation -----------------+
+|  Pipeline + policy floors                                  |
+|       +--> InventorStore: revisions, leases, budgets        |
+|       +--> artifact and gate contracts                      |
+|       +--> CAD release bundles                              |
+|       +--> publication outbox and receipts                  |
+|       `--> narrow adapter ports                             |
+|                                                            |
+|  Inventor may add stages or stricter gates.                 |
+|  Inventor may not weaken Foundation safety floors.          |
++------------------------------------------------------------+
+```
+
+### Shared invention-to-publication path
+
+```text
+[Idea] -> [Research] -> [Rules] -> [Simulation] -> [CAD/product build]
+                                                        |
+                                                        v
+                                      [Content-addressed artifact]
+                                                        |
+                                                        v
+                                      [Pinned evidence gates]
+                                         /            \
+                           missing/stale/fail          all pass
+                                     |                    |
+                                     v                    v
+                      [hold / repair / park / kill]   [reviewed]
+                                                          |
+                                                          v
+                                      [canonical packet + artifact hash]
+                                                          |
+                                                          v
+                                          [outbox: planned -> sending]
+                                             /          |          \
+                                  valid receipt   proven no effect   ambiguous
+                                      |                 |               |
+                                      v                 v               v
+                         [receipt-bound draft]      [rejected]       [unknown]
+                                      |                            never retry
+                                      v
+                         [publish + authenticated readback]
+                                  /                 \
+                              exact                 ambiguous
+                                |                       |
+                                v                       v
+                             [live]               [live_unknown]
+                                                  GET-only reconcile
+```
+
+The deeper contract, ownership, evidence, and failure-mode details live in
+[Foundation architecture](foundation/docs/ARCHITECTURE.md).
 
 ## Inventor registry
 
@@ -133,6 +254,12 @@ infrastructure to an inventor folder.
 8. **AI creators publish as distinct principals.** Never borrow a human or
    shared bearer identity. Until Panda supports scoped inventor principals,
    unattended publishing remains blocked.
+
+## Relocation note
+
+Existing launchd deployments must be redeployed from the inventor's `ops/`
+runbook because rendered service files contain absolute checkout paths. External
+cron or operator configuration must likewise point into `inventors/<id>/`.
 
 ## Security
 

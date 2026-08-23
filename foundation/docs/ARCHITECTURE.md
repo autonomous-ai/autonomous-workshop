@@ -6,99 +6,88 @@ niche, taste, creative process, and stronger domain-specific evaluation.
 
 ## System layers
 
-```mermaid
-flowchart TB
-    subgraph Inventors["inventors/: one self-contained folder per inventor"]
-        Alice["Alice<br/>books, history, reward policy"]
-        Bob["Bob<br/>literature, simulation, table play"]
-        Eve["Eve<br/>great-books loop, journal, concepts"]
-        Text2cad["text2cad<br/>registered snapshot"]
-        Text2game["text2game<br/>registered snapshot"]
-        VibeIdeas["vibe-ideas<br/>registered snapshot"]
-        New["New niche inventor<br/>taste, prompts, generators, evaluators"]
-    end
-
-    subgraph Foundation["foundation/: shared invariants"]
-        Registry["Registry and scaffolding<br/>manifest, CLI, new inventor"]
-        State["Durable control plane<br/>CAS lifecycle, leases, budgets, event chain"]
-        Evidence["Evidence boundary<br/>artifact manifests, gates, CAD release bundles"]
-        Publication["Publication safety<br/>Panda outbox, effect fencing, exact receipts"]
-        Skills["Creation skills<br/>CAD, STEP parts, product-to-CAD"]
-        Ports["Narrow ports<br/>agent, CAD, evaluator, publisher, fulfillment"]
-
-        Registry --> State
-        State --> Evidence
-        Evidence --> Publication
-        Skills --> Evidence
-        Ports --> State
-    end
-
-    Alice -->|"artifact boundary today"| Evidence
-    Bob -->|"skills and artifacts"| Skills
-    Bob --> Publication
-    Eve --> Evidence
-    Eve --> Publication
-    Text2cad -.->|"registry and provenance;<br/>runtime migration pending"| Registry
-    Text2game -.->|"registry and provenance;<br/>runtime migration pending"| Registry
-    VibeIdeas -.->|"registry and provenance;<br/>runtime migration pending"| Registry
-    New -->|"full paved road"| Registry
-
-    subgraph Platforms["Injected adapters and external platforms"]
-        Models["Harness, Grid, model providers"]
-        CadSystems["CAD engines, slicers, physical tests"]
-        Panda["Panda"]
-        Factory["Factory and Store"]
-    end
-
-    Ports --> Models
-    Ports --> CadSystems
-    Publication --> Panda
-    Ports --> Factory
+```text
++--------------------------- inventors/ -----------------------------+
+|                                                                    |
+|  alice/        books + history + reward policy                     |
+|  bob/          literature + simulation + table play                |
+|  eve/          great-books loop + journal + concepts               |
+|  text2cad/     registered upstream snapshot                        |
+|  text2game/    registered upstream snapshot                        |
+|  vibe-ideas/   registered upstream snapshot                        |
+|  <new>/        TASTE + niche logic + prompts + evaluators           |
+|                                                                    |
+|  Each inventor owns its identity, taste, creative process,         |
+|  domain gates, adapters, tests, and reward hypothesis.             |
++--------------------------------+-----------------------------------+
+                                 |
+                                 | imports and uses
+                                 v
++-------------------------- foundation/ -----------------------------+
+|                                                                    |
+|  Registry + scaffolder                                             |
+|       |                                                            |
+|       v                                                            |
+|  Lifecycle + state  <----- narrow ports for agents, CAD, evals,    |
+|       |                    publishing, and fulfillment              |
+|       v                                                            |
+|  Artifact identity + evidence gates <----- creation/CAD skills      |
+|       |                                                            |
+|       v                                                            |
+|  Publication outbox + exact receipts + effect fencing              |
+|                                                                    |
+|  Foundation owns shared invariants. It never imports an inventor.  |
++------------+----------------------+----------------------+----------+
+             |                      |                      |
+             v                      v                      v
+      model providers       CAD/slicer/physical       Panda/Factory
+                                test systems             and Store
 ```
 
 ## Building a new inventor
 
-```mermaid
-flowchart LR
-    Command["inventor-foundation new deduction-games<br/>--name Ada --niche ... --root inventors"] --> Scaffold["Atomic scaffolder"]
-
-    subgraph Inventor["inventors/deduction-games/: inventor-owned"]
-        Manifest["inventor.json<br/>identity, niche, capabilities"]
-        Taste["TASTE.md<br/>human-owned creative constitution"]
-        CLI["CLI<br/>init, create, status"]
-        Workflow["workflow.py<br/>default or stricter PipelineSpec"]
-        Creative["Niche logic<br/>taste, prompts, roles, generators, reward"]
-        Adapters["Concrete adapters<br/>models, CAD, evaluation, publishing"]
-        Tests["Golden artifacts and behavior tests"]
-        Runtime[".runtime/state.sqlite<br/>ignored, stable location"]
-
-        Taste --> Creative
-        Creative --> Workflow
-        Adapters --> Workflow
-        Tests --> Creative
-    end
-
-    Scaffold --> Manifest
-    Scaffold --> Taste
-    Scaffold --> CLI
-    Scaffold --> Workflow
-    Scaffold --> Tests
-
-    subgraph Shared["Inventor Foundation"]
-        Pipeline["Pipeline and policy floors"]
-        Store["InventorStore<br/>revisions, leases, budgets"]
-        Contracts["Artifacts, GateResult, CadReleaseBundle"]
-        Outbox["Publication outbox and receipts"]
-        Interfaces["AgentPort, CadPort, EvaluatorPort<br/>PublisherPort, FulfillmentPort"]
-    end
-
-    CLI --> Pipeline
-    Workflow --> Pipeline
-    Pipeline --> Store
-    Store --> Runtime
-    Workflow --> Contracts
-    Workflow --> Outbox
-    Adapters -. "implement" .-> Interfaces
+```text
+inventor-foundation new deduction-games --name Ada --niche ... --root inventors
+                                      |
+                                      v
+                           +--------------------+
+                           | atomic scaffolder  |
+                           +---------+----------+
+                                     |
+                                     v
++---------------- inventors/deduction-games/ ----------------+
+|                                                            |
+|  inventor.json       identity, niche, capabilities          |
+|  TASTE.md            human-owned creative constitution      |
+|       |                                                    |
+|       v                                                    |
+|  prompts + roles + generators + reward hypothesis           |
+|       |                                                    |
+|       v                                                    |
+|  workflow.py         default or stricter PipelineSpec       |
+|       ^                                                    |
+|       |                                                    |
+|  adapters/           models, CAD, evaluation, publishing    |
+|  tests/              golden artifacts + behavior tests      |
+|  CLI                 init, create, status                   |
+|  .runtime/           stable local state; never committed    |
++----------------------------+-------------------------------+
+                             |
+                             | imports
+                             v
++---------------------- Inventor Foundation -----------------+
+|                                                            |
+|  Pipeline + policy floors                                  |
+|       |                                                    |
+|       +--> InventorStore: revisions, leases, budgets        |
+|       +--> artifact and gate contracts                      |
+|       +--> CAD release bundles                              |
+|       +--> publication outbox and receipts                  |
+|       `--> narrow adapter ports                             |
+|                                                            |
+|  Inventor may add stages or stricter gates.                 |
+|  Inventor may not weaken Foundation safety floors.          |
++------------------------------------------------------------+
 ```
 
 A niche inventor can extend stages and strengthen gates, but cannot waive
@@ -106,35 +95,50 @@ Foundation's artifact, identity, spend, safety, or publication floors.
 
 ## Invention-to-publication flow
 
-```mermaid
-flowchart LR
-    Idea["Idea"] --> Research["Research"]
-    Research --> Rules["Rules"]
-    Rules --> Simulate["Simulation"]
-    Simulate --> Build["CAD and product build"]
+```text
+[Idea] -> [Research] -> [Rules] -> [Simulation] -> [CAD/product build]
+                                                        |
+                                                        v
+                                      [Content-addressed artifact]
+                                      exact tree SHA-256
+                                                        |
+                                                        v
+                                      [Pinned evidence gates]
+                                      rules, CAD, printability,
+                                      playtest, novelty
+                                         /            \
+                           missing/stale/fail          all pass
+                                      /                  \
+                                     v                    v
+                      [hold / repair / park / kill]   [reviewed]
+                                                          |
+                                                          v
+                                      [canonical packet + artifact hash]
+                                                          |
+                                                          v
+                                          [outbox: planned -> sending]
+                                             /          |          \
+                                  valid receipt   proven no effect   ambiguous
+                                       /                |               \
+                                      v                 v                v
+                             [receipt-bound]       [rejected]        [unknown]
+                                [draft]            correct/new       never retry
+                                   |
+                                   v
+                         [publishing + exact price]
+                                   |
+                                   v
+                      [authenticated Panda readback]
+                              /              \
+                     exact owner,             ambiguous or
+                  history, listing, SKU         not exact
+                           /                       \
+                          v                         v
+                       [live]                  [live_unknown]
+                                                GET-only reconcile
 
-    Build --> Artifact["Content-addressed artifact<br/>exact tree SHA-256"]
-    Artifact --> Gates["Pinned gate evidence<br/>rules, CAD, printability<br/>playtest, novelty"]
-    Gates -->|"all required evidence passes"| Review["Validated and reviewed"]
-    Gates -->|"missing, stale, malformed, or failed"| Hold["Hold, bounded repair, park, or kill"]
-
-    Review --> Packet["Canonical ZIP_STORED packet<br/>artifact hash embedded"]
-    Packet --> Planned["Outbox: planned"]
-    Planned --> Sending["sending<br/>fresh effect token"]
-
-    Sending -->|"valid 201 draft receipt"| Draft["succeeded<br/>receipt-bound draft"]
-    Sending -->|"proven no effect"| Rejected["rejected<br/>correct content or new packet"]
-    Sending -->|"ambiguous outcome"| Unknown["unknown<br/>do not retry"]
-
-    Draft --> Publishing["publishing<br/>persist exact USD price<br/>fresh effect token"]
-    Publishing --> Readback["Authenticated Panda readback"]
-    Readback -->|"same owner, design, history, and artifact intent<br/>active price and SKU"| Live["live"]
-    Readback -->|"ambiguous or not exact"| LiveUnknown["live_unknown<br/>GET reconciliation only"]
-
-    Fence["Cross-cutting fences<br/>revision CAS, lease tokens<br/>persisted budgets, effect tokens"]
-    Fence -.-> Build
-    Fence -.-> Sending
-    Fence -.-> Publishing
+Every mutation and external effect is fenced by revision CAS, lease tokens,
+persisted budgets, and one-time effect tokens.
 ```
 
 ## Ownership boundary
