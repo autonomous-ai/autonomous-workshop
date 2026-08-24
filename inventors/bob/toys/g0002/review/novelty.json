@@ -1,0 +1,13 @@
+{
+  "evidence_url": "https://en.wikipedia.org/wiki/Black_Box_(game)",
+  "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
+  "judge": "bob-novelty-judge",
+  "margin": "near",
+  "nearest": [
+    "Turing Machine (2022)",
+    "Mastermind",
+    "Black Box"
+  ],
+  "notes": "Harness BGG lookup failed (401) and corpus index missing, so I searched live myself and opened real pages (BGG lookup for Turing Machine/Mastermind blocked at 403, so used Meeple Mountain review + Wikipedia as the openable sources). None collide at mechanism level: Mastermind gives per-peg (position+color) feedback from a manual human codemaker, static code, no mechanical device. Turing Machine gives binary pass/fail per independent verifier criterion via punch-card cutouts, no asymmetric role (all players solve the same fixed code), code never changes. Black Box gives per-probe hit/reflection/detour feedback about spatial atom positions, asymmetric hider/seeker but hidden state is static all game. Re-Pin's signal is a single continuous ordinal readout (how many chambers correct IN ORDER, gated by a staircase cam so it can't skip ahead) from ONE physical device per turn, with an asymmetric Locksmith role that rotates seats and may secretly re-pin exactly one chamber after a fail, decaying prior knowledge. That combination (ordinal-not-per-slot feedback + mid-game secret re-pinning + rotating asymmetric role) isn't present in any of the three. Turing Machine is the nearest by 'mechanical device replaces a human referee' framing, hence 'near' not 'far'.",
+  "pass": true
+}

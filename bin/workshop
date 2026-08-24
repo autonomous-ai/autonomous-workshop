@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+WORKSHOP_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+PYTHONPATH="$WORKSHOP_DIR/src${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m inventor_workshop "$@"

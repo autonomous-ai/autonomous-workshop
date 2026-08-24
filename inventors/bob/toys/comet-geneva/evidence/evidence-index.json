@@ -1,0 +1,34 @@
+{
+  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "evaluator": "showcase-digital-playtest-v1",
+  "evaluator_version": "1.0.0",
+  "kind": "showcase-digital-playtest-index",
+  "schema_version": 1,
+  "status": "waiting-at-playtest",
+  "unresolved_canonical_capabilities": [
+    "independent-review",
+    "motion-test",
+    "mechanical-test",
+    "print-test",
+    "human-playtest",
+    "physical-prototype"
+  ],
+  "validated_checks": [
+    {
+      "evidence_ref": "digital-geometry.json",
+      "playtest_id": "digital-geometry"
+    },
+    {
+      "evidence_ref": "digital-printability.json",
+      "playtest_id": "digital-printability"
+    },
+    {
+      "evidence_ref": "digital-lane.json",
+      "playtest_id": "digital-lane-model"
+    },
+    {
+      "evidence_ref": "wish-taste-trace.json",
+      "playtest_id": "wish-taste-trace"
+    }
+  ]
+}

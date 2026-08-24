@@ -1,0 +1,16 @@
+{
+  "concept": "one_line: One rubber loop is stretched around every peg on the board at once, so it always finds the outer boundary by itself, and any peg that ends up inside the loop belongs to whoever put the fence around it \u2014 no counting, no scoring rule, the elastic does the arithmetic. | slug: fence | arm: wildcard | emotion: patient tension while the loop tightens, then loud glee when one far plant swallows four of somebody else's pegs | piggyback: place-a-stone territory capture (Go/Othello conversion) | audience: adults 14+ who play abstracts \u2014 Go, Hive, Othello \u2014 and want the board to compute the position instead of the players; never children | players 2-4, light, target_minutes 30 | fun_correct_bet: every decision is geometric and physical \u2014 will this hole reach with the band still slack, which of my pegs go from boundary to interior, and how much slack am I leaving the next player. You cannot win by counting points; you win by reading where the loop will jump to. | nearest_known: Go (capture by enclosure); Othello (conversion by surround); Hey! That's My Fish (a shrinking legal space). String art is the craft, not the game.",
+  "direction": {
+    "family": "wildcard",
+    "lane": "invention",
+    "players": "2-4",
+    "weight": "light"
+  },
+  "lane": "invention",
+  "mechanism": "A printed peg plate of about 90 holes and one size #32 rubber band, plus 12 pegs per player in printed colours. The band is looped over every peg on the board and, being elastic, seats itself on the outer boundary \u2014 pegs it touches are EXPOSED, pegs inside it are HELD. Turn: plant one peg in an empty hole, or pull one of your own exposed pegs back to hand, then re-seat the band over all pegs. Every peg the band no longer touches is now HELD and flips to the colour of the player who just moved, whoever planted it. Crucially the band has a finite stretch: a hole the band physically cannot reach is an illegal move, so the fence's own length is the map's border and it shrinks as tension builds \u2014 late in the game you can only expand by first pulling a peg of your own and letting the loop fall inward, which re-exposes everything on the new boundary. Peg heights are randomised per copy: a short peg does not catch the band and is a permanent hole in anyone's fence. Game ends when a full round passes with no legal plant; most HELD pegs wins, ties to fewest exposed.",
+  "physical_hook": "Cardboard breaks: the capture rule is a convex boundary recomputed instantly by tension every single turn, and legality is 'the band reaches or it doesn't' \u2014 on paper that is a geometry exam performed by hand between moves, and every player would have to agree on the answer. Molding breaks: each copy is printed with a different map of tall and short pegs, so the board is fresh per buyer instead of one fixed layout that gets solved and posted, and the peg-height ladder has to be trimmed to the real band lot's tension, which steel tooling cannot chase.",
+  "players": "2-4",
+  "slug": "g0004",
+  "title": "Fence",
+  "weight": "light"
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": 5,
+  "id": "eve",
+  "status": "experimental",
+  "entrypoint": ["python3", "profile.py"],
+  "capabilities": ["wish", "little-worlds", "personalization", "taste-only", "default-make", "default-playtest"],
+  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
+  "source": {"kind": "local"}
+}

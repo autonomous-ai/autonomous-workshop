@@ -1,0 +1,14 @@
+{
+  "all_parts_step_reimported": true,
+  "all_parts_watertight": true,
+  "artifact_sha256": "547dd84c8a5822e937d4b63db01cf6b40b4a7529ecae6bb476e8264b8524e110",
+  "check": "digital-geometry",
+  "claim_scope": "OpenCascade/mesh digital checks; not physical proof",
+  "part_count": 5,
+  "passed": true,
+  "schema_version": 1,
+  "step_reimported": true,
+  "step_solid_count": 19,
+  "stl_watertight": true,
+  "stl_winding_consistent": true
+}

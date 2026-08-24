@@ -1,0 +1,9 @@
+{
+  "schema_version": 5,
+  "id": "alice",
+  "status": "experimental",
+  "entrypoint": ["python3", "profile.py"],
+  "capabilities": ["wish", "classics-made-yours", "personalization", "known-rules", "taste-only", "default-make", "default-playtest"],
+  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
+  "source": {"kind": "local"}
+}

@@ -1,0 +1,20 @@
+{
+  "algorithm": "canonical-skill-tree-v1",
+  "schema_version": 1,
+  "skills": {
+    "cad": {
+      "sha256": "b05730f091555d448ed3517427cc0ee7bd94b4c9a372036941ae3bfb9b9e373c",
+      "source_commit": "f18aebe4698d92ffccf07d94e2d624b08d30e667",
+      "source_url": "https://github.com/peterat617/text-to-3d"
+    },
+    "product-to-cad": {
+      "sha256": "742a94be70efbb0fef75d1db19dd401bb7b57aa7dcee0e09bab35e890e1ed602",
+      "source": "local"
+    },
+    "step-parts": {
+      "sha256": "d194176d26e8ff373788e8fea71b2cb7082e36e616f9c6d54de0a76cd05e105b",
+      "source_commit": "f18aebe4698d92ffccf07d94e2d624b08d30e667",
+      "source_url": "https://github.com/peterat617/text-to-3d"
+    }
+  }
+}

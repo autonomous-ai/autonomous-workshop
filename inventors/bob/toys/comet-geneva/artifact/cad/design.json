@@ -1,0 +1,30 @@
+{
+  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
+  "design": {
+    "base_mm": [
+      94.0,
+      68.0,
+      5.0
+    ],
+    "drive_radius_mm": 18.0,
+    "geneva_radius_mm": 23.0,
+    "geneva_slots": 6,
+    "kind": "six-step-geneva-machine",
+    "nominal_clearance_mm": 0.35,
+    "step_degrees": 60.0,
+    "wish_features": [
+      "continuous crank becomes six discrete orbital jumps",
+      "comet pin is the visible cause of motion",
+      "six stations form the midnight orbit"
+    ]
+  },
+  "generator": "showcase-real-cad-v1",
+  "inventor_id": "bob",
+  "kind": "showcase-declarative-cad",
+  "lane": "moving-machines",
+  "schema_version": 1,
+  "slug": "comet-geneva",
+  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "title": "Comet Geneva",
+  "wish_sha256": "250b83fbdf83d4cc9d5d7da2af9d4d3820825865b16ec2f8d01a5296c93b03a8"
+}

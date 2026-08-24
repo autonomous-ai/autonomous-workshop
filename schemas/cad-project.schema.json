@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/cad-project-v1.json",
+  "title": "Engine-neutral CAD project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "artifact_sha256",
+    "engine",
+    "skill_versions",
+    "parts",
+    "assemblies",
+    "fits",
+    "motions",
+    "print_profile",
+    "evidence_files",
+    "physical_claims"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "project_id": {
+      "type": "string", "minLength": 1,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string", "minLength": 1,
+          "not": {
+            "pattern": "^(?:[Ss][Ee][Ll][Ff]-[Rr][Ee][Pp][Oo][Rr][Tt]|[Tt][Rr][Uu][Ss][Tt]-[Mm][Ee])$"
+          }
+        },
+        "version": {"$ref": "#/$defs/exactVersion"}
+      }
+    },
+    "skill_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string", "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "part_id", "name", "quantity", "source_path", "step_path",
+          "stl_path", "material", "print_orientation", "expected_solids",
+          "expected_shells"
+        ],
+        "properties": {
+          "part_id": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "quantity": {"type": "integer", "minimum": 1},
+          "source_path": {"$ref": "#/$defs/safePath"},
+          "step_path": {"$ref": "#/$defs/safePath"},
+          "stl_path": {"$ref": "#/$defs/safePath"},
+          "material": {"type": "string", "minLength": 1},
+          "print_orientation": {
+            "type": "array", "minItems": 3, "maxItems": 3,
+            "items": {"type": "number"}
+          },
+          "expected_solids": {"type": "integer", "minimum": 1},
+          "expected_shells": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "assemblies": {"type": "array", "items": {"type": "object"}},
+    "fits": {"type": "array", "items": {"type": "object"}},
+    "motions": {"type": "array", "items": {"type": "object"}},
+    "print_profile": {
+      "type": "object",
+      "required": ["process", "profile_sha256"],
+      "properties": {
+        "process": {"type": "string", "minLength": 1},
+        "profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "evidence_files": {
+      "type": "object",
+      "propertyNames": {"$ref": "#/$defs/safePath"},
+      "additionalProperties": {
+        "type": "string", "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "physical_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id", "statement", "critical", "status", "evidence_ref",
+          "evidence_sha256"
+        ],
+        "properties": {
+          "claim_id": {"type": "string", "minLength": 1},
+          "statement": {"type": "string", "minLength": 1},
+          "critical": {"type": "boolean"},
+          "status": {"enum": ["passed", "failed", "held"]},
+          "evidence_ref": {
+            "oneOf": [
+              {"$ref": "#/$defs/safePath"},
+              {"type": "null"}
+            ]
+          },
+          "evidence_sha256": {
+            "type": ["string", "null"],
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {"evidence_ref": {"type": "null"}},
+              "required": ["evidence_ref"]
+            },
+            "then": {
+              "properties": {"evidence_sha256": {"type": "null"}}
+            },
+            "else": {
+              "properties": {
+                "evidence_sha256": {
+                  "type": "string", "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {"status": {"const": "passed"}},
+              "required": ["status"]
+            },
+            "then": {
+              "properties": {
+                "evidence_ref": {"$ref": "#/$defs/safePath"},
+                "evidence_sha256": {
+                  "type": "string", "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^(?=.*[0-9])[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$",
+      "not": {
+        "pattern": "(^|[._+-])(?:[Ll][Aa][Tt][Ee][Ss][Tt]|[Mm][Aa][Ii][Nn]|[Mm][Aa][Ss][Tt][Ee][Rr]|[Hh][Ee][Aa][Dd]|[Dd][Ee][Vv]|[Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Ss][Nn][Aa][Pp][Ss][Hh][Oo][Tt]|[Xx])([._+-]|$)"
+      }
+    },
+    "safePath": {
+      "type": "string",
+      "pattern": "^(?![.]$)(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*[/]$).+$"
+    }
+  }
+}

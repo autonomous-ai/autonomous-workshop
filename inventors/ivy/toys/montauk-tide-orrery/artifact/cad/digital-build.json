@@ -1,0 +1,354 @@
+{
+  "claim_scope": "digital evidence only; no slicing, printing, fit, wear, safety, human delight, or delivery evidence",
+  "conclusion": "real CAD and digital topology checks passed",
+  "declared_bed_mm": [
+    256.0,
+    256.0,
+    256.0
+  ],
+  "dependencies": {
+    "cadquery": "2.8.0",
+    "kernel": "OpenCascade via cadquery-ocp",
+    "numpy": "2.4.6",
+    "pillow": "12.2.0",
+    "python": "3.14.2",
+    "trimesh": "4.12.2"
+  },
+  "design_source": {
+    "path": "cad/design.json",
+    "sha256": "731aecf4f08479916c75b4973f3419db8a9fac5b3f6e56a1f87035c1db2ea9de"
+  },
+  "executable_source": {
+    "path": "cad/model.py",
+    "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+  },
+  "generator": {
+    "id": "showcase-real-cad-v1",
+    "path": "tools/build_showcase_products.py",
+    "sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c"
+  },
+  "kind": "real-digital-cad-build",
+  "lane_checks": {
+    "claim_scope": "qualitative demonstration; not to scale, not a Montauk tide prediction",
+    "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
+    "tested_relationships": [
+      {
+        "angle_degrees": 0,
+        "configuration": "aligned",
+        "model_result": "spring"
+      },
+      {
+        "angle_degrees": 90,
+        "configuration": "quadrature",
+        "model_result": "neap"
+      },
+      {
+        "angle_degrees": 180,
+        "configuration": "opposed",
+        "model_result": "spring"
+      },
+      {
+        "angle_degrees": 270,
+        "configuration": "quadrature",
+        "model_result": "neap"
+      }
+    ]
+  },
+  "parts": {
+    "center-post": {
+      "step": {
+        "bbox_mm": [
+          4.6,
+          4.6,
+          16.0
+        ],
+        "bytes": 5756,
+        "reimported": true,
+        "sha256": "a91c703904a20efcc2862a054ed5901e076b4b9a82e41d21bfb19ac6c758fd17",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -2.3,
+            -2.2993,
+            0.0
+          ],
+          [
+            2.3,
+            2.2993,
+            16.0
+          ]
+        ],
+        "bytes": 25084,
+        "extents_mm": [
+          4.6,
+          4.5986,
+          16.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "de6d79adb07737ca989d34b1332a83be881cb0bfa847d7771b75d7f9c060596c",
+        "triangles": 500,
+        "volume_mm3": 265.7942,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "earth-hub": {
+      "step": {
+        "bbox_mm": [
+          16.0,
+          16.0,
+          7.5306
+        ],
+        "bytes": 8548,
+        "reimported": true,
+        "sha256": "ebe41adae0bc821ec711b390b0842f3dbd8dddd74077ae3bafb03b3c23ad2448",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -8.0,
+            -7.9975,
+            8.0
+          ],
+          [
+            8.0,
+            7.9975,
+            15.5306
+          ]
+        ],
+        "bytes": 192484,
+        "extents_mm": [
+          16.0,
+          15.995,
+          7.5306
+        ],
+        "inside_declared_bed": true,
+        "sha256": "a0c93f1ae506a947d718a7b56eee7e916e69fb01d24a8b7c889bfeb668de114b",
+        "triangles": 3848,
+        "volume_mm3": 892.7032,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "moon-marker": {
+      "step": {
+        "bbox_mm": [
+          10.0,
+          10.0,
+          19.0
+        ],
+        "bytes": 16638,
+        "reimported": true,
+        "sha256": "fb585eba6d9d4da711c07c7b455b667dfb1f511df71e1082c2b361615991d3db",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -5.0,
+            -4.9984,
+            0.0
+          ],
+          [
+            5.0,
+            4.9984,
+            19.0
+          ]
+        ],
+        "bytes": 151084,
+        "extents_mm": [
+          10.0,
+          9.9969,
+          19.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "9d5ad04c3e7959a498b2184ef9804607835e2e3da061dc1c32cf10ed81afabd6",
+        "triangles": 3020,
+        "volume_mm3": 1007.8116,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "phase-base": {
+      "step": {
+        "bbox_mm": [
+          104.0,
+          104.0,
+          5.6
+        ],
+        "bytes": 71863,
+        "reimported": true,
+        "sha256": "d8e3183223d3d1a8d64643c255de68b1b7d4cac1f2b7e4d7178b13760dca75a9",
+        "solid_count": 5
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -52.0,
+            -51.9838,
+            0.0
+          ],
+          [
+            52.0,
+            51.9838,
+            5.6
+          ]
+        ],
+        "bytes": 27484,
+        "extents_mm": [
+          104.0,
+          103.9677,
+          5.6
+        ],
+        "inside_declared_bed": true,
+        "sha256": "3a311d957ea1452b9558214a709099517dc4154a0df77abbd2f47f212c064cd7",
+        "triangles": 548,
+        "volume_mm3": 34072.9053,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "sun-arrow": {
+      "step": {
+        "bbox_mm": [
+          21.0,
+          9.0,
+          3.0
+        ],
+        "bytes": 22876,
+        "reimported": true,
+        "sha256": "0ba3b08784bd2b0801c274edf153eb68c8c0559fec3d33dd3919dc34c602e228",
+        "solid_count": 2
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -7.5,
+            -4.4986,
+            0.0
+          ],
+          [
+            13.5,
+            4.4986,
+            3.0
+          ]
+        ],
+        "bytes": 25684,
+        "extents_mm": [
+          21.0,
+          8.9972,
+          3.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "c8c8aa78d82544e804aac1f017561e2bb2f35bdc87653cc73c44ed2e55986c54",
+        "triangles": 512,
+        "volume_mm3": 415.7727,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "tide-arm": {
+      "step": {
+        "bbox_mm": [
+          96.0,
+          16.0,
+          3.2
+        ],
+        "bytes": 32879,
+        "reimported": true,
+        "sha256": "f887845dd492b2e48a309a43752417e130639dffcf0f9a148f590f8fd270c451",
+        "solid_count": 3
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -48.0,
+            -7.9975,
+            0.0
+          ],
+          [
+            48.0,
+            7.9975,
+            3.2
+          ]
+        ],
+        "bytes": 76084,
+        "extents_mm": [
+          96.0,
+          15.995,
+          3.2
+        ],
+        "inside_declared_bed": true,
+        "sha256": "694a98e328b6529f76e2449e0d1bd45820ef24980e01712ce058b8fb9acda06e",
+        "triangles": 1520,
+        "volume_mm3": 2957.4682,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    }
+  },
+  "product": {
+    "step": {
+      "bbox_mm": [
+        104.5,
+        104.0,
+        31.2
+      ],
+      "bytes": 162998,
+      "reimported": true,
+      "sha256": "bb2519c5af0fb17de4eb34e652308d6c07a17d7ca13e36a72bbc7a0c8bc77b2c",
+      "solid_count": 13
+    },
+    "stl": {
+      "bounds_mm": [
+        [
+          -52.5,
+          -51.9838,
+          0.0
+        ],
+        [
+          52.0,
+          51.9838,
+          31.2
+        ]
+      ],
+      "bytes": 497484,
+      "extents_mm": [
+        104.5,
+        103.9677,
+        31.2
+      ],
+      "inside_declared_bed": true,
+      "sha256": "777fb5efa1ad595af49604c7482371d82b8b32a8fe9f1073b164fdbb654dc00b",
+      "triangles": 9948,
+      "volume_mm3": 39612.4549,
+      "watertight": true,
+      "winding_consistent": true
+    }
+  },
+  "render": {
+    "camera": {
+      "position_direction": [
+        1.0,
+        1.0,
+        1.15
+      ],
+      "projection": "orthographic",
+      "view": "above-isometric"
+    },
+    "concept_art": false,
+    "input": "cad/product.stl",
+    "input_sha256": "777fb5efa1ad595af49604c7482371d82b8b32a8fe9f1073b164fdbb654dc00b",
+    "kind": "fixed-view exact-STL render",
+    "output": "images/hero.png",
+    "output_sha256": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb",
+    "pixels": [
+      1200,
+      900
+    ]
+  },
+  "schema_version": 1
+}

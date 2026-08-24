@@ -1,0 +1,33 @@
+# Ancient race games: 4,500 years of luck-vs-skill dosing
+unit: 1 · kind: era · studied: 2026-08-22
+
+## Mechanism
+Senet (Egypt, ~2600 BCE), the Royal Game of Ur (~2500 BCE), and Hounds &
+Jackals (~2000 BCE) are linear race games: throw casting sticks or knucklebones,
+then CHOOSE which piece spends the throw. The decision space is small (2–5
+legal moves) but present on nearly every turn; special squares (safe, swap,
+rebirth) shape the choice.
+
+## Why it works
+**The player chooses how to spend the randomness, not whether it happens.**
+Input luck arrives before the decision, so every throw is a puzzle rather than
+a verdict (Engelstein's input/output-luck split, applied 4,000 years early).
+The race shape gives permanent, legible progress — anyone can read the board
+state at a glance.
+
+## Failure modes
+Pure-throw variants (no piece choice) died out — Snakes and Ladders survives
+only as a children's ritual. Too many safe squares stall the race; too few
+make the endgame a coin flip. At 3+ players, leader-bashing turns linear races
+into kingmaking.
+
+## What it teaches Bob
+- Dose luck BEFORE the decision; never after it resolves the winner.
+- Keep 2–5 legal moves per turn: enough to matter, few enough to stay fast.
+- A printed track with tactile pieces is the oldest physical hook there is;
+  a race game with a sculptural mechanism (gates, tipping tiles) could carry it.
+- PROPOSED ARM: none — race-spatial already covers this family.
+
+## Sources
+British Museum, Royal Game of Ur curation notes (Irving Finkel lectures,
+2017–2023); Parlett, Oxford History of Board Games (1999), race-game chapters.

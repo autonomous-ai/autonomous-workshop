@@ -1,0 +1,136 @@
+{
+  "runtime": {
+    "database": "var/alice.sqlite3",
+    "poll_seconds": 30,
+    "lease_seconds": 900,
+    "max_attempts": 3,
+    "max_active_candidates": 3,
+    "effect_mode": "dry-run"
+  },
+  "objective": {
+    "auto_publish_when_eligible": false
+  },
+  "agents": {
+    "provider": "fixture",
+    "command": [],
+    "timeout_seconds": 900,
+    "model_allowed_environment": ["PATH", "LANG", "LC_ALL", "TMPDIR"],
+    "codex": {
+      "binary": "codex",
+      "home": "var/codex-home",
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "timeout_seconds": 600,
+      "startup_timeout_seconds": 30,
+      "shutdown_grace_seconds": 10,
+      "max_output_bytes": 200000
+    }
+  },
+  "adapters": {
+    "text2game": {
+      "enabled": false,
+      "repo": "",
+      "commit": "",
+      "work_root": "var/text2game-runs",
+      "vibe_workspace": "",
+      "command": [],
+      "text2cad_repo": "",
+      "text2cad_commit": "",
+      "cad_python": "",
+      "slicer_binary": "",
+      "slicer_profile": "",
+      "codex_binary": "",
+      "codex_home": "var/text2game-codex-home",
+      "git_binary": "",
+      "calibration_profile": "",
+      "printer_target": {},
+      "allowed_environment": ["PATH", "LANG", "LC_ALL", "TMPDIR"],
+      "timeout_seconds": 7200,
+      "max_output_bytes": 262144,
+      "max_stderr_bytes": 262144,
+      "shutdown_grace_seconds": 10
+    },
+    "page_builder": {
+      "enabled": false,
+      "workspace": "",
+      "workspace_commit": "",
+      "operator_command": [],
+      "interpreter_sha256": "",
+      "operator_sha256": "",
+      "operator_dependency_sha256": {
+        "animation_gate.py": "",
+        "journal.py": "",
+        "telegram.py": ""
+      },
+      "publishdesign_sha256": "",
+      "publishdesign_preflight_receipt": "",
+      "publishdesign_preflight_sha256": "",
+      "git_binary": "",
+      "diagnostic_design_id": "",
+      "diagnostic_owner_id": "",
+      "base_url": "https://panda-social-api.autonomous.ai/api/v1",
+      "token_env": "WORKSHOP_SHOP_TOKEN",
+      "allowed_project_hosts": [],
+      "allowed_environment": [
+        "PATH",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+        "WORKSHOP_SHOP_OWNER_ID",
+        "WORKSHOP_SHOP_BACKEND_DIR",
+        "GOOGLE_APPLICATION_CREDENTIALS",
+        "WORKSHOP_SHOP_APP_URL"
+      ],
+      "timeout_seconds": 3600,
+      "readback_timeout_seconds": 180
+    },
+    "vibe": {
+      "enabled": false,
+      "base_url": "https://panda-social-api.autonomous.ai/api/v1",
+      "token_env": "WORKSHOP_SHOP_TOKEN",
+      "timeout_seconds": 180,
+      "poll_interval_seconds": 5,
+      "max_job_polls": 4320,
+      "max_page_polls": 360
+    },
+    "library_command": [],
+    "history_command": [],
+    "research_command": [],
+    "rules_validator_command": [],
+    "digital_playtest_command": [],
+    "human_playtest_command": [],
+    "cad_command": [],
+    "market_validation_command": [],
+    "outcomes_command": [],
+    "delivery_command": [],
+    "print_fulfillment_command": [],
+    "command_allowed_environment": {},
+    "required_live_capabilities": []
+  },
+  "learning": {
+    "seed": 617,
+    "minimum_external_trials": 3,
+    "exploration_probability": 0.15,
+    "actions": [
+      "simplify_rules",
+      "rebalance_resources",
+      "increase_player_agency",
+      "reduce_downtime",
+      "clarify_teach",
+      "change_setup",
+      "strengthen_social_tension",
+      "mechanism_pivot",
+      "kill_candidate"
+    ]
+  },
+  "quality": {
+    "minimum_dimension": 0.65,
+    "minimum_quality": 0.72,
+    "minimum_confidence": 0.7,
+    "minimum_blind_groups": 3,
+    "minimum_games_per_group": 2,
+    "minimum_print_yield": 0.95,
+    "minimum_gross_margin": 0.5
+  }
+}

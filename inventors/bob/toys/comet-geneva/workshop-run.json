@@ -1,0 +1,91 @@
+{
+  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "assertions": {
+    "delivered": false,
+    "exact_geometry_render": true,
+    "human_playtest": false,
+    "instructions_created": false,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
+  "evidence_sha256": "5b1d64b7546247a3f6a8875ab3b6b160de46e75b7dfa9e5adcf353adec4933bd",
+  "inventor": {
+    "extension_level": "custom-make",
+    "id": "bob",
+    "name": "Bob",
+    "profile": "inventors/bob/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "playtest",
+    "needs": [
+      {
+        "capability": "independent-review",
+        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
+      },
+      {
+        "capability": "motion-test",
+        "instructions": "Run the canonical motion-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full motion-test gate."
+      },
+      {
+        "capability": "mechanical-test",
+        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
+      },
+      {
+        "capability": "print-test",
+        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
+      },
+      {
+        "capability": "human-playtest",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      },
+      {
+        "capability": "physical-prototype",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      }
+    ],
+    "playtest_rounds": 4,
+    "product_id": "comet-geneva",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "moving-machines"
+    },
+    "context": {
+      "inventor_id": "bob"
+    },
+    "objective": "I wish for a hand-cranked desk machine where one comet makes six precise jumps around a midnight orbit.",
+    "product_id": "comet-geneva",
+    "schema_version": 1
+  }
+}

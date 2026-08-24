@@ -1,0 +1,16 @@
+{
+  "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+  "blueprint_sha256": "e458f439b0e1f83b3430a56dcb6b035d62d02826461e8d2a59caed3c115a6af2",
+  "check": "wish-taste-trace",
+  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
+  "passed": true,
+  "schema_version": 1,
+  "taste_sha256": "98c92654cb2af36e5ca7f39c406476400b61c3d0114451011a6d17694cffc34a",
+  "wish_features": [
+    "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
+    "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",
+    "black and warm-gold architectural composition"
+  ],
+  "wish_sha256": "f54d37b34fc5b3da337d3f4e92d8ec46ac0c502927b5f581d1379b4f6c6f8a95"
+}

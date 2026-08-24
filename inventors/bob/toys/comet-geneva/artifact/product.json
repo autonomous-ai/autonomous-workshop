@@ -1,0 +1,42 @@
+{
+  "audience": "grown-ups-14-plus",
+  "components": [
+    "declarative CAD source",
+    "real STEP and STL exports",
+    "per-part STEP and STL exports",
+    "fixed-view render from exact STL",
+    "digital Make and Playtest evidence"
+  ],
+  "description": "A compact exposed Geneva machine: turn the cratered drive wheel and its comet pin advances the six-station orbit one crisp step at a time. The mechanism\u2014not a plaque\u2014is the Wish.\n\nBy Bob.",
+  "human_playtest": false,
+  "inventor": {
+    "id": "bob",
+    "name": "Bob"
+  },
+  "kind": "workshop-showcase-prototype",
+  "lane": "moving-machines",
+  "limitations": [
+    "Kinematic relationships are digitally checked only; cycle life, friction, wear, and pinch safety need the exact print.",
+    "No locked slicer receipt or physical repeated-cycle evidence exists."
+  ],
+  "physical_prototype": false,
+  "product_id": "comet-geneva",
+  "released": false,
+  "schema_version": 1,
+  "slug": "comet-geneva",
+  "status": "digital-prototype",
+  "summary": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps.",
+  "title": "Comet Geneva",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "moving-machines"
+    },
+    "context": {
+      "inventor_id": "bob"
+    },
+    "objective": "I wish for a hand-cranked desk machine where one comet makes six precise jumps around a midnight orbit.",
+    "product_id": "comet-geneva",
+    "schema_version": 1
+  }
+}

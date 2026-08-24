@@ -1,0 +1,49 @@
+# local env + creds (only inert examples belong in Git)
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+**/*.bak
+**/*.bak-*
+**/*.bak.*
+**/state/portal-auth.json
+**/state/panda-auth.json
+
+# runtime noise (state that matters — QUEUE, ledger, bandit, DAYBOOK — IS committed)
+**/state/transcripts/
+**/state/logs/
+**/state/bgg_cache/
+**/state/.lock
+**/state/.daybook.lock
+**/state/.tick-budget.json
+**/state/.tg-offset
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.coverage
+.venv*/
+/build/
+/dist/
+
+# macOS
+.DS_Store
+.venv-cad/
+.runtime/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+
+# internal operating state (costs, queues, ledgers) stays out of the public repo
+inventors/*/state/

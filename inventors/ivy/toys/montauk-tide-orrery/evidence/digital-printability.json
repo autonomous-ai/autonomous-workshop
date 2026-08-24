@@ -1,0 +1,17 @@
+{
+  "all_exported_parts_inside_bed": true,
+  "all_exported_parts_watertight": true,
+  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "check": "digital-printability",
+  "claim_scope": "basic digital mesh/envelope screening only; canonical print-test remains unresolved",
+  "declared_bed_mm": [
+    256.0,
+    256.0,
+    256.0
+  ],
+  "fit_test": false,
+  "locked_slicer_profile_run": false,
+  "passed": true,
+  "physical_print": false,
+  "schema_version": 1
+}

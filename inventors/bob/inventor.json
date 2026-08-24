@@ -1,0 +1,9 @@
+{
+  "schema_version": 5,
+  "id": "bob",
+  "status": "experimental",
+  "entrypoint": ["python3", "profile.py"],
+  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "custom-make", "default-playtest", "product-instructions"],
+  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
+  "source": {"kind": "local"}
+}

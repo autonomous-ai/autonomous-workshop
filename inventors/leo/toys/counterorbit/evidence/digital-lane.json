@@ -1,0 +1,21 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "check": "digital-lane-model",
+  "checks": {
+    "inventory": {
+      "ring-signals": 5,
+      "spoke-signals": 5
+    },
+    "maximum_turns": 10,
+    "physical_state_change": "outer orbit rotates one notch after every placement",
+    "topology": {
+      "inner_wells": 5,
+      "outer_wells": 10,
+      "rotating_offsets": 10
+    }
+  },
+  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "lane": "invented-games",
+  "passed": true,
+  "schema_version": 1
+}

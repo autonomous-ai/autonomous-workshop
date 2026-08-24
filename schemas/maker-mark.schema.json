@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/maker-mark-v1.json",
+  "title": "MakerMark creation provenance",
+  "description": "Records how one candidate was made; does not assert quality, inspection, printability, or production readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "inventor_id", "run_id", "mode", "tool",
+    "tool_version", "authenticated", "taste_sha256", "artifact_sha256", "input_sha256",
+    "agent_calls", "actual_cost_micros", "synthetic_cost_micros",
+    "started_at", "completed_at", "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "inventor_id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
+    "run_id": {
+      "type": "string", "minLength": 1, "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "mode": {"enum": ["live", "fixture", "offline", "replay"]},
+    "tool": {
+      "type": "string", "minLength": 1, "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+    },
+    "tool_version": {"$ref": "#/$defs/exactVersion"},
+    "authenticated": {"type": "boolean"},
+    "taste_sha256": {"$ref": "#/$defs/sha256"},
+    "artifact_sha256": {
+      "$ref": "#/$defs/sha256",
+      "description": "Exact content-addressed product output this run made."
+    },
+    "input_sha256": {
+      "type": "object", "minProperties": 1, "maxProperties": 128,
+      "propertyNames": {"pattern": "^[a-z][a-z0-9._-]{0,63}$"},
+      "additionalProperties": {"$ref": "#/$defs/sha256"}
+    },
+    "agent_calls": {"type": "integer", "minimum": 0},
+    "actual_cost_micros": {"type": "integer", "minimum": 0},
+    "synthetic_cost_micros": {"type": "integer", "minimum": 0},
+    "started_at": {"$ref": "#/$defs/utcTimestamp"},
+    "completed_at": {"$ref": "#/$defs/utcTimestamp"},
+    "limitations": {
+      "type": "array", "maxItems": 100, "uniqueItems": true,
+      "items": {
+        "type": "string", "minLength": 1, "maxLength": 2000,
+        "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "live"}}},
+      "then": {"properties": {"synthetic_cost_micros": {"const": 0}}},
+      "else": {
+        "properties": {
+          "authenticated": {"const": false},
+          "actual_cost_micros": {"const": 0},
+          "limitations": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {"properties": {"authenticated": {"const": false}}},
+          {"properties": {"agent_calls": {"const": 0}}}
+        ]
+      },
+      "then": {"properties": {"limitations": {"minItems": 1}}}
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^(?=.*[0-9])[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$",
+      "not": {
+        "pattern": "(^|[._+-])(?:[Ll][Aa][Tt][Ee][Ss][Tt]|[Mm][Aa][Ii][Nn]|[Mm][Aa][Ss][Tt][Ee][Rr]|[Hh][Ee][Aa][Dd]|[Dd][Ee][Vv]|[Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Ss][Nn][Aa][Pp][Ss][Hh][Oo][Tt]|[Xx])([._+-]|$)"
+      }
+    },
+    "utcTimestamp": {
+      "type": "string", "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|\\+00:00)$"
+    }
+  }
+}

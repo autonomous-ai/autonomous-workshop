@@ -1,0 +1,16 @@
+{
+  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
+  "check": "wish-taste-trace",
+  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
+  "passed": true,
+  "schema_version": 1,
+  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "wish_features": [
+    "continuous crank becomes six discrete orbital jumps",
+    "comet pin is the visible cause of motion",
+    "six stations form the midnight orbit"
+  ],
+  "wish_sha256": "250b83fbdf83d4cc9d5d7da2af9d4d3820825865b16ec2f8d01a5296c93b03a8"
+}

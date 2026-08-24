@@ -1,0 +1,35 @@
+{
+  "blueprint_sha256": "e458f439b0e1f83b3430a56dcb6b035d62d02826461e8d2a59caed3c115a6af2",
+  "design": {
+    "board_mm": [
+      132.0,
+      132.0,
+      5.5
+    ],
+    "cell_mm": 14.5,
+    "grid": [
+      8,
+      8
+    ],
+    "kind": "classic-checkers-edition",
+    "known_rules": "English draughts/checkers; this edition does not alter play",
+    "piece_count": {
+      "five-ring": 12,
+      "five-spoke": 12
+    },
+    "wish_features": [
+      "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
+      "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",
+      "black and warm-gold architectural composition"
+    ]
+  },
+  "generator": "showcase-real-cad-v1",
+  "inventor_id": "alice",
+  "kind": "showcase-declarative-cad",
+  "lane": "classics-made-yours",
+  "schema_version": 1,
+  "slug": "five-job-checkers",
+  "taste_sha256": "98c92654cb2af36e5ca7f39c406476400b61c3d0114451011a6d17694cffc34a",
+  "title": "Five-Job Checkers",
+  "wish_sha256": "f54d37b34fc5b3da337d3f4e92d8ec46ac0c502927b5f581d1379b4f6c6f8a95"
+}

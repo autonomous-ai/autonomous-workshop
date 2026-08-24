@@ -1,0 +1,19 @@
+{
+  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "check": "digital-lane-model",
+  "checks": {
+    "claim_scope": "dimensional/kinematic intent only; not a physical cycle test",
+    "drive_pin_diameter_mm": 4.3,
+    "input": "continuous manual crank",
+    "kinematic_model": "six-slot external Geneva prototype",
+    "nominal_pin_slot_clearance_mm": 0.7,
+    "output": "one 60 degree step per drive revolution",
+    "slot_count": 6,
+    "slot_width_mm": 5.0,
+    "step_degrees": 60.0
+  },
+  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "lane": "moving-machines",
+  "passed": true,
+  "schema_version": 1
+}

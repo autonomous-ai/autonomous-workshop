@@ -1,0 +1,91 @@
+{
+  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "assertions": {
+    "delivered": false,
+    "exact_geometry_render": true,
+    "human_playtest": false,
+    "instructions_created": false,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "08591d34ed681b671fd472e41c3084e58af32e6b346d59190497a44098283e4a",
+  "evidence_sha256": "f031bda6132c9c0c31de5539e396fc2f59e139f5f1a9144d5e5c5e7d8761e7a7",
+  "inventor": {
+    "extension_level": "taste-only",
+    "id": "ivy",
+    "name": "Ivy",
+    "profile": "inventors/ivy/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "playtest",
+    "needs": [
+      {
+        "capability": "independent-review",
+        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
+      },
+      {
+        "capability": "science-test",
+        "instructions": "Run the canonical science-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full science-test gate."
+      },
+      {
+        "capability": "mechanical-test",
+        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
+      },
+      {
+        "capability": "print-test",
+        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
+      },
+      {
+        "capability": "human-playtest",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      },
+      {
+        "capability": "physical-prototype",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      }
+    ],
+    "playtest_rounds": 3,
+    "product_id": "montauk-tide-orrery",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "taste_sha256": "ce535bda385252a706688bd93cc7cfdeb455d408ac685319ae3c5cb113fbde23",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "holdable-science"
+    },
+    "context": {
+      "inventor_id": "ivy"
+    },
+    "objective": "I wish I could hold the spring-neap tide cycle for Montauk and predict what alignment makes the larger tide.",
+    "product_id": "montauk-tide-orrery",
+    "schema_version": 1
+  }
+}

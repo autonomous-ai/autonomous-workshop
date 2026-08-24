@@ -1,0 +1,261 @@
+{
+  "claim_scope": "digital evidence only; no slicing, printing, fit, wear, safety, human delight, or delivery evidence",
+  "conclusion": "real CAD and digital topology checks passed",
+  "declared_bed_mm": [
+    256.0,
+    256.0,
+    256.0
+  ],
+  "dependencies": {
+    "cadquery": "2.8.0",
+    "kernel": "OpenCascade via cadquery-ocp",
+    "numpy": "2.4.6",
+    "pillow": "12.2.0",
+    "python": "3.14.2",
+    "trimesh": "4.12.2"
+  },
+  "design_source": {
+    "path": "cad/design.json",
+    "sha256": "e77766eb0408f6db32afb595984fcfc482b979aeb97c17bb5d252ddf10cf59dc"
+  },
+  "executable_source": {
+    "path": "cad/model.py",
+    "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+  },
+  "generator": {
+    "id": "showcase-real-cad-v1",
+    "path": "tools/build_showcase_products.py",
+    "sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c"
+  },
+  "kind": "real-digital-cad-build",
+  "lane_checks": {
+    "claim_scope": "dimensional/kinematic intent only; not a physical cycle test",
+    "drive_pin_diameter_mm": 4.3,
+    "input": "continuous manual crank",
+    "kinematic_model": "six-slot external Geneva prototype",
+    "nominal_pin_slot_clearance_mm": 0.7,
+    "output": "one 60 degree step per drive revolution",
+    "slot_count": 6,
+    "slot_width_mm": 5.0,
+    "step_degrees": 60.0
+  },
+  "parts": {
+    "axle": {
+      "step": {
+        "bbox_mm": [
+          4.7,
+          4.7,
+          10.0
+        ],
+        "bytes": 5762,
+        "reimported": true,
+        "sha256": "dca12cb4e4d1c73e646c92b87ddff014297dacd7afe897b5c0f9e2ccc53cace8",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -2.35,
+            -2.3493,
+            0.0
+          ],
+          [
+            2.35,
+            2.3493,
+            10.0
+          ]
+        ],
+        "bytes": 25084,
+        "extents_mm": [
+          4.7,
+          4.6985,
+          10.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "f375aa3b89c26543efdedbdb9dcb68a2786bc20bf317cee6bc1328525f433ac6",
+        "triangles": 500,
+        "volume_mm3": 173.4226,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "base": {
+      "step": {
+        "bbox_mm": [
+          94.0,
+          68.0,
+          5.0
+        ],
+        "bytes": 31756,
+        "reimported": true,
+        "sha256": "b2325f717f953a34d0abc081bbf96ebdc75f8532e656ff3ba0db40b35af62dd4",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -47.0,
+            -34.0,
+            0.0
+          ],
+          [
+            47.0,
+            34.0,
+            5.0
+          ]
+        ],
+        "bytes": 26284,
+        "extents_mm": [
+          94.0,
+          68.0,
+          5.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "b8ae289784f0a9b23a45c78a6649118e7e7a46b16fba184c94234097056756d4",
+        "triangles": 524,
+        "volume_mm3": 31891.2265,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "comet-drive": {
+      "step": {
+        "bbox_mm": [
+          36.0,
+          36.0,
+          12.0
+        ],
+        "bytes": 50069,
+        "reimported": true,
+        "sha256": "cb378dd7d7ade6c5f1384275ebadf578532d83ca682e12b4a9cea075a7bad2d9",
+        "solid_count": 3
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -18.0,
+            -17.9944,
+            0.0
+          ],
+          [
+            18.0,
+            17.9944,
+            12.0
+          ]
+        ],
+        "bytes": 251684,
+        "extents_mm": [
+          36.0,
+          35.9888,
+          12.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "166a6a47c764cbbb09def1f09e62a8b33c6beda56488b8ca228fd2c90a48c76c",
+        "triangles": 5032,
+        "volume_mm3": 4293.6537,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "six-slot-orbit": {
+      "step": {
+        "bbox_mm": [
+          45.7275,
+          46.0,
+          6.2
+        ],
+        "bytes": 139921,
+        "reimported": true,
+        "sha256": "e7eabd53133ae633c8624dd4a3871bde8be6cfdc49915875745e4f1519becd77",
+        "solid_count": 7
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -22.8637,
+            -22.9932,
+            0.0
+          ],
+          [
+            22.8637,
+            22.9932,
+            6.2
+          ]
+        ],
+        "bytes": 199284,
+        "extents_mm": [
+          45.7275,
+          45.9863,
+          6.2
+        ],
+        "inside_declared_bed": true,
+        "sha256": "1cda0cf944ff715e7dbd425a043066cd4994c7a11d831d8917838735f0cb2177",
+        "triangles": 3984,
+        "volume_mm3": 6082.126,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    }
+  },
+  "product": {
+    "step": {
+      "bbox_mm": [
+        94.0,
+        68.0,
+        20.0
+      ],
+      "bytes": 229094,
+      "reimported": true,
+      "sha256": "b20d609fb903244a365f6a5b592544c3c45ca4d0bf1609cf975c2682946c4c88",
+      "solid_count": 13
+    },
+    "stl": {
+      "bounds_mm": [
+        [
+          -47.0,
+          -34.0,
+          0.0
+        ],
+        [
+          47.0,
+          34.0,
+          20.0
+        ]
+      ],
+      "bytes": 527084,
+      "extents_mm": [
+        94.0,
+        68.0,
+        20.0
+      ],
+      "inside_declared_bed": true,
+      "sha256": "e9b1366112d9abcf5b940a3b95d89d673befed4d52895a5e4b5ca14322b3266b",
+      "triangles": 10540,
+      "volume_mm3": 42613.8511,
+      "watertight": true,
+      "winding_consistent": true
+    }
+  },
+  "render": {
+    "camera": {
+      "position_direction": [
+        1.0,
+        1.0,
+        1.15
+      ],
+      "projection": "orthographic",
+      "view": "above-isometric"
+    },
+    "concept_art": false,
+    "input": "cad/product.stl",
+    "input_sha256": "e9b1366112d9abcf5b940a3b95d89d673befed4d52895a5e4b5ca14322b3266b",
+    "kind": "fixed-view exact-STL render",
+    "output": "images/hero.png",
+    "output_sha256": "5e6a62e4dda37b709dc4c0dacb8100c99d51bf074cc00af9388cba1ba36c449b",
+    "pixels": [
+      1200,
+      900
+    ]
+  },
+  "schema_version": 1
+}

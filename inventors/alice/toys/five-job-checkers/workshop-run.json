@@ -1,0 +1,91 @@
+{
+  "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+  "assertions": {
+    "delivered": false,
+    "exact_geometry_render": true,
+    "human_playtest": false,
+    "instructions_created": false,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "e458f439b0e1f83b3430a56dcb6b035d62d02826461e8d2a59caed3c115a6af2",
+  "evidence_sha256": "32f5918dc9011643029d06de6b1acab275f8cbcca0a8bea7de987d270baf5822",
+  "inventor": {
+    "extension_level": "taste-only",
+    "id": "alice",
+    "name": "Alice",
+    "profile": "inventors/alice/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "playtest",
+    "needs": [
+      {
+        "capability": "independent-review",
+        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
+      },
+      {
+        "capability": "classic-rules-test",
+        "instructions": "Run the canonical classic-rules-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full classic-rules-test gate."
+      },
+      {
+        "capability": "mechanical-test",
+        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
+      },
+      {
+        "capability": "print-test",
+        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
+      },
+      {
+        "capability": "human-playtest",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      },
+      {
+        "capability": "physical-prototype",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      }
+    ],
+    "playtest_rounds": 2,
+    "product_id": "five-job-checkers",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "taste_sha256": "98c92654cb2af36e5ca7f39c406476400b61c3d0114451011a6d17694cffc34a",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "classics-made-yours"
+    },
+    "context": {
+      "inventor_id": "alice"
+    },
+    "objective": "I wish our five-job Workshop became a checkers set for late-night design reviews\u2014black and warm gold, architectural rather than cute.",
+    "product_id": "five-job-checkers",
+    "schema_version": 1
+  }
+}

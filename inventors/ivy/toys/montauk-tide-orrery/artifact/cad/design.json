@@ -1,0 +1,33 @@
+{
+  "blueprint_sha256": "08591d34ed681b671fd472e41c3084e58af32e6b346d59190497a44098283e4a",
+  "design": {
+    "base_diameter_mm": 104.0,
+    "kind": "qualitative-tide-orrery",
+    "phase_positions_degrees": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "relationship": {
+      "aligned_or_opposed": "spring-tide configuration",
+      "quadrature": "neap-tide configuration"
+    },
+    "scope": "qualitative alignment model; not to scale and not predictive",
+    "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
+    "wish_features": [
+      "Montauk-specific request is framed as a prediction experiment",
+      "four detents embody the spring-neap cycle",
+      "two-lobed tide arm makes the alignment comparison tactile"
+    ]
+  },
+  "generator": "showcase-real-cad-v1",
+  "inventor_id": "ivy",
+  "kind": "showcase-declarative-cad",
+  "lane": "holdable-science",
+  "schema_version": 1,
+  "slug": "montauk-tide-orrery",
+  "taste_sha256": "ce535bda385252a706688bd93cc7cfdeb455d408ac685319ae3c5cb113fbde23",
+  "title": "Montauk Tide Orrery",
+  "wish_sha256": "bbe0314d667de124e4e12c24da3c442231a2bdd53e2ac8c27cd3615d6e5a395c"
+}

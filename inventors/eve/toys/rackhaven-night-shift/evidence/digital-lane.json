@@ -1,0 +1,18 @@
+{
+  "artifact_sha256": "547dd84c8a5822e937d4b63db01cf6b40b4a7529ecae6bb476e8264b8524e110",
+  "check": "digital-lane-model",
+  "checks": {
+    "generic_nameplates": 0,
+    "personalization_map": {
+      "Comet": "six swept side fins",
+      "Moss": "paired exposed coolant pipes",
+      "Void": "vertical orbital halo",
+      "night shift": "single operator facing all three nodes"
+    },
+    "reference_scope": "Wish text only; no private likeness assets were used"
+  },
+  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "lane": "little-worlds",
+  "passed": true,
+  "schema_version": 1
+}

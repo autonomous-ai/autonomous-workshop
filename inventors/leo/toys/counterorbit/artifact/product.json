@@ -1,0 +1,42 @@
+{
+  "audience": "grown-ups-14-plus",
+  "components": [
+    "declarative CAD source",
+    "real STEP and STL exports",
+    "per-part STEP and STL exports",
+    "fixed-view render from exact STL",
+    "digital Make and Playtest evidence"
+  ],
+  "description": "Place one of five signal stones, rotate the shared orbit, and try to hold a three-point wedge while every move reframes both players' plans. The five-job topology changes play rather than decorating it.\n\nBy Leo.",
+  "human_playtest": false,
+  "inventor": {
+    "id": "leo",
+    "name": "Leo"
+  },
+  "kind": "workshop-showcase-prototype",
+  "lane": "invented-games",
+  "limitations": [
+    "Seeded simulation can reject obvious failures but cannot establish fun or release readiness.",
+    "Independent humans have not played the exact physical game and asked to play again."
+  ],
+  "physical_prototype": false,
+  "product_id": "counterorbit",
+  "released": false,
+  "schema_version": 1,
+  "slug": "counterorbit",
+  "status": "digital-prototype",
+  "summary": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit.",
+  "title": "Counterorbit",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "invented-games"
+    },
+    "context": {
+      "inventor_id": "leo"
+    },
+    "objective": "I wish for a tense two-player game where our five Workshop jobs orbit, interfere, and only align when a plan survives the other inventor.",
+    "product_id": "counterorbit",
+    "schema_version": 1
+  }
+}

@@ -1,0 +1,2 @@
+SPARK 1: Gravity Well — a marble-drop territory game where the board is a printed funnel lattice; pieces reroute channels as they land.
+SPARK 2: Splice — players graft printed gear-teeth onto a shared ring; the ring's rotation IS the scoring track.

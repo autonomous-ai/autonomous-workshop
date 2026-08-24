@@ -1,0 +1,9 @@
+{
+  "idea_sha": "20b9993488f8caa4a502b13d2489dbe1afac075586f20af136967779851bd724",
+  "issues": [
+    "Section 6 claims a hard round cap that its own mechanics contradict: \"So the game runs for at most as many rounds as a starting hand has tiles: 12 rounds at two players (24 pushes)... Probes only make it shorter for the prober. No loop can extend it.\" But Probe (5.2) costs a chip, not a tile, and does not empty the rack \u2014 a player who spends all 3 chips needs 3 extra turns beyond their tile count to empty their rack, so the true worst-case bound is N+3 rounds (up to 15 at 2p), not N. The claim is backwards ('shorter') and the 'no loop can extend it' guarantee is false as written. Fixable by correcting the stated bound/wording; doesn't require changing the Push/Probe mechanic itself."
+  ],
+  "judge": "bob-rules-lens",
+  "lane": "invention",
+  "verdict": "PASS"
+}

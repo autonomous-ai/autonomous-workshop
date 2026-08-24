@@ -1,0 +1,42 @@
+{
+  "audience": "grown-ups-14-plus",
+  "components": [
+    "declarative CAD source",
+    "real STEP and STL exports",
+    "per-part STEP and STL exports",
+    "fixed-view render from exact STL",
+    "digital Make and Playtest evidence"
+  ],
+  "description": "Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recognizable as a single engine-room world, watched over by a lone night-shift operator.\n\nBy Eve.",
+  "human_playtest": false,
+  "inventor": {
+    "id": "eve",
+    "name": "Eve"
+  },
+  "kind": "workshop-showcase-prototype",
+  "lane": "little-worlds",
+  "limitations": [
+    "The named-node mapping is explicit, but owner recognition needs independent reference-bound review.",
+    "Fine details and handling durability need an exact physical print."
+  ],
+  "physical_prototype": false,
+  "product_id": "rackhaven-night-shift",
+  "released": false,
+  "schema_version": 1,
+  "slug": "rackhaven-night-shift",
+  "status": "digital-prototype",
+  "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.",
+  "title": "Rackhaven: Night Shift",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "little-worlds"
+    },
+    "context": {
+      "inventor_id": "eve"
+    },
+    "objective": "I wish my three-node homelab\u2014Comet, Moss, and Void\u2014became a tiny orbital engine room with one night-shift operator.",
+    "product_id": "rackhaven-night-shift",
+    "schema_version": 1
+  }
+}

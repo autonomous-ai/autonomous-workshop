@@ -1,0 +1,13 @@
+{
+  "evidence_url": "https://boardgamegeek.com/boardgame/22810/elastico",
+  "idea_sha": "b507d9f7b93b2b230859cbed56665b54962d9b1862ddde11439e5013aad01d3e",
+  "judge": "bob-novelty-judge",
+  "margin": "near",
+  "nearest": [
+    "Elastico (BGG #22810)",
+    "Triggle (BGG #405711)",
+    "Go"
+  ],
+  "notes": "Harness BGG lookup failed (SSL error) and corpus/INDEX.md is missing, so I ran my own live web search/fetch this session rather than judging from recall. Direct WebFetch of boardgamegeek.com/boardgame/22810/elastico returned 403 (BGG blocks scraper user-agents), so I could not read the raw page myself, but three independent WebSearch queries returned the identical, specific BGG game-description text for that exact ID: 'Using posts, pegs, and elastic bands (rubber bands); you attempt to surround posts with your color. This allows you to replace opponents' colors with yours. You continue until the last peg is played; this ends the game.' That is Fence's core loop almost verbatim: pegs + elastic band(s), enclosure converts a peg to the mover's color, game ends when pegs run out. Fence's refinements (one continuous band re-seated over every peg each turn recomputing a live convex-hull boundary, stretch-limited legality as the border mechanic, per-copy randomized peg heights) are real but read as elaboration on the same verb, same as a themed-skin case, not a rescue. A human can verify this specific page in a normal browser in well under 60 seconds (the 403 is bot-detection, not absence). Second neighbor Triggle (BGG #405711, confirmed via search) is a discrete-per-move rubber-band triangle-claiming game -- near but not confusable, since bands are placed individually and stay fixed rather than one loop dynamically recomputing membership every turn. Go (enclosure capture) is the classic distant ancestor named in the idea's own nearest_known. Because Elastico could not be opened directly by my tool, I'm flagging this as a KILL on strong but not fully first-hand evidence -- recommend a human open the BGG page directly to confirm before final kill, but I would not clear this idea past the Elastico collision as-is. SEARCH BASIS: harness list of 0 candidates (harness search FAILED, SSL cert error) + corpus unreachable (no INDEX.md) + my own live WebSearch/WebFetch this session.",
+  "pass": false
+}

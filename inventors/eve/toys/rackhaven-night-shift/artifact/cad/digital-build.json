@@ -1,0 +1,299 @@
+{
+  "claim_scope": "digital evidence only; no slicing, printing, fit, wear, safety, human delight, or delivery evidence",
+  "conclusion": "real CAD and digital topology checks passed",
+  "declared_bed_mm": [
+    256.0,
+    256.0,
+    256.0
+  ],
+  "dependencies": {
+    "cadquery": "2.8.0",
+    "kernel": "OpenCascade via cadquery-ocp",
+    "numpy": "2.4.6",
+    "pillow": "12.2.0",
+    "python": "3.14.2",
+    "trimesh": "4.12.2"
+  },
+  "design_source": {
+    "path": "cad/design.json",
+    "sha256": "dec36564f9f2a6712247cbc0ea56184712175703a6b563022de1ca7f2b21b8af"
+  },
+  "executable_source": {
+    "path": "cad/model.py",
+    "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+  },
+  "generator": {
+    "id": "showcase-real-cad-v1",
+    "path": "tools/build_showcase_products.py",
+    "sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c"
+  },
+  "kind": "real-digital-cad-build",
+  "lane_checks": {
+    "generic_nameplates": 0,
+    "personalization_map": {
+      "Comet": "six swept side fins",
+      "Moss": "paired exposed coolant pipes",
+      "Void": "vertical orbital halo",
+      "night shift": "single operator facing all three nodes"
+    },
+    "reference_scope": "Wish text only; no private likeness assets were used"
+  },
+  "parts": {
+    "comet-node": {
+      "step": {
+        "bbox_mm": [
+          33.0,
+          18.0,
+          34.0
+        ],
+        "bytes": 130971,
+        "reimported": true,
+        "sha256": "92fe026925a0182f8423e77a76b1b5e5e40791ece2aa2fd9feac4a71172a6c32",
+        "solid_count": 7
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -16.5,
+            -9.0,
+            0.0
+          ],
+          [
+            16.5,
+            9.0,
+            34.0
+          ]
+        ],
+        "bytes": 29884,
+        "extents_mm": [
+          33.0,
+          18.0,
+          34.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "2d503b5f179a6cd9addd61d244fe7655a9ff696783eff685dfeb5fd777a28d8d",
+        "triangles": 596,
+        "volume_mm3": 14847.6992,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "engine-deck": {
+      "step": {
+        "bbox_mm": [
+          108.0,
+          72.0,
+          5.9
+        ],
+        "bytes": 81845,
+        "reimported": true,
+        "sha256": "dbbd34cd98b390b4a3dc19647bb3d70f3dee86091de217f5a880a63b52c7c689",
+        "solid_count": 4
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -54.0,
+            -36.0,
+            0.0
+          ],
+          [
+            54.0,
+            36.0,
+            5.9
+          ]
+        ],
+        "bytes": 28084,
+        "extents_mm": [
+          108.0,
+          72.0,
+          5.9
+        ],
+        "inside_declared_bed": true,
+        "sha256": "bf83cc26d7ef6e0cea88cca3768b87e318ec30ac0ebd2e059ac3b7852fead4e5",
+        "triangles": 560,
+        "volume_mm3": 39298.3067,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "moss-node": {
+      "step": {
+        "bbox_mm": [
+          22.0,
+          23.0,
+          35.0
+        ],
+        "bytes": 57005,
+        "reimported": true,
+        "sha256": "9d503309591e94ed51aa91c13408e794cc374dcd08a7eed8fd4e2b63449a42ff",
+        "solid_count": 5
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -11.0,
+            -13.9989,
+            0.0
+          ],
+          [
+            11.0,
+            9.0,
+            35.0
+          ]
+        ],
+        "bytes": 126284,
+        "extents_mm": [
+          22.0,
+          22.9989,
+          35.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "c40ae81d19fbc92746fc077db86959188521dfd0194e82e89b348961d358cb75",
+        "triangles": 2524,
+        "volume_mm3": 13407.4597,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "night-operator": {
+      "step": {
+        "bbox_mm": [
+          7.2,
+          7.2,
+          16.0
+        ],
+        "bytes": 18035,
+        "reimported": true,
+        "sha256": "57e13b8ac106f5fe234bc7e2adcc0c82c3a8330bc5b7da0f893d88e55d70a150",
+        "solid_count": 1
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -3.6,
+            -3.5989,
+            0.0
+          ],
+          [
+            3.6,
+            3.5989,
+            16.0
+          ]
+        ],
+        "bytes": 132184,
+        "extents_mm": [
+          7.2,
+          7.1978,
+          16.0
+        ],
+        "inside_declared_bed": true,
+        "sha256": "aa640129925e0f08a796b6cffee8edbb9471ea7251529efea5a3930746bae0b5",
+        "triangles": 2642,
+        "volume_mm3": 359.8342,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    },
+    "void-node": {
+      "step": {
+        "bbox_mm": [
+          22.0,
+          27.4,
+          37.7
+        ],
+        "bytes": 37732,
+        "reimported": true,
+        "sha256": "556a2701d1e3c0f1c4035d9fec0c0fbaca959e9156143ef9b60202e0560a1530",
+        "solid_count": 2
+      },
+      "stl": {
+        "bounds_mm": [
+          [
+            -11.0,
+            -13.6957,
+            0.0
+          ],
+          [
+            11.0,
+            13.6957,
+            37.7
+          ]
+        ],
+        "bytes": 1613884,
+        "extents_mm": [
+          22.0,
+          27.3915,
+          37.7
+        ],
+        "inside_declared_bed": true,
+        "sha256": "db5334fc47ec58c7ca96fc1076e6562fe283210740399f41c75d59eaf61dc53b",
+        "triangles": 32276,
+        "volume_mm3": 13266.8581,
+        "watertight": true,
+        "winding_consistent": true
+      }
+    }
+  },
+  "product": {
+    "step": {
+      "bbox_mm": [
+        108.0,
+        72.0,
+        43.6
+      ],
+      "bytes": 328402,
+      "reimported": true,
+      "sha256": "30b1b0bd69445a59b1ab36dda982b921b307bf59d383774e51c4be9a2343ad99",
+      "solid_count": 19
+    },
+    "stl": {
+      "bounds_mm": [
+        [
+          -54.0,
+          -36.0,
+          0.0
+        ],
+        [
+          54.0,
+          36.0,
+          43.6
+        ]
+      ],
+      "bytes": 1929984,
+      "extents_mm": [
+        108.0,
+        72.0,
+        43.6
+      ],
+      "inside_declared_bed": true,
+      "sha256": "9286c72c3889704c61f1045cd6cf1a0a9398c7ff30b99150dae3d30da34cc916",
+      "triangles": 38598,
+      "volume_mm3": 81180.1597,
+      "watertight": true,
+      "winding_consistent": true
+    }
+  },
+  "render": {
+    "camera": {
+      "position_direction": [
+        1.0,
+        1.0,
+        1.15
+      ],
+      "projection": "orthographic",
+      "view": "above-isometric"
+    },
+    "concept_art": false,
+    "input": "cad/product.stl",
+    "input_sha256": "9286c72c3889704c61f1045cd6cf1a0a9398c7ff30b99150dae3d30da34cc916",
+    "kind": "fixed-view exact-STL render",
+    "output": "images/hero.png",
+    "output_sha256": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e",
+    "pixels": [
+      1200,
+      900
+    ]
+  },
+  "schema_version": 1
+}

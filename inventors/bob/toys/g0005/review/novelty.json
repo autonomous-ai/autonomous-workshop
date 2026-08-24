@@ -1,0 +1,13 @@
+{
+  "evidence_url": "https://boardgamegeek.com/boardgame/277458/kluster",
+  "idea_sha": "20b9993488f8caa4a502b13d2489dbe1afac075586f20af136967779851bd724",
+  "judge": "bob-novelty-judge",
+  "margin": "far",
+  "nearest": [
+    "Abalone",
+    "Skull",
+    "Kluster"
+  ],
+  "notes": "Harness BGG search failed (SSL error) and corpus unreachable, so this verdict rests on my own web search of the idea's named comps plus extra magnetic-game candidates I found and checked by URL. Abalone has push-capture but no hidden info/magnets; Skull has hidden bluff but resolves by human card-flip not physics; Kluster resolves by magnet physics but poles are visible and there's no directional rail/push-capture. No candidate stacks all three of Kick's ingredients (hidden per-tile pole + directional push into a line + physics-only resolution), so margin is far despite each piece individually having a known analog.",
+  "pass": true
+}

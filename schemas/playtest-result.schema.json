@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autonomous.ai/schemas/inventor/playtest-result-v1.json",
+  "title": "Artifact-bound PlaytestResult",
+  "description": "Canonical Workshop 0.5 Playtest result. The persisted inspection_id spelling is retained for replay compatibility and is exposed as playtest_id by the code API.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "inspection_id", "passed", "artifact_sha256", "evidence", "evaluator",
+    "evaluator_version", "config_sha256", "evidence_ref",
+    "evidence_sha256", "observed_at"
+  ],
+  "properties": {
+    "inspection_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Persisted spelling of the code-facing playtest_id."
+    },
+    "passed": {"type": "boolean"},
+    "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "evidence": {"type": "object", "minProperties": 1},
+    "evaluator": {
+      "type": "string", "minLength": 1,
+      "not": {
+        "pattern": "^(?:[Ss][Ee][Ll][Ff]-[Rr][Ee][Pp][Oo][Rr][Tt]|[Tt][Rr][Uu][Ss][Tt]-[Mm][Ee])$"
+      }
+    },
+    "evaluator_version": {"$ref": "#/$defs/exactVersion"},
+    "config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "evidence_ref": {"$ref": "#/$defs/safePath"},
+    "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observed_at": {
+      "type": "string", "format": "date-time", "pattern": "(?:Z|\\+00:00)$"
+    }
+  },
+  "$defs": {
+    "exactVersion": {
+      "type": "string",
+      "pattern": "^(?=.*[0-9])[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$",
+      "not": {
+        "pattern": "(^|[._+-])(?:[Ll][Aa][Tt][Ee][Ss][Tt]|[Mm][Aa][Ii][Nn]|[Mm][Aa][Ss][Tt][Ee][Rr]|[Hh][Ee][Aa][Dd]|[Dd][Ee][Vv]|[Dd][Ee][Vv][Ee][Ll][Oo][Pp][Mm][Ee][Nn][Tt]|[Uu][Nn][Kk][Nn][Oo][Ww][Nn]|[Ss][Nn][Aa][Pp][Ss][Hh][Oo][Tt]|[Xx])([._+-]|$)"
+      }
+    },
+    "safePath": {
+      "type": "string",
+      "pattern": "^(?![.]$)(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])(?!.*//)(?!.*(?:^|/)\\.(?:/|$))(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*[/]$).+$"
+    }
+  }
+}

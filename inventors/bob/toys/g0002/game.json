@@ -1,0 +1,99 @@
+{
+  "action_types": [
+    "load",
+    "probe",
+    "hold",
+    "re_pin"
+  ],
+  "components": [
+    {
+      "id": "plug_01",
+      "name": "Staircase-cam plug",
+      "qty": 1,
+      "size_mm": "\u230034 \u00d7 96"
+    },
+    {
+      "id": "shell_01",
+      "name": "Lock shell",
+      "qty": 1,
+      "size_mm": "118 \u00d7 74 \u00d7 66"
+    },
+    {
+      "id": "hood_01",
+      "name": "Loading hood",
+      "qty": 1,
+      "size_mm": "122 \u00d7 56 \u00d7 74"
+    },
+    {
+      "id": "latch_01",
+      "name": "Latch bar",
+      "qty": 1,
+      "size_mm": "74 \u00d7 12 \u00d7 8"
+    },
+    {
+      "id": "lever_01",
+      "name": "Reset lever",
+      "qty": 1,
+      "size_mm": "60 \u00d7 14 \u00d7 8"
+    },
+    {
+      "id": "slug_01",
+      "name": "Driver slug",
+      "qty": 7,
+      "size_mm": "\u23006 \u00d7 8"
+    },
+    {
+      "id": "pin_r1",
+      "name": "Pin, rungs 1\u20138",
+      "qty": 40,
+      "size_mm": "\u23006 \u00d7 3.0/3.4/3.8/4.2/4.6/5.0/5.4/5.8 by rung"
+    },
+    {
+      "id": "case_01",
+      "name": "Pin case",
+      "qty": 1,
+      "size_mm": "96 \u00d7 62 \u00d7 22"
+    },
+    {
+      "id": "key_01",
+      "name": "Key blank",
+      "qty": 4,
+      "size_mm": "132 \u00d7 30 \u00d7 14"
+    },
+    {
+      "id": "rail_01",
+      "name": "Cut rail",
+      "qty": 1,
+      "size_mm": "110 \u00d7 26 \u00d7 10"
+    },
+    {
+      "id": "board_01",
+      "name": "Round board",
+      "qty": 1,
+      "size_mm": "180 \u00d7 60 \u00d7 8"
+    },
+    {
+      "id": "board_02",
+      "name": "Score board",
+      "qty": 1,
+      "size_mm": "220 \u00d7 90 \u00d7 8"
+    },
+    {
+      "id": "grid_01",
+      "name": "Deduction card",
+      "qty": 4,
+      "size_mm": "108 \u00d7 152 \u00d7 9"
+    },
+    {
+      "id": "peg_01",
+      "name": "Peg",
+      "qty": 6,
+      "size_mm": "\u23005 \u00d7 16"
+    }
+  ],
+  "players": "2-4",
+  "rules": {
+    "win": "Highest score after one round per player (2 players: four legs). A Cracker who opens the lock scores the time rail value at that moment (12 down to 1); the Locksmith scores +1 per failed turn, \u22122 per re-pin, and +5 if the lock is never opened; in an unopened round the Cracker with the deepest reading scores 3. Ties: most points, then most locks opened as a Cracker, then highest single opening score, then the tied player who sat as Locksmith most recently."
+  },
+  "target_minutes": 30
+}

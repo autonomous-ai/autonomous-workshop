@@ -1,0 +1,38 @@
+{
+  "artifact_sha256": "32f5918dc9011643029d06de6b1acab275f8cbcca0a8bea7de987d270baf5822",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 438,
+      "executable": false,
+      "path": "digital-geometry.json",
+      "sha256": "e0bb6e93f4558922306e1579178c27c80f51be541df9ba2d3cff1a9906ddd57c"
+    },
+    {
+      "bytes": 557,
+      "executable": false,
+      "path": "digital-lane.json",
+      "sha256": "67711c3f0f5060316c2ecb7a0fd9089399caeae29e45b6fae19581d09a85b375"
+    },
+    {
+      "bytes": 500,
+      "executable": false,
+      "path": "digital-printability.json",
+      "sha256": "60008c5d0794c3cf54525aac34b343e2e724dcabf34f7d0b753645295e1c3493"
+    },
+    {
+      "bytes": 894,
+      "executable": false,
+      "path": "evidence-index.json",
+      "sha256": "a5cfd9781199297a68223134f7635e23817ab977df593d3e49e2b65a60cbbf18"
+    },
+    {
+      "bytes": 912,
+      "executable": false,
+      "path": "wish-taste-trace.json",
+      "sha256": "2170718a554c8791e71a059821a5abf51a319a56d598bc4c0d5b59834e34cd8d"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 3301
+}

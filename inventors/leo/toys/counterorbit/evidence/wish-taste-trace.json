@@ -1,0 +1,16 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "blueprint_sha256": "761992ed3f94ff887e62afbf0bf784a5d24d77fae95d960ab0f590facc58bd7f",
+  "check": "wish-taste-trace",
+  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
+  "passed": true,
+  "schema_version": 1,
+  "taste_sha256": "d1b12c6043328f8d55b3429b94c597a85ace6590d50f048399d013e6d0bf4963",
+  "wish_features": [
+    "five inner stations are the five Workshop jobs",
+    "the shared rotating orbit changes adjacency after every placement",
+    "opposition is literal interference with a surviving alignment plan"
+  ],
+  "wish_sha256": "3ea7a783257582830458645555fc3e9596dba683a53f3f7f9c38105b549bf029"
+}

@@ -1,0 +1,22 @@
+{
+  "games": 240,
+  "label": "greedy_vs_random",
+  "move_kinds_seen": [
+    "crown",
+    "plant",
+    "probe",
+    "seed"
+  ],
+  "natural": 240,
+  "seed": 2026082305,
+  "shared": 0,
+  "turns": {
+    "max": 24,
+    "min": 24
+  },
+  "undefined": 0,
+  "win_credit": [
+    0.967,
+    0.033
+  ]
+}

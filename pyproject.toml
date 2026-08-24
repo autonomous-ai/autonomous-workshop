@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inventor-workshop"
+version = "0.5.0"
+description = "A request-driven toy workshop that routes each Wish to the right inventor"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+workshop = "inventor_workshop.cli:main"
+inventor-workshop = "inventor_workshop.cli:main"
+inventor-foundation = "inventor_workshop.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

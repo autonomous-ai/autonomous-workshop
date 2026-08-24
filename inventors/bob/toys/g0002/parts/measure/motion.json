@@ -1,0 +1,115 @@
+{
+  "assembly": "repin.step.py",
+  "conditions": [
+    {
+      "id": "plug-turns-free-0-90",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "Brief 'Approved look' measurable 1: the plug turns freely in the shell through the full 0-90 deg with no key and no drivers. If the shell bore, the ogive roof, the arc channels or the protractor ever touch the plug land, the mechanism has no free state to measure from.",
+      "inputs": {
+        "moving_part": "plug_01",
+        "obstacle_parts": ["shell_01"],
+        "axis_point": [0, 0, 0],
+        "axis_direction": [1, 0, 0],
+        "start_deg": 0,
+        "end_deg": 90,
+        "steps": 36,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "correct-chambers-pass",
+      "check": "rotation_motion_collision",
+      "expect": "clear",
+      "description": "The positive half of the wound (brief 2, 'Correct'). Every chamber is loaded correct in this assembly, so all five driver noses sit on the shear radius 22.4, hovering 0.40 above the plug land 22.0. The plug must reach 90 deg without a single driver touching it.",
+      "inputs": {
+        "moving_part": "plug_01",
+        "obstacle_parts": ["slug_01_1", "slug_01_2", "slug_01_3", "slug_01_4", "slug_01_5"],
+        "axis_point": [0, 0, 0],
+        "axis_direction": [1, 0, 0],
+        "start_deg": 0,
+        "end_deg": 90,
+        "steps": 36,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "key-withdraws",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The key must come out of the keyway along the plug axis with the plug at theta = 0 (rules: RESET frees a jammed key). Rigid path, so this also establishes insertion.",
+      "inputs": {
+        "moving_part": "key_01",
+        "obstacle_parts": ["plug_01", "shell_01"],
+        "translation": [-110, 0, 0],
+        "steps": 22,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "plug-captured-rearward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Capture. cap_01 exists only to stop the plug walking out of the shell under torque (brief 3). End float is 0.50, so 3 mm of rearward travel must be blocked.",
+      "inputs": {
+        "moving_part": "plug_01",
+        "obstacle_parts": ["shell_01", "cap_01"],
+        "translation": [3, 0, 0],
+        "steps": 6,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "plug-captured-forward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Capture, the other direction: the D70 pointer flange lands on the shell front face, so the plug cannot be pulled out toward the Cracker.",
+      "inputs": {
+        "moving_part": "plug_01",
+        "obstacle_parts": ["shell_01", "cap_01"],
+        "translation": [-3, 0, 0],
+        "steps": 6,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "cap-captured",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Capture. The three snap tabs sit behind the shell's rear ledge with 1.20 engagement; the cap must not lift off rearward as a rigid body.",
+      "inputs": {
+        "moving_part": "cap_01",
+        "obstacle_parts": ["shell_01"],
+        "translation": [6, 0, 0],
+        "steps": 8,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "lever-slides-run-to-load",
+      "check": "linear_motion_collision",
+      "expect": "clear",
+      "description": "The reset slide has to travel its 9.9 mm from RUN to LOAD/RESET in the shell's dovetail rails. Drivers are excluded on purpose: lifting them is what the ramps are for, and a rigid sweep cannot represent a lift.",
+      "inputs": {
+        "moving_part": "lever_01",
+        "obstacle_parts": ["shell_01"],
+        "translation": [9.9, 0, 0],
+        "steps": 12,
+        "allow_seated_contact": true
+      }
+    },
+    {
+      "id": "lever-captured-upward",
+      "check": "linear_motion_collision",
+      "expect": "blocked",
+      "description": "Capture. The dovetail must retain the slide: if the lever lifts straight off the rails it is a plain boss in a plain pocket and it stops lidding the chimney row, which leaks hidden state (brief 6).",
+      "inputs": {
+        "moving_part": "lever_01",
+        "obstacle_parts": ["shell_01"],
+        "translation": [0, 0, 12],
+        "steps": 10,
+        "allow_seated_contact": true
+      }
+    }
+  ]
+}

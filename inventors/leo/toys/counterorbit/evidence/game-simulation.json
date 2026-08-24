@@ -1,0 +1,373 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "claim_scope": "executability and digital strategy probe only; not evidence of fun or human replay demand",
+  "completed_games": 1200,
+  "evidence_class": "ai-simulation",
+  "executable": true,
+  "first_seat_win_rate": 0.815833,
+  "game": "Counterorbit",
+  "matchups": {
+    "adversarial-vs-adversarial": {
+      "A_wins": 12,
+      "B_wins": 62,
+      "draws": 1,
+      "games": 75
+    },
+    "adversarial-vs-exploratory": {
+      "A_wins": 67,
+      "B_wins": 5,
+      "draws": 3,
+      "games": 75
+    },
+    "adversarial-vs-optimizing": {
+      "A_wins": 65,
+      "B_wins": 10,
+      "draws": 0,
+      "games": 75
+    },
+    "adversarial-vs-social": {
+      "A_wins": 8,
+      "B_wins": 67,
+      "draws": 0,
+      "games": 75
+    },
+    "exploratory-vs-adversarial": {
+      "A_wins": 3,
+      "B_wins": 67,
+      "draws": 5,
+      "games": 75
+    },
+    "exploratory-vs-exploratory": {
+      "A_wins": 25,
+      "B_wins": 22,
+      "draws": 28,
+      "games": 75
+    },
+    "exploratory-vs-optimizing": {
+      "A_wins": 2,
+      "B_wins": 72,
+      "draws": 1,
+      "games": 75
+    },
+    "exploratory-vs-social": {
+      "A_wins": 1,
+      "B_wins": 74,
+      "draws": 0,
+      "games": 75
+    },
+    "optimizing-vs-adversarial": {
+      "A_wins": 10,
+      "B_wins": 65,
+      "draws": 0,
+      "games": 75
+    },
+    "optimizing-vs-exploratory": {
+      "A_wins": 74,
+      "B_wins": 0,
+      "draws": 1,
+      "games": 75
+    },
+    "optimizing-vs-optimizing": {
+      "A_wins": 64,
+      "B_wins": 11,
+      "draws": 0,
+      "games": 75
+    },
+    "optimizing-vs-social": {
+      "A_wins": 8,
+      "B_wins": 67,
+      "draws": 0,
+      "games": 75
+    },
+    "social-vs-adversarial": {
+      "A_wins": 7,
+      "B_wins": 68,
+      "draws": 0,
+      "games": 75
+    },
+    "social-vs-exploratory": {
+      "A_wins": 73,
+      "B_wins": 1,
+      "draws": 1,
+      "games": 75
+    },
+    "social-vs-optimizing": {
+      "A_wins": 71,
+      "B_wins": 4,
+      "draws": 0,
+      "games": 75
+    },
+    "social-vs-social": {
+      "A_wins": 7,
+      "B_wins": 68,
+      "draws": 0,
+      "games": 75
+    }
+  },
+  "max_turns_observed": 10,
+  "maximum_rules_turns": 10,
+  "nonterminating_games": 0,
+  "outcomes": {
+    "A": 497,
+    "B": 663,
+    "draw": 40
+  },
+  "player_styles": [
+    "optimizing",
+    "social",
+    "exploratory",
+    "adversarial"
+  ],
+  "requested_games": 1200,
+  "sample_traces": [
+    {
+      "seed": 6488787590697149972,
+      "styles": [
+        "optimizing",
+        "optimizing"
+      ],
+      "trace": [
+        {
+          "action": [
+            "outer",
+            9,
+            -1
+          ],
+          "offset": 9,
+          "player": 0,
+          "turn": 1
+        },
+        {
+          "action": [
+            "outer",
+            8,
+            -1
+          ],
+          "offset": 8,
+          "player": 1,
+          "turn": 2
+        },
+        {
+          "action": [
+            "inner",
+            3,
+            -1
+          ],
+          "offset": 7,
+          "player": 0,
+          "turn": 3
+        },
+        {
+          "action": [
+            "inner",
+            2,
+            -1
+          ],
+          "offset": 6,
+          "player": 1,
+          "turn": 4
+        },
+        {
+          "action": [
+            "outer",
+            0,
+            1
+          ],
+          "offset": 7,
+          "player": 0,
+          "turn": 5
+        }
+      ],
+      "turns": 5,
+      "winner": 0
+    },
+    {
+      "seed": 8810418377524668613,
+      "styles": [
+        "optimizing",
+        "social"
+      ],
+      "trace": [
+        {
+          "action": [
+            "outer",
+            8,
+            1
+          ],
+          "offset": 1,
+          "player": 1,
+          "turn": 1
+        },
+        {
+          "action": [
+            "outer",
+            3,
+            -1
+          ],
+          "offset": 0,
+          "player": 0,
+          "turn": 2
+        },
+        {
+          "action": [
+            "inner",
+            4,
+            1
+          ],
+          "offset": 1,
+          "player": 1,
+          "turn": 3
+        },
+        {
+          "action": [
+            "inner",
+            2,
+            1
+          ],
+          "offset": 2,
+          "player": 0,
+          "turn": 4
+        },
+        {
+          "action": [
+            "outer",
+            7,
+            -1
+          ],
+          "offset": 1,
+          "player": 1,
+          "turn": 5
+        }
+      ],
+      "turns": 5,
+      "winner": 1
+    },
+    {
+      "seed": 9076751586667794679,
+      "styles": [
+        "optimizing",
+        "exploratory"
+      ],
+      "trace": [
+        {
+          "action": [
+            "outer",
+            2,
+            -1
+          ],
+          "offset": 9,
+          "player": 0,
+          "turn": 1
+        },
+        {
+          "action": [
+            "outer",
+            8,
+            -1
+          ],
+          "offset": 8,
+          "player": 1,
+          "turn": 2
+        },
+        {
+          "action": [
+            "inner",
+            0,
+            1
+          ],
+          "offset": 9,
+          "player": 0,
+          "turn": 3
+        },
+        {
+          "action": [
+            "outer",
+            6,
+            1
+          ],
+          "offset": 0,
+          "player": 1,
+          "turn": 4
+        },
+        {
+          "action": [
+            "outer",
+            1,
+            -1
+          ],
+          "offset": 9,
+          "player": 0,
+          "turn": 5
+        }
+      ],
+      "turns": 5,
+      "winner": 0
+    },
+    {
+      "seed": 1806601617042299704,
+      "styles": [
+        "optimizing",
+        "adversarial"
+      ],
+      "trace": [
+        {
+          "action": [
+            "outer",
+            5,
+            1
+          ],
+          "offset": 1,
+          "player": 1,
+          "turn": 1
+        },
+        {
+          "action": [
+            "outer",
+            4,
+            -1
+          ],
+          "offset": 0,
+          "player": 0,
+          "turn": 2
+        },
+        {
+          "action": [
+            "outer",
+            6,
+            -1
+          ],
+          "offset": 9,
+          "player": 1,
+          "turn": 3
+        },
+        {
+          "action": [
+            "inner",
+            2,
+            1
+          ],
+          "offset": 0,
+          "player": 0,
+          "turn": 4
+        },
+        {
+          "action": [
+            "inner",
+            3,
+            1
+          ],
+          "offset": 1,
+          "player": 1,
+          "turn": 5
+        }
+      ],
+      "turns": 5,
+      "winner": 1
+    }
+  ],
+  "schema_version": 1,
+  "seed": 260823,
+  "simulator_path": "game/simulate.py",
+  "simulator_sha256": "65610d6d994a674771a5bd03837134c53ba098dc7733a538dadb00c192b66517",
+  "terminated_games": 1200
+}

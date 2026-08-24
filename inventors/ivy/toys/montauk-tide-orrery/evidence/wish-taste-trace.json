@@ -1,0 +1,16 @@
+{
+  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "blueprint_sha256": "08591d34ed681b671fd472e41c3084e58af32e6b346d59190497a44098283e4a",
+  "check": "wish-taste-trace",
+  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
+  "passed": true,
+  "schema_version": 1,
+  "taste_sha256": "ce535bda385252a706688bd93cc7cfdeb455d408ac685319ae3c5cb113fbde23",
+  "wish_features": [
+    "Montauk-specific request is framed as a prediction experiment",
+    "four detents embody the spring-neap cycle",
+    "two-lobed tide arm makes the alignment comparison tactile"
+  ],
+  "wish_sha256": "bbe0314d667de124e4e12c24da3c442231a2bdd53e2ac8c27cd3615d6e5a395c"
+}

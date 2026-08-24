@@ -1,0 +1,42 @@
+{
+  "audience": "grown-ups-14-plus",
+  "components": [
+    "declarative CAD source",
+    "real STEP and STL exports",
+    "per-part STEP and STL exports",
+    "fixed-view render from exact STL",
+    "digital Make and Playtest evidence"
+  ],
+  "description": "A regulation-readable checkers edition whose five-ring and five-spoke pieces, five brass-like threshold markers, and midnight grid turn the Workshop workflow into table presence without changing the known game.\n\nBy Alice.",
+  "human_playtest": false,
+  "inventor": {
+    "id": "alice",
+    "name": "Alice"
+  },
+  "kind": "workshop-showcase-prototype",
+  "lane": "classics-made-yours",
+  "limitations": [
+    "Known rules are documented, but independent rule/readability playtest is still required.",
+    "No exact part has been printed, sliced with a locked printer profile, or handled by people."
+  ],
+  "physical_prototype": false,
+  "product_id": "five-job-checkers",
+  "released": false,
+  "schema_version": 1,
+  "slug": "five-job-checkers",
+  "status": "digital-prototype",
+  "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.",
+  "title": "Five-Job Checkers",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "classics-made-yours"
+    },
+    "context": {
+      "inventor_id": "alice"
+    },
+    "objective": "I wish our five-job Workshop became a checkers set for late-night design reviews\u2014black and warm gold, architectural rather than cute.",
+    "product_id": "five-job-checkers",
+    "schema_version": 1
+  }
+}

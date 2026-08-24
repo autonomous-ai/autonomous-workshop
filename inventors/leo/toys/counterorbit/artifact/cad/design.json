@@ -1,0 +1,31 @@
+{
+  "blueprint_sha256": "761992ed3f94ff887e62afbf0bf784a5d24d77fae95d960ab0f590facc58bd7f",
+  "design": {
+    "inner_wells": 5,
+    "kind": "original-two-player-orbit-game",
+    "maximum_turns": 10,
+    "outer_wells": 10,
+    "player_styles": [
+      "optimizing",
+      "social",
+      "exploratory",
+      "adversarial"
+    ],
+    "players": 2,
+    "tokens_per_player": 5,
+    "wish_features": [
+      "five inner stations are the five Workshop jobs",
+      "the shared rotating orbit changes adjacency after every placement",
+      "opposition is literal interference with a surviving alignment plan"
+    ]
+  },
+  "generator": "showcase-real-cad-v1",
+  "inventor_id": "leo",
+  "kind": "showcase-declarative-cad",
+  "lane": "invented-games",
+  "schema_version": 1,
+  "slug": "counterorbit",
+  "taste_sha256": "d1b12c6043328f8d55b3429b94c597a85ace6590d50f048399d013e6d0bf4963",
+  "title": "Counterorbit",
+  "wish_sha256": "3ea7a783257582830458645555fc3e9596dba683a53f3f7f9c38105b549bf029"
+}

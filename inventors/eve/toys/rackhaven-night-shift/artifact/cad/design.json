@@ -1,0 +1,35 @@
+{
+  "blueprint_sha256": "ba870dc429acfac778c32e664a60d6024b2e08b6dce581d7e247a549006431dd",
+  "design": {
+    "deck_mm": [
+      108.0,
+      72.0,
+      5.0
+    ],
+    "kind": "personalized-homelab-diorama",
+    "node_signatures": {
+      "Comet": "swept cooling fins",
+      "Moss": "paired vertical coolant pipes",
+      "Void": "suspended orbital halo"
+    },
+    "nodes": [
+      "Comet",
+      "Moss",
+      "Void"
+    ],
+    "wish_features": [
+      "three node identities are geometry, not labels",
+      "circuit trenches connect the rack city",
+      "one operator establishes scale and night-shift story"
+    ]
+  },
+  "generator": "showcase-real-cad-v1",
+  "inventor_id": "eve",
+  "kind": "showcase-declarative-cad",
+  "lane": "little-worlds",
+  "schema_version": 1,
+  "slug": "rackhaven-night-shift",
+  "taste_sha256": "e13341de2a2704197f0f590a95523f7d885d00f3ddd2990ad90a6c45b6b9bf92",
+  "title": "Rackhaven: Night Shift",
+  "wish_sha256": "ad262dadb03bc7dfe60531d55beb790c827408b0a5c00cc25c26b8d545449b87"
+}

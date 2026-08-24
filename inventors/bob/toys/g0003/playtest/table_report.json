@@ -1,0 +1,77 @@
+{
+  "aborted": "cost_cap",
+  "aggregate": {
+    "confusion_events": 23,
+    "confusion_per_game": 5.75,
+    "seats_total": 8,
+    "would_play_again_fraction": 0.625,
+    "would_play_again_yes": 5
+  },
+  "cost_cap_usd": 5.0,
+  "cost_usd": 5.008237,
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "move_cap": 160,
+  "n_players": 4,
+  "n_tables": 4,
+  "seed": 0,
+  "slug": "g0003",
+  "tables": [
+    {
+      "agency": [
+        true,
+        false,
+        true,
+        true
+      ],
+      "answers": [
+        "My choices mattered \u2014 I played c1 in R2 when I'd set a tight bar, and it got scrapped instead of scoring. A random player might have lucked into better outcomes, but this game rewards reading the gap precisely and choosing blocks strategica",
+        "My choices barely mattered. I had two blocks in my final line while the winner had seven\u2014that gap was set by which blocks I drew and when I could clear them, not by how I played. Even when I set the bar in round 3, I played it safe (dropped",
+        "You set the bar once (R1, full information) and cleared\u2014good decision. But you guessed wrong twice (R2, R3) on an unknown gap and got scrapped both times, while seat 3 made better calls and doubled your score. Your choices on *which* blocks",
+        "Your choices absolutely mattered \u2014 you won multiple rounds (R1, R3 visible, likely more) by picking better blocks than opponents, built a 7-block line while the table got 4, 2, and 0. Random play would expect everyone close to 25% round-win"
+      ],
+      "confusion_count": 12,
+      "moves": 51,
+      "question": "Did your choices matter, or would a random player have done as well?",
+      "table": 0,
+      "terminated": true,
+      "winners": [
+        3
+      ],
+      "would_play_again": [
+        true,
+        false,
+        true,
+        true
+      ]
+    },
+    {
+      "agency": [
+        false,
+        true,
+        false,
+        true
+      ],
+      "answers": [
+        "In R3, when I set the bar and then immediately my own block (a1) got scrapped, I couldn't tell if I'd misjudged the gap, misjudged my block height, or misunderstood how much clearance to leave when setting. The measurement uncertainty made ",
+        "When a block is scrapped (like d4 in round 2), I'm unclear whether it stays in play and gets added to the round winner's line, or if it's permanently removed from the game. The rule says \"scrapped for the rest of the game,\" but the scorelin",
+        "The most confusing part is how scrapped blocks get awarded. When I scrapped d4 and d2 (blocks taller than the gap), they somehow ended up in seat 1's score line instead of being removed from play entirely. The rule says blocks are \"scrapped",
+        "I don't understand how to score\u2014I cleared blocks (b5 in R2, b2 in R3) but they never entered my line, while seat 1 accumulated 7. Is scoring only for the round winner, or did I misread the winners? If so, once the bar drops below your small"
+      ],
+      "confusion_count": 11,
+      "moves": 52,
+      "question": "Which rule or situation confused you most, if any?",
+      "table": 1,
+      "terminated": true,
+      "winners": [
+        1
+      ],
+      "would_play_again": [
+        true,
+        true,
+        false,
+        false
+      ]
+    }
+  ],
+  "turn_cap": 160
+}

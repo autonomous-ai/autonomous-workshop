@@ -1,0 +1,34 @@
+{
+  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "check": "digital-lane-model",
+  "checks": {
+    "claim_scope": "qualitative demonstration; not to scale, not a Montauk tide prediction",
+    "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
+    "tested_relationships": [
+      {
+        "angle_degrees": 0,
+        "configuration": "aligned",
+        "model_result": "spring"
+      },
+      {
+        "angle_degrees": 90,
+        "configuration": "quadrature",
+        "model_result": "neap"
+      },
+      {
+        "angle_degrees": 180,
+        "configuration": "opposed",
+        "model_result": "spring"
+      },
+      {
+        "angle_degrees": 270,
+        "configuration": "quadrature",
+        "model_result": "neap"
+      }
+    ]
+  },
+  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "lane": "holdable-science",
+  "passed": true,
+  "schema_version": 1
+}

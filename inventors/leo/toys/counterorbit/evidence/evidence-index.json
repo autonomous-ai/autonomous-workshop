@@ -1,0 +1,37 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "evaluator": "showcase-digital-playtest-v1",
+  "evaluator_version": "1.0.0",
+  "kind": "showcase-digital-playtest-index",
+  "schema_version": 1,
+  "status": "waiting-at-playtest",
+  "unresolved_canonical_capabilities": [
+    "independent-review",
+    "human-replay",
+    "mechanical-test",
+    "print-test",
+    "physical-prototype"
+  ],
+  "validated_checks": [
+    {
+      "evidence_ref": "digital-geometry.json",
+      "playtest_id": "digital-geometry"
+    },
+    {
+      "evidence_ref": "digital-printability.json",
+      "playtest_id": "digital-printability"
+    },
+    {
+      "evidence_ref": "digital-lane.json",
+      "playtest_id": "digital-lane-model"
+    },
+    {
+      "evidence_ref": "wish-taste-trace.json",
+      "playtest_id": "wish-taste-trace"
+    },
+    {
+      "evidence_ref": "game-simulation.json",
+      "playtest_id": "game-simulation"
+    }
+  ]
+}

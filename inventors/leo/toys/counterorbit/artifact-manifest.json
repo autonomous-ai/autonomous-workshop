@@ -1,0 +1,122 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 1196,
+      "executable": false,
+      "path": "README.md",
+      "sha256": "329255cf32581b8be467e5453974c8c660c170cffece662c261fc949881b1282"
+    },
+    {
+      "bytes": 992,
+      "executable": false,
+      "path": "cad/design.json",
+      "sha256": "2531cf191cacee37070c71a0d2febbd43db8e645f797547b60764a9344847c46"
+    },
+    {
+      "bytes": 6091,
+      "executable": false,
+      "path": "cad/digital-build.json",
+      "sha256": "5994eeb3b393f264f8cc1ac8cb7ff95c09f50ea64c3a3a23895af7dd45ba2978"
+    },
+    {
+      "bytes": 999,
+      "executable": true,
+      "path": "cad/model.py",
+      "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+    },
+    {
+      "bytes": 56471,
+      "executable": false,
+      "path": "cad/parts/counter-orbit.step",
+      "sha256": "db5e4f3346f84f73ccdf3b998803ea3ad170e0a5718bdc198e85f2a4702919d7"
+    },
+    {
+      "bytes": 302484,
+      "executable": false,
+      "path": "cad/parts/counter-orbit.stl",
+      "sha256": "406543cfaa14a7c8f29913eeed25d0e60a90d8d7b9a3d57e5b7a878fb175a212"
+    },
+    {
+      "bytes": 36435,
+      "executable": false,
+      "path": "cad/parts/five-job-core.step",
+      "sha256": "806bb18e63074a6ad30459d6809288768f895de24b9e40f18ee16f185e4d91db"
+    },
+    {
+      "bytes": 176084,
+      "executable": false,
+      "path": "cad/parts/five-job-core.stl",
+      "sha256": "0ad80aa57f5653eba347536a719fde439bd75f1ec817054042a19be0b6f832cf"
+    },
+    {
+      "bytes": 13231,
+      "executable": false,
+      "path": "cad/parts/ring-signal.step",
+      "sha256": "7396b928db1acfc107ffbc3d20c5bbfb900d125283eaabd7296bf3ceb803bd90"
+    },
+    {
+      "bytes": 50084,
+      "executable": false,
+      "path": "cad/parts/ring-signal.stl",
+      "sha256": "5b582d826dcb2514680afc7c1638c1b8854ffa1d22f766e335783febc8ea5d02"
+    },
+    {
+      "bytes": 91688,
+      "executable": false,
+      "path": "cad/parts/spoke-signal.step",
+      "sha256": "774cf51f50c0d0e06ee27a899e8d6769ecffb9348d4f447e5fc87b70152c53cc"
+    },
+    {
+      "bytes": 28084,
+      "executable": false,
+      "path": "cad/parts/spoke-signal.stl",
+      "sha256": "61c8d6ae163bd5c57c2207ccf6a26c4732289640759f3bd56e4683f3eebaf03b"
+    },
+    {
+      "bytes": 629119,
+      "executable": false,
+      "path": "cad/product.step",
+      "sha256": "f5fbc5968ad0966a217a8f93ea9ffd8fa7bca61b7b8ffe83a1608631d0336ab1"
+    },
+    {
+      "bytes": 868484,
+      "executable": false,
+      "path": "cad/product.stl",
+      "sha256": "e08d80984a64b733151639be44f43a13b131e616ec9b95a5e4afbf373610b2d8"
+    },
+    {
+      "bytes": 1510,
+      "executable": false,
+      "path": "game/RULES.md",
+      "sha256": "a011cb94ac2fedb4b33daaaf0a0f741a897f0f386894557b2c2d0411ba1eb4b6"
+    },
+    {
+      "bytes": 5952,
+      "executable": true,
+      "path": "game/simulate.py",
+      "sha256": "65610d6d994a674771a5bd03837134c53ba098dc7733a538dadb00c192b66517"
+    },
+    {
+      "bytes": 113073,
+      "executable": false,
+      "path": "images/hero.png",
+      "sha256": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2"
+    },
+    {
+      "bytes": 1522,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "f03b220ea1dbd308f0c98c3562dadef281255b63adbccb0b0c01ce357204c601"
+    },
+    {
+      "bytes": 349,
+      "executable": false,
+      "path": "wish.json",
+      "sha256": "9f7f99c31c0a55983b7ddc238b5975ab6e16551b6bf419db106c8a435e9f2808"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 2383848
+}

@@ -1,0 +1,85 @@
+{
+  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "assertions": {
+    "delivered": false,
+    "exact_geometry_render": true,
+    "human_playtest": false,
+    "instructions_created": false,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "761992ed3f94ff887e62afbf0bf784a5d24d77fae95d960ab0f590facc58bd7f",
+  "evidence_sha256": "5b509a3aa8d09e6cbdb7a8eeaca329149c673870d37035d24b9e9b62e47d252f",
+  "inventor": {
+    "extension_level": "custom-playtest",
+    "id": "leo",
+    "name": "Leo",
+    "profile": "inventors/leo/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "playtest",
+    "needs": [
+      {
+        "capability": "independent-review",
+        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
+      },
+      {
+        "capability": "human-replay",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      },
+      {
+        "capability": "mechanical-test",
+        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
+      },
+      {
+        "capability": "print-test",
+        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
+        "job": "playtest",
+        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
+      },
+      {
+        "capability": "physical-prototype",
+        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
+        "job": "playtest",
+        "reason": "This exact digital prototype still needs independent real-world evidence."
+      }
+    ],
+    "playtest_rounds": 10,
+    "product_id": "counterorbit",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "taste_sha256": "d1b12c6043328f8d55b3429b94c597a85ace6590d50f048399d013e6d0bf4963",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "invented-games"
+    },
+    "context": {
+      "inventor_id": "leo"
+    },
+    "objective": "I wish for a tense two-player game where our five Workshop jobs orbit, interfere, and only align when a plan survives the other inventor.",
+    "product_id": "counterorbit",
+    "schema_version": 1
+  }
+}

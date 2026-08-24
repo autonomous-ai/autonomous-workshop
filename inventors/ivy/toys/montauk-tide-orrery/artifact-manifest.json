@@ -1,0 +1,134 @@
+{
+  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 1223,
+      "executable": false,
+      "path": "README.md",
+      "sha256": "84c7ee6b18481fe0b6c588b6071c2947b346d71579f7b2f28a16cf945137b83a"
+    },
+    {
+      "bytes": 1176,
+      "executable": false,
+      "path": "cad/design.json",
+      "sha256": "731aecf4f08479916c75b4973f3419db8a9fac5b3f6e56a1f87035c1db2ea9de"
+    },
+    {
+      "bytes": 8200,
+      "executable": false,
+      "path": "cad/digital-build.json",
+      "sha256": "0add46edea12d9a68d0b1d06ef75f3f2e0b368fa43040177294c93ac830b24cc"
+    },
+    {
+      "bytes": 999,
+      "executable": true,
+      "path": "cad/model.py",
+      "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+    },
+    {
+      "bytes": 5756,
+      "executable": false,
+      "path": "cad/parts/center-post.step",
+      "sha256": "a91c703904a20efcc2862a054ed5901e076b4b9a82e41d21bfb19ac6c758fd17"
+    },
+    {
+      "bytes": 25084,
+      "executable": false,
+      "path": "cad/parts/center-post.stl",
+      "sha256": "de6d79adb07737ca989d34b1332a83be881cb0bfa847d7771b75d7f9c060596c"
+    },
+    {
+      "bytes": 8548,
+      "executable": false,
+      "path": "cad/parts/earth-hub.step",
+      "sha256": "ebe41adae0bc821ec711b390b0842f3dbd8dddd74077ae3bafb03b3c23ad2448"
+    },
+    {
+      "bytes": 192484,
+      "executable": false,
+      "path": "cad/parts/earth-hub.stl",
+      "sha256": "a0c93f1ae506a947d718a7b56eee7e916e69fb01d24a8b7c889bfeb668de114b"
+    },
+    {
+      "bytes": 16638,
+      "executable": false,
+      "path": "cad/parts/moon-marker.step",
+      "sha256": "fb585eba6d9d4da711c07c7b455b667dfb1f511df71e1082c2b361615991d3db"
+    },
+    {
+      "bytes": 151084,
+      "executable": false,
+      "path": "cad/parts/moon-marker.stl",
+      "sha256": "9d5ad04c3e7959a498b2184ef9804607835e2e3da061dc1c32cf10ed81afabd6"
+    },
+    {
+      "bytes": 71863,
+      "executable": false,
+      "path": "cad/parts/phase-base.step",
+      "sha256": "d8e3183223d3d1a8d64643c255de68b1b7d4cac1f2b7e4d7178b13760dca75a9"
+    },
+    {
+      "bytes": 27484,
+      "executable": false,
+      "path": "cad/parts/phase-base.stl",
+      "sha256": "3a311d957ea1452b9558214a709099517dc4154a0df77abbd2f47f212c064cd7"
+    },
+    {
+      "bytes": 22876,
+      "executable": false,
+      "path": "cad/parts/sun-arrow.step",
+      "sha256": "0ba3b08784bd2b0801c274edf153eb68c8c0559fec3d33dd3919dc34c602e228"
+    },
+    {
+      "bytes": 25684,
+      "executable": false,
+      "path": "cad/parts/sun-arrow.stl",
+      "sha256": "c8c8aa78d82544e804aac1f017561e2bb2f35bdc87653cc73c44ed2e55986c54"
+    },
+    {
+      "bytes": 32879,
+      "executable": false,
+      "path": "cad/parts/tide-arm.step",
+      "sha256": "f887845dd492b2e48a309a43752417e130639dffcf0f9a148f590f8fd270c451"
+    },
+    {
+      "bytes": 76084,
+      "executable": false,
+      "path": "cad/parts/tide-arm.stl",
+      "sha256": "694a98e328b6529f76e2449e0d1bd45820ef24980e01712ce058b8fb9acda06e"
+    },
+    {
+      "bytes": 162998,
+      "executable": false,
+      "path": "cad/product.step",
+      "sha256": "bb2519c5af0fb17de4eb34e652308d6c07a17d7ca13e36a72bbc7a0c8bc77b2c"
+    },
+    {
+      "bytes": 497484,
+      "executable": false,
+      "path": "cad/product.stl",
+      "sha256": "777fb5efa1ad595af49604c7482371d82b8b32a8fe9f1073b164fdbb654dc00b"
+    },
+    {
+      "bytes": 107963,
+      "executable": false,
+      "path": "images/hero.png",
+      "sha256": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb"
+    },
+    {
+      "bytes": 1570,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "71c194cb8d76d682c6060437e99837e6a237e77e62d6dc4108e802c52a4f69a2"
+    },
+    {
+      "bytes": 329,
+      "executable": false,
+      "path": "wish.json",
+      "sha256": "4511a1a4f62c31da07b1d4f694b45e790d72660424e4f2276a4a6e3d7be25a69"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 1438406
+}

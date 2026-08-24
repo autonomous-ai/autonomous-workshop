@@ -1,0 +1,44 @@
+{
+  "artifact_sha256": "5b509a3aa8d09e6cbdb7a8eeaca329149c673870d37035d24b9e9b62e47d252f",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 437,
+      "executable": false,
+      "path": "digital-geometry.json",
+      "sha256": "5176b44212c75e27bc79538620b7de7077c896edac463a47c805605e30d04448"
+    },
+    {
+      "bytes": 624,
+      "executable": false,
+      "path": "digital-lane.json",
+      "sha256": "3226cb1a86e9db8fc5e03f98d86e94a44347b47c779ac8e4a435dee501345c7e"
+    },
+    {
+      "bytes": 500,
+      "executable": false,
+      "path": "digital-printability.json",
+      "sha256": "aea3a0cf529ec0b8f113a2d675bf5f6f661ad81519d2a46575efbb72c17efd40"
+    },
+    {
+      "bytes": 964,
+      "executable": false,
+      "path": "evidence-index.json",
+      "sha256": "675197d2378bcacd41b24f971bfcc940e6af48ff734dfae3cd08b5db10fd99dc"
+    },
+    {
+      "bytes": 6876,
+      "executable": false,
+      "path": "game-simulation.json",
+      "sha256": "3778455b8d1d89038869be6adfe24e713b27d962718013e7a339d6a1a585d578"
+    },
+    {
+      "bytes": 883,
+      "executable": false,
+      "path": "wish-taste-trace.json",
+      "sha256": "86834f592cc1f2b5e77831ab751d47386a584ca7d6a5c4bd39d6bda62665ba52"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 10284
+}

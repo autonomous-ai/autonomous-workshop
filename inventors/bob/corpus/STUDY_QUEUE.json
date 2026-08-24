@@ -1,0 +1,30 @@
+{
+  "comment": "Scholar loop work queue. One unit per scholar tick. Each unit becomes a mechanism/era card in corpus/cards/. The scholar may append units it discovers (snowball), tagged discovered_by: scholar. Order = priority.",
+  "next_id": 25,
+  "units": [
+    {"id": 1, "kind": "era", "topic": "Ancient race games: Senet, Royal Game of Ur, Hounds & Jackals — what 4,500 years of survival says about luck-vs-skill dosing", "status": "todo"},
+    {"id": 2, "kind": "era", "topic": "Go and the economy of one rule — depth from placement + capture alone; what minimal rulesets buy", "status": "todo"},
+    {"id": 3, "kind": "era", "topic": "Chess lineage (chaturanga→shogi→chess): asymmetric piece powers, drop rules, why shogi never goes stale", "status": "todo"},
+    {"id": 4, "kind": "era", "topic": "Mancala family: perfect-information sowing engines, ruleset variation across Africa/Asia as natural A/B testing", "status": "todo"},
+    {"id": 5, "kind": "era", "topic": "Backgammon: the doubling cube as the greatest tension invention; racing + luck management", "status": "todo"},
+    {"id": 6, "kind": "mechanism", "topic": "Dexterity games that sold: Jenga, Crokinole, Carrom, ICECOOL, Klask — physical skill as the fun engine and its party-context dependence", "status": "todo"},
+    {"id": 7, "kind": "mechanism", "topic": "Physical hidden-state machines: Stay Alive (1965), Screwball Scramble, Mouse Trap — what breaks and what delights in plastic mechanisms", "status": "todo"},
+    {"id": 8, "kind": "era", "topic": "The German school: Catan, Carcassonne, El Grande — interaction without elimination, catch-up mechanics, 60-minute discipline", "status": "todo"},
+    {"id": 9, "kind": "mechanism", "topic": "Engine builders: Dominion, Splendor, Wingspan — the compounding-growth dopamine curve and its endgame problem", "status": "todo"},
+    {"id": 10, "kind": "mechanism", "topic": "Auction/valuation: Knizia's trilogy (Ra, Modern Art, Tigris) — pricing as gameplay; why auctions died in mass market", "status": "todo"},
+    {"id": 11, "kind": "mechanism", "topic": "Worker placement: Agricola, Viticulture — blocking as interaction; turn-order tension", "status": "todo"},
+    {"id": 12, "kind": "mechanism", "topic": "Social deduction: Werewolf, The Resistance, Blood on the Clocktower — hidden roles, table talk, player-count sensitivity", "status": "todo"},
+    {"id": 13, "kind": "mechanism", "topic": "Cooperative engines: Pandemic, Spirit Island, The Crew — alpha-player problem and solutions; co-op difficulty tuning", "status": "todo"},
+    {"id": 14, "kind": "mechanism", "topic": "Legacy/campaign: Risk Legacy, Pandemic Legacy, Gloomhaven — permanent change as retention; the reset economics", "status": "todo"},
+    {"id": 15, "kind": "mechanism", "topic": "Roll-and-write boom: Qwixx, Welcome To, Cartographers — why paper+pencil beat apps; simultaneous play", "status": "todo"},
+    {"id": 16, "kind": "mechanism", "topic": "Abstract modern: Hive, Azul, Santorini, YINSH (GIPF) — theme-free depth, piece-geometry-as-rules (Hive has no board!)", "status": "todo"},
+    {"id": 17, "kind": "mechanism", "topic": "Party geometry: Codenames, Wavelength, Just One — the spectator problem solved; one clever constraint per game", "status": "todo"},
+    {"id": 18, "kind": "case", "topic": "Yavalath and LUDI: the computer-invented game that sold — Browne's fitness function (drama, uncertainty, depth proxies), what it validates for Bob", "status": "todo"},
+    {"id": 19, "kind": "case", "topic": "Failed physical games post-2015 (Kickstarter graveyard): overproduced minis, rules bloat, kinetic gimmicks that bored after one play — the anti-canon", "status": "todo"},
+    {"id": 20, "kind": "case", "topic": "3D-printed games on marketplaces today (Printables/MakerWorld/Etsy): what exists, what sells, where the white space is", "status": "todo"},
+    {"id": 21, "kind": "mechanism", "topic": "Trick-taking 500 years on: from Karnöffel to The Crew — why the oldest card mechanism keeps producing hits", "status": "todo"},
+    {"id": 22, "kind": "mechanism", "topic": "Tension mechanics inventory: push-your-luck (Can't Stop, Quacks), timers, bag-building — quantifying 'one more turn'", "status": "todo"},
+    {"id": 23, "kind": "case", "topic": "Player-count reality: BGG data on 2p vs 3-4p vs party sizes; what player count Bob should design for first and why", "status": "todo"},
+    {"id": 24, "kind": "case", "topic": "Rulebook science: how the best rulebooks teach (Uwe/Leacock patterns), ambiguity failure modes, the 'first game in 5 minutes' bar", "status": "todo"}
+  ]
+}

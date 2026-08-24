@@ -1,0 +1,16 @@
+{
+  "bgg_candidates": [],
+  "corpus_hits": [],
+  "game_doc_sha256": null,
+  "generated_at": "2026-08-22T12:55:19.800571+00:00",
+  "search_terms": {
+    "keywords": [],
+    "title": "g0001"
+  },
+  "slug": "g0001",
+  "title": "g0001",
+  "warnings": [
+    "BGG lookup failed (URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1123)>) \u2014 novelty judge must work from corpus only and say so; a kill still requires a URL, so no kill can come from this run's web evidence.",
+    "corpus/INDEX.md missing \u2014 scholar loop has not built the index yet; corpus evidence unavailable"
+  ]
+}

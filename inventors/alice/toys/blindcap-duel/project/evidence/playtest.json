@@ -1,0 +1,237 @@
+{
+  "idea": "board-game/ideas/blindcap-duel/idea.json",
+  "engine": "board-game/ideas/blindcap-duel/playtest/engine.py",
+  "provenance": {
+    "semantic_reverified": "2026-08-23",
+    "idea_sha256": "7f85d295b9127fd1688b68dd782f0b10255465a30a43d4c83f5c839802477fe1",
+    "rules": "board-game/ideas/blindcap-duel/project/RULES.md",
+    "rules_sha256": "5e48d003b59450fc12df677d476350b84c2e0be3a30f3405bbd545239c2ad880",
+    "engine_sha256": "9a548e6f31c4d5d5c1dcf669cea3d996ac2a43fe803cf7d4ddea2129a73ea8ee",
+    "command": "python3 board-game/tools/playtest.py board-game/ideas/blindcap-duel --games 400 --ladder-games 60 --mc-budget 30 --out board-game/ideas/blindcap-duel/project/evidence/playtest.json --deadline 300"
+  },
+  "pass": true,
+  "verdict": "clean",
+  "by_class": {},
+  "findings": [],
+  "stats": {
+    "slug": "blindcap-duel",
+    "idea": {
+      "playtime_min": 25,
+      "players": [
+        2,
+        2
+      ]
+    },
+    "config": {
+      "games": 400,
+      "ladder_games": 60,
+      "mc_budget": 30,
+      "seed": 7,
+      "turn_cap": 40,
+      "deadline_s": 300.0,
+      "hidden_info": true,
+      "determinize": true
+    },
+    "seats": {
+      "2": {
+        "random": {
+          "games_requested": 400,
+          "games_played": 400,
+          "natural_endings": 400,
+          "stuck": 0,
+          "undefined": [],
+          "undefined_count": 0,
+          "wins": [
+            186.5,
+            213.5
+          ],
+          "turns_mean": 24.0,
+          "turns_median": 24.0,
+          "turns_p90": 24,
+          "branching_mean": 15.611666666666666,
+          "branching_median": 8.0,
+          "branching_p90": 42,
+          "branching_max": 64,
+          "forced_fraction": 0.0,
+          "margin_mean": 3.6425,
+          "kinds_legal": [
+            "crown",
+            "plant",
+            "probe",
+            "seed"
+          ],
+          "kinds_chosen": {
+            "seed": 800,
+            "plant": 4000,
+            "crown": 2400,
+            "probe": 2400
+          },
+          "runaway": 0.589041095890411,
+          "ties": 5,
+          "tie_rate": 0.0125,
+          "challenger_wins": 0.0,
+          "challenger_decided": 0,
+          "seat": {
+            "fair_share": 0.5,
+            "win_rates": [
+              0.46625,
+              0.53375
+            ],
+            "best_seat": 1,
+            "best_rate": 0.53375,
+            "best_ci": [
+              0.4860191592087707,
+              0.5833149559492518
+            ],
+            "decided": 400.0,
+            "edge": -0.013980840791229299
+          }
+        },
+        "competent": {
+          "games_requested": 400,
+          "games_played": 400,
+          "natural_endings": 400,
+          "stuck": 0,
+          "undefined": [],
+          "undefined_count": 0,
+          "wins": [
+            203.0,
+            197.0
+          ],
+          "turns_mean": 24.0,
+          "turns_median": 24.0,
+          "turns_p90": 24,
+          "branching_mean": 15.756979166666667,
+          "branching_median": 8.0,
+          "branching_p90": 42,
+          "branching_max": 64,
+          "forced_fraction": 0.0,
+          "margin_mean": 0.7575,
+          "kinds_legal": [
+            "crown",
+            "plant",
+            "probe",
+            "seed"
+          ],
+          "kinds_chosen": {
+            "seed": 800,
+            "plant": 4000,
+            "crown": 2400,
+            "probe": 2400
+          },
+          "runaway": 0.6459016393442623,
+          "ties": 34,
+          "tie_rate": 0.085,
+          "challenger_wins": 0.0,
+          "challenger_decided": 0,
+          "seat": {
+            "fair_share": 0.5,
+            "win_rates": [
+              0.5075,
+              0.4925
+            ],
+            "best_seat": 0,
+            "best_rate": 0.5075,
+            "best_ci": [
+              0.458667706127959,
+              0.5561896042630459
+            ],
+            "decided": 400.0,
+            "edge": -0.041332293872041015
+          }
+        }
+      }
+    },
+    "table_size": 2,
+    "competent_policy": "greedy",
+    "competent_games": 400,
+    "ladder": [
+      {
+        "policy": "first",
+        "field": "random",
+        "games": 60,
+        "win_rate": 0.6166666666666667,
+        "ci": [
+          0.4901736454040315,
+          0.7291191041511176
+        ],
+        "fair_share": 0.5,
+        "edge": -0.009826354595968478,
+        "kinds_chosen": {
+          "seed": 120,
+          "plant": 600,
+          "probe": 360,
+          "crown": 360
+        }
+      },
+      {
+        "policy": "greedy",
+        "field": "random",
+        "games": 60,
+        "win_rate": 0.9,
+        "ci": [
+          0.7985030550748896,
+          0.9533578005427642
+        ],
+        "fair_share": 0.5,
+        "edge": 0.2985030550748896,
+        "kinds_chosen": {
+          "seed": 120,
+          "plant": 600,
+          "probe": 360,
+          "crown": 360
+        }
+      },
+      {
+        "policy": "lookahead",
+        "field": "random",
+        "games": 60,
+        "win_rate": 0.7,
+        "ci": [
+          0.5749105303360957,
+          0.801019897472731
+        ],
+        "fair_share": 0.5,
+        "edge": 0.07491053033609574,
+        "kinds_chosen": {
+          "seed": 120,
+          "plant": 600,
+          "crown": 360,
+          "probe": 360
+        }
+      },
+      {
+        "policy": "lookahead",
+        "field": "greedy",
+        "games": 60,
+        "win_rate": 0.23333333333333334,
+        "ci": [
+          0.1443943161843107,
+          0.3543651134039202
+        ],
+        "fair_share": 0.5,
+        "edge": -0.3556056838156893,
+        "kinds_chosen": {
+          "seed": 120,
+          "plant": 600,
+          "crown": 360,
+          "probe": 360
+        }
+      }
+    ],
+    "moves": {
+      "declared": [
+        "seed",
+        "plant",
+        "probe",
+        "crown"
+      ],
+      "never_legal": [],
+      "never_chosen": []
+    },
+    "sensitivity": [],
+    "leaks": [],
+    "elapsed_s": 46.7,
+    "hit_deadline": false
+  }
+}

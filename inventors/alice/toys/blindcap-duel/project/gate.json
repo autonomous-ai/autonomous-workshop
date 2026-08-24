@@ -1,0 +1,1220 @@
+{
+  "project": "/private/tmp/panda-catchup-20260822/vibe-ideas/board-game/ideas/blindcap-duel/project",
+  "source_sha256": "94124ea3a91c006f555fba16256b5c355409d8b819421344c1de8cb91c713f1e",
+  "input_sha256": {
+    "source_sha256": "94124ea3a91c006f555fba16256b5c355409d8b819421344c1de8cb91c713f1e",
+    "cad_project_sha256": "0a56d5ee513462f6d53083b4368130107c8ef7d78e6677c497a688fde7de07dd",
+    "bill_sha256": "e57c055a6ebd46d6d70deefcbcb72ec5db73534a22d21b48d3c9319cbe14d85b",
+    "motion_sha256": "e32bd536b75c447fb6da70fe07b069815140bdc2bb60da48d5bc0176099687b0",
+    "brief_sha256": "dcb34ff57ae8508efffa45e9fda0029d1fa0f44ba368de57ca089210d5941f39",
+    "slicer_executable_sha256": "544098eecb95e01e6ba636a16f3252efb6994806376a334a5085320d3468c26f",
+    "slicer_profile_sha256": [
+      "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9",
+      "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7",
+      "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+    ]
+  },
+  "bed_usable_mm": [
+    246.0,
+    246.0,
+    251.0
+  ],
+  "build": {
+    "ok": true,
+    "is_solid": true,
+    "volume_mm3": 1372244.9957111797,
+    "blocking_warnings": []
+  },
+  "part_count": 28,
+  "bill": {
+    "expected_total": 28,
+    "findings": []
+  },
+  "package_promoted": [
+    "blindcap-duel.stl",
+    "blindcap-duel.step",
+    "blindcap-duel_parts/loam_tile_01.stl",
+    "blindcap-duel_parts/loam_tile.step",
+    "blindcap-duel_parts/loam_tile_02.stl",
+    "blindcap-duel_parts/stool_deadhead_p1_01.stl",
+    "blindcap-duel_parts/stool_deadhead_p1.step",
+    "blindcap-duel_parts/stool_deadhead_p1_02.stl",
+    "blindcap-duel_parts/stool_deadhead_p2_01.stl",
+    "blindcap-duel_parts/stool_deadhead_p2.step",
+    "blindcap-duel_parts/stool_deadhead_p2_02.stl",
+    "blindcap-duel_parts/stool_bracket_p1_01.stl",
+    "blindcap-duel_parts/stool_bracket_p1.step",
+    "blindcap-duel_parts/stool_bracket_p1_02.stl",
+    "blindcap-duel_parts/stool_bracket_p2_01.stl",
+    "blindcap-duel_parts/stool_bracket_p2.step",
+    "blindcap-duel_parts/stool_bracket_p2_02.stl",
+    "blindcap-duel_parts/stool_inkcap_p1_01.stl",
+    "blindcap-duel_parts/stool_inkcap_p1.step",
+    "blindcap-duel_parts/stool_inkcap_p2_01.stl",
+    "blindcap-duel_parts/stool_inkcap_p2.step",
+    "blindcap-duel_parts/stool_hollow_p1_01.stl",
+    "blindcap-duel_parts/stool_hollow_p1.step",
+    "blindcap-duel_parts/stool_hollow_p2_01.stl",
+    "blindcap-duel_parts/stool_hollow_p2.step",
+    "blindcap-duel_parts/claim_crown_p1_01.stl",
+    "blindcap-duel_parts/claim_crown_p1.step",
+    "blindcap-duel_parts/claim_crown_p1_02.stl",
+    "blindcap-duel_parts/claim_crown_p2_01.stl",
+    "blindcap-duel_parts/claim_crown_p2.step",
+    "blindcap-duel_parts/claim_crown_p2_02.stl",
+    "blindcap-duel_parts/claim_crown_p1_03.stl",
+    "blindcap-duel_parts/claim_crown_p2_03.stl",
+    "blindcap-duel_parts/probe_pin_p2_01.stl",
+    "blindcap-duel_parts/probe_pin_p2.step",
+    "blindcap-duel_parts/probe_pin_p2_02.stl",
+    "blindcap-duel_parts/probe_pin_p2_03.stl",
+    "blindcap-duel_parts/probe_pin_p1_01.stl",
+    "blindcap-duel_parts/probe_pin_p1.step",
+    "blindcap-duel_parts/probe_pin_p1_02.stl",
+    "blindcap-duel_parts/probe_pin_p1_03.stl",
+    "blindcap-duel_parts/spore_trough_p1_01.stl",
+    "blindcap-duel_parts/spore_trough_p1.step",
+    "blindcap-duel_parts/spore_trough_p2_01.stl",
+    "blindcap-duel_parts/spore_trough_p2.step"
+  ],
+  "package_artifacts": {
+    "verified": true,
+    "assembled": {
+      "blindcap-duel.stl": "c951471a2dd207da776c7c4e931d68e941d895e354b75f5e1efeb5cbe444e690",
+      "blindcap-duel.step": "4e4d0648bba0b125df5ce9283c0493fada12e24e388f1807d7b0fc6ef9bcccb1"
+    },
+    "parts": {
+      "loam_tile": {
+        "shipped": {
+          "loam_tile_01.stl": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b",
+          "loam_tile.step": "aeca0375c2ed8cdc52f4126c9dd90dc3fb4815ee00d5f555f68c3eb80d9f6f38",
+          "loam_tile_02.stl": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b"
+        },
+        "build_instances": {
+          "loam_tile_01.stl": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b",
+          "loam_tile_01.step": "aeca0375c2ed8cdc52f4126c9dd90dc3fb4815ee00d5f555f68c3eb80d9f6f38",
+          "loam_tile_02.stl": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b",
+          "loam_tile_02.step": "e2dfd1c9a517342e2354ded1d660b5e68288b2ea05f7c4ffd3641f2d858e5ca8"
+        }
+      },
+      "stool_deadhead_p1": {
+        "shipped": {
+          "stool_deadhead_p1_01.stl": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95",
+          "stool_deadhead_p1.step": "77182353f80079ea9f0fccbc65cf961a265186d7d97ce4b408e458a3e5f9999c",
+          "stool_deadhead_p1_02.stl": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95"
+        },
+        "build_instances": {
+          "stool_deadhead_p1_01.stl": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95",
+          "stool_deadhead_p1_01.step": "77182353f80079ea9f0fccbc65cf961a265186d7d97ce4b408e458a3e5f9999c",
+          "stool_deadhead_p1_02.stl": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95",
+          "stool_deadhead_p1_02.step": "d529f6de7fed4563f6b7286c0118936958ad1750815e5af6468bfd76fb0e34e2"
+        }
+      },
+      "stool_deadhead_p2": {
+        "shipped": {
+          "stool_deadhead_p2_01.stl": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465",
+          "stool_deadhead_p2.step": "98e339ce8d2aec1c92c954407158c42a3fb79357f05472ea329bcd7bac02f1e9",
+          "stool_deadhead_p2_02.stl": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465"
+        },
+        "build_instances": {
+          "stool_deadhead_p2_01.stl": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465",
+          "stool_deadhead_p2_01.step": "98e339ce8d2aec1c92c954407158c42a3fb79357f05472ea329bcd7bac02f1e9",
+          "stool_deadhead_p2_02.stl": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465",
+          "stool_deadhead_p2_02.step": "a6fc28ec50547d7bc7390fc49d2c518a10bce20e740cfa3652ba0de61695fdfa"
+        }
+      },
+      "stool_bracket_p1": {
+        "shipped": {
+          "stool_bracket_p1_01.stl": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915",
+          "stool_bracket_p1.step": "27b3be5c20c26a09e7ce5eee2a772af743274f4b395f8b97974de8f4354a7375",
+          "stool_bracket_p1_02.stl": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915"
+        },
+        "build_instances": {
+          "stool_bracket_p1_01.stl": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915",
+          "stool_bracket_p1_01.step": "27b3be5c20c26a09e7ce5eee2a772af743274f4b395f8b97974de8f4354a7375",
+          "stool_bracket_p1_02.stl": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915",
+          "stool_bracket_p1_02.step": "9da3ca63592d79de0d97c1a333fef6432f8acddf4e692eaab727dc6269a21dcd"
+        }
+      },
+      "stool_bracket_p2": {
+        "shipped": {
+          "stool_bracket_p2_01.stl": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa",
+          "stool_bracket_p2.step": "514bcab35610b7fb191d67f64a44df46c8a28748480c7c4d2b554280ddc9b6ea",
+          "stool_bracket_p2_02.stl": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa"
+        },
+        "build_instances": {
+          "stool_bracket_p2_01.stl": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa",
+          "stool_bracket_p2_01.step": "514bcab35610b7fb191d67f64a44df46c8a28748480c7c4d2b554280ddc9b6ea",
+          "stool_bracket_p2_02.stl": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa",
+          "stool_bracket_p2_02.step": "136e257f33d702dedd09e9e7a3d961e252fa996069745c7ad93ebea627f3cc07"
+        }
+      },
+      "stool_inkcap_p1": {
+        "shipped": {
+          "stool_inkcap_p1_01.stl": "336bc4b145cb9cfdcaa1c63cf505e749287affed5cc88a942fa0260719c84b6e",
+          "stool_inkcap_p1.step": "1d2d010640526df63f9f642af51a1eba9b7501f2acda5aac5c61365889477268"
+        },
+        "build_instances": {
+          "stool_inkcap_p1_01.stl": "336bc4b145cb9cfdcaa1c63cf505e749287affed5cc88a942fa0260719c84b6e",
+          "stool_inkcap_p1_01.step": "1d2d010640526df63f9f642af51a1eba9b7501f2acda5aac5c61365889477268"
+        }
+      },
+      "stool_inkcap_p2": {
+        "shipped": {
+          "stool_inkcap_p2_01.stl": "393a716362c2a2feef1d60db193ac732f3855822225cf0871914f0f0861ded8f",
+          "stool_inkcap_p2.step": "efb0d7ed6e955bcd72ca44ae25d1cc30bc79e254ee4bfaa99b61f8d4c22dad2e"
+        },
+        "build_instances": {
+          "stool_inkcap_p2_01.stl": "393a716362c2a2feef1d60db193ac732f3855822225cf0871914f0f0861ded8f",
+          "stool_inkcap_p2_01.step": "efb0d7ed6e955bcd72ca44ae25d1cc30bc79e254ee4bfaa99b61f8d4c22dad2e"
+        }
+      },
+      "stool_hollow_p1": {
+        "shipped": {
+          "stool_hollow_p1_01.stl": "eb4dfd5c00e3527545a90ee980f95706e0433718d33f3fa0b8cecb8021cb4da0",
+          "stool_hollow_p1.step": "62c13e9d0d578bdb6c6cae2ad3025d51438df9c7efdeed15bbd38458e592318e"
+        },
+        "build_instances": {
+          "stool_hollow_p1_01.stl": "eb4dfd5c00e3527545a90ee980f95706e0433718d33f3fa0b8cecb8021cb4da0",
+          "stool_hollow_p1_01.step": "62c13e9d0d578bdb6c6cae2ad3025d51438df9c7efdeed15bbd38458e592318e"
+        }
+      },
+      "stool_hollow_p2": {
+        "shipped": {
+          "stool_hollow_p2_01.stl": "c62923ac341c6cacf37707f51dc247332d7ee6f758902c866d3bf77351d208fd",
+          "stool_hollow_p2.step": "6e59e3fe38a4998ad2af3d791d383244b3d4a7475f39f27f0b531d321c1f6fa9"
+        },
+        "build_instances": {
+          "stool_hollow_p2_01.stl": "c62923ac341c6cacf37707f51dc247332d7ee6f758902c866d3bf77351d208fd",
+          "stool_hollow_p2_01.step": "6e59e3fe38a4998ad2af3d791d383244b3d4a7475f39f27f0b531d321c1f6fa9"
+        }
+      },
+      "claim_crown_p1": {
+        "shipped": {
+          "claim_crown_p1_01.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+          "claim_crown_p1.step": "718891930a6042a57adcab92ef129130fdb5c6663181b091ab305ed94519c06c",
+          "claim_crown_p1_02.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+          "claim_crown_p1_03.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c"
+        },
+        "build_instances": {
+          "claim_crown_p1_01.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+          "claim_crown_p1_01.step": "718891930a6042a57adcab92ef129130fdb5c6663181b091ab305ed94519c06c",
+          "claim_crown_p1_02.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+          "claim_crown_p1_02.step": "420ea071177c6da62a81a67a21741a5c7174f3102567fdd1127de0819d155031",
+          "claim_crown_p1_03.stl": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+          "claim_crown_p1_03.step": "2170ddd89051ecb263189e41962f9332b3f010c6fdd5fcfb61fa1dfc3993a33f"
+        }
+      },
+      "claim_crown_p2": {
+        "shipped": {
+          "claim_crown_p2_01.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+          "claim_crown_p2.step": "f6e0ae06af9cd4b271f987c8dfe8de003f7c8444a8b9e63e82e646bc587fe487",
+          "claim_crown_p2_02.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+          "claim_crown_p2_03.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7"
+        },
+        "build_instances": {
+          "claim_crown_p2_01.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+          "claim_crown_p2_01.step": "f6e0ae06af9cd4b271f987c8dfe8de003f7c8444a8b9e63e82e646bc587fe487",
+          "claim_crown_p2_02.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+          "claim_crown_p2_02.step": "2404289bc55e9a885d42abfb32256986079bea55acb6db9d4c1d88fc2d190dd0",
+          "claim_crown_p2_03.stl": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+          "claim_crown_p2_03.step": "4df552ecdcef43680625c06326e970f6c48c24c72e91a23fc115062954f15c72"
+        }
+      },
+      "probe_pin_p2": {
+        "shipped": {
+          "probe_pin_p2_01.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+          "probe_pin_p2.step": "db2823e49755918a6990236eca934b0157a6e0f3da914f1aeeaeb31e7537b906",
+          "probe_pin_p2_02.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+          "probe_pin_p2_03.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42"
+        },
+        "build_instances": {
+          "probe_pin_p2_01.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+          "probe_pin_p2_01.step": "db2823e49755918a6990236eca934b0157a6e0f3da914f1aeeaeb31e7537b906",
+          "probe_pin_p2_02.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+          "probe_pin_p2_02.step": "e64d10278d4eb3d332ef8f7f97947b86b6d6b913046a353013d7571371e92bf4",
+          "probe_pin_p2_03.stl": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+          "probe_pin_p2_03.step": "537182466a8d6f53445a1ea6ad34e990264e11f1c5514ec2e5d53cf2b7a9b81e"
+        }
+      },
+      "probe_pin_p1": {
+        "shipped": {
+          "probe_pin_p1_01.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+          "probe_pin_p1.step": "b1b38673c79f16087e9576053973d01ae1a802d463dfc3fe41f7bb087556307c",
+          "probe_pin_p1_02.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+          "probe_pin_p1_03.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4"
+        },
+        "build_instances": {
+          "probe_pin_p1_01.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+          "probe_pin_p1_01.step": "b1b38673c79f16087e9576053973d01ae1a802d463dfc3fe41f7bb087556307c",
+          "probe_pin_p1_02.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+          "probe_pin_p1_02.step": "31a5221c2efe7dd74c790c51ef8115c558952fdd4550c79b8c17dc90d75831e9",
+          "probe_pin_p1_03.stl": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+          "probe_pin_p1_03.step": "f67c456afe20fa31fd23019cfc22612a81e06f111d6b86df5fb0f9e7af5bb9ef"
+        }
+      },
+      "spore_trough_p1": {
+        "shipped": {
+          "spore_trough_p1_01.stl": "5aa255b6f07e8c7100b6e7dbbf054229ff2fb7233ab4930b44ea684a6145f7f0",
+          "spore_trough_p1.step": "485905f8d3dae5516c566a327114a56653d27117e8d11dac08b9ae20bee8fb8f"
+        },
+        "build_instances": {
+          "spore_trough_p1_01.stl": "5aa255b6f07e8c7100b6e7dbbf054229ff2fb7233ab4930b44ea684a6145f7f0",
+          "spore_trough_p1_01.step": "485905f8d3dae5516c566a327114a56653d27117e8d11dac08b9ae20bee8fb8f"
+        }
+      },
+      "spore_trough_p2": {
+        "shipped": {
+          "spore_trough_p2_01.stl": "d69608b4d1db337eb60bff953439bb5a69ccbec8d895b7aaf18bcc4b46274002",
+          "spore_trough_p2.step": "3c466c2f33d8b5b9abc4fcd1ab4a04edb968be0f82ca86f1d73624bc40ff79e0"
+        },
+        "build_instances": {
+          "spore_trough_p2_01.stl": "d69608b4d1db337eb60bff953439bb5a69ccbec8d895b7aaf18bcc4b46274002",
+          "spore_trough_p2_01.step": "3c466c2f33d8b5b9abc4fcd1ab4a04edb968be0f82ca86f1d73624bc40ff79e0"
+        }
+      }
+    },
+    "coupons": {
+      "coupons/admitted_3mm_reference.step": "8a7a7b47fdd816449578a417a0bbecbb1c8623d007fcd3a7a9f2fa1debc8352a",
+      "coupons/blocked_27_628906mm_reference.step": "97b4a120a82a905eda65534f66c8b18a2a841e0184ec19ccdf01090dc19813b2",
+      "coupons/coupon_probe_pin_p1.step": "481f5f12149395fa3fc54830b603a128ecb966bfa000e02a88f1ca4a831ccaa0",
+      "coupons/coupon_probe_pin_p1.stl": "adbadcdd80d2b1b0ee61fff59a812966e950dc02bb4f024f6b26210680b06699",
+      "coupons/coupon_probe_pin_p2.step": "c911d4ab88be4b9ceb058b04cf143d25432626b7d0cd295f8c072e60ab4867ae",
+      "coupons/coupon_probe_pin_p2.stl": "e90c22937401d501b17e3fd52f3dd391f2d5bf981a8f6974b2e3a770575ba26d",
+      "coupons/coupon_stool_bracket_p1.step": "ea8f37eb9cb80fcb6d3c1c73dea5dd4426c688eed2196511459eca659bbc6a6e",
+      "coupons/coupon_stool_bracket_p1.stl": "03fa6aa52ebc957a122c02c38a03ae356cdd832760485847dba3e7cbba03a21b",
+      "coupons/coupon_stool_deadhead_p1.step": "17d363027edd969a4fb62780c1c40da38e1bbde8a7232f7a1efaacd7d3fc0ae8",
+      "coupons/coupon_stool_deadhead_p1.stl": "09e24e1ad0b4f1fbfd0b04c9f9283dd909fa3f34155be3511581840b53553df2",
+      "coupons/coupon_stool_hollow_p1.step": "a0d24fab75bd8a4c1bb933a02e951f08f0d4d60c211947b18245880b157be4b4",
+      "coupons/coupon_stool_hollow_p1.stl": "e1fc7522f48c88c4637507dfabd74f54d3175a5094d65ee1d7272106bdc00dea",
+      "coupons/coupon_stool_inkcap_p1.step": "6bc0feb2a403e6dbf595fd5bb2dfab328273b3b328771b1fc23af5e13ceac842",
+      "coupons/coupon_stool_inkcap_p1.stl": "20adf433b46559e577c75b31cff14f51aa6b34d5c00bcdc9b1e66e41037cce9c",
+      "coupons/dovetail_female_coupon.step": "0ccb8b9fff06efccb82139ca15ba4e3bd3b6fed8ddcf183bd931ff19c0e3baef",
+      "coupons/dovetail_female_coupon.stl": "7fd345069dae77e69e66808f956bee0437c1ab05ca6b9d99bd9b94b50a577ffe",
+      "coupons/dovetail_male_coupon.step": "6dd1cfe8f166cc4e101ef0e0d55fbb298150d6d7b13668222f433db680cba57a",
+      "coupons/dovetail_male_coupon.stl": "7968f26f5faba4bda69b291661c5274925c44084ad216c24bc3e3142ec52309e",
+      "coupons/socket_coupon.step": "31d3e423baa33040c1a958e3b535aaa2b11f65cba3a4ae46939fc5ba5097a750",
+      "coupons/socket_coupon.stl": "6fd2f66cfcb8ebb3969418082dd8f7a18d08673b71a3fd9e600049beddbfb90c",
+      "coupons/validation.json": "94be92875f627bd05889aae17da311d2d91d29efa2ae3e7f48625b856f442fb9"
+    }
+  },
+  "parts": {
+    "loam_tile_01": {
+      "stl_sha256": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 418467.97,
+      "bbox_mm": [
+        144.0,
+        144.0,
+        30.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 25.12,
+      "bridge_span_mm": 0.0
+    },
+    "loam_tile_02": {
+      "stl_sha256": "71da74a9cace26e81cd002436b2889f48a951e8f2f95ac1c7edc097d0e41b05b",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 418467.97,
+      "bbox_mm": [
+        144.0,
+        144.0,
+        30.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 25.12,
+      "bridge_span_mm": 0.0
+    },
+    "stool_deadhead_p1_01": {
+      "stl_sha256": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20763.49,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.17,
+      "bridge_span_mm": 0.0
+    },
+    "stool_deadhead_p1_02": {
+      "stl_sha256": "25e4d6e5fb08dd7892b0ea0a9c8e19c2d6eedf75ec8a5386f8d30f835ee10c95",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20763.49,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.17,
+      "bridge_span_mm": 0.0
+    },
+    "stool_deadhead_p2_01": {
+      "stl_sha256": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20703.26,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.22,
+      "bridge_span_mm": 0.0
+    },
+    "stool_deadhead_p2_02": {
+      "stl_sha256": "a9a77831bdc15a1212b052b9108b0ac128a129e752eec0ccd6b0df32c3671465",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20703.26,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.22,
+      "bridge_span_mm": 0.0
+    },
+    "stool_bracket_p1_01": {
+      "stl_sha256": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20140.96,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.44,
+      "bridge_span_mm": 0.0
+    },
+    "stool_bracket_p1_02": {
+      "stl_sha256": "36d61a11c38bb2c142118a4df67d69e6c9ae2f966f5975da7a8eaa86dbd6e915",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20140.96,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.44,
+      "bridge_span_mm": 0.0
+    },
+    "stool_bracket_p2_01": {
+      "stl_sha256": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20080.73,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.49,
+      "bridge_span_mm": 0.0
+    },
+    "stool_bracket_p2_02": {
+      "stl_sha256": "61258b8e6eaae84bccca5dda9bf3bfdbcda7c305d2bf8e92c242a330ff30eeaa",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20080.73,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.49,
+      "bridge_span_mm": 0.0
+    },
+    "stool_inkcap_p1_01": {
+      "stl_sha256": "336bc4b145cb9cfdcaa1c63cf505e749287affed5cc88a942fa0260719c84b6e",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20367.4,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.97,
+      "bridge_span_mm": 0.0
+    },
+    "stool_inkcap_p2_01": {
+      "stl_sha256": "393a716362c2a2feef1d60db193ac732f3855822225cf0871914f0f0861ded8f",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20307.17,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.02,
+      "bridge_span_mm": 0.0
+    },
+    "stool_hollow_p1_01": {
+      "stl_sha256": "eb4dfd5c00e3527545a90ee980f95706e0433718d33f3fa0b8cecb8021cb4da0",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 19745.12,
+      "bbox_mm": [
+        34.0,
+        33.8,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 7.19,
+      "bridge_span_mm": 0.0
+    },
+    "stool_hollow_p2_01": {
+      "stl_sha256": "c62923ac341c6cacf37707f51dc247332d7ee6f758902c866d3bf77351d208fd",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 19684.88,
+      "bbox_mm": [
+        33.8,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 7.23,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p1_01": {
+      "stl_sha256": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1058.42,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.94,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p1_02": {
+      "stl_sha256": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1058.42,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.94,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p2_01": {
+      "stl_sha256": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1036.14,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y-90",
+      "overhang_pct": 15.25,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p2_02": {
+      "stl_sha256": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1036.14,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y-90",
+      "overhang_pct": 15.25,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p1_03": {
+      "stl_sha256": "5a8587d51344458f3296d065c9354615f5ea0888f43f4258c128bef31d2ee92c",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1058.42,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y+90",
+      "overhang_pct": 14.94,
+      "bridge_span_mm": 0.0
+    },
+    "claim_crown_p2_03": {
+      "stl_sha256": "cfdafc7f1cf56d5d211a1bca6846abc44fed68c6495d7fa1b13487761a8147a7",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 1036.14,
+      "bbox_mm": [
+        24.0,
+        23.9,
+        6.0
+      ],
+      "print_orientation": "Y-90",
+      "overhang_pct": 15.25,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p2_01": {
+      "stl_sha256": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 710.62,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.49,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p2_02": {
+      "stl_sha256": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 710.62,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.49,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p2_03": {
+      "stl_sha256": "021a9f010449e1d1900c82ff02b9a36b1eeeeda568516b5c4f2c760e22f17b42",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 710.62,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.49,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p1_01": {
+      "stl_sha256": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 716.61,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.85,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p1_02": {
+      "stl_sha256": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 716.61,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.85,
+      "bridge_span_mm": 0.0
+    },
+    "probe_pin_p1_03": {
+      "stl_sha256": "f5fb98689f8ae03a33c814f620d4db8dfd2fe2697d0029a2cd1cefdbebd70ac4",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 716.61,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.85,
+      "bridge_span_mm": 0.0
+    },
+    "spore_trough_p1_01": {
+      "stl_sha256": "5aa255b6f07e8c7100b6e7dbbf054229ff2fb7233ab4930b44ea684a6145f7f0",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 142030.83,
+      "bbox_mm": [
+        154.0,
+        150.0,
+        40.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 32.37,
+      "bridge_span_mm": 0.0
+    },
+    "spore_trough_p2_01": {
+      "stl_sha256": "d69608b4d1db337eb60bff953439bb5a69ccbec8d895b7aaf18bcc4b46274002",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 142008.33,
+      "bbox_mm": [
+        154.0,
+        150.0,
+        40.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 32.37,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_probe_pin_p1.stl": {
+      "stl_sha256": "adbadcdd80d2b1b0ee61fff59a812966e950dc02bb4f024f6b26210680b06699",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 717.09,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.83,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_probe_pin_p2.stl": {
+      "stl_sha256": "e90c22937401d501b17e3fd52f3dd391f2d5bf981a8f6974b2e3a770575ba26d",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 711.06,
+      "bbox_mm": [
+        11.8,
+        11.8,
+        34.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 10.47,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_stool_bracket_p1.stl": {
+      "stl_sha256": "03fa6aa52ebc957a122c02c38a03ae356cdd832760485847dba3e7cbba03a21b",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20389.79,
+      "bbox_mm": [
+        34.0,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.39,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_stool_deadhead_p1.stl": {
+      "stl_sha256": "09e24e1ad0b4f1fbfd0b04c9f9283dd909fa3f34155be3511581840b53553df2",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 21035.76,
+      "bbox_mm": [
+        34.0,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 5.19,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_stool_hollow_p1.stl": {
+      "stl_sha256": "e1fc7522f48c88c4637507dfabd74f54d3175a5094d65ee1d7272106bdc00dea",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 19982.36,
+      "bbox_mm": [
+        34.0,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 7.15,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:coupon_stool_inkcap_p1.stl": {
+      "stl_sha256": "20adf433b46559e577c75b31cff14f51aa6b34d5c00bcdc9b1e66e41037cce9c",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 20628.33,
+      "bbox_mm": [
+        34.0,
+        33.9,
+        49.0
+      ],
+      "print_orientation": "as-modelled",
+      "overhang_pct": 6.01,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:dovetail_female_coupon.stl": {
+      "stl_sha256": "7fd345069dae77e69e66808f956bee0437c1ab05ca6b9d99bd9b94b50a577ffe",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 9392.64,
+      "bbox_mm": [
+        30.0,
+        44.0,
+        8.0
+      ],
+      "print_orientation": "X-90",
+      "overhang_pct": 8.0,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:dovetail_male_coupon.stl": {
+      "stl_sha256": "7968f26f5faba4bda69b291661c5274925c44084ad216c24bc3e3142ec52309e",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 11616.0,
+      "bbox_mm": [
+        36.0,
+        44.0,
+        8.0
+      ],
+      "print_orientation": "X-90",
+      "overhang_pct": 6.88,
+      "bridge_span_mm": 0.0
+    },
+    "coupon:socket_coupon.stl": {
+      "stl_sha256": "6fd2f66cfcb8ebb3969418082dd8f7a18d08673b71a3fd9e600049beddbfb90c",
+      "watertight": true,
+      "bodies": 1,
+      "split_error": null,
+      "volume_mm3": 46777.22,
+      "bbox_mm": [
+        44.0,
+        44.0,
+        30.0
+      ],
+      "print_orientation": "Y-90",
+      "overhang_pct": 14.43,
+      "bridge_span_mm": 0.0
+    }
+  },
+  "interference": {
+    "assembled_stl": "/private/tmp/panda-catchup-20260822/vibe-ideas/board-game/ideas/blindcap-duel/project/blindcap-duel.stl",
+    "threshold_mm3": 20.0,
+    "broad_phase_margin_mm": 0.5,
+    "findings": [],
+    "inconclusive": [],
+    "placed_components": 28,
+    "component_names": [
+      "loam_tile",
+      "loam_tile#2",
+      "stool_deadhead_p1",
+      "stool_deadhead_p1#2",
+      "stool_deadhead_p2",
+      "stool_deadhead_p2#2",
+      "stool_bracket_p1",
+      "stool_bracket_p1#2",
+      "stool_bracket_p2",
+      "stool_bracket_p2#2",
+      "stool_inkcap_p1_01",
+      "stool_inkcap_p2_01",
+      "stool_hollow_p1_01",
+      "stool_hollow_p2_01",
+      "claim_crown_p1",
+      "claim_crown_p1#2",
+      "claim_crown_p2",
+      "claim_crown_p2#2",
+      "claim_crown_p1#3",
+      "claim_crown_p2#3",
+      "probe_pin_p2",
+      "probe_pin_p2#2",
+      "probe_pin_p2#3",
+      "probe_pin_p1",
+      "probe_pin_p1#2",
+      "probe_pin_p1#3",
+      "spore_trough_p1|spore_trough_p2",
+      "spore_trough_p1|spore_trough_p2#2"
+    ],
+    "expected_components": 28,
+    "pairs_total": 378,
+    "pairs_tested": 40,
+    "pairs_pruned": 338,
+    "measured_overlaps": [
+      {
+        "a": "loam_tile#2",
+        "b": "probe_pin_p1",
+        "volume_mm3": 15.81,
+        "sampled": 4000,
+        "resolution_mm3": 2.635,
+        "resolution_capped": false,
+        "note": ""
+      }
+    ],
+    "motions_declared": 6,
+    "swept_overlaps": [
+      {
+        "a": "probe_pin_p1",
+        "b": "loam_tile#2",
+        "volume_mm3": 15.81,
+        "at": "0.0mm",
+        "clear_at_first_position": true,
+        "resolution_mm3": 2.635,
+        "resolution_capped": false
+      }
+    ],
+    "pass": true,
+    "unswept_moving_parts": []
+  },
+  "distinct_shapes": 24,
+  "slice": {
+    "loam_tile_01": {
+      "sliced": true,
+      "print_min": 257,
+      "filament_g": 147.21,
+      "gcode_sha256": "b45ef15068e4e9670a7a5bd5e18d313a5f8723531e3e0aa571437cece5942852",
+      "gcode_bytes": 18281224,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_deadhead_p1_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.17,
+      "gcode_sha256": "9be1b3dbccf7fd792e76ce91cdc3af985a5ff8315962a05d1b1e4d443356a503",
+      "gcode_bytes": 1398347,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_deadhead_p2_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.18,
+      "gcode_sha256": "a37bf0aa67d45ebfa8e07079fb624aca350801bcff07a8fbb20e3b02ff8e9197",
+      "gcode_bytes": 1410308,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_bracket_p1_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.25,
+      "gcode_sha256": "a62dd672b190abf5e4ec50389d9bd6b13fb1d5ccadd880131c8eb440ed427a27",
+      "gcode_bytes": 1681903,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_bracket_p2_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.27,
+      "gcode_sha256": "973d619d1547f0c0bddd19d3abf8e02421dcbfecfdf4267d0f36e3d73466d4d2",
+      "gcode_bytes": 1696698,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_inkcap_p1_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.18,
+      "gcode_sha256": "53f1bc44f2ced4778f310f93bde479cbe14858e596fb7a48a9127e0ab27a3929",
+      "gcode_bytes": 1568305,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_inkcap_p2_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.2,
+      "gcode_sha256": "b8c417ad89f9b4d60b06e78b21fd91eced23ce7830516d64e09b8541e1af5419",
+      "gcode_bytes": 1582099,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_hollow_p1_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.27,
+      "gcode_sha256": "f68e628dbf738533aa447df9dc8d50dc255b4c450653a39f687f780cb804cedb",
+      "gcode_bytes": 1851246,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "stool_hollow_p2_01": {
+      "sliced": true,
+      "print_min": 24,
+      "filament_g": 9.28,
+      "gcode_sha256": "82cd6cd0dc1f927420645a63e1ecc05efa44313feb64c1f3554754c00f911c69",
+      "gcode_bytes": 1864956,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "claim_crown_p1_01": {
+      "sliced": true,
+      "print_min": 4,
+      "filament_g": 1.11,
+      "gcode_sha256": "52fef8282a0af6be6b6e3c1fbff3f40b19e33721d3eef8d143a974f0a81ae63e",
+      "gcode_bytes": 359812,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "claim_crown_p2_01": {
+      "sliced": true,
+      "print_min": 4,
+      "filament_g": 1.1,
+      "gcode_sha256": "952b72946b5376c3db14d98d6652370c9cc3b4800514b7975d079e5d2629ea2a",
+      "gcode_bytes": 385957,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "probe_pin_p2_01": {
+      "sliced": true,
+      "print_min": 7,
+      "filament_g": 0.78,
+      "gcode_sha256": "8d85d192e347821ef39816c71f652e09c18d71242259bc1a1c0151e2b1398080",
+      "gcode_bytes": 612303,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "probe_pin_p1_01": {
+      "sliced": true,
+      "print_min": 7,
+      "filament_g": 0.78,
+      "gcode_sha256": "6361c58c291086945d50c5cc3ec4775621389aed5ec36aa58df1ac5d5e06b4ca",
+      "gcode_bytes": 578027,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "spore_trough_p1_01": {
+      "sliced": true,
+      "print_min": 133,
+      "filament_g": 91.94,
+      "gcode_sha256": "6bc4561c7163332fc1226c8a2d4f15ddff408f7a06662002d6058de51f28c3c8",
+      "gcode_bytes": 4252234,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "spore_trough_p2_01": {
+      "sliced": true,
+      "print_min": 133,
+      "filament_g": 91.94,
+      "gcode_sha256": "b4532f5af26d9ddd40bf95c33f5a3b3b8f2aad836d5882b8510bed086ed5882a",
+      "gcode_bytes": 4240126,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_probe_pin_p1.stl": {
+      "sliced": true,
+      "print_min": 7,
+      "filament_g": 0.78,
+      "gcode_sha256": "67b170ebe5b19a5d997f8a404760fd3b7149782658485064074d19342b47c161",
+      "gcode_bytes": 570170,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_probe_pin_p2.stl": {
+      "sliced": true,
+      "print_min": 7,
+      "filament_g": 0.78,
+      "gcode_sha256": "345c320aca97a7d2dbbf3d4f698785abd0cac19bab1c05f9a38d833c33002dc1",
+      "gcode_bytes": 594105,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_stool_bracket_p1.stl": {
+      "sliced": true,
+      "print_min": 23,
+      "filament_g": 9.35,
+      "gcode_sha256": "95609c73af37eb4e4b8051423e912e7e39b1aedba9654c88dd6a4fddf83d662f",
+      "gcode_bytes": 1719051,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_stool_deadhead_p1.stl": {
+      "sliced": true,
+      "print_min": 23,
+      "filament_g": 9.27,
+      "gcode_sha256": "24a40026e4fd456c6d5bda0b3ed014b94d51ed47c1b7157647d0684905bf68c8",
+      "gcode_bytes": 1301817,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_stool_hollow_p1.stl": {
+      "sliced": true,
+      "print_min": 23,
+      "filament_g": 9.37,
+      "gcode_sha256": "c8baf35725a30d9dbac74199a3b2a729a54a9db59cb2918a37a31304cbed56de",
+      "gcode_bytes": 1859714,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:coupon_stool_inkcap_p1.stl": {
+      "sliced": true,
+      "print_min": 23,
+      "filament_g": 9.27,
+      "gcode_sha256": "b581a0534d41d9a1e9ed2ed410f4f14f19e94c1eb5f9985f2fea7de2da12ae2b",
+      "gcode_bytes": 1566214,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:dovetail_female_coupon.stl": {
+      "sliced": true,
+      "print_min": 7,
+      "filament_g": 4.83,
+      "gcode_sha256": "9c87f458969f0c4379173fa9ab7ac0fe1947d4cfa80b419cf20e7a5796baa735",
+      "gcode_bytes": 311491,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:dovetail_male_coupon.stl": {
+      "sliced": true,
+      "print_min": 8,
+      "filament_g": 5.72,
+      "gcode_sha256": "f7f84382bd95a1eb1800e1c71e93628037bd470cafc8c96ec4b5b46c03394f9e",
+      "gcode_bytes": 336586,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    },
+    "coupon:socket_coupon.stl": {
+      "sliced": true,
+      "print_min": 31,
+      "filament_g": 18.82,
+      "gcode_sha256": "e6b3d479a45a349f8556e8bc6bd0280300287887b522e02d7a95ae1dcc1b9e53",
+      "gcode_bytes": 2291614,
+      "warnings": [],
+      "errors": [],
+      "profile_diagnostics": [
+        "Invalid T command (T65535)."
+      ]
+    }
+  },
+  "fit_checks": "pass",
+  "pass": true,
+  "fails": [],
+  "unmeasured": []
+}
