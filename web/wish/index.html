@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Make a Wish</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Instrument+Sans:wght@400;500&display=swap">
+<style>
+  :root{
+    --ink:#05070F; --sky:#0C1634; --horizon:#162046;
+    --star:#F3E9C8; --window:#FFB347; --ember:#E08A2E;
+    --text:#E8E2D3; --muted:#8E93A6; --muted-2:#5F657C;
+    --coin:#D9B86A; --line:rgba(232,226,211,.18);
+    --kraft:#B9935C; --kraft-dark:#8E6E3E; --tissue:#F2ECE1; --wax:#8B2E2E;
+    --serif:"Fraunces", Georgia, "Times New Roman", serif;
+    --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--ink); color:var(--text);
+    font-family:var(--sans); font-size:16px; line-height:1.5;
+    overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  .topnav{
+    position:fixed; top:0; left:0; right:0; z-index:7; display:flex; align-items:center; gap:26px;
+    padding:0 22px; height:52px; background:rgba(5,7,15,.72); border-bottom:1px solid rgba(232,226,211,.08);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); font-family:var(--sans);
+  }
+  .topnav .brand{color:var(--text); text-decoration:none; font-weight:500; font-size:15px; letter-spacing:.01em}
+  .topnav .links{display:flex; align-items:center; gap:22px; font-size:13.5px}
+  .topnav .links a{color:var(--muted); text-decoration:none; transition:color .2s}
+  .topnav .links a:hover{color:var(--text)}
+  .topnav .wishtab{display:flex; align-items:center; gap:7px; color:var(--coin) !important; font-weight:500}
+  .topnav .wishtab svg{width:20px; height:15px; filter:drop-shadow(0 0 6px rgba(243,233,200,.5))}
+  .topnav .wishtab:hover{color:#F3D78C !important}
+  @media (max-width:760px){ .topnav .links a:not(.wishtab){display:none} .topnav{gap:0; justify-content:space-between} }
+  /* ---------- the sky ---------- */
+  #sky{position:fixed; inset:0; width:100%; height:100%; display:block;
+    background:
+      radial-gradient(120% 70% at 50% 115%, var(--horizon) 0%, var(--sky) 35%, var(--ink) 75%);
+  }
+  .label{
+    position:fixed; transform:translate(-50%,-104%); pointer-events:none; z-index:5;
+    display:flex; flex-direction:column; align-items:stretch; gap:8px;
+    opacity:0; transition:opacity .35s ease; width:250px; max-width:74vw; text-align:left;
+    padding:10px 10px 12px; background:rgba(8,12,28,.92); border:1px solid rgba(217,184,106,.22);
+    border-radius:12px; box-shadow:0 18px 44px rgba(0,0,0,.55); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  }
+  .label .shotwrap{position:relative; display:block; width:100%; line-height:0}
+  .label .shot{width:100%; border-radius:8px; display:block; background:#0E1226; aspect-ratio:4/3; object-fit:cover}
+  .label .shot[hidden]{display:none}
+  .label .count{
+    position:absolute; left:8px; bottom:8px; z-index:2;
+    font-family:var(--sans); font-size:11px; line-height:1; letter-spacing:.03em; color:#F2ECE1;
+    background:rgba(8,10,20,.62); border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:5px 9px;
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); white-space:nowrap;
+  }
+  .label .w{font-family:var(--serif); font-style:italic; font-weight:300; font-size:15px; line-height:1.35; color:var(--star); padding:0 2px}
+  .label .too{
+    display:block; width:100%; text-align:center; box-sizing:border-box; padding:9px 12px; border-radius:999px;
+    border:1px solid rgba(217,184,106,.5); background:rgba(217,184,106,.08); color:var(--coin);
+    font-family:var(--sans); font-weight:500; font-size:13px; letter-spacing:.02em; cursor:pointer;
+    transition:background .2s, border-color .2s;
+  }
+  .label .too:hover{background:rgba(217,184,106,.18); border-color:rgba(217,184,106,.85)}
+  .label .too[hidden]{display:none}
+  .label .too.done{background:transparent; border-color:rgba(232,226,211,.18); color:var(--muted); cursor:default}
+  .label.on{opacity:.98; pointer-events:auto}
+  /* ---------- the workshop ---------- */
+  .workshop{position:fixed; left:0; right:0; bottom:0; height:min(28vh,260px); pointer-events:none; z-index:1}
+  .workshop svg{width:100%; height:100%; display:block}
+  .win{fill:var(--window); opacity:.85; filter:drop-shadow(0 0 6px rgba(255,179,71,.7))}
+  .win.a{animation:flick 4.2s ease-in-out infinite}
+  .win.b{animation:flick 6.1s ease-in-out infinite .8s}
+  .win.c{animation:flick 5.3s ease-in-out infinite 2.1s}
+  .win.d{animation:flick 7.4s ease-in-out infinite 1.3s}
+  @keyframes flick{0%,100%{opacity:.85}37%{opacity:.62}52%{opacity:.95}71%{opacity:.7}}
+  .glow{fill:url(#g-lamp); opacity:.55}
+  /* ---------- the stage ---------- */
+  .stage{position:fixed; inset:0; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 20px; box-sizing:border-box; width:100%; pointer-events:none}
+  .stage > *{pointer-events:auto}
+  .ask{ text-align:center; transition:opacity .6s ease, transform .6s ease; width:100%; max-width:560px; margin:-8vh auto 0}
+  .ask.away{opacity:0; transform:translateY(-8px); pointer-events:none}
+  .prompt{
+    font-family:var(--serif); font-weight:300; font-size:clamp(34px,6vw,56px); line-height:1.1;
+    letter-spacing:-.01em; margin:0 0 26px; color:var(--text); text-wrap:balance;
+    font-variation-settings:"opsz" 144;
+  }
+  .prompt em{font-style:italic; font-weight:300}
+  #wish{
+    flex:1; min-width:0; width:100%; box-sizing:border-box; background:transparent; border:0; outline:0;
+    border-bottom:1px solid var(--line); color:var(--text); display:block; resize:none; overflow-y:auto;
+    font-family:var(--serif); font-style:italic; font-weight:300; font-size:clamp(20px,3vw,26px); line-height:1.45;
+    padding:10px 4px 14px; text-align:center; caret-color:var(--coin); max-height:34vh;
+    transition:border-color .3s;
+    scrollbar-width:thin; scrollbar-color:rgba(232,226,211,.2) transparent;
+  }
+  #wish::-webkit-scrollbar{width:6px}
+  #wish::-webkit-scrollbar-thumb{background:rgba(232,226,211,.18); border-radius:3px}
+  .line{position:relative; display:flex; align-items:center; gap:10px}
+  .ghost{
+    position:absolute; left:0; right:0; top:12px; pointer-events:none; text-align:center;
+    font-family:var(--serif); font-style:italic; font-weight:300; font-size:clamp(20px,3vw,26px); color:var(--muted-2);
+    transition:opacity .7s ease; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ghost.fade{opacity:0}
+  .ghost.off{opacity:0; transition:none}
+  .pills{display:flex; gap:8px; align-items:center}
+  .pouchbtn.boxes{color:var(--muted)}
+  .pouchbtn.boxes svg{filter:none}
+  #wish:focus{border-bottom-color:rgba(217,184,106,.55)}
+  .makewish{
+    margin:26px auto 0; display:block; padding:13px 34px; border-radius:999px;
+    border:1px solid rgba(217,184,106,.4); background:rgba(217,184,106,.05); color:rgba(217,184,106,.55);
+    font-family:var(--sans); font-weight:500; font-size:15.5px; letter-spacing:.02em; cursor:default;
+    transition:background .25s, border-color .25s, color .25s, transform .15s, box-shadow .25s;
+  }
+  .makewish.ready{
+    color:#1A1206; background:linear-gradient(180deg,#F0CE84,#D9B86A); border-color:transparent; cursor:pointer;
+    box-shadow:0 8px 26px rgba(217,184,106,.3);
+  }
+  .makewish.ready:hover{filter:brightness(1.06); box-shadow:0 10px 32px rgba(217,184,106,.45)}
+  .makewish:active{transform:scale(.98)}
+  .makewish:focus-visible{outline:2px solid rgba(217,184,106,.6); outline-offset:3px}
+  .hint{margin:14px 0 0; color:var(--muted-2); font-size:12.5px; letter-spacing:.03em; transition:opacity .4s ease}
+  .hint kbd{font-family:var(--sans); font-size:12px; border:1px solid var(--line); border-radius:4px; padding:0 5px; color:var(--muted)}
+  /* the lifted words */
+  .lifted{
+    position:fixed; left:50%; transform:translate(-50%,-50%) scale(1); z-index:3; pointer-events:none;
+    font-family:var(--serif); font-style:italic; font-weight:300; font-size:clamp(20px,3vw,26px);
+    color:var(--text); text-align:center; max-width:min(560px,86vw); line-height:1.25;
+    opacity:0; transition:top 1.6s cubic-bezier(.2,.7,.2,1), transform 1.6s cubic-bezier(.2,.7,.2,1), opacity 1.2s ease, text-shadow 1.2s ease;
+    will-change:top,transform,opacity;
+  }
+  .lifted.up{opacity:.78; text-shadow:0 0 18px rgba(243,233,200,.35)}
+  .lifted.gone{opacity:0}
+  .lifted.star{opacity:0; transform:translate(-50%,-50%) scale(.12)}
+  /* the coin */
+  .coin{
+    position:fixed; left:50%; top:32vh; transform:translateX(-50%); z-index:3;
+    width:calc(100% - 40px); max-width:440px; text-align:center; opacity:0;
+    transition:opacity .9s ease .1s, top .9s ease .1s;
+  }
+  .coin.on{opacity:1; top:30vh}
+  .coin.off{opacity:0; top:31vh; pointer-events:none; transition:opacity .5s ease, top .5s ease}
+  .coin p.say{
+    font-family:var(--serif); font-weight:300; font-size:clamp(17px,2.3vw,20px); line-height:1.45;
+    color:var(--text); margin:0 0 20px; text-wrap:balance;
+  }
+  .coin p.say b{font-weight:500; color:var(--coin)}
+  .small{font-size:12.5px; line-height:1.5; color:var(--muted); margin:0 auto; max-width:360px}
+  .quiet{background:none; border:0; color:var(--muted-2); font-family:var(--sans); font-size:13px; cursor:pointer; margin-top:10px; padding:6px 10px}
+  .quiet:hover{color:var(--muted)}
+  /* the note */
+  .note{
+    position:fixed; left:50%; top:58%; transform:translateX(-50%); z-index:3; pointer-events:none;
+    font-family:var(--serif); font-weight:300; font-style:italic; font-size:clamp(18px,2.6vw,24px);
+    color:var(--text); opacity:0; transition:opacity 1.2s ease; text-align:center; white-space:nowrap;
+  }
+  .note.on{opacity:.9}
+  /* the pouch, top right */
+  .actions{display:flex; align-items:center; justify-content:center; gap:14px; margin-top:24px}
+  .actions .right{display:flex; align-items:center; gap:12px}
+  .pouch{position:relative; display:flex; align-items:center; gap:8px}
+  .pouch .topup{position:absolute; right:0; top:calc(100% + 10px); z-index:8}
+  .pouchbtn{
+    display:flex; align-items:center; gap:8px; background:rgba(12,20,52,.35); border:1px solid rgba(217,184,106,.28); border-radius:999px;
+    padding:6px 12px 6px 8px; color:var(--text); font-family:var(--sans); font-size:14px; font-weight:500; cursor:pointer;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); transition:border-color .2s, background .2s;
+  }
+  .pouchbtn svg{width:22px; height:16px; display:block; filter:drop-shadow(0 0 6px rgba(243,233,200,.45))}
+  .pouchbtn:hover{border-color:rgba(217,184,106,.6); background:rgba(12,20,52,.55)}
+  .pouchbtn:focus-visible{outline:2px solid rgba(217,184,106,.6); outline-offset:3px}
+  .topup{
+    width:min(300px, calc(100vw - 36px)); background:rgba(8,12,28,.92); border:1px solid rgba(217,184,106,.22); border-radius:14px;
+    padding:16px 16px 14px; box-shadow:0 20px 50px rgba(0,0,0,.55); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .topup .t{font-family:var(--serif); font-weight:400; font-size:20px; margin:0; color:var(--text)}
+  .topup .d{margin:-6px 0 2px; font-size:12.5px; color:var(--muted)}
+  .opts{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+  .opts button{
+    background:transparent; border:1px solid var(--line); border-radius:10px; color:var(--text); font-family:var(--serif); font-size:20px; padding:8px 4px 6px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:2px; transition:border-color .2s, background .2s;
+  }
+  .opts button small{font-family:var(--sans); font-size:11.5px; color:var(--muted); letter-spacing:.02em}
+  .opts button:hover{border-color:rgba(217,184,106,.5)}
+  .opts button.sel{border-color:rgba(217,184,106,.75); background:rgba(217,184,106,.08)}
+  .opts button.sel small{color:var(--coin)}
+  .applepay{
+    margin-top:4px; width:100%; height:42px; border-radius:10px; border:0; background:#000; color:#fff; font-family:-apple-system, "SF Pro Text", system-ui, sans-serif; font-size:16px; font-weight:500; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:2px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  .applepay span::before{content:""; font-family:-apple-system, "SF Pro Text", system-ui, sans-serif; font-size:17px}
+  .applepay:hover{background:#111}
+  .cardlink{background:none; border:0; color:var(--muted); font-family:var(--sans); font-size:12.5px; cursor:pointer; padding:2px; text-decoration:underline; text-underline-offset:3px; text-decoration-color:rgba(142,147,166,.5)}
+  .cardlink:hover{color:var(--text)}
+  .card{display:flex; flex-direction:column; gap:8px}
+  .card input{background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:8px; color:var(--text); font-family:var(--sans); font-size:15px; padding:9px 10px; outline:0; width:100%; box-sizing:border-box}
+  .card input:focus{border-color:rgba(217,184,106,.55)}
+  .card input::placeholder{color:var(--muted-2)}
+  .card .row{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .paycard{height:40px; border-radius:10px; border:1px solid rgba(217,184,106,.55); background:rgba(217,184,106,.08); color:var(--coin); font-family:var(--sans); font-weight:500; font-size:15px; cursor:pointer}
+  .paycard:hover{background:rgba(217,184,106,.16)}
+  .topup[hidden],.card[hidden]{display:none}
+  /* the budget sheet + confirmation */
+  .sheet, .done{
+    position:fixed; left:50%; top:30vh; transform:translateX(-50%); z-index:4; width:calc(100% - 40px); max-width:420px;
+    text-align:center; opacity:0; transition:opacity .6s ease, top .6s ease; pointer-events:none;
+  }
+  .sheet[hidden], .done[hidden]{display:none}
+  .sheet.on, .done.on{opacity:1; top:28vh; pointer-events:auto}
+  .sheet .q{font-family:var(--serif); font-weight:300; font-size:clamp(24px,3.4vw,30px); color:var(--text); margin:0 0 26px}
+  .sheet .qs{font-family:var(--serif); font-style:italic; font-weight:300; font-size:16px; color:var(--muted); margin:0 0 24px; line-height:1.35}
+  .amounts{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:14px}
+  .amounts button{
+    min-width:74px; padding:12px 6px; border-radius:12px; border:1px solid var(--line); background:transparent;
+    color:var(--text); font-family:var(--serif); font-size:19px; cursor:pointer; transition:border-color .2s, background .2s;
+  }
+  .amounts button:hover{border-color:rgba(217,184,106,.5)}
+  .amounts button.sel{border-color:rgba(217,184,106,.8); background:rgba(217,184,106,.09); color:var(--coin)}
+  .amounts .own{min-width:52px; font-size:17px; color:var(--muted)}
+  .ownamt{
+    width:130px; margin:0 auto 14px; display:block; background:transparent; border:0; border-bottom:1px solid rgba(217,184,106,.5);
+    color:var(--coin); font-family:var(--serif); font-size:22px; text-align:center; outline:0; padding:4px 0 6px;
+  }
+  .ownamt[hidden]{display:none}
+  .note-b{font-size:12.5px; color:var(--muted); margin:0 0 20px; line-height:1.5}
+  .pay{
+    width:100%; height:52px; border-radius:14px; border:0; cursor:pointer;
+    background:linear-gradient(180deg, #F0CE84 0%, #D9B86A 100%); color:#1A1206;
+    font-family:var(--sans); font-size:17px; font-weight:600; letter-spacing:.01em;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 30px rgba(217,184,106,.28); transition:transform .15s, box-shadow .25s, filter .2s;
+  }
+  .pay:hover{filter:brightness(1.06); box-shadow:0 12px 36px rgba(217,184,106,.42)}
+  .pay:active{transform:scale(.99)}
+  .pay:focus-visible{outline:2px solid rgba(243,233,200,.7); outline-offset:3px}
+  .done .lantern{width:120px; margin:0 auto 6px}
+  .done .lantern svg{width:100%; display:block}
+  .done .win-glow{animation:breathe 3.4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:.75}50%{opacity:1}}
+  .done .d1{font-family:var(--serif); font-weight:300; font-size:clamp(24px,3.4vw,30px); color:var(--text); margin:0 0 10px}
+  .done .d2{font-family:var(--serif); font-style:italic; font-weight:300; font-size:17px; color:var(--star); margin:0 0 14px; line-height:1.35}
+  .done .d3{font-size:13.5px; color:var(--muted); margin:0; line-height:1.6}
+  /* ---------- the wall ---------- */
+  .wall{position:fixed; inset:0; z-index:9; background:var(--ink); overflow-y:auto; overflow-x:hidden; padding:0 0 60px}
+  .wall[hidden]{display:none}
+  .wallhead{position:sticky; top:0; z-index:2; display:flex; align-items:baseline; gap:18px; padding:18px 22px 14px; background:linear-gradient(180deg, var(--ink) 70%, transparent)}
+  .wallhead .wordmark-ish{font-family:var(--serif); font-style:italic; font-weight:300; font-size:15px; color:var(--muted)}
+  .wallhead h2{font-family:var(--serif); font-weight:300; font-size:clamp(20px,2.6vw,26px); margin:0; color:var(--text); flex:1}
+  .grid{columns:4 280px; column-gap:10px; padding:0 22px}
+  .grid img{width:100%; display:block; margin:0 0 10px; border-radius:6px; break-inside:avoid; background:#0E1226}
+  @media (max-width:700px){.grid{columns:2 160px; padding:0 12px}}
+  /* ---------- the unboxing ---------- */
+  .unbox{
+    position:fixed; inset:0; z-index:10; background:#07060A; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .9s ease; padding:20px;
+  }
+  .unbox.on{opacity:1; pointer-events:auto}
+  .table{position:absolute; left:0; right:0; bottom:0; height:46vh;
+    background:
+      radial-gradient(60% 70% at 50% 20%, rgba(255,179,71,.22) 0%, rgba(255,179,71,.06) 45%, transparent 70%),
+      linear-gradient(180deg, #0E0B0F 0%, #17120F 100%);
+  }
+  .scene{position:relative; width:min(520px,92vw); height:min(520px,62vh); display:flex; align-items:center; justify-content:center}
+  .scene svg{width:100%; height:100%; overflow:visible; transform:scale(1.25) translateY(-4%)}
+  .step{transition:opacity .7s ease, transform .7s ease}
+  .step.hidden{opacity:0; pointer-events:none}
+  .lid{transform-origin:50% 50%; transition:transform 1s cubic-bezier(.2,.7,.2,1), opacity 1s ease}
+  .lid.open{transform:translate(-30px,-150px) rotate(-14deg); opacity:0}
+  .tissue{transition:transform 1s cubic-bezier(.2,.7,.2,1), opacity 1s ease}
+  .tissue.open{transform:translateY(-120px) scale(1.05); opacity:0}
+  .thing{transition:opacity 1s ease .3s, transform 1s cubic-bezier(.2,.7,.2,1) .3s; opacity:0; transform:translateY(18px)}
+  .thing.on{opacity:1; transform:none}
+  .thing.flip{transform:rotateX(180deg) translateY(-10px); transform-origin:50% 62%}
+  .tag{opacity:0; transition:opacity .8s ease, transform .8s ease; transform:translateY(10px)}
+  .tag.on{opacity:1; transform:none}
+  .mark{opacity:0; transition:opacity .8s ease .4s}
+  .mark.on{opacity:1}
+  .cue{
+    position:relative; z-index:2; margin-top:18px; font-family:var(--serif); font-style:italic; font-weight:300;
+    font-size:clamp(17px,2.4vw,21px); color:var(--text); opacity:.85; text-align:center; min-height:1.6em; cursor:pointer; text-wrap:balance; max-width:520px;
+  }
+  .cue small{display:block; font-family:var(--sans); font-style:normal; font-size:12px; color:var(--muted-2); margin-top:6px; letter-spacing:.03em}
+  .tagcard{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) rotate(-2deg); width:min(300px,80vw);
+    background:#EFE6D6; color:#2A2420; border-radius:3px; padding:18px 20px 16px; box-shadow:0 18px 40px rgba(0,0,0,.55);
+    font-family:var(--serif); opacity:0; pointer-events:none; transition:opacity .7s ease, transform .7s ease;
+  }
+  .tagcard.on{opacity:1; pointer-events:auto; transform:translate(-50%,-50%) rotate(-2deg)}
+  .tagcard .w{font-style:italic; font-weight:300; font-size:18px; line-height:1.35; margin:0 0 12px}
+  .tagcard .m{font-family:var(--sans); font-size:11.5px; letter-spacing:.03em; color:#6B5F52; margin:0}
+  .tagcard .hole{position:absolute; top:10px; left:12px; width:8px; height:8px; border-radius:50%; background:#07060A; box-shadow:inset 0 0 0 2px #C9BBA4}
+  .tagcard.back{background:#E7DCC7}
+  .tagcard.back .m{font-size:12.5px; color:#4A3F34; line-height:1.5}
+  .back-to-sky{position:absolute; top:16px; right:18px; z-index:3}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition-duration:.01ms !important}
+  }
+  @media (max-width:520px){
+    .prompt{margin-bottom:18px}
+    .coin{margin-top:6vh}
+    .note{white-space:normal; width:90vw}
+  }
+</style>
+
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="label" class="label">
+  <span class="shotwrap"><img class="shot" id="label-shot" alt="" hidden><span class="count"></span></span>
+  <span class="w"></span>
+  <button class="too" type="button">✦ I wish this too</button>
+</div>
+
+<div class="workshop" aria-hidden="true">
+  <svg viewBox="0 0 1200 260" preserveAspectRatio="xMidYMax slice">
+    <defs>
+      <radialGradient id="g-lamp" cx="50%" cy="100%" r="60%">
+        <stop offset="0%" stop-color="#FFB347" stop-opacity=".55"/>
+        <stop offset="100%" stop-color="#FFB347" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="g-ground" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0B0A12"/><stop offset="100%" stop-color="#050508"/>
+      </linearGradient>
+    </defs>
+    <!-- ground -->
+    <path d="M0 190 C 200 176, 380 184, 600 178 S 1000 186, 1200 174 L1200 260 L0 260 Z" fill="url(#g-ground)"/>
+    <!-- soft lamp glow behind the workshop -->
+    <ellipse cx="600" cy="200" rx="330" ry="90" class="glow"/>
+    <!-- the workshop: a long low building with a steep roof and a chimney -->
+    <g fill="#0B0A12">
+      <path d="M330 186 L330 120 L440 60 L760 60 L870 120 L870 186 Z"/>
+      <rect x="790" y="30" width="26" height="60"/>
+      <path d="M300 190 L330 186 L330 140 L300 150 Z"/>
+      <path d="M870 140 L900 150 L900 190 L870 186 Z"/>
+    </g>
+    <!-- roof edge highlight -->
+    <path d="M330 120 L440 60 L760 60 L870 120" fill="none" stroke="#1C1A2E" stroke-width="2"/>
+    <!-- windows — the elves are awake -->
+    <g>
+      <rect class="win a" x="372" y="132" width="22" height="28" rx="1"/>
+      <rect class="win b" x="412" y="132" width="22" height="28" rx="1"/>
+      <rect class="win c" x="452" y="132" width="22" height="28" rx="1"/>
+      <rect class="win d" x="492" y="132" width="22" height="28" rx="1"/>
+      <rect class="win a" x="532" y="132" width="22" height="28" rx="1"/>
+      <rect class="win c" x="572" y="140" width="56" height="46" rx="1" style="opacity:.95"/>
+      <rect class="win b" x="652" y="132" width="22" height="28" rx="1"/>
+      <rect class="win d" x="692" y="132" width="22" height="28" rx="1"/>
+      <rect class="win a" x="732" y="132" width="22" height="28" rx="1"/>
+      <rect class="win c" x="772" y="132" width="22" height="28" rx="1"/>
+      <rect class="win b" x="812" y="132" width="22" height="28" rx="1"/>
+      <!-- attic windows -->
+      <rect class="win d" x="520" y="84" width="16" height="20" rx="1"/>
+      <rect class="win a" x="664" y="84" width="16" height="20" rx="1"/>
+      <!-- a small mullion on the big window -->
+      <rect x="599" y="140" width="2" height="46" fill="#0B0A12"/>
+      <rect x="572" y="162" width="56" height="2" fill="#0B0A12"/>
+    </g>
+    <!-- chimney smoke -->
+    <g fill="none" stroke="#3A3650" stroke-width="3" stroke-linecap="round" opacity=".6">
+      <path d="M803 26 C 812 12, 790 8, 800 -6"/>
+    </g>
+  </svg>
+</div>
+
+<main class="stage">
+  <section class="ask" id="ask">
+    <h1 class="prompt">What toy do you wish for?</h1>
+    <form id="wish-form" autocomplete="off">
+      <label for="wish" style="position:absolute;left:-9999px">Your wish</label>
+      <div class="line">
+        <span class="ghost" id="ghost" aria-hidden="true">a chess set where the knights are my dog</span>
+        <textarea id="wish" name="wish" maxlength="1200" rows="1" autocomplete="off" autocapitalize="sentences" spellcheck="false" aria-label="Your wish"></textarea>
+      </div>
+      <button class="makewish" id="go" type="submit">Make a wish</button>
+    </form>
+  </section>
+
+  <section class="sheet" id="sheet" role="dialog" aria-label="Your wish" hidden>
+    <p class="q">What's your budget?</p>
+    <div class="amounts" id="amounts">
+      <button type="button" data-a="10">$10</button>
+      <button type="button" data-a="20">$20</button>
+      <button type="button" data-a="50" class="sel">$50</button>
+      <button type="button" data-a="100">$100</button>
+      <button type="button" class="own" id="own-btn">…</button>
+    </div>
+    <input class="ownamt" id="own-amt" type="text" inputmode="numeric" placeholder="$" aria-label="Your amount" hidden>
+    <p class="note-b" id="budget-note">A bigger budget means more parts, more play, more nights on it.</p>
+    <button class="pay" id="pay-btn" type="button">Pay</button>
+    <button class="quiet" id="sheet-back" type="button">make another wish</button>
+  </section>
+
+  <section class="done" id="done" aria-live="polite" hidden>
+    <div class="lantern" aria-hidden="true">
+      <svg viewBox="0 0 120 150"><g class="win-glow"><ellipse cx="60" cy="76" rx="52" ry="52" fill="url(#g-halo2)"/></g>
+        <defs><radialGradient id="g-halo2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFB347" stop-opacity=".5"/><stop offset="100%" stop-color="#FFB347" stop-opacity="0"/></radialGradient></defs>
+        <path d="M30 108 L30 62 L60 40 L90 62 L90 108 Z" fill="#0B0A12"/><path d="M30 62 L60 40 L90 62" fill="none" stroke="#1C1A2E" stroke-width="2"/>
+        <rect x="42" y="74" width="14" height="16" rx="1" fill="#FFB347"/><rect x="64" y="74" width="14" height="16" rx="1" fill="#FFB347"/>
+        <rect x="42" y="94" width="36" height="14" rx="1" fill="#FFC46B"/>
+      </svg>
+    </div>
+    <p class="d1">The elves are on it.</p>
+    <p class="d2" id="done-wish"></p>
+    <p class="d3">A box will turn up at your door in about a week. Don't look for it.</p>
+    <button class="quiet" id="done-back" type="button">make another wish</button>
+  </section>
+</main>
+
+<div id="lifted" class="lifted" aria-hidden="true"></div>
+<div id="note" class="note" aria-live="polite"></div>
+
+<nav class="topnav" aria-label="Autonomous">
+  <a class="brand" href="#">Autonomous</a>
+  <div class="links" aria-hidden="false">
+    <a href="#">Store</a><a href="#">Robots</a><a href="#">Harness</a><a href="#">Datacenter</a><a href="#">Office</a>
+    <a href="#" class="wishtab" aria-current="page"><svg viewBox="0 0 30 22" aria-hidden="true"><path d="M2 19 C 8 14, 13 10, 19 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".55"/><path d="M22 1.5 L23.9 6.1 L28.8 6.5 L25 9.7 L26.2 14.5 L22 11.9 L17.8 14.5 L19 9.7 L15.2 6.5 L20.1 6.1 Z" fill="currentColor"/></svg>Wish</a>
+  </div>
+</nav>
+<!-- ---------- the unboxing wall (internal demo: Factory photos stand in for customer unboxings) ---------- -->
+<section class="wall" id="wall" aria-label="Boxes people opened" hidden>
+  <div class="wallhead"><span class="wordmark-ish">the workshop</span><h2>Toys people opened.</h2><button class="quiet" id="wall-close" type="button">back to the sky</button></div>
+  <div class="grid"><img src="assets/00.jpg" alt="" loading="lazy"><img src="assets/01.jpg" alt="" loading="lazy"><img src="assets/02.jpg" alt="" loading="lazy"><img src="assets/03.jpg" alt="" loading="lazy"><img src="assets/04.jpg" alt="" loading="lazy"><img src="assets/05.jpg" alt="" loading="lazy"><img src="assets/06.jpg" alt="" loading="lazy"><img src="assets/07.jpg" alt="" loading="lazy"><img src="assets/08.jpg" alt="" loading="lazy"><img src="assets/09.jpg" alt="" loading="lazy"><img src="assets/10.jpg" alt="" loading="lazy"><img src="assets/11.jpg" alt="" loading="lazy"><img src="assets/12.jpg" alt="" loading="lazy"><img src="assets/13.jpg" alt="" loading="lazy"><img src="assets/14.jpg" alt="" loading="lazy"><img src="assets/15.jpg" alt="" loading="lazy"><img src="assets/16.jpg" alt="" loading="lazy"><img src="assets/17.jpg" alt="" loading="lazy"><img src="assets/18.jpg" alt="" loading="lazy"><img src="assets/19.jpg" alt="" loading="lazy"><img src="assets/20.jpg" alt="" loading="lazy"><img src="assets/21.jpg" alt="" loading="lazy"><img src="assets/22.jpg" alt="" loading="lazy"><img src="assets/23.jpg" alt="" loading="lazy"><img src="assets/24.jpg" alt="" loading="lazy"><img src="assets/25.jpg" alt="" loading="lazy"><img src="assets/26.jpg" alt="" loading="lazy"><img src="assets/27.jpg" alt="" loading="lazy"><img src="assets/28.jpg" alt="" loading="lazy"><img src="assets/29.jpg" alt="" loading="lazy"><img src="assets/32.jpg" alt="" loading="lazy"><img src="assets/33.jpg" alt="" loading="lazy"><img src="assets/34.jpg" alt="" loading="lazy"><img src="assets/35.jpg" alt="" loading="lazy"><img src="assets/36.jpg" alt="" loading="lazy"><img src="assets/37.jpg" alt="" loading="lazy"><img src="assets/38.jpg" alt="" loading="lazy"><img src="assets/39.jpg" alt="" loading="lazy"></div>
+</section>
+
+<!-- ---------- the unboxing (prototype) ---------- -->
+<section class="unbox" id="unbox" aria-hidden="true">
+  <div class="table" aria-hidden="true"></div>
+  <button class="quiet back-to-sky" id="back-to-sky" type="button">back to the sky</button>
+  <div class="scene" id="scene">
+    <svg viewBox="0 0 420 420" aria-hidden="true">
+      <defs>
+        <pattern id="layers" width="4" height="4" patternUnits="userSpaceOnUse">
+          <rect width="4" height="4" fill="#D8C7A8"/><rect width="4" height="1" fill="#C9B693" opacity=".7"/>
+        </pattern>
+        <linearGradient id="g-kraft" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#C49D62"/><stop offset="100%" stop-color="#A67E49"/>
+        </linearGradient>
+        <linearGradient id="g-kraft-side" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9C7545"/><stop offset="100%" stop-color="#7A5A33"/>
+        </linearGradient>
+        <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10"/></filter>
+      </defs>
+      <!-- shadow -->
+      <ellipse cx="210" cy="330" rx="150" ry="22" fill="#000" opacity=".55" filter="url(#soft)"/>
+
+      <!-- the thing (revealed later) -->
+      <g id="thing" class="thing"></g>
+
+      <!-- box body -->
+      <g id="boxbody" class="step">
+        <path d="M90 200 L210 250 L330 200 L330 300 L210 350 L90 300 Z" fill="url(#g-kraft-side)"/>
+        <path d="M90 200 L210 250 L210 350 L90 300 Z" fill="#8E6E3E"/>
+        <path d="M210 250 L330 200 L330 300 L210 350 Z" fill="#7C5F36"/>
+      </g>
+      <!-- tissue (inside) -->
+      <g id="tissue" class="tissue step">
+        <path d="M110 212 C 150 190, 270 190, 315 210 C 300 236, 270 246, 210 252 C 150 246, 126 236, 110 212 Z" fill="#F2ECE1"/>
+        <path d="M130 214 C 170 226, 250 226, 300 212" fill="none" stroke="#E0D6C5" stroke-width="2"/>
+        <path d="M150 232 C 180 240, 240 240, 280 230" fill="none" stroke="#E0D6C5" stroke-width="2"/>
+      </g>
+      <!-- lid -->
+      <g id="lid" class="lid step">
+        <path d="M84 196 L210 248 L336 196 L210 144 Z" fill="url(#g-kraft)"/>
+        <path d="M84 196 L210 248 L210 262 L84 210 Z" fill="#9C7545"/>
+        <path d="M210 248 L336 196 L336 210 L210 262 Z" fill="#8A6639"/>
+        <!-- wax seal -->
+        <circle cx="210" cy="200" r="14" fill="#8B2E2E"/>
+        <circle cx="210" cy="200" r="9" fill="none" stroke="#B24A4A" stroke-width="1.5"/>
+        <path d="M204 200 L210 194 L216 200 L210 206 Z" fill="#B24A4A"/>
+      </g>
+    </svg>
+
+    <!-- the tag card (HTML for readable text) -->
+    <div class="tagcard" id="tag-front">
+      <span class="hole" aria-hidden="true"></span>
+      <p class="w" id="tag-wish">“a thing you wish you had”</p>
+      <p class="m" id="tag-night">wished the night of Aug 23</p>
+    </div>
+    <div class="tagcard back" id="tag-back">
+      <span class="hole" aria-hidden="true"></span>
+      <p class="m">Made by the elves — AI inventors at the Autonomous workshop.</p>
+      <p class="m" style="margin-top:8px">A toy for grown-ups — not for children under 14.</p>
+    </div>
+  </div>
+  <div class="cue" id="cue" role="button" tabindex="0">a plain box at the door<small>tap it</small></div>
+</section>
+
+<script>
+(function(){
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ---------- sample wishes for the sky ----------
+  const NAMES = ["John","Maya","Priya","Sam","Nina","Theo","Ana","Jonas","Rey","Cleo","Marcus","Ida","Omar","Lena","Vik","Rosa","Kai","Elle","Dan","Yuki"];
+  const AGO = ["today","yesterday","2d ago","3d ago","4d ago","5d ago","a week ago","last week"];
+  const SAMPLE = [
+    "a chess set where the knights are my dog — he's a corgi, so short legs, big ears","a two-player game that fits in a jacket pocket, for the pub","a puzzle box with a ring hidden inside",
+    "a tiny orrery of the planets","a gravity well for my desk","a top that spins for five minutes","a wind-up crab that walks",
+    "a backgammon set themed to my startup","a dice tower shaped like a lighthouse","my homelab as a tiny mech — four boxes stacked, one blinking eye","a Klein bottle I can hold",
+    "a pocket pinball machine","a marble run for my bookshelf","a dragon guarding my monitor","a pendulum that never repeats",
+    "a secret box only my daughter can open — she's eight and very stubborn","a chess set my dad can play by feel","a tiny automaton that waves back",
+    "the solar system on my desk","a fidget that clicks like a keyboard","a rocket on its launch tower","a biplane with a rubber-band engine",
+    "a go set for the balcony table","a maze my cat can actually play","a kaleidoscope with no glass","a tiny theater with turning scenes",
+    "a monster that eats my pens","a duel of tiny catapults","a puzzle that takes one lunch break","a tiny Ferris wheel that turns",
+    "a game my grandmother can win","a spinning coin that lands on its edge","a labyrinth for one marble and bad days",
+    "a knight that looks like my cat","a dodecahedron that opens like a flower","a chess clock with no electronics"
+  ];
+  // ---------- canvas sky ----------
+  const cv = document.getElementById('sky'), ctx = cv.getContext('2d');
+  const label = document.getElementById('label');
+  let W=0,H=0,DPR=1, stars=[], wishStars=[], mine=null, shooting=null, nextShoot=0, t0=performance.now();
+  function resize(){
+    DPR = Math.min(2, devicePixelRatio||1); W = innerWidth; H = innerHeight;
+    cv.width = W*DPR; cv.height = H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    seed();
+  }
+  // rough photo match so the card's photo fits the wish (internal demo)
+  const PHOTO_SETS = [
+    [/chess|knight|checkmate|by feel/, ['02','03','12','13','39']],
+    [/game|soccer|hockey|catapult|pinball|grandmother|two-player|backgammon|go set|labyrinth|maze|marble/, ['10','11','19','20','35','04','26','27']],
+    [/dice|tower|lighthouse/, ['21','22']],
+    [/plane|biplane|rocket|launch|wheel|ferris|mech|crab|automaton|wind-up/, ['14','15','09','36','37','38']],
+    [/planet|orrery|solar|gravity|pendulum|klein|kaleidoscope|spinning|dodecahedron|top /, ['05','06','00','01','17','18']],
+    [/boat|submarine|sea|whale/, ['32','33','34']],
+  ];
+  function photoFor(w, i){
+    const t=(w||'').toLowerCase();
+    for(const [re, set] of PHOTO_SETS){ if(re.test(t)) return set[i%set.length]; }
+    return ['07','08','16','23','24','25','28','29'][i%8];
+  }
+  function seed(){
+    stars=[]; wishStars=[];
+    const n = Math.round((W*H)/5200);
+    for(let i=0;i<n;i++){
+      stars.push({x:Math.random()*W, y:Math.random()*H*0.78, r:Math.random()*1.1+0.25, a:Math.random()*0.55+0.25, p:Math.random()*Math.PI*2, s:Math.random()*0.9+0.3});
+    }
+    const m = Math.max(14, Math.round(n/9));
+    for(let i=0;i<m;i++){
+      wishStars.push({x:40+Math.random()*(W-80), y:30+Math.random()*H*0.62, r:1.6+Math.random()*1.1, a:0.75+Math.random()*0.25, p:Math.random()*Math.PI*2, s:0.4+Math.random()*0.6, w:SAMPLE[(i*7+3)%SAMPLE.length], n:1+Math.floor(Math.random()*Math.random()*40), me:false, img:photoFor(SAMPLE[(i*7+3)%SAMPLE.length], i), who:NAMES[i%NAMES.length], ago:AGO[(i*3)%AGO.length]});
+    }
+  }
+  function drawStar(x,y,r,alpha,warm){
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = warm ? '#FFF1CF' : '#F3E9C8';
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+    if(r>1.4){
+      const g = ctx.createRadialGradient(x,y,0,x,y,r*4.2);
+      g.addColorStop(0,'rgba(255,241,207,'+(0.35*alpha)+')'); g.addColorStop(1,'rgba(255,241,207,0)');
+      ctx.globalAlpha = 1; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x,y,r*4.2,0,Math.PI*2); ctx.fill();
+    }
+  }
+  function frame(now){
+    const t=(now-t0)/1000;
+    ctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      const tw = reduce?1:(0.78+0.22*Math.sin(t*s.s+s.p));
+      drawStar(s.x,s.y,s.r,s.a*tw,false);
+    }
+    for(const s of wishStars){
+      const tw = reduce?1:(0.8+0.2*Math.sin(t*s.s+s.p));
+      drawStar(s.x,s.y,s.r,s.a*tw,true);
+    }
+    if(mine){
+      // my star: brighten and rise a little after it lands
+      const age = (now-mine.born)/1000;
+      const k = Math.min(1, age/2.2);
+      const y = mine.y0 - k*34;
+      const pulse = age<1.8 ? Math.sin(age/1.8*Math.PI) : 0;
+      const r = 3.0 + 2.2*pulse;
+      // a soft bloom that fades as the star settles
+      const bloom = ctx.createRadialGradient(mine.x,y,0,mine.x,y,40+60*age);
+      bloom.addColorStop(0,'rgba(255,241,207,'+(0.22*(1-Math.min(1,age/3)))+')'); bloom.addColorStop(1,'rgba(255,241,207,0)');
+      ctx.globalAlpha=1; ctx.fillStyle=bloom; ctx.beginPath(); ctx.arc(mine.x,y,40+60*age,0,Math.PI*2); ctx.fill();
+      drawStar(mine.x, y, r, 1, true);
+      mine.y = y;
+    }
+    // an occasional shooting star
+    if(!reduce){
+      if(!shooting && now>nextShoot){ shooting={x:W*(0.15+Math.random()*0.7), y:H*(0.05+Math.random()*0.3), vx:-(380+Math.random()*220), vy:170+Math.random()*90, life:0}; }
+      if(shooting){
+        shooting.life += 1/60; const L=shooting.life;
+        const x=shooting.x+shooting.vx*L, y=shooting.y+shooting.vy*L;
+        const fade = Math.max(0, 1-L/0.9);
+        const g = ctx.createLinearGradient(x,y,x-shooting.vx*0.18,y-shooting.vy*0.18);
+        g.addColorStop(0,'rgba(255,241,207,'+(0.9*fade)+')'); g.addColorStop(1,'rgba(255,241,207,0)');
+        ctx.globalAlpha=1; ctx.strokeStyle=g; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-shooting.vx*0.18,y-shooting.vy*0.18); ctx.stroke();
+        if(L>0.95){ shooting=null; nextShoot = now + 9000 + Math.random()*16000; }
+      }
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(frame);
+  }
+  addEventListener('resize', resize, {passive:true});
+  resize(); nextShoot = performance.now()+5000; requestAnimationFrame(frame);
+
+  // hover / tap a wish star to read it — and wish it too
+  let hideT=null, cur=null;
+  const labelW=label.querySelector('.w'), labelC=label.querySelector('.count'), labelToo=label.querySelector('.too'), labelShot=document.getElementById('label-shot');
+  function near(x,y){
+    let best=null, bd=22*22;
+    for(const s of wishStars){ const dx=s.x-x, dy=s.y-y, d=dx*dx+dy*dy; if(d<bd){bd=d; best=s;} }
+    if(mine){ const dx=mine.x-x, dy=mine.y-y; if(dx*dx+dy*dy<bd) best=mine; }
+    return best;
+  }
+  function renderLabel(s){
+    labelW.textContent = '“'+s.w+'”';
+    if(s===mine){ labelC.textContent='yours · on its way'; labelToo.hidden=true; labelShot.hidden=true; }
+    else {
+      labelC.textContent = s.who+"'s wish came true "+s.ago;
+      labelToo.hidden=false;
+      labelToo.classList.toggle('done', !!s.me);
+      labelToo.textContent = s.me ? '✦ you wished this' : '✦ I wish this too';
+      labelToo.disabled = !!s.me;
+      if(s.img!==undefined){ labelShot.src='assets/'+s.img+'.jpg'; labelShot.hidden=false; } else { labelShot.hidden=true; }
+    }
+  }
+  function showLabel(s){
+    if(!s){ return; }
+    cur=s; renderLabel(s);
+    label.style.left = Math.min(Math.max(s.x, 140), W-140)+'px'; label.style.top = s.y+'px';
+    label.style.transform = (s.y < 300) ? 'translate(-50%, 14px)' : 'translate(-50%,-104%)';
+    label.classList.add('on');
+    clearTimeout(hideT); hideT=setTimeout(()=>label.classList.remove('on'), 3200);
+  }
+  label.addEventListener('pointerenter', ()=>clearTimeout(hideT));
+  label.addEventListener('pointerleave', ()=>{ hideT=setTimeout(()=>label.classList.remove('on'), 900); });
+  labelToo.addEventListener('click', e=>{
+    e.stopPropagation(); if(!cur || cur===mine || cur.me) return;
+    cur.me=true; cur.n+=1; cur.r+=0.7; cur.a=1; renderLabel(cur);
+    // a little spark leaves the cursor for the star
+    const sp=document.createElement('div'); sp.style.cssText='position:fixed;width:6px;height:6px;border-radius:50%;background:#FFF1CF;box-shadow:0 0 12px #FFF1CF;pointer-events:none;z-index:6;transition:transform .7s cubic-bezier(.2,.7,.2,1),opacity .7s ease;left:'+(e.clientX-3)+'px;top:'+(e.clientY-3)+'px';
+    document.body.appendChild(sp); requestAnimationFrame(()=>requestAnimationFrame(()=>{ sp.style.transform='translate('+(cur.x-e.clientX)+'px,'+(cur.y-e.clientY)+'px) scale(.3)'; sp.style.opacity='0'; }));
+    setTimeout(()=>sp.remove(), 800);
+    clearTimeout(hideT); hideT=setTimeout(()=>label.classList.remove('on'), 2600);
+  });
+  addEventListener('pointermove', e=>{ if(document.body.classList.contains('unboxing')) return; if(e.target.closest('.label')) return; const s=near(e.clientX,e.clientY); if(s) showLabel(s); }, {passive:true});
+  addEventListener('pointerdown', e=>{ if(e.target.closest('input,button,a,form,.ask,.label')) return; if(document.body.classList.contains('unboxing')) return; const s=near(e.clientX,e.clientY); if(s) showLabel(s); }, {passive:true});
+
+  // ---------- the wish ----------
+  const ask=document.getElementById('ask'), input=document.getElementById('wish'), lifted=document.getElementById('lifted'),
+        coin=document.getElementById('coin'), note=document.getElementById('note');
+  let wishText='', liftedPos=null, state='ask';
+  setTimeout(()=>{ try{ input.focus({preventScroll:true}); }catch(e){} }, 600);
+
+  let boxes=0;
+  const sheet=document.getElementById('sheet'), doneEl=document.getElementById('done'),
+        amounts=document.getElementById('amounts'), ownBtn=document.getElementById('own-btn'), ownAmt=document.getElementById('own-amt'),
+        payBtn=document.getElementById('pay-btn'), doneWish=document.getElementById('done-wish'),
+        budgetNote=document.getElementById('budget-note');
+  let amount=50;
+  const NOTES={10:"A small thing, made just for you.",20:"A small thing with a little more to it.",50:"A proper toy — more parts, more nights on it.",100:"A big one: a set, or something with real moving parts."};
+  function setAmount(a){ amount=a;  budgetNote.textContent = NOTES[a] || "The elves will spend it all on your toy."; }
+  amounts.addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return;
+    amounts.querySelectorAll('button').forEach(x=>x.classList.remove('sel')); b.classList.add('sel');
+    if(b===ownBtn){ ownAmt.hidden=false; ownAmt.focus(); setAmount(parseInt(ownAmt.value.replace(/\D/g,''),10)||50); }
+    else { ownAmt.hidden=true; setAmount(parseInt(b.dataset.a,10)); }
+  });
+  ownAmt.addEventListener('input', ()=>{ const v=parseInt(ownAmt.value.replace(/\D/g,''),10); if(v) setAmount(v); });
+
+  // 1) the wish rises, 2) the budget sheet, 3) pay, 4) the elves are on it
+  function toss(){
+    const v = input.value.trim(); if(!v || state!=='ask') return;
+    wishText=v; state='budget';
+    const r = input.getBoundingClientRect();
+    lifted.textContent = v; lifted.style.top=(r.top+r.height/2)+'px';
+    lifted.style.transform='translate(-50%,-50%) scale(1)'; lifted.className='lifted'; lifted.style.opacity='1';
+    ask.classList.add('away'); setTimeout(()=>{ ask.hidden=true; }, reduce?10:650);
+    const apex={x:W/2, y:Math.max(56,H*0.15)};
+    const go=()=>{ lifted.classList.add('up'); lifted.style.opacity=''; lifted.style.top=apex.y+'px'; lifted.style.transform='translate(-50%,-50%) scale(.86)'; };
+    requestAnimationFrame(()=>requestAnimationFrame(go)); setTimeout(go,120);
+    setTimeout(()=>{ lifted.classList.add('gone'); }, reduce?20:1000);
+    setTimeout(()=>{ lifted.className='lifted'; lifted.textContent=''; }, reduce?40:2000);
+    setAmount(50);
+    setTimeout(()=>{ sheet.hidden=false; requestAnimationFrame(()=>sheet.classList.add('on')); }, reduce?40:1200);
+  }
+  payBtn.addEventListener('click', ()=>{
+    if(state!=='budget') return; state='paid';
+    sheet.classList.remove('on'); setTimeout(()=>{ sheet.hidden=true; }, reduce?10:600);
+    setTimeout(()=>{ mine={x:W/2, y:Math.max(56,H*0.15), y0:Math.max(56,H*0.15), born:performance.now(), w:wishText}; }, reduce?20:500);
+    boxes++;
+    doneWish.textContent='“'+wishText+'”';
+    setTimeout(()=>{ doneEl.hidden=false; requestAnimationFrame(()=>doneEl.classList.add('on')); }, reduce?40:1200);
+  });
+  function backToAsk(){
+    sheet.classList.remove('on'); doneEl.classList.remove('on');
+    setTimeout(()=>{ sheet.hidden=true; doneEl.hidden=true; }, reduce?10:600);
+    lifted.className='lifted'; lifted.textContent='';
+    input.value=''; ghostSync(); ask.hidden=false; requestAnimationFrame(()=>ask.classList.remove('away')); state='ask';
+    try{ input.focus({preventScroll:true}); }catch(e){}
+  }
+  document.getElementById('sheet-back').addEventListener('click', backToAsk);
+  document.getElementById('done-back').addEventListener('click', backToAsk);
+
+  document.getElementById('wish-form').addEventListener('submit', e=>{ e.preventDefault(); toss(); });
+
+  // the empty line teaches by example: it rotates through real wishes
+  const ghost=document.getElementById('ghost'); let gi=0, gTimer=null;
+  function ghostSync(){ ghost.classList.toggle('off', input.value.length>0); }
+  const goBtn=document.getElementById('go');
+  function goSync(){ const has=input.value.trim().length>0; goBtn.classList.toggle('ready', has); goBtn.disabled=!has; }
+  function grow(){ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight, Math.round(innerHeight*0.34))+'px'; }
+  input.addEventListener('input', ()=>{ ghostSync(); goSync(); grow(); });
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); toss(); } });
+  addEventListener('resize', grow);
+  function rotateGhost(){
+    if(input.value.length>0 || state!=='ask'){ return; }
+    ghost.classList.add('fade');
+    setTimeout(()=>{ gi=(gi+1)%SAMPLE.length; ghost.textContent=SAMPLE[(gi*5+2)%SAMPLE.length]; ghost.classList.remove('fade'); }, reduce?0:700);
+  }
+  if(!reduce){ setTimeout(()=>{ rotateGhost(); gTimer=setInterval(rotateGhost, 4200); }, 2600); }
+
+  // the sky reads itself to you: now and then a star's wish surfaces on its own
+  if(!reduce){ setInterval(()=>{
+    if(state!=='ask' || label.classList.contains('on') || document.body.classList.contains('unboxing')) return;
+    // only stars clear of the center (heading + line + buttons), with room for the card
+    const cx=W/2, clearX=Math.min(520, W*0.42);
+    const ok = wishStars.filter(st=>{
+      const inMiddleX = Math.abs(st.x-cx) < clearX + 130;
+      const inMiddleY = st.y > H*0.10 && st.y < H*0.78;
+      return !(inMiddleX && inMiddleY);
+    });
+    if(!ok.length) return;
+    const s = ok[Math.floor(Math.random()*ok.length)];
+    showLabel(s); clearTimeout(hideT); hideT=setTimeout(()=>label.classList.remove('on'), 2600);
+  }, 7000); }
+  addEventListener('keydown', e=>{ if(e.key==='Escape' && state==='ask'){ input.value=''; } });
+
+  // the wall
+  const wall=document.getElementById('wall');
+  function openWall(o){ wall.hidden=!o; document.body.classList.toggle('walled', o); }
+  document.getElementById('wall-close').addEventListener('click', ()=>openWall(false));
+  // the boxes pill: what's on its way — tap it to open one (prototype)
+  // prototype-only: press "u" after a wish to jump to the unboxing
+  addEventListener('keydown', e=>{ if((e.key==='u'||e.key==='U') && document.activeElement!==input && !e.target.closest('input')) openUnbox(); });
+
+  // demo hooks for screenshots: ?w=your+wish  &pay=1  &box=1
+  const q = new URLSearchParams(location.search);
+  if(q.get('wall')) openWall(true);
+  if(q.get('w')){
+    setTimeout(()=>{ input.value=q.get('w'); ghostSync(); goSync(); grow(); if(q.get('go')||q.get('pay')) toss(); }, 900);
+    if(q.get('pay')) setTimeout(()=>payBtn.click(), 3200);
+    if(q.get('box')) setTimeout(()=>{ openUnbox(); const n=parseInt(q.get('box'),10)||0; for(let i=0;i<n;i++) setTimeout(advance, 400*(i+1)); }, 9000);
+  }
+})();
+</script>
+
+</body>
+</html>
