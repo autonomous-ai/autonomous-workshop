@@ -1,12 +1,12 @@
 {
-  "artifact_sha256": "79739983f4fd03d690c25230d319143ee805b360013a0700768fbb7feee334ba",
-  "created_at": "2026-08-24T12:53:58.166822+00:00",
+  "artifact_sha256": "d37a8c5e7971ea9e277ebc5f0a9bd94e6336095bb79650640816ace75ddc8570",
+  "created_at": "2026-08-24T12:56:21.436603+00:00",
   "entries": [
     {
-      "bytes": 3585,
+      "bytes": 3640,
       "executable": false,
       "path": "INSTRUCTIONS.md",
-      "sha256": "e2c90a7f3752e822af9706b8a88d1aa2c981b768e584de3d1c9263f3c8407846"
+      "sha256": "87a98a3e9bb2dd0a4dd04bc629df2348f64bb6fce3d7b5c59c5e01dc99954c51"
     },
     {
       "bytes": 2909,
@@ -52,5 +52,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 1331965
+  "total_bytes": 1332020
 }

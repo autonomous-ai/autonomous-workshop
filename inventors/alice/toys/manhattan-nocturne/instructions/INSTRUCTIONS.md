@@ -32,9 +32,10 @@ broad base rails. Those cues remain when color is hard to see.
 ## Set up
 
 Turn the board so the raised square is at each player's right hand. Each raised
-square is an isolated 25 mm landing with a broad sloped edge, so the checker
-pattern remains visible even before an optional contrasting finish. From left
-to right, each back rank is:
+square is an isolated 25 mm landing with a broad sloped edge, preserving a
+physical square boundary. The required midnight-and-brass contrasting finish
+makes the checker pattern immediately readable. From left to right, each back
+rank is:
 
 ```text
 rook  knight  bishop  queen  king  bishop  knight  rook

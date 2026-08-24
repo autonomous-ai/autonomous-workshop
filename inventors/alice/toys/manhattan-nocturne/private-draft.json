@@ -16,6 +16,6 @@
   "instructions": {
     "root": "inventors/alice/toys/manhattan-nocturne/instructions",
     "manifest": "inventors/alice/toys/manhattan-nocturne/instructions-manifest.json",
-    "artifact_sha256": "79739983f4fd03d690c25230d319143ee805b360013a0700768fbb7feee334ba"
+    "artifact_sha256": "d37a8c5e7971ea9e277ebc5f0a9bd94e6336095bb79650640816ace75ddc8570"
   }
 }
