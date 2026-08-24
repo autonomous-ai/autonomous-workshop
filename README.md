@@ -1,176 +1,208 @@
 # Autonomous Workshop
 
-Build autonomous AI inventors without rebuilding everything around them.
-
-An inventor owns its **Taste** and the way it turns a **Wish** into something
-real. Autonomous Workshop supplies the reliable making machinery: durable
-state, reusable skills, exact artifacts, inspection evidence, and safe
-connections to outside services.
-
-The experience for the person making the Wish stays simple:
+Santa's workshop for autonomous inventors. A person makes a Wish, waits, and
+receives a box containing a playful object with a soul.
 
 ```text
-WISH  ------------------------ WAIT ------------------------>  RECEIVE
-                                |
-                         the Workshop works
+PERSON       makes a wish ---------------- waits ----------------> receives a box
+                    |
+                    v
+WORKSHOP          WISH -> MAKE <-> PLAYTEST -> DOCS -> DELIVER
+                                ^          |
+                                + feedback-+
 ```
 
-`Wait` and `Receive` are ordinary customer language, not engine stages.
+Those five words are the complete creation pipeline. The machinery underneath
+them can be sophisticated; the language every elf and developer shares should
+stay simple.
 
-## How Alice is built
+## What this Workshop makes
 
-Alice is one inventor. A new inventor replaces Alice's layer while reusing the
-Workshop underneath it.
+The first Workshop makes **playthings for grown-ups (14+)**:
 
-```text
-                             ALICE
-                 +---------------------------+
-                 | TASTE.md                  |
-WISH ----------->| prompts + creative choices|
-                 | niche-specific inspection |
-                 +-------------+-------------+
-                               |
-                               v
-                 +---------------------------+
-                 |         WORKSHOP          |
-                 |                           |
-                 |      MAKE <-> INSPECT     |
-                 |        ^         |        |
-                 |        + feedback+        |
-                 |                           |
-                 | skills · artifacts        |
-                 | runtime · integrations    |
-                 +-------------+-------------+
-                               |
-                               v
-                            RECEIVE
-```
+- tabletop games;
+- desk toys;
+- tiny models and characters;
+- puzzles and keepsakes with play in them.
 
-Alice decides what should exist and what good feels like. The Workshop makes
-the work repeatable, inspectable, recoverable, and safe to hand off. The
-Workshop never imports Alice.
+The rule is simple: a useful Wish gets the playful version. A cable holder
+becomes a whale that swallows cables. A phone stand becomes a little creature
+that holds the phone. Nothing is merely useful; everything should invite
+curiosity, touch, surprise, or play.
 
-## Four words
+## The five jobs
 
-| Word | Meaning |
+| Job | What the Workshop must accomplish |
 |---|---|
-| **Wish** | What someone wants, preserved as the inventor received it |
-| **Taste** | The inventor's creative judgment, written in `TASTE.md` |
-| **Make** | Create or revise the product |
-| **Inspect** | Test the exact result and return useful feedback to Make |
+| **Wish** | Preserve what the person asked for and bind it to the elf's exact `TASTE.md`. |
+| **Make** | Invent the experience, write rules when needed, and create beautiful STEP-first printable parts. |
+| **Playtest** | Test the entire product and send useful feedback back to Make until the pinned bar passes. |
+| **Docs** | Create a truthful private product page with beautiful exact-product images, copy, rules, and instructions. |
+| **Deliver** | Print, QA, pack, and hand the exact approved product to USPS, UPS, or FedEx. |
 
-That is the complete public Workshop vocabulary. Packaging bytes, recording
-state, calling providers, and retaining receipts are implementation details;
-they are not extra stages an inventor author has to learn.
+Playtest is intentionally broad. It covers executable AI-player simulation,
+rules, fun and flow predictions, exploits, balance, CAD, fit, motion,
+printability, safety, independent human use, and the exact physical prototype.
+Different evidence remains different: AI players cannot prove that humans had
+fun, a render cannot prove that parts fit, and a shipping label cannot prove a
+carrier received the box.
+
+## How Alice is built on the Workshop
+
+Alice is the concrete example; every other elf uses the same dependency
+direction.
+
+```text
+inventors/alice/
+  TASTE.md                       what Alice loves and rejects
+  profile.py                     Alice's Workshop connection
+  custom Make + Playtest         Alice's tabletop-game craft
+          |
+          | imports
+          v
++--------------------------------------------------------------------+
+|                         AUTONOMOUS WORKSHOP                         |
+|                                                                    |
+|  Wish -> Make <---------------------> Playtest -> Docs -> Deliver   |
+|           |        structured feedback       |                      |
+|           |                                   |                      |
+|           +-- locked CAD skills               +-- exact evidence     |
+|           +-- immutable product bytes         +-- bounded repairs    |
+|                                                                    |
+|  durable state · budgets · leases · receipts · safe integrations   |
++--------------------------------------------------------------------+
+
+Workshop never imports Alice. Alice imports Workshop.
+```
+
+Taste makes Alice recognizable. Workshop makes her work repeatable,
+content-addressed, evidence-bound, and safe to connect to printers,
+product pages, and carriers.
+
+## Three ways to build an elf
+
+Most developers should begin with the smallest level that expresses what is
+special about their inventor.
+
+| Level | Inventor authors | Workshop supplies |
+|---|---|---|
+| **Taste only** | `TASTE.md` | Make, Playtest and its improvement loop, Docs, Deliver, state, artifacts, and integrations |
+| **Custom Make** | `TASTE.md` + Make hook | Shared Playtest and improvement loop, Docs, Deliver, state, artifacts, and integrations |
+| **Custom Playtest** | `TASTE.md` + Make hook + Playtest hook | The loop, Docs, Deliver, state, artifacts, and integrations |
+
+A custom Playtest requires a custom Make. Docs and Deliver remain shared so
+every product page and shipment stays attached to the exact approved bytes.
+
+The playtest allowance is chosen per Wish:
+
+```python
+result = workshop.run(wish, playtest_rounds=2)   # small tier
+result = workshop.run(wish, playtest_rounds=10)  # deeper tier
+```
+
+The trusted checkout or quote service translates payment into that allowance;
+free-form Wish text cannot authorize spend. The number is a maximum number of
+Make–Playtest improvement rounds, not permission to weaken the bar. A design
+that still fails when its allowance is exhausted stops instead of reaching
+Docs or Deliver.
+
+## The four elves
+
+The names are internal. Customers make Wishes to the Workshop, not to an elf.
+
+| Elf | Plaything lane | Level | What is uniquely theirs |
+|---|---|---|---|
+| **Alice** | Tabletop games | Custom Playtest | Hidden-information game invention, executable rules, adversarial simulation, and tabletop evidence |
+| **Bob** | Desk toys | Custom Make | Mechanisms, motion, tactile rhythm, and playful versions of useful objects |
+| **Eve** | Tiny models and characters | Taste only | Expressive silhouettes, tiny worlds, character, and collectibility |
+| **Ivy** | Puzzles and keepsakes | Taste only | Secrets, reveals, personal meaning, and repeatable puzzle moments |
+
+Bob's earlier board-game laboratory is preserved as migration material. His
+canonical role is now desk toys, and his reusable budgeting, parallel
+exploration, and reward ideas belong in Workshop so every elf can benefit.
 
 ## Repository shape
 
-The repository *is* the Workshop, so its shared code lives at the root.
-Inventor-owned code lives under `inventors/`.
+The repository itself is the Workshop. Shared code lives at the root; elf code
+lives under `inventors/`.
 
 ```text
 autonomous-workshop/
   inventors/
-    alice/                   one autonomous inventor
+    alice/
     bob/
-    <new-inventor>/          Taste, workflow, code, docs, and tests
+    eve/
+    ivy/
+    ...                         pinned team experiments remain references
 
-  src/inventor_workshop/     shared Python package
-  skills/                    reusable making skills
-  schemas/                   portable data contracts
-  docs/                      architecture and build guides
-  tests/                     shared contract tests
-  tools/                     repository checks
-  pyproject.toml
+  src/inventor_workshop/        the shared five-job runner and contracts
+  skills/                       locked CAD and STEP-first making knowledge
+  schemas/                      portable artifact and evidence contracts
+  docs/                         architecture and elf-building guides
+  tests/                        Workshop invariants and product rehearsals
+  tools/                        repository, provenance, lock, and secret checks
 ```
 
-The pinned upstream inventors are reference snapshots. Their provenance and
-integration status are recorded in [inventors/README.md](inventors/README.md).
+Internally, the Workshop uses a few literal implementation types:
 
-## Build an inventor
+```text
+Artifact   exact immutable product identity
+Runtime    state, leases, budgets, retries, and durable outside effects
+Adapter    one model, CAD, renderer, printer, shop, or carrier boundary
+Receipt    verifiable evidence returned by that boundary
+```
 
-Generated inventors require Python 3.11 or newer.
+They are machinery, not extra jobs. Older `Pack`, `Send`, `Door`, `Stamp`,
+`Clockwork`, and `Inspect` spellings remain readable only while existing Alice
+and Bob code migrates.
+
+## Build a new elf
+
+Generated elves require Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/<your-user>/autonomous-workshop.git
+git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
 python3.11 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e .
 
-workshop new deduction-games \
+workshop new ada \
   --name Ada \
-  --niche "two-player printable deduction games" \
-  --template board-game \
-  --root inventors
+  --niche "pocket word games" \
+  --lane table-game \
+  --level taste-only \
+  --root .
 ```
 
-The scaffold creates a self-contained inventor:
+Start by making `inventors/ada/TASTE.md` unmistakably Ada's. The generated
+profile uses the same `Workshop` class as Alice, Bob, Eve, and Ivy. With no real
+model/CAD worker configured, it reports exactly what it is waiting for; it does
+not pass a placeholder off as a printable product.
 
-```text
-inventors/deduction-games/
-  TASTE.md                 recognizable preferences and explicit rejects
-  README.md                thesis, operation, limits, and commands
-  inventor.json            identity and entry point
-  src/deduction_games/     inventor-owned workflow and code
-  tests/                   offline and failure-path checks
-```
+See [Build an elf](docs/BUILD_AN_INVENTOR.md) and
+[Workshop architecture](docs/ARCHITECTURE.md).
 
-Edit `TASTE.md` and `src/deduction_games/workflow.py` first. Keep prompts,
-model choices, niche judgment, and stronger niche inspections with the
-inventor. Reuse Workshop for everything common.
+## What the Workshop refuses to fake
 
-Then prove the starter without credentials:
+- Missing, stale, malformed, timed-out, or unsupported evidence is not a pass.
+- Playtest evidence follows exact product bytes across every repair.
+- A changed rule or part invalidates only the evidence that depends on it, but
+  no stale receipt can approve the new revision.
+- Generated media is not product proof unless it depicts the exact approved
+  geometry; concept art is labeled as concept art.
+- External effects are recorded before execution and ambiguous outcomes wait
+  for reconciliation instead of blind retry.
+- “Perfect” means the pinned acceptance policy passed within bounded time,
+  attempts, and budget. The elf may kill a weak idea instead of lowering the bar.
 
-```bash
-cd inventors/deduction-games
-python -m pip install -e ../.. -e .
-deduction_games doctor
-deduction_games make first-product
-deduction_games status
-python -m unittest discover -s tests -p 'test_*.py' -v
-cd ../..
-```
-
-The offline `make` is deterministic and records exact Taste, Inspection, and
-artifact identities. It proves the wiring; it does not claim production CAD,
-physical safety, print quality, or live fulfillment.
-
-## What the Workshop guarantees
-
-- Taste belongs to the inventor. Agents may propose changes; they do not
-  silently rewrite `TASTE.md`.
-- Unknown is not pass. Missing, stale, malformed, timed-out, or unsupported
-  evidence sends the result back to Make or holds it for review.
-- Inspection follows the bytes. Evidence identifies the exact artifact that
-  was inspected.
-- External outcomes outrank self-scores. Real prints, use, returns, and
-  independent review beat generator confidence.
-- Outside effects are recorded before they happen, use stable idempotency, and
-  keep ambiguous outcomes for reconciliation.
-- No viable product is a valid outcome. An inventor never lowers its bar just
-  to preserve sunk work.
-
-Internally, those guarantees are implemented with three plain subsystems:
-
-```text
-Artifact   immutable product identity and exact transferable bytes
-Runtime    state, leases, budgets, retries, and durable outside effects
-Adapter    a provider boundary that returns a verifiable receipt
-```
-
-These are implementation names, not additional steps in the invention loop.
-Older `Pack`, `Send`, `Door`, `Stamp`, and `Clockwork` APIs remain readable
-during migration, but new inventor code should not build its mental model
-around them.
-
-## Verify the repository
+## Verify the Workshop
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
 workshop skills list
 workshop schemas list
-workshop inventors --root inventors --check-entrypoints
+workshop inventors --root . --check-entrypoints
 workshop check inventors --run
 python tools/verify_skill_locks.py
 python tools/verify_snapshot_locks.py
@@ -178,20 +210,10 @@ python tools/scan_secrets.py
 git diff --check
 ```
 
-Public package names remain stable:
+Read next:
 
-- distribution: `inventor-workshop`
-- Python package: `inventor_workshop`
-- CLI: `workshop`
-- per-inventor runtime directory: `.workshop/`
-
-Former `inventor_foundation` and `inventor_core` imports are compatibility
-shims to the same implementation. They do not own separate state or behavior.
-
-## Read next
-
-- [Build an inventor](docs/BUILD_AN_INVENTOR.md)
 - [Workshop architecture](docs/ARCHITECTURE.md)
+- [Build an elf](docs/BUILD_AN_INVENTOR.md)
 - [Current adoption](docs/ADOPTION.md)
 - [Migration guide](docs/MIGRATION.md)
 - [Lessons from the inventor ecosystem](docs/ECOSYSTEM.md)

@@ -210,6 +210,7 @@ class Workshop:
         round_number: int,
         waiting: WaitingFor,
         lease_token: str,
+        playtest_rounds: int,
         *,
         artifact_sha256: Optional[str] = None,
         docs_sha256: Optional[str] = None,
@@ -236,14 +237,20 @@ class Workshop:
             artifact_sha256,
             docs_sha256,
             waiting.needs,
+            playtest_rounds=playtest_rounds,
         )
 
-    def run(self, wish: Wish) -> WorkshopRun:
+    def run(
+        self, wish: Wish, *, playtest_rounds: Optional[int] = None
+    ) -> WorkshopRun:
         """Start one product and run until delivered, waiting, or bounded stop."""
 
         if not isinstance(wish, Wish):
             raise ContractError("Workshop.run requires a Wish")
         wish.assert_valid()
+        selected_rounds = self.max_rounds if playtest_rounds is None else playtest_rounds
+        if type(selected_rounds) is not int or not 1 <= selected_rounds <= 100:
+            raise ContractError("playtest_rounds must be an integer from 1 to 100")
         self.taste.assert_current()
         runtime = self._runtime()
         runtime.register_product(
@@ -255,6 +262,7 @@ class Workshop:
                 "blueprint_sha256": self.blueprint.sha256,
                 "lane": self.lane,
                 "customization_level": self.customization_level,
+                "playtest_rounds": selected_rounds,
             },
         )
         lease = runtime.acquire_lease(wish.product_id, "toy-workshop")
@@ -279,7 +287,7 @@ class Workshop:
             made: Optional[Made] = None
             playtested: Optional[Playtested] = None
             round_number = 0
-            for round_number in range(1, self.max_rounds + 1):
+            for round_number in range(1, selected_rounds + 1):
                 round_root = run_root / ("round-%03d" % round_number)
                 make_workspace = (round_root / "make").absolute()
                 make_context = MakeContext(
@@ -289,12 +297,19 @@ class Workshop:
                     round_number,
                     make_workspace,
                     feedback,
+                    selected_rounds,
                 )
                 try:
                     made = self.make_job(make_context)
                 except WaitingFor as waiting:
                     return self._wait(
-                        runtime, wish, "make", round_number, waiting, lease
+                        runtime,
+                        wish,
+                        "make",
+                        round_number,
+                        waiting,
+                        lease,
+                        selected_rounds,
                     )
                 if not isinstance(made, Made):
                     raise ContractError("Make must return Made")
@@ -324,6 +339,7 @@ class Workshop:
                     round_number,
                     made,
                     playtest_workspace,
+                    selected_rounds,
                 )
                 try:
                     playtested = self.playtest_job(playtest_context)
@@ -335,6 +351,7 @@ class Workshop:
                         round_number,
                         waiting,
                         lease,
+                        selected_rounds,
                         artifact_sha256=made.artifact_sha256,
                     )
                 if not isinstance(playtested, Playtested):
@@ -366,7 +383,7 @@ class Workshop:
                     raise ContractError(
                         "a failed Playtest must return actionable improve or block feedback"
                     )
-                if round_number == self.max_rounds:
+                if round_number == selected_rounds:
                     self._advance(
                         runtime,
                         wish.product_id,
@@ -385,6 +402,7 @@ class Workshop:
                         "playtest",
                         round_number,
                         made.artifact_sha256,
+                        playtest_rounds=selected_rounds,
                     )
                 self._advance(
                     runtime,
@@ -420,6 +438,7 @@ class Workshop:
                     round_number,
                     waiting,
                     lease,
+                    selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                 )
             if not isinstance(product_docs, ProductDocs):
@@ -451,6 +470,7 @@ class Workshop:
                     round_number,
                     waiting,
                     lease,
+                    selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                     docs_sha256=product_docs.docs_sha256,
                 )
@@ -478,6 +498,7 @@ class Workshop:
                 made.artifact_sha256,
                 product_docs.docs_sha256,
                 delivery=delivered,
+                playtest_rounds=selected_rounds,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)

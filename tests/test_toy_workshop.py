@@ -178,6 +178,7 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual(workshop.customization_level, "taste-only")
         result = workshop.run(Wish.create("rhythm-top", "A delightful desk spinner"))
         self.assertEqual((result.status, result.job, result.round), ("delivered", "deliver", 2))
+        self.assertEqual(result.playtest_rounds, 4)
         self.assertIsNotNone(result.delivery)
         state = Runtime(self.runtime / "workshop.sqlite3")
         self.assertTrue(state.verify_event_chain("rhythm-top"))
@@ -238,12 +239,58 @@ class ToyWorkshopTest(unittest.TestCase):
             "model-character",
             runtime_root=self.runtime,
         )
-        result = workshop.run(Wish.create("tiny-friend", "A tiny desk companion"))
+        result = workshop.run(
+            Wish.create("tiny-friend", "A tiny desk companion"),
+            playtest_rounds=2,
+        )
         self.assertEqual((result.status, result.job, result.round), ("waiting", "make", 1))
+        self.assertEqual(result.playtest_rounds, 2)
         self.assertEqual(result.needs[0].capability, "model-and-cad-maker")
         state = Runtime(self.runtime / "workshop.sqlite3")
         self.assertTrue(state.verify_event_chain("tiny-friend"))
         self.assertIsNone(state.get_product("tiny-friend")["artifact_sha256"])
+        self.assertEqual(state.get_product("tiny-friend")["metadata"]["playtest_rounds"], 2)
+
+    def test_each_wish_can_buy_a_different_bounded_round_allowance(self):
+        two_rounds = Workshop(
+            self.inventor,
+            "desk-toy",
+            tools=self.complete_tools(),
+            runtime_root=self.root / "two-round-runtime",
+        )
+        result = two_rounds.run(
+            Wish.create("small-tier", "A small playtest allowance"),
+            playtest_rounds=2,
+        )
+        self.assertEqual((result.status, result.round, result.playtest_rounds), ("delivered", 2, 2))
+
+        one_round = Workshop(
+            self.inventor,
+            "desk-toy",
+            tools=self.complete_tools(),
+            runtime_root=self.root / "one-round-runtime",
+        )
+        held = one_round.run(
+            Wish.create("smallest-tier", "One chance to improve"),
+            playtest_rounds=1,
+        )
+        self.assertEqual(
+            (held.status, held.job, held.round, held.playtest_rounds),
+            ("stopped", "playtest", 1, 1),
+        )
+        self.assertIsNone(held.docs_sha256)
+        self.assertIsNone(held.delivery)
+
+        with self.assertRaisesRegex(ContractError, "from 1 to 100"):
+            Workshop(
+                self.inventor,
+                "desk-toy",
+                tools=self.complete_tools(),
+                runtime_root=self.root / "invalid-round-runtime",
+            ).run(
+                Wish.create("bad-tier", "An invalid allowance"),
+                playtest_rounds=0,
+            )
 
     def test_preview_preserves_wish_taste_and_playful_rule(self):
         workshop = Workshop(

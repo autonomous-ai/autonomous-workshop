@@ -146,6 +146,7 @@ class MakeContext:
     round: int
     workspace: Path
     feedback: Sequence[Feedback] = field(default_factory=tuple)
+    playtest_rounds: int = 1
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -154,6 +155,14 @@ class MakeContext:
             raise ContractError("MakeContext requires a ToyBlueprint")
         if type(self.round) is not int or self.round < 1:
             raise ContractError("MakeContext round must be a positive integer")
+        if (
+            type(self.playtest_rounds) is not int
+            or not 1 <= self.playtest_rounds <= 100
+            or self.round > self.playtest_rounds
+        ):
+            raise ContractError(
+                "MakeContext playtest_rounds must cover this round and be from 1 to 100"
+            )
         root = Path(self.workspace)
         if not root.is_absolute():
             raise ContractError("MakeContext workspace must be absolute")
@@ -212,6 +221,7 @@ class PlaytestContext:
     round: int
     made: Made
     workspace: Path
+    playtest_rounds: int = 1
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -224,6 +234,14 @@ class PlaytestContext:
             raise ContractError("PlaytestContext product belongs to a different lane")
         if type(self.round) is not int or self.round < 1:
             raise ContractError("PlaytestContext round must be a positive integer")
+        if (
+            type(self.playtest_rounds) is not int
+            or not 1 <= self.playtest_rounds <= 100
+            or self.round > self.playtest_rounds
+        ):
+            raise ContractError(
+                "PlaytestContext playtest_rounds must cover this round and be from 1 to 100"
+            )
         root = Path(self.workspace)
         if not root.is_absolute():
             raise ContractError("PlaytestContext workspace must be absolute")
@@ -440,6 +458,7 @@ class WorkshopRun:
     docs_sha256: Optional[str] = None
     needs: Sequence[Need] = field(default_factory=tuple)
     delivery: Optional[Delivered] = None
+    playtest_rounds: int = 1
 
     def __post_init__(self) -> None:
         _text(self.product_id, "WorkshopRun product_id", 256)
@@ -449,6 +468,14 @@ class WorkshopRun:
             raise ContractError("WorkshopRun job is invalid")
         if type(self.round) is not int or self.round < 0:
             raise ContractError("WorkshopRun round must be a non-negative integer")
+        if (
+            type(self.playtest_rounds) is not int
+            or not 1 <= self.playtest_rounds <= 100
+            or self.round > self.playtest_rounds
+        ):
+            raise ContractError(
+                "WorkshopRun playtest_rounds must cover this round and be from 1 to 100"
+            )
         if self.artifact_sha256 is not None:
             require_sha256(self.artifact_sha256, "WorkshopRun artifact sha256")
         if self.docs_sha256 is not None:
@@ -464,6 +491,7 @@ class WorkshopRun:
             "status": self.status,
             "job": self.job,
             "round": self.round,
+            "playtest_rounds": self.playtest_rounds,
             "artifact_sha256": self.artifact_sha256,
             "docs_sha256": self.docs_sha256,
             "needs": [item.to_dict() for item in self.needs],
