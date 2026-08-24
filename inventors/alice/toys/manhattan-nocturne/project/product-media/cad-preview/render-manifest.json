@@ -1,0 +1,40 @@
+{
+  "concept_art": false,
+  "input": {
+    "path": "../../exports/manhattan-nocturne.glb",
+    "sha256": "a5ae9ec954f48daaa17ea54a9cbab005a852da12a8a07099050665d6c25c453c"
+  },
+  "physical_print": false,
+  "renderer": {
+    "id": "manhattan-nocturne-software-cad-preview",
+    "version": 1
+  },
+  "renderer_source_sha256": "f52ed34ad4ffdcc02d6c6c5a63c0d963f068eb2e93ae90158b2f9c67a1470ccb",
+  "schema": "workshop.cad-preview-render-manifest.v1",
+  "views": [
+    {
+      "png": "01-hero-stone.png",
+      "png_sha256": "a0bde03e5893da546b2067832c98d7ea578d77106f82ce535a6bb4be3d9ba1b3",
+      "receipt": "01-hero-stone.render.json",
+      "receipt_sha256": "89d9b1adc410346d0f4d26605550f49d083642e80e38de3a95cccd479e9af4e2",
+      "view": "hero-stone",
+      "warnings": []
+    },
+    {
+      "png": "02-hero-steel.png",
+      "png_sha256": "fd9204c7af39261064ffb9ec99f8507735a646f08b47e386865ffbd3ecac28b2",
+      "receipt": "02-hero-steel.render.json",
+      "receipt_sha256": "1ae69892205ca9201b42ae973ffe30d471f9fb7f15184000895d9e01cdb45833",
+      "view": "hero-steel",
+      "warnings": []
+    },
+    {
+      "png": "03-top-inventory.png",
+      "png_sha256": "9eea25252dc4069813dd2590e6e1437677c281682fea3cce70ea15b27ac1873e",
+      "receipt": "03-top-inventory.render.json",
+      "receipt_sha256": "8b385d2bee3ada9da0514f01d93cfcf89a23b7eb3baea3ea05168f0b6444f3aa",
+      "view": "top-inventory",
+      "warnings": []
+    }
+  ]
+}
