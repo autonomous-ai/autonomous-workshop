@@ -176,6 +176,7 @@ def _validate_live_request(
         allowed_proof = {
             "instructions_sha256",
             "playtest_evidence_sha256",
+            "page_url",
             "media_sha256",
             "page_content_sha256",
             "listing_request_sha256",
@@ -190,6 +191,21 @@ def _validate_live_request(
         ):
             if proof.get(name) is not None:
                 require_sha256(proof[name], "live proof %s" % name)
+        page_url = proof.get("page_url")
+        if page_url is not None:
+            if not isinstance(page_url, str):
+                raise ContractError("live proof page_url must be absolute HTTPS")
+            parsed_page = urllib.parse.urlsplit(page_url)
+            if (
+                parsed_page.scheme != "https"
+                or not parsed_page.hostname
+                or parsed_page.username is not None
+                or parsed_page.password is not None
+                or parsed_page.query
+                or parsed_page.fragment
+                or any(ord(character) < 32 or ord(character) == 127 for character in page_url)
+            ):
+                raise ContractError("live proof page_url must be absolute HTTPS")
         media = proof.get("media_sha256")
         if media is not None and (
             not isinstance(media, Mapping)
@@ -216,6 +232,7 @@ def _validate_live_request(
             required_proof = {
                 "instructions_sha256",
                 "playtest_evidence_sha256",
+                "page_url",
                 "media_sha256",
                 "page_content_sha256",
                 "listing_request_sha256",

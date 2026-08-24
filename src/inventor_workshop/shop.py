@@ -36,6 +36,7 @@ from .models import PublicationOutcome, PublicationReceipt, require_sha256
 from .store import InventorStore
 
 DEFAULT_SHOP_API = "https://panda-social-api.autonomous.ai/api/v1"
+DEFAULT_SHOP_PAGE_BASE = "https://www.autonomous.ai/factory/product"
 HTTP_TIMEOUT_SECONDS = 120
 Transport = Callable[[str, str, Mapping[str, str], Optional[bytes], int], "HttpResponse"]
 
@@ -47,10 +48,10 @@ PROVEN_NO_EFFECT_STATUSES = frozenset(
 )
 SHOP_LISTING_STRING_LIMITS = {
     "title": 300,
-    "description": 20_000,
+    "description": 2_000,
     "category": 100,
     "prompt": 50_000,
-    "license": 100,
+    "license": 60,
 }
 WORKSHOP_SHOP_LISTING_FIELDS = frozenset(
     (
@@ -74,6 +75,15 @@ LEGACY_SHOP_LISTING_FIELDS = frozenset(
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 SHOP_INSTRUCTIONS_IMAGES = ("hero", "play", "detail", "parts", "box")
+SHOP_CATEGORY_BY_LANE = {
+    "classics-made-yours": "tabletop",
+    "invented-games": "tabletop",
+    "moving-machines": "toys",
+    "holdable-science": "toys",
+    "little-worlds": "toys",
+}
+SHOP_CONTENT_IMAGE_URL_LIMIT = 2_048
+SHOP_CONTENT_VIDEO_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".avi")
 
 
 def _canonical_sha256(value: Any) -> str:
@@ -106,6 +116,39 @@ def _https_url(value: Any, label: str) -> str:
     ):
         raise ContractError("%s must be an absolute HTTPS URL" % label)
     return value
+
+
+def _shop_product_page_url(slug: Any) -> str:
+    """Return the customer page, never the immutable project CDN directory."""
+
+    if not isinstance(slug, str) or not slug or len(slug) > 300:
+        raise ReceiptError("Shop product page requires a canonical slug")
+    return _https_url(
+        DEFAULT_SHOP_PAGE_BASE + "/" + urllib.parse.quote(slug, safe=""),
+        "Shop product page URL",
+    )
+
+
+def _shop_category_for_lane(lane: Any) -> str:
+    """Translate Workshop lanes into the Shop's stable public taxonomy."""
+
+    if not isinstance(lane, str) or lane not in SHOP_CATEGORY_BY_LANE:
+        raise ContractError("product page lane has no Shop category mapping")
+    return SHOP_CATEGORY_BY_LANE[lane]
+
+
+def _shop_content_image_url(value: Any, label: str) -> str:
+    """Apply the stricter URL contract used by Shop product-page images."""
+
+    url = _https_url(value, label)
+    if len(url) > SHOP_CONTENT_IMAGE_URL_LIMIT:
+        raise ContractError(
+            "%s must be at most %d characters" % (label, SHOP_CONTENT_IMAGE_URL_LIMIT)
+        )
+    path = urllib.parse.urlsplit(url).path.casefold()
+    if any(path.endswith(suffix) for suffix in SHOP_CONTENT_VIDEO_SUFFIXES):
+        raise ContractError("%s must identify a static image" % label)
+    return url
 
 
 def _plain_text(value: Any, label: str, minimum: int, maximum: int) -> str:
@@ -155,7 +198,7 @@ def _normalize_use_case(value: Mapping[str, Any]) -> Dict[str, str]:
     return {
         "label": _plain_text(value.get("label"), "use_case.label", 1, 40),
         "body": _plain_text(value.get("body"), "use_case.body", 180, 400),
-        "image": _https_url(value.get("image"), "use_case.image"),
+        "image": _shop_content_image_url(value.get("image"), "use_case.image"),
     }
 
 
@@ -183,7 +226,7 @@ def _normalize_story_blocks(value: Sequence[Mapping[str, Any]]) -> list:
         }
         hero = item.get("hero_image")
         if hero:
-            block["hero_image"] = _https_url(
+            block["hero_image"] = _shop_content_image_url(
                 hero, "story_blocks[%d].hero_image" % index
             )
         pairs = item.get("pair_images", [])
@@ -195,10 +238,15 @@ def _normalize_story_blocks(value: Sequence[Mapping[str, Any]]) -> list:
             raise ContractError(
                 "story_blocks[%d].pair_images must contain at most 10 URLs" % index
             )
-        block["pair_images"] = [
-            _https_url(url, "story_blocks[%d].pair_images" % index)
+        normalized_pairs = [
+            _shop_content_image_url(url, "story_blocks[%d].pair_images" % index)
             for url in pairs
         ]
+        # The Shop's Go response uses ``omitempty`` for this optional gallery.
+        # Omitting an empty list here makes the sent value, persisted proof, and
+        # authenticated readback share one canonical representation.
+        if normalized_pairs:
+            block["pair_images"] = normalized_pairs
         normalized.append(block)
     return normalized
 
@@ -328,25 +376,38 @@ def _normalize_shop_listing(
             continue
         if name == "description" and inventor_name is not None:
             value = attribute_product_description(value, inventor_name)
-        if not isinstance(value, str) or not value.strip() or len(value) > limit:
+        if (
+            not isinstance(value, str)
+            or value != value.strip()
+            or not value
+            or len(value) > limit
+        ):
             raise ContractError(
-                "Shop listing %s must be a non-empty string of at most %d characters"
+                "Shop listing %s must be a trimmed non-empty string of at most %d characters"
                 % (name, limit)
             )
         normalized[name] = value
     if "title" not in normalized:
         raise ContractError("Shop listing title is required")
-    tags = metadata.get("tags") or []
+    tags = metadata.get("tags")
+    if tags is None:
+        tags = []
     if (
         not isinstance(tags, list)
-        or len(tags) > 50
+        or len(tags) > 10
         or any(
-            not isinstance(tag, str) or not tag.strip() or len(tag) > 100
+            not isinstance(tag, str)
+            or tag != tag.strip()
+            or not tag
+            or len(tag) > 40
             for tag in tags
         )
-        or len(tags) != len(set(tags))
+        or len(tags) != len({tag.casefold() for tag in tags})
     ):
-        raise ContractError("Shop listing tags must be at most 50 unique non-empty strings")
+        raise ContractError(
+            "Shop listing tags must be at most 10 case-insensitively unique "
+            "trimmed strings of at most 40 characters"
+        )
     normalized["tags"] = list(tags)
     assert_packable_content(
         "publication-metadata.json",
@@ -494,8 +555,13 @@ class ShopDoor:
             if metadata.get(name) is not None:
                 fields.append((name, str(metadata[name])))
         tags = metadata["tags"]
-        for tag in tags:
-            fields.append(("tags", str(tag)))
+        if tags:
+            for tag in tags:
+                fields.append(("tags", str(tag)))
+        else:
+            # The backend distinguishes an absent tag field (derive defaults)
+            # from a present empty field (the exact requested empty set).
+            fields.append(("tags", ""))
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
         body, multipart_type = _multipart(
             fields, (("file", filename, content_type, content),)
@@ -1352,7 +1418,7 @@ class ShopInstructionsWriter:
         receipt.assert_artifact(artifact_sha256)
         if not receipt.is_verified_public:
             raise ReceiptError("Instructions require authenticated public Shop readback")
-        _https_url(receipt.project_url, "Shop product page URL")
+        _https_url(receipt.details.get("page_url"), "Shop product page URL")
         if receipt.details.get("instructions_sha256") != instructions_sha256:
             raise ReceiptError("Shop receipt is not bound to the sealed Instructions bytes")
 
@@ -1429,7 +1495,7 @@ class ShopInstructionsWriter:
                 {
                     "title": title,
                     "description": summary,
-                    "category": lane,
+                    "category": _shop_category_for_lane(lane),
                     "tags": ["toy", lane],
                 },
                 inventor_name=inventor_name,
@@ -1484,6 +1550,7 @@ class ShopInstructionsWriter:
         proof = {
             "instructions_sha256": instructions_sha256,
             "playtest_evidence_sha256": playtest_sha256,
+            "page_url": _shop_product_page_url(outcome.receipt.slug),
             "media_sha256": {
                 role: media[role]["sha256"] for role in SHOP_INSTRUCTIONS_IMAGES
             },

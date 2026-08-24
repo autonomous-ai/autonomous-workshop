@@ -462,7 +462,7 @@ class ProductInstructions:
             raise ContractError(
                 "ProductInstructions requires an authenticated public site Receipt"
             )
-        page_url = self.site_receipt.project_url
+        page_url = self._site_page_url()
         try:
             parsed_page_url = urllib.parse.urlsplit(page_url or "")
         except ValueError as exc:
@@ -485,6 +485,31 @@ class ProductInstructions:
             raise ContractError(
                 "ProductInstructions site Receipt describes different page, paper, or media bytes"
             )
+
+    def _site_page_url(self) -> str:
+        """Resolve the customer page without mistaking a project CDN for it."""
+
+        page_url = self.site_receipt.details.get("page_url")
+        if isinstance(page_url, str) and page_url:
+            return page_url
+        # Compatibility for older custom site writers that stored the customer
+        # URL directly in ``project_url``.  Real Shop receipts use project_url
+        # for the immutable downloadable project and therefore must carry the
+        # distinct page_url detail.
+        legacy = self.site_receipt.project_url
+        try:
+            parsed = urllib.parse.urlsplit(legacy or "")
+        except ValueError:
+            parsed = urllib.parse.SplitResult("", "", "", "", "")
+        if (
+            isinstance(legacy, str)
+            and parsed.hostname == "www.autonomous.ai"
+            and parsed.path.startswith("/factory/product/")
+        ):
+            return legacy
+        raise ContractError(
+            "ProductInstructions site Receipt requires a customer product page URL"
+        )
 
     @classmethod
     def from_root(
@@ -513,10 +538,7 @@ class ProductInstructions:
     def page_url(self) -> str:
         """The authenticated public product-page URL created by Instructions."""
 
-        # __post_init__ requires this value, so the cast-free assertion is safe
-        # while preserving Receipt's compatibility-friendly Optional field.
-        assert self.site_receipt.project_url is not None
-        return self.site_receipt.project_url
+        return self._site_page_url()
 
     @property
     def publication_receipt(self) -> Receipt:

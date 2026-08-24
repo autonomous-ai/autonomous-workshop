@@ -5,10 +5,16 @@ import unittest
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.errors import AmbiguousPublishError, StateConflict
+from inventor_workshop.errors import AmbiguousPublishError, ContractError, StateConflict
 from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
-from inventor_workshop.shop import HttpResponse, ShopDoor, ShopInstructionsWriter
+from inventor_workshop.shop import (
+    HttpResponse,
+    ShopDoor,
+    ShopInstructionsWriter,
+    _normalize_use_case,
+    _shop_category_for_lane,
+)
 from inventor_workshop.store import InventorStore
 
 
@@ -44,10 +50,7 @@ class SuccessfulShopTransport:
             "current_history_id": "history-1",
             "published_history_id": "history-1" if status == "public" else None,
             "status": status,
-            "project_url": (
-                "https://www.autonomous.ai/factory/product/"
-                + self.context.wish.product_id
-            ),
+            "project_url": "https://cdn.autonomous.ai/projects/history-1/",
         }
         if status == "public":
             value["attachments"] = [
@@ -211,17 +214,45 @@ class InstructionsSiteTest(unittest.TestCase):
             receipt.details["instructions_sha256"],
             self.manifest.artifact_sha256,
         )
+        self.assertEqual(
+            receipt.details["page_url"],
+            "https://www.autonomous.ai/factory/product/verified-toy",
+        )
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha)
         self.assertEqual(set(receipt.details["media_sha256"]), set(self.media))
         self.assertEqual(
             [call[0] for call in transport.calls],
             ["POST", "POST", "POST", "POST", "POST", "POST", "POST", "GET"],
         )
+        import_body = transport.calls[0][3]
+        self.assertIn(b'name="category"\r\n\r\ntabletop\r\n', import_body)
+        category_part = import_body.split(b'name="category"', 1)[1].split(
+            b"\r\n--", 1
+        )[0]
+        self.assertNotIn(b"classics-made-yours\r\n", category_part)
         with self.store._connection() as connection:
             states = connection.execute(
                 "SELECT state FROM shop_effects ORDER BY created_at, effect_key"
             ).fetchall()
         self.assertEqual([row[0] for row in states], ["succeeded"] * 5)
+
+    def test_workshop_lanes_map_to_the_shops_public_taxonomy(self):
+        self.assertEqual(_shop_category_for_lane("classics-made-yours"), "tabletop")
+        self.assertEqual(_shop_category_for_lane("invented-games"), "tabletop")
+        for lane in ("moving-machines", "holdable-science", "little-worlds"):
+            self.assertEqual(_shop_category_for_lane(lane), "toys")
+        with self.assertRaises(ContractError):
+            _shop_category_for_lane("unknown-lane")
+
+    def test_curated_page_images_reject_video_urls_before_import(self):
+        with self.assertRaises(ContractError):
+            _normalize_use_case(
+                {
+                    "label": "Made for your table",
+                    "body": "U" * 180,
+                    "image": "https://cdn.example/looks-like-an-image.mp4",
+                }
+            )
 
     def test_ambiguous_image_upload_is_not_repeated(self):
         context = InstructionsSiteContext(self.made, "verified-toy")
@@ -280,7 +311,13 @@ class InstructionsSiteTest(unittest.TestCase):
                 "body": "S" * 180,
                 "hero_image": "play",
                 "pair_images": ["detail", "parts"],
-            }
+            },
+            {
+                "lead": "What arrives",
+                "body": "B" * 180,
+                "hero_image": "box",
+                "pair_images": [],
+            },
         ]
         page_path.write_text(
             json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
@@ -300,6 +337,7 @@ class InstructionsSiteTest(unittest.TestCase):
             transport.story_blocks[0]["pair_images"],
             [transport.urls["detail"], transport.urls["parts"]],
         )
+        self.assertNotIn("pair_images", transport.story_blocks[1])
         self.assertEqual(
             [call[0] for call in transport.calls],
             ["POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "POST", "GET"],

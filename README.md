@@ -388,6 +388,7 @@ Read next:
 - [Workshop architecture](docs/ARCHITECTURE.md)
 - [Build an inventor](docs/BUILD_AN_INVENTOR.md)
 - [Playtest evidence](docs/PLAYTEST_EVIDENCE.md)
+- [Publish the sealed showcase toys](docs/PUBLISH_SHOWCASES.md)
 - [Current adoption](docs/ADOPTION.md)
 - [Migration guide](docs/MIGRATION.md)
 - [Contributing](CONTRIBUTING.md)
