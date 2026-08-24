@@ -1,0 +1,82 @@
+{
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "config": {
+    "path": "config.json",
+    "sha256": "11e44d632556e17291b196131fda0175cca8a411761a7d7fc496ad26d0fe9248"
+  },
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "2.0.0",
+  "evidence_manifest": {
+    "artifact_sha256": "78db1fcfe1a0e4c5450b767fc13d3c5c1ec921681f7c82e0224c1c8e38000a76",
+    "path": "evidence-manifest.json",
+    "sha256": "a85d70843e2680c18cf95880d9d64e979a16efb5bf7e24a1da709cde00d06459"
+  },
+  "feedback": {
+    "count": 1,
+    "path": "feedback.json",
+    "sha256": "3eb0c24dd9792160560598bc4ce0bc4974863a3fef282e461199f3068a0408b3"
+  },
+  "kind": "manhattan-nocturne-ai-playtest-round",
+  "make_manifest": {
+    "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+    "git_commit": "e259d288b3fdacc834b17ae9cddc8d4ad0e798b3",
+    "path": "make-manifest.json",
+    "sha256": "7bbfbedd16ea7d67ce7da0ff9c975362e555e0fd5b535277437610b722c87c41"
+  },
+  "overall_passed": false,
+  "result_summary": {
+    "failed": [
+      "agent-playtest",
+      "classic-rules-test"
+    ],
+    "passed": [
+      "mechanical-test",
+      "print-test"
+    ]
+  },
+  "results": [
+    {
+      "evidence_ref": "evidence/results/agent-playtest.json",
+      "evidence_sha256": "ea0272dcf362c9e3f1fee16023ed042ce21248e33b2251e743bc4c86fdc61b74",
+      "passed": false,
+      "playtest_id": "agent-playtest",
+      "wrapper": "wrappers/agent-playtest.json",
+      "wrapper_sha256": "49dcb7476efc9a5f87141d7340c86d0977f66aed5b7a8f047d8eb9e7043d27a1"
+    },
+    {
+      "evidence_ref": "evidence/results/classic-rules-test.json",
+      "evidence_sha256": "9cf902771b783a37c35f16cee31b492333db2ff2fad23778ebd68d8197154f72",
+      "passed": false,
+      "playtest_id": "classic-rules-test",
+      "wrapper": "wrappers/classic-rules-test.json",
+      "wrapper_sha256": "fdfee031c96bf26a6146b3abf0b3fa50516530176df889c8e398ef2c659abeb0"
+    },
+    {
+      "evidence_ref": "evidence/results/mechanical-test.json",
+      "evidence_sha256": "43f020a94f50895c928ba8f6791e008de682befea1277390d536f85a7b7e2070",
+      "passed": true,
+      "playtest_id": "mechanical-test",
+      "wrapper": "wrappers/mechanical-test.json",
+      "wrapper_sha256": "fd83f2e1863676090c01073138ad2b59bab11bb92c06af7c462211d27939770f"
+    },
+    {
+      "evidence_ref": "evidence/results/print-test.json",
+      "evidence_sha256": "e1ea6809ee8a83e296f1ae9d7f4fe879493d67e22e40c545d387ad6371128a92",
+      "passed": true,
+      "playtest_id": "print-test",
+      "wrapper": "wrappers/print-test.json",
+      "wrapper_sha256": "7fb5773e71d4c046918347b77231876ed7755927c0775d8e48e5bec0c0d52847"
+    }
+  ],
+  "reviews": "Customer Reviews begin only after Deliver and are not part of this AI Playtest evidence.",
+  "round": 2,
+  "schema_version": 1,
+  "status": "failed-needs-make-revision",
+  "unresolved_canonical_capabilities": [
+    "agent-playtest",
+    "classic-rules-test"
+  ],
+  "warnings": [
+    "Digital print-test passes, but each OrcaSlicer invocation retained the T65535 warning and no physical print claim is made."
+  ]
+}
