@@ -1,0 +1,112 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Two fresh independent blind AI Player sessions each immediately read an alternating 8 by 8 board and a light square on the right from both corrected player orientations: Stone south has h1 on the right and Steel north has a8 on the right.",
+        "Each session identifies all six chess roles. Bishop and queen are the weaker pair, but both still pass; the aggregate is 12 of 12 session-role decisions and king-or-queen is 4 of 4.",
+        "Each session identifies two systematic neutral-material geometry families across all six role pairs. The knight is the weakest paired distinction and color is faster than geometry, but side recognition still passes in neutral material.",
+        "Without seeing the brief, both sessions spontaneously lead with Manhattan or NYC-associated Art Deco/noir language. Both also say that NYC is leading rather than exclusive without a literal landmark. This passes the sealed Wish for NYC building style and the sealed no-exact-landmark direction; it does not claim unique landmark recognition or exclusive city identification.",
+        "The digital production-finish plan passes 15 of 15 deterministic checks and makes board parity immediately readable in exact production-finish previews, but no physical finish execution is claimed."
+      ],
+      "evaluator": "alice.manhattan-nocturne.ai-players",
+      "evaluator_version": "5.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "results/agent-playtest.json",
+      "evidence_sha256": "1f5e4cc5e9297c89f8b612bad78eccbbb29834b9a250310aaaa59c1e30fd07cf",
+      "passed": true
+    },
+    "classic-rules-test": {
+      "claims": [
+        "The exact Make retains one board, 16 Stone pieces, 16 Steel pieces, 32 unique occupied starting squares, and standard R N B Q K B N R back ranks.",
+        "Corrected renderer provenance restores CAD coordinates as (GLB X,-GLB Z,GLB Y) and proves the ordinary light-square-on-right setup from both sides: Stone south with h1 right and Steel north with a8 right.",
+        "AI Players record zero setup errors and zero rule changes: movement, capture, check, checkmate, castling, en passant, promotion, draws, and turn order remain ordinary chess."
+      ],
+      "evaluator": "alice.manhattan-nocturne.ai-players",
+      "evaluator_version": "5.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "results/classic-rules-test.json",
+      "evidence_sha256": "0ef1e1bcb61251525424f52bc52a4bc6b771d0d2d0070755754e1bb8d1e73548",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "All 33 exact sealed STEP occurrences pass selected topological validation with zero reported failures.",
+        "The starting assembly has zero B-rep clashes above 0.001 cubic millimetres across 528 occurrence pairs, with 32 candidate pairs tested and 496 rejected by bounding boxes.",
+        "All 20 algebraic board-envelope, isolated-pad, landing, street-plan, clearance, side-code, inventory, starting-layout, and assembly-height checks pass for the exact Make.",
+        "The finish-plan checker confirms that the 0.80 millimetre checker relief preserves the sealed 9.00 millimetre one-piece board and leaves its 27-file geometry seal unchanged."
+      ],
+      "evaluator": "alice.manhattan-nocturne.ai-players",
+      "evaluator_version": "5.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "results/mechanical-test.json",
+      "evidence_sha256": "dc17afcef03123066c3cae1d4a40f69d0cca406efae4a3d4335755cfb99f7216",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "All 13 unique exact STL entries pass both the recorded mesh check and the 0.8 millimetre two-line thickness floor, then slice with OrcaSlicer 2.3.2 using pinned profiles and supports disabled.",
+        "The complete 32-piece inventory arranges and slices on one plate; parsed G-code records 155.5 grams, 23562 model seconds, 372 layers, 74.4 millimetres maximum Z, and SHA-256 c5d826ee9d023da616512538d04484d393f2af181e88d7ba6a5b85536e250b62.",
+        "The board finish plan passes 15 of 15 deterministic checks and preserves geometry seal 477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54.",
+        "Print-test passes as digital evidence only. No G-code was accepted by a physical printer and no successful print, material change, finish, warp, tipping, handling, tactile, support-removal, or durability claim is made."
+      ],
+      "evaluator": "alice.manhattan-nocturne.ai-players",
+      "evaluator_version": "5.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "results/print-test.json",
+      "evidence_sha256": "7ca1a843cd98a4247937c134342300b107c698e1cf6b58125dff27493cfaf58a",
+      "passed": true
+    }
+  },
+  "how_to_play": "Set up and play with the standard rules of chess. Use the raised square at each player's right, keep each queen on her own square family, and lift pieces rather than dragging them across the relief.",
+  "images": {
+    "box": "images/box.png",
+    "detail": "images/detail.png",
+    "hero": "images/hero.png",
+    "parts": "images/parts.png",
+    "play": "images/play.png"
+  },
+  "instructions_kind": "rulebook",
+  "lane": "classics-made-yours",
+  "limitations": [
+    "Digital geometry, mesh, thickness, fit, packing, and slicer evidence do not prove a successful physical print.",
+    "Surface finish, warp resistance, handling, durability, storage, and human delight remain unverified until a production set is printed and reviewed.",
+    "The generated G-code has not been accepted or run by a physical production printer.",
+    "The required warm-brass light-square finish is a digitally specified material boundary; no production color change or hand finish has yet been executed and inspected."
+  ],
+  "playtest_evidence_artifact_sha256": "d3d37be5d0069205a78602096ad48b78a5768b74ca9f2ff24ab69e9abbfc3703",
+  "product_artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "schema_version": 1,
+  "status": "ready",
+  "story_blocks": [
+    {
+      "body": "Set up and play with the standard rules of chess. Use the raised square at each player's right, keep each queen on her own square family, and lift pieces rather than dragging them across the relief. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
+      "hero_image": "play",
+      "lead": "How to play",
+      "pair_images": [
+        "detail",
+        "parts"
+      ]
+    },
+    {
+      "body": "The box contains one seamless 244 x 244 mm beveled street-grid chess board with warm brass light squares, sixteen Stone chess pieces, sixteen Steel chess pieces, one rules and care guide. Digital geometry, mesh, thickness, fit, packing, and slicer evidence do not prove a successful physical print. Surface finish, warp resistance, handling, durability, storage, and human delight remain unverified.",
+      "hero_image": "box",
+      "lead": "What arrives",
+      "pair_images": []
+    }
+  ],
+  "summary": "New York after midnight, translated into a complete architectural chess set with ordinary chess rules.\n\nBy Alice.",
+  "title": "Manhattan Nocturne Chess",
+  "use_case": {
+    "body": "New York after midnight, translated into a complete architectural chess set with ordinary chess rules. It turns one person's request into this exact plaything instead of decorating a generic download.",
+    "image": "hero",
+    "label": "Made from your wish"
+  },
+  "what_arrives": [
+    "one seamless 244 x 244 mm beveled street-grid chess board with warm brass light squares",
+    "sixteen Stone chess pieces",
+    "sixteen Steel chess pieces",
+    "one rules and care guide"
+  ],
+  "wish": "Have Alice create a really cool chess set with NYC building style."
+}

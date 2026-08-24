@@ -6,9 +6,9 @@ This is a place portrait rather than a tray of landmark miniatures. Manhattan's
 setbacks, water towers, masonry crowns, vertical steel, street grid, and night
 light become one coherent chess language while standard chess remains unchanged.
 
-Status: **Fourth AI Playtest failed on immediate checker parity; the fifth Make
-adds the required midnight-and-brass board finish. Deliver is held until
-physical printing and hands-on QA exist.**
+Status: **The fifth Make and AI Playtest pass; Instructions are prepared for a
+private Factory draft. Deliver is held until physical printing and hands-on QA
+exist.**
 Concept art is visual intent, not evidence of the final geometry.
 
 ## Workshop trail

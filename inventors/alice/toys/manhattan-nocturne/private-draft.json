@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "kind": "workshop.sealed-private-draft",
+  "inventor_id": "alice",
+  "taste_sha256": "2d3217df630eb707695b9f60c5bebbec180d2a8553c46445b641c5583e1a5f3c",
+  "make": {
+    "root": "inventors/alice/toys/manhattan-nocturne/project",
+    "manifest": "inventors/alice/toys/manhattan-nocturne/playtest/round-05/make-manifest.json",
+    "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f"
+  },
+  "playtest": {
+    "root": "inventors/alice/toys/manhattan-nocturne/playtest/round-05",
+    "evidence_artifact_sha256": "d3d37be5d0069205a78602096ad48b78a5768b74ca9f2ff24ab69e9abbfc3703",
+    "index_sha256": "d3b376453d947808598dcb8b17c1cb3f67506e117d0a4103aa6fee882e161f1d"
+  },
+  "instructions": {
+    "root": "inventors/alice/toys/manhattan-nocturne/instructions",
+    "manifest": "inventors/alice/toys/manhattan-nocturne/instructions-manifest.json",
+    "artifact_sha256": "79739983f4fd03d690c25230d319143ee805b360013a0700768fbb7feee334ba"
+  }
+}
