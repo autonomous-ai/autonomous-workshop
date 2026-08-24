@@ -1,11 +1,11 @@
-/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_board.stl: 540 triangles, 272 vertices
+inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_board.stl: 1044 triangles, 524 vertices
   PASS  sliver triangles                   0 under 1e-06 mm altitude (dropped)
   PASS  watertight (no open edges)         0 boundary edges
   PASS  manifold edges                     0 edges shared by >2 faces
   PASS  manifold vertices                  0 pinched (two cones of material meeting at a point)
   PASS  consistent winding                 0 edges with flipped neighbours
-  PASS  positive volume (normals point out) 527.04 cm3
+  PASS  positive volume (normals point out) 515.98 cm3
   PASS  connected shells                   1 (>1 = separate bodies; check they touch, not float)
   PASS  fits 256x256x256 bed               244.0x244.0x9.0 mm
-  PASS  small triangles                    4 under 0.8 mm edge scale (thin walls / nozzle limit)
+  PASS  small triangles                    92 under 0.8 mm edge scale (thin walls / nozzle limit)
 RESULT: printable

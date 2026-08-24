@@ -184,7 +184,9 @@ def slice_inputs(
         public_command = []
         for argument in command:
             value = str(argument)
-            if value.startswith(str(root)):
+            if value == str(orca):
+                value = "${ORCASLICER_CLI}"
+            elif value.startswith(str(root)):
                 value = value.replace(str(root), "${SLICE_TMP}", 1)
             elif value.startswith(str(repo_root())):
                 value = value.replace(str(repo_root()), "${WORKSHOP_ROOT}", 1)
@@ -226,11 +228,14 @@ def main() -> int:
 
     export_dir = PROJECT / "exports/stl"
     log_dir = PROJECT / "validation/mesh-logs"
+    thickness_dir = PROJECT / "validation/thickness-reports"
     export_dir.mkdir(parents=True, exist_ok=True)
     log_dir.mkdir(parents=True, exist_ok=True)
+    thickness_dir.mkdir(parents=True, exist_ok=True)
 
     export_tool = repo_root() / "skills/cad/scripts/export"
     mesh_tool = repo_root() / "skills/cad/scripts/check_mesh"
+    thickness_tool = repo_root() / "skills/cad/scripts/check_thickness"
     stls: dict[str, Path] = {}
     mesh_rows: list[dict[str, object]] = []
 
@@ -256,12 +261,27 @@ def main() -> int:
             require_ok(exported, f"export {part}")
         if not stl.is_file():
             raise RuntimeError(f"missing STL: {stl}")
+        stl_arg = stl.relative_to(repo_root())
         checked = run(
-            [str(args.cad_python), str(mesh_tool), str(stl), "--bed", "256x256x256"]
+            [str(args.cad_python), str(mesh_tool), str(stl_arg), "--bed", "256x256x256"]
         )
         require_ok(checked, f"mesh check {part}")
         log = log_dir / f"part_{part}.txt"
         log.write_text(checked.stdout, encoding="utf-8")
+        thickness_report = thickness_dir / f"part_{part}.md"
+        thickness_checked = run(
+            [
+                str(args.cad_python),
+                str(thickness_tool),
+                str(stl_arg),
+                "--nozzle",
+                "0.4",
+                "--report",
+                str(thickness_report.relative_to(repo_root())),
+            ],
+            timeout=900,
+        )
+        require_ok(thickness_checked, f"thickness check {part}")
         mesh_rows.append(
             {
                 "part": part,
@@ -274,6 +294,10 @@ def main() -> int:
                 "mesh_log": log.relative_to(PROJECT).as_posix(),
                 "mesh_log_sha256": sha256(log),
                 "mesh_passed": True,
+                "thickness_report": thickness_report.relative_to(PROJECT).as_posix(),
+                "thickness_report_sha256": sha256(thickness_report),
+                "thickness_nozzle_mm": 0.4,
+                "thickness_passed": True,
             }
         )
 
@@ -316,6 +340,14 @@ def main() -> int:
     )
     inventory_invocation["label"] = "all-32-pieces"
     slice_invocations.append(inventory_invocation)
+    slicer_warnings = sorted(
+        {
+            line
+            for invocation in slice_invocations
+            for line in invocation["stderr"]
+            if line.strip()
+        }
+    )
 
     separate_seconds = sum(int(row["quantity_total_model_seconds"]) for row in slice_rows)
     separate_grams = round(sum(float(row["quantity_total_filament_g"]) for row in slice_rows), 3)
@@ -362,6 +394,13 @@ def main() -> int:
                 for path in profiles
             ],
         },
+        "validation_tools": {
+            "receipt_writer_sha256": sha256(Path(__file__)),
+            "export_main_sha256": sha256(export_tool / "__main__.py"),
+            "export_cli_sha256": sha256(export_tool / "cli.py"),
+            "check_mesh_sha256": sha256(mesh_tool),
+            "check_thickness_sha256": sha256(thickness_tool),
+        },
         "mesh_checks": mesh_rows,
         "unique_part_slices": slice_rows,
         "full_piece_inventory_slice": {
@@ -379,18 +418,28 @@ def main() -> int:
             "separate_part_model_seconds": separate_seconds,
             "separate_part_filament_g": separate_grams,
         },
+        "slicer_warnings": slicer_warnings,
         "invocations": slice_invocations,
         "claims": {
             "exact_stls_are_watertight_and_within_the_declared_bed": True,
+            "exact_stls_meet_the_two_line_0_8mm_wall_floor": True,
             "exact_stls_slice_with_pinned_profiles": True,
             "all_32_pieces_were_arranged_and_sliced_on_one_plate": inventory_passed,
             "physical_print_succeeded": False,
             "surface_finish_verified": False,
             "tactile_feel_verified": False,
             "durability_verified": False,
+            "gcode_accepted_by_a_physical_printer": False,
         },
         "limitations": [
             "This is deterministic digital mesh and slicer evidence, not a physical print.",
+            *(
+                [
+                    "Orca produced measured G-code with exit code zero but reported a profile end-G-code warning; verify the G-code on the target P2S before Deliver."
+                ]
+                if slicer_warnings
+                else []
+            ),
             "Physical finish, warp, tipping, handling, and durability remain for Deliver and Reviews.",
         ],
     }
