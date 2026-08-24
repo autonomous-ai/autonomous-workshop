@@ -26,6 +26,7 @@
 
 # python
 __pycache__/
+__cadgen__/
 *.pyc
 *.egg-info/
 .pytest_cache/
