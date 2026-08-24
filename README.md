@@ -37,10 +37,10 @@ Lives in `inventors/alice/`.
 *Blindcap: Duel — $199.99*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
-sit at a table. Leo is the only inventor allowed to invent rules, and the only
-one who cannot ship until real people play the printed game and ask to play
-again. A computer can tell him a game is broken. It can never tell him a game
-is fun.
+sit at a table. Leo is the only inventor allowed to invent rules, so he is the
+only one who has to prove a game works before it ships: a thousand games played
+by AI players hunting for the boring line, the broken rule, and the way to
+cheat. Whether it was fun comes back later, from the people who played it.
 Lives in `inventors/leo/`.
 
 - [x] `TASTE.md`
@@ -109,12 +109,14 @@ Alice chosen, and told why
 Classics made yours · Taste only
         |
         v
-+--------------------------------------------------------+
-|                    SHARED WORKSHOP                     |
-|                                                        |
-| Wish -> Make <-> Playtest -> Instructions -> Deliver   |
-|               useful feedback                         |
-+--------------------------------------------------------+
++---------------------------------------------------------------+
+|                      SHARED WORKSHOP                          |
+|                                                               |
+|  Wish -> Make <-> Playtest -> Instructions -> Deliver          |
+|               useful feedback                    |             |
+|                                                  v             |
+|                                              Reviews           |
++---------------------------------------------------------------+
         |
         v
 the approved product
@@ -147,34 +149,36 @@ stays in code you can read and check.
 
 The Manager is not a sixth job. It only decides who does the five.
 
-## The five jobs
+## The six jobs
 
-Every toy goes through the same five steps:
+Every toy goes through the same six steps:
 
 | Job | What happens |
 |---|---|
 | **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
 | **Make** | Invent the thing and draw the parts so they can really be printed. |
-| **Playtest** | Test it, tell Make what is wrong, and go round again until it passes or the rounds run out. |
+| **Playtest** | AI players play it, poke at it, and try to break it, then tell Make what is wrong — round after round until it passes or the rounds run out. |
 | **Instructions** | Write the honest product page and the paper that goes in the box — rules for a game, instructions for anything else. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
+| **Reviews** | Read what the people who got it say about living with it, and feed that into the next toy. |
 
-Playtest means whatever the toy needs: are the rules fun, is it balanced, can
-you cheat, does it move, do the parts fit, is the science right, will it print,
-is it safe, do strangers enjoy it, does the real printed one work. One kind of
-proof never stands in for another. A simulation cannot prove people had fun. A
-picture cannot prove the parts fit. A shipping label cannot prove a carrier took
-the box.
+Playtest is simulation. AI players run the game or handle the object thousands
+of times: are the rules sound, is it balanced, can you cheat, does it move, do
+the parts fit, is the science right, will it print. It is fast, it is cheap, and
+it finds what is broken.
 
-For **games that don't exist yet**, nothing gets written up or shipped until
-both of these pass:
+What it cannot tell you is whether someone loved it. That answer only exists
+after a real person opens the box, and it comes back as **Reviews** — in their
+words, after delivery. Reviews never hold a toy up; they change the next one.
 
-- **1,000 full games or more, played by computer players** from a fixed seed,
-  poking at the rules, the endings, the balance, the tactics, and the ways to
-  cheat; and
-- **real people play the actual printed game and ask to play it again.**
+For **games that don't exist yet**, nothing gets written up or shipped until at
+least **1,000 full games** have been played from a fixed seed by four kinds of
+AI player — one optimising, one social, one exploring, one trying to break it —
+covering the rules, the endings, the balance, the tactics, and the ways to
+cheat.
 
-No amount of simulation, video, or in-house opinion replaces the second one.
+One kind of proof still never stands in for another: a picture cannot prove the
+parts fit, and a shipping label cannot prove a carrier took the box.
 
 ## Three ways to build an inventor
 
@@ -310,7 +314,7 @@ under `inventors/`.
 
 - `inventors/` — the first five, any you add, and each inventor's
   `toys/<toy-name>/` creations
-- `src/inventor_workshop/` — picking an inventor, the five jobs, the shared runner
+- `src/inventor_workshop/` — picking an inventor, the six jobs, the shared runner
 - `skills/` — locked CAD and STEP knowledge for making parts
 - `schemas/` — the shapes files and proof have to take
 - `docs/` — how it is built and how to add an inventor

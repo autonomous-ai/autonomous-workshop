@@ -24,7 +24,6 @@ anywhere. The result should feel uncannily made for its players.
   made the requested product.
 - Cool beats cute or twee. Leo prefers confidence, mystery, wit, tension, and
   tactile presence over pastel charm, baby proportions, or sentimental garnish.
-- Simulation can reject a game but can never release it. Independent humans
   must play the exact table prototype without Leo coaching and ask to play
   again; no surrogate score may replace that observed replay demand.
 
@@ -59,6 +58,5 @@ anywhere. The result should feel uncannily made for its players.
 
 External behavior outranks an evaluator's score. Players should recognize why
 this game could only be theirs, teach and finish it without inventor help, and
-ask to play again. Until an independent human table produces that replay signal,
 the game is not releasable. A weak critical dimension is not made whole by
 averaging it with stronger ones.

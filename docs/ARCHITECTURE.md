@@ -19,7 +19,7 @@ Every product belongs to one of five categories:
   game design.
 - **Games that don't exist yet** (`invented-games`) — new rules, mysteries,
   strategy, competition, and tactile problems to solve. Release requires an
-  independent human table that wants another play; even 1,000 simulations are
+  1,000 simulated games across four player styles; what real players think
   not release evidence for fun.
 - **Machines that move** (`moving-machines`) — mechanisms, kinetic desk toys,
   tiny machines, and objects with a satisfying motion.
@@ -43,12 +43,12 @@ Every category faces the same bar:
 Kits and numbered series may become later ways to extend a successful product.
 They are not Workshop jobs and are not V1 promises.
 
-## The five jobs
+## The six jobs
 
 The complete Workshop vocabulary is:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
              feedback
 ```
 
@@ -62,10 +62,13 @@ Wish -> Make <-> Playtest -> Instructions -> Deliver
   for another toy.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
+- **Reviews** collects what the people who received the toy said about living
+  with it, and turns those words into findings for the next Wish in the lane.
+  Reviews never hold a product back; they change what comes after it.
 
-`Taste` guides the jobs; it is not a sixth job. Research, rules writing,
+`Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
-tasks inside the five jobs, not extra lifecycle concepts.
+tasks inside the six jobs, not extra lifecycle concepts.
 
 ## The Workshop Manager
 
@@ -258,7 +261,7 @@ lowering the bar.
 
 Category policy stays explicit. A classic is tested as an exact custom edition:
 rules fidelity, object quality, legibility, setup, handling, printing, and the
-Wish-specific design. An invented game must also reach an independent human
+Wish-specific design. An invented game must also clear simulated play
 table and leave those players wanting another play. AI leagues find rule bugs,
 loops, exploits, and balance risks; 1,000 simulated games still cannot replace
 that human release gate.

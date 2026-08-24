@@ -180,13 +180,13 @@ class ScaffoldTest(unittest.TestCase):
             )
             preview_data = json.loads(preview.stdout)
             self.assertEqual(preview_data["blueprint"]["lane"], "invented-games")
-            human_table = next(
+            owner_reviews = next(
                 task
                 for task in preview_data["blueprint"]["tasks"]
-                if task["key"] == "playtest.human-table"
+                if task["key"] == "reviews.collect"
             )
-            self.assertEqual(human_table["capability"], "human-replay")
-            self.assertTrue(human_table["external"])
+            self.assertEqual(owner_reviews["capability"], "owner-reviews")
+            self.assertTrue(owner_reviews["external"])
             self.assertFalse((destination / ".workshop").exists())
 
             run = subprocess.run(

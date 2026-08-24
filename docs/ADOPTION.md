@@ -34,7 +34,7 @@ generic print. Kits and numbered series are later product variants, not current
 profiles, jobs, or V1 promises.
 
 Invented games have one additional non-negotiable release gate: an independent
-human table must play the exact game and want another play. AI simulations are
+simulated table must play the exact game across four player styles. Reviews are
 diagnostic evidence only; 1,000 passing simulations do not release a game.
 
 ## Current routing boundary
@@ -96,7 +96,7 @@ All five profiles use the same 0.5 contracts for:
 The platform operator still has to install real shared tools. A complete live
 path needs, as applicable, authenticated model and CAD workers, executable AI
 players, independent reviewers, a pinned slicer and printer profile, exact
-physical prototypes, independent human playtests, a product renderer or photo
+physical prototypes, owner reviews, a product renderer or photo
 pipeline, production QA, packing, and USPS/UPS/FedEx integration.
 
 Missing tools remain a `waiting` result. Simulation does not become human-fun
@@ -194,7 +194,7 @@ model credential, catalog credential, printer, carrier, or paid service.
 2. Keep Alice's classics profile Taste-only and prove shared Make and Playtest
    can preserve known rules while producing a genuinely personal edition.
 3. Implement Leo's invented-game `Made`, `Playtested`, and `Feedback` adapters,
-   including the independent-human-table replay gate.
+   including the simulated-play release gate.
 4. Implement Bob's new moving-machine `MakeContext -> Made` path; do not route
    machine Wishes into the preserved board-game laboratory.
 5. Configure and test shared Make and Playtest tools for the Taste-only

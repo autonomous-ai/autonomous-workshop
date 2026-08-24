@@ -109,7 +109,7 @@ The evidence class determines what Instructions may claim:
 | CAD/kernel measurement | dimensions, topology, clearances, interference, motion, assembly calculations | that a real print assembled or survived use |
 | Slicer analysis | behavior under an exact printer, material, and profile; predicted time, material, and supports | successful printing or acceptable finish |
 | Physical prototype | recorded measurements and tests for one exact print with full provenance | broad durability, safety, or delight beyond that test |
-| Human playtest | observed behavior and statements from identified independent participants under a stated protocol | universal fun or demand beyond the sample |
+| Owner reviews | what people who received the toy said about living with it — from identified participants under a stated protocol | universal fun or demand beyond the sample |
 | Production or carrier receipt | the exact production, QA, packing, handoff, or delivery event observed | any later event or unobserved product quality |
 
 For example, “1,000 seeded games terminated” is a strong simulation claim and
@@ -135,9 +135,8 @@ Category-specific Playtest then adds the right gates:
   new invention.
 - **Games that don't exist yet (`invented-games`)** needs executable AI-player
   traces to find rule errors, loops, exploits, balance risks, and pacing
-  problems. Release also requires an independent human table that plays the
-  exact game and wants another play. Even 1,000 simulations cannot replace
-  that gate.
+  problems, and that is what release turns on. What real players think arrives
+  afterwards as owner reviews, and shapes the next game rather than this one.
 - **Machines that move (`moving-machines`)** needs exact motion, interference,
   wear, assembly, print, and physical-cycle evidence.
 - **Science you can hold (`holdable-science`)** needs scientific accuracy plus

@@ -1,7 +1,7 @@
 """The opinionated first Workshop: Wish-shaped playthings for grown-ups.
 
 The five lanes are crafts, not extra pipeline stages. Every inventor still works the
-same five jobs: Wish, Make, Playtest, Instructions, and Deliver.
+same six jobs: Wish, Make, Playtest, Instructions, Deliver, and Reviews.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ WORKSHOP_JOBS: Tuple[str, ...] = (
     "playtest",
     "instructions",
     "deliver",
+    "reviews",
 )
 PLAYTHING_LANES: Tuple[str, ...] = (
     "classics-made-yours",
@@ -178,15 +179,6 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         ("invented-games",),
     ),
     ToyTask(
-        "playtest.human-table",
-        "playtest",
-        "Let independent humans play the exact invented game and observe whether they ask to play again.",
-        "Authenticated blind-table record and an explicit replay-request observation.",
-        "human-replay",
-        ("invented-games",),
-        external=True,
-    ),
-    ToyTask(
         "playtest.motion",
         "playtest",
         "Cycle the exact mechanism across tolerances, orientations, wear, and misuse.",
@@ -225,28 +217,6 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "print-test",
     ),
     ToyTask(
-        "playtest.people",
-        "playtest",
-        "Let independent grown-ups use the exact prototype without inventor coaching.",
-        "Authenticated blind-use records, delight signals, confusion, and requested changes.",
-        "human-playtest",
-        (
-            "classics-made-yours",
-            "moving-machines",
-            "holdable-science",
-            "little-worlds",
-        ),
-        external=True,
-    ),
-    ToyTask(
-        "playtest.prototype",
-        "playtest",
-        "Print and test the exact physical revision that later work will describe and ship.",
-        "Printer, material, calibration, artifact, QA, safety, and physical-test receipts.",
-        "physical-prototype",
-        external=True,
-    ),
-    ToyTask(
         "instructions.create",
         "instructions",
         "Explain the plaything with box-ready instructions, beautiful truthful images, copy, and rules.",
@@ -277,6 +247,21 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "shipping",
         external=True,
     ),
+    ToyTask(
+        "reviews.collect",
+        "reviews",
+        "Collect what the people who received the toy say about living with it.",
+        "Owner reviews bound to a delivered order, with the words they wrote.",
+        "owner-reviews",
+        external=True,
+    ),
+    ToyTask(
+        "reviews.learn",
+        "reviews",
+        "Turn those reviews into findings the next Wish in this lane should know.",
+        "Findings tied to the reviews that support them, and what changes because of them.",
+        "review-findings",
+    ),
 )
 
 
@@ -296,7 +281,7 @@ class ToyBlueprint:
         if not selected or any(self.lane not in task.applies_to for task in selected):
             raise ContractError("toy blueprint contains a task for another lane")
         if set(task.job for task in selected) != set(WORKSHOP_JOBS):
-            raise ContractError("toy blueprint must cover all five Workshop jobs")
+            raise ContractError("toy blueprint must cover all six Workshop jobs")
         if len({task.key for task in selected}) != len(selected):
             raise ContractError("toy blueprint task keys must be unique")
         object.__setattr__(self, "tasks", selected)
@@ -361,8 +346,9 @@ def playful_make_request(
             ),
             "product_lanes": list(PLAYTHING_LANES),
             "invented_game_release_rule": (
-                "Simulation may reject an invented game but may not release it. "
-                "Independent humans must play the exact prototype and ask to play again."
+                "Simulated play decides whether an invented game is ready: at least "
+                "1,000 seeded games across all four player styles. What real people "
+                "think arrives later, as Reviews, and shapes the next game."
             ),
             "deliverables": (
                 "build spec, parametric source, STEP, printable parts, assembly, "

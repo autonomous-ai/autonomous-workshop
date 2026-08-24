@@ -510,7 +510,10 @@ class SmokeTest(unittest.TestCase):
         self.assertIsInstance(workshop, Workshop)
         self.assertEqual(workshop.lane, {lane_literal})
         self.assertEqual(workshop.customization_level, {level_literal})
-        self.assertEqual(tuple(WORKSHOP_JOBS), ("wish", "make", "playtest", "instructions", "deliver"))
+        self.assertEqual(
+            tuple(WORKSHOP_JOBS),
+            ("wish", "make", "playtest", "instructions", "deliver", "reviews"),
+        )
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
 

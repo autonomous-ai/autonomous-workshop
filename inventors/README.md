@@ -18,7 +18,7 @@ inventor. Every toy the inventor makes lives under
 | [Eve](eve/) | little worlds | ✅ | ⬜ | ⬜ |
 
 Every inventor owns a `TASTE.md`. Leo also owns his own Make and Playtest,
-because inventing rules and proving a game is fun are his alone; Bob owns his
+because inventing rules and simulating a table are his alone; Bob owns his
 Make, because a machine that moves is designed differently from anything else.
 Leo's and Bob's Make seams are typed and waiting — a run stops and says so
 rather than faking a result.

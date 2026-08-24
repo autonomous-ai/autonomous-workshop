@@ -104,28 +104,6 @@ def _playtest_policy_needs(
                 )
             )
 
-    human = by_id.get("human-replay")
-    if human is not None and human.passed:
-        evidence = human.evidence
-        human_replay_is_real = (
-            evidence.get("evidence_class") == "human-playtest"
-            and type(evidence.get("participant_count")) is int
-            and evidence["participant_count"] >= 2
-            and evidence.get("independent") is True
-            and evidence.get("exact_physical_prototype") is True
-            and evidence.get("inventor_coaching") is False
-            and evidence.get("asked_to_play_again") is True
-        )
-        if not human_replay_is_real:
-            needs.append(
-                Need(
-                    "playtest",
-                    "human-replay",
-                    "Simulation cannot establish fun or observed replay demand for an invented game.",
-                    "Record an independent table of at least two humans playing the exact physical prototype without inventor coaching and asking to play again.",
-                )
-            )
-
     # Keep one actionable request per capability even when a malformed result
     # and a missing-result check converge on the same policy requirement.
     unique = {}

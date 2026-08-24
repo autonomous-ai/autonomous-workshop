@@ -2,10 +2,10 @@
 
 Workshop 0.5 turns the repository into one opinionated Toy Workshop for
 playthings for grown-ups. Every new profile uses one of five product categories
-and the same five jobs:
+and the same six jobs:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
              feedback
 ```
 
@@ -100,7 +100,7 @@ or twee; and personalization plus design intelligence beats a generic print.
 Kits and numbered series are later variants, not jobs or current V1 promises.
 
 Classics use known rules and are judged as exact custom editions and physical
-objects. Invented games must reach an independent human table that wants
+objects. Invented games must clear simulated play that wants
 another play. Even 1,000 clean AI simulations cannot pass that release gate.
 
 ## Migrate vocabulary without rewriting history
@@ -186,7 +186,7 @@ delivery:
 
 Taste guides every choice but is not a job. Research, ideation, rules, CAD,
 simulation, repair, slicing, human trials, rendering, printing, QA, packing,
-and carrier calls are tasks within the five jobs.
+and carrier calls are tasks within the six jobs.
 
 For a mature state machine:
 
@@ -225,7 +225,7 @@ they are examples, not a closed catalog or five completed live inventors:
   capabilities are absent.
 - Leo is the clean Workshop-native `invented-games` inventor with custom Make and
   custom Playtest. His unfinished typed adapters and mandatory independent
-  human-table replay gate wait honestly rather than inheriting a second legacy
+  simulated-play release gate wait honestly rather than inheriting a second legacy
   state machine.
 - Bob demonstrates `moving-machines` and still waits for a typed custom Make; his
   preserved board-game laboratory is not that adapter.

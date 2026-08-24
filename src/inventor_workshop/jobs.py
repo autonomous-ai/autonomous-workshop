@@ -74,7 +74,7 @@ class Need:
 
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
-            raise ContractError("need job must name one of the five Workshop jobs")
+            raise ContractError("need job must name one of the six Workshop jobs")
         _text(self.capability, "need capability", 200)
         _text(self.reason, "need reason")
         _text(self.instructions, "need instructions")

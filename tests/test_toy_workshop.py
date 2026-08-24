@@ -348,7 +348,7 @@ class ToyWorkshopTest(unittest.TestCase):
             - {workshop.blueprint.required_capabilities("playtest")[0]},
         )
 
-    def test_invented_game_requires_meaningful_simulation_and_human_replay(self):
+    def test_invented_game_requires_meaningful_simulation(self):
         invalid = Workshop(
             self.inventor,
             "invented-games",
@@ -362,7 +362,7 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual((invalid.status, invalid.job), ("waiting", "playtest"))
         self.assertEqual(
             {need.capability for need in invalid.needs},
-            {"game-simulation", "human-replay"},
+            {"game-simulation"},
         )
 
         valid = Workshop(

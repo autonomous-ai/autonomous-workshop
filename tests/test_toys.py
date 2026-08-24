@@ -14,10 +14,10 @@ from inventor_workshop.toys import (
 
 
 class ToyBlueprintTest(unittest.TestCase):
-    def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
+    def test_first_workshop_has_exactly_six_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS,
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "make", "playtest", "instructions", "deliver", "reviews"),
         )
         self.assertEqual(
             PLAYTHING_LANES,
@@ -49,10 +49,10 @@ class ToyBlueprintTest(unittest.TestCase):
         game_keys = {task.key for task in games.tasks}
         self.assertIn("make.rules", game_keys)
         self.assertIn("playtest.game", game_keys)
-        self.assertIn("playtest.human-table", game_keys)
-        self.assertNotIn("playtest.people", game_keys)
+        self.assertNotIn("playtest.human-table", game_keys)
+        self.assertIn("reviews.collect", game_keys)
         self.assertTrue(
-            next(task for task in games.tasks if task.key == "playtest.human-table").external
+            next(task for task in games.tasks if task.key == "reviews.collect").external
         )
 
         self.assertIn("make.motion", {task.key for task in machines.tasks})

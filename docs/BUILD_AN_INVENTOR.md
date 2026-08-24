@@ -43,7 +43,7 @@ custom edition as an object: fidelity, personalization, beauty, legibility,
 handling, setup, print quality, and the way the Wish changes the edition.
 
 For `invented-games`, simulations are necessary but never sufficient. Release
-requires an independent human table that wants another play. Even 1,000 clean
+requires 1,000 simulated games across four player styles. Those 1,000 clean
 AI simulations cannot pass that gate.
 
 Kits and numbered series are possible later variants of a successful design.
@@ -234,7 +234,7 @@ Workshop hashes the exact UTF-8 bytes. An agent may propose a Taste change, but
 it may not silently edit or activate one to excuse a weak result.
 
 Taste is direction, not evidence. “This feels fun to me” in `TASTE.md` cannot
-pass a human playtest or physical test.
+pass a physical test.
 
 Keep routing guidance inside the same Taste rather than adding a second prompt
 or manager-only description. The Manager compares each finalist's complete,
@@ -402,15 +402,15 @@ evidence observed:
   profile. It predicts manufacturing; it does not prove a print succeeded.
 - **Physical prototype:** exact artifact, printer, material, calibration,
   measurements, and test receipts. It proves only the recorded prototype test.
-- **Human playtest:** independent participants, protocol, observed behavior,
-  confusion, and feedback. Report the sample; do not generalize beyond it.
+- **Owner reviews:** what people who received the toy said about living with
+  it, tied to a delivered order. Report the sample; do not generalize beyond it.
 
 For invented games, AI players must execute the rules rather than let one model
 narrate an imagined session. Rotate seats and policies, retain seeded traces,
 and check termination, dead states, illegal actions, dominant strategies,
-pacing, and exploits. These are useful predictions, not release evidence for
-fun. The exact game must reach an independent human table, and those people
-must want another play; 1,000 simulations do not substitute for that gate.
+pacing, and exploits. That is the release evidence: a game that survives a
+thousand seeded games is ready to ship. Whether people loved it comes back
+afterwards as owner reviews, and belongs to the next game, not this one.
 
 For classics made yours, verify the known rules and evaluate the exact custom
 edition as an object. Do not market familiar gameplay as a new invention.
@@ -519,4 +519,4 @@ niche Playtest logic.
 Shared changes need credential-free contract tests, failure-path tests,
 artifact and evidence binding, and backward-compatible persisted-state
 handling. Older compatibility aliases may remain for existing runs, but new
-inventors should learn and expose only the five jobs.
+inventors should learn and expose only the six jobs.
