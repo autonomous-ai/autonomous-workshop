@@ -1,5 +1,5 @@
 {
-  "blueprint_sha256": "e458f439b0e1f83b3430a56dcb6b035d62d02826461e8d2a59caed3c115a6af2",
+  "blueprint_sha256": "aa2cc01c516e86bdfd741724e619de4a99b24866f84073fe79a456cd4b433de9",
   "design": {
     "board_mm": [
       132.0,
@@ -29,7 +29,7 @@
   "lane": "classics-made-yours",
   "schema_version": 1,
   "slug": "five-job-checkers",
-  "taste_sha256": "98c92654cb2af36e5ca7f39c406476400b61c3d0114451011a6d17694cffc34a",
+  "taste_sha256": "2d3217df630eb707695b9f60c5bebbec180d2a8553c46445b641c5583e1a5f3c",
   "title": "Five-Job Checkers",
   "wish_sha256": "f54d37b34fc5b3da337d3f4e92d8ec46ac0c502927b5f581d1379b4f6c6f8a95"
 }

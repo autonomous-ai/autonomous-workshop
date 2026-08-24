@@ -52,7 +52,11 @@ from .integrations import Adapter
 from .inspection import Inspection
 from .playtest import Playtest
 from .deliver import DefaultDeliver
-from .instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
+from .instructions import (
+    DefaultInstructions,
+    InstructionsSiteWriter,
+    REQUIRED_PRODUCT_IMAGES,
+)
 from .gameplay import (
     ExecutableGame,
     GameTrace,
@@ -64,6 +68,7 @@ from .gameplay import (
     run_league,
 )
 from .jobs import (
+    CustomerReview,
     DeliverContext,
     Delivered,
     InstructionsContext,
@@ -105,6 +110,8 @@ from .manager import (
 )
 from .toys import (
     PLAYTHING_LANES,
+    POST_DELIVERY_REVIEWS,
+    ReviewsPolicy,
     TOY_TASKS,
     WORKSHOP_JOBS,
     ToyBlueprint,
@@ -161,6 +168,7 @@ from .ports import (
     LaunchPort,
 )
 from .send import DEFAULT_SHOP_API, HttpResponse, Sender, ShopDoor
+from .shop import ShopInstructionsWriter
 from .runtime import Runtime
 from .launch import DEFAULT_PORTAL_API, Launchpad, Portal, inspect_publish_packet
 from .schemas import discover_schemas, resolve_schemas_root
@@ -188,12 +196,14 @@ __all__ = [
     "CadReleaseBundle",
     "CatalogPage",
     "CUSTOMIZATION_LEVELS",
+    "CustomerReview",
     "DefaultDeliver",
     "DefaultInstructions",
     "DeliverContext",
     "Delivered",
     "InstructionsContext",
     "InstructionsJob",
+    "InstructionsSiteWriter",
     "EffectError",
     "ExecutableGame",
     "Feedback",
@@ -217,6 +227,7 @@ __all__ = [
     "Need",
     "NoInventorFit",
     "PLAYTHING_LANES",
+    "POST_DELIVERY_REVIEWS",
     "PlayerPolicy",
     "Playtest",
     "PlaytestContext",
@@ -226,6 +237,7 @@ __all__ = [
     "ProductInstructions",
     "REQUIRED_PRODUCT_IMAGES",
     "RandomPlayer",
+    "ReviewsPolicy",
     "Receipt",
     "ReceiptError",
     "Runtime",
@@ -322,6 +334,7 @@ __all__ = [
     "SendResult",
     "Sender",
     "ShopDoor",
+    "ShopInstructionsWriter",
     "ShopDoorProtocol",
     "Stamp",
     "StampError",

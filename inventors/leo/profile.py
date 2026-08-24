@@ -23,7 +23,7 @@ PROFILE = {
     "workshop_level": "custom-playtest",
     "make": "Leo-owned typed waiting seam",
     "playtest": "Leo-owned typed waiting seam",
-    "release_gate": "independent humans at the table ask to play again",
+    "release_gate": "1,000 seeded AI games across four player styles",
 }
 
 
@@ -42,7 +42,7 @@ def leo_make(context):
 
 
 def leo_playtest(context):
-    """Typed fail-closed seam for Leo's custom Playtest and human release gate."""
+    """Typed fail-closed seam for Leo's custom AI-player Playtest."""
 
     del context
     raise WaitingFor(
@@ -51,12 +51,6 @@ def leo_playtest(context):
             "leo-custom-playtest-adapter",
             "Leo owns invented-game Playtest, but no implementation returns Workshop Playtested records yet.",
             "Bind Leo's exact game evidence and feedback from PlaytestContext to Playtested.",
-        ),
-        Need(
-            "playtest",
-            "leo-independent-human-replay",
-            "Simulation cannot release an invented game; independent humans must play the exact table prototype and ask to play again.",
-            "Run an uncoached independent human table test and bind observed replay demand to the exact artifact.",
         ),
     )
 

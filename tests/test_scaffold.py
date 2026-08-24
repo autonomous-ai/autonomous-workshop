@@ -51,8 +51,9 @@ class ScaffoldTest(unittest.TestCase):
                     self.assertIn("Wish-shaped physical set", taste)
                 if lane == "invented-games":
                     self.assertIn("experimental rules craft", taste)
-                    self.assertIn("human table replay", taste)
-                    self.assertIn("exact rules and printed prototype", taste)
+                    self.assertIn("1,000 seeded games", taste)
+                    self.assertIn("AI players", taste)
+                    self.assertIn("after Deliver as Reviews", taste)
             for index, lane in enumerate(
                 (
                     "games-puzzles",
@@ -180,13 +181,17 @@ class ScaffoldTest(unittest.TestCase):
             )
             preview_data = json.loads(preview.stdout)
             self.assertEqual(preview_data["blueprint"]["lane"], "invented-games")
-            owner_reviews = next(
+            ai_table = next(
                 task
                 for task in preview_data["blueprint"]["tasks"]
-                if task["key"] == "reviews.collect"
+                if task["key"] == "playtest.game"
             )
-            self.assertEqual(owner_reviews["capability"], "owner-reviews")
-            self.assertTrue(owner_reviews["external"])
+            self.assertEqual(ai_table["capability"], "game-simulation")
+            self.assertFalse(ai_table["external"])
+            self.assertEqual(
+                preview_data["blueprint"]["post_delivery_reviews"]["feeds"],
+                "future-make",
+            )
             self.assertFalse((destination / ".workshop").exists())
 
             run = subprocess.run(

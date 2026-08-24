@@ -2,7 +2,10 @@
 
 > **Legacy board-game architecture.** Bob's canonical profile now makes moving
 > machines through `profile.py`. Nothing in this document is the kinetic custom
-> Make callback; it is preserved as migration material.
+> Make callback; it is preserved as migration material. Its human-table terms
+> are historical, not canonical Playtest. Current Playtest is AI-agent
+> simulation only; physical production and QA belong to Deliver; post-delivery
+> customer feedback is Reviews for future Makes.
 
 This board-game laboratory was built on the shared Workshop. The design
 separates the tiny customer promise from the machinery that fulfills it.

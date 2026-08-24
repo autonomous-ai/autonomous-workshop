@@ -1,0 +1,21 @@
+{
+  "agent_roles": [
+    "optimizing-player",
+    "rules-lawyer",
+    "adversarial-breaker",
+    "first-time-player"
+  ],
+  "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
+  "claims": [
+    "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+  ],
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback": [],
+  "schema_version": 1,
+  "simulation": "B-rep, mesh, envelope, assembly, and failure-mode analysis",
+  "source_records": [
+    "digital-geometry.json",
+    "digital-lane.json"
+  ]
+}

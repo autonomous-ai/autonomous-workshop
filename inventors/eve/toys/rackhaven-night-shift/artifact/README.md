@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Rackhaven: Night Shift](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -19,9 +19,9 @@ machine-readable checks.
 
 ## What remains true
 
-- The named-node mapping is explicit, but owner recognition needs independent reference-bound review.
-- Fine details and handling durability need an exact physical print.
+- AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.
+- Fine details and handling durability are checked on the produced object during Deliver.
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.

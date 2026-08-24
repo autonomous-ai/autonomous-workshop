@@ -1,0 +1,31 @@
+{
+  "agent_roles": [
+    "optimizing-player",
+    "rules-lawyer",
+    "adversarial-breaker",
+    "first-time-player"
+  ],
+  "artifact_sha256": "a8fe2b195ce7629b16097a1e7696f6bf9d387c51543d5cd9d59494d5d9bbe8f0",
+  "claims": [
+    "The lane-specific AI players completed their exact-design checks without a blocking finding."
+  ],
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback": [],
+  "lane_checks": {
+    "generic_nameplates": 0,
+    "personalization_map": {
+      "Comet": "six swept side fins",
+      "Moss": "paired exposed coolant pipes",
+      "Void": "vertical orbital halo",
+      "night shift": "single operator facing all three nodes"
+    },
+    "reference_scope": "Wish text only; no private likeness assets were used"
+  },
+  "schema_version": 1,
+  "simulation": "little-worlds lane panel",
+  "source_records": [
+    "digital-lane.json",
+    "wish-taste-trace.json"
+  ]
+}

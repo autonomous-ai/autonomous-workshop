@@ -4,13 +4,18 @@ Autonomous Workshop 0.5 is the shared Toy Workshop for playthings for grown-ups
 (14+). Its product journey is exactly:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
-             feedback
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                             feedback
+after delivery: customer Reviews -> future revision + future Wishes
 ```
 
-This page records what the five bundled showcase profiles can do **now**. A valid
-profile or passing offline test is not a claim that its model, physical
-playtest, printer, product-page, or carrier capability is live.
+The creation workflow still has exactly five jobs. Reviews is shown only as
+post-delivery feedback for future work.
+
+This page records what the five bundled showcase profiles can do **now**. A
+valid profile or passing offline test is not a claim that its model, AI
+Playtest, printer, product-page, production-QA, carrier, or post-delivery
+Reviews capability is live.
 
 V1 intake is request-driven. The Workshop Manager handles one Wish, retrieves
 a shortlist from an open Taste catalog, compares the finalists' exact Tastes,
@@ -22,7 +27,7 @@ required to run 24/7, poll a queue, or schedule itself.
 | Profile | Category | Customization level | Truthful 0.5 status |
 |---|---|---|---|
 | Alice | classics made yours (`classics-made-yours`) | Taste only | Alice deliberately demonstrates the minimum extension level and delegates Make and Playtest to shared tools. Her Blindcap laboratory is provenance that taught Workshop, not her active profile or a second invented-game inventor. |
-| Leo | games that don't exist yet (`invented-games`) | custom Make + custom Playtest | Leo is the bundled invented-game example. He waits honestly at unfinished typed adapter and independent-human-table boundaries; simulations cannot release his games. |
+| Leo | games that don't exist yet (`invented-games`) | custom Make + custom Playtest | Leo is the bundled invented-game example. His AI players must execute the pinned simulation policy before Instructions; customer response arrives later through Reviews. |
 | Bob | machines that move (`moving-machines`) | custom Make | His profile, machine Taste, Wish, preview, and typed seam work. A run waits at Bob's typed custom-Make seam; the preserved board-game laboratory is not a moving-machine Make adapter. |
 | Ivy | science you can hold (`holdable-science`) | Taste only | Her science profile delegates Make and Playtest to shared tools. Without configured shared model/CAD and scientific-evidence tools, a run truthfully waits at Make or Playtest. |
 | Eve | little worlds (`little-worlds`) | Taste only | Her fresh personalized-world profile delegates Make and Playtest to shared tools. Without configured shared tools, a run truthfully waits at Make. This profile does not restore the old Eve implementation. |
@@ -33,9 +38,11 @@ twee; and personalization plus design intelligence must do more than decorate a
 generic print. Kits and numbered series are later product variants, not current
 profiles, jobs, or V1 promises.
 
-Invented games have one additional non-negotiable release gate: an independent
-simulated table must play the exact game across four player styles. Reviews are
-diagnostic evidence only; 1,000 passing simulations do not release a game.
+Invented games have one additional AI Playtest requirement: executable players
+must complete at least 1,000 seeded games and probe rules, endings, balance,
+strategies, and exploits. Whether customers want another play is learned after
+delivery through Reviews and can improve a future revision of that toy and
+future Wishes.
 
 ## Current routing boundary
 
@@ -95,13 +102,19 @@ All five profiles use the same 0.5 contracts for:
 
 The platform operator still has to install real shared tools. A complete live
 path needs, as applicable, authenticated model and CAD workers, executable AI
-players, independent reviewers, a pinned slicer and printer profile, exact
-physical prototypes, owner reviews, a product renderer or photo
-pipeline, production QA, packing, and USPS/UPS/FedEx integration.
+players, independent model reviewers, and a pinned slicer profile for Playtest,
+plus a product renderer and site-publishing integration for Instructions.
+Deliver then needs a printer profile, exact production, hands-on QA, packing,
+and USPS/UPS/FedEx integration. Reviews begins only after customers receive
+those deliveries.
 
 Missing tools remain a `waiting` result. Simulation does not become human-fun
 evidence; slicer output does not become a physical print; concept art does not
 become a product photograph; a generated label does not become carrier handoff.
+
+Reviews is post-delivery feedback that can inform a future revision of the same
+toy and future Wishes. It is not a sixth job, a custom inventor hook, or a gate
+that holds the original order, and it cannot mutate shipped bytes.
 
 ## Per-Wish Playtest allowance
 
@@ -194,15 +207,17 @@ model credential, catalog credential, printer, carrier, or paid service.
 2. Keep Alice's classics profile Taste-only and prove shared Make and Playtest
    can preserve known rules while producing a genuinely personal edition.
 3. Implement Leo's invented-game `Made`, `Playtested`, and `Feedback` adapters,
-   including the simulated-play release gate.
+   including executable, seeded AI-player simulation and the 1,000-game gate.
 4. Implement Bob's new moving-machine `MakeContext -> Made` path; do not route
    machine Wishes into the preserved board-game laboratory.
 5. Configure and test shared Make and Playtest tools for the Taste-only
    profiles.
 6. Rehearse one exact Wish per category through truthful waiting, then through each
    real capability as it becomes available.
-7. Enable Instructions and Deliver only after exact product, physical, human,
-   production, and carrier evidence can support their claims.
+7. Enable Instructions after exact AI Playtest evidence, then let Deliver own
+   exact printing, physical QA, packing, and carrier evidence.
+8. Collect Reviews only after delivery and feed them into a future revision of
+   the same toy and future Wishes without rewriting the completed run.
 
 The target architecture is not a claim about current completeness. Adoption is
 complete only when the selected profile crosses every typed boundary with the

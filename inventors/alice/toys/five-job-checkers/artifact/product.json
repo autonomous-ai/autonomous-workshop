@@ -1,14 +1,18 @@
 {
   "audience": "grown-ups-14-plus",
   "components": [
+    "one checkers board",
+    "twelve five-ring pieces",
+    "twelve five-spoke pieces"
+  ],
+  "description": "A regulation-readable checkers edition whose five-ring and five-spoke pieces, five brass-like threshold markers, and midnight grid turn the Workshop workflow into table presence without changing the known game.\n\nBy Alice.",
+  "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
     "per-part STEP and STL exports",
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
-  "description": "A regulation-readable checkers edition whose five-ring and five-spoke pieces, five brass-like threshold markers, and midnight grid turn the Workshop workflow into table presence without changing the known game.\n\nBy Alice.",
-  "human_playtest": false,
   "inventor": {
     "id": "alice",
     "name": "Alice"
@@ -16,13 +20,14 @@
   "kind": "workshop-showcase-prototype",
   "lane": "classics-made-yours",
   "limitations": [
-    "Known rules are documented, but independent rule/readability playtest is still required.",
-    "No exact part has been printed, sliced with a locked printer profile, or handled by people."
+    "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
+    "The exact physical set is produced and checked during Deliver, not Playtest."
   ],
   "physical_prototype": false,
   "product_id": "five-job-checkers",
-  "released": false,
+  "reviews_status": "begins-after-delivery",
   "schema_version": 1,
+  "site_status": "pending-instructions",
   "slug": "five-job-checkers",
   "status": "digital-prototype",
   "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.",

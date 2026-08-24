@@ -1,0 +1,98 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "bee9cd31190810d5d65fb03c1c83246abe751c9cccfdd1e4b231004cf608c68d",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "6d074c0728cf96092eae20cb2949647a71ece95340088be2ca779b41805d8daf",
+      "passed": true
+    },
+    "motion-test": {
+      "claims": [
+        "The lane-specific AI players completed their exact-design checks without a blocking finding."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "motion-test.json",
+      "evidence_sha256": "ee94e6623f87d80b6ba02a28e87e34f8225bdd9871a92cda1d2503b085b6fdc7",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "91a3a26108a7892011c2283ee65f514716f48a4ea43d6863e38e51c8a64becae",
+      "passed": true
+    }
+  },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "images": {
+    "box": "images/box.png",
+    "detail": "images/detail.png",
+    "hero": "images/hero.png",
+    "parts": "images/parts.png",
+    "play": "images/play.png"
+  },
+  "instructions_kind": "instructions",
+  "lane": "moving-machines",
+  "limitations": [
+    "AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver.",
+    "Customer observations begin as Reviews only after delivery."
+  ],
+  "playtest_evidence_artifact_sha256": "f42a349eeff630ad4e98bdfab8e44ef868dff22fa1152d1f2eb89b374444fba9",
+  "product_artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+  "schema_version": 1,
+  "status": "ready",
+  "story_blocks": [
+    {
+      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
+      "hero_image": "play",
+      "lead": "How to use",
+      "pair_images": [
+        "detail",
+        "parts"
+      ]
+    },
+    {
+      "body": "The box contains one base, one hand crank, one comet drive wheel, one six-station Geneva wheel. AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver. Customer observations begin as Reviews only after delivery.",
+      "hero_image": "box",
+      "lead": "What arrives",
+      "pair_images": []
+    }
+  ],
+  "summary": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps.\n\nBy Bob.",
+  "title": "Comet Geneva",
+  "use_case": {
+    "body": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps. It turns one person's request into this exact plaything instead of decorating a generic download.",
+    "image": "hero",
+    "label": "Made from your wish"
+  },
+  "what_arrives": [
+    "one base",
+    "one hand crank",
+    "one comet drive wheel",
+    "one six-station Geneva wheel"
+  ],
+  "wish": "I wish for a hand-cranked desk machine where one comet makes six precise jumps around a midnight orbit."
+}

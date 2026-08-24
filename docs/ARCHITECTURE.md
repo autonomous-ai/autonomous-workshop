@@ -18,9 +18,9 @@ Every product belongs to one of five categories:
   known; the product is judged as an object and a custom edition, not as a new
   game design.
 - **Games that don't exist yet** (`invented-games`) — new rules, mysteries,
-  strategy, competition, and tactile problems to solve. Release requires an
-  1,000 simulated games across four player styles; what real players think
-  not release evidence for fun.
+  strategy, competition, and tactile problems to solve. AI players exercise
+  the complete rules, strategies, endings, and exploits before Instructions;
+  customer response arrives later as Reviews after delivery.
 - **Machines that move** (`moving-machines`) — mechanisms, kinetic desk toys,
   tiny machines, and objects with a satisfying motion.
 - **Science you can hold** (`holdable-science`) — tangible phenomena, geometry,
@@ -43,34 +43,38 @@ Every category faces the same bar:
 Kits and numbered series may become later ways to extend a successful product.
 They are not Workshop jobs and are not V1 promises.
 
-## The six jobs
+## The five jobs
 
 The complete Workshop vocabulary is:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
-        ^    feedback                                      |
-        +------------- what owners say --------------------+
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                             feedback
+after delivery: customer Reviews -> a future revision of this toy
+                                  -> future Wishes and Makes
 ```
 
 - **Wish** preserves what the person asked for and the relevant constraints.
 - **Make** invents the plaything, writes any rules, and creates its exact
   printable product files.
-- **Playtest** tests that exact Make from every relevant angle. A failed check
-  returns actionable feedback to Make, producing a new immutable round.
-- **Instructions** creates a truthful private product page, exact-product images,
-  and the paper that belongs in the box—a rulebook for a game or instructions
-  for another toy.
+- **Playtest** has AI agents simulate using or playing that exact Make from
+  every relevant angle. A failed check returns actionable feedback to Make,
+  producing a new immutable round. Playtest never means a human
+  print-and-play session.
+- **Instructions** creates the truthful product page, exact-product images, and
+  paper that belongs in the box—a rulebook for a game or instructions for
+  another toy. It publishes that page on the site and verifies the live page
+  before the job passes.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
-- **Reviews** collects what the people who received the toy said about living
-  with it. Those words return to Make, so the same toy can come round again as
-  a better version, and they become findings for the next Wish in the lane.
-  Reviews never hold a product back; they improve what follows.
 
 `Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
-tasks inside the six jobs, not extra lifecycle concepts.
+tasks inside the five jobs, not extra lifecycle concepts. After Deliver,
+customer **Reviews** may improve a future revision of the same toy and inform
+future Wishes and Makes. Reviews is a public, post-delivery feedback stream,
+not a sixth inventor job, custom inventor hook, or release gate for the order
+already shipped.
 
 ## The Workshop Manager
 
@@ -98,8 +102,9 @@ one Wish to the best fit once.
                          chosen inventor
                                |
                                v
-             Wish -> Make <-> Playtest -> Instructions -> Deliver
-                          feedback
+             creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
+                                      feedback
+             later:    customer Reviews -> future Makes
 ```
 
 This checkout begins with five showcase inventors:
@@ -170,6 +175,9 @@ the machinery beneath her is shared by every inventor.
                              |
                              v
                     PERSON RECEIVES THE BOX
+                             |
+                             v
+                    REVIEWS -> FUTURE MAKES
 ```
 
 Dependency remains one-way: Alice imports Workshop; Workshop never imports
@@ -200,9 +208,10 @@ contract being tested. Instructions and Deliver remain shared so every inventor 
 the same truth and exact-artifact guarantees.
 
 The shared defaults are capabilities configured for the Workshop as a whole,
-not magic built into a profile. If a model, CAD worker, physical test, image
-renderer, printer, or carrier connection is unavailable, the job returns a
-typed `WaitingFor` result. Missing capability is never converted into success.
+not magic built into a profile. If a model, CAD worker, AI simulator, image
+renderer, printer, or carrier connection is unavailable, its owning job
+returns a typed `WaitingFor` result. Missing capability is never converted
+into success.
 
 ## Job contracts
 
@@ -232,26 +241,28 @@ every result and evidence file to that artifact hash. `ProductInstructions` bind
 page and media to both its own manifest and the product hash. `Delivered` binds
 production and carrier receipts to the exact product and Instructions hashes.
 
+After delivery, customer Reviews may be collected with the delivered product
+identity and offered as input to a future Make. They do not mutate the
+completed run, re-grade its Playtest, or add another inventor hook.
+
 Changing product bytes after Make, evidence after Playtest, or page bytes after
 Instructions invalidates the next boundary. No later job is allowed to bless stale
 work.
 
 ## The Playtest improvement loop
 
-Playtest is broader than checking rules. It asks whether the whole plaything is
-good enough to continue:
+Playtest is AI-agent simulation and feedback, broader than checking rules. It
+asks whether the digital plaything is good enough to continue:
 
 - Does the idea feel playful and aligned with Taste rather than merely useful?
 - Are rules executable, terminating, understandable, and resistant to obvious
   exploits?
 - Do AI-player traces reveal balance, pacing, dominant strategies, dead states,
   or discontinuities?
-- Do CAD bodies, fits, motion, assembly, and part interfaces work?
-- Do every expected part and exact slicer profile pass printable-geometry and
+- Do AI agents and deterministic tools find problems in CAD bodies, fits,
+  motion, assembly, and part interfaces?
+- Do every expected part and exact slicer profile pass digital geometry and
   manufacturing checks?
-- Does the exact physical prototype work under measured use?
-- Can independent people use it without inventor coaching, and what do they
-  actually do or say?
 
 A failed result includes structured `Feedback`: the area, observed finding,
 evidence references, severity, and a concrete change for the next Make. The
@@ -261,12 +272,13 @@ make a later version look like the version originally tested.
 The loop is bounded. Reaching the round limit stops truthfully instead of
 lowering the bar.
 
-Category policy stays explicit. A classic is tested as an exact custom edition:
-rules fidelity, object quality, legibility, setup, handling, printing, and the
-Wish-specific design. An invented game must also clear simulated play
-table and leave those players wanting another play. AI leagues find rule bugs,
-loops, exploits, and balance risks; 1,000 simulated games still cannot replace
-that human release gate.
+Category policy stays explicit. A classic is simulated as an exact custom
+edition: rules fidelity, object legibility, setup, handling proxies,
+printability, and the Wish-specific design. For an invented game, executable AI
+players must complete at least 1,000 seeded games and probe rules, endings,
+balance, strategies, and exploits. Customer desire for another play is not a
+Playtest claim; it arrives later through Reviews and can improve a future
+revision of the same toy as well as future Wishes and Makes.
 
 The allowance is selected per Wish, not baked into an inventor:
 
@@ -278,31 +290,34 @@ workshop.run(wish, playtest_rounds=10)  # a deeper service tier
 A trusted checkout or quote maps payment to the allowance; text inside a Wish
 cannot authorize spend. `playtest_rounds` is the maximum number of
 Make–Playtest improvement rounds. A Playtest implementation may also run many
-seeded AI games, reviewers, or physical trials inside one round. More budget
+seeded AI games, model reviewers, or digital trials inside one round. More budget
 buys more opportunities to find and repair problems—it never lowers the same
 acceptance policy.
 
-## Evidence classes and honest claims
+## Evidence boundaries and honest claims
 
-Different evidence proves different things. The class travels with its source,
-hash, evaluator, exact version, configuration, and observation time.
+Different boundary records prove different things. Each travels with its
+source, hash, evaluator, exact version, configuration, and observation time.
 
-| Evidence class | May support | Does not prove |
+| Boundary evidence | May support | Does not prove |
 |---|---|---|
 | **AI simulation** | executable rules, termination, traces, measured balance or pacing proxies | that people understand it or find it fun |
 | **Independent model review** | a reproducible prediction about clarity, novelty, or Taste alignment | human preference or physical behavior |
 | **CAD/kernel measurement** | topology, dimensions, clearances, interference, or motion computed from exact geometry | that a real print assembled or survived use |
 | **Slicer analysis** | that exact meshes sliced under a pinned printer, material, and profile; predicted time/material/supports | successful printing or acceptable surface quality |
-| **Physical prototype** | recorded measurements and tests of one exact printed revision with printer/material/calibration provenance | broad durability, safety, or customer delight beyond that test |
-| **Human playtest** | observed behavior and feedback from identified independent participants under a stated protocol | universal fun or demand beyond the observed sample |
-| **Production/carrier receipt** | the exact job, QA, packing, handoff, or delivery event the authenticated provider observed | an event later than the receipt's actual status |
+| **Deliver receipt** | the exact print, QA, packing, handoff, or delivery event an authenticated provider observed | any later event or customer experience |
+| **Customer Review** | what a verified customer reported after delivery | that the earlier Playtest predicted it, or that every customer agrees |
+
+The first four rows belong to Playtest. Deliver owns the exact physical print,
+hands-on QA, packing, and carrier receipts. Reviews begins only after delivery
+and feeds future Makes; it never changes the completed Playtest result.
 
 Examples of truthful boundaries:
 
 - “128 seeded simulations terminated” is an AI-simulation claim; “players had
   fun” is not.
 - “Sliced with profile X” is slicer evidence; “prints perfectly” requires a
-  physical print and test.
+  print and QA receipt from Deliver.
 - A label is not carrier handoff. “Delivered” requires the corresponding
   carrier observation.
 
@@ -311,14 +326,24 @@ pass. An inventor's own confidence is not independent evidence.
 
 ## Instructions is part of the proof chain
 
-Instructions begins only after Playtest passes for the exact Make. The shared default
-creates the in-box instructions plus a private page with five fixed image roles—hero, play, detail, parts,
-and box—and a claim-to-evidence map.
+Instructions begins only after Playtest passes for the exact Make. The shared
+default creates the in-box instructions plus a page with five fixed image
+roles—hero, play, detail, parts, and box—and a claim-to-evidence map. It then
+publishes that page on the site. A local page is not a completed Instructions
+job: the result must include authenticated readback proving that the current
+approved product is public and has an active listing.
+
+Before any site effect, Workshop seals both the approved Make/Playtest
+checkpoint and the complete Instructions tree. If credentials disappear or a
+site response is ambiguous, `workshop.resume_instructions(wish)` reuses those
+exact bytes and retries only the idempotent site writer. It never reruns Make,
+Playtest, copy, or image generation.
 
 Images must depict the product actually approved. Concept art can guide Make,
 but it cannot masquerade as a render or photograph of printable geometry. Copy
-must preserve evidence qualifiers: simulation remains simulation; a prototype
-remains a prototype; limited human observations remain limited.
+must preserve evidence qualifiers: simulation remains simulation; a digital
+prototype remains a digital prototype; Reviews from earlier deliveries must
+not be presented as proof that the current toy passed Playtest.
 
 ## Deliver is an exact-product boundary
 
@@ -330,6 +355,14 @@ External effects use durable intent, stable idempotency, scoped credentials,
 and authenticated receipts. A timeout or ambiguous response is held for
 reconciliation. It is not blindly retried and it never becomes a fabricated
 receipt.
+
+## Reviews improve the next Make
+
+Reviews begins after the customer receives the box. It records customer
+feedback against the delivered toy and may inform a new Wish or future Make.
+It does not delay the original delivery, mutate that run's evidence, or become
+a sixth Workshop job. Inventors customize Taste, Make, and optionally
+Playtest—not Reviews.
 
 ## Shared implementation
 

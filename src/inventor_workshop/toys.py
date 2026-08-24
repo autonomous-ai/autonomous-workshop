@@ -1,7 +1,10 @@
 """The opinionated first Workshop: Wish-shaped playthings for grown-ups.
 
-The five lanes are crafts, not extra pipeline stages. Every inventor still works the
-same six jobs: Wish, Make, Playtest, Instructions, Deliver, and Reviews.
+The five lanes are crafts, not extra pipeline stages. Every inventor implements
+the same five creation jobs: Wish, Make, AI Playtest, Instructions, and Deliver.
+Customer Reviews follow Deliver as a shared feedback stream. Reviews improve a
+future revision of the same toy and future Wishes; they never rewrite what was
+already delivered.
 """
 
 from __future__ import annotations
@@ -22,7 +25,6 @@ WORKSHOP_JOBS: Tuple[str, ...] = (
     "playtest",
     "instructions",
     "deliver",
-    "reviews",
 )
 PLAYTHING_LANES: Tuple[str, ...] = (
     "classics-made-yours",
@@ -158,15 +160,15 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "playtest.intent",
         "playtest",
-        "Test the product bar and the tone: unmistakably Wish-shaped, cool, and never twee.",
-        "Independent Taste, distinctiveness, and delight verdicts.",
-        "independent-review",
+        "Have independent AI players test the product bar and tone: unmistakably Wish-shaped, cool, and never twee.",
+        "Seeded AI-player traces plus independent Taste, distinctiveness, and delight verdicts.",
+        "agent-playtest",
     ),
     ToyTask(
         "playtest.classic",
         "playtest",
-        "Verify that customization never corrupts the classic game's known rules or readability.",
-        "Rule-conformance and role-legibility results for the exact edition.",
+        "Simulate the classic with AI players to verify that customization never corrupts known rules or readability.",
+        "Seeded game traces, rule-conformance checks, and AI-player role-legibility results for the exact edition.",
         "classic-rules-test",
         ("classics-made-yours",),
     ),
@@ -181,32 +183,32 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "playtest.motion",
         "playtest",
-        "Cycle the exact mechanism across tolerances, orientations, wear, and misuse.",
-        "Measured cycle, interference, wear, stall, and failure evidence.",
+        "Simulate the exact mechanism across tolerances, orientations, wear, and misuse.",
+        "Computed cycle, interference, wear, stall, and failure evidence plus AI-player findings.",
         "motion-test",
         ("moving-machines",),
     ),
     ToyTask(
         "playtest.science",
         "playtest",
-        "Check scientific truth, honest simplification, and whether handling reveals the idea.",
-        "Source-bound accuracy checks and independent comprehension observations.",
+        "Have AI players check scientific truth, honest simplification, and whether the interaction reveals the idea.",
+        "Source-bound accuracy checks and seeded AI-player comprehension traces.",
         "science-test",
         ("holdable-science",),
     ),
     ToyTask(
         "playtest.likeness",
         "playtest",
-        "Check that the tiny world is recognizable, specific, coherent, and consent-safe.",
-        "Reference-bound likeness and personalization review.",
+        "Have AI players check that the tiny world is recognizable, specific, coherent, and consent-safe.",
+        "Reference-bound likeness and personalization traces from independent AI players.",
         "world-test",
         ("little-worlds",),
     ),
     ToyTask(
         "playtest.mechanics",
         "playtest",
-        "Test physical interactions, fit, assembly paths, loads, and failure modes.",
-        "Measured B-rep, interference, fit, motion, and assembly evidence.",
+        "Simulate physical interactions, fit, assembly paths, loads, and failure modes.",
+        "Computed B-rep, interference, fit, motion, and assembly evidence with AI-player findings.",
         "mechanical-test",
     ),
     ToyTask(
@@ -220,7 +222,7 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "instructions.create",
         "instructions",
         "Explain the plaything with box-ready instructions, beautiful truthful images, copy, and rules.",
-        "Box insert or rulebook plus private page draft bound to the approved artifact.",
+        "Box insert or rulebook plus an authenticated live site page bound to the approved artifact.",
         "product-instructions",
         external=True,
     ),
@@ -247,22 +249,47 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "shipping",
         external=True,
     ),
-    ToyTask(
-        "reviews.collect",
-        "reviews",
-        "Collect what the people who received the toy say about living with it.",
-        "Owner reviews bound to a delivered order, with the words they wrote.",
-        "owner-reviews",
-        external=True,
-    ),
-    ToyTask(
-        "reviews.learn",
-        "reviews",
-        "Turn those reviews into a better version of this toy, and into findings the next Wish should know.",
-        "Findings tied to the reviews that support them, and the changes each one asks for.",
-        "review-findings",
-    ),
 )
+
+
+@dataclass(frozen=True)
+class ReviewsPolicy:
+    """The shared post-delivery stream, not a sixth inventor job or release gate."""
+
+    after: str = "deliver"
+    capability: str = "customer-reviews"
+    feeds: str = "future-make"
+    mutates_delivered_revision: bool = False
+
+    def __post_init__(self) -> None:
+        if (
+            self.after != "deliver"
+            or self.capability != "customer-reviews"
+            or self.feeds != "future-make"
+            or self.mutates_delivered_revision is not False
+        ):
+            raise ContractError(
+                "Reviews must follow Deliver, feed a future Make, and preserve the delivered revision"
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "after": self.after,
+            "capability": self.capability,
+            "feeds": self.feeds,
+            "mutates_delivered_revision": self.mutates_delivered_revision,
+            "purpose": (
+                "Collect customer reviews after Deliver and turn them into learning "
+                "for a new Wish or future revision."
+            ),
+            "evidence": (
+                "Append-only review records bound to the delivered artifact, "
+                "Instructions, and delivery."
+            ),
+        }
+
+
+POST_DELIVERY_REVIEWS = ReviewsPolicy()
 
 
 @dataclass(frozen=True)
@@ -281,7 +308,7 @@ class ToyBlueprint:
         if not selected or any(self.lane not in task.applies_to for task in selected):
             raise ContractError("toy blueprint contains a task for another lane")
         if set(task.job for task in selected) != set(WORKSHOP_JOBS):
-            raise ContractError("toy blueprint must cover all six Workshop jobs")
+            raise ContractError("toy blueprint must cover every Workshop job")
         if len({task.key for task in selected}) != len(selected):
             raise ContractError("toy blueprint task keys must be unique")
         object.__setattr__(self, "tasks", selected)
@@ -312,6 +339,7 @@ class ToyBlueprint:
             "audience": "grown-ups-14-plus",
             "lane": self.lane,
             "jobs": list(WORKSHOP_JOBS),
+            "post_delivery_reviews": POST_DELIVERY_REVIEWS.to_dict(),
             "tasks": [task.to_dict() for task in self.tasks],
         }
 
@@ -345,10 +373,14 @@ def playful_make_request(
                 "Nothing may be merely useful."
             ),
             "product_lanes": list(PLAYTHING_LANES),
-            "invented_game_release_rule": (
-                "Simulated play decides whether an invented game is ready: at least "
-                "1,000 seeded games across all four player styles. What real people "
-                "think arrives later, as Reviews, and shapes the next game."
+            "playtest_rule": (
+                "Playtest means AI agents simulate playing or using the exact Make, "
+                "give evidence-bound feedback, and send improvements back to Make."
+            ),
+            "reviews_rule": (
+                "Reviews are customer feedback collected after Deliver. They may improve "
+                "a future revision of this toy and future Wishes, but never rewrite "
+                "delivered bytes or delivery history."
             ),
             "deliverables": (
                 "build spec, parametric source, STEP, printable parts, assembly, "
@@ -360,6 +392,8 @@ def playful_make_request(
 
 __all__ = [
     "PLAYTHING_LANES",
+    "POST_DELIVERY_REVIEWS",
+    "ReviewsPolicy",
     "TOY_TASKS",
     "WORKSHOP_JOBS",
     "ToyBlueprint",

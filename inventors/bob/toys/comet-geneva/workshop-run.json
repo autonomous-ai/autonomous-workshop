@@ -1,18 +1,21 @@
 {
-  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
   "assertions": {
+    "ai_playtest_passed": true,
+    "customer_reviews": false,
     "delivered": false,
     "exact_geometry_render": true,
-    "human_playtest": false,
-    "instructions_created": false,
+    "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
+    "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
-  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
-  "evidence_sha256": "5b1d64b7546247a3f6a8875ab3b6b160de46e75b7dfa9e5adcf353adec4933bd",
+  "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
+  "evidence_sha256": "f42a349eeff630ad4e98bdfab8e44ef868dff22fa1152d1f2eb89b374444fba9",
+  "instructions_sha256": "0f3b2c7693cad6246bdc5ea2072fbfcade5ae3c51e5a9fa8294b70fe5b1aa937",
   "inventor": {
     "extension_level": "custom-make",
     "id": "bob",
@@ -21,48 +24,19 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+    "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
     "delivery": null,
     "instructions_sha256": null,
-    "job": "playtest",
+    "job": "instructions",
     "needs": [
       {
-        "capability": "independent-review",
-        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
-      },
-      {
-        "capability": "motion-test",
-        "instructions": "Run the canonical motion-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full motion-test gate."
-      },
-      {
-        "capability": "mechanical-test",
-        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
-      },
-      {
-        "capability": "print-test",
-        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
-      },
-      {
-        "capability": "human-playtest",
-        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
-        "job": "playtest",
-        "reason": "This exact digital prototype still needs independent real-world evidence."
-      },
-      {
-        "capability": "physical-prototype",
-        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
-        "job": "playtest",
-        "reason": "This exact digital prototype still needs independent real-world evidence."
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions publish and verify the page.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
     ],
+    "page_url": null,
     "playtest_rounds": 4,
     "product_id": "comet-geneva",
     "round": 1,
@@ -71,11 +45,12 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "builder_sha256": "7261180e9d723e69493cf6b75a1400bbd538a012dfddf5ba8d219a02dc429896",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "site_receipt": null,
+  "taste_sha256": "ce2db44b057b79bc2e385daf1dec3024311a434aec39123514fdb0d5ef11cf50",
   "wish": {
     "constraints": {
       "audience": "grown-ups-14-plus",

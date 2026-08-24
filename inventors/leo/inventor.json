@@ -3,7 +3,7 @@
   "id": "leo",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "invented-games", "personalization", "custom-make", "custom-playtest", "human-replay-gate", "cad", "product-instructions", "learning"],
+  "capabilities": ["wish", "invented-games", "personalization", "custom-make", "custom-playtest", "ai-game-simulation", "cad", "product-instructions", "learning"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

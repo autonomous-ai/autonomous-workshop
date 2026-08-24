@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Counterorbit](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -19,9 +19,9 @@ machine-readable checks.
 
 ## What remains true
 
-- Seeded simulation can reject obvious failures but cannot establish fun or release readiness.
-- Independent humans have not played the exact physical game and asked to play again.
+- AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight.
+- Customer reactions are collected after delivery as Reviews and can improve a future edition.
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.

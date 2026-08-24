@@ -141,7 +141,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         bob = load_profile("bob")
         for profile, capability in (
             (leo, "leo-custom-playtest-adapter"),
-            (bob, "independent-review"),
+            (bob, "agent-playtest"),
         ):
             with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
                 workshop = profile.build_workshop(
@@ -157,7 +157,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(result.status, "waiting")
                 self.assertEqual(result.needs[0].capability, capability)
 
-    def test_leo_cannot_release_on_simulation_alone(self):
+    def test_leo_waits_for_his_ai_playtest_adapter(self):
         leo = load_profile("leo")
         with tempfile.TemporaryDirectory() as temporary:
             workshop = leo.build_workshop(
@@ -165,12 +165,12 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 runtime_root=Path(temporary),
             )
             wish = leo.create_wish(
-                "human-gate", "I wish for an original duel for our table."
+                "agent-gate", "I wish for an original duel for our table."
             )
             result = workshop.run(wish, playtest_rounds=2)
         self.assertEqual(
             [need.capability for need in result.needs],
-            ["leo-custom-playtest-adapter", "leo-independent-human-replay"],
+            ["leo-custom-playtest-adapter"],
         )
 
     def test_every_taste_enforces_wish_uniqueness_and_cool_over_twee(self):

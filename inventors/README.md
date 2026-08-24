@@ -29,17 +29,21 @@ All five inventors used the shared Workshop Make and Playtest contracts to
 create these checked-in digital prototypes. *Playtest rounds* is how many times
 that wish paid for Playtest to test the toy and send it back to Make:
 
-| Inventor | Toy | Playtest rounds |
-|---|---|---:|
-| Alice | [Five-Job Checkers](alice/toys/five-job-checkers/) | 2 |
-| Leo | [Counterorbit](leo/toys/counterorbit/) | 10 |
-| Bob | [Comet Geneva](bob/toys/comet-geneva/) | 4 |
-| Ivy | [Montauk Tide Orrery](ivy/toys/montauk-tide-orrery/) | 3 |
-| Eve | [Rackhaven: Night Shift](eve/toys/rackhaven-night-shift/) | 3 |
+| Inventor | Toy | Playtest allowance | Current state |
+|---|---|---:|---|
+| Alice | [Five-Job Checkers](alice/toys/five-job-checkers/) | 2 rounds | Instructions: site access needed |
+| Leo | [Counterorbit](leo/toys/counterorbit/) | 10 rounds | Instructions: site access needed |
+| Bob | [Comet Geneva](bob/toys/comet-geneva/) | 4 rounds | Instructions: site access needed |
+| Ivy | [Montauk Tide Orrery](ivy/toys/montauk-tide-orrery/) | 3 rounds | Instructions: site access needed |
+| Eve | [Rackhaven: Night Shift](eve/toys/rackhaven-night-shift/) | 3 rounds | Instructions: site access needed |
 
-Open a toy to see its render, STEP/STL files, evidence, and receipt. Every
-check a computer can do has passed. None of them has been printed or handed to
-a person yet, so Instructions and Deliver stay locked and the receipt says so.
+Open a toy to see its exact render, STEP/STL files, complete AI Playtest
+evidence, sealed page bundle, content-addressed manifests, and Workshop
+receipt. All five pass Playtest and wait in Instructions only because the build
+environment has no Workshop site credential. Printing, hands-on QA, packing,
+and shipment belong to Deliver; customer feedback begins afterward as Reviews
+and may inform a future revision of the same toy and future Wishes without
+changing shipped bytes.
 
 Every creation belongs under `inventors/<id>/toys/<toy-name>/`, whether it is
 a tabletop game, a moving machine, holdable science, or a little world. Do not

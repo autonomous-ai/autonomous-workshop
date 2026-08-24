@@ -1,6 +1,6 @@
 ---
 name: product-to-cad
-description: Turn a product, toy, game component, enclosure, mechanism, or reference concept into attractive, manufacturable, 3D-printable CAD with explicit dimensions, provenance, fit and motion intent, release evidence, and honest physical limitations. Use for new STEP/STL/3MF designs, CAD redesigns, image-guided form development, multipart assemblies, print-in-place mechanisms, and preparing a design for Launchpad and fulfillment.
+description: Turn a product, toy, game component, enclosure, mechanism, or reference concept into attractive, manufacturable, 3D-printable CAD with explicit dimensions, provenance, fit and motion intent, digital Playtest evidence, and physical claims deferred to Deliver. Use for new STEP/STL/3MF designs, CAD redesigns, image-guided form development, multipart assemblies, print-in-place mechanisms, and preparing a design for Launchpad and fulfillment.
 ---
 
 # Product to CAD
@@ -48,11 +48,12 @@ physical proof as separate evidence streams.
    [release-evidence.md](references/release-evidence.md).
 9. Emit one content-hashed project manifest and independent verification
    receipts. Bind every verdict to exact source, artifact, skill/tool, config,
-   calibration, and renderer versions. A Workshop check marked `passed` must include
-   the typed measurements and meet the numeric floor in
+   calibration, and renderer versions. A Workshop Playtest check marked
+   `passed` must include the typed measurements and meet the numeric floor in
    [release-evidence.md](references/release-evidence.md); a generic
-   `{"checked": true}` is never enough. Publish only when every required result
-   is `passed`; `held`, missing, stale, malformed, or tool error blocks release.
+   `{"checked": true}` is never enough. Continue to Instructions only when
+   every required digital Playtest result passes. Keep physical claims explicit
+   for Deliver instead of asking Playtest to prove an exact print.
 
 ## Non-negotiable evidence rules
 
@@ -63,8 +64,9 @@ physical proof as separate evidence streams.
 - Keep beauty and likeness reviews independent from engineering gates. A
   beautiful render cannot waive topology, fit, safety, or manufacturing facts.
 - Keep fatigue, snap compliance, friction, living-hinge life, food/contact
-  safety, and print-in-place release `held` until simulation or physical coupon
-  evidence supports the exact material/process.
+  safety, and print-in-place release explicitly unresolved when digital
+  simulation cannot establish them. Exact printing and hands-on QA belong to
+  Deliver, not Playtest.
 - Preserve all failed receipts. Bound repair rounds by money, tokens, attempts,
   and wall time. A design may end with “no viable artifact.”
 
@@ -72,8 +74,9 @@ physical proof as separate evidence streams.
 
 Produce source, build spec, project manifest, STEP, per-part printable meshes,
 assembled viewer mesh, canonical renders, verification receipts, slicer report,
-assembly/print instructions, and an explicit unresolved-claims list. Keep large
-generated binaries in artifact storage when the repository policy requires it.
+assembly/print instructions, and an explicit unresolved-claims list for
+Deliver. Keep large generated binaries in artifact storage when the repository
+policy requires it.
 
 Start from the copyable [build-spec template](assets/build-spec-template.md),
 [CAD project example](assets/cad-project.example.json), and

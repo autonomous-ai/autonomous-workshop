@@ -48,13 +48,13 @@ Status: **HELD — template values and unresolved claims are not evidence.**
 - Sampled poses:
 - Allowed contacts:
 - Forbidden collisions:
-- Compliance/friction/fatigue claims held for physical evidence:
+- Compliance/friction/fatigue claims deferred to Deliver evidence:
 
 ## Assembly and service
 
 1. Replace with an unambiguous assembly sequence.
 
-## Release gates
+## AI Playtest gates
 
 | Gate | Acceptance criterion | Evidence source | Current status |
 |---|---|---|---|
@@ -62,12 +62,17 @@ Status: **HELD — template values and unresolved claims are not evidence.**
 | B-rep | `valid_solids>=1`, `invalid_solids=0`; exact per-part topology in evidence | deterministic | held |
 | Mesh topology | `watertight_parts>=1`, `non_manifold_edges=0`; every output represented | deterministic | held |
 | Dimensions | `measured_parts>=1`, `out_of_tolerance=0`; project tolerances pinned in config | deterministic | held |
-| Fit/motion | `poses_tested>=1`, `forbidden_intersections=0`; coupons for physical behavior | mixed | held |
+| Fit/motion | `poses_tested>=1`, `forbidden_intersections=0`; physical behavior deferred to Deliver | deterministic | held |
 | Bed packing | `beds_used>=1`, `out_of_bounds_parts=0`; all required quantities packed | deterministic | held |
 | Slicer/process | `profiles_checked>=1`, `slicer_errors=0`, numeric support grams | slicer | held |
 | Form/beauty | `views_reviewed>=3`, `blockers=0`; independent fixed-view review | review | held |
 | Safety | `hazards_found=0`, non-empty `review_scope`; age/use boundary pinned | review | held |
-| Physical claims | `claims_tested>=1`, `claims_failed=0`; exact claim evidence bound | physical | held |
+
+## Deliver gates
+
+| Gate | Acceptance criterion | Evidence source | Current status |
+|---|---|---|---|
+| Physical claims | Exact print, material/profile/calibration, hands-on QA, and claim measurements bound to the approved bytes | Deliver receipt | waiting for Deliver |
 
 ## Bounds and unresolved claims
 

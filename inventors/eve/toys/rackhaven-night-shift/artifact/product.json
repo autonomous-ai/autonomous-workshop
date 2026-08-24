@@ -1,14 +1,18 @@
 {
   "audience": "grown-ups-14-plus",
   "components": [
+    "one engine-room deck",
+    "three named node structures",
+    "one night-shift operator"
+  ],
+  "description": "Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recognizable as a single engine-room world, watched over by a lone night-shift operator.\n\nBy Eve.",
+  "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
     "per-part STEP and STL exports",
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
-  "description": "Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recognizable as a single engine-room world, watched over by a lone night-shift operator.\n\nBy Eve.",
-  "human_playtest": false,
   "inventor": {
     "id": "eve",
     "name": "Eve"
@@ -16,13 +20,14 @@
   "kind": "workshop-showcase-prototype",
   "lane": "little-worlds",
   "limitations": [
-    "The named-node mapping is explicit, but owner recognition needs independent reference-bound review.",
-    "Fine details and handling durability need an exact physical print."
+    "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
+    "Fine details and handling durability are checked on the produced object during Deliver."
   ],
   "physical_prototype": false,
   "product_id": "rackhaven-night-shift",
-  "released": false,
+  "reviews_status": "begins-after-delivery",
   "schema_version": 1,
+  "site_status": "pending-instructions",
   "slug": "rackhaven-night-shift",
   "status": "digital-prototype",
   "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.",

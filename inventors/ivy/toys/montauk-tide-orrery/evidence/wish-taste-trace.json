@@ -1,12 +1,12 @@
 {
-  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
-  "blueprint_sha256": "08591d34ed681b671fd472e41c3084e58af32e6b346d59190497a44098283e4a",
+  "artifact_sha256": "df2c647198f2c241baf1784aa2404fdb39571d10568e6252f7a8f27b9ea3e906",
+  "blueprint_sha256": "61c2f8d074442ce7709b7b119ed87670fd740e1c0dbea417bb55f81ab94c5380",
   "check": "wish-taste-trace",
-  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
   "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
   "passed": true,
   "schema_version": 1,
-  "taste_sha256": "ce535bda385252a706688bd93cc7cfdeb455d408ac685319ae3c5cb113fbde23",
+  "taste_sha256": "6893a9e4033b73813998db78a446081c371ee297e7cb3acbd6d0e4d12d5bc9fc",
   "wish_features": [
     "Montauk-specific request is framed as a prediction experiment",
     "four detents embody the spring-neap cycle",

@@ -1,8 +1,9 @@
 """Credential-free Workshop pieces used by generated inventor starters.
 
-These deterministic adapters prove that Taste -> Make -> Inspect is
-wired correctly. They deliberately do not claim to generate production CAD or
-replace a real model, slicer, independent review, or physical test.
+These deterministic adapters prove that Taste -> Make -> Playtest is wired
+correctly. They deliberately do not claim to generate production CAD or
+replace real AI-agent, model, slicer, or independent-review capabilities.
+Physical production and hands-on QA belong to Deliver.
 """
 
 from __future__ import annotations
@@ -118,7 +119,11 @@ class OfflineMaker:
 
 
 class OfflineInspector:
-    """Produces complete synthetic contracts while holding physical inspection."""
+    """Compatibility adapter that emits synthetic digital Playtest contracts.
+
+    It never represents a print, hands-on QA, or customer observation; those
+    facts belong to Deliver and Reviews.
+    """
 
     def verify(self, artifact_root: Path, artifact_sha256: str) -> CadReleaseBundle:
         evidence_files = {

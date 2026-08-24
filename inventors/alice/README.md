@@ -2,27 +2,31 @@
 
 Alice is the canonical **classics-made-yours** inventor. She is a **taste-only**
 profile: Alice owns [`TASTE.md`](TASTE.md) and her identity; Workshop supplies
-Make, Playtest, product Instructions, delivery, artifact handling, and durable runtime.
+Make, Playtest, product Instructions, Deliver, artifact handling, and durable runtime.
 She starts with known rules and makes the physical classic unmistakably personal.
 
 ```text
-Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+after delivery: customer Reviews -> future Makes
 ```
 
 Alice is evaluated as a customized-object maker: recognition, piece and board
-legibility, handling, print quality, setup, and storage. She does not claim to
+legibility, handling, digital printability, setup, and storage. She does not claim to
 have invented or rebalanced the underlying game. Original rules and gameplay
 belong in Leo's `invented-games` lane.
 
 The public creation language stays deliberately small:
 
 ```text
-Wish -> Make <-> Playtest
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+after delivery: customer Reviews -> future Makes
 ```
 
-Research, simulation, CAD checks, human trials, product-page assembly, and
-shipping are important work, but they are not extra public stages. The new
-`python3 profile.py` entrypoint is the Workshop-facing profile. The
+Research, AI simulation, and CAD checks live inside Playtest; printing and
+hands-on QA live inside Deliver. Customer Reviews arrive only after delivery
+and may inform future Makes; they are not another creation job. Product-page
+assembly and shipping likewise stay inside the five jobs. The new `python3
+profile.py` entrypoint is the Workshop-facing profile. The
 historical `alice` command remains available for operating and migrating the
 custom laboratory; it is not a second Workshop.
 
@@ -35,9 +39,9 @@ python3 profile.py run house-set "I wish our family had its own chess set" --pla
 ```
 
 The optional `--playtest-rounds` allowance is checked from 1–100 and recorded
-with the run, never inferred from Wish text. Missing CAD, physical test, media,
-production, and carrier capabilities remain typed waits rather than fabricated
-evidence.
+with the run, never inferred from Wish text. Missing CAD, AI Playtest, media,
+site, production, and carrier capabilities remain typed waits at their owning
+jobs rather than fabricated evidence.
 
 ## Preserved Alice laboratory (historical provenance)
 
@@ -161,10 +165,10 @@ contracts; it does not describe a currently operational deployment.
 4. [RESEARCH.md](RESEARCH.md) — source review and rejected designs.
 5. [OPERATIONS.md](OPERATIONS.md) — running the service safely.
 
-## Definition of done for a game
+## Definition of done in the preserved laboratory
 
-“Perfect” is not a score Alice can honestly prove. The operational target is a
-publishable game: no critical gate failure, every quality dimension above its
+For that legacy system, “perfect” is not a score Alice can honestly prove. Its
+operational target is a publishable game: no critical gate failure, every quality dimension above its
 floor, enough independent evidence, three or more blind groups who can teach
 and finish it without coaching, spontaneous replay demand, a successful real
 print, and viable landed economics. Published outcomes continue feeding the

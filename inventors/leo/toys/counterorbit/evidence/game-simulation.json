@@ -1,9 +1,13 @@
 {
-  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
-  "claim_scope": "executability and digital strategy probe only; not evidence of fun or human replay demand",
+  "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+  "claim_scope": "AI-player executability and strategy evidence; not a customer Review",
+  "claims": [
+    "1200 seeded AI games terminated across all sixteen player-style matchups."
+  ],
   "completed_games": 1200,
   "evidence_class": "ai-simulation",
   "executable": true,
+  "feedback": [],
   "first_seat_win_rate": 0.815833,
   "game": "Counterorbit",
   "matchups": {
@@ -368,6 +372,6 @@
   "schema_version": 1,
   "seed": 260823,
   "simulator_path": "game/simulate.py",
-  "simulator_sha256": "65610d6d994a674771a5bd03837134c53ba098dc7733a538dadb00c192b66517",
+  "simulator_sha256": "862257e3f3a7f2e15c5d4d902ecbe8e4fb378e7ceaddcceb070998e857d9ca08",
   "terminated_games": 1200
 }

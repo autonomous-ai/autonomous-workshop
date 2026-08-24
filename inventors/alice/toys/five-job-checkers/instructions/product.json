@@ -1,0 +1,97 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "0e469eae0cf9d381cd42f1b341362485c3a745c9c1ba90f859e4e1f5c3404ec9",
+      "passed": true
+    },
+    "classic-rules-test": {
+      "claims": [
+        "The lane-specific AI players completed their exact-design checks without a blocking finding."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "classic-rules-test.json",
+      "evidence_sha256": "4ec3ed38d51ad0c6b160d82353f6a7ea9d35a8dd2d5e19552bc49d093ca828f7",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "0c9401d76dc644655d220ec1e62ff3cac4e9a5fd71ef922a646e4f95bcdca429",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "8b9c92b5d47a90ac4bbf9690eccce28fe28a1439bbb0cbbfb5526cefade79f34",
+      "passed": true
+    }
+  },
+  "how_to_play": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "images": {
+    "box": "images/box.png",
+    "detail": "images/detail.png",
+    "hero": "images/hero.png",
+    "parts": "images/parts.png",
+    "play": "images/play.png"
+  },
+  "instructions_kind": "rulebook",
+  "lane": "classics-made-yours",
+  "limitations": [
+    "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
+    "The exact physical set is produced and checked during Deliver, not Playtest."
+  ],
+  "playtest_evidence_artifact_sha256": "3c6551c449e8e5e146674c3665de69d7340ab5c73b7e8682b6780e71ffe66486",
+  "product_artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
+  "schema_version": 1,
+  "status": "ready",
+  "story_blocks": [
+    {
+      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
+      "hero_image": "play",
+      "lead": "How to play",
+      "pair_images": [
+        "detail",
+        "parts"
+      ]
+    },
+    {
+      "body": "The box contains one checkers board, twelve five-ring pieces, twelve five-spoke pieces. AI players checked the known rules and role readability; customer experience will arrive later as Reviews. The exact physical set is produced and checked during Deliver, not Playtest.",
+      "hero_image": "box",
+      "lead": "What arrives",
+      "pair_images": []
+    }
+  ],
+  "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.\n\nBy Alice.",
+  "title": "Five-Job Checkers",
+  "use_case": {
+    "body": "A known checkers game made into an architectural portrait of the Workshop's five jobs. It turns one person's request into this exact plaything instead of decorating a generic download.",
+    "image": "hero",
+    "label": "Made from your wish"
+  },
+  "what_arrives": [
+    "one checkers board",
+    "twelve five-ring pieces",
+    "twelve five-spoke pieces"
+  ],
+  "wish": "I wish our five-job Workshop became a checkers set for late-night design reviews—black and warm gold, architectural rather than cute."
+}

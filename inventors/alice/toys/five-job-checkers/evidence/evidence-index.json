@@ -1,34 +1,28 @@
 {
-  "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+  "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
   "evaluator": "showcase-digital-playtest-v1",
   "evaluator_version": "1.0.0",
-  "kind": "showcase-digital-playtest-index",
+  "kind": "showcase-ai-playtest-index",
+  "reviews": "Customer Reviews arrive only after Deliver.",
   "schema_version": 1,
-  "status": "waiting-at-playtest",
-  "unresolved_canonical_capabilities": [
-    "independent-review",
-    "classic-rules-test",
-    "mechanical-test",
-    "print-test",
-    "human-playtest",
-    "physical-prototype"
-  ],
+  "status": "passed-ai-playtest",
+  "unresolved_canonical_capabilities": [],
   "validated_checks": [
     {
-      "evidence_ref": "digital-geometry.json",
-      "playtest_id": "digital-geometry"
+      "evidence_ref": "agent-playtest.json",
+      "playtest_id": "agent-playtest"
     },
     {
-      "evidence_ref": "digital-printability.json",
-      "playtest_id": "digital-printability"
+      "evidence_ref": "classic-rules-test.json",
+      "playtest_id": "classic-rules-test"
     },
     {
-      "evidence_ref": "digital-lane.json",
-      "playtest_id": "digital-lane-model"
+      "evidence_ref": "mechanical-test.json",
+      "playtest_id": "mechanical-test"
     },
     {
-      "evidence_ref": "wish-taste-trace.json",
-      "playtest_id": "wish-taste-trace"
+      "evidence_ref": "print-test.json",
+      "playtest_id": "print-test"
     }
   ]
 }

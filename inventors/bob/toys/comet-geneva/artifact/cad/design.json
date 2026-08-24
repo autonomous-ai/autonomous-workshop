@@ -1,5 +1,5 @@
 {
-  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
+  "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
   "design": {
     "base_mm": [
       94.0,
@@ -24,7 +24,7 @@
   "lane": "moving-machines",
   "schema_version": 1,
   "slug": "comet-geneva",
-  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "taste_sha256": "ce2db44b057b79bc2e385daf1dec3024311a434aec39123514fdb0d5ef11cf50",
   "title": "Comet Geneva",
   "wish_sha256": "250b83fbdf83d4cc9d5d7da2af9d4d3820825865b16ec2f8d01a5296c93b03a8"
 }

@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Montauk Tide Orrery](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -19,9 +19,9 @@ machine-readable checks.
 
 ## What remains true
 
-- The source relationship and geometry are auditable, but an independent science expert has not reviewed this exact object.
-- Detent feel, comprehension, and safety need physical and human playtest.
+- The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.
+- Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews.
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.

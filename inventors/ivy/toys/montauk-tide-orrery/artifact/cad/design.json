@@ -1,5 +1,5 @@
 {
-  "blueprint_sha256": "08591d34ed681b671fd472e41c3084e58af32e6b346d59190497a44098283e4a",
+  "blueprint_sha256": "61c2f8d074442ce7709b7b119ed87670fd740e1c0dbea417bb55f81ab94c5380",
   "design": {
     "base_diameter_mm": 104.0,
     "kind": "qualitative-tide-orrery",
@@ -27,7 +27,7 @@
   "lane": "holdable-science",
   "schema_version": 1,
   "slug": "montauk-tide-orrery",
-  "taste_sha256": "ce535bda385252a706688bd93cc7cfdeb455d408ac685319ae3c5cb113fbde23",
+  "taste_sha256": "6893a9e4033b73813998db78a446081c371ee297e7cb3acbd6d0e4d12d5bc9fc",
   "title": "Montauk Tide Orrery",
   "wish_sha256": "bbe0314d667de124e4e12c24da3c442231a2bdd53e2ac8c27cd3615d6e5a395c"
 }

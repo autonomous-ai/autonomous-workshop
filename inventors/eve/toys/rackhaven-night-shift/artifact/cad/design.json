@@ -1,5 +1,5 @@
 {
-  "blueprint_sha256": "ba870dc429acfac778c32e664a60d6024b2e08b6dce581d7e247a549006431dd",
+  "blueprint_sha256": "920e278909ff582a74226e87598d904adee3d2fc8310357bce11ded443af48b4",
   "design": {
     "deck_mm": [
       108.0,
@@ -29,7 +29,7 @@
   "lane": "little-worlds",
   "schema_version": 1,
   "slug": "rackhaven-night-shift",
-  "taste_sha256": "e13341de2a2704197f0f590a95523f7d885d00f3ddd2990ad90a6c45b6b9bf92",
+  "taste_sha256": "de525b7acbb5586488eb1343e93220e366dcb40c71d0831d0cfedd70e919f1f7",
   "title": "Rackhaven: Night Shift",
   "wish_sha256": "ad262dadb03bc7dfe60531d55beb790c827408b0a5c00cc25c26b8d545449b87"
 }

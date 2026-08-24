@@ -15,8 +15,8 @@ from .models import PlaytestResult
 class Playtest:
     """A complete, artifact-bound playtest report for one Make.
 
-    Product files stay bound to ``artifact_manifest``. Playtest and review
-    files may be sealed separately in ``evidence_manifest`` so feedback can
+    Product files stay bound to ``artifact_manifest``. Playtest evidence files
+    may be sealed separately in ``evidence_manifest`` so AI-player feedback can
     improve the next Make without changing the exact product bytes that were
     tested. Failed results are useful feedback; :meth:`require` is the
     approval boundary and refuses to finish until every required check passes.
@@ -135,4 +135,3 @@ class Playtest:
             ),
             "results": [result.to_dict() for result in self.results],
         }
-

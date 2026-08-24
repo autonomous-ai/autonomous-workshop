@@ -10,9 +10,17 @@ from inventor_workshop.instructions import (
     REQUIRED_PRODUCT_IMAGES,
 )
 from inventor_workshop.errors import ContractError
-from inventor_workshop.jobs import Delivered, Feedback, Made, Playtested
+from inventor_workshop.jobs import (
+    CustomerReview,
+    Delivered,
+    Feedback,
+    Made,
+    Need,
+    Playtested,
+    WaitingFor,
+)
 from inventor_workshop.make import Wish
-from inventor_workshop.models import PlaytestResult
+from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.workshop import Workshop, WorkshopTools
@@ -64,7 +72,9 @@ class ToyWorkshopTest(unittest.TestCase):
         )
 
     @staticmethod
-    def _playtest(context, *, passed, valid_invented=False):
+    def _playtest(
+        context, *, passed, valid_invented=False, ai_simulation=True
+    ):
         context.workspace.mkdir(parents=True)
         results = []
         for capability in context.blueprint.required_capabilities("playtest"):
@@ -75,7 +85,10 @@ class ToyWorkshopTest(unittest.TestCase):
                 encoding="utf-8",
             )
             evidence = {
-                "evidence_class": "deterministic-fixture",
+                "evidence_class": (
+                    "ai-simulation" if ai_simulation else "deterministic-fixture"
+                ),
+                "agent_roles": ["optimizing-player", "adversarial-breaker"],
                 "claims": ["Synthetic contract evidence for %s." % capability],
             }
             if valid_invented and capability == "game-simulation":
@@ -89,15 +102,6 @@ class ToyWorkshopTest(unittest.TestCase):
                         "exploratory",
                         "adversarial",
                     ],
-                }
-            elif valid_invented and capability == "human-replay":
-                evidence = {
-                    "evidence_class": "human-playtest",
-                    "participant_count": 2,
-                    "independent": True,
-                    "exact_physical_prototype": True,
-                    "inventor_coaching": False,
-                    "asked_to_play_again": True,
                 }
             results.append(
                 PlaytestResult.create(
@@ -160,6 +164,31 @@ class ToyWorkshopTest(unittest.TestCase):
         return result
 
     @staticmethod
+    def site_writer(context, sealed_root, sealed_manifest):
+        del sealed_root
+        return Receipt(
+            pack_sha256="f" * 64,
+            artifact_sha256=context.made.artifact_sha256,
+            design_id="design-" + context.wish.product_id,
+            slug=context.wish.product_id,
+            owner_id="owner-test",
+            root_id="design-" + context.wish.product_id,
+            current_history_id="history-1",
+            published_history_id="history-1",
+            status="public",
+            project_url=(
+                "https://www.autonomous.ai/factory/product/"
+                + context.wish.product_id
+            ),
+            observed_at="2026-08-23T12:00:00+00:00",
+            listing_active=True,
+            listing_price_cents=3500,
+            listing_currency="USD",
+            listing_sku="TEST-001",
+            details={"instructions_sha256": sealed_manifest.artifact_sha256},
+        )
+
+    @staticmethod
     def fulfiller(context):
         return Delivered(
             context.made.artifact_sha256,
@@ -181,7 +210,7 @@ class ToyWorkshopTest(unittest.TestCase):
         return WorkshopTools(
             make=self.make_job,
             playtest=playtest or self.playtest_job,
-            instructions=DefaultInstructions(self.media_maker),
+            instructions=DefaultInstructions(self.media_maker, self.site_writer),
             deliver=DefaultDeliver(self.fulfiller),
         )
 
@@ -214,6 +243,223 @@ class ToyWorkshopTest(unittest.TestCase):
             ],
         )
 
+    def test_resume_instructions_uses_checkpoint_without_repeating_make_or_playtest(self):
+        calls = {"make": 0, "playtest": 0, "media": 0}
+
+        def counted_make(context):
+            calls["make"] += 1
+            return self.make_job(context)
+
+        def counted_playtest(context):
+            calls["playtest"] += 1
+            return self.passing_playtest(context)
+
+        def counted_media(context):
+            calls["media"] += 1
+            return self.media_maker(context)
+
+        wish = Wish.create("resumable-top", "A top whose page can resume")
+        waiting_workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=counted_make,
+                playtest=counted_playtest,
+                instructions=DefaultInstructions(counted_media),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        )
+        waiting = waiting_workshop.run(wish, playtest_rounds=3)
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 0})
+
+        resumed_workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=counted_make,
+                playtest=counted_playtest,
+                instructions=DefaultInstructions(counted_media, self.site_writer),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        )
+        with self.assertRaisesRegex(ContractError, "original Wish"):
+            resumed_workshop.resume_instructions(
+                Wish.create("resumable-top", "A different Wish must not attach")
+            )
+        resumed = resumed_workshop.resume_instructions(wish)
+        self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
+        self.assertEqual(resumed.artifact_sha256, waiting.artifact_sha256)
+        self.assertEqual(resumed.playtest_rounds, 3)
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1})
+        state = Runtime(self.runtime / "workshop.sqlite3")
+        self.assertTrue(state.verify_event_chain(wish.product_id))
+
+    def test_resume_reuses_sealed_instructions_and_only_retries_the_site(self):
+        calls = {"make": 0, "playtest": 0, "media": 0, "site": 0}
+
+        def counted_make(context):
+            calls["make"] += 1
+            return self.make_job(context)
+
+        def counted_playtest(context):
+            calls["playtest"] += 1
+            return self.passing_playtest(context)
+
+        def counted_media(context):
+            calls["media"] += 1
+            return self.media_maker(context)
+
+        def waiting_site(context, root, manifest):
+            del context, root, manifest
+            calls["site"] += 1
+            raise WaitingFor(
+                Need(
+                    "instructions",
+                    "site-page",
+                    "The sealed page is waiting for a site account.",
+                    "Configure the site account and resume this exact page.",
+                )
+            )
+
+        wish = Wish.create("sealed-top", "A top with one sealed page")
+        first = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=counted_make,
+                playtest=counted_playtest,
+                instructions=DefaultInstructions(counted_media, waiting_site),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=2)
+        self.assertEqual((first.status, first.job), ("waiting", "instructions"))
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1, "site": 1})
+        waiting_payload = Runtime(
+            self.runtime / "workshop.sqlite3"
+        ).events(wish.product_id)[-1]["payload"]
+        self.assertEqual(len(waiting_payload["resume_checkpoint_sha256"]), 64)
+        self.assertEqual(len(waiting_payload["instructions_sha256"]), 64)
+
+        def successful_site(context, root, manifest):
+            calls["site"] += 1
+            return self.site_writer(context, root, manifest)
+
+        resumed = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=counted_make,
+                playtest=counted_playtest,
+                instructions=DefaultInstructions(counted_media, successful_site),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).resume_instructions(wish)
+        self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
+        self.assertEqual(resumed.artifact_sha256, first.artifact_sha256)
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1, "site": 2})
+
+    def test_resume_rejects_changed_sealed_instructions_before_site_effect(self):
+        site_calls = 0
+
+        def waiting_site(context, root, manifest):
+            del context, root, manifest
+            raise WaitingFor(
+                Need(
+                    "instructions",
+                    "site-page",
+                    "The sealed page is waiting.",
+                    "Resume after site capability is configured.",
+                )
+            )
+
+        wish = Wish.create("tampered-page", "A top with immutable Instructions")
+        Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=self.make_job,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(self.media_maker, waiting_site),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=1)
+        instructions_path = (
+            self.runtime
+            / "runs"
+            / wish.product_id
+            / "instructions"
+            / "INSTRUCTIONS.md"
+        )
+        instructions_path.write_text("changed while waiting\n", encoding="utf-8")
+
+        def forbidden_site(context, root, manifest):
+            nonlocal site_calls
+            site_calls += 1
+            return self.site_writer(context, root, manifest)
+
+        resumed_workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                make=self.make_job,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(self.media_maker, forbidden_site),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        )
+        with self.assertRaisesRegex(ContractError, "changed while waiting"):
+            resumed_workshop.resume_instructions(wish)
+        self.assertEqual(site_calls, 0)
+
+    def test_customer_reviews_follow_deliver_and_feed_only_a_future_make(self):
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=self.complete_tools(self.passing_playtest),
+            runtime_root=self.runtime,
+        )
+        result = workshop.run(
+            Wish.create("reviewed-top", "A top a customer can review"),
+            playtest_rounds=1,
+        )
+        review = CustomerReview(
+            "review-1",
+            result.artifact_sha256,
+            result.instructions_sha256,
+            result.delivery.tracking_id,
+            4,
+            "The second rhythm is delightful; make the winding grip larger next time.",
+            "2026-08-24T12:00:00+00:00",
+        )
+        self.assertEqual(workshop.record_review("reviewed-top", review), review)
+        self.assertEqual(workshop.record_review("reviewed-top", review), review)
+        self.assertEqual(workshop.reviews("reviewed-top"), (review,))
+        learning = workshop.review_learnings("reviewed-top")[0]
+        self.assertEqual(learning["applies_to"], "future-make")
+        self.assertTrue(learning["delivered_revision_immutable"])
+        state = Runtime(self.runtime / "workshop.sqlite3")
+        self.assertEqual(state.get_product("reviewed-top")["stage"], "deliver")
+        self.assertTrue(state.verify_event_chain("reviewed-top"))
+
+        changed = CustomerReview(
+            "review-1",
+            result.artifact_sha256,
+            result.instructions_sha256,
+            result.delivery.tracking_id,
+            1,
+            "Different feedback under the same id must not replace history.",
+            "2026-08-24T12:00:00+00:00",
+        )
+        with self.assertRaisesRegex(ContractError, "already bound"):
+            workshop.record_review("reviewed-top", changed)
+
     def test_three_levels_are_explicit_and_playtest_requires_make(self):
         taste_only = Workshop(
             self.inventor,
@@ -226,7 +472,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "moving-machines",
             tools=WorkshopTools(
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(self.media_maker),
+                instructions=DefaultInstructions(self.media_maker, self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -236,7 +482,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
-                instructions=DefaultInstructions(self.media_maker),
+                instructions=DefaultInstructions(self.media_maker, self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -348,7 +594,32 @@ class ToyWorkshopTest(unittest.TestCase):
             - {workshop.blueprint.required_capabilities("playtest")[0]},
         )
 
-    def test_invented_game_requires_meaningful_simulation(self):
+    def test_playtest_requires_ai_agent_simulation_evidence(self):
+        def non_ai_playtest(context):
+            return self._playtest(
+                context,
+                passed=True,
+                ai_simulation=False,
+            )
+
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            make=self.make_job,
+            playtest=non_ai_playtest,
+            runtime_root=self.root / "non-ai-playtest-runtime",
+        )
+        result = workshop.run(
+            Wish.create("not-ai-proof", "A machine tested without AI players"),
+            playtest_rounds=1,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in result.needs},
+            set(workshop.blueprint.required_capabilities("playtest")),
+        )
+
+    def test_invented_game_requires_meaningful_ai_simulation(self):
         invalid = Workshop(
             self.inventor,
             "invented-games",

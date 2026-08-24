@@ -10,20 +10,15 @@ Place one of five signal stones, rotate the shared orbit, and try to hold a thre
 - Lane: `invented-games`
 - Extension level: `custom-playtest`
 - Configured Playtest rounds: `10`
-- Actual stop: **Playtest / waiting**, round 1
-- Exact artifact: `2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb`
+- Actual stop: **Instructions / waiting**, round 1
+- Exact artifact: `5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a`
+- Product page: sealed locally; waiting for the Workshop site account
 
-The shared Workshop produced a real digital prototype and stopped before
-Instructions or Deliver. That is intentional: software cannot manufacture
-physical evidence or human delight.
+AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account.
 
 ## Still needed
 
-- `independent-review` — The current digital checks do not establish the Workshop's full independent-review gate.
-- `human-replay` — This exact digital prototype still needs independent real-world evidence.
-- `mechanical-test` — The current digital checks do not establish the Workshop's full mechanical-test gate.
-- `print-test` — The current digital checks do not establish the Workshop's full print-test gate.
-- `physical-prototype` — This exact digital prototype still needs independent real-world evidence.
+- `site-page` — The page and in-box guide are sealed, but this run has no authenticated Workshop site account.
 
 ## Inspect it
 
@@ -33,8 +28,10 @@ physical evidence or human delight.
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
 - [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
-- [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed digital Playtest index
+- [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
+- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
-No file in this bundle claims a physical print, human Playtest, released product,
-box instructions, shipment, or delivery.
+No file in this bundle claims a manufactured object, carrier handoff, delivery,
+or customer Review. Those facts belong to Deliver and Reviews.

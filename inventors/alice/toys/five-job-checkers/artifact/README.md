@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Five-Job Checkers](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -19,9 +19,9 @@ machine-readable checks.
 
 ## What remains true
 
-- Known rules are documented, but independent rule/readability playtest is still required.
-- No exact part has been printed, sliced with a locked printer profile, or handled by people.
+- AI players checked the known rules and role readability; customer experience will arrive later as Reviews.
+- The exact physical set is produced and checked during Deliver, not Playtest.
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.

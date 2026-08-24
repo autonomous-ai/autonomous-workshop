@@ -1,5 +1,12 @@
 # Alice architecture
 
+> **Legacy invented-game laboratory.** This document preserves the system that
+> produced Blindcap: Duel and its historical human-table and prototype gates.
+> It is not Alice's current classics profile or the canonical Workshop stage
+> boundary. Current Playtest is AI-agent simulation only; printing and physical
+> QA belong to Deliver; customer feedback after delivery is Reviews and may
+> inform future Makes.
+
 ## Objective
 
 Alice continuously increases the probability of shipping an original

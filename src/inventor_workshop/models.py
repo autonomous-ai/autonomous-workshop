@@ -494,7 +494,11 @@ class Receipt:
             details={"kind": "shop-design"},
             listing_active=listing.get("active"),
             listing_price_cents=listing.get("price_cents"),
-            listing_currency=listing.get("currency"),
+            listing_currency=(
+                listing.get("currency").upper()
+                if isinstance(listing.get("currency"), str)
+                else listing.get("currency")
+            ),
             listing_sku=listing.get("sku"),
         )
 
@@ -517,7 +521,8 @@ class Receipt:
             and self.published_history_id == self.current_history_id
             and self.listing_active is True
             and self.listing_price_cents is not None
-            and self.listing_currency == "USD"
+            and isinstance(self.listing_currency, str)
+            and self.listing_currency.upper() == "USD"
             and bool(self.listing_sku)
         )
 
@@ -525,7 +530,8 @@ class Receipt:
         if (
             self.listing_active is not True
             or self.listing_price_cents != expected_price_cents
-            or self.listing_currency != "USD"
+            or not isinstance(self.listing_currency, str)
+            or self.listing_currency.upper() != "USD"
             or not self.listing_sku
         ):
             raise ReceiptError(

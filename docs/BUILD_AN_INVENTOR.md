@@ -6,9 +6,13 @@ when needed, custom Make or Playtest craft. Workshop supplies the product
 journey:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
-             feedback
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                             feedback
+after delivery: customer Reviews -> future Makes
 ```
+
+The inventor participates only in the five creation jobs. Reviews is
+post-delivery feedback for future work, not another hook to implement.
 
 This guide is for the first Workshop, which makes playthings for grown-ups
 (14+). It is not a generic framework for organizers, replacement parts, or
@@ -23,7 +27,7 @@ Every inventor starts in exactly one category:
 | Category ID | Focus |
 |---|---|
 | `classics-made-yours` | known games and puzzles remade as exceptional custom physical editions |
-| `invented-games` | new rules, mysteries, strategy, and tactile games that must earn another human play |
+| `invented-games` | new rules, mysteries, strategy, and tactile games exercised by complete AI-agent simulations |
 | `moving-machines` | mechanisms, kinetic toys, and tiny machines with satisfying motion |
 | `holdable-science` | tangible phenomena, geometry, nature, space, waves, and forces |
 | `little-worlds` | personalized miniature places, characters, stories, and memories |
@@ -40,11 +44,14 @@ Then apply the category bar before writing code:
 
 For `classics-made-yours`, do not pretend to invent known rules. Judge the
 custom edition as an object: fidelity, personalization, beauty, legibility,
-handling, setup, print quality, and the way the Wish changes the edition.
+handling proxies, setup, digital printability, and the way the Wish changes the
+edition.
 
-For `invented-games`, simulations are necessary but never sufficient. Release
-requires 1,000 simulated games across four player styles. Those 1,000 clean
-AI simulations cannot pass that gate.
+For `invented-games`, AI players must execute at least 1,000 complete seeded
+games and probe endings, balance, strategies, illegal actions, and exploits.
+Whether customers want another play is learned after delivery through Reviews
+and can shape a future revision of the same toy as well as future Wishes and
+Makes; it is not a Playtest gate for the original order.
 
 Kits and numbered series are possible later variants of a successful design.
 They are not jobs and are not promises of the V1 Workshop.
@@ -75,8 +82,9 @@ retrieval, or a genuinely new Taste instead of forcing a bad match.
 The Manager is not a sixth job. Once assigned, the Wish still follows only:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
-             feedback
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                             feedback
+after delivery: customer Reviews -> future Makes
 ```
 
 A future always-on intake service can call the same one-Wish Manager repeatedly.
@@ -117,6 +125,9 @@ Alice, the `classics-made-yours` inventor, illustrates the boundary:
 | Wish -> Make <-> Playtest -> Instructions -> Deliver        |
 |        artifacts + feedback + evidence + runtime    |
 +-----------------------------------------------------+
+                           |
+                           v
+                 Reviews -> future Makes
 ```
 
 A new inventor follows this dependency shape and chooses the smallest level its
@@ -234,7 +245,8 @@ Workshop hashes the exact UTF-8 bytes. An agent may propose a Taste change, but
 it may not silently edit or activate one to excuse a weak result.
 
 Taste is direction, not evidence. “This feels fun to me” in `TASTE.md` cannot
-pass a physical test.
+pass an AI Playtest check, replace a Deliver receipt, or stand in for customer
+Reviews after shipping.
 
 Keep routing guidance inside the same Taste rather than adding a second prompt
 or manager-only description. The Manager compares each finalist's complete,
@@ -389,8 +401,8 @@ quality bar.
 
 ## 8. Use the right evidence class
 
-Playtest covers the whole toy or game, but a result may claim only what its
-evidence observed:
+Playtest is performed by AI agents over the whole digital toy or game, and a
+result may claim only what its evidence observed:
 
 - **AI simulation:** seeded traces, legal actions, termination, balance and
   pacing proxies. It cannot claim human fun.
@@ -400,25 +412,30 @@ evidence observed:
   motion, or assembly calculations. It is not a physical test.
 - **Slicer analysis:** exact meshes under a pinned printer, material, and
   profile. It predicts manufacturing; it does not prove a print succeeded.
-- **Physical prototype:** exact artifact, printer, material, calibration,
-  measurements, and test receipts. It proves only the recorded prototype test.
-- **Owner reviews:** what people who received the toy said about living with
-  it, tied to a delivered order. Report the sample; do not generalize beyond it.
+
+Deliver separately records the exact artifact, printer, material, calibration,
+physical measurements, hands-on QA, packing, and shipment receipts. After the
+customer receives that order, Reviews records what verified customers say
+about living with it. Bind each Review to the delivered toy, report the sample,
+and do not generalize beyond it. Reviews may improve a future revision of the
+same toy and inform future Wishes and Makes; it is not Playtest evidence, an
+inventor hook, or a release gate for the original order.
 
 For invented games, AI players must execute the rules rather than let one model
 narrate an imagined session. Rotate seats and policies, retain seeded traces,
 and check termination, dead states, illegal actions, dominant strategies,
-pacing, and exploits. That is the release evidence: a game that survives a
-thousand seeded games is ready to ship. Whether people loved it comes back
-afterwards as owner reviews, and belongs to the next game, not this one.
+pacing, and exploits. Run at least 1,000 complete seeded games. These are
+useful predictions, not claims about customer fun; actual customer response is
+collected later as Reviews and may guide a future revision of the same toy as
+well as future Wishes and Makes.
 
 For classics made yours, verify the known rules and evaluate the exact custom
 edition as an object. Do not market familiar gameplay as a new invention.
 
-For every category, the V1 release Playtest also covers delight intent, mechanics,
-printable geometry, slicing, an exact physical prototype, and independent human
-use. If that evidence does not exist yet, the product waits; simulation or a
-self-review cannot fill the gap.
+For every category, Playtest covers delight intent, mechanics, printable
+geometry, slicing, rules, and other checks that AI agents or deterministic
+tools can perform. Printing and hands-on QA begin only in Deliver. Human
+customer feedback begins only after delivery as Reviews.
 
 ## 9. Let shared Instructions tell only the truth
 
@@ -427,6 +444,20 @@ truthful product page and the paper that belongs in the box: a rulebook for a
 game, or instructions for another toy. Both stay bound to the same approved
 product. The shared contract requires distinct hero, play, detail, parts, and
 box images plus a claim-to-evidence map.
+
+Creating files locally is only the first half of Instructions. The same shared
+job publishes the page on the site and requires authenticated readback for the
+exact approved product, sealed page, guide, and media before Deliver can begin.
+
+If a run waits here, resume the exact sealed work instead of starting over:
+
+```python
+resumed = workshop.resume_instructions(wish)
+```
+
+Workshop verifies the original Wish, Taste, blueprint, round allowance, Make,
+Playtest evidence, event chain, and Instructions manifest, then calls only the
+shared site writer. Make, Playtest, copy, and media are not repeated.
 
 The media provider must render or photograph the approved artifact. Concept art
 may appear only when clearly labeled as concept art; it cannot stand in for a
@@ -437,9 +468,10 @@ inventing facts:
 
 - say “128 seeded AI games terminated,” not “players love it”;
 - say “sliced under the named profile,” not “guaranteed to print”;
-- describe exactly how many independent people played and what was observed;
-- keep the page private until its exact product and page hashes are approved
-  for Deliver.
+- do not borrow customer Reviews from an earlier delivery as proof for this
+  toy's Playtest;
+- never claim the page is live from a local flag; only the site's authenticated
+  receipt can complete Instructions.
 
 An inventor does not implement its own publication path. Improve shared Instructions
 when every inventor needs the change.
@@ -461,6 +493,14 @@ Keep printer and carrier credentials in shared provider configuration, scoped
 to the minimum authority. They must never enter Taste, prompts, product files,
 evidence bundles, runtime event payloads, or source.
 
+## After Deliver, Reviews improve future Makes
+
+Reviews records what customers report after they receive the exact shipped
+toy. That feedback may inspire a new Wish or enter a future Make as product
+learning. It never rewrites the completed run, delays the original order, or
+becomes a custom inventor hook. Reviews is post-delivery feedback around the
+five jobs—not a sixth job.
+
 ## 11. Test failure before success
 
 At minimum, an inventor's tests should prove:
@@ -477,6 +517,8 @@ At minimum, an inventor's tests should prove:
   real pass;
 - AI simulation cannot be presented as human-fun evidence;
 - slicer output cannot be presented as a successful physical print;
+- production and hands-on QA cannot be presented as Playtest;
+- customer Reviews cannot rewrite the Playtest evidence for a shipped toy;
 - Instructions claims and images remain bound to the approved product;
 - changed Instructions bytes cannot enter Deliver;
 - missing production or carrier capability produces `WaitingFor`;
@@ -519,4 +561,4 @@ niche Playtest logic.
 Shared changes need credential-free contract tests, failure-path tests,
 artifact and evidence binding, and backward-compatible persisted-state
 handling. Older compatibility aliases may remain for existing runs, but new
-inventors should learn and expose only the six jobs.
+inventors should learn and expose only the five jobs.

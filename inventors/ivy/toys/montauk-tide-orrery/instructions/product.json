@@ -1,0 +1,98 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "700fb64a8b2574140b9ab8611980fc6dd5627f859e27d87676a78553a1f7992f",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "f67ed2c16e10ec0a42ce1b7c5ba630c67d9104d441e5ba5f4b8c6f53db9989d1",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "6168042c06ed5270d49d0f6c2deeb5b9272a967755bc3c3735539d359ed06c9e",
+      "passed": true
+    },
+    "science-test": {
+      "claims": [
+        "The lane-specific AI players completed their exact-design checks without a blocking finding."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "science-test.json",
+      "evidence_sha256": "786386c4aaa19e088546b378687e75d898c1784cdc628919250607594d26fe49",
+      "passed": true
+    }
+  },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "images": {
+    "box": "images/box.png",
+    "detail": "images/detail.png",
+    "hero": "images/hero.png",
+    "parts": "images/parts.png",
+    "play": "images/play.png"
+  },
+  "instructions_kind": "instructions",
+  "lane": "holdable-science",
+  "limitations": [
+    "The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.",
+    "Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews."
+  ],
+  "playtest_evidence_artifact_sha256": "85e69c0b9539c9f2c81de540396f39adebbfa2cd81548f874080fe522a15dcc3",
+  "product_artifact_sha256": "df2c647198f2c241baf1784aa2404fdb39571d10568e6252f7a8f27b9ea3e906",
+  "schema_version": 1,
+  "status": "ready",
+  "story_blocks": [
+    {
+      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
+      "hero_image": "play",
+      "lead": "How to use",
+      "pair_images": [
+        "detail",
+        "parts"
+      ]
+    },
+    {
+      "body": "The box contains one Montauk base, one tide-alignment arm, one Sun marker, one Moon marker. The model is qualitative and not a tide forecast; AI science players keep that simplification explicit. Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews.",
+      "hero_image": "box",
+      "lead": "What arrives",
+      "pair_images": []
+    }
+  ],
+  "summary": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.\n\nBy Ivy.",
+  "title": "Montauk Tide Orrery",
+  "use_case": {
+    "body": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk. It turns one person's request into this exact plaything instead of decorating a generic download.",
+    "image": "hero",
+    "label": "Made from your wish"
+  },
+  "what_arrives": [
+    "one Montauk base",
+    "one tide-alignment arm",
+    "one Sun marker",
+    "one Moon marker"
+  ],
+  "wish": "I wish I could hold the spring-neap tide cycle for Montauk and predict what alignment makes the larger tide."
+}

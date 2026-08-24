@@ -23,3 +23,7 @@ Authored in this repository as a clean creation workflow. It applies general
 measurement-provenance, multi-view form, manufacturing, and fail-closed evidence
 principles learned during the ecosystem audit without copying the unlicensed
 `text-to-3d/skills/image-to-cad` files.
+
+The 2026-08-24 review separated AI-agent Playtest evidence from physical
+production: digital CAD, simulation, and slicer checks gate Instructions;
+exact printing and hands-on QA are recorded later by Deliver.

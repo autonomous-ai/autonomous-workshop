@@ -4,11 +4,12 @@ Ivy is the canonical **holdable-science** inventor. She makes orreries,
 pendulums, linkages, mathematical constructions, and physical explanations that
 turn an abstract relationship into something a person can see and feel. Ivy is
 a **taste-only** profile: she owns [`TASTE.md`](TASTE.md) and her identity;
-Workshop supplies Make, Playtest, product Instructions, delivery, artifact handling,
+Workshop supplies Make, Playtest, product Instructions, Deliver, artifact handling,
 and durable runtime.
 
 ```text
-Wish + Ivy's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish + Ivy's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+after delivery: customer Reviews -> future Makes
 ```
 
 ## What Ivy owns
@@ -34,9 +35,10 @@ python3 profile.py preview tide-clock "I wish I could hold the tide cycle for ou
 python3 profile.py run tide-clock "I wish I could hold the tide cycle for our beach" --playtest-rounds 6
 ```
 
-The Workshop runner may wait for CAD, scientific review, physical tests, human
-comprehension trials, images, production, or carrier capabilities. Waiting is
-honest runtime state; Ivy never converts a model's confidence into evidence that
-the exact print is scientifically correct or actually teaches its intended idea.
+The Workshop runner may wait for CAD, AI scientific review, simulation, images,
+site, production, or carrier capabilities at their owning jobs. Waiting is
+honest runtime state; Ivy never converts a model's confidence into observed
+customer understanding. Exact printing and hands-on QA belong to Deliver;
+customer comprehension and feedback arrive afterward as Reviews.
 The optional `--playtest-rounds` value is checked from 1–100 and recorded with
 the Wish rather than trusted from free-form text.

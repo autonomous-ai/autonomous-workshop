@@ -1,0 +1,32 @@
+{
+  "agent_roles": [
+    "optimizing-player",
+    "rules-lawyer",
+    "adversarial-breaker",
+    "first-time-player"
+  ],
+  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+  "claims": [
+    "The lane-specific AI players completed their exact-design checks without a blocking finding."
+  ],
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback": [],
+  "lane_checks": {
+    "claim_scope": "dimensional/kinematic intent only; not a physical cycle test",
+    "drive_pin_diameter_mm": 4.3,
+    "input": "continuous manual crank",
+    "kinematic_model": "six-slot external Geneva prototype",
+    "nominal_pin_slot_clearance_mm": 0.7,
+    "output": "one 60 degree step per drive revolution",
+    "slot_count": 6,
+    "slot_width_mm": 5.0,
+    "step_degrees": 60.0
+  },
+  "schema_version": 1,
+  "simulation": "moving-machines lane panel",
+  "source_records": [
+    "digital-lane.json",
+    "wish-taste-trace.json"
+  ]
+}

@@ -1,12 +1,12 @@
 {
-  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
-  "blueprint_sha256": "478a1032ab97d9b9e2ff35cbf72cf459dd6511450fe7acc646f3b72affc990e6",
+  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+  "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
   "check": "wish-taste-trace",
-  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
   "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
   "passed": true,
   "schema_version": 1,
-  "taste_sha256": "554e2a9e7e447ae09b6cfad917e76c23e3dae566681ab36d5b8c35d0e0abfa6c",
+  "taste_sha256": "ce2db44b057b79bc2e385daf1dec3024311a434aec39123514fdb0d5ef11cf50",
   "wish_features": [
     "continuous crank becomes six discrete orbital jumps",
     "comet pin is the visible cause of motion",

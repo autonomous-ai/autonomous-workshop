@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Comet Geneva](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -19,9 +19,9 @@ machine-readable checks.
 
 ## What remains true
 
-- Kinematic relationships are digitally checked only; cycle life, friction, wear, and pinch safety need the exact print.
-- No locked slicer receipt or physical repeated-cycle evidence exists.
+- AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver.
+- Customer observations begin as Reviews only after delivery.
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.

@@ -22,7 +22,7 @@ from inventor_workshop.jobs import (
     WaitingFor,
 )
 from inventor_workshop.make import Wish
-from inventor_workshop.models import PlaytestResult
+from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
@@ -130,10 +130,32 @@ class WorkshopJobFixture(unittest.TestCase):
             paths[role] = path.relative_to(context.workspace).as_posix()
         return paths
 
+    @staticmethod
+    def site_writer(context, sealed_root, sealed_manifest):
+        del sealed_root
+        return Receipt(
+            pack_sha256="f" * 64,
+            artifact_sha256=context.made.artifact_sha256,
+            design_id="design-pocket-duel",
+            slug="pocket-duel",
+            owner_id="owner-alice",
+            root_id="design-pocket-duel",
+            current_history_id="history-1",
+            published_history_id="history-1",
+            status="public",
+            project_url="https://www.autonomous.ai/factory/product/pocket-duel",
+            observed_at="2026-08-23T12:00:00+00:00",
+            listing_active=True,
+            listing_price_cents=3500,
+            listing_currency="USD",
+            listing_sku="PD-001",
+            details={"instructions_sha256": sealed_manifest.artifact_sha256},
+        )
+
     def generated_instructions(
         self, name: str = "instructions"
     ) -> ProductInstructions:
-        return DefaultInstructions(self.media_maker)(
+        return DefaultInstructions(self.media_maker, self.site_writer)(
             self.instructions_context(name)
         )
 
@@ -254,13 +276,53 @@ class InstructionsJobTest(WorkshopJobFixture):
         context = self.instructions_context("waiting-instructions")
         with self.assertRaises(WaitingFor) as raised:
             DefaultInstructions()(context)
-        self.assertEqual(len(raised.exception.needs), 1)
-        need = raised.exception.needs[0]
-        self.assertIsInstance(need, Need)
+        self.assertEqual(len(raised.exception.needs), 2)
+        self.assertTrue(all(isinstance(need, Need) for need in raised.exception.needs))
         self.assertEqual(
-            (need.job, need.capability), ("instructions", "product-images")
+            {need.capability for need in raised.exception.needs},
+            {"product-images", "site-page"},
         )
         self.assertFalse(context.workspace.exists())
+
+    def test_instructions_wait_when_images_exist_but_site_access_is_missing(self):
+        context = self.instructions_context("site-waiting-instructions")
+        with self.assertRaises(WaitingFor) as raised:
+            DefaultInstructions(self.media_maker)(context)
+        self.assertEqual(
+            [(need.job, need.capability) for need in raised.exception.needs],
+            [("instructions", "site-page")],
+        )
+        self.assertFalse(context.workspace.exists())
+
+    def test_instructions_reject_site_receipt_for_unverified_or_different_bytes(self):
+        def unverified(context, sealed_root, sealed_manifest):
+            del sealed_root
+            receipt = self.site_writer(context, None, sealed_manifest)
+            value = receipt.to_dict()
+            value["status"] = "draft"
+            value["published_history_id"] = None
+            value["listing_active"] = None
+            value["listing_price_cents"] = None
+            value["listing_currency"] = None
+            value["listing_sku"] = None
+            return Receipt.from_dict(value)
+
+        with self.assertRaisesRegex(ContractError, "authenticated public"):
+            DefaultInstructions(self.media_maker, unverified)(
+                self.instructions_context("unverified-site-instructions")
+            )
+
+        def wrong_page(context, sealed_root, sealed_manifest):
+            del sealed_root
+            receipt = self.site_writer(context, None, sealed_manifest)
+            value = receipt.to_dict()
+            value["details"] = {"instructions_sha256": "0" * 64}
+            return Receipt.from_dict(value)
+
+        with self.assertRaisesRegex(ContractError, "different page"):
+            DefaultInstructions(self.media_maker, wrong_page)(
+                self.instructions_context("wrong-site-instructions")
+            )
 
     def test_instructions_require_every_fixed_image_role(self):
         def incomplete(context):
@@ -269,7 +331,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             return media
 
         with self.assertRaisesRegex(ContractError, "box"):
-            DefaultInstructions(incomplete)(
+            DefaultInstructions(incomplete, self.site_writer)(
                 self.instructions_context("incomplete-instructions")
             )
 
@@ -280,7 +342,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             return {role: "one.png" for role in REQUIRED_PRODUCT_IMAGES}
 
         with self.assertRaisesRegex(ContractError, "distinct"):
-            DefaultInstructions(repeated)(
+            DefaultInstructions(repeated, self.site_writer)(
                 self.instructions_context("repeated-instructions")
             )
 
@@ -294,7 +356,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             return media
 
         with self.assertRaisesRegex(ContractError, "stay inside"):
-            DefaultInstructions(escaped)(
+            DefaultInstructions(escaped, self.site_writer)(
                 self.instructions_context("escaped-instructions")
             )
 
@@ -303,7 +365,7 @@ class InstructionsJobTest(WorkshopJobFixture):
         page = json.loads(
             (instructions.root / "product.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(page["status"], "private")
+        self.assertEqual(page["status"], "ready")
         self.assertEqual(
             page["summary"],
             "A tiny bluffing game with a satisfying reveal.\n\nBy Alice.",
@@ -322,6 +384,11 @@ class InstructionsJobTest(WorkshopJobFixture):
         self.assertNotIn("human", claim["claims"][0].casefold())
         self.assertEqual(instructions.claims, page["claims"])
         self.assertEqual(instructions.instructions_path, "INSTRUCTIONS.md")
+        self.assertTrue(instructions.site_receipt.is_verified_public)
+        self.assertEqual(
+            instructions.page_url,
+            "https://www.autonomous.ai/factory/product/pocket-duel",
+        )
         insert = (instructions.root / instructions.instructions_path).read_text(
             encoding="utf-8"
         )
@@ -350,7 +417,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             self.playtested,
             self.root / "moving-machine-instructions",
         )
-        instructions = DefaultInstructions(self.media_maker)(context)
+        instructions = DefaultInstructions(self.media_maker, self.site_writer)(context)
         page = json.loads(
             (instructions.root / "product.json").read_text(encoding="utf-8")
         )
@@ -384,7 +451,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             return self.media_maker(observed)
 
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
-            DefaultInstructions(media)(context)
+            DefaultInstructions(media, self.site_writer)(context)
         self.assertEqual(calls, [])
 
 

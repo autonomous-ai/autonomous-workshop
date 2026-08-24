@@ -1,5 +1,11 @@
 # Operating Alice
 
+> **Legacy laboratory runbook.** Human-play and prototype procedures below
+> describe preserved pre-Workshop operations. They are not part of canonical
+> Playtest. Current Playtest is AI-agent simulation only, physical production
+> and QA belong to Deliver, and post-delivery customer feedback is Reviews for
+> future Makes.
+
 Alice is a supervised queue worker, not an immortal chat session. Durable state
 lives in SQLite and immutable artifacts; the process may be restarted at any
 time. Task leases and fencing protect crash recovery, while the supported

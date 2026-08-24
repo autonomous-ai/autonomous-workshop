@@ -1,14 +1,19 @@
 {
   "audience": "grown-ups-14-plus",
   "components": [
+    "one Montauk base",
+    "one tide-alignment arm",
+    "one Sun marker",
+    "one Moon marker"
+  ],
+  "description": "Rotate the tide arm through Sun\u2013Earth\u2013Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast.\n\nBy Ivy.",
+  "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
     "per-part STEP and STL exports",
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
-  "description": "Rotate the tide arm through Sun\u2013Earth\u2013Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast.\n\nBy Ivy.",
-  "human_playtest": false,
   "inventor": {
     "id": "ivy",
     "name": "Ivy"
@@ -16,13 +21,14 @@
   "kind": "workshop-showcase-prototype",
   "lane": "holdable-science",
   "limitations": [
-    "The source relationship and geometry are auditable, but an independent science expert has not reviewed this exact object.",
-    "Detent feel, comprehension, and safety need physical and human playtest."
+    "The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.",
+    "Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews."
   ],
   "physical_prototype": false,
   "product_id": "montauk-tide-orrery",
-  "released": false,
+  "reviews_status": "begins-after-delivery",
   "schema_version": 1,
+  "site_status": "pending-instructions",
   "slug": "montauk-tide-orrery",
   "status": "digital-prototype",
   "summary": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.",

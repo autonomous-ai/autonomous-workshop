@@ -1,0 +1,98 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "917162c9855b497164cd24c7b6245aeb636bdbef005fc09cd55f74e255e4c03a",
+      "passed": true
+    },
+    "game-simulation": {
+      "claims": [
+        "1200 seeded AI games terminated across all sixteen player-style matchups."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "game-simulation.json",
+      "evidence_sha256": "ad8c2f55cba6f543cfb38428b6669bae899ddfbd3ab656af3c88d0567cd03f5e",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "e3fc25138eb9fbe69e3cfa6614afb5ecabe70e2e8918639aadfcd11f954e5038",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "82f1444dc90a826cadc6340aefb9544b02fe493b5844f953232018f9ca00ffdb",
+      "passed": true
+    }
+  },
+  "how_to_play": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written.",
+  "images": {
+    "box": "images/box.png",
+    "detail": "images/detail.png",
+    "hero": "images/hero.png",
+    "parts": "images/parts.png",
+    "play": "images/play.png"
+  },
+  "instructions_kind": "rulebook",
+  "lane": "invented-games",
+  "limitations": [
+    "AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight.",
+    "Customer reactions are collected after delivery as Reviews and can improve a future edition."
+  ],
+  "playtest_evidence_artifact_sha256": "fce9c76db73e8368f25bb9e89cbf1b1b2beaff9e67756d780c40c48a97a3c8e1",
+  "product_artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+  "schema_version": 1,
+  "status": "ready",
+  "story_blocks": [
+    {
+      "body": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
+      "hero_image": "play",
+      "lead": "How to play",
+      "pair_images": [
+        "detail",
+        "parts"
+      ]
+    },
+    {
+      "body": "The box contains one fixed core, one rotating outer orbit, ten signal stones, one rulebook. AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight. Customer reactions are collected after delivery as Reviews and can improve a future edition.",
+      "hero_image": "box",
+      "lead": "What arrives",
+      "pair_images": []
+    }
+  ],
+  "summary": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit.\n\nBy Leo.",
+  "title": "Counterorbit",
+  "use_case": {
+    "body": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit. It turns one person's request into this exact plaything instead of decorating a generic download.",
+    "image": "hero",
+    "label": "Made from your wish"
+  },
+  "what_arrives": [
+    "one fixed core",
+    "one rotating outer orbit",
+    "ten signal stones",
+    "one rulebook"
+  ],
+  "wish": "I wish for a tense two-player game where our five Workshop jobs orbit, interfere, and only align when a plan survives the other inventor."
+}

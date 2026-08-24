@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
@@ -10,7 +11,7 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 from .artifacts import ArtifactManifest, build_artifact_manifest
 from .errors import ArtifactError, ContractError
 from .make import Wish
-from .models import require_json_mapping, require_sha256, require_utc_timestamp
+from .models import Receipt, require_json_mapping, require_sha256, require_utc_timestamp
 from .playtest import Playtest
 from .taste import Taste
 from .toys import PLAYTHING_LANES, ToyBlueprint, WORKSHOP_JOBS
@@ -20,6 +21,8 @@ _SEVERITIES = frozenset(("note", "improve", "block"))
 _RUN_STATUSES = frozenset(("working", "waiting", "ready", "delivered", "stopped"))
 _CARRIERS = frozenset(("USPS", "UPS", "FedEx"))
 _DELIVERY_STATUSES = frozenset(("handed-off", "delivered"))
+_INSTRUCTIONS_MEDIA_ROLES = frozenset(("hero", "play", "detail", "parts", "box"))
+_INSTRUCTIONS_IMAGE_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp"))
 
 
 def _text(value: Any, label: str, maximum: int = 10_000) -> str:
@@ -74,7 +77,7 @@ class Need:
 
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
-            raise ContractError("need job must name one of the six Workshop jobs")
+            raise ContractError("need job must name one of the five Workshop jobs")
         _text(self.capability, "need capability", 200)
         _text(self.reason, "need reason")
         _text(self.instructions, "need instructions")
@@ -285,6 +288,7 @@ class InstructionsContext:
     made: Made
     playtested: Playtested
     workspace: Path
+    lease_token: Optional[str] = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -304,6 +308,13 @@ class InstructionsContext:
         root = Path(self.workspace)
         if not root.is_absolute():
             raise ContractError("InstructionsContext workspace must be absolute")
+        if self.lease_token is not None and (
+            not isinstance(self.lease_token, str)
+            or not self.lease_token
+            or len(self.lease_token) > 512
+            or any(ord(character) < 33 or ord(character) == 127 for character in self.lease_token)
+        ):
+            raise ContractError("InstructionsContext lease token is malformed")
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
@@ -316,11 +327,19 @@ class InstructionsContext:
 
 @dataclass(frozen=True)
 class ProductInstructions:
+    """One sealed box insert and site page, proven live for the exact Make.
+
+    Instructions is not complete merely because local copy and images exist.  The
+    site receipt binds the complete Instructions tree (page, paper, and media) to
+    an authenticated public readback for the exact product artifact.
+    """
+
     root: Path
     manifest: ArtifactManifest
     product_artifact_sha256: str
     instructions_path: str
     claims: Mapping[str, Any]
+    site_receipt: Receipt
 
     def __post_init__(self) -> None:
         root = Path(self.root)
@@ -349,12 +368,123 @@ class ProductInstructions:
             raise ContractError(
                 "ProductInstructions instructions_path must be INSTRUCTIONS.md"
             )
-        if not (root / "product.json").is_file():
+        page_path = root / "product.json"
+        if not page_path.is_file():
             raise ContractError("ProductInstructions requires an in-root product.json")
         claims = _mapping(self.claims, "ProductInstructions claims", nonempty=True)
         _fresh_manifest(root, self.manifest)
+        try:
+            page_value = json.loads(page_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ContractError(
+                "ProductInstructions product.json must be valid UTF-8 JSON"
+            ) from exc
+        page = _mapping(
+            page_value,
+            "ProductInstructions product.json",
+            nonempty=True,
+        )
+        if page.get("status") != "ready":
+            raise ContractError(
+                "ProductInstructions product.json must be sealed and ready for the site"
+            )
+        if page.get("product_artifact_sha256") != self.product_artifact_sha256:
+            raise ContractError(
+                "ProductInstructions product.json describes different product bytes"
+            )
+        page_claims = _mapping(
+            page.get("claims"),
+            "ProductInstructions product.json claims",
+            nonempty=True,
+        )
+        if page_claims != claims:
+            raise ContractError(
+                "ProductInstructions claims differ from the sealed product page"
+            )
+        images_value = page.get("images")
+        if (
+            not isinstance(images_value, Mapping)
+            or set(images_value) != _INSTRUCTIONS_MEDIA_ROLES
+        ):
+            raise ContractError(
+                "ProductInstructions product.json requires hero, play, detail, "
+                "parts, and box images"
+            )
+        image_paths = []
+        resolved_root = root.resolve(strict=True)
+        for role in sorted(_INSTRUCTIONS_MEDIA_ROLES):
+            relative_value = images_value[role]
+            relative = (
+                Path(relative_value)
+                if isinstance(relative_value, str)
+                else Path(".")
+            )
+            if (
+                not isinstance(relative_value, str)
+                or not relative_value
+                or relative.is_absolute()
+                or ".." in relative.parts
+                or "\\" in relative_value
+                or relative.suffix.casefold() not in _INSTRUCTIONS_IMAGE_SUFFIXES
+            ):
+                raise ContractError(
+                    "ProductInstructions %s image must be a safe relative image path"
+                    % role
+                )
+            try:
+                image_path = (root / relative).resolve(strict=True)
+                image_path.relative_to(resolved_root)
+            except (OSError, ValueError) as exc:
+                raise ContractError(
+                    "ProductInstructions %s image is missing or outside its root"
+                    % role
+                ) from exc
+            if not image_path.is_file():
+                raise ContractError(
+                    "ProductInstructions %s image must be a regular file" % role
+                )
+            image_paths.append(relative.as_posix())
+        if len(set(image_paths)) != len(_INSTRUCTIONS_MEDIA_ROLES):
+            raise ContractError(
+                "ProductInstructions requires a distinct file for every image role"
+            )
+        self._assert_site_receipt()
         object.__setattr__(self, "root", root.resolve(strict=True))
         object.__setattr__(self, "claims", claims)
+
+    def _assert_site_receipt(self) -> None:
+        """Require a public readback bound to both Make and Instructions bytes."""
+
+        if not isinstance(self.site_receipt, Receipt):
+            raise ContractError("ProductInstructions requires a site Receipt")
+        self.site_receipt.assert_artifact(self.product_artifact_sha256)
+        if not self.site_receipt.is_verified_public:
+            raise ContractError(
+                "ProductInstructions requires an authenticated public site Receipt"
+            )
+        page_url = self.site_receipt.project_url
+        try:
+            parsed_page_url = urllib.parse.urlsplit(page_url or "")
+        except ValueError as exc:
+            raise ContractError(
+                "ProductInstructions site Receipt requires a valid public page URL"
+            ) from exc
+        if (
+            parsed_page_url.scheme != "https"
+            or not parsed_page_url.hostname
+            or parsed_page_url.username is not None
+            or parsed_page_url.password is not None
+        ):
+            raise ContractError(
+                "ProductInstructions site Receipt requires an HTTPS public page URL"
+            )
+        if (
+            self.site_receipt.details.get("instructions_sha256")
+            != self.manifest.artifact_sha256
+        ):
+            raise ContractError(
+                "ProductInstructions site Receipt describes different page, paper, or media bytes"
+            )
 
     @classmethod
     def from_root(
@@ -363,6 +493,7 @@ class ProductInstructions:
         product_artifact_sha256: str,
         instructions_path: str,
         claims: Mapping[str, Any],
+        site_receipt: Receipt,
     ) -> "ProductInstructions":
         resolved = Path(root).resolve(strict=True)
         return cls(
@@ -371,16 +502,33 @@ class ProductInstructions:
             product_artifact_sha256,
             instructions_path,
             claims,
+            site_receipt,
         )
 
     @property
     def instructions_sha256(self) -> str:
         return self.manifest.artifact_sha256
 
+    @property
+    def page_url(self) -> str:
+        """The authenticated public product-page URL created by Instructions."""
+
+        # __post_init__ requires this value, so the cast-free assertion is safe
+        # while preserving Receipt's compatibility-friendly Optional field.
+        assert self.site_receipt.project_url is not None
+        return self.site_receipt.project_url
+
+    @property
+    def publication_receipt(self) -> Receipt:
+        """Compatibility spelling for callers that previously said publication."""
+
+        return self.site_receipt
+
     def assert_current(self) -> None:
         """Refuse to use output bytes changed after Instructions completed."""
 
         _fresh_manifest(self.root, self.manifest)
+        self._assert_site_receipt()
 
 
 @dataclass(frozen=True)
@@ -480,6 +628,69 @@ class Delivered:
 
 
 @dataclass(frozen=True)
+class CustomerReview:
+    """Human feedback received after the exact toy has been delivered.
+
+    Reviews are deliberately separate from Playtest. Playtest is an AI-agent
+    simulation inside the Make loop; a Review is a real customer's observation
+    of a shipped product. It can guide a later revision, but it never rewrites
+    the evidence or bytes of the product that customer received.
+    """
+
+    review_id: str
+    product_artifact_sha256: str
+    instructions_sha256: str
+    delivery_tracking_id: str
+    rating: int
+    feedback: str
+    observed_at: str
+
+    def __post_init__(self) -> None:
+        _text(self.review_id, "CustomerReview review_id", 256)
+        require_sha256(
+            self.product_artifact_sha256,
+            "CustomerReview product artifact sha256",
+        )
+        require_sha256(
+            self.instructions_sha256,
+            "CustomerReview instructions sha256",
+        )
+        _text(
+            self.delivery_tracking_id,
+            "CustomerReview delivery_tracking_id",
+            300,
+        )
+        if type(self.rating) is not int or not 1 <= self.rating <= 5:
+            raise ContractError("CustomerReview rating must be an integer from 1 to 5")
+        _text(self.feedback, "CustomerReview feedback", 20_000)
+        require_utc_timestamp(self.observed_at, "CustomerReview observed_at")
+
+    def assert_delivery(self, delivered: Delivered) -> None:
+        if not isinstance(delivered, Delivered):
+            raise ContractError("CustomerReview requires a Delivered result")
+        if (
+            self.product_artifact_sha256 != delivered.product_artifact_sha256
+            or self.instructions_sha256 != delivered.instructions_sha256
+            or self.delivery_tracking_id != delivered.tracking_id
+        ):
+            raise ContractError(
+                "CustomerReview belongs to a different product, Instructions, or delivery"
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "review_id": self.review_id,
+            "product_artifact_sha256": self.product_artifact_sha256,
+            "instructions_sha256": self.instructions_sha256,
+            "delivery_tracking_id": self.delivery_tracking_id,
+            "rating": self.rating,
+            "feedback": self.feedback,
+            "observed_at": self.observed_at,
+        }
+
+
+@dataclass(frozen=True)
 class WorkshopRun:
     product_id: str
     status: str
@@ -490,6 +701,7 @@ class WorkshopRun:
     needs: Sequence[Need] = field(default_factory=tuple)
     delivery: Optional[Delivered] = None
     playtest_rounds: int = 1
+    page_url: Optional[str] = None
 
     def __post_init__(self) -> None:
         _text(self.product_id, "WorkshopRun product_id", 256)
@@ -513,6 +725,13 @@ class WorkshopRun:
             require_sha256(
                 self.instructions_sha256, "WorkshopRun instructions sha256"
             )
+        if self.page_url is not None:
+            try:
+                parsed_page_url = urllib.parse.urlsplit(self.page_url)
+            except ValueError as exc:
+                raise ContractError("WorkshopRun page_url must be a valid HTTPS URL") from exc
+            if parsed_page_url.scheme != "https" or not parsed_page_url.hostname:
+                raise ContractError("WorkshopRun page_url must be a valid HTTPS URL")
         needs = tuple(self.needs)
         if not all(isinstance(item, Need) for item in needs):
             raise ContractError("WorkshopRun needs must use Need records")
@@ -527,12 +746,14 @@ class WorkshopRun:
             "playtest_rounds": self.playtest_rounds,
             "artifact_sha256": self.artifact_sha256,
             "instructions_sha256": self.instructions_sha256,
+            "page_url": self.page_url,
             "needs": [item.to_dict() for item in self.needs],
             "delivery": self.delivery.to_dict() if self.delivery is not None else None,
         }
 
 
 __all__ = [
+    "CustomerReview",
     "DeliverContext",
     "Delivered",
     "InstructionsContext",

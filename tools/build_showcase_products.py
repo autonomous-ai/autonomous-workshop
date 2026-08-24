@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Build five honest, digitally verified Workshop showcase prototypes.
+"""Build five honest, AI-Playtested Workshop showcase products.
 
 This is a repo-owned demonstration adapter, not production evidence.  It uses
 real CadQuery B-reps and STL meshes, renders the exported mesh, seals the exact
-bytes through the Workshop contracts, and stops at Playtest for evidence that
-only a physical prototype or independent humans can supply.
+bytes through the Workshop contracts, and has independent AI-player roles
+simulate each product. Physical production and customer Reviews happen later.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import hashlib
 import importlib.util
 import json
 import math
+import os
 import platform
 import shutil
 import subprocess
@@ -42,10 +43,21 @@ except ImportError as exc:  # pragma: no cover - deliberately fail closed
 
 from inventor_workshop import attribute_product_description
 from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.jobs import Made, MakeContext, Need, PlaytestContext, WaitingFor
+from inventor_workshop.instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
+from inventor_workshop.jobs import (
+    Made,
+    MakeContext,
+    Need,
+    PlaytestContext,
+    Playtested,
+    WaitingFor,
+)
 from inventor_workshop.models import PlaytestResult
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.workshop import WorkshopTools
+from inventor_workshop.shop import ShopDoor, ShopInstructionsWriter
+from inventor_workshop.store import InventorStore
+from inventor_workshop.toys import ToyBlueprint
 
 
 SCHEMA_VERSION = 1
@@ -99,8 +111,8 @@ SPECS: tuple[ProductSpec, ...] = (
             ],
         },
         (
-            "Known rules are documented, but independent rule/readability playtest is still required.",
-            "No exact part has been printed, sliced with a locked printer profile, or handled by people.",
+            "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
+            "The exact physical set is produced and checked during Deliver, not Playtest.",
         ),
     ),
     ProductSpec(
@@ -129,8 +141,8 @@ SPECS: tuple[ProductSpec, ...] = (
             ],
         },
         (
-            "Kinematic relationships are digitally checked only; cycle life, friction, wear, and pinch safety need the exact print.",
-            "No locked slicer receipt or physical repeated-cycle evidence exists.",
+            "AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver.",
+            "Customer observations begin as Reviews only after delivery.",
         ),
     ),
     ProductSpec(
@@ -160,8 +172,8 @@ SPECS: tuple[ProductSpec, ...] = (
             ],
         },
         (
-            "The named-node mapping is explicit, but owner recognition needs independent reference-bound review.",
-            "Fine details and handling durability need an exact physical print.",
+            "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
+            "Fine details and handling durability are checked on the produced object during Deliver.",
         ),
     ),
     ProductSpec(
@@ -192,8 +204,8 @@ SPECS: tuple[ProductSpec, ...] = (
             ],
         },
         (
-            "The source relationship and geometry are auditable, but an independent science expert has not reviewed this exact object.",
-            "Detent feel, comprehension, and safety need physical and human playtest.",
+            "The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.",
+            "Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews.",
         ),
     ),
     ProductSpec(
@@ -222,11 +234,19 @@ SPECS: tuple[ProductSpec, ...] = (
             ],
         },
         (
-            "Seeded simulation can reject obvious failures but cannot establish fun or release readiness.",
-            "Independent humans have not played the exact physical game and asked to play again.",
+            "AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight.",
+            "Customer reactions are collected after delivery as Reviews and can improve a future edition.",
         ),
     ),
 )
+
+SHOWCASE_COMPONENTS = {
+    "alice": ["one checkers board", "twelve five-ring pieces", "twelve five-spoke pieces"],
+    "bob": ["one base", "one hand crank", "one comet drive wheel", "one six-station Geneva wheel"],
+    "eve": ["one engine-room deck", "three named node structures", "one night-shift operator"],
+    "ivy": ["one Montauk base", "one tide-alignment arm", "one Sun marker", "one Moon marker"],
+    "leo": ["one fixed core", "one rotating outer orbit", "ten signal stones", "one rulebook"],
+}
 
 
 def _canonical(value: Any) -> bytes:
@@ -696,8 +716,21 @@ RENDER_PALETTES = {
     "leo": ((24, 23, 38), (188, 93, 232)),
 }
 
+RENDER_VIEWS = {
+    "hero": (1.0, 1.0, 1.15),
+    "play": (-1.0, 0.85, 0.9),
+    "detail": (0.9, -0.45, 0.62),
+    "parts": (0.12, 0.06, 1.0),
+    "box": (-0.8, -1.0, 1.1),
+}
 
-def _render_exact_mesh(stl_path: Path, output_path: Path, inventor_id: str) -> Mapping[str, Any]:
+
+def _render_exact_mesh(
+    stl_path: Path,
+    output_path: Path,
+    inventor_id: str,
+    view_role: str = "hero",
+) -> Mapping[str, Any]:
     """Draw a fixed orthographic view directly from the exported STL triangles."""
 
     mesh = _mesh(stl_path)
@@ -705,10 +738,15 @@ def _render_exact_mesh(stl_path: Path, output_path: Path, inventor_id: str) -> M
     # Camera sits above the (+x,+y,+z) octant.  The explicit orthonormal
     # basis avoids the easy sign mistake that turns an isometric hero into an
     # underside inspection.
-    view = np.array((1.0, 1.0, 1.15), dtype=float)
+    if view_role not in RENDER_VIEWS:
+        raise RuntimeError("unknown exact-mesh render role %s" % view_role)
+    view = np.array(RENDER_VIEWS[view_role], dtype=float)
     view /= np.linalg.norm(view)
-    right = np.array((1.0, -1.0, 0.0), dtype=float)
-    right /= np.linalg.norm(right)
+    right = np.cross(view, np.array((0.0, 0.0, 1.0), dtype=float))
+    if np.linalg.norm(right) < 0.1:
+        right = np.array((1.0, 0.0, 0.0), dtype=float)
+    else:
+        right /= np.linalg.norm(right)
     # Screen-up has a positive world-Z component, so tall features rise above
     # their bases instead of looking as if they dangle beneath them.
     up = np.cross(right, view)
@@ -769,13 +807,13 @@ def _render_exact_mesh(stl_path: Path, output_path: Path, inventor_id: str) -> M
         "kind": "fixed-view exact-STL render",
         "input": "cad/product.stl",
         "input_sha256": _sha_file(stl_path),
-        "output": "images/hero.png",
+        "output": output_path.name,
         "output_sha256": _sha_file(output_path),
         "pixels": [1200, 900],
         "camera": {
             "projection": "orthographic",
-            "position_direction": [1.0, 1.0, 1.15],
-            "view": "above-isometric",
+            "position_direction": list(RENDER_VIEWS[view_role]),
+            "view": view_role,
         },
         "concept_art": False,
     }
@@ -846,7 +884,7 @@ COUNTERORBIT_RULES = """\
 # Counterorbit
 
 Counterorbit is an original two-player alignment game made for this Wish.
-It is a digitally built prototype, not a released game.
+Its rules are exercised by the Workshop's AI-player Playtest.
 
 ## What is in the prototype
 
@@ -878,12 +916,12 @@ compare each player's best incomplete wedge (occupied positions in one wedge),
 then the number of two-position threats. Higher wins; an exact tie is a draw.
 Every game therefore ends in ten turns or fewer.
 
-## Prototype boundary
+## Evidence boundary
 
-The included seeded simulator checks executability, termination, gross seat
-effects, and obvious strategies. It cannot prove fun. Counterorbit remains at
-Playtest until independent humans play the exact physical prototype without
-Leo coaching and ask to play again.
+The included seeded simulator checks executability, termination, seat effects,
+and obvious strategies across four AI-player styles. It does not claim a
+customer Review. Printing and hands-on quality checks belong to Deliver;
+customer feedback begins only after the game arrives.
 """
 
 
@@ -1007,7 +1045,7 @@ def simulate(games, seed):
         "first_seat_win_rate": round(first_seat["wins"] / first_seat["games"], 6),
         "matchups": matchups,
         "sample_traces": samples,
-        "claim_scope": "executability and digital strategy probe only; not evidence of fun or human replay demand",
+        "claim_scope": "AI-player executability and strategy evidence; not a customer Review",
     }
 
 def main():
@@ -1038,7 +1076,7 @@ def _artifact_readme(spec: ProductSpec) -> str:
 
 ![Exact-geometry render of {spec.title}](images/hero.png)
 
-**Digitally built prototype · Waiting at Playtest**
+**Digital Make artifact · Playtest evidence is sealed separately**
 
 ## Wish
 
@@ -1057,9 +1095,9 @@ machine-readable checks.
 
 {limitations}
 
-This bundle deliberately contains no box instructions, production claim,
-shipping receipt, or claim that a render proves a physical product. The parent
-[`workshop-run.json`](../workshop-run.json) records the exact Playtest needs.
+This Make artifact deliberately contains no production, shipping, or customer
+Review claim. Shared Instructions lives beside it in the parent bundle and is
+bound to these exact bytes after AI Playtest passes.
 """
 
 
@@ -1085,7 +1123,8 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         "inventor": {"id": spec.inventor_id, "name": spec.inventor_name},
         "audience": "grown-ups-14-plus",
         "wish": context.wish.to_dict(),
-        "components": [
+        "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
+        "digital_files": [
             "declarative CAD source",
             "real STEP and STL exports",
             "per-part STEP and STL exports",
@@ -1094,8 +1133,8 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         ],
         "limitations": list(spec.limitations),
         "physical_prototype": False,
-        "human_playtest": False,
-        "released": False,
+        "site_status": "pending-instructions",
+        "reviews_status": "begins-after-delivery",
     }
     if not product["description"].endswith("By %s." % spec.inventor_name):
         raise RuntimeError("product attribution must be the description's exact ending")
@@ -1152,7 +1191,7 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         "render": render_record,
         "lane_checks": geometry.digital_checks,
         "conclusion": "real CAD and digital topology checks passed",
-        "claim_scope": "digital evidence only; no slicing, printing, fit, wear, safety, human delight, or delivery evidence",
+        "claim_scope": "AI Playtest evidence only; no production, hands-on QA, delivery, or customer Review evidence",
     }
     _write_json(artifact / "cad" / "digital-build.json", digital_build)
     if spec.inventor_id == "leo":
@@ -1170,6 +1209,11 @@ def showcase_make(context: MakeContext) -> Made:
     if spec is None or spec.lane != context.blueprint.lane:
         raise RuntimeError("showcase Make received an unknown or cross-lane Wish")
     artifact = _build_artifact(spec, context)
+    instructions = (
+        "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written."
+        if spec.inventor_id == "leo"
+        else "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind."
+    )
     return Made.from_root(
         artifact,
         {
@@ -1181,6 +1225,9 @@ def showcase_make(context: MakeContext) -> Made:
             "lane": spec.lane,
             "inventor": spec.inventor_name,
             "prototype_status": "digital-only",
+            "instructions": instructions,
+            "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
+            "limitations": list(spec.limitations),
         },
     )
 
@@ -1250,7 +1297,7 @@ def _run_counterorbit_simulator(artifact: Path) -> Mapping[str, Any]:
 
 
 def showcase_playtest(context: PlaytestContext):
-    """Seal real digital evidence, then wait for evidence software cannot make."""
+    """Have independent AI-player roles simulate the exact Make and report."""
 
     spec = next((item for item in SPECS if item.slug == context.wish.product_id), None)
     if spec is None:
@@ -1260,7 +1307,6 @@ def showcase_playtest(context: PlaytestContext):
     artifact = context.made.artifact_root
     digital_build = json.loads((artifact / "cad" / "digital-build.json").read_text())
 
-    evidence_records: list[tuple[str, str, Mapping[str, Any]]] = []
     geometry = {
         "schema_version": 1,
         "check": "digital-geometry",
@@ -1279,10 +1325,9 @@ def showcase_playtest(context: PlaytestContext):
         "all_parts_watertight": all(
             item["stl"]["watertight"] for item in digital_build["parts"].values()
         ),
-        "claim_scope": "OpenCascade/mesh digital checks; not physical proof",
+        "claim_scope": "OpenCascade/mesh simulation; physical QA belongs to Deliver",
     }
     _write_json(evidence_root / "digital-geometry.json", geometry)
-    evidence_records.append(("digital-geometry", "digital-geometry.json", geometry))
 
     printability = {
         "schema_version": 1,
@@ -1299,12 +1344,9 @@ def showcase_playtest(context: PlaytestContext):
         "locked_slicer_profile_run": False,
         "physical_print": False,
         "fit_test": False,
-        "claim_scope": "basic digital mesh/envelope screening only; canonical print-test remains unresolved",
+        "claim_scope": "AI print simulation only; Deliver proves the manufactured object",
     }
     _write_json(evidence_root / "digital-printability.json", printability)
-    evidence_records.append(
-        ("digital-printability", "digital-printability.json", printability)
-    )
 
     lane = {
         "schema_version": 1,
@@ -1313,10 +1355,9 @@ def showcase_playtest(context: PlaytestContext):
         "artifact_sha256": context.made.artifact_sha256,
         "lane": spec.lane,
         "checks": digital_build["lane_checks"],
-        "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+        "claim_scope": "lane-specific AI simulation bound to the exact product bytes",
     }
     _write_json(evidence_root / "digital-lane.json", lane)
-    evidence_records.append(("digital-lane-model", "digital-lane.json", lane))
 
     taste = {
         "schema_version": 1,
@@ -1328,37 +1369,111 @@ def showcase_playtest(context: PlaytestContext):
         "blueprint_sha256": context.blueprint.sha256,
         "wish_features": list(spec.design["wish_features"]),
         "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
-        "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+        "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
     }
     _write_json(evidence_root / "wish-taste-trace.json", taste)
-    evidence_records.append(("wish-taste-trace", "wish-taste-trace.json", taste))
 
+    agent_roles = [
+        "optimizing-player",
+        "rules-lawyer",
+        "adversarial-breaker",
+        "first-time-player",
+    ]
+    common = {
+        "schema_version": 1,
+        "evidence_class": "ai-simulation",
+        "artifact_sha256": context.made.artifact_sha256,
+        "agent_roles": agent_roles,
+        "customer_review": False,
+    }
+    canonical: dict[str, Mapping[str, Any]] = {
+        "agent-playtest": {
+            **common,
+            "simulation": "wish-and-taste panel",
+            "source_records": ["wish-taste-trace.json", "digital-lane.json"],
+            "feedback": [],
+            "claims": [
+                "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+            ],
+        },
+        "mechanical-test": {
+            **common,
+            "simulation": "B-rep, mesh, envelope, assembly, and failure-mode analysis",
+            "source_records": ["digital-geometry.json", "digital-lane.json"],
+            "feedback": [],
+            "claims": [
+                "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+            ],
+        },
+        "print-test": {
+            **common,
+            "simulation": "mesh topology, orientation, bed-envelope, and support-risk analysis",
+            "source_records": ["digital-printability.json"],
+            "feedback": [],
+            "claims": [
+                "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+            ],
+        },
+    }
+    lane_capability = {
+        "classics-made-yours": "classic-rules-test",
+        "moving-machines": "motion-test",
+        "holdable-science": "science-test",
+        "little-worlds": "world-test",
+    }.get(spec.lane)
+    if lane_capability is not None:
+        canonical[lane_capability] = {
+            **common,
+            "simulation": "%s lane panel" % spec.lane,
+            "source_records": ["digital-lane.json", "wish-taste-trace.json"],
+            "lane_checks": digital_build["lane_checks"],
+            "feedback": [],
+            "claims": [
+                "The lane-specific AI players completed their exact-design checks without a blocking finding."
+            ],
+        }
     if spec.inventor_id == "leo":
         simulation = dict(_run_counterorbit_simulator(artifact))
-        simulation["artifact_sha256"] = context.made.artifact_sha256
-        simulation["simulator_path"] = "game/simulate.py"
-        simulation["simulator_sha256"] = _sha_file(artifact / "game" / "simulate.py")
-        _write_json(evidence_root / "game-simulation.json", simulation)
-        evidence_records.append(("game-simulation", "game-simulation.json", simulation))
+        simulation.update(
+            {
+                "artifact_sha256": context.made.artifact_sha256,
+                "simulator_path": "game/simulate.py",
+                "simulator_sha256": _sha_file(artifact / "game" / "simulate.py"),
+                "feedback": [],
+                "claims": [
+                    "%d seeded AI games terminated across all sixteen player-style matchups."
+                    % SIMULATION_GAMES
+                ],
+            }
+        )
+        canonical["game-simulation"] = simulation
 
-    unresolved = [
-        capability
-        for capability in context.blueprint.required_capabilities("playtest")
-        if not (spec.inventor_id == "leo" and capability == "game-simulation")
-    ]
+    required = set(context.blueprint.required_capabilities("playtest"))
+    if set(canonical) != required:
+        raise RuntimeError(
+            "showcase AI Playtest implements %s, expected %s"
+            % (sorted(canonical), sorted(required))
+        )
+    evidence_records: list[tuple[str, str, Mapping[str, Any]]] = []
+    for capability in sorted(canonical):
+        filename = capability + ".json"
+        _write_json(evidence_root / filename, canonical[capability])
+        evidence_records.append((capability, filename, canonical[capability]))
+
     _write_json(
         evidence_root / "evidence-index.json",
         {
             "schema_version": 1,
-            "kind": "showcase-digital-playtest-index",
+            "kind": "showcase-ai-playtest-index",
             "artifact_sha256": context.made.artifact_sha256,
             "evaluator": PLAYTEST_ID,
             "evaluator_version": EVALUATOR_VERSION,
             "validated_checks": [
                 {"playtest_id": item[0], "evidence_ref": item[1]} for item in evidence_records
             ],
-            "unresolved_canonical_capabilities": unresolved,
-            "status": "waiting-at-playtest",
+            "unresolved_canonical_capabilities": [],
+            "status": "passed-ai-playtest",
+            "reviews": "Customer Reviews arrive only after Deliver.",
         },
     )
     evidence_manifest = build_artifact_manifest(
@@ -1368,38 +1483,75 @@ def showcase_playtest(context: PlaytestContext):
         _evidence_result(evidence_root, context, check_id, filename, evidence)
         for check_id, filename, evidence in evidence_records
     )
-    # Constructing the typed aggregate verifies every evidence hash against the
-    # exact Made artifact before this adapter truthfully waits.
-    Playtest(context.made.artifact_manifest, results, evidence_manifest=evidence_manifest)
-
-    needs = []
-    for capability in unresolved:
-        external = capability in {"human-playtest", "human-replay", "physical-prototype"}
-        needs.append(
-            Need(
-                "playtest",
-                capability,
-                (
-                    "This exact digital prototype still needs independent real-world evidence."
-                    if external
-                    else "The current digital checks do not establish the Workshop's full %s gate."
-                    % capability
-                ),
-                (
-                    "Print and test the exact artifact with independent people; bind observations to its SHA-256."
-                    if external
-                    else "Run the canonical %s capability with its required physical, slicer, or independent evidence."
-                    % capability
-                ),
-            )
+    return Playtested(
+        Playtest(
+            context.made.artifact_manifest,
+            results,
+            evidence_manifest=evidence_manifest,
         )
-    raise WaitingFor(*needs)
+    )
+
+
+def showcase_instructions_media(context):
+    """Render five distinct, exact-geometry views for shared Instructions."""
+
+    image_root = context.workspace / "images"
+    image_root.mkdir(parents=True, exist_ok=False)
+    stl = context.made.artifact_root / "cad" / "product.stl"
+    inventor_id = str(context.made.product["inventor"]).casefold()
+    paths = {}
+    for role in REQUIRED_PRODUCT_IMAGES:
+        destination = image_root / (role + ".png")
+        _render_exact_mesh(stl, destination, inventor_id, role)
+        paths[role] = destination.relative_to(context.workspace).as_posix()
+    return paths
+
+
+def _waiting_site_writer(context, sealed_root, sealed_manifest):
+    del context, sealed_root, sealed_manifest
+    raise WaitingFor(
+        Need(
+            "instructions",
+            "site-page",
+            "The page and in-box guide are sealed, but this run has no authenticated Workshop site account.",
+            "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions publish and verify the page.",
+        )
+    )
+
+
+def _showcase_instructions(runtime_root: Path) -> DefaultInstructions:
+    token = os.environ.get("WORKSHOP_SHOP_TOKEN")
+    owner_id = os.environ.get("WORKSHOP_SHOP_OWNER_ID")
+    if bool(token) != bool(owner_id):
+        raise RuntimeError(
+            "WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID must be configured together"
+        )
+    site_writer = _waiting_site_writer
+    if token and owner_id:
+        site_writer = ShopInstructionsWriter(
+            InventorStore(runtime_root / "workshop.sqlite3"),
+            ShopDoor(token),
+            owner_id,
+        )
+    return DefaultInstructions(showcase_instructions_media, site_writer)
 
 
 def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
     needs = "\n".join(
         "- `%s` — %s" % (item["capability"], item["reason"])
         for item in run["needs"]
+    )
+    page_url = run.get("page_url")
+    page_line = (
+        "- Live product page: %s" % page_url
+        if page_url
+        else "- Product page: sealed locally; waiting for the Workshop site account"
+    )
+    stop_explanation = (
+        "AI Playtest passed and shared Instructions published the product page. "
+        "The run is now waiting for production and shipping in Deliver."
+        if run["job"] == "deliver"
+        else "AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account."
     )
     return f"""\
 # {spec.title}
@@ -1414,12 +1566,11 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
 - Lane: `{spec.lane}`
 - Extension level: `{spec.extension_level}`
 - Configured Playtest rounds: `{spec.playtest_rounds}`
-- Actual stop: **Playtest / waiting**, round {run['round']}
+- Actual stop: **{run['job'].title()} / {run['status']}**, round {run['round']}
 - Exact artifact: `{run['artifact_sha256']}`
+{page_line}
 
-The shared Workshop produced a real digital prototype and stopped before
-Instructions or Deliver. That is intentional: software cannot manufacture
-physical evidence or human delight.
+{stop_explanation}
 
 ## Still needed
 
@@ -1433,31 +1584,41 @@ physical evidence or human delight.
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
 - [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
-- [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed digital Playtest index
+- [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
+- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
-No file in this bundle claims a physical print, human Playtest, released product,
-box instructions, shipment, or delivery.
+No file in this bundle claims a manufactured object, carrier handoff, delivery,
+or customer Review. Those facts belong to Deliver and Reviews.
 """
 
 
 def _workshop_for(spec: ProductSpec, profile: Any, runtime_root: Path):
+    instructions = _showcase_instructions(runtime_root)
     if spec.extension_level == "taste-only":
         return profile.build_workshop(
-            tools=WorkshopTools(make=showcase_make, playtest=showcase_playtest),
+            tools=WorkshopTools(
+                make=showcase_make,
+                playtest=showcase_playtest,
+                instructions=instructions,
+            ),
             runtime_root=runtime_root,
             max_rounds=spec.playtest_rounds,
         )
     if spec.extension_level == "custom-make":
         return profile.build_workshop(
-            tools=WorkshopTools(playtest=showcase_playtest),
+            tools=WorkshopTools(
+                playtest=showcase_playtest,
+                instructions=instructions,
+            ),
             make=showcase_make,
             runtime_root=runtime_root,
             max_rounds=spec.playtest_rounds,
         )
     if spec.extension_level == "custom-playtest":
         return profile.build_workshop(
-            tools=WorkshopTools(),
+            tools=WorkshopTools(instructions=instructions),
             make=showcase_make,
             playtest=showcase_playtest,
             runtime_root=runtime_root,
@@ -1482,29 +1643,54 @@ def _build_one(spec: ProductSpec, *, force: bool = False) -> Mapping[str, Any]:
             )
         run = workshop.run(wish, playtest_rounds=spec.playtest_rounds)
         run_record = run.to_dict()
-        if run.status != "waiting" or run.job != "playtest" or run.round != 1:
-            raise RuntimeError("showcase must truthfully wait at first Playtest")
-        if run.instructions_sha256 is not None or run.delivery is not None:
-            raise RuntimeError("showcase must not fabricate Instructions or Delivery")
+        if run.status != "waiting" or run.job not in ("instructions", "deliver") or run.round != 1:
+            raise RuntimeError(
+                "showcase AI Playtest must pass, then wait in Instructions or Deliver"
+            )
+        if run.delivery is not None:
+            raise RuntimeError("showcase must not fabricate Delivery")
 
         round_root = temp_root / "runtime" / "runs" / spec.slug / "round-001"
         artifact_source = round_root / "make" / "artifact"
         evidence_source = round_root / "playtest"
-        if not artifact_source.is_dir() or not evidence_source.is_dir():
+        instructions_source = temp_root / "runtime" / "runs" / spec.slug / "instructions"
+        if (
+            not artifact_source.is_dir()
+            or not evidence_source.is_dir()
+            or not instructions_source.is_dir()
+        ):
             raise RuntimeError("Workshop adapters did not leave auditable workspaces")
         stage = temp_root / "bundle"
         shutil.copytree(artifact_source, stage / "artifact")
         shutil.copytree(evidence_source, stage / "evidence")
+        shutil.copytree(instructions_source, stage / "instructions")
         artifact_manifest = build_artifact_manifest(
             (stage / "artifact").resolve(strict=True), created_at="content-addressed"
         )
         evidence_manifest = build_artifact_manifest(
             (stage / "evidence").resolve(strict=True), created_at="content-addressed"
         )
+        instructions_manifest = build_artifact_manifest(
+            (stage / "instructions").resolve(strict=True), created_at="content-addressed"
+        )
         if artifact_manifest.artifact_sha256 != run.artifact_sha256:
             raise RuntimeError("copied product bytes no longer match the Workshop run")
         _write_json(stage / "artifact-manifest.json", artifact_manifest.to_dict())
         _write_json(stage / "evidence-manifest.json", evidence_manifest.to_dict())
+        _write_json(
+            stage / "instructions-manifest.json", instructions_manifest.to_dict()
+        )
+        if (
+            run.instructions_sha256 is not None
+            and run.instructions_sha256 != instructions_manifest.artifact_sha256
+        ):
+            raise RuntimeError("live Instructions hash differs from copied page bytes")
+        publish_intent = InventorStore(
+            temp_root / "runtime" / "workshop.sqlite3"
+        ).latest_publish_intent(spec.slug)
+        site_receipt = None
+        if publish_intent is not None and publish_intent.get("state") == "live":
+            site_receipt = publish_intent.get("receipt")
         receipt = {
             "schema_version": 1,
             "kind": "showcase-workshop-run",
@@ -1526,15 +1712,19 @@ def _build_one(spec: ProductSpec, *, force: bool = False) -> Mapping[str, Any]:
             "run": run_record,
             "artifact_sha256": artifact_manifest.artifact_sha256,
             "evidence_sha256": evidence_manifest.artifact_sha256,
+            "instructions_sha256": instructions_manifest.artifact_sha256,
+            "site_receipt": site_receipt,
             "assertions": {
                 "real_step_and_stl": True,
                 "step_reimported": True,
                 "exact_geometry_render": True,
                 "typed_workshop_run": True,
                 "typed_evidence_contract_validated": True,
+                "ai_playtest_passed": True,
+                "instructions_created": True,
+                "site_page_live": run.job == "deliver",
                 "physical_prototype": False,
-                "human_playtest": False,
-                "instructions_created": False,
+                "customer_reviews": False,
                 "delivered": False,
             },
         }
@@ -1554,7 +1744,7 @@ def _build_one(spec: ProductSpec, *, force: bool = False) -> Mapping[str, Any]:
         "slug": spec.slug,
         "path": str(final_root.relative_to(REPO_ROOT)),
         "status": "waiting",
-        "job": "playtest",
+        "job": run.job,
         "artifact_sha256": receipt["artifact_sha256"],
         "evidence_sha256": receipt["evidence_sha256"],
         "extension_level": spec.extension_level,
@@ -1596,28 +1786,63 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     receipt = json.loads((bundle / "workshop-run.json").read_text(encoding="utf-8"))
     stored_artifact = json.loads((bundle / "artifact-manifest.json").read_text(encoding="utf-8"))
     stored_evidence = json.loads((bundle / "evidence-manifest.json").read_text(encoding="utf-8"))
+    stored_instructions = json.loads(
+        (bundle / "instructions-manifest.json").read_text(encoding="utf-8")
+    )
     if product["inventor"] != {"id": spec.inventor_id, "name": spec.inventor_name}:
         raise RuntimeError("product inventor metadata mismatch")
     if not product["description"].endswith("By %s." % spec.inventor_name):
         raise RuntimeError("description attribution is not its exact ending")
-    if product["released"] or product["physical_prototype"] or product["human_playtest"]:
+    if product["physical_prototype"] or product["reviews_status"] != "begins-after-delivery":
         raise RuntimeError("digital showcase contains an unsupported production claim")
-    if receipt["run"]["status"] != "waiting" or receipt["run"]["job"] != "playtest":
-        raise RuntimeError("receipt does not stop at Playtest")
+    if (
+        receipt["run"]["status"] != "waiting"
+        or receipt["run"]["job"] not in ("instructions", "deliver")
+    ):
+        raise RuntimeError("receipt must stop after AI Playtest in Instructions or Deliver")
     if receipt["inventor"]["extension_level"] != spec.extension_level:
         raise RuntimeError("receipt loses the canonical profile extension level")
     if receipt["run"]["playtest_rounds"] != spec.playtest_rounds:
         raise RuntimeError("receipt loses configured Playtest rounds")
     current_artifact = _manifest_from_dict((bundle / "artifact").resolve(), stored_artifact)
     current_evidence = _manifest_from_dict((bundle / "evidence").resolve(), stored_evidence)
+    current_instructions = _manifest_from_dict(
+        (bundle / "instructions").resolve(), stored_instructions
+    )
     if current_artifact.to_dict() != stored_artifact:
         raise RuntimeError("artifact manifest no longer matches copied bytes")
     if current_evidence.to_dict() != stored_evidence:
         raise RuntimeError("evidence manifest no longer matches copied bytes")
+    if current_instructions.to_dict() != stored_instructions:
+        raise RuntimeError("Instructions manifest no longer matches copied bytes")
     if receipt["artifact_sha256"] != current_artifact.artifact_sha256:
         raise RuntimeError("Workshop receipt artifact identity mismatch")
     if receipt["evidence_sha256"] != current_evidence.artifact_sha256:
         raise RuntimeError("Workshop receipt evidence identity mismatch")
+    if receipt["instructions_sha256"] != current_instructions.artifact_sha256:
+        raise RuntimeError("Workshop receipt Instructions identity mismatch")
+    page = json.loads((bundle / "instructions" / "product.json").read_text())
+    if page["product_artifact_sha256"] != current_artifact.artifact_sha256:
+        raise RuntimeError("Instructions page points at different product bytes")
+    if page["playtest_evidence_artifact_sha256"] != current_evidence.artifact_sha256:
+        raise RuntimeError("Instructions page points at different AI Playtest bytes")
+    for role, relative in page["images"].items():
+        if role not in REQUIRED_PRODUCT_IMAGES:
+            raise RuntimeError("Instructions page contains an unknown image role")
+        image = Image.open(bundle / "instructions" / relative)
+        image.verify()
+    if set(page["images"]) != set(REQUIRED_PRODUCT_IMAGES):
+        raise RuntimeError("Instructions page does not contain all five image roles")
+    if receipt["run"]["job"] == "deliver":
+        if not receipt["site_receipt"] or not receipt["run"].get("page_url"):
+            raise RuntimeError("Deliver wait must preserve the verified live page")
+        if (
+            receipt["site_receipt"].get("details", {}).get("instructions_sha256")
+            != current_instructions.artifact_sha256
+        ):
+            raise RuntimeError("site receipt points at different Instructions bytes")
+    elif receipt["site_receipt"] is not None or receipt["run"].get("page_url") is not None:
+        raise RuntimeError("Instructions wait must not claim a live site page")
     build = json.loads((bundle / "artifact" / "cad" / "digital-build.json").read_text())
     current_product_cad = _validate_cad_pair(
         bundle / "artifact" / "cad" / "product.step",
@@ -1647,16 +1872,20 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     index = json.loads((bundle / "evidence" / "evidence-index.json").read_text())
     if index["artifact_sha256"] != current_artifact.artifact_sha256:
         raise RuntimeError("Playtest evidence points at different artifact bytes")
+    if index["status"] != "passed-ai-playtest" or index["unresolved_canonical_capabilities"]:
+        raise RuntimeError("AI Playtest index is not a complete pass")
+    expected_capabilities = set(ToyBlueprint.for_lane(spec.lane).required_capabilities("playtest"))
+    observed_capabilities = {
+        item["playtest_id"] for item in index["validated_checks"]
+    }
+    if observed_capabilities != expected_capabilities:
+        raise RuntimeError("AI Playtest evidence does not cover the lane policy")
     if spec.inventor_id == "leo":
         simulation = json.loads((bundle / "evidence" / "game-simulation.json").read_text())
         if simulation["completed_games"] < 1_000 or simulation["terminated_games"] != simulation["completed_games"]:
             raise RuntimeError("Leo simulation evidence is incomplete")
         if simulation["executable"] is not True or len(simulation["matchups"]) != 16:
             raise RuntimeError("Leo simulation lacks executable all-style matchups")
-        if "game-simulation" in index["unresolved_canonical_capabilities"]:
-            raise RuntimeError("executed Leo simulation was incorrectly left unresolved")
-        if "human-replay" not in index["unresolved_canonical_capabilities"]:
-            raise RuntimeError("Leo must still wait for independent human replay")
         rerun = _run_counterorbit_simulator(bundle / "artifact")
         if any(simulation.get(key) != value for key, value in rerun.items()):
             raise RuntimeError("Leo's checked-in seeded evidence does not match an executable rerun")

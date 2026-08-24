@@ -1,5 +1,5 @@
 {
-  "claim_scope": "digital evidence only; no slicing, printing, fit, wear, safety, human delight, or delivery evidence",
+  "claim_scope": "AI Playtest evidence only; no production, hands-on QA, delivery, or customer Review evidence",
   "conclusion": "real CAD and digital topology checks passed",
   "declared_bed_mm": [
     256.0,
@@ -16,7 +16,7 @@
   },
   "design_source": {
     "path": "cad/design.json",
-    "sha256": "dec36564f9f2a6712247cbc0ea56184712175703a6b563022de1ca7f2b21b8af"
+    "sha256": "65cbd4ac703936acbdc284ce4a8c6d4fd3296e85bebabbaa16febcf32165bdb3"
   },
   "executable_source": {
     "path": "cad/model.py",
@@ -25,7 +25,7 @@
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c"
+    "sha256": "7261180e9d723e69493cf6b75a1400bbd538a012dfddf5ba8d219a02dc429896"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -48,7 +48,7 @@
         ],
         "bytes": 130971,
         "reimported": true,
-        "sha256": "92fe026925a0182f8423e77a76b1b5e5e40791ece2aa2fd9feac4a71172a6c32",
+        "sha256": "ef5657aa84609f057f57729e10d4f98cc8e2c98dedf172e5c4ce697d5e5824a9",
         "solid_count": 7
       },
       "stl": {
@@ -87,7 +87,7 @@
         ],
         "bytes": 81845,
         "reimported": true,
-        "sha256": "dbbd34cd98b390b4a3dc19647bb3d70f3dee86091de217f5a880a63b52c7c689",
+        "sha256": "89593b66f5b90628b5b966c1e6c789cc92dbfe05078455dcfee79120ec09a545",
         "solid_count": 4
       },
       "stl": {
@@ -126,7 +126,7 @@
         ],
         "bytes": 57005,
         "reimported": true,
-        "sha256": "9d503309591e94ed51aa91c13408e794cc374dcd08a7eed8fd4e2b63449a42ff",
+        "sha256": "7caa866dfa3cc954ac8a7adb386dc4fd712775b5a0fcd344d2ea302937c12ab4",
         "solid_count": 5
       },
       "stl": {
@@ -165,7 +165,7 @@
         ],
         "bytes": 18035,
         "reimported": true,
-        "sha256": "57e13b8ac106f5fe234bc7e2adcc0c82c3a8330bc5b7da0f893d88e55d70a150",
+        "sha256": "45a293c49545ea1b6c059efe88f1d9ca33c936c7883502cc88e3a487aa64f69a",
         "solid_count": 1
       },
       "stl": {
@@ -204,7 +204,7 @@
         ],
         "bytes": 37732,
         "reimported": true,
-        "sha256": "556a2701d1e3c0f1c4035d9fec0c0fbaca959e9156143ef9b60202e0560a1530",
+        "sha256": "9b0c104545874468a28615463e92e55745b2996cbd99257f7462562db683b8e9",
         "solid_count": 2
       },
       "stl": {
@@ -244,7 +244,7 @@
       ],
       "bytes": 328402,
       "reimported": true,
-      "sha256": "30b1b0bd69445a59b1ab36dda982b921b307bf59d383774e51c4be9a2343ad99",
+      "sha256": "61b262d618cb5ebb977c33ee46611f2fd168ad3dc8f4182fae4261bd641bf2a6",
       "solid_count": 19
     },
     "stl": {
@@ -282,13 +282,13 @@
         1.15
       ],
       "projection": "orthographic",
-      "view": "above-isometric"
+      "view": "hero"
     },
     "concept_art": false,
     "input": "cad/product.stl",
     "input_sha256": "9286c72c3889704c61f1045cd6cf1a0a9398c7ff30b99150dae3d30da34cc916",
     "kind": "fixed-view exact-STL render",
-    "output": "images/hero.png",
+    "output": "hero.png",
     "output_sha256": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e",
     "pixels": [
       1200,

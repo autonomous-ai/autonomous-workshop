@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "d38af0b6e4453869f7d5a1865b01c745b105e8e3349f4cfc1dd634a5b6570858",
+  "artifact_sha256": "df2c647198f2c241baf1784aa2404fdb39571d10568e6252f7a8f27b9ea3e906",
   "check": "digital-lane-model",
   "checks": {
     "claim_scope": "qualitative demonstration; not to scale, not a Montauk tide prediction",
@@ -27,7 +27,7 @@
       }
     ]
   },
-  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "claim_scope": "lane-specific AI simulation bound to the exact product bytes",
   "lane": "holdable-science",
   "passed": true,
   "schema_version": 1

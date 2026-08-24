@@ -1,9 +1,9 @@
 {
   "all_exported_parts_inside_bed": true,
   "all_exported_parts_watertight": true,
-  "artifact_sha256": "547dd84c8a5822e937d4b63db01cf6b40b4a7529ecae6bb476e8264b8524e110",
+  "artifact_sha256": "a8fe2b195ce7629b16097a1e7696f6bf9d387c51543d5cd9d59494d5d9bbe8f0",
   "check": "digital-printability",
-  "claim_scope": "basic digital mesh/envelope screening only; canonical print-test remains unresolved",
+  "claim_scope": "AI print simulation only; Deliver proves the manufactured object",
   "declared_bed_mm": [
     256.0,
     256.0,

@@ -1,7 +1,7 @@
 # Counterorbit
 
 Counterorbit is an original two-player alignment game made for this Wish.
-It is a digitally built prototype, not a released game.
+Its rules are exercised by the Workshop's AI-player Playtest.
 
 ## What is in the prototype
 
@@ -33,9 +33,9 @@ compare each player's best incomplete wedge (occupied positions in one wedge),
 then the number of two-position threats. Higher wins; an exact tie is a draw.
 Every game therefore ends in ten turns or fewer.
 
-## Prototype boundary
+## Evidence boundary
 
-The included seeded simulator checks executability, termination, gross seat
-effects, and obvious strategies. It cannot prove fun. Counterorbit remains at
-Playtest until independent humans play the exact physical prototype without
-Leo coaching and ask to play again.
+The included seeded simulator checks executability, termination, seat effects,
+and obvious strategies across four AI-player styles. It does not claim a
+customer Review. Printing and hands-on quality checks belong to Deliver;
+customer feedback begins only after the game arrives.

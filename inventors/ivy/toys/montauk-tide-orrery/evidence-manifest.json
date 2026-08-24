@@ -1,38 +1,62 @@
 {
-  "artifact_sha256": "f031bda6132c9c0c31de5539e396fc2f59e139f5f1a9144d5e5c5e7d8761e7a7",
+  "artifact_sha256": "85e69c0b9539c9f2c81de540396f39adebbfa2cd81548f874080fe522a15dcc3",
   "created_at": "content-addressed",
   "entries": [
     {
-      "bytes": 437,
+      "bytes": 588,
+      "executable": false,
+      "path": "agent-playtest.json",
+      "sha256": "700fb64a8b2574140b9ab8611980fc6dd5627f859e27d87676a78553a1f7992f"
+    },
+    {
+      "bytes": 445,
       "executable": false,
       "path": "digital-geometry.json",
-      "sha256": "1eaf73d5ed66f8f854b44c300ba515fd8bd9e0c44d9d58dca49609e2f6f501b6"
+      "sha256": "c5cbaa554fc3e07d31757be2378f52622405a798034b8b474d63da42475a2d24"
     },
     {
-      "bytes": 1026,
+      "bytes": 983,
       "executable": false,
       "path": "digital-lane.json",
-      "sha256": "3ae5298e8bc38beb6874cd56f351f0bc0729c3cc5209ef01cdb17b8bd90ca337"
+      "sha256": "5cb392d6b0c02a6fadb0ae37dedbf82e767b488f3bd61fce8fda6450921b75cc"
     },
     {
-      "bytes": 500,
+      "bytes": 481,
       "executable": false,
       "path": "digital-printability.json",
-      "sha256": "17b1f974308281ca1369767f762e4a135bd7806198e102b3c9c66534ba8a0aa0"
+      "sha256": "72d8ba6b3767b85113c901cca3f091c19707999785c9d3a6fd79db656c89c3ec"
     },
     {
-      "bytes": 888,
+      "bytes": 773,
       "executable": false,
       "path": "evidence-index.json",
-      "sha256": "ffdfb9fd80ed99aaa6bb4637ab3a4b9842180aa402e865e081f925bd24c07482"
+      "sha256": "2dd22ab36290ff83bd82775da4c7f1a2cdaa677556a2b05ac9db91cfa22fee6d"
     },
     {
-      "bytes": 865,
+      "bytes": 613,
+      "executable": false,
+      "path": "mechanical-test.json",
+      "sha256": "f67ed2c16e10ec0a42ce1b7c5ba630c67d9104d441e5ba5f4b8c6f53db9989d1"
+    },
+    {
+      "bytes": 631,
+      "executable": false,
+      "path": "print-test.json",
+      "sha256": "6168042c06ed5270d49d0f6c2deeb5b9272a967755bc3c3735539d359ed06c9e"
+    },
+    {
+      "bytes": 1274,
+      "executable": false,
+      "path": "science-test.json",
+      "sha256": "786386c4aaa19e088546b378687e75d898c1784cdc628919250607594d26fe49"
+    },
+    {
+      "bytes": 855,
       "executable": false,
       "path": "wish-taste-trace.json",
-      "sha256": "f6e8d2c78bc721d28a6d5cb5e9929cde8a5ff4f5a04d23c181092001a9b8e98d"
+      "sha256": "69f17060a6910ded75053224fb18d8a4a4c9f15f0dbe29347d548cb817b89a41"
     }
   ],
   "schema_version": 1,
-  "total_bytes": 3716
+  "total_bytes": 6643
 }

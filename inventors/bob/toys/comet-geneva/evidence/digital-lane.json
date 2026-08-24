@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "16555ca6d7dc7c4dcf04f66ce8b59bfb04a3eeb336b80840532b001af2a88b1f",
+  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
   "check": "digital-lane-model",
   "checks": {
     "claim_scope": "dimensional/kinematic intent only; not a physical cycle test",
@@ -12,7 +12,7 @@
     "slot_width_mm": 5.0,
     "step_degrees": 60.0
   },
-  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "claim_scope": "lane-specific AI simulation bound to the exact product bytes",
   "lane": "moving-machines",
   "passed": true,
   "schema_version": 1

@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "547dd84c8a5822e937d4b63db01cf6b40b4a7529ecae6bb476e8264b8524e110",
+  "artifact_sha256": "a8fe2b195ce7629b16097a1e7696f6bf9d387c51543d5cd9d59494d5d9bbe8f0",
   "check": "digital-lane-model",
   "checks": {
     "generic_nameplates": 0,
@@ -11,7 +11,7 @@
     },
     "reference_scope": "Wish text only; no private likeness assets were used"
   },
-  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "claim_scope": "lane-specific AI simulation bound to the exact product bytes",
   "lane": "little-worlds",
   "passed": true,
   "schema_version": 1

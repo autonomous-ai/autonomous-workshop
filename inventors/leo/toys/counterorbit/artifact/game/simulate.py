@@ -118,7 +118,7 @@ def simulate(games, seed):
         "first_seat_win_rate": round(first_seat["wins"] / first_seat["games"], 6),
         "matchups": matchups,
         "sample_traces": samples,
-        "claim_scope": "executability and digital strategy probe only; not evidence of fun or human replay demand",
+        "claim_scope": "AI-player executability and strategy evidence; not a customer Review",
     }
 
 def main():

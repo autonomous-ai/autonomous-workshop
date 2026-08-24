@@ -1,12 +1,12 @@
 {
-  "artifact_sha256": "547dd84c8a5822e937d4b63db01cf6b40b4a7529ecae6bb476e8264b8524e110",
-  "blueprint_sha256": "ba870dc429acfac778c32e664a60d6024b2e08b6dce581d7e247a549006431dd",
+  "artifact_sha256": "a8fe2b195ce7629b16097a1e7696f6bf9d387c51543d5cd9d59494d5d9bbe8f0",
+  "blueprint_sha256": "920e278909ff582a74226e87598d904adee3d2fc8310357bce11ded443af48b4",
   "check": "wish-taste-trace",
-  "claim_scope": "traceability record; independent distinctiveness/delight review remains unresolved",
+  "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
   "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
   "passed": true,
   "schema_version": 1,
-  "taste_sha256": "e13341de2a2704197f0f590a95523f7d885d00f3ddd2990ad90a6c45b6b9bf92",
+  "taste_sha256": "de525b7acbb5586488eb1343e93220e366dcb40c71d0831d0cfedd70e919f1f7",
   "wish_features": [
     "three node identities are geometry, not labels",
     "circuit trenches connect the rack city",

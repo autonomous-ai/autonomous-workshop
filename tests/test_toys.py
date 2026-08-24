@@ -7,6 +7,7 @@ from inventor_workshop.make import Wish
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import (
     PLAYTHING_LANES,
+    ReviewsPolicy,
     WORKSHOP_JOBS,
     ToyBlueprint,
     playful_make_request,
@@ -14,10 +15,10 @@ from inventor_workshop.toys import (
 
 
 class ToyBlueprintTest(unittest.TestCase):
-    def test_first_workshop_has_exactly_six_jobs_and_five_plaything_lanes(self):
+    def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS,
-            ("wish", "make", "playtest", "instructions", "deliver", "reviews"),
+            ("wish", "make", "playtest", "instructions", "deliver"),
         )
         self.assertEqual(
             PLAYTHING_LANES,
@@ -50,9 +51,10 @@ class ToyBlueprintTest(unittest.TestCase):
         self.assertIn("make.rules", game_keys)
         self.assertIn("playtest.game", game_keys)
         self.assertNotIn("playtest.human-table", game_keys)
-        self.assertIn("reviews.collect", game_keys)
-        self.assertTrue(
-            next(task for task in games.tasks if task.key == "reviews.collect").external
+        self.assertNotIn("playtest.people", game_keys)
+        self.assertNotIn("playtest.prototype", game_keys)
+        self.assertEqual(
+            games.to_dict()["post_delivery_reviews"]["feeds"], "future-make"
         )
 
         self.assertIn("make.motion", {task.key for task in machines.tasks})
@@ -85,10 +87,16 @@ class ToyBlueprintTest(unittest.TestCase):
             self.assertIn("interchangeable", request["brief"]["product_bar"])
             self.assertIn("Cool beats cute", request["brief"]["tone"])
             self.assertIn("STEP", request["brief"]["deliverables"])
+            self.assertIn("AI agents", request["brief"]["playtest_rule"])
+            self.assertIn("after Deliver", request["brief"]["reviews_rule"])
 
     def test_unknown_product_lane_fails_closed(self):
         with self.assertRaises(ContractError):
             ToyBlueprint.for_lane("organizer")
+
+    def test_reviews_policy_cannot_become_a_sixth_job_or_rewrite_delivery(self):
+        with self.assertRaisesRegex(ContractError, "preserve the delivered revision"):
+            ReviewsPolicy(feeds="make", mutates_delivered_revision=True)
 
 
 if __name__ == "__main__":

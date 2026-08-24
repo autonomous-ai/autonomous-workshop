@@ -1,24 +1,24 @@
 {
-  "artifact_sha256": "2fddeeaab49031bcfb5bb8fa0bc777b02ecdfd3b989b82d8e3fe0246725eccfb",
+  "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
   "created_at": "content-addressed",
   "entries": [
     {
-      "bytes": 1196,
+      "bytes": 1244,
       "executable": false,
       "path": "README.md",
-      "sha256": "329255cf32581b8be467e5453974c8c660c170cffece662c261fc949881b1282"
+      "sha256": "dc0d8c996f167903b628f2339a34338d3b9221df71e28a7d0eaa6b09c80a017e"
     },
     {
       "bytes": 992,
       "executable": false,
       "path": "cad/design.json",
-      "sha256": "2531cf191cacee37070c71a0d2febbd43db8e645f797547b60764a9344847c46"
+      "sha256": "2de9b657d28646dc856b4a27147e7e00c9ba4e15149621b78c8a415b13a3cd10"
     },
     {
-      "bytes": 6091,
+      "bytes": 6066,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "5994eeb3b393f264f8cc1ac8cb7ff95c09f50ea64c3a3a23895af7dd45ba2978"
+      "sha256": "ef698183218c72e1112a17987e5fd04c06c5807f31d276218450f6499b437fa3"
     },
     {
       "bytes": 999,
@@ -30,7 +30,7 @@
       "bytes": 56471,
       "executable": false,
       "path": "cad/parts/counter-orbit.step",
-      "sha256": "db5e4f3346f84f73ccdf3b998803ea3ad170e0a5718bdc198e85f2a4702919d7"
+      "sha256": "3180cbd53546a8134277e8d03ad6525b716ec7be6e9f4788334dd77f44e9bb36"
     },
     {
       "bytes": 302484,
@@ -42,7 +42,7 @@
       "bytes": 36435,
       "executable": false,
       "path": "cad/parts/five-job-core.step",
-      "sha256": "806bb18e63074a6ad30459d6809288768f895de24b9e40f18ee16f185e4d91db"
+      "sha256": "447ba6fd912a62b25b28849ec6857a496427aee43a19be32994cb23f1278f91b"
     },
     {
       "bytes": 176084,
@@ -54,7 +54,7 @@
       "bytes": 13231,
       "executable": false,
       "path": "cad/parts/ring-signal.step",
-      "sha256": "7396b928db1acfc107ffbc3d20c5bbfb900d125283eaabd7296bf3ceb803bd90"
+      "sha256": "d10652910a55b7a67c1b8b192d95822cad5039507f0b8a7aab5e4ca915a602c3"
     },
     {
       "bytes": 50084,
@@ -66,7 +66,7 @@
       "bytes": 91688,
       "executable": false,
       "path": "cad/parts/spoke-signal.step",
-      "sha256": "774cf51f50c0d0e06ee27a899e8d6769ecffb9348d4f447e5fc87b70152c53cc"
+      "sha256": "25b2f79aa71482749f1d504d89f63248ad220ab112638a13332f5205e54b33da"
     },
     {
       "bytes": 28084,
@@ -78,7 +78,7 @@
       "bytes": 629119,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "f5fbc5968ad0966a217a8f93ea9ffd8fa7bca61b7b8ffe83a1608631d0336ab1"
+      "sha256": "69c5cbe6c8158f51fe61245b7428993c2604a1ace9790d3332cc36dfbf1d133f"
     },
     {
       "bytes": 868484,
@@ -87,16 +87,16 @@
       "sha256": "e08d80984a64b733151639be44f43a13b131e616ec9b95a5e4afbf373610b2d8"
     },
     {
-      "bytes": 1510,
+      "bytes": 1528,
       "executable": false,
       "path": "game/RULES.md",
-      "sha256": "a011cb94ac2fedb4b33daaaf0a0f741a897f0f386894557b2c2d0411ba1eb4b6"
+      "sha256": "0c046b4f5e68b8b66875c6a41304ec0fd6c7134a63db6ddb976bc713f7647981"
     },
     {
-      "bytes": 5952,
+      "bytes": 5931,
       "executable": true,
       "path": "game/simulate.py",
-      "sha256": "65610d6d994a674771a5bd03837134c53ba098dc7733a538dadb00c192b66517"
+      "sha256": "862257e3f3a7f2e15c5d4d902ecbe8e4fb378e7ceaddcceb070998e857d9ca08"
     },
     {
       "bytes": 113073,
@@ -105,10 +105,10 @@
       "sha256": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2"
     },
     {
-      "bytes": 1522,
+      "bytes": 1738,
       "executable": false,
       "path": "product.json",
-      "sha256": "f03b220ea1dbd308f0c98c3562dadef281255b63adbccb0b0c01ce357204c601"
+      "sha256": "2549ffb4b7f24f30a36f93891ec8f24f3d170a4f2b418dbdfc1bbf0ee4784fa1"
     },
     {
       "bytes": 349,
@@ -118,5 +118,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 2383848
+  "total_bytes": 2384084
 }

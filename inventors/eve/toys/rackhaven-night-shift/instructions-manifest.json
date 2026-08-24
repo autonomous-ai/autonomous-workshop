@@ -1,0 +1,50 @@
+{
+  "artifact_sha256": "460e42248c3658929d274488f949ac31f4cc7904e647e83eb6755017a0bf998f",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 615,
+      "executable": false,
+      "path": "INSTRUCTIONS.md",
+      "sha256": "095732237ed1e29cfb8097dd67c7b6833809dc7715edb896f1675971950a581e"
+    },
+    {
+      "bytes": 108656,
+      "executable": false,
+      "path": "images/box.png",
+      "sha256": "019cac7be3db6e6996f82ef27bee440e7e8f97feaca6a0e81521ca5809818479"
+    },
+    {
+      "bytes": 92524,
+      "executable": false,
+      "path": "images/detail.png",
+      "sha256": "7d178207bff17ac87d769842ae5ee46b7f26b073e6e9292d3a5f4c1ddc90cea6"
+    },
+    {
+      "bytes": 118519,
+      "executable": false,
+      "path": "images/hero.png",
+      "sha256": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e"
+    },
+    {
+      "bytes": 76159,
+      "executable": false,
+      "path": "images/parts.png",
+      "sha256": "90a9ddfcdd6bcf339736cac0a8321e166b80c2405850779b59c07ee4fe28dc51"
+    },
+    {
+      "bytes": 79523,
+      "executable": false,
+      "path": "images/play.png",
+      "sha256": "018c812e4136fc053200a5f595c0d9caabd578ea05afe597da7f9442a5a9da92"
+    },
+    {
+      "bytes": 4358,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "11dec5696e2bea4308f027df851d3708d94693ce7a4b94c0904e747bed76bc1c"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 480354
+}

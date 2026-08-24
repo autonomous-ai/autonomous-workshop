@@ -17,10 +17,11 @@ Write the spec as data or concise Markdown with these sections:
    forbidden collisions, and physical claims not covered by rigid geometry.
 8. Splits/connectors: split plane, keys/fasteners/inserts, tolerances, strength
    direction, trapped-volume risk, and assembly order.
-9. Release gates: required deterministic checks, independent reviews, slicer
-   profile, physical tests, exact typed core measurements from
-   [release-evidence.md](release-evidence.md), project-specific stricter
-   thresholds, and explicit conditions that result in `held`.
+9. Boundary gates: required AI Playtest simulations, deterministic checks,
+   independent model reviews, slicer profile, and exact typed core measurements
+   from [release-evidence.md](release-evidence.md); then the physical production
+   and hands-on QA evidence Deliver must collect. State project-specific
+   thresholds and explicit conditions that result in `held` at each boundary.
 
 Reject a spec with no scale anchor, unnamed parts, contradictory quantities,
 unowned mating dimensions, or an undeclared manufacturing process.

@@ -2,14 +2,17 @@
 
 Bob is the canonical **moving-machines** inventor. He shows the middle customization
 level: Bob owns **Make**, while Workshop supplies Wish intake, Taste binding,
-the default physical **Playtest**, product Instructions, delivery, and durable runtime.
+the default AI-agent **Playtest**, product Instructions, Deliver, and durable runtime.
 [`TASTE.md`](TASTE.md) defines his kinetic point of view.
 
 ```text
-Wish -> Bob Make <-> Workshop Playtest -> Workshop Instructions -> Workshop Deliver
-             ^                 |
-             +----- feedback --+
+creation:       Wish -> Bob Make <-> Workshop Playtest -> Workshop Instructions -> Workshop Deliver
+after delivery: customer Reviews -> future Makes
 ```
+
+Workshop Playtest uses AI agents and deterministic tools. Exact printing and
+hands-on QA belong to Deliver; customer feedback arrives later as Reviews and
+may guide future Makes.
 
 The custom moving-machine Make is an explicit integration seam and is not implemented
 yet. `python3 profile.py` is the canonical Workshop-facing entrypoint;
@@ -24,7 +27,7 @@ python3 profile.py run first-machine "I wish my rally car became a hand-cranked 
 
 `run` currently returns a typed `waiting` result at Bob's owned Make seam. The
 remaining migration is exactly one `MakeContext -> Made` moving-machine callback.
-Once installed, the callback feeds the shared physical Playtest; `bob.py` is
+Once installed, the callback feeds the shared AI-agent Playtest; `bob.py` is
 never used as a fallback.
 `--playtest-rounds` is a checked 1–100 allowance recorded with the Wish; it is
 not inferred from free-form prompt text.

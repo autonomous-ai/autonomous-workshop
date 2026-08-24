@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+  "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
   "check": "digital-lane-model",
   "checks": {
     "classic": "English checkers geometry: 8x8 grid, 12 pieces per side",
@@ -11,7 +11,7 @@
       "five-spoke"
     ]
   },
-  "claim_scope": "computational/declarative review only; lane-specific physical and independent review remains unresolved",
+  "claim_scope": "lane-specific AI simulation bound to the exact product bytes",
   "lane": "classics-made-yours",
   "passed": true,
   "schema_version": 1

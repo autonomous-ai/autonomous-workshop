@@ -1,5 +1,5 @@
 {
-  "blueprint_sha256": "761992ed3f94ff887e62afbf0bf784a5d24d77fae95d960ab0f590facc58bd7f",
+  "blueprint_sha256": "e2c69b700f99162be8de8d4eb078adc052cfc7c94fb41c3f56daf08bdb7fdeb8",
   "design": {
     "inner_wells": 5,
     "kind": "original-two-player-orbit-game",
@@ -25,7 +25,7 @@
   "lane": "invented-games",
   "schema_version": 1,
   "slug": "counterorbit",
-  "taste_sha256": "d1b12c6043328f8d55b3429b94c597a85ace6590d50f048399d013e6d0bf4963",
+  "taste_sha256": "f255c2a01edb25a586907da9e4daa724ce441a8b87ff27c03c3baff1ae63666c",
   "title": "Counterorbit",
   "wish_sha256": "3ea7a783257582830458645555fc3e9596dba683a53f3f7f9c38105b549bf029"
 }

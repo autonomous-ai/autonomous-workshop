@@ -1,18 +1,21 @@
 {
-  "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+  "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
   "assertions": {
+    "ai_playtest_passed": true,
+    "customer_reviews": false,
     "delivered": false,
     "exact_geometry_render": true,
-    "human_playtest": false,
-    "instructions_created": false,
+    "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
+    "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
-  "blueprint_sha256": "e458f439b0e1f83b3430a56dcb6b035d62d02826461e8d2a59caed3c115a6af2",
-  "evidence_sha256": "32f5918dc9011643029d06de6b1acab275f8cbcca0a8bea7de987d270baf5822",
+  "blueprint_sha256": "aa2cc01c516e86bdfd741724e619de4a99b24866f84073fe79a456cd4b433de9",
+  "evidence_sha256": "3c6551c449e8e5e146674c3665de69d7340ab5c73b7e8682b6780e71ffe66486",
+  "instructions_sha256": "69797ece00f182e6f811d63fb6f35261f2e0c38ba3016893ff891d286f131596",
   "inventor": {
     "extension_level": "taste-only",
     "id": "alice",
@@ -21,48 +24,19 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "a03b3b277a895e07f3cd1b43fff911cb97948e49dfd010efa7a0e2ca5ebaa710",
+    "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
     "delivery": null,
     "instructions_sha256": null,
-    "job": "playtest",
+    "job": "instructions",
     "needs": [
       {
-        "capability": "independent-review",
-        "instructions": "Run the canonical independent-review capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full independent-review gate."
-      },
-      {
-        "capability": "classic-rules-test",
-        "instructions": "Run the canonical classic-rules-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full classic-rules-test gate."
-      },
-      {
-        "capability": "mechanical-test",
-        "instructions": "Run the canonical mechanical-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full mechanical-test gate."
-      },
-      {
-        "capability": "print-test",
-        "instructions": "Run the canonical print-test capability with its required physical, slicer, or independent evidence.",
-        "job": "playtest",
-        "reason": "The current digital checks do not establish the Workshop's full print-test gate."
-      },
-      {
-        "capability": "human-playtest",
-        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
-        "job": "playtest",
-        "reason": "This exact digital prototype still needs independent real-world evidence."
-      },
-      {
-        "capability": "physical-prototype",
-        "instructions": "Print and test the exact artifact with independent people; bind observations to its SHA-256.",
-        "job": "playtest",
-        "reason": "This exact digital prototype still needs independent real-world evidence."
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions publish and verify the page.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
     ],
+    "page_url": null,
     "playtest_rounds": 2,
     "product_id": "five-job-checkers",
     "round": 1,
@@ -71,11 +45,12 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "4d5860d90318dd8725719494edbd5a7315d93c514f19964f1b46f55a11eb454c",
+    "builder_sha256": "7261180e9d723e69493cf6b75a1400bbd538a012dfddf5ba8d219a02dc429896",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "taste_sha256": "98c92654cb2af36e5ca7f39c406476400b61c3d0114451011a6d17694cffc34a",
+  "site_receipt": null,
+  "taste_sha256": "2d3217df630eb707695b9f60c5bebbec180d2a8553c46445b641c5583e1a5f3c",
   "wish": {
     "constraints": {
       "audience": "grown-ups-14-plus",

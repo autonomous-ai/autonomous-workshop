@@ -37,10 +37,10 @@ Lives in `inventors/alice/`.
 *Blindcap: Duel — $199.99*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
-sit at a table. Leo is the only inventor allowed to invent rules, so he is the
-only one who has to prove a game works before it ships: a thousand games played
-by AI players hunting for the boring line, the broken rule, and the way to
-cheat. Whether it was fun comes back later, from the people who played it.
+sit at a table. Leo is the only inventor allowed to invent rules. Before
+Instructions, his AI players must finish the required seeded games and expose
+broken rules, loops, exploits, and weak strategies. Whether customers want to
+play again is learned later from Reviews, after they receive the game.
 Lives in `inventors/leo/`.
 
 - [x] `TASTE.md`
@@ -109,17 +109,18 @@ Alice chosen, and told why
 Classics made yours · Taste only
         |
         v
-+---------------------------------------------------------------+
-|                      SHARED WORKSHOP                          |
-|                                                               |
-|  Wish -> Make <-> Playtest -> Instructions -> Deliver          |
-|            ^     feedback                          |           |
-|            |                                       v           |
-|            +--------- what owners say --------- Reviews        |
-+---------------------------------------------------------------+
++--------------------------------------------------------+
+|                    SHARED WORKSHOP                     |
+|                                                        |
+| Wish -> Make <-> Playtest -> Instructions -> Deliver   |
+|               AI-agent feedback                       |
++--------------------------------------------------------+
         |
         v
-the approved product
+the approved product -> customer Reviews
+                            |
+                            +-> a better revision of this toy
+                            `-> future Wishes and Makes
 
 Alice supplies taste. Workshop supplies the repeatable work.
 ```
@@ -149,35 +150,58 @@ stays in code you can read and check.
 
 The Manager is not a sixth job. It only decides who does the five.
 
-## The six jobs
+## Five toys, one Workshop
 
-Every toy goes through the same six steps:
+Each built-in inventor made one checked-in toy through the shared Workshop
+Make and Playtest contracts. Together they exercise all five initial lanes,
+all three extension levels, and different Playtest allowances.
+
+| Inventor | Toy | Extension | Playtest allowance | Truthful result |
+|---|---|---|---:|---|
+| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 rounds | Instructions: site access needed |
+| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 rounds | Instructions: site access needed |
+| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 rounds | Instructions: site access needed |
+| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 rounds | Instructions: site access needed |
+| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 rounds | Instructions: site access needed |
+
+Every bundle contains an exact-geometry render, CAD source, STEP and STL
+files, content-addressed manifests, complete AI Playtest evidence, the in-box
+guide, five exact-product page images, and the Workshop run receipt. All five
+pass Playtest. Their page bundles are sealed; these checked-in runs wait in
+Instructions because no Workshop site credential is present in the build
+environment. Printing and shipping happen later in Deliver. Customer experience
+is collected afterward as Reviews.
+
+## The five jobs
+
+Every toy goes through the same five steps:
 
 | Job | What happens |
 |---|---|
 | **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
 | **Make** | Invent the thing and draw the parts so they can really be printed. |
-| **Playtest** | AI players play it, poke at it, and try to break it, then tell Make what is wrong — round after round until it passes or the rounds run out. |
-| **Instructions** | Write the honest product page and the paper that goes in the box — rules for a game, instructions for anything else. |
+| **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
+| **Instructions** | Write the honest product page and the paper that goes in the box, publish the page on our site, and verify that the exact approved toy is live. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
-| **Reviews** | Read what the people who got it say about living with it, and use it — to build a better version of this toy, and to make the next one better too. |
 
-Playtest is simulation. AI players run the game or handle the object thousands
-of times: are the rules sound, is it balanced, can you cheat, does it move, do
-the parts fit, is the science right, will it print. It is fast, it is cheap, and
-it finds what is broken.
+Playtest is entirely simulated by AI agents. They play complete games, adopt
+different strategies, try to cheat, stress rules and mechanisms, inspect CAD,
+check science and printability, and return concrete feedback to Make. It is not
+a human print-and-play session and it must not claim that customers had fun.
+Printing, physical QA, packing, and carrier handoff belong to Deliver.
 
-What it cannot tell you is whether someone loved it. That answer only exists
-after a real person opens the box, and it comes back as **Reviews** — in their
-words, after delivery. Reviews never hold a toy up. They go back to Make: the
-same toy comes round again as a better version, and what was learned travels
-to the next wish in that lane.
+For **games that don't exist yet**, nothing gets written up or shipped until
+this passes:
 
-For **games that don't exist yet**, nothing gets written up or shipped until at
-least **1,000 full games** have been played from a fixed seed by four kinds of
-AI player — one optimising, one social, one exploring, one trying to break it —
-covering the rules, the endings, the balance, the tactics, and the ways to
-cheat.
+- **1,000 full games or more, played by AI players** from a fixed seed,
+  poking at the rules, the endings, the balance, the tactics, and the ways to
+  cheat.
+
+What real customers think is learned after delivery through Reviews. Reviews
+can improve a future revision of the same toy as well as future Wishes and
+Makes, but they never rewrite the evidence for the version already shipped.
+Reviews is a public, post-delivery feedback stream—not a sixth inventor job, a
+custom inventor hook, or a gate that holds up the original order.
 
 One kind of proof still never stands in for another: a picture cannot prove the
 parts fit, and a shipping label cannot prove a carrier took the box.
@@ -193,8 +217,10 @@ Start with the least you need.
 | **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, its own Make, and its own Playtest | The loop around them, Instructions, Deliver, storage, files, and connections |
 
 Its own Playtest requires its own Make. Instructions and Deliver are always
-shared, so the page, the print, and the box always describe the exact thing that
-passed.
+shared. Instructions is also the publishing step: it creates the page and
+in-box guide, puts the page on the site, and records an authenticated live-page
+receipt before Deliver can begin. That keeps the page, print, and box tied to
+the exact thing that passed.
 
 A custom Make is one function. `workshop create inventor … --level custom-make`
 writes it for you, already wired up and waiting:
@@ -316,7 +342,7 @@ under `inventors/`.
 
 - `inventors/` — the first five, any you add, and each inventor's
   `toys/<toy-name>/` creations
-- `src/inventor_workshop/` — picking an inventor, the six jobs, the shared runner
+- `src/inventor_workshop/` — picking an inventor, the five jobs, the shared runner
 - `skills/` — locked CAD and STEP knowledge for making parts
 - `schemas/` — the shapes files and proof have to take
 - `docs/` — how it is built and how to add an inventor
@@ -361,6 +387,7 @@ Read next:
 
 - [Workshop architecture](docs/ARCHITECTURE.md)
 - [Build an inventor](docs/BUILD_AN_INVENTOR.md)
+- [Playtest evidence](docs/PLAYTEST_EVIDENCE.md)
 - [Current adoption](docs/ADOPTION.md)
 - [Migration guide](docs/MIGRATION.md)
 - [Contributing](CONTRIBUTING.md)

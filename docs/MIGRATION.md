@@ -2,12 +2,12 @@
 
 Workshop 0.5 turns the repository into one opinionated Toy Workshop for
 playthings for grown-ups. Every new profile uses one of five product categories
-and the same six jobs:
+and the same five creation jobs:
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
-        ^    feedback                                      |
-        +------------- what owners say --------------------+
+creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                             feedback
+after delivery: customer Reviews -> future revision + future Wishes
 ```
 
 Migration is incremental. Preserve characterized behavior and persisted
@@ -18,8 +18,12 @@ readiness is recorded in [ADOPTION.md](ADOPTION.md).
 
 - The product scope is classics made yours, games that do not exist yet,
   machines that move, science you can hold, and little worlds.
-- `Playtest` is the canonical name for testing and improving an exact Make.
+- `Playtest` is the canonical name for AI agents simulating, testing, and
+  improving an exact Make. It does not include human print-and-play.
 - Instructions and Deliver are explicit shared jobs after the Make–Playtest loop.
+- Deliver owns printing and physical QA. Reviews begins after delivery and may
+  inform a future revision of the same toy and future Wishes without becoming
+  a sixth job or inventor hook.
 - Inventors choose Taste-only, custom-Make, or custom-Playtest adoption.
 - Intake is one Wish at a time through a Taste-based Workshop Manager; a
   continuously running scheduler is not an inventor requirement.
@@ -100,9 +104,11 @@ been bought before the Wish; cool, clever, or striking beats merely cute
 or twee; and personalization plus design intelligence beats a generic print.
 Kits and numbered series are later variants, not jobs or current V1 promises.
 
-Classics use known rules and are judged as exact custom editions and physical
-objects. Invented games must clear simulated play that wants
-another play. Even 1,000 clean AI simulations cannot pass that release gate.
+Classics use known rules and are simulated as exact custom editions. Invented
+games require at least 1,000 complete seeded AI-player games that probe rules,
+endings, balance, strategies, and exploits. Customer response is learned only
+after delivery through Reviews and may improve a future revision of the same
+toy and future Wishes.
 
 ## Migrate vocabulary without rewriting history
 
@@ -142,8 +148,9 @@ inventor. V1 intake has one request-scoped boundary:
 one Wish -> Workshop Manager -> one chosen Taste -> one assignment
                                                      |
                                                      v
-                       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                    feedback
+                       creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
+                                          feedback
+                       later:    customer Reviews -> future revision + future Wishes
 ```
 
 For each Wish, the Manager searches an open catalog built from the short
@@ -181,13 +188,17 @@ delivery:
 ```text
 0.4:  Wish + Taste -> Make <-> legacy review
 
-0.5:  Wish -> Make <-> Playtest -> Instructions -> Deliver
-              feedback
+0.5 creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                                 feedback
+    after delivery: customer Reviews -> future revision + future Wishes
 ```
 
 Taste guides every choice but is not a job. Research, ideation, rules, CAD,
-simulation, repair, slicing, human trials, rendering, printing, QA, packing,
-and carrier calls are tasks within the six jobs.
+AI simulation, repair, slicing, rendering, printing, QA, packing, and carrier
+calls are tasks within the five jobs. Customer Reviews occur only after
+Deliver and may influence a future revision of the same toy and future Wishes;
+they are not a sixth job or migration gate for the completed order, and they
+cannot mutate already shipped bytes.
 
 For a mature state machine:
 
@@ -201,6 +212,9 @@ For a mature state machine:
 5. Bind every Instructions claim and image to that artifact and its evidence.
 6. Bind production, QA, packing, and carrier receipts to the exact product and
    Instructions hashes before returning Delivered.
+7. Keep post-delivery Reviews attached to the delivered product and offer them
+   only to a future revision of the same toy and future Wishes; never rewrite
+   the completed run.
 
 Do not run an old and new lifecycle as co-authorities. A thin profile may wait
 at a typed seam while the legacy worker continues separately; that is safer
@@ -225,9 +239,8 @@ they are examples, not a closed catalog or five completed live inventors:
   second invented-game inventor. Shared Make and Playtest must wait when their real
   capabilities are absent.
 - Leo is the clean Workshop-native `invented-games` inventor with custom Make and
-  custom Playtest. His unfinished typed adapters and mandatory independent
-  simulated-play release gate wait honestly rather than inheriting a second legacy
-  state machine.
+  custom Playtest. His AI-player adapter must enforce the pinned seeded
+  simulation policy rather than inheriting a second legacy state machine.
 - Bob demonstrates `moving-machines` and still waits for a typed custom Make; his
   preserved board-game laboratory is not that adapter.
 - Ivy (`holdable-science`) and Eve (`little-worlds`) are Taste-only profiles and
@@ -331,7 +344,9 @@ and never merge authorities by modification time.
 9. Add trusted per-Wish `playtest_rounds` without changing gates.
 10. Move lifecycle, leases, and budgets only after parity tests pass.
 11. Adopt shared Instructions, then exact production and Deliver receipts.
-12. Simplify operational names only after every entry point uses one authority.
+12. Connect post-delivery Reviews to a future revision of the same toy and
+    future Wishes, never as a new job or a rewrite of completed evidence.
+13. Simplify operational names only after every entry point uses one authority.
 
 Blindcap provenance and Bob's preserved laboratory should retain every stronger
 native invariant until Workshop proves equivalent behavior. Alice's active

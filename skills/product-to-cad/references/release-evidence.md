@@ -1,10 +1,10 @@
-# Release evidence
+# Digital Playtest and Deliver evidence
 
 Every check returns `passed`, `failed`, or `held`, plus exact artifact hash,
 tool and version, configuration hash, timestamps, structured measurements,
 limitations, and captured errors. Missing or malformed output is `held`.
 
-Minimum final evidence:
+Minimum AI Playtest evidence:
 
 - project schema, expected inventory, path safety, and artifact freshness;
 - B-rep validity and expected solid/shell count per canonical part;
@@ -36,12 +36,15 @@ type and meet the pass condition:
 | `slicer` | `profiles_checked` (integer) >= 1; `slicer_errors` (integer) = 0; `support_material_grams` (finite number) >= 0 |
 | `form-review` | `views_reviewed` (integer) >= 3; `blockers` (integer) = 0 |
 | `safety` | `hazards_found` (integer) = 0; `review_scope` is a non-empty string |
-| `physical-claims` | `claims_tested` (integer) >= 1; `claims_failed` (integer) = 0 |
 
 Counts are parsed observations, not self-authored promises. The evidence file
-must retain the per-part, per-pose, per-view, per-hazard, or per-claim detail
-behind each aggregate. A one-part threshold does not waive the manifest's full
-inventory, and a single physical test does not waive any critical claim.
+must retain the per-part, per-pose, per-view, or per-hazard detail behind each
+aggregate. A one-part threshold does not waive the manifest's full inventory.
+
+Physical claims are not Playtest result IDs. Deliver binds the exact print,
+printer/material/calibration inputs, hands-on QA measurements, packing, and
+shipment receipts. A single Deliver test does not waive any other critical
+claim, and its absence must never be filled by an AI prediction.
 
 Do not accept these substitutions:
 
@@ -52,6 +55,7 @@ Do not accept these substitutions:
 - one successful pose for a full motion envelope;
 - rigid interference analysis for compliance, fatigue, friction, or release.
 
-Final release requires a content-hashed manifest and receipts from the exact
-current artifacts. Any source/config/tool change invalidates downstream
-receipts until regenerated.
+Passing Playtest requires a content-hashed manifest and digital receipts from
+the exact current artifacts. Any source/config/tool change invalidates
+downstream receipts until regenerated. Deliver later binds physical production
+and QA to those approved bytes.

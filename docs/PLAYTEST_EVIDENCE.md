@@ -16,8 +16,9 @@ playtest root --seal--> evidence_manifest
 The product manifest owns what the customer may receive: rules, source, STEP,
 per-part meshes, assembly information, and other product assets. The evidence
 manifest owns simulator traces, evaluator output, CAD measurements, slicer
-reports, physical-test records, human-playtest observations, and supporting
-media.
+reports, and supporting media produced by AI agents or deterministic tools.
+Physical production and hands-on QA receipts belong to Deliver. Customer
+feedback belongs to Reviews after delivery.
 
 Keeping them separate prevents internal review files from silently entering the
 customer product while preserving a complete audit link.
@@ -57,9 +58,10 @@ a finalist Taste, or the selected manifest invalidates dispatch.
 A routing decision does **not** prove that the product matches Taste, works,
 prints, delights anyone, or deserves release. The semantic fit score is an
 independent-model prediction only when its evaluator provenance supports that
-claim. It cannot substitute for artifact-bound CAD, slicer, physical,
-simulation, or human evidence, and Instructions must not present “the Manager chose
-this inventor” as product approval.
+claim. It cannot substitute for artifact-bound CAD, slicer, or simulation
+evidence, authenticated Deliver receipts, or post-delivery Reviews, and
+Instructions must not present “the Manager chose this inventor” as product
+approval.
 
 The assignment is one-shot. Reassignment creates a new routing record; it does
 not bless artifacts or Playtest evidence produced under the old Taste. A future
@@ -98,19 +100,24 @@ is not a pass. An optional failure remains visible and cannot be silently
 discarded or presented as approval. Same-model self-confidence cannot satisfy
 an independent gate.
 
-## Evidence class limits
+## Evidence boundary limits
 
-The evidence class determines what Instructions may claim:
+The boundary determines what Instructions may claim and which stage owns the
+observation:
 
-| Evidence class | Supports | Cannot establish |
+| Boundary evidence | Supports | Cannot establish |
 |---|---|---|
 | AI simulation | executable rules, termination, traces, balance and pacing proxies | human understanding, delight, or desire for another play |
 | Independent model review | a reproducible prediction about clarity, novelty, coolness, or Taste alignment | observed human preference or physical behavior |
 | CAD/kernel measurement | dimensions, topology, clearances, interference, motion, assembly calculations | that a real print assembled or survived use |
 | Slicer analysis | behavior under an exact printer, material, and profile; predicted time, material, and supports | successful printing or acceptable finish |
-| Physical prototype | recorded measurements and tests for one exact print with full provenance | broad durability, safety, or delight beyond that test |
-| Owner reviews | what people who received the toy said about living with it — from identified participants under a stated protocol | universal fun or demand beyond the sample |
-| Production or carrier receipt | the exact production, QA, packing, handoff, or delivery event observed | any later event or unobserved product quality |
+| Deliver receipt | the exact print, hands-on QA, packing, handoff, or delivery event observed | any later event or customer experience |
+| Customer Review | what a verified customer reported after receiving the toy | that AI Playtest predicted it, or that every customer agrees |
+
+The first four rows are Playtest evidence. Deliver owns all physical production
+and QA evidence. Reviews begins only after delivery and may feed a future
+revision of the same toy and future Wishes; it does not revise the completed
+Playtest, mutate shipped bytes, or hold the original order.
 
 For example, “1,000 seeded games terminated” is a strong simulation claim and
 still not evidence that anyone had fun.
@@ -124,26 +131,32 @@ Every category must first clear the Workshop product bar:
 - cool, clever, striking, or satisfying beats merely cute or twee;
 - personalization and design intelligence beat a generic print.
 
-An independent model may predict that a design clears this bar, but human
-behavior is required for human-preference claims.
+An independent model may predict that a design clears this bar. Playtest must
+label that as a prediction; customer-preference claims come only from Reviews
+after delivery.
 
 Category-specific Playtest then adds the right gates:
 
 - **Classics made yours (`classics-made-yours`)** uses known rules. Verify rules
-  fidelity, personalization, legibility, setup, handling, physical quality,
-  printing, and the exact custom edition. Do not claim familiar gameplay as a
-  new invention.
+  fidelity, personalization, legibility, setup, handling proxies, digital
+  printability, and the exact custom edition. Do not claim familiar gameplay
+  as a new invention.
 - **Games that don't exist yet (`invented-games`)** needs executable AI-player
   traces to find rule errors, loops, exploits, balance risks, and pacing
-  problems, and that is what release turns on. What real players think arrives
-  afterwards as owner reviews, and shapes the next game rather than this one.
+  problems. At least 1,000 complete seeded games must exercise the rules,
+  endings, strategies, and ways to cheat before Instructions.
 - **Machines that move (`moving-machines`)** needs exact motion, interference,
-  wear, assembly, print, and physical-cycle evidence.
+  wear proxies, assembly, and digital printability evidence.
 - **Science you can hold (`holdable-science`)** needs scientific accuracy plus
-  exact geometry, interaction, print, and physical-observation evidence.
+  exact geometry, simulated interaction, and digital printability evidence.
 - **Little worlds (`little-worlds`)** needs evidence that the Wish materially
-  shaped the world, plus legibility, originality, print, assembly, and observed
-  human response.
+  shaped the world, plus legibility, originality, digital printability, and
+  assembly checks.
+
+After Playtest and Instructions, Deliver owns the exact print, hands-on QA,
+packing, and carrier handoff for every category. After delivery, Reviews may
+report delight, confusion, durability, or desire for another play and feed
+those observations into a future revision of the same toy and future Wishes.
 
 Kits and numbered series are later variants. They introduce no V1 Playtest
 class and are not evidence shortcuts.
@@ -155,23 +168,30 @@ may consume. The trusted service boundary records a value from 1 through 100
 before Make and passes the same value into every custom context.
 
 It never changes the evidence policy. A smaller allowance does not remove
-physical tests, human gates, or required result IDs; a larger allowance does
-not turn simulation into human evidence. If the allowance ends while a required
-result still fails, the run stops before Instructions and Deliver.
+required AI simulation, model-review, CAD, slicer, or result IDs; a larger
+allowance does not turn a prediction into customer feedback. If the allowance
+ends while a required result still fails, the run stops before Instructions
+and Deliver.
 
-The number of AI games, reviewers, or physical trials inside one Playtest round
-is a separate trusted budget.
+The number of AI games, model reviewers, or digital trials inside one Playtest
+round is a separate trusted budget.
 
 ## Instructions and Deliver remain bound
 
-Instructions begins only after Playtest passes for the exact product hash. Each public
-claim points back to a result's evidence class, path, hash, evaluator, and
-version. Copy may be delightful, but it may not upgrade simulation to fun,
-slicing to a physical print, or concept art to product proof.
+Instructions begins only after Playtest passes for the exact product hash. It
+creates both the in-box guide and the site page, then publishes and verifies
+that page as one shared job. Each public claim points back to a result's
+evidence class, path, hash, evaluator, and version. Copy may be delightful, but
+it may not upgrade simulation to fun, slicing to a physical print, or concept
+art to product proof.
 
-Deliver rechecks both the product and Instructions manifests. Production, QA, packing,
-and USPS/UPS/FedEx receipts must identify those approved bytes. A carrier label
-alone is not handoff or delivery.
+Deliver rechecks both the product and Instructions manifests. Production,
+hands-on QA, packing, and USPS/UPS/FedEx receipts must identify those approved
+bytes. A carrier label alone is not handoff or delivery.
+
+After delivery, Reviews may bind customer feedback to the delivered toy and
+offer it to a future revision of that toy and future Wishes. Reviews is not
+another Workshop job, an inventor hook, or retroactive Playtest evidence.
 
 ## Persisted compatibility
 

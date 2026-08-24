@@ -36,8 +36,9 @@ _LANE_GUIDANCE = {
     ),
     "invented-games": (
         "Invented games are experimental rules craft. Make the rules complete and "
-        "executable, but never treat AI simulation as proof of fun: the exact rules "
-        "and printed prototype require human table replay before Playtest may pass."
+        "executable, then Playtest at least 1,000 seeded games with optimizing, "
+        "social, exploratory, and adversarial AI players. Customer reactions arrive "
+        "after Deliver as Reviews and may improve a future Make."
     ),
     "moving-machines": (
         "Make motion the magic: one legible mechanism should invite a hand, reward "
@@ -512,7 +513,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(workshop.customization_level, {level_literal})
         self.assertEqual(
             tuple(WORKSHOP_JOBS),
-            ("wish", "make", "playtest", "instructions", "deliver", "reviews"),
+            ("wish", "make", "playtest", "instructions", "deliver"),
         )
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)

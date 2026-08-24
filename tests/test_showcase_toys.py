@@ -33,7 +33,7 @@ class ShowcaseToyTest(unittest.TestCase):
                 self.assertFalse((inventor_root / "games").exists())
                 self.assertFalse((inventor_root / "products").exists())
 
-    def test_records_credit_the_inventor_and_wait_at_playtest(self):
+    def test_records_credit_the_inventor_pass_ai_playtest_and_wait_at_instructions(self):
         for inventor_id, (inventor_name, slug) in SHOWCASE_TOYS.items():
             with self.subTest(inventor_id=inventor_id):
                 toy = self.toy_root(inventor_id, slug)
@@ -52,14 +52,13 @@ class ShowcaseToyTest(unittest.TestCase):
                 self.assertEqual(description, description.rstrip())
                 self.assertEqual(product["status"], "digital-prototype")
                 self.assertIs(product["physical_prototype"], False)
-                self.assertIs(product["human_playtest"], False)
-                self.assertIs(product["released"], False)
+                self.assertEqual(product["reviews_status"], "begins-after-delivery")
 
                 receipt = load_json(receipt_path)
                 self.assertEqual(receipt["inventor"]["id"], inventor_id)
                 self.assertEqual(receipt["inventor"]["name"], inventor_name)
                 self.assertEqual(receipt["run"]["status"], "waiting")
-                self.assertEqual(receipt["run"]["job"], "playtest")
+                self.assertEqual(receipt["run"]["job"], "instructions")
                 self.assertEqual(
                     receipt["run"]["artifact_sha256"],
                     receipt["artifact_sha256"],
@@ -69,10 +68,11 @@ class ShowcaseToyTest(unittest.TestCase):
                 waiting_for = {
                     need["capability"] for need in receipt["run"]["needs"]
                 }
-                self.assertIn("physical-prototype", waiting_for)
-                self.assertTrue(
-                    waiting_for.intersection({"human-playtest", "human-replay"})
-                )
+                self.assertEqual(waiting_for, {"site-page"})
+                self.assertTrue(receipt["assertions"]["ai_playtest_passed"])
+                self.assertTrue(receipt["assertions"]["instructions_created"])
+                self.assertFalse(receipt["assertions"]["site_page_live"])
+                self.assertFalse(receipt["assertions"]["customer_reviews"])
 
     def test_manifests_bind_every_checked_in_artifact_and_evidence_file(self):
         required_artifacts = {
@@ -90,6 +90,7 @@ class ShowcaseToyTest(unittest.TestCase):
                 for directory, manifest_name, receipt_key in (
                     ("artifact", "artifact-manifest.json", "artifact_sha256"),
                     ("evidence", "evidence-manifest.json", "evidence_sha256"),
+                    ("instructions", "instructions-manifest.json", "instructions_sha256"),
                 ):
                     manifest_path = toy / manifest_name
                     self.assertTrue(manifest_path.is_file())
@@ -112,9 +113,23 @@ class ShowcaseToyTest(unittest.TestCase):
                 }
                 self.assertTrue(required_artifacts.issubset(artifact_paths))
                 evidence_index = load_json(toy / "evidence" / "evidence-index.json")
-                self.assertEqual(evidence_index["status"], "waiting-at-playtest")
+                self.assertEqual(evidence_index["status"], "passed-ai-playtest")
+                self.assertEqual(evidence_index["unresolved_canonical_capabilities"], [])
                 self.assertEqual(
                     evidence_index["artifact_sha256"], receipt["artifact_sha256"]
+                )
+                instructions_page = load_json(toy / "instructions" / "product.json")
+                self.assertEqual(
+                    instructions_page["product_artifact_sha256"],
+                    receipt["artifact_sha256"],
+                )
+                self.assertEqual(
+                    instructions_page["playtest_evidence_artifact_sha256"],
+                    receipt["evidence_sha256"],
+                )
+                self.assertEqual(
+                    set(instructions_page["images"]),
+                    {"hero", "play", "detail", "parts", "box"},
                 )
 
 
