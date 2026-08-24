@@ -2,11 +2,13 @@
 
 Workshop 0.5 turns the repository into one opinionated Toy Workshop for
 playthings for grown-ups. Every new profile uses one of five product categories
-and the same five creation jobs:
+and the same six creation jobs:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                          ^                    |
+                          +--------------------+
+                                 feedback
 after delivery: customer Reviews -> future revision + future Wishes
 ```
 
@@ -148,8 +150,10 @@ inventor. V1 intake has one request-scoped boundary:
 one Wish -> Workshop Manager -> one chosen Taste -> one assignment
                                                      |
                                                      v
-                       creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                          feedback
+         creation: Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                             ^                    |
+                             +--------------------+
+                                    feedback
                        later:    customer Reviews -> future revision + future Wishes
 ```
 
@@ -170,13 +174,13 @@ Migrate an old intake loop by separating these responsibilities:
 3. Record the retrieval receipt, complete finalist ranking, and explanation,
    not just the winner.
 4. Dispatch the content-bound assignment exactly once.
-5. Let the selected profile enter the shared five-job workflow without
+5. Let the selected profile enter the shared six-job workflow without
    rediscovering or rerouting the Wish.
 
 If no Taste fits, return a truthful wait for clarification or a new inventor.
 Do not weaken an existing Taste, use keyword routing, or choose the least-bad
 inventor. A future scheduler may wrap this one-Wish API and invoke it repeatedly,
-but that adapter remains outside inventor folders and does not become a sixth
+but that adapter remains outside inventor folders and does not become another
 Workshop job.
 
 ## Migrate the workflow
@@ -188,16 +192,18 @@ delivery:
 ```text
 0.4:  Wish + Taste -> Make <-> legacy review
 
-0.5 creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                 feedback
+0.5 creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                              ^                    |
+                              +--------------------+
+                                     feedback
     after delivery: customer Reviews -> future revision + future Wishes
 ```
 
 Taste guides every choice but is not a job. Research, ideation, rules, CAD,
 AI simulation, repair, slicing, rendering, printing, QA, packing, and carrier
-calls are tasks within the five jobs. Customer Reviews occur only after
+calls are tasks within the six jobs. Customer Reviews occur only after
 Deliver and may influence a future revision of the same toy and future Wishes;
-they are not a sixth job or migration gate for the completed order, and they
+they are not another job or migration gate for the completed order, and they
 cannot mutate already shipped bytes.
 
 For a mature state machine:
@@ -224,9 +230,13 @@ than dual-writing or guessing a conversion.
 
 | Level | Profile owns | Workshop owns |
 |---|---|---|
-| Taste only | `TASTE.md` | Make, Playtest, loop, Instructions, Deliver, runtime |
-| Custom Make | Taste and `MakeContext -> Made` | Playtest, loop, Instructions, Deliver, runtime |
-| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | loop, Instructions, Deliver, runtime |
+| Taste only | `TASTE.md` | Concept, Make, Playtest, loop, Instructions, Deliver, runtime |
+| Custom Make | Taste and `MakeContext -> Made` | Concept, Playtest, loop, Instructions, Deliver, runtime |
+| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | Concept, loop, Instructions, Deliver, runtime |
+
+Concept is shared at every level, wired through `WorkshopTools.concept` or an
+inventor's own `ConceptContext -> ConceptImages` hook. Owning it does not change
+the level, which names who owns the product and evidence contracts.
 
 A custom Playtest requires a custom Make. Keep stronger niche checks, but return
 their observations through the shared result and evidence contracts.

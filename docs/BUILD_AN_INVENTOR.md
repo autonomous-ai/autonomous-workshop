@@ -6,12 +6,14 @@ when needed, custom Make or Playtest craft. Workshop supplies the product
 journey:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                          ^                    |
+                          +--------------------+
+                                 feedback
 after delivery: customer Reviews -> future Makes
 ```
 
-The inventor participates only in the five creation jobs. Reviews is
+The inventor participates only in the six creation jobs. Reviews is
 post-delivery feedback for future work, not another hook to implement.
 
 This guide is for the first Workshop, which makes playthings for grown-ups
@@ -79,11 +81,13 @@ their Tastes in full and explain the choice. A tie is resolved deterministically
 If every finalist rejects the Wish, the Manager waits for clarification, wider
 retrieval, or a genuinely new Taste instead of forcing a bad match.
 
-The Manager is not a sixth job. Once assigned, the Wish still follows only:
+The Manager is not a job of its own. Once assigned, the Wish still follows only:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                          ^                    |
+                          +--------------------+
+                                 feedback
 after delivery: customer Reviews -> future Makes
 ```
 
@@ -101,9 +105,9 @@ Start with the least code that can express the inventor:
 
 | Level | Files or hooks you author | Shared behavior |
 |---|---|---|
-| `taste-only` | `TASTE.md` | Workshop Make and Playtest |
-| `custom-make` | `TASTE.md` plus `MakeContext -> Made` | Workshop Playtest |
-| `custom-playtest` | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Workshop still owns the feedback loop |
+| `taste-only` | `TASTE.md` | Workshop Concept, Make, and Playtest |
+| `custom-make` | `TASTE.md` plus `MakeContext -> Made` | Workshop Concept and Playtest |
+| `custom-playtest` | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Workshop Concept; Workshop still owns the feedback loop |
 
 Workshop owns Instructions, Deliver, artifact identity, evidence binding, runtime, and
 truthful waiting at every level. Custom Playtest is available only with custom
@@ -122,7 +126,8 @@ Alice, the `classics-made-yours` inventor, illustrates the boundary:
                            |
                            v
 +-------------------- SHARED WORKSHOP ----------------+
-| Wish -> Make <-> Playtest -> Instructions -> Deliver        |
+| Wish -> Concept -> Make <-> Playtest -> Instructions        |
+|                                          -> Deliver |
 |        artifacts + feedback + evidence + runtime    |
 +-----------------------------------------------------+
                            |
@@ -299,7 +304,88 @@ profile once. A profile should not rediscover the roster, reroute the Wish,
 poll for more work, or create its own scheduler. Reassignment is an explicit
 new Manager decision with a new assignment identity.
 
-## 6. Customize Make only when necessary
+## 6. Concept decides the design before Make builds it
+
+Concept runs at the top of every round, between Wish and Make. It produces a
+`ConceptImages`: a locked `ConceptBrief` of physical facts plus a sealed set of
+images — `front`, `top`, `bottom`, `exploded`, and one per component — that all
+depict that one design.
+
+Like Instructions' media and site writers, the pixels come from an injected
+provider rather than from the job itself:
+
+```python
+from inventor_workshop import DefaultConcept, WorkshopTools
+
+tools = WorkshopTools(
+    concept=DefaultConcept(
+        concept_artist=my_image_provider,       # one request -> one image path
+        explode_inspector=my_component_counter,  # which parts the explode shows
+    ),
+    ...
+)
+```
+
+`DefaultConcept` owns everything except those two capabilities: it derives the
+brief, builds the prompts, generates in dependency order, checks the exploded
+view for component completeness, writes the sealed `concept.json` descriptor,
+and seals the root. The artist receives one `ConceptImageRequest` at a time —
+role, prompt, the earlier images to use as references, and the filename to
+write — so a provider never has to know the anchoring rules to satisfy them.
+Pass `brief_maker=` when the inventor already knows its own physical facts.
+
+With no provider configured, Concept raises `WaitingFor` with
+`Need(job="concept", capability="concept-images", ...)` and the run parks. This
+repo ships no image model, so that is the default behavior: a described design
+is not a drawn one.
+
+An inventor may also own the whole job, the way it can own Make:
+
+```python
+from inventor_workshop import ConceptContext, ConceptImages
+
+
+def concept(context: ConceptContext) -> ConceptImages:
+    # context.previous carries the standing design and context.feedback the
+    # Playtest findings that invalidated it. Revise; do not restart.
+    ...
+
+
+workshop = Workshop(INVENTOR_ROOT, CATEGORY, tools=shared_tools, concept=concept)
+```
+
+Owning Concept does not change the inventor's customization level, which names
+who owns the product and evidence contracts.
+
+### What following a concept obliges Make to do
+
+When `context.concept_images` is present it is the primary reference for form,
+proportion, construction, and the part breakdown. Three of those obligations
+are checked, not trusted:
+
+- **The component breakdown is binding.** `Made.product["components"]` must
+  correspond one-to-one with the brief's components, matched by each
+  component's `key` or its `name`. A product that ships a different set of
+  parts is a different design, and the Workshop refuses it.
+- **The concept's bytes must not move.** The seal is re-checked when Make
+  returns, so a concept edited while Make was running fails the round.
+- **Concept pixels may not travel into the product.** The Workshop refuses a
+  `Made` containing any file whose sha256 matches a concept image, and
+  Instructions refuses a product image with those bytes. Build faithfully; then
+  show the thing you actually built.
+
+Two more obligations are real but unverified, and should be treated as
+instructions rather than guarantees: where an image and the brief's millimetres
+imply different geometry, **the numbers govern**; and if the visualized design
+cannot be realized as printable geometry, raise a `Need` or fail rather than
+quietly building something else. Nothing checks that returned geometry looks
+like the concept — Playtest, and feedback that invalidates `concept`, is the
+loop that catches that.
+
+A `MakeContext` without a concept stays valid and behaves exactly as it did
+before Concept existed.
+
+## 7. Customize Make only when necessary
 
 Custom Make has one stable boundary:
 
@@ -346,7 +432,7 @@ workshop = Workshop(
 )
 ```
 
-## 7. Customize Playtest only for real niche expertise
+## 8. Customize Playtest only for real niche expertise
 
 Custom Playtest receives the exact `Made` revision:
 
@@ -399,7 +485,7 @@ it into spend authority. If the product still fails when the allowance is
 exhausted, it stops before Instructions and Deliver; it does not receive a cheaper
 quality bar.
 
-## 8. Use the right evidence class
+## 9. Use the right evidence class
 
 Playtest is performed by AI agents over the whole digital toy or game, and a
 result may claim only what its evidence observed:
@@ -437,7 +523,7 @@ geometry, slicing, rules, and other checks that AI agents or deterministic
 tools can perform. Printing and hands-on QA begin only in Deliver. Human
 customer feedback begins only after delivery as Reviews.
 
-## 9. Let shared Instructions tell only the truth
+## 10. Let shared Instructions tell only the truth
 
 Instructions starts only after the exact Make passes Playtest. It produces the
 truthful product page and the paper that belongs in the box: a rulebook for a
@@ -451,7 +537,7 @@ authenticated owner readback for the exact approved product, sealed page,
 guide, media, and terminal `By <Inventor>.` byline before Deliver can begin.
 Instructions does not make the page public and does not require an active
 listing. An owner reviews the draft and may make it public later through a
-separate action outside the five-job pipeline.
+separate action outside the six-job pipeline.
 
 If a run waits here, resume the exact sealed work instead of starting over:
 
@@ -481,7 +567,7 @@ An inventor does not implement its own Factory draft path. Improve shared
 Instructions when every inventor needs the change. The later owner-controlled
 public transition is not an inventor hook or a sixth Workshop job.
 
-## 10. Let shared Deliver ship the exact approval
+## 11. Let shared Deliver ship the exact approval
 
 Deliver binds four kinds of evidence to the approved product and Instructions:
 
@@ -504,9 +590,9 @@ Reviews records what customers report after they receive the exact shipped
 toy. That feedback may inspire a new Wish or enter a future Make as product
 learning. It never rewrites the completed run, delays the original order, or
 becomes a custom inventor hook. Reviews is post-delivery feedback around the
-five jobs—not a sixth job.
+six jobs—not another job.
 
-## 11. Test failure before success
+## 12. Test failure before success
 
 At minimum, an inventor's tests should prove:
 
@@ -535,7 +621,7 @@ At minimum, an inventor's tests should prove:
 Fixtures must cross the same typed boundaries as production. Mark fixture,
 offline, replay, and synthetic evidence explicitly.
 
-## 12. Run the checks
+## 13. Run the checks
 
 From the inventor folder:
 
@@ -568,4 +654,4 @@ niche Playtest logic.
 Shared changes need credential-free contract tests, failure-path tests,
 artifact and evidence binding, and backward-compatible persisted-state
 handling. Older compatibility aliases may remain for existing runs, but new
-inventors should learn and expose only the five jobs.
+inventors should learn and expose only the six jobs.

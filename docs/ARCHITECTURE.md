@@ -43,20 +43,36 @@ Every category faces the same bar:
 Kits and numbered series may become later ways to extend a successful product.
 They are not Workshop jobs and are not V1 promises.
 
-## The five jobs
+## The six jobs
 
 The complete Workshop vocabulary is:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                          ^                    |
+                          +--------------------+
+                                 feedback
 after delivery: customer Reviews -> a future revision of this toy
                                   -> future Wishes and Makes
 ```
 
 - **Wish** preserves what the person asked for and the relevant constraints.
+- **Concept** decides what the plaything actually looks like before anything is
+  built. It locks the design's physical facts — envelope, wall thickness, fit
+  target, features, print orientation, and the component breakdown — and then
+  draws one mutually consistent set of images from them: `front`, `top`,
+  `bottom`, an `exploded` view, and one view per component. Every image request
+  carries the locked numbers, and each image after the first is anchored on the
+  ones already drawn, so the set depicts one object rather than several
+  interpretations of the same words. Concept runs at the top of every round, so
+  a Playtest rejection can be answered in the design instead of worked around in
+  geometry. With no image provider configured it raises a truthful `Need` and
+  the run parks; it never describes a design it did not draw.
 - **Make** invents the plaything, writes any rules, and creates its exact
-  printable product files.
+  printable product files. When a concept is present it is the primary
+  reference for form, proportion, construction, and the part breakdown; the
+  brief's millimetres remain the binding constraints, and where an image and a
+  number disagree, the number governs.
 - **Playtest** has AI agents simulate using or playing that exact Make from
   every relevant angle. A failed check returns actionable feedback to Make,
   producing a new immutable round. Playtest never means a human
@@ -71,16 +87,16 @@ after delivery: customer Reviews -> a future revision of this toy
 
 `Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
-tasks inside the five jobs, not extra lifecycle concepts. After Deliver,
+tasks inside the six jobs, not extra lifecycle concepts. After Deliver,
 customer **Reviews** may improve a future revision of the same toy and inform
 future Wishes and Makes. Reviews is a public, post-delivery feedback stream,
 not a sixth inventor job, custom inventor hook, or release gate for the order
 already shipped.
 
 The owner-facing transition from private draft to public page is deliberately
-outside those five jobs. An owner reviews the finished draft and decides when
+outside those six jobs. An owner reviews the finished draft and decides when
 to make it public; that decision does not delay Instructions or Deliver and
-does not introduce a sixth job.
+does not introduce another job.
 
 ## The Workshop Manager
 
@@ -108,9 +124,11 @@ one Wish to the best fit once.
                          chosen inventor
                                |
                                v
-             creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                      feedback
-             later:    customer Reviews -> future Makes
+   creation: Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                       ^                    |
+                       +--------------------+
+                              feedback
+   later:    customer Reviews -> future Makes
 ```
 
 This checkout begins with five showcase inventors:
@@ -150,7 +168,7 @@ category.
 The Manager is typed Workshop engine code, not a skill, a sixth Workshop job,
 or a creative supervisor once work begins. Making it a skill would leave the
 host to select the selector and would hide routing behind prompt behavior. Its
-assignment enters the same five-job contract as every other Wish. A future
+assignment enters the same six-job contract as every other Wish. A future
 continuous service may repeatedly call this one-Wish interface, but scheduling,
 polling, and 24/7 operation stay outside an inventor profile and outside the V1
 Workshop promise.
@@ -204,9 +222,14 @@ The same boundary supports three levels of authorship:
 
 | Level | Inventor supplies | Workshop supplies |
 |---|---|---|
-| **Taste only** | `TASTE.md` | Make, Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | the improvement loop, Instructions, Deliver, and runtime |
+| **Taste only** | `TASTE.md` | Concept, Make, Playtest, the improvement loop, Instructions, Deliver, and runtime |
+| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Concept, Playtest, the improvement loop, Instructions, Deliver, and runtime |
+| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Concept, the improvement loop, Instructions, Deliver, and runtime |
+
+Concept is a shared job with its own seam: `WorkshopTools.concept`, or a
+`ConceptContext -> ConceptImages` hook an inventor supplies directly. It does
+not change an inventor's customization level, because the level names who owns
+the *product* contract and the *evidence* contract.
 
 A custom Playtest requires a custom Make. This keeps the maximum level honest:
 an inventor that changes how evidence is interpreted must also own the product
@@ -227,6 +250,9 @@ The jobs exchange small, exact records:
 Wish + Taste + ToyBlueprint
               |
               v
+      ConceptContext  ->  ConceptImages
+                            | locked brief + sealed image set
+                            v
          MakeContext  ->  Made
                             | exact product manifest
                             v
@@ -242,10 +268,18 @@ Wish + Taste + ToyBlueprint
                        WorkshopRun
 ```
 
-`Made` binds product metadata to an immutable artifact tree. `Playtested` binds
-every result and evidence file to that artifact hash. `ProductInstructions` binds the
-page and media to both its own manifest and the product hash. `Delivered` binds
-production and carrier receipts to the exact product and Instructions hashes.
+`ConceptImages` binds a locked `ConceptBrief` and every image role to a sealed
+concept root, giving a `concept_sha256` the run records and re-checks whenever
+the concept is used. `Made` binds product metadata to an immutable artifact
+tree. `Playtested` binds every result and evidence file to that artifact hash.
+`ProductInstructions` binds the page and media to both its own manifest and the
+product hash. `Delivered` binds production and carrier receipts to the exact
+product and Instructions hashes.
+
+Three things are checked at the Concept/Make boundary rather than trusted:
+the concept's bytes are re-checked when Make returns, the product's declared
+components must match the brief's, and no file in the product may carry the
+bytes of a concept image.
 
 After delivery, customer Reviews may be collected with the delivered product
 identity and offered as input to a future Make. They do not mutate the
@@ -342,8 +376,20 @@ and terminal `By <Inventor>.` byline are present in that private draft.
 
 Instructions stops there and advances to Deliver. It neither makes the page
 public nor requires an active listing. An owner may review the draft and make
-it public later through a separate, explicit action outside the five-job
+it public later through a separate, explicit action outside the six-job
 pipeline.
+
+Concept art guides Make and never stands in as product proof. Now that concept
+art is a first-class record this is enforced rather than merely stated, at two
+levels. `ConceptImages` has no `hero`/`play`/`detail`/`parts`/`box` roles, so
+the record cannot be passed where product media is expected. And because a
+faithful build makes the substitution tempting — the closer Make comes to
+building what the concept shows, the more reasonable it looks to reuse the
+drawing — the concept's *bytes* are barred too: the Workshop refuses a `Made`
+containing any file whose sha256 matches a concept image, and Instructions
+refuses a product image with those bytes. An instruction is not evidence. The
+concept says what should be built; a product image says what was built, and it
+exists precisely to reveal any divergence between the two.
 
 Before any site effect, Workshop seals both the approved Make/Playtest
 checkpoint and the complete Instructions tree. If credentials disappear or a
@@ -373,7 +419,7 @@ receipt.
 Reviews begins after the customer receives the box. It records customer
 feedback against the delivered toy and may inform a new Wish or future Make.
 It does not delay the original delivery, mutate that run's evidence, or become
-a sixth Workshop job. Inventors customize Taste, Make, and optionally
+another Workshop job. Inventors customize Taste, Make, and optionally
 Playtest—not Reviews.
 
 ## Shared implementation
@@ -389,8 +435,9 @@ inventors/<id>/
 src/inventor_workshop/
   manager.py            one-Wish, Taste-bound inventor assignment
   toys.py               five categories and their shared task blueprint
-  workshop.py           five-job orchestration and improvement loop
+  workshop.py           six-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
+  concept.py            locked design brief, image anchoring, and the artist seam
   make.py               Wish and shared making boundary
   gameplay.py           reproducible AI-player games and leagues
   playtest.py           exact artifact-bound evidence

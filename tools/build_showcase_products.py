@@ -29,6 +29,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
+TOOLS_ROOT = Path(__file__).resolve().parent
+if str(TOOLS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TOOLS_ROOT))
 
 try:
     import cadquery as cq
@@ -43,8 +46,12 @@ except ImportError as exc:  # pragma: no cover - deliberately fail closed
 
 from inventor_workshop import attribute_product_description
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
 from inventor_workshop.jobs import (
+    ConceptBrief,
+    ConceptComponent,
+    ConceptContext,
     Made,
     MakeContext,
     Need,
@@ -58,6 +65,10 @@ from inventor_workshop.workshop import WorkshopTools
 from inventor_workshop.shop import ShopDoor, ShopInstructionsWriter
 from inventor_workshop.store import InventorStore
 from inventor_workshop.toys import ToyBlueprint
+
+# A deterministic fixture, deliberately outside the installed package: this repo
+# ships no image provider, and none is being pretended into existence here.
+from concept_fixture import FixtureConceptArtist, fixture_explode_inspector
 
 
 SCHEMA_VERSION = 1
@@ -1209,6 +1220,72 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     return artifact.resolve(strict=True)
 
 
+def _component_key(name: str) -> str:
+    key = "".join(
+        character if character.isalnum() else "-" for character in name.casefold()
+    )
+    while "--" in key:
+        key = key.replace("--", "-")
+    return key.strip("-")
+
+
+def _showcase_envelope(spec: ProductSpec) -> tuple:
+    for key, value in sorted(spec.design.items()):
+        if not key.endswith("_mm") or not isinstance(value, (list, tuple)):
+            continue
+        if len(value) == 3 and all(isinstance(item, (int, float)) for item in value):
+            return tuple(float(item) for item in value)
+    return (200.0, 200.0, 60.0)
+
+
+def showcase_concept_brief(context: ConceptContext) -> ConceptBrief:
+    """The showcase's own locked brief. Fixture facts, and labelled as such.
+
+    The five checked-in bundles were designed before Concept existed, so their
+    parts are already decided by ``SHOWCASE_COMPONENTS``. This restates them in
+    the brief so the pipeline runs end to end without inventing a different
+    design. The per-component millimetres are fixture placeholders, not measured
+    geometry, and the brief says so in its assumptions.
+    """
+
+    spec = next((item for item in SPECS if item.slug == context.wish.product_id), None)
+    if spec is None:
+        raise RuntimeError("showcase Concept received an unknown Wish")
+    envelope = _showcase_envelope(spec)
+    names = SHOWCASE_COMPONENTS[spec.inventor_id]
+    share = max(len(names), 1)
+    components = tuple(
+        ConceptComponent(
+            _component_key(name),
+            name,
+            "One of the parts this edition ships.",
+            "a printed part of %s, in the edition's material and finish" % spec.title,
+            (envelope[0] / share, envelope[1] / share, envelope[2]),
+            "assembled with the other parts of %s" % spec.title,
+            "meets the other parts of this edition as the assembly requires",
+        )
+        for name in names
+    )
+    return ConceptBrief(
+        spec.title,
+        spec.lane,
+        envelope,
+        2.4,
+        tuple(str(item) for item in spec.design.get("wish_features", ()))
+        or (spec.summary,),
+        {"orientation": "flat on its largest face", "supports": False},
+        components,
+        None,
+        (
+            "Showcase fixture: the component names come from this bundle's "
+            "declared parts, and the per-component millimetres are placeholders "
+            "rather than measured geometry.",
+            "Wall thickness was not measured for this bundle; the brief states "
+            "the Workshop default.",
+        ),
+    )
+
+
 def showcase_make(context: MakeContext) -> Made:
     """One shared, data-driven Make adapter used by all five profiles."""
 
@@ -1601,11 +1678,27 @@ or customer Review. Those facts belong to Deliver and Reviews.
 """
 
 
+def _showcase_concept():
+    """The fixture Concept these bundles run through. Never a real provider.
+
+    No image model exists here, so the concept images are deterministic swatches
+    drawn from the brief. They are what lets the six-job pipeline run end to end
+    for a checked-in bundle; they are not a visualization of anything.
+    """
+
+    return DefaultConcept(
+        FixtureConceptArtist(),
+        fixture_explode_inspector,
+        showcase_concept_brief,
+    )
+
+
 def _workshop_for(spec: ProductSpec, profile: Any, runtime_root: Path):
     instructions = _showcase_instructions(runtime_root)
     if spec.extension_level == "taste-only":
         return profile.build_workshop(
             tools=WorkshopTools(
+                concept=_showcase_concept(),
                 make=showcase_make,
                 playtest=showcase_playtest,
                 instructions=instructions,
@@ -1616,6 +1709,7 @@ def _workshop_for(spec: ProductSpec, profile: Any, runtime_root: Path):
     if spec.extension_level == "custom-make":
         return profile.build_workshop(
             tools=WorkshopTools(
+                concept=_showcase_concept(),
                 playtest=showcase_playtest,
                 instructions=instructions,
             ),
@@ -1625,7 +1719,9 @@ def _workshop_for(spec: ProductSpec, profile: Any, runtime_root: Path):
         )
     if spec.extension_level == "custom-playtest":
         return profile.build_workshop(
-            tools=WorkshopTools(instructions=instructions),
+            tools=WorkshopTools(
+                concept=_showcase_concept(), instructions=instructions
+            ),
             make=showcase_make,
             playtest=showcase_playtest,
             runtime_root=runtime_root,

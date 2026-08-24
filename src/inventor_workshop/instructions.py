@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -169,6 +170,33 @@ def _safe_relative_file(root: Path, value: Any, label: str) -> str:
     return relative.as_posix()
 
 
+def _refuse_concept_pixels(
+    context: InstructionsContext, root: Path, media: Mapping[str, str]
+) -> None:
+    """Refuse a product image that is really one of the concept's own images.
+
+    Type separation stops the concept *record* from being passed here; it does
+    nothing about copied pixels. The closer Make builds to the concept the more
+    plausible the substitution looks and the more it would conceal — a product
+    image exists to reveal a divergence between what was designed and what was
+    actually made, and a concept image is one of the two things being compared.
+    """
+
+    concept = context.concept_images
+    if concept is None:
+        return
+    forbidden = concept.image_digests()
+    if not forbidden:
+        return
+    for role in REQUIRED_PRODUCT_IMAGES:
+        digest = hashlib.sha256((root / media[role]).read_bytes()).hexdigest()
+        if digest in forbidden:
+            raise ContractError(
+                "Instructions %s image has the bytes of a concept image; concept "
+                "art directs the build and never evidences it" % role
+            )
+
+
 def evidence_claims(context: InstructionsContext) -> Dict[str, Any]:
     """Expose exactly what Playtest proved; never upgrade evidence in copy."""
 
@@ -276,6 +304,7 @@ class DefaultInstructions:
             raise ContractError(
                 "Instructions require a distinct file for every fixed image view"
             )
+        _refuse_concept_pixels(context, root, media)
         claims = evidence_claims(context)
         title = str(context.made.product["title"])
         summary = attribute_product_description(

@@ -109,12 +109,14 @@ Alice chosen, and told why
 Classics made yours · Taste only
         |
         v
-+--------------------------------------------------------+
-|                    SHARED WORKSHOP                     |
-|                                                        |
-| Wish -> Make <-> Playtest -> Instructions -> Deliver   |
-|               AI-agent feedback                       |
-+--------------------------------------------------------+
++------------------------------------------------------------------+
+|                        SHARED WORKSHOP                           |
+|                                                                  |
+| Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver  |
+|            ^                    |                                |
+|            +--------------------+                                |
+|                    AI-agent feedback                             |
++------------------------------------------------------------------+
         |
         v
 the approved product -> customer Reviews
@@ -148,7 +150,7 @@ loves, what it refuses, when it should say no. It holds judgment, not machinery
 The Manager is ordinary, tested code. Deciding who gets a real person's wish
 stays in code you can read and check.
 
-The Manager is not a sixth job. It only decides who does the five.
+The Manager is not a job of its own. It only decides who does the six.
 
 ## Five toys, one Workshop
 
@@ -171,16 +173,17 @@ pass Playtest. Their page bundles are sealed; these checked-in runs wait in
 Instructions because no Workshop site credential is present to create and
 authenticate their private drafts. Printing and shipping happen later in
 Deliver. Afterward, an owner may review a draft and make it public outside the
-five-job pipeline. Customer experience is collected after delivery as Reviews.
+six-job pipeline. Customer experience is collected after delivery as Reviews.
 
-## The five jobs
+## The six jobs
 
-Every toy goes through the same five steps:
+Every toy goes through the same six steps:
 
 | Job | What happens |
 |---|---|
 | **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
-| **Make** | Invent the thing and draw the parts so they can really be printed. |
+| **Concept** | Decide what the thing actually looks like: lock its physical facts, then draw one consistent set of images — front, top, bottom, an exploded view, and one per part — that Make has to follow. |
+| **Make** | Invent the thing and draw the parts so they can really be printed, building to the concept rather than reinterpreting the wish. |
 | **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
 | **Instructions** | Write the honest product page and the paper that goes in the box, save and enrich the page as a private Factory draft, and authenticate that exact draft. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
@@ -222,7 +225,7 @@ shared. Instructions creates the page and in-box guide, preserves the terminal
 `By <Inventor>.` product byline, puts the page in Factory as a private draft,
 and records authenticated draft readback before Deliver can begin. It does not
 make the page public or require an active listing. An owner reviews the draft
-and may make it public later, outside the five-job pipeline. That keeps the
+and may make it public later, outside the six-job pipeline. That keeps the
 page, print, and box tied to the exact thing that passed without confusing
 draft creation with release.
 
@@ -346,7 +349,7 @@ under `inventors/`.
 
 - `inventors/` — the first five, any you add, and each inventor's
   `toys/<toy-name>/` creations
-- `src/inventor_workshop/` — picking an inventor, the five jobs, the shared runner
+- `src/inventor_workshop/` — picking an inventor, the six jobs, the shared runner
 - `skills/` — locked CAD and STEP knowledge for making parts
 - `schemas/` — the shapes files and proof have to take
 - `docs/` — how it is built and how to add an inventor

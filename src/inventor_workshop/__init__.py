@@ -68,6 +68,11 @@ from .gameplay import (
     run_league,
 )
 from .jobs import (
+    CONCEPT_OVERALL_ROLES,
+    ConceptBrief,
+    ConceptComponent,
+    ConceptContext,
+    ConceptImages,
     CustomerReview,
     DeliverContext,
     Delivered,
@@ -118,7 +123,19 @@ from .toys import (
     ToyTask,
     playful_make_request,
 )
-from .workshop import CUSTOMIZATION_LEVELS, InstructionsJob, Workshop, WorkshopTools
+from .concept import (
+    ConceptArtist,
+    ConceptImageRequest,
+    DefaultConcept,
+    concept_handoff_text,
+)
+from .workshop import (
+    CUSTOMIZATION_LEVELS,
+    ConceptJob,
+    InstructionsJob,
+    Workshop,
+    WorkshopTools,
+)
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
@@ -195,8 +212,18 @@ __all__ = [
     "CadBuildResult",
     "CadReleaseBundle",
     "CatalogPage",
+    "CONCEPT_OVERALL_ROLES",
+    "ConceptArtist",
+    "ConceptBrief",
+    "ConceptComponent",
+    "ConceptContext",
+    "ConceptImageRequest",
+    "ConceptImages",
+    "ConceptJob",
+    "concept_handoff_text",
     "CUSTOMIZATION_LEVELS",
     "CustomerReview",
+    "DefaultConcept",
     "DefaultDeliver",
     "DefaultInstructions",
     "DeliverContext",

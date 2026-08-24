@@ -4,13 +4,16 @@ Autonomous Workshop 0.5 is the shared Toy Workshop for playthings for grown-ups
 (14+). Its product journey is exactly:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
+                          ^                    |
+                          +--------------------+
+                                 feedback
 after delivery: customer Reviews -> future revision + future Wishes
 ```
 
-The creation workflow still has exactly five jobs. Reviews is shown only as
-post-delivery feedback for future work.
+The creation workflow has exactly six jobs: Concept joins between Wish and
+Make and decides what the plaything looks like before anything is built.
+Reviews is shown only as post-delivery feedback for future work.
 
 This page records what the five bundled showcase profiles can do **now**. A
 valid profile or passing offline test is not a claim that its model, AI
@@ -93,7 +96,8 @@ All five profiles use the same 0.5 contracts for:
 - one-Wish, exact-Taste routing and content-bound assignment;
 - exact, human-owned Taste bytes and SHA-256 identity;
 - one of the five Workshop product categories;
-- the `MakeContext -> Made` and `PlaytestContext -> Playtested` seams;
+- the `ConceptContext -> ConceptImages`, `MakeContext -> Made`, and
+  `PlaytestContext -> Playtested` seams;
 - actionable Playtest feedback and bounded immutable rounds;
 - typed `Need` and `WaitingFor` results instead of fabricated success;
 - content-addressed product, evidence, and Instructions identities;
@@ -152,7 +156,12 @@ wait explicitly:
 ```text
 Leo: MakeContext -> Made -> PlaytestContext -> Playtested   WAITING
 Bob: MakeContext -> Made                                    WAITING
+all: ConceptContext -> ConceptImages                        WAITING
 ```
+
+No image provider ships with this repo, so every profile now waits at Concept
+before it can reach its own Make seam. That is the truthful order: a design is
+decided before it is built, and a design nobody drew is not a design.
 
 Each bridge must preserve exact Taste, product, evidence, tool-version, budget,
 and external-effect identities. Until golden fixtures show parity, the legacy

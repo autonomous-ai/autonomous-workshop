@@ -77,10 +77,41 @@ def _hook_source(level: str) -> Optional[str]:
     make_hook = '''"""The creative seams this inventor chooses to own.
 
 Return exact Workshop records when the implementation is ready. Until then,
-waiting is honest: never invent CAD, print, or play evidence.
+waiting is honest: never invent a design, CAD, print, or play evidence.
 """
 
-from inventor_workshop import Made, MakeContext, Need, WaitingFor
+from inventor_workshop import (
+    ConceptContext,
+    ConceptImages,
+    Made,
+    MakeContext,
+    Need,
+    WaitingFor,
+)
+
+
+def concept(context: ConceptContext) -> ConceptImages:
+    """Replace this wait with this inventor's design-deciding Concept.
+
+    Concept runs before Make in every round and settles what the plaything
+    actually looks like: a locked brief of physical facts plus images that all
+    depict that one design. Feedback from a failed Playtest arrives here, so a
+    design flaw is corrected in the design instead of worked around in geometry.
+    """
+
+    # Round N carries the previous round's concept and its feedback; revise the
+    # standing design rather than proposing an unrelated new one.
+    previous = context.previous
+    del previous
+    raise WaitingFor(
+        Need(
+            "concept",
+            "inventor-concept",
+            "This inventor's custom Concept has not been connected yet.",
+            "Implement concept(context) and return a sealed ConceptImages record; "
+            "never hand Make a design that was described but not drawn.",
+        )
+    )
 
 
 def make(context: MakeContext) -> Made:
@@ -90,6 +121,11 @@ def make(context: MakeContext) -> Made:
     # receives it on every round; never infer or increase it from Wish text.
     playtest_rounds = context.playtest_rounds
     del playtest_rounds
+    # When a concept is present it is the primary reference for form,
+    # proportion, and the part breakdown; where an image and the brief's
+    # millimetres disagree, the numbers govern.
+    concept_images = context.concept_images
+    del concept_images
     raise WaitingFor(
         Need(
             "make",
@@ -162,13 +198,14 @@ def _files(
             "Instructions, Deliver, the improvement loop, and durable state."
         ),
         "custom-make": (
-            "This inventor owns `TASTE.md` and `inventor.py:make`. Workshop supplies "
-            "Playtest, Instructions, Deliver, the improvement loop, and durable state."
+            "This inventor owns `TASTE.md`, `inventor.py:concept`, and "
+            "`inventor.py:make`. Workshop supplies Playtest, Instructions, Deliver, "
+            "the improvement loop, and durable state."
         ),
         "custom-playtest": (
-            "This inventor owns `TASTE.md`, `inventor.py:make`, and "
-            "`inventor.py:playtest`. Workshop still owns the loop, Instructions, Deliver, "
-            "artifact identity, and durable state."
+            "This inventor owns `TASTE.md`, `inventor.py:concept`, "
+            "`inventor.py:make`, and `inventor.py:playtest`. Workshop still owns "
+            "the loop, Instructions, Deliver, artifact identity, and durable state."
         ),
     }[level]
     hook_step = {
@@ -177,21 +214,25 @@ def _files(
             "Make or Playtest harness into this folder."
         ),
         "custom-make": (
-            "2. Implement the typed `make(context)` seam in `src/%s/inventor.py`."
-            % package
+            "2. Implement the typed `concept(context)` and `make(context)` seams "
+            "in `src/%s/inventor.py`." % package
         ),
         "custom-playtest": (
-            "2. Implement the typed `make(context)` and `playtest(context)` seams "
-            "in `src/%s/inventor.py`." % package
+            "2. Implement the typed `concept(context)`, `make(context)`, and "
+            "`playtest(context)` seams in `src/%s/inventor.py`." % package
         ),
     }[level]
 
     custom_import = {
-        "taste-only": "CUSTOM_MAKE = None\nCUSTOM_PLAYTEST = None",
+        "taste-only": (
+            "CUSTOM_CONCEPT = None\nCUSTOM_MAKE = None\nCUSTOM_PLAYTEST = None"
+        ),
         "custom-make": (
+            "from .inventor import concept as CUSTOM_CONCEPT\n"
             "from .inventor import make as CUSTOM_MAKE\n\nCUSTOM_PLAYTEST = None"
         ),
         "custom-playtest": (
+            "from .inventor import concept as CUSTOM_CONCEPT\n"
             "from .inventor import make as CUSTOM_MAKE\n"
             "from .inventor import playtest as CUSTOM_PLAYTEST"
         ),
@@ -414,6 +455,7 @@ def build_workshop(
         tools=tools if tools is not None else WorkshopTools(),
         make=CUSTOM_MAKE,
         playtest=CUSTOM_PLAYTEST,
+        concept=CUSTOM_CONCEPT,
         runtime_root=runtime_root if runtime_root is not None else default_runtime_root(),
         max_rounds=max_rounds,
     )
@@ -513,7 +555,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(workshop.customization_level, {level_literal})
         self.assertEqual(
             tuple(WORKSHOP_JOBS),
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "concept", "make", "playtest", "instructions", "deliver"),
         )
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
@@ -546,7 +588,9 @@ class SmokeTest(unittest.TestCase):
                     )
                 result = json.loads(output.getvalue())
                 self.assertEqual(result["status"], "waiting")
-                self.assertEqual(result["job"], "make")
+                # A new inventor has no concept provider yet, so the first
+                # truthful stop is Concept: no design, no build.
+                self.assertEqual(result["job"], "concept")
                 self.assertEqual(result["playtest_rounds"], 2)
                 self.assertIsNone(result["artifact_sha256"])
                 self.assertTrue(result["needs"])

@@ -1,7 +1,9 @@
 """The opinionated first Workshop: Wish-shaped playthings for grown-ups.
 
 The five lanes are crafts, not extra pipeline stages. Every inventor implements
-the same five creation jobs: Wish, Make, AI Playtest, Instructions, and Deliver.
+the same six creation jobs: Wish, Concept, Make, AI Playtest, Instructions, and
+Deliver. Concept decides what the plaything looks like before Make builds it, so
+a rejected round can be answered in the design rather than only in the geometry.
 Customer Reviews follow Deliver as a shared feedback stream. Reviews improve a
 future revision of the same toy and future Wishes; they never rewrite what was
 already delivered.
@@ -21,6 +23,7 @@ from .taste import Taste
 
 WORKSHOP_JOBS: Tuple[str, ...] = (
     "wish",
+    "concept",
     "make",
     "playtest",
     "instructions",
@@ -50,7 +53,8 @@ class ToyTask:
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
             raise ContractError(
-                "toy task job must be Wish, Make, Playtest, Instructions, or Deliver"
+                "toy task job must be Wish, Concept, Make, Playtest, Instructions, "
+                "or Deliver"
             )
         for label, value in (
             ("key", self.key),
@@ -88,6 +92,27 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "Preserve the person's words and choose the craft that can answer them uniquely.",
         "Exact Wish and Taste hashes plus the chosen plaything lane.",
         "wish-intake",
+    ),
+    ToyTask(
+        "concept.lock",
+        "concept",
+        "Decide the design's physical facts before anything is drawn, and record what the Wish left open.",
+        "A locked brief of object, envelope, wall thickness, components, fit target, and stated assumptions.",
+        "concept-brief",
+    ),
+    ToyTask(
+        "concept.views",
+        "concept",
+        "Visualize one concrete design: overall views, an exploded view, and one view per component.",
+        "A sealed concept root whose images all depict the same brief-bound design.",
+        "concept-images",
+    ),
+    ToyTask(
+        "concept.explode",
+        "concept",
+        "Confirm the exploded view separates every named component before any component view is drawn.",
+        "A per-component completeness result for the exact exploded image and brief.",
+        "exploded-view-check",
     ),
     ToyTask(
         "make.discover",

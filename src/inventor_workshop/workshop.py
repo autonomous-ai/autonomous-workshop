@@ -28,6 +28,7 @@ from .cad import (
     VerificationCheck,
     VerificationReceipt,
 )
+from .concept import DefaultConcept, MAX_CONCEPT_REFINE_DEPTH
 from .deliver import DefaultDeliver
 from .instructions import (
     DefaultInstructions,
@@ -36,6 +37,8 @@ from .instructions import (
 )
 from .errors import ContractError
 from .jobs import (
+    ConceptContext,
+    ConceptImages,
     CustomerReview,
     DeliverContext,
     Delivered,
@@ -50,13 +53,14 @@ from .jobs import (
     WorkshopRun,
 )
 from .make import Wish
-from .models import PlaytestResult
+from .models import PlaytestResult, require_sha256
 from .playtest import Playtest
 from .runtime import Runtime
 from .taste import load_taste
 from .toys import ToyBlueprint, playful_make_request
 
 
+ConceptJob = Callable[[ConceptContext], ConceptImages]
 MakeJob = Callable[[MakeContext], Made]
 PlaytestJob = Callable[[PlaytestContext], Playtested]
 InstructionsJob = Callable[[InstructionsContext], ProductInstructions]
@@ -565,6 +569,7 @@ def _instructions_checkpoint_payload(
     playtested: Playtested,
     run_root: Path,
     playtest_workspace: Path,
+    concept_sha256: Optional[str],
 ) -> Mapping[str, Any]:
     made.assert_current()
     playtested.evidence.assert_valid()
@@ -590,6 +595,9 @@ def _instructions_checkpoint_payload(
         "customization_level": customization_level,
         "playtest_rounds": playtest_rounds,
         "round": round_number,
+        # The concept this build followed, so a resumed run cannot silently
+        # attach its approved product to a different design.
+        "concept_sha256": concept_sha256,
         "made": {
             "root": _relative_tree(run_root, made.artifact_root, "Made artifact"),
             "manifest": made.artifact_manifest.to_dict(),
@@ -709,15 +717,80 @@ class WorkshopTools:
     playtest: Optional[PlaytestJob] = None
     instructions: Optional[InstructionsJob] = None
     deliver: Optional[DeliverJob] = None
+    concept: Optional[ConceptJob] = None
 
     def __post_init__(self) -> None:
         for value, label in (
+            (self.concept, "Workshop Concept"),
             (self.make, "Workshop Make"),
             (self.playtest, "Workshop Playtest"),
             (self.instructions, "Workshop Instructions"),
             (self.deliver, "Workshop Deliver"),
         ):
             _callable_or_none(value, label)
+
+
+def _assert_product_follows_concept(concept: ConceptImages, made: Made) -> None:
+    """Enforce the two parts of concept adherence that bytes can actually settle.
+
+    The component breakdown was decided in Concept, so a product that ships a
+    different set of parts is a different design and is refused. And the concept
+    is an instruction, never evidence: a build that copies the drawing into its
+    own artifact tree has not shown what was made, however faithfully it built.
+    """
+
+    declared = made.product.get("components", [])
+    if isinstance(declared, (str, bytes)) or not isinstance(declared, (list, tuple)):
+        raise ContractError(
+            "Make must publish the concept's component list as its components"
+        )
+    remaining = {item.key: item for item in concept.brief.components}
+    for value in declared:
+        name = str(value)
+        matched = next(
+            (
+                key
+                for key, component in remaining.items()
+                if name in (component.key, component.name)
+            ),
+            None,
+        )
+        if matched is None:
+            raise ContractError(
+                "Make published component %r, which the concept brief does not name"
+                % name
+            )
+        del remaining[matched]
+    if remaining:
+        raise ContractError(
+            "Make omitted the concept's components: %s"
+            % ", ".join(sorted(remaining))
+        )
+    reused = concept.image_digests() & {
+        entry.sha256 for entry in made.artifact_manifest.entries
+    }
+    if reused:
+        raise ContractError(
+            "Make returned a product containing concept image bytes; a concept "
+            "says what to build and can never stand in as a picture of what was built"
+        )
+
+
+def _missing_concept(context: ConceptContext) -> ConceptImages:
+    capabilities = context.blueprint.required_capabilities("concept")
+    raise WaitingFor(
+        *(
+            Need(
+                "concept",
+                capability,
+                "This Wish still needs %s before Make can build to a decided design."
+                % capability,
+                "Configure the shared Concept capability; never hand Make a design "
+                "that was described but not actually drawn.",
+            )
+            for capability in capabilities
+        )
+    )
 
 
 def _missing_make(context: MakeContext) -> Made:
@@ -764,6 +837,7 @@ class Workshop:
         tools: Optional[WorkshopTools] = None,
         make: Optional[MakeJob] = None,
         playtest: Optional[PlaytestJob] = None,
+        concept: Optional[ConceptJob] = None,
         runtime_root: Optional[Path] = None,
         max_rounds: int = 4,
     ) -> None:
@@ -778,6 +852,7 @@ class Workshop:
             raise ContractError("inventor root must be a directory")
         _callable_or_none(make, "inventor Make")
         _callable_or_none(playtest, "inventor Playtest")
+        _callable_or_none(concept, "inventor Concept")
         if playtest is not None and make is None:
             raise ContractError("custom Playtest requires custom Make")
         if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
@@ -794,6 +869,9 @@ class Workshop:
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
         self.tools = selected_tools
+        self.concept_job: ConceptJob = (
+            concept or selected_tools.concept or _missing_concept
+        )
         self.make_job: MakeJob = make or selected_tools.make or _missing_make
         self.playtest_job: PlaytestJob = (
             playtest or selected_tools.playtest or _missing_playtest
@@ -925,9 +1003,12 @@ class Workshop:
         product = runtime.get_product(product_id)
         source = product["stage"]
         legal = {
-            "wish": ("make",),
+            # Make is reachable only through Concept: a build always follows a
+            # decided design, including the rebuild a failed Playtest asks for.
+            "wish": ("concept",),
+            "concept": ("concept", "make"),
             "make": ("make", "playtest"),
-            "playtest": ("playtest", "make", "instructions"),
+            "playtest": ("playtest", "concept", "instructions"),
             "instructions": ("instructions", "deliver"),
             "deliver": ("deliver",),
         }
@@ -956,6 +1037,7 @@ class Workshop:
         artifact_sha256: Optional[str] = None,
         instructions_sha256: Optional[str] = None,
         page_url: Optional[str] = None,
+        concept_sha256: Optional[str] = None,
     ) -> WorkshopRun:
         if any(need.job != job for need in waiting.needs):
             raise ContractError("waiting capability belongs to a different Workshop job")
@@ -964,6 +1046,8 @@ class Workshop:
             "round": round_number,
             "needs": [need.to_dict() for need in waiting.needs],
         }
+        if concept_sha256 is not None:
+            wait_payload["concept_sha256"] = concept_sha256
         if job == "instructions":
             run_root = self.runtime_root / "runs" / wish.product_id
             _, checkpoint_sha256 = _read_instructions_checkpoint(run_root)
@@ -998,6 +1082,7 @@ class Workshop:
             waiting.needs,
             playtest_rounds=playtest_rounds,
             page_url=page_url,
+            concept_sha256=concept_sha256,
         )
 
     def _finish_instructions(
@@ -1010,6 +1095,7 @@ class Workshop:
         playtest_rounds: int,
         lease_token: str,
         instructions_workspace: Path,
+        concept_sha256: Optional[str] = None,
     ) -> WorkshopRun:
         """Validate Instructions once, then continue through the existing Deliver job."""
 
@@ -1050,6 +1136,7 @@ class Workshop:
                 artifact_sha256=made.artifact_sha256,
                 instructions_sha256=product_instructions.instructions_sha256,
                 page_url=product_instructions.page_url,
+                concept_sha256=concept_sha256,
             )
         if not isinstance(delivered, Delivered):
             raise ContractError("Deliver must return Delivered")
@@ -1077,6 +1164,7 @@ class Workshop:
             delivery=delivered,
             playtest_rounds=playtest_rounds,
             page_url=product_instructions.page_url,
+            concept_sha256=concept_sha256,
         )
 
     def resume_instructions(self, wish: Wish) -> WorkshopRun:
@@ -1151,6 +1239,7 @@ class Workshop:
                 "customization_level",
                 "playtest_rounds",
                 "round",
+                "concept_sha256",
                 "made",
                 "playtested",
             }:
@@ -1178,6 +1267,11 @@ class Workshop:
                 or round_number > selected_rounds
             ):
                 raise ContractError("Instructions checkpoint round is outside its allowance")
+            checkpoint_concept = checkpoint["concept_sha256"]
+            if checkpoint_concept is not None:
+                require_sha256(
+                    checkpoint_concept, "Instructions checkpoint concept sha256"
+                )
 
             events = runtime.events(wish.product_id)
             latest = events[-1]
@@ -1224,6 +1318,13 @@ class Workshop:
             ):
                 raise ContractError(
                     "persisted Instructions state identifies different Make or Playtest bytes"
+                )
+            if (
+                approval_event["payload"].get("concept_sha256") != checkpoint_concept
+                or latest_payload.get("concept_sha256") != checkpoint_concept
+            ):
+                raise ContractError(
+                    "persisted Instructions state was built against a different concept"
                 )
 
             instructions_workspace = (run_root / "instructions").absolute()
@@ -1277,6 +1378,7 @@ class Workshop:
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
+                    concept_sha256=checkpoint_concept,
                 )
             return self._finish_instructions(
                 runtime,
@@ -1287,6 +1389,7 @@ class Workshop:
                 selected_rounds,
                 lease,
                 instructions_workspace,
+                checkpoint_concept,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)
@@ -1328,7 +1431,7 @@ class Workshop:
             self._advance(
                 runtime,
                 wish.product_id,
-                "make",
+                "concept",
                 artifact_sha256=None,
                 payload={"status": "working", "round": 1},
                 lease_token=lease,
@@ -1337,9 +1440,63 @@ class Workshop:
             feedback = ()
             made: Optional[Made] = None
             playtested: Optional[Playtested] = None
+            concept: Optional[ConceptImages] = None
+            previous_concept: Optional[ConceptImages] = None
+            refine_depth = 0
             round_number = 0
             for round_number in range(1, selected_rounds + 1):
                 round_root = run_root / ("round-%03d" % round_number)
+                concept_workspace = (round_root / "concept").absolute()
+                concept_context = ConceptContext(
+                    wish,
+                    self.taste,
+                    self.blueprint,
+                    round_number,
+                    concept_workspace,
+                    feedback,
+                    selected_rounds,
+                    previous_concept,
+                    refine_depth,
+                )
+                try:
+                    concept = self.concept_job(concept_context)
+                except WaitingFor as waiting:
+                    return self._wait(
+                        runtime,
+                        wish,
+                        "concept",
+                        round_number,
+                        waiting,
+                        lease,
+                        selected_rounds,
+                    )
+                if not isinstance(concept, ConceptImages):
+                    raise ContractError("Concept must return ConceptImages")
+                _inside(concept.root, concept_workspace, "Concept images")
+                concept.assert_current()
+                if concept.round != round_number:
+                    raise ContractError("Concept returned a design for another round")
+                if previous_concept is not None and feedback:
+                    refine_depth = (
+                        0
+                        if refine_depth >= MAX_CONCEPT_REFINE_DEPTH
+                        else refine_depth + 1
+                    )
+                previous_concept = concept
+                self.taste.assert_current()
+                self._advance(
+                    runtime,
+                    wish.product_id,
+                    "make",
+                    artifact_sha256=None,
+                    payload={
+                        "status": "working",
+                        "round": round_number,
+                        "concept_sha256": concept.concept_sha256,
+                    },
+                    lease_token=lease,
+                )
+
                 make_workspace = (round_root / "make").absolute()
                 make_context = MakeContext(
                     wish,
@@ -1349,6 +1506,7 @@ class Workshop:
                     make_workspace,
                     feedback,
                     selected_rounds,
+                    concept,
                 )
                 try:
                     made = self.make_job(make_context)
@@ -1361,6 +1519,7 @@ class Workshop:
                         waiting,
                         lease,
                         selected_rounds,
+                        concept_sha256=concept.concept_sha256,
                     )
                 if not isinstance(made, Made):
                     raise ContractError("Make must return Made")
@@ -1368,6 +1527,10 @@ class Workshop:
                 made.assert_current()
                 if made.product.get("lane") != self.lane:
                     raise ContractError("Make returned a product for another plaything lane")
+                # Make may have been slow, and the concept it followed is the
+                # thing the product will be judged against.
+                concept.assert_current()
+                _assert_product_follows_concept(concept, made)
                 self.taste.assert_current()
                 self._advance(
                     runtime,
@@ -1421,6 +1584,7 @@ class Workshop:
                             lease,
                             selected_rounds,
                             artifact_sha256=made.artifact_sha256,
+                            concept_sha256=concept.concept_sha256,
                         )
                     checkpoint_payload = _instructions_checkpoint_payload(
                         wish,
@@ -1433,6 +1597,7 @@ class Workshop:
                         playtested,
                         run_root,
                         playtest_workspace,
+                        concept.concept_sha256,
                     )
                     checkpoint_sha256 = _write_instructions_checkpoint(
                         run_root, checkpoint_payload
@@ -1448,6 +1613,7 @@ class Workshop:
                             "evidence_artifact_sha256": (
                                 playtested.evidence.evidence_artifact_sha256
                             ),
+                            "concept_sha256": concept.concept_sha256,
                             "resume_checkpoint_sha256": checkpoint_sha256,
                         },
                         lease_token=lease,
@@ -1471,6 +1637,7 @@ class Workshop:
                         payload={
                             "status": "stopped",
                             "round": round_number,
+                            "concept_sha256": concept.concept_sha256,
                             "feedback": [item.to_dict() for item in feedback],
                         },
                         lease_token=lease,
@@ -1482,15 +1649,19 @@ class Workshop:
                         round_number,
                         made.artifact_sha256,
                         playtest_rounds=selected_rounds,
+                        concept_sha256=concept.concept_sha256,
                     )
+                # A rejected revision goes back through Concept: a design flaw
+                # is corrected in the design, not worked around in geometry.
                 self._advance(
                     runtime,
                     wish.product_id,
-                    "make",
+                    "concept",
                     artifact_sha256=made.artifact_sha256,
                     payload={
                         "status": "working",
                         "round": round_number + 1,
+                        "concept_sha256": concept.concept_sha256,
                         "feedback": [item.to_dict() for item in feedback],
                     },
                     lease_token=lease,
@@ -1498,6 +1669,7 @@ class Workshop:
 
             if made is None or playtested is None or not playtested.passed:
                 raise ContractError("Workshop ended without an approved Make")
+            assert concept is not None
             instructions_workspace = (run_root / "instructions").absolute()
             instructions_context = InstructionsContext(
                 wish,
@@ -1507,6 +1679,7 @@ class Workshop:
                 playtested,
                 instructions_workspace,
                 lease,
+                concept,
             )
             try:
                 product_instructions = self.instructions_job(instructions_context)
@@ -1520,6 +1693,7 @@ class Workshop:
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
+                    concept_sha256=concept.concept_sha256,
                 )
             return self._finish_instructions(
                 runtime,
@@ -1530,6 +1704,7 @@ class Workshop:
                 selected_rounds,
                 lease,
                 instructions_workspace,
+                concept.concept_sha256,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)
@@ -1549,6 +1724,7 @@ from .offline import (  # noqa: E402,F401
 
 __all__ = [
     "CUSTOMIZATION_LEVELS",
+    "ConceptJob",
     "DeliverJob",
     "InstructionsJob",
     "MakeJob",

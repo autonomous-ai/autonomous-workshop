@@ -15,10 +15,10 @@ from inventor_workshop.toys import (
 
 
 class ToyBlueprintTest(unittest.TestCase):
-    def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
+    def test_first_workshop_has_exactly_six_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS,
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "concept", "make", "playtest", "instructions", "deliver"),
         )
         self.assertEqual(
             PLAYTHING_LANES,

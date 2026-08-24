@@ -1,4 +1,4 @@
-"""Strict inputs and outputs for the five Toy Workshop jobs."""
+"""Strict inputs and outputs for the six Toy Workshop jobs."""
 
 from __future__ import annotations
 
@@ -23,6 +23,12 @@ _CARRIERS = frozenset(("USPS", "UPS", "FedEx"))
 _DELIVERY_STATUSES = frozenset(("handed-off", "delivered"))
 _INSTRUCTIONS_MEDIA_ROLES = frozenset(("hero", "play", "detail", "parts", "box"))
 _INSTRUCTIONS_IMAGE_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp"))
+
+CONCEPT_OVERALL_ROLES: Tuple[str, ...] = ("front", "top", "bottom", "exploded")
+CONCEPT_DESCRIPTOR_FILENAME = "concept.json"
+CONCEPT_IMAGE_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp"))
+MAX_CONCEPT_COMPONENTS = 12
+_CONCEPT_KEY_CHARACTERS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789-")
 
 
 def _text(value: Any, label: str, maximum: int = 10_000) -> str:
@@ -59,6 +65,51 @@ def _mapping(value: Mapping[str, Any], label: str, *, nonempty: bool = False) ->
     return copied
 
 
+def _positive_number(value: Any, label: str) -> float:
+    if type(value) not in (int, float) or value != value or value in (
+        float("inf"),
+        float("-inf"),
+    ):
+        raise ContractError("%s must be a real number" % label)
+    number = float(value)
+    if not 0 < number <= 100_000:
+        raise ContractError("%s must be a positive millimetre measurement" % label)
+    return number
+
+
+def _dimensions_mm(value: Any, label: str) -> Tuple[float, float, float]:
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
+        raise ContractError("%s must be three millimetre dimensions" % label)
+    numbers = tuple(value)
+    if len(numbers) != 3:
+        raise ContractError("%s must be three millimetre dimensions" % label)
+    return (
+        _positive_number(numbers[0], "%s length" % label),
+        _positive_number(numbers[1], "%s width" % label),
+        _positive_number(numbers[2], "%s height" % label),
+    )
+
+
+def _text_tuple(value: Any, label: str, maximum: int = 2_000) -> Tuple[str, ...]:
+    if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Sequence):
+        raise ContractError("%s must be a sequence of lines" % label)
+    return tuple(_text(item, label, maximum) for item in value)
+
+
+def _concept_key(value: Any, label: str) -> str:
+    _text(value, label, 64)
+    key = str(value)
+    if not set(key) <= _CONCEPT_KEY_CHARACTERS or key.startswith("-") or key.endswith("-"):
+        raise ContractError(
+            "%s must be a lowercase hyphenated key so a filename can carry it" % label
+        )
+    if key in CONCEPT_OVERALL_ROLES:
+        raise ContractError(
+            "%s must not reuse an overall concept view name" % label
+        )
+    return key
+
+
 def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
     current = build_artifact_manifest(root, created_at=manifest.created_at)
     if current.to_dict() != manifest.to_dict():
@@ -77,7 +128,7 @@ class Need:
 
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
-            raise ContractError("need job must name one of the five Workshop jobs")
+            raise ContractError("need job must name one of the Workshop jobs")
         _text(self.capability, "need capability", 200)
         _text(self.reason, "need reason")
         _text(self.instructions, "need instructions")
@@ -142,6 +193,399 @@ class Feedback:
 
 
 @dataclass(frozen=True)
+class ConceptComponent:
+    """One decided part of a concept, specified well enough to draw unseen.
+
+    Geometry lives here rather than in a picture because text does not occlude.
+    A component hidden behind another part in every external view is still fully
+    stated by ``form``, ``dimensions_mm``, ``placement``, and ``interfaces``.
+    """
+
+    key: str
+    name: str
+    purpose: str
+    form: str
+    dimensions_mm: Sequence[float]
+    placement: str
+    interfaces: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "key", _concept_key(self.key, "concept component key"))
+        _text(self.name, "concept component name", 200)
+        _text(self.purpose, "concept component purpose", 2_000)
+        _text(self.form, "concept component form", 2_000)
+        _text(self.placement, "concept component placement", 2_000)
+        _text(self.interfaces, "concept component interfaces", 2_000)
+        object.__setattr__(
+            self,
+            "dimensions_mm",
+            _dimensions_mm(self.dimensions_mm, "concept component dimensions_mm"),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "key": self.key,
+            "name": self.name,
+            "purpose": self.purpose,
+            "form": self.form,
+            "dimensions_mm": list(self.dimensions_mm),
+            "placement": self.placement,
+            "interfaces": self.interfaces,
+        }
+
+
+@dataclass(frozen=True)
+class ConceptBrief:
+    """The design's decided physical facts, settled before any image is drawn.
+
+    The brief is the design's complete description and is complete independently
+    of any image, so that every image request can carry the same millimetres and
+    every component can be drawn from its own specification.
+    """
+
+    object: str
+    category: str
+    envelope_mm: Sequence[float]
+    wall_mm: float
+    features: Sequence[str]
+    print: Mapping[str, Any]
+    components: Sequence[ConceptComponent]
+    fits: Optional[Mapping[str, Any]] = None
+    assumptions: Sequence[str] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        _text(self.object, "concept brief object", 500)
+        _text(self.category, "concept brief category", 200)
+        object.__setattr__(
+            self,
+            "envelope_mm",
+            _dimensions_mm(self.envelope_mm, "concept brief envelope_mm"),
+        )
+        object.__setattr__(
+            self, "wall_mm", _positive_number(self.wall_mm, "concept brief wall_mm")
+        )
+        object.__setattr__(
+            self, "features", _text_tuple(self.features, "concept brief feature")
+        )
+        object.__setattr__(
+            self,
+            "assumptions",
+            _text_tuple(self.assumptions, "concept brief assumption"),
+        )
+        printing = _mapping(self.print, "concept brief print", nonempty=True)
+        if set(printing) != {"orientation", "supports"}:
+            raise ContractError(
+                "concept brief print must state orientation and supports"
+            )
+        _text(printing["orientation"], "concept brief print orientation", 500)
+        if printing["supports"] is not True and printing["supports"] is not False:
+            raise ContractError("concept brief print supports must be true or false")
+        object.__setattr__(self, "print", printing)
+        components = tuple(self.components)
+        if not components or not all(
+            isinstance(item, ConceptComponent) for item in components
+        ):
+            raise ContractError("concept brief requires ConceptComponent records")
+        if len(components) > MAX_CONCEPT_COMPONENTS:
+            raise ContractError(
+                "concept brief must name at most %d components"
+                % MAX_CONCEPT_COMPONENTS
+            )
+        if len({item.key for item in components}) != len(components):
+            raise ContractError("concept brief component keys must be unique")
+        object.__setattr__(self, "components", components)
+        if self.fits is not None:
+            fits = _mapping(self.fits, "concept brief fits", nonempty=True)
+            if set(fits) != {"target", "ref_mm", "clearance_mm"}:
+                raise ContractError(
+                    "concept brief fits must state target, ref_mm, and clearance_mm"
+                )
+            _text(fits["target"], "concept brief fits target", 500)
+            fits["ref_mm"] = list(
+                _dimensions_mm(fits["ref_mm"], "concept brief fits ref_mm")
+            )
+            fits["clearance_mm"] = _positive_number(
+                fits["clearance_mm"], "concept brief fits clearance_mm"
+            )
+            object.__setattr__(self, "fits", fits)
+
+    @property
+    def component_keys(self) -> Tuple[str, ...]:
+        return tuple(item.key for item in self.components)
+
+    def component(self, key: str) -> ConceptComponent:
+        for item in self.components:
+            if item.key == key:
+                return item
+        raise ContractError("concept brief does not name component %r" % key)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "object": self.object,
+            "category": self.category,
+            "envelope_mm": list(self.envelope_mm),
+            "wall_mm": self.wall_mm,
+            "features": list(self.features),
+            "print": dict(self.print),
+            "components": [item.to_dict() for item in self.components],
+            "fits": dict(self.fits) if self.fits is not None else None,
+            "assumptions": list(self.assumptions),
+        }
+
+
+def _safe_concept_image(root: Path, value: Any, label: str) -> str:
+    """Apply the Instructions media path rules to one concept image path."""
+
+    if not isinstance(value, str) or not value:
+        raise ContractError("concept image %s must be a relative path" % label)
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts or "\\" in value:
+        raise ContractError(
+            "concept image %s must stay inside the concept root" % label
+        )
+    path = root / relative
+    if path.is_symlink():
+        raise ContractError("concept image %s must not be a symlink" % label)
+    try:
+        resolved = path.resolve(strict=True)
+        resolved.relative_to(root.resolve(strict=True))
+    except (OSError, ValueError) as exc:
+        raise ContractError(
+            "concept image %s is missing or outside the concept root" % label
+        ) from exc
+    if not resolved.is_file() or resolved.suffix.casefold() not in CONCEPT_IMAGE_SUFFIXES:
+        raise ContractError(
+            "concept image %s must be a PNG, JPEG, or WebP file" % label
+        )
+    return relative.as_posix()
+
+
+def _filename_carries(relative: str, label: str) -> bool:
+    """Whether a concept filename identifies its role without opening it."""
+
+    stem = Path(relative).stem.casefold()
+    name = label.casefold()
+    if stem == name:
+        return True
+    return any(
+        stem.startswith(name + separator) or stem.endswith(separator + name)
+        for separator in ("-", "_", ".")
+    )
+
+
+@dataclass(frozen=True)
+class ConceptImages:
+    """One sealed concept: the locked brief plus the images that depict it.
+
+    Every image is identified by role in three places that never include the
+    pixels: this record, the in-root ``concept.json`` descriptor, and the
+    filename. Concept images are handed back to an image model as references,
+    so a caption burned into one is text the next image can inherit.
+
+    A concept is an instruction, never evidence. It says what should be built;
+    only a picture of the finished artifact says what was built.
+    """
+
+    root: Path
+    manifest: ArtifactManifest
+    brief: ConceptBrief
+    overall: Mapping[str, str]
+    components: Mapping[str, str]
+    round: int
+
+    def __post_init__(self) -> None:
+        root = Path(self.root)
+        if not root.is_absolute() or root.is_symlink() or not root.is_dir():
+            raise ContractError(
+                "ConceptImages root must be an absolute regular directory"
+            )
+        if not isinstance(self.manifest, ArtifactManifest):
+            raise ContractError("ConceptImages requires an ArtifactManifest")
+        if not isinstance(self.brief, ConceptBrief):
+            raise ContractError("ConceptImages requires a ConceptBrief")
+        if type(self.round) is not int or self.round < 1:
+            raise ContractError("ConceptImages round must be a positive integer")
+        overall_value = self.overall
+        if not isinstance(overall_value, Mapping) or set(overall_value) != set(
+            CONCEPT_OVERALL_ROLES
+        ):
+            raise ContractError(
+                "ConceptImages requires front, top, bottom, and exploded views"
+            )
+        components_value = self.components
+        if not isinstance(components_value, Mapping):
+            raise ContractError("ConceptImages components must be a role mapping")
+        if set(components_value) != set(self.brief.component_keys):
+            raise ContractError(
+                "ConceptImages must name exactly one image per brief component"
+            )
+        overall = {}
+        for role in CONCEPT_OVERALL_ROLES:
+            relative = _safe_concept_image(root, overall_value[role], role)
+            if not _filename_carries(relative, role):
+                raise ContractError(
+                    "concept %s image filename must identify its role" % role
+                )
+            overall[role] = relative
+        components = {}
+        for key in sorted(components_value):
+            relative = _safe_concept_image(root, components_value[key], key)
+            if not _filename_carries(relative, key):
+                raise ContractError(
+                    "concept component image filename must identify component %s" % key
+                )
+            components[key] = relative
+        paths = list(overall.values()) + list(components.values())
+        if len(set(paths)) != len(paths):
+            raise ContractError(
+                "ConceptImages requires a distinct file for every image role"
+            )
+        _fresh_manifest(root, self.manifest)
+        self._assert_descriptor(root, overall, components)
+        object.__setattr__(self, "root", root.resolve(strict=True))
+        object.__setattr__(self, "overall", overall)
+        object.__setattr__(self, "components", components)
+
+    def _assert_descriptor(
+        self,
+        root: Path,
+        overall: Mapping[str, str],
+        components: Mapping[str, str],
+    ) -> None:
+        """Require the sealed in-root descriptor to agree with this record."""
+
+        descriptor_path = root / CONCEPT_DESCRIPTOR_FILENAME
+        if descriptor_path.is_symlink() or not descriptor_path.is_file():
+            raise ContractError(
+                "ConceptImages requires an in-root %s descriptor"
+                % CONCEPT_DESCRIPTOR_FILENAME
+            )
+        try:
+            descriptor_value = json.loads(
+                descriptor_path.read_text(encoding="utf-8")
+            )
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            raise ContractError(
+                "concept descriptor must be valid UTF-8 JSON"
+            ) from exc
+        descriptor = _mapping(
+            descriptor_value, "concept descriptor", nonempty=True
+        )
+        if descriptor.get("brief") != self.brief.to_dict():
+            raise ContractError(
+                "concept descriptor records a different design brief"
+            )
+        if descriptor.get("round") != self.round:
+            raise ContractError("concept descriptor records a different round")
+        if descriptor.get("concept_art") is not True:
+            raise ContractError(
+                "concept descriptor must mark its images as concept art"
+            )
+        images = descriptor.get("images")
+        expected = dict(overall)
+        expected["components"] = dict(components)
+        if not isinstance(images, Mapping) or dict(images) != expected:
+            raise ContractError(
+                "concept descriptor roles and paths differ from the concept"
+            )
+
+    @classmethod
+    def from_root(
+        cls,
+        root: Path,
+        brief: ConceptBrief,
+        overall: Mapping[str, str],
+        components: Mapping[str, str],
+        round_number: int,
+    ) -> "ConceptImages":
+        resolved = Path(root).resolve(strict=True)
+        return cls(
+            resolved,
+            build_artifact_manifest(resolved, created_at="content-addressed"),
+            brief,
+            overall,
+            components,
+            round_number,
+        )
+
+    @property
+    def concept_sha256(self) -> str:
+        return self.manifest.artifact_sha256
+
+    def paths(self) -> Dict[str, str]:
+        """Every image in the set, keyed by overall role or component key."""
+
+        combined = dict(self.overall)
+        combined.update(self.components)
+        return combined
+
+    def image_digests(self) -> frozenset:
+        """The exact bytes of every concept image, for product-proof refusal."""
+
+        wanted = set(self.paths().values())
+        return frozenset(
+            entry.sha256
+            for entry in self.manifest.entries
+            if entry.path in wanted
+        )
+
+    def assert_current(self) -> None:
+        _fresh_manifest(self.root, self.manifest)
+
+
+@dataclass(frozen=True)
+class ConceptContext:
+    wish: Wish
+    taste: Taste
+    blueprint: ToyBlueprint
+    round: int
+    workspace: Path
+    feedback: Sequence[Feedback] = field(default_factory=tuple)
+    playtest_rounds: int = 1
+    previous: Optional[ConceptImages] = None
+    refine_depth: int = 0
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
+            raise ContractError("ConceptContext requires a Wish and Taste")
+        if not isinstance(self.blueprint, ToyBlueprint):
+            raise ContractError("ConceptContext requires a ToyBlueprint")
+        if type(self.round) is not int or self.round < 1:
+            raise ContractError("ConceptContext round must be a positive integer")
+        if (
+            type(self.playtest_rounds) is not int
+            or not 1 <= self.playtest_rounds <= 100
+            or self.round > self.playtest_rounds
+        ):
+            raise ContractError(
+                "ConceptContext playtest_rounds must cover this round and be from 1 to 100"
+            )
+        root = Path(self.workspace)
+        if not root.is_absolute():
+            raise ContractError("ConceptContext workspace must be absolute")
+        feedback = tuple(self.feedback)
+        if not all(isinstance(item, Feedback) for item in feedback):
+            raise ContractError("ConceptContext feedback must use Feedback records")
+        if self.previous is not None:
+            if not isinstance(self.previous, ConceptImages):
+                raise ContractError(
+                    "ConceptContext previous must be a ConceptImages record"
+                )
+            if self.previous.round >= self.round:
+                raise ContractError(
+                    "ConceptContext previous concept must come from an earlier round"
+                )
+            self.previous.assert_current()
+        if type(self.refine_depth) is not int or not 0 <= self.refine_depth <= 100:
+            raise ContractError(
+                "ConceptContext refine_depth must be an integer from 0 to 100"
+            )
+        object.__setattr__(self, "workspace", root)
+        object.__setattr__(self, "feedback", feedback)
+
+
+@dataclass(frozen=True)
 class MakeContext:
     wish: Wish
     taste: Taste
@@ -150,6 +594,7 @@ class MakeContext:
     workspace: Path
     feedback: Sequence[Feedback] = field(default_factory=tuple)
     playtest_rounds: int = 1
+    concept_images: Optional[ConceptImages] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -172,6 +617,16 @@ class MakeContext:
         feedback = tuple(self.feedback)
         if not all(isinstance(item, Feedback) for item in feedback):
             raise ContractError("MakeContext feedback must use Feedback records")
+        if self.concept_images is not None:
+            if not isinstance(self.concept_images, ConceptImages):
+                raise ContractError(
+                    "MakeContext concept_images must be a ConceptImages record"
+                )
+            if self.concept_images.round != self.round:
+                raise ContractError(
+                    "MakeContext concept belongs to a different round"
+                )
+            self.concept_images.assert_current()
         object.__setattr__(self, "workspace", root)
         object.__setattr__(self, "feedback", feedback)
 
@@ -289,6 +744,7 @@ class InstructionsContext:
     playtested: Playtested
     workspace: Path
     lease_token: Optional[str] = field(default=None, repr=False, compare=False)
+    concept_images: Optional[ConceptImages] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -315,6 +771,12 @@ class InstructionsContext:
             or any(ord(character) < 33 or ord(character) == 127 for character in self.lease_token)
         ):
             raise ContractError("InstructionsContext lease token is malformed")
+        if self.concept_images is not None and not isinstance(
+            self.concept_images, ConceptImages
+        ):
+            raise ContractError(
+                "InstructionsContext concept_images must be a ConceptImages record"
+            )
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
@@ -323,6 +785,8 @@ class InstructionsContext:
 
         self.made.assert_current()
         self.playtested.assert_artifact(self.made.artifact_sha256)
+        if self.concept_images is not None:
+            self.concept_images.assert_current()
 
 
 @dataclass(frozen=True)
@@ -736,6 +1200,7 @@ class WorkshopRun:
     delivery: Optional[Delivered] = None
     playtest_rounds: int = 1
     page_url: Optional[str] = None
+    concept_sha256: Optional[str] = None
 
     def __post_init__(self) -> None:
         _text(self.product_id, "WorkshopRun product_id", 256)
@@ -759,6 +1224,8 @@ class WorkshopRun:
             require_sha256(
                 self.instructions_sha256, "WorkshopRun instructions sha256"
             )
+        if self.concept_sha256 is not None:
+            require_sha256(self.concept_sha256, "WorkshopRun concept sha256")
         if self.page_url is not None:
             try:
                 parsed_page_url = urllib.parse.urlsplit(self.page_url)
@@ -779,6 +1246,7 @@ class WorkshopRun:
             "round": self.round,
             "playtest_rounds": self.playtest_rounds,
             "artifact_sha256": self.artifact_sha256,
+            "concept_sha256": self.concept_sha256,
             "instructions_sha256": self.instructions_sha256,
             "page_url": self.page_url,
             "needs": [item.to_dict() for item in self.needs],
@@ -787,12 +1255,20 @@ class WorkshopRun:
 
 
 __all__ = [
+    "CONCEPT_DESCRIPTOR_FILENAME",
+    "CONCEPT_IMAGE_SUFFIXES",
+    "CONCEPT_OVERALL_ROLES",
+    "ConceptBrief",
+    "ConceptComponent",
+    "ConceptContext",
+    "ConceptImages",
     "CustomerReview",
     "DeliverContext",
     "Delivered",
     "InstructionsContext",
     "Feedback",
     "Made",
+    "MAX_CONCEPT_COMPONENTS",
     "MakeContext",
     "Need",
     "PlaytestContext",

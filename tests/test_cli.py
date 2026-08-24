@@ -94,6 +94,7 @@ class CliTest(unittest.TestCase):
             self.assertEqual(result, 0)
             self.assertTrue((collection / "deduction-games/inventor.json").is_file())
             hook = collection / "deduction-games/src/deduction_games/inventor.py"
+            self.assertIn("def concept(", hook.read_text(encoding="utf-8"))
             self.assertIn("def make(", hook.read_text(encoding="utf-8"))
             self.assertNotIn("def playtest(", hook.read_text(encoding="utf-8"))
 

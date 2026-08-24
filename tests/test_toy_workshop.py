@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.deliver import DefaultDeliver
 from inventor_workshop.instructions import (
     DefaultInstructions,
@@ -24,6 +25,7 @@ from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
 
 
 CONFIG_SHA256 = "c" * 64
@@ -49,6 +51,10 @@ class ToyWorkshopTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
+    concept_job = staticmethod(
+        DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)
+    )
+
     @staticmethod
     def make_job(context):
         artifact = context.workspace / "artifact"
@@ -59,6 +65,13 @@ class ToyWorkshopTest(unittest.TestCase):
         (artifact / "instructions.md").write_text(
             "Spin it and discover the hidden rhythm.\n", encoding="utf-8"
         )
+        # Make follows the concept: the parts were decided before geometry.
+        components = ["one spinning top"]
+        if context.concept_images is not None:
+            components = [
+                component.name
+                for component in context.concept_images.brief.components
+            ]
         return Made.from_root(
             artifact,
             {
@@ -66,7 +79,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 "summary": "A pocket top that reveals a changing beat.",
                 "lane": context.blueprint.lane,
                 "instructions": "Spin, listen, and try to repeat the rhythm.",
-                "components": ["one spinning top"],
+                "components": components,
                 "limitations": ["Fixture evidence is not a physical print."],
             },
         )
@@ -208,6 +221,7 @@ class ToyWorkshopTest(unittest.TestCase):
 
     def complete_tools(self, playtest=None):
         return WorkshopTools(
+            concept=self.concept_job,
             make=self.make_job,
             playtest=playtest or self.playtest_job,
             instructions=DefaultInstructions(self.media_maker, self.site_writer),
@@ -233,8 +247,10 @@ class ToyWorkshopTest(unittest.TestCase):
             transitions,
             [
                 "wish",
+                "concept",
                 "make",
                 "playtest",
+                "concept",
                 "make",
                 "playtest",
                 "instructions",
@@ -242,6 +258,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 "deliver",
             ],
         )
+        self.assertEqual(len(result.concept_sha256), 64)
 
     def test_resume_instructions_uses_checkpoint_without_repeating_make_or_playtest(self):
         calls = {"make": 0, "playtest": 0, "media": 0}
@@ -263,6 +280,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(counted_media),
@@ -278,6 +296,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(counted_media, self.site_writer),
@@ -329,6 +348,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(counted_media, waiting_site),
@@ -352,6 +372,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(counted_media, successful_site),
@@ -382,6 +403,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(self.media_maker, waiting_site),
@@ -407,6 +429,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(self.media_maker, forbidden_site),
@@ -471,6 +494,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(self.media_maker, self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
@@ -482,6 +506,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                concept=self.concept_job,
                 instructions=DefaultInstructions(self.media_maker, self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
@@ -501,6 +526,7 @@ class ToyWorkshopTest(unittest.TestCase):
             Workshop(
                 self.inventor,
                 "moving-machines",
+                concept=self.concept_job,
                 playtest=self.passing_playtest,
                 runtime_root=self.root / "invalid-runtime",
             )
@@ -509,6 +535,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "little-worlds",
+            concept=self.concept_job,
             runtime_root=self.runtime,
         )
         result = workshop.run(
@@ -579,6 +606,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
+            concept=self.concept_job,
             make=self.make_job,
             playtest=incomplete_playtest,
             runtime_root=self.root / "incomplete-policy-runtime",
@@ -605,6 +633,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
+            concept=self.concept_job,
             make=self.make_job,
             playtest=non_ai_playtest,
             runtime_root=self.root / "non-ai-playtest-runtime",
@@ -623,6 +652,7 @@ class ToyWorkshopTest(unittest.TestCase):
         invalid = Workshop(
             self.inventor,
             "invented-games",
+            concept=self.concept_job,
             make=self.make_job,
             playtest=self.passing_playtest,
             runtime_root=self.root / "invalid-invented-runtime",
@@ -651,6 +681,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
+            concept=self.concept_job,
             runtime_root=self.runtime,
         )
         preview = workshop.preview(Wish.create("kinetic-cable", "A cable holder"))

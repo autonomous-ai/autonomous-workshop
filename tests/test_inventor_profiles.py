@@ -6,11 +6,25 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.jobs import Made
-from inventor_workshop.workshop import Workshop
+from inventor_workshop.workshop import Workshop, WorkshopTools
+from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def concept_tools():
+    """Install the fixture Concept so a test can reach the Make boundary.
+
+    Shipped profiles configure no concept provider, so without this they park at
+    Concept — which is the truthful answer, and is asserted separately below.
+    """
+
+    return WorkshopTools(
+        concept=DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)
+    )
 
 
 def load_profile(inventor_id):
@@ -29,14 +43,19 @@ def make_fixture(context):
     (context.workspace / "product.txt").write_text(
         "exact fixture bytes\n", encoding="utf-8"
     )
-    return Made.from_root(
-        context.workspace,
-        {
-            "title": "Fixture plaything",
-            "summary": "A fixture used only to reach the typed Playtest seam.",
-            "lane": context.blueprint.lane,
-        },
-    )
+    product = {
+        "title": "Fixture plaything",
+        "summary": "A fixture used only to reach the typed Playtest seam.",
+        "lane": context.blueprint.lane,
+    }
+    if context.concept_images is not None:
+        # The parts were decided in Concept; a product that ships a different
+        # set of parts is a different design.
+        product["components"] = [
+            component.name
+            for component in context.concept_images.brief.components
+        ]
+    return Made.from_root(context.workspace, product)
 
 
 class CanonicalInventorProfileTest(unittest.TestCase):
@@ -76,6 +95,22 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(preview["taste"]["sha256"], workshop.taste.sha256)
                 self.assertEqual(preview["blueprint"]["lane"], workshop.lane)
 
+    def test_unconfigured_profiles_wait_at_concept_before_inventing_a_design(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id), tempfile.TemporaryDirectory() as temporary:
+                profile = load_profile(inventor_id)
+                workshop = profile.build_workshop(runtime_root=Path(temporary))
+                wish = profile.create_wish(
+                    "%s-concept-wait" % inventor_id,
+                    "I wish for a truthful first Workshop run.",
+                )
+                result = workshop.run(wish, playtest_rounds=3)
+                self.assertEqual((result.status, result.job), ("waiting", "concept"))
+                self.assertIn(
+                    "concept-images", [need.capability for need in result.needs]
+                )
+                self.assertIsNone(result.concept_sha256)
+
     def test_unconfigured_profiles_wait_at_their_real_make_boundary(self):
         expected_need = {
             "alice": "model-and-cad-maker",
@@ -87,7 +122,9 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         for inventor_id, capability in expected_need.items():
             with self.subTest(inventor_id=inventor_id), tempfile.TemporaryDirectory() as temporary:
                 profile = load_profile(inventor_id)
-                workshop = profile.build_workshop(runtime_root=Path(temporary))
+                workshop = profile.build_workshop(
+                    tools=concept_tools(), runtime_root=Path(temporary)
+                )
                 wish = profile.create_wish(
                     "%s-wait" % inventor_id,
                     "I wish for a truthful first Workshop run.",
@@ -145,6 +182,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         ):
             with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
                 workshop = profile.build_workshop(
+                    tools=concept_tools(),
                     make=make_fixture,
                     runtime_root=Path(temporary),
                 )
@@ -161,6 +199,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         leo = load_profile("leo")
         with tempfile.TemporaryDirectory() as temporary:
             workshop = leo.build_workshop(
+                tools=concept_tools(),
                 make=make_fixture,
                 runtime_root=Path(temporary),
             )

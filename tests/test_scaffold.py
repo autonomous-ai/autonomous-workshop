@@ -213,10 +213,11 @@ class ScaffoldTest(unittest.TestCase):
             )
             waiting = json.loads(run.stdout)
             self.assertEqual(waiting["status"], "waiting")
-            self.assertEqual(waiting["job"], "make")
+            self.assertEqual(waiting["job"], "concept")
             self.assertEqual(waiting["playtest_rounds"], 3)
             self.assertIsNone(waiting["artifact_sha256"])
-            self.assertEqual(waiting["needs"][0]["capability"], "model-and-cad-maker")
+            self.assertIsNone(waiting["concept_sha256"])
+            self.assertEqual(waiting["needs"][0]["capability"], "concept-brief")
             self.assertTrue((destination / ".workshop/workshop.sqlite3").is_file())
 
             subprocess.run(
@@ -260,6 +261,7 @@ class ScaffoldTest(unittest.TestCase):
                     self.assertEqual(hook.exists(), has_make)
                     if hook.exists():
                         source = hook.read_text(encoding="utf-8")
+                        self.assertIn("def concept(", source)
                         self.assertIn("def make(", source)
                         self.assertEqual("def playtest(" in source, has_playtest)
                         self.assertIn("WaitingFor", source)
@@ -295,10 +297,19 @@ class ScaffoldTest(unittest.TestCase):
                         stdout=subprocess.PIPE,
                         text=True,
                     )
-                    need = json.loads(run.stdout)["needs"][0]["capability"]
+                    # Concept runs before Make, so an unconnected inventor stops
+                    # at its own first missing seam rather than at the build.
+                    needs = [
+                        item["capability"]
+                        for item in json.loads(run.stdout)["needs"]
+                    ]
                     self.assertEqual(
-                        need,
-                        "model-and-cad-maker" if level == "taste-only" else "inventor-make",
+                        needs,
+                        (
+                            ["concept-brief", "concept-images", "exploded-view-check"]
+                            if level == "taste-only"
+                            else ["inventor-concept"]
+                        ),
                     )
 
     def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
