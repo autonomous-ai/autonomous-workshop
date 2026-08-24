@@ -1,0 +1,852 @@
+{
+  "claims": {
+    "all_32_pieces_were_arranged_and_sliced_on_one_plate": true,
+    "durability_verified": false,
+    "exact_stls_are_watertight_and_within_the_declared_bed": true,
+    "exact_stls_slice_with_pinned_profiles": true,
+    "physical_print_succeeded": false,
+    "surface_finish_verified": false,
+    "tactile_feel_verified": false
+  },
+  "estimated_totals": {
+    "packed_filament_g": 362.24,
+    "packed_model_seconds": 37905,
+    "separate_part_filament_g": 361.47,
+    "separate_part_model_seconds": 54958
+  },
+  "evidence_class": "digital-slicer",
+  "full_piece_inventory_slice": {
+    "arranged_slice_filament_g": 150.98,
+    "arrangement_delta_filament_g": 0.77,
+    "individual_slice_sum_filament_g": 150.21,
+    "input_objects": 32,
+    "passed": true,
+    "plate_metrics": [
+      {
+        "filament_cm3": 119.83,
+        "filament_cost": 3.77,
+        "filament_g": 150.98,
+        "filament_mm": 49819.07,
+        "gcode_bytes": 32789935,
+        "gcode_sha256": "b8687196a4b92bbc0384140e30a6da1d1bd070ccb915d600528972eb13ab328a",
+        "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:09",
+        "layers": 372,
+        "max_z_mm": 74.4,
+        "model_seconds": 22639,
+        "support_enabled": false,
+        "total_seconds": 22652
+      }
+    ],
+    "plates": 1
+  },
+  "invocations": [
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_board.stl"
+      ],
+      "exit_code": 0,
+      "label": "board",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:01.864818] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_pawn",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:02.370157] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_rook.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_rook",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:02.698566] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_knight.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_knight",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:03.023111] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_bishop.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_bishop",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:03.353557] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_queen.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_queen",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:03.694757] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_king.stl"
+      ],
+      "exit_code": 0,
+      "label": "stone_king",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:04.043849] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_pawn",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:04.402683] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_rook.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_rook",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:04.742956] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_knight.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_knight",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:05.092865] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_bishop.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_bishop",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:05.457908] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_queen.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_queen",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:05.832745] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_king.stl"
+      ],
+      "exit_code": 0,
+      "label": "steel_king",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:06.204824] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    },
+    {
+      "argv": [
+        "/Volumes/OrcaSlicer/OrcaSlicer.app/Contents/MacOS/OrcaSlicer",
+        "--datadir",
+        "${SLICE_TMP}/data",
+        "--load-settings",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-machine-standard.json;/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/p2s-process-standard.json",
+        "--load-filaments",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/validation/orca-profiles/pla-basic-standard.json",
+        "--load-defaultfila",
+        "--arrange",
+        "1",
+        "--slice",
+        "0",
+        "--outputdir",
+        "${SLICE_TMP}/out",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_rook.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_rook.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_knight.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_knight.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_bishop.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_bishop.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_queen.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_stone_king.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_rook.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_rook.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_knight.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_knight.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_bishop.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_bishop.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_queen.stl",
+        "${WORKSHOP_ROOT}/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_king.stl"
+      ],
+      "exit_code": 0,
+      "label": "all-32-pieces",
+      "stderr": [],
+      "stdout": [
+        "[2026-08-24 05:35:13.608241] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+      ]
+    }
+  ],
+  "limitations": [
+    "This is deterministic digital mesh and slicer evidence, not a physical print.",
+    "Physical finish, warp, tipping, handling, and durability remain for Deliver and Reviews."
+  ],
+  "mesh_checks": [
+    {
+      "mesh_log": "validation/mesh-logs/part_board.txt",
+      "mesh_log_sha256": "53231573475daded523088c4a998ce8c505993d1ca8d32104acf6ecc5da577a7",
+      "mesh_passed": true,
+      "part": "board",
+      "quantity": 1,
+      "source": "part_board.step.py",
+      "source_sha256": "a8e49c599b0a5638c77ad02202111376f71dff1d9833715a3543a05116647b39",
+      "stl": "exports/stl/part_board.stl",
+      "stl_bytes": 27084,
+      "stl_sha256": "fb94b5bf3b2b456f2a91bcf10dfbf95b0ef517106c06d95c49b6e4609da00aa6"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_pawn.txt",
+      "mesh_log_sha256": "4b672fc656f4476f10122a9b1d94e9938ddcc7600e65114c9e5888614bea27ed",
+      "mesh_passed": true,
+      "part": "stone_pawn",
+      "quantity": 8,
+      "source": "part_stone_pawn.step.py",
+      "source_sha256": "bae6afc1a1890ba2c993e125f067abb4d640111d0c4788c739106f0e9aa489eb",
+      "stl": "exports/stl/part_stone_pawn.stl",
+      "stl_bytes": 295984,
+      "stl_sha256": "33fcaba8ad2a0cb2c4499165b20d996620e1668265d05b4077b177b4a4d17b63"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_rook.txt",
+      "mesh_log_sha256": "8dac5aae8d39f6a5ef1cbc1595ec9ae9f8395dd44cc44ea9987c7f90819d7d3b",
+      "mesh_passed": true,
+      "part": "stone_rook",
+      "quantity": 2,
+      "source": "part_stone_rook.step.py",
+      "source_sha256": "9b351826ea3fb2239b4b0837cab71be9b2e77860381bb582dcfe827e2ed50161",
+      "stl": "exports/stl/part_stone_rook.stl",
+      "stl_bytes": 210984,
+      "stl_sha256": "3f02e7fc7b3a612558ec0f5bc14bf59654779cd33b7cd3e6ecdb17f44df5d0fd"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_knight.txt",
+      "mesh_log_sha256": "513352d83b4cea31b9ae0adfa7c8e118b69d68d039394b06f5e44e3d861f6bd9",
+      "mesh_passed": true,
+      "part": "stone_knight",
+      "quantity": 2,
+      "source": "part_stone_knight.step.py",
+      "source_sha256": "5e0477da1e86694fb2a8692a7ad923d07d5775c894faa326efc08116f0249123",
+      "stl": "exports/stl/part_stone_knight.stl",
+      "stl_bytes": 211484,
+      "stl_sha256": "0d188f8b3d376a34f9d0510273b399100dde8a82059f7b2a2f74ef6b4547e1ff"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_bishop.txt",
+      "mesh_log_sha256": "faf058a5722bf797c637d98358fb0319a6824eca849b9bc0281851848df2b754",
+      "mesh_passed": true,
+      "part": "stone_bishop",
+      "quantity": 2,
+      "source": "part_stone_bishop.step.py",
+      "source_sha256": "73b5dd4f9bbd0a209b35257facd3012e389db5ed20da7fef1fc81d634100be3d",
+      "stl": "exports/stl/part_stone_bishop.stl",
+      "stl_bytes": 232584,
+      "stl_sha256": "78f69f4a98143fbba5ecdbf0e3bff45b627ef289c3556e5fe541bc4e29f4379d"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_queen.txt",
+      "mesh_log_sha256": "fff00de3ea91840f066c1f1f1c767b7227381914117a7a72136f576aca7c2997",
+      "mesh_passed": true,
+      "part": "stone_queen",
+      "quantity": 1,
+      "source": "part_stone_queen.step.py",
+      "source_sha256": "48dd81a7c1f45b3f826e060e0bcac236448d124cbd5253119d82076183dc48b4",
+      "stl": "exports/stl/part_stone_queen.stl",
+      "stl_bytes": 216284,
+      "stl_sha256": "73f8b9b616c2941b49086e77433a04919223f3c69dc291459e279308104bd2b2"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_stone_king.txt",
+      "mesh_log_sha256": "6df9fb15ffc63afef2a640caef38a507f7facd25661a8bf87ac31a97d0fd5649",
+      "mesh_passed": true,
+      "part": "stone_king",
+      "quantity": 1,
+      "source": "part_stone_king.step.py",
+      "source_sha256": "acc7d079509b447543f78afd0d1939d7bc8bb744dc13dd18a77c2cb103175727",
+      "stl": "exports/stl/part_stone_king.stl",
+      "stl_bytes": 231184,
+      "stl_sha256": "fa87bfeace5141b3d66052c7ca549e8eb1d3227a76272c3055d0165601c8d089"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_pawn.txt",
+      "mesh_log_sha256": "ee0b83524ed68d94968983a1eb648ee4ffd6ddee8f55f808308f28a9374092a0",
+      "mesh_passed": true,
+      "part": "steel_pawn",
+      "quantity": 8,
+      "source": "part_steel_pawn.step.py",
+      "source_sha256": "70c90cd378808e84748391dbb5ffcf6cfc21f3c475a9e3da81601851531300fe",
+      "stl": "exports/stl/part_steel_pawn.stl",
+      "stl_bytes": 347284,
+      "stl_sha256": "71e3141005c950701d5365f2fbe85052d7e70ad3607ae4506bdbf40d8fcfb416"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_rook.txt",
+      "mesh_log_sha256": "c18bbd513369384d2de50b74aa0a713f581a376bb9268353754f5ba159a5c625",
+      "mesh_passed": true,
+      "part": "steel_rook",
+      "quantity": 2,
+      "source": "part_steel_rook.step.py",
+      "source_sha256": "0041717d40ff6140631a8b6c154303c729a6b2b7de29d901a49606c7cf64a369",
+      "stl": "exports/stl/part_steel_rook.stl",
+      "stl_bytes": 298484,
+      "stl_sha256": "d11519a3f8b37f792aa046d72b6a3b782bc75c72eb3c29ee9595e0862476a4ec"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_knight.txt",
+      "mesh_log_sha256": "b17f0bea5052704ef9ff699a947f84a4c0cf75b3c90ff255aab040398532fa9e",
+      "mesh_passed": true,
+      "part": "steel_knight",
+      "quantity": 2,
+      "source": "part_steel_knight.step.py",
+      "source_sha256": "08219061ff4bb9ed1dca28a623e28b81a7804ce8541e715fc4152973fd490c9b",
+      "stl": "exports/stl/part_steel_knight.stl",
+      "stl_bytes": 295584,
+      "stl_sha256": "480a771181e987db7a79c4ff624376dae07895b478527c30b9bd719d30e25aee"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_bishop.txt",
+      "mesh_log_sha256": "88c73e251785636a64964d1a6352fc4b81ae01d8ad53837e679b994253d701b8",
+      "mesh_passed": true,
+      "part": "steel_bishop",
+      "quantity": 2,
+      "source": "part_steel_bishop.step.py",
+      "source_sha256": "3f5a3882163ebedbc464a3d9ddced11cc4d3c2def18bf3d70ca0f92da3bcd9b8",
+      "stl": "exports/stl/part_steel_bishop.stl",
+      "stl_bytes": 325684,
+      "stl_sha256": "0143fd4670eac3963f5290f2fd20e6de5d308034497d5f6ffcad8c98ff18e93a"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_queen.txt",
+      "mesh_log_sha256": "691efa0df1a8ba580e6384c674f76d58647c624500899605020dad44f93b16a2",
+      "mesh_passed": true,
+      "part": "steel_queen",
+      "quantity": 1,
+      "source": "part_steel_queen.step.py",
+      "source_sha256": "c81f91d1fd59e4b4360630fc9713663417ef5530d2dbb76d3b8675863710eaaa",
+      "stl": "exports/stl/part_steel_queen.stl",
+      "stl_bytes": 304584,
+      "stl_sha256": "a90c9e99fa2ae5bb947c06dd96361168dbec74f40f95114a754f8b775339b91c"
+    },
+    {
+      "mesh_log": "validation/mesh-logs/part_steel_king.txt",
+      "mesh_log_sha256": "499bd049b150ab4ccf856989b491a45f8ee976e0ab0afa1e188c87e776e434e2",
+      "mesh_passed": true,
+      "part": "steel_king",
+      "quantity": 1,
+      "source": "part_steel_king.step.py",
+      "source_sha256": "6259514f12d63ac3ee238ca6f578db449ba32aa12d6092fa0205ec3372f9e39f",
+      "stl": "exports/stl/part_steel_king.stl",
+      "stl_bytes": 332484,
+      "stl_sha256": "24c55321e4c386656200535d1e67a8f42087e501c48f50d0fca02d1940bef27e"
+    }
+  ],
+  "observed_at": "2026-08-24T09:35:14Z",
+  "passed": true,
+  "product": "manhattan-nocturne",
+  "schema_version": 1,
+  "scope": {
+    "board_count": 1,
+    "physical_parts": 33,
+    "piece_count": 32,
+    "unique_printable_entries": 13
+  },
+  "slicer": {
+    "executable_sha256": "544098eecb95e01e6ba636a16f3252efb6994806376a334a5085320d3468c26f",
+    "name": "OrcaSlicer",
+    "profiles": [
+      {
+        "path": "validation/orca-profiles/p2s-machine-standard.json",
+        "sha256": "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9"
+      },
+      {
+        "path": "validation/orca-profiles/p2s-process-standard.json",
+        "sha256": "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7"
+      },
+      {
+        "path": "validation/orca-profiles/pla-basic-standard.json",
+        "sha256": "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+      }
+    ],
+    "version": "2.3.2"
+  },
+  "unique_part_slices": [
+    {
+      "filament_cm3": 167.67,
+      "filament_cost": 5.28,
+      "filament_g": 211.26,
+      "filament_mm": 69707.31,
+      "gcode_bytes": 7026237,
+      "gcode_sha256": "3e77743f7b2bf8cba1197a852e46a88503afa2386811e330de204cb4035eb70f",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:01",
+      "layers": 45,
+      "max_z_mm": 9.0,
+      "model_seconds": 15266,
+      "part": "board",
+      "quantity": 1,
+      "quantity_total_filament_g": 211.26,
+      "quantity_total_model_seconds": 15266,
+      "support_enabled": false,
+      "total_seconds": 15280
+    },
+    {
+      "filament_cm3": 2.93,
+      "filament_cost": 0.09,
+      "filament_g": 3.69,
+      "filament_mm": 1219.09,
+      "gcode_bytes": 1202431,
+      "gcode_sha256": "3b7b82b46a41cfe19d815a6abb875ea28f651d218b6f9fa1c9f1ec7f7d282afb",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "layers": 220,
+      "max_z_mm": 44.0,
+      "model_seconds": 1006,
+      "part": "stone_pawn",
+      "quantity": 8,
+      "quantity_total_filament_g": 29.52,
+      "quantity_total_model_seconds": 8048,
+      "support_enabled": false,
+      "total_seconds": 1020
+    },
+    {
+      "filament_cm3": 5.27,
+      "filament_cost": 0.17,
+      "filament_g": 6.64,
+      "filament_mm": 2192.24,
+      "gcode_bytes": 1233959,
+      "gcode_sha256": "266c843dce07da162e8e91c02476bd3199fe0786729c11a3705ac221525a0b5f",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "layers": 285,
+      "max_z_mm": 57.0,
+      "model_seconds": 1491,
+      "part": "stone_rook",
+      "quantity": 2,
+      "quantity_total_filament_g": 13.28,
+      "quantity_total_model_seconds": 2982,
+      "support_enabled": false,
+      "total_seconds": 1505
+    },
+    {
+      "filament_cm3": 3.63,
+      "filament_cost": 0.11,
+      "filament_g": 4.57,
+      "filament_mm": 1508.6,
+      "gcode_bytes": 1067701,
+      "gcode_sha256": "3172d5fef359af5969141536669f60f046cae2f0d72491936c6b814d1a96f96e",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "layers": 293,
+      "max_z_mm": 59.0,
+      "model_seconds": 1355,
+      "part": "stone_knight",
+      "quantity": 2,
+      "quantity_total_filament_g": 9.14,
+      "quantity_total_model_seconds": 2710,
+      "support_enabled": false,
+      "total_seconds": 1368
+    },
+    {
+      "filament_cm3": 4.17,
+      "filament_cost": 0.13,
+      "filament_g": 5.25,
+      "filament_mm": 1732.08,
+      "gcode_bytes": 1179645,
+      "gcode_sha256": "3eb659d5ff008fd31f2557e6d02c27190ea2d0488263ac72d2e7eda4da257ec2",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "layers": 305,
+      "max_z_mm": 61.0,
+      "model_seconds": 1422,
+      "part": "stone_bishop",
+      "quantity": 2,
+      "quantity_total_filament_g": 10.5,
+      "quantity_total_model_seconds": 2844,
+      "support_enabled": false,
+      "total_seconds": 1436
+    },
+    {
+      "filament_cm3": 4.99,
+      "filament_cost": 0.16,
+      "filament_g": 6.28,
+      "filament_mm": 2073.24,
+      "gcode_bytes": 1272505,
+      "gcode_sha256": "665809cf9ef607971775b87c0b0034fade565070c4b6d05cb40f35b71694f61b",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "layers": 339,
+      "max_z_mm": 68.0,
+      "model_seconds": 1621,
+      "part": "stone_queen",
+      "quantity": 1,
+      "quantity_total_filament_g": 6.28,
+      "quantity_total_model_seconds": 1621,
+      "support_enabled": false,
+      "total_seconds": 1634
+    },
+    {
+      "filament_cm3": 4.68,
+      "filament_cost": 0.15,
+      "filament_g": 5.9,
+      "filament_mm": 1946.87,
+      "gcode_bytes": 1346285,
+      "gcode_sha256": "36c980e5860997873c09a6f8abdac38b5a7141d0b2a36cc7f6372bb45b1e538b",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "layers": 372,
+      "max_z_mm": 74.4,
+      "model_seconds": 1661,
+      "part": "stone_king",
+      "quantity": 1,
+      "quantity_total_filament_g": 5.9,
+      "quantity_total_model_seconds": 1661,
+      "support_enabled": false,
+      "total_seconds": 1675
+    },
+    {
+      "filament_cm3": 2.96,
+      "filament_cost": 0.09,
+      "filament_g": 3.73,
+      "filament_mm": 1229.94,
+      "gcode_bytes": 1161332,
+      "gcode_sha256": "8ff1299b3cb6d8f443909e1b8a00c99e5aad5c30e7f3c7ebcf7cee7aaaf16d6e",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "layers": 220,
+      "max_z_mm": 44.0,
+      "model_seconds": 1001,
+      "part": "steel_pawn",
+      "quantity": 8,
+      "quantity_total_filament_g": 29.84,
+      "quantity_total_model_seconds": 8008,
+      "support_enabled": false,
+      "total_seconds": 1014
+    },
+    {
+      "filament_cm3": 5.31,
+      "filament_cost": 0.17,
+      "filament_g": 6.7,
+      "filament_mm": 2209.23,
+      "gcode_bytes": 1349645,
+      "gcode_sha256": "701470a792119c70081b947db932e4867756abfeb4d8cb83b82476747b89b79b",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "layers": 285,
+      "max_z_mm": 57.0,
+      "model_seconds": 1492,
+      "part": "steel_rook",
+      "quantity": 2,
+      "quantity_total_filament_g": 13.4,
+      "quantity_total_model_seconds": 2984,
+      "support_enabled": false,
+      "total_seconds": 1506
+    },
+    {
+      "filament_cm3": 3.69,
+      "filament_cost": 0.12,
+      "filament_g": 4.65,
+      "filament_mm": 1533.44,
+      "gcode_bytes": 1103687,
+      "gcode_sha256": "c56a25b8c70f8b4602d444ce33f2684a8545336fea69ee54d9902c19d8d7fe71",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "layers": 293,
+      "max_z_mm": 59.0,
+      "model_seconds": 1356,
+      "part": "steel_knight",
+      "quantity": 2,
+      "quantity_total_filament_g": 9.3,
+      "quantity_total_model_seconds": 2712,
+      "support_enabled": false,
+      "total_seconds": 1370
+    },
+    {
+      "filament_cm3": 4.27,
+      "filament_cost": 0.13,
+      "filament_g": 5.38,
+      "filament_mm": 1775.32,
+      "gcode_bytes": 1305840,
+      "gcode_sha256": "cc77f755957a96e33072b6532fb38986bb1379b4a820449e4a8623a5532d6e1b",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:05",
+      "layers": 305,
+      "max_z_mm": 61.0,
+      "model_seconds": 1429,
+      "part": "steel_bishop",
+      "quantity": 2,
+      "quantity_total_filament_g": 10.76,
+      "quantity_total_model_seconds": 2858,
+      "support_enabled": false,
+      "total_seconds": 1443
+    },
+    {
+      "filament_cm3": 5.03,
+      "filament_cost": 0.16,
+      "filament_g": 6.34,
+      "filament_mm": 2092.66,
+      "gcode_bytes": 1383631,
+      "gcode_sha256": "a92a34eb9759e07f94bb111a704c39e951b96b502089a1e84536d7ff603ca3d1",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:05",
+      "layers": 339,
+      "max_z_mm": 68.0,
+      "model_seconds": 1616,
+      "part": "steel_queen",
+      "quantity": 1,
+      "quantity_total_filament_g": 6.34,
+      "quantity_total_model_seconds": 1616,
+      "support_enabled": false,
+      "total_seconds": 1629
+    },
+    {
+      "filament_cm3": 4.72,
+      "filament_cost": 0.15,
+      "filament_g": 5.95,
+      "filament_mm": 1963.04,
+      "gcode_bytes": 1498574,
+      "gcode_sha256": "194b480d2b4809790923b6bb09f32f4ff7295dfdb2af436698277fa3fff02d73",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:06",
+      "layers": 372,
+      "max_z_mm": 74.4,
+      "model_seconds": 1648,
+      "part": "steel_king",
+      "quantity": 1,
+      "quantity_total_filament_g": 5.95,
+      "quantity_total_model_seconds": 1648,
+      "support_enabled": false,
+      "total_seconds": 1662
+    }
+  ]
+}

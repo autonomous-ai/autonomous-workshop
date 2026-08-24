@@ -1,0 +1,10 @@
+/Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_rook.stl: 5968 triangles, 2986 vertices
+  PASS  degenerate triangles               0 zero-area (dropped; slicers ignore these)
+  PASS  watertight (no open edges)         0 boundary edges
+  PASS  manifold                           0 edges shared by >2 faces
+  PASS  consistent winding                 0 edges with flipped neighbours
+  PASS  positive volume (normals point out) 13.19 cm3
+  PASS  connected shells                   1 (>1 = separate bodies; check they touch, not float)
+  PASS  fits 256x256x256 bed               22.5x22.5x57.0 mm
+  PASS  small triangles                    5006 under 0.8 mm edge scale (thin walls / nozzle limit)
+RESULT: printable

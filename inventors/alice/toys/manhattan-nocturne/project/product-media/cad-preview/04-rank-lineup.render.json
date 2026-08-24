@@ -1,0 +1,1815 @@
+{
+  "concept_art": false,
+  "evidence_class": "exact-cad-recognition-input",
+  "input": {
+    "format": "native-glb",
+    "native_axes": "Y-up",
+    "native_units": "metres",
+    "path": "../../exports/manhattan-nocturne.glb",
+    "restored_axes": "CAD XY bed plane, +Z up",
+    "sha256": "734e78caca4e2f51e28a01b9f2bd674caa999f14e6ac77e43bfcec2c3360096c",
+    "unit_scale_to_mm": 1000.0
+  },
+  "output": {
+    "format": "png",
+    "path": "04-rank-lineup.png",
+    "sha256": "57fa8b33f5a183185e2456fbba9c7214c5ee9903448e1eac0547d08fe0e81c9a"
+  },
+  "physical_print": false,
+  "printability_proof": false,
+  "product_beauty_render": false,
+  "render": {
+    "camera": {
+      "direction_cad": [
+        0.0,
+        -0.99503719,
+        0.099503719
+      ],
+      "framed_projected_bounds_cad_mm": [
+        [
+          -195.871975,
+          -1.118886
+        ],
+        [
+          195.871975,
+          74.14022
+        ]
+      ],
+      "projection": "orthographic",
+      "resolution": {
+        "mode": "fixed",
+        "semantic_side": null
+      },
+      "right_cad": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "up_cad": [
+        0.0,
+        0.099503719,
+        0.99503719
+      ]
+    },
+    "culled_triangles": 0,
+    "depth_edge_emphasis": {
+      "basis": "exact z-buffer discontinuities",
+      "enabled": false,
+      "threshold_mm": 0.08
+    },
+    "internal_pixels": [
+      3200,
+      1800
+    ],
+    "lighting_mode": "symmetric-review",
+    "material_mode": "neutral-review",
+    "output_pixels": [
+      1600,
+      900
+    ],
+    "rendered_triangles": 66032,
+    "scene_bounds_cad_mm": [
+      [
+        -195.871975,
+        -11.244664,
+        0.0
+      ],
+      [
+        195.871975,
+        11.244664,
+        74.349999
+      ]
+    ],
+    "shadow": true,
+    "supersample": 2
+  },
+  "renderer": {
+    "id": "manhattan-nocturne-software-cad-preview",
+    "version": 2
+  },
+  "renderer_source": {
+    "path": "../../render_product.py",
+    "sha256": "b0a9b3b7472f6d07709e8f461baa939d6dc846e64fa95bebef3bf86468404005"
+  },
+  "scene_derivation": {
+    "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
+    "material_mode": "neutral-review",
+    "material_override": {
+      "applies_to": "display only; source GLB materials remain in each node receipt",
+      "mode": "neutral-recognition-review",
+      "rgba_srgb": [
+        142,
+        145,
+        149,
+        255
+      ]
+    },
+    "mode": "rank-lineup",
+    "review_layout": [
+      {
+        "role": "pawn",
+        "side": "stone",
+        "source_label": "stone_pawn_a2",
+        "target_base_center_cad_mm": [
+          -184.632643,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "pawn",
+        "side": "steel",
+        "source_label": "steel_pawn_a7",
+        "target_base_center_cad_mm": [
+          -155.153981,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "rook",
+        "side": "stone",
+        "source_label": "stone_rook_a1",
+        "target_base_center_cad_mm": [
+          -116.675319,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "rook",
+        "side": "steel",
+        "source_label": "steel_rook_a8",
+        "target_base_center_cad_mm": [
+          -87.196656,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "knight",
+        "side": "stone",
+        "source_label": "stone_knight_b1",
+        "target_base_center_cad_mm": [
+          -48.717994,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "knight",
+        "side": "steel",
+        "source_label": "steel_knight_b8",
+        "target_base_center_cad_mm": [
+          -19.239331,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "bishop",
+        "side": "stone",
+        "source_label": "stone_bishop_c1",
+        "target_base_center_cad_mm": [
+          19.239331,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "bishop",
+        "side": "steel",
+        "source_label": "steel_bishop_c8",
+        "target_base_center_cad_mm": [
+          48.717994,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "queen",
+        "side": "stone",
+        "source_label": "stone_queen_d1",
+        "target_base_center_cad_mm": [
+          87.196656,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "queen",
+        "side": "steel",
+        "source_label": "steel_queen_d8",
+        "target_base_center_cad_mm": [
+          116.675319,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "king",
+        "side": "stone",
+        "source_label": "stone_king_e1",
+        "target_base_center_cad_mm": [
+          155.153981,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "role": "king",
+        "side": "steel",
+        "source_label": "steel_king_e8",
+        "target_base_center_cad_mm": [
+          184.632643,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "selected_node_count": 12,
+    "selected_source_labels": [
+      "stone_pawn_a2",
+      "steel_pawn_a7",
+      "stone_rook_a1",
+      "steel_rook_a8",
+      "stone_knight_b1",
+      "steel_knight_b8",
+      "stone_bishop_c1",
+      "steel_bishop_c8",
+      "stone_queen_d1",
+      "steel_queen_d8",
+      "stone_king_e1",
+      "steel_king_e8"
+    ],
+    "source_material_summary": {
+      "steel_bishop_c8": {
+        "colors": [
+          {
+            "faces": 6512,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_king_e8": {
+        "colors": [
+          {
+            "faces": 6648,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_knight_b8": {
+        "colors": [
+          {
+            "faces": 5910,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_pawn_a7": {
+        "colors": [
+          {
+            "faces": 6944,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_queen_d8": {
+        "colors": [
+          {
+            "faces": 6090,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_rook_a8": {
+        "colors": [
+          {
+            "faces": 5968,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_bishop_c1": {
+        "colors": [
+          {
+            "faces": 4650,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_king_e1": {
+        "colors": [
+          {
+            "faces": 4622,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_knight_b1": {
+        "colors": [
+          {
+            "faces": 4228,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_pawn_a2": {
+        "colors": [
+          {
+            "faces": 5918,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_queen_d1": {
+        "colors": [
+          {
+            "faces": 4324,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_rook_a1": {
+        "colors": [
+          {
+            "faces": 4218,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      }
+    },
+    "source_node_count": 33
+  },
+  "scene_nodes": [
+    {
+      "bounds_cad_mm": [
+        [
+          -195.871975,
+          -11.244664,
+          0.0
+        ],
+        [
+          -173.393312,
+          11.244664,
+          44.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 5918,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_pawn_h2",
+      "label": "stone_pawn_a2",
+      "metallic": 0.0,
+      "record_sha256": "20fdbabbee68b690a4d2d9b5ccde82ecf2ebba43f363797c7d880ba3f0e13b45",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -84.893312603
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -71.25
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -110.978662,
+          60.005336,
+          9.0
+        ],
+        [
+          -88.5,
+          82.494664,
+          53.0
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 5918,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.07125
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 5918,
+      "vertices": 4712
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          -166.393312,
+          -11.244664,
+          0.0
+        ],
+        [
+          -143.91465,
+          11.244664,
+          44.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 6944,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_pawn_h7",
+      "label": "steel_pawn_a7",
+      "metallic": 0.0,
+      "record_sha256": "7af55d827cd2798c34f46ddfb24e961093ec91fc75cedf91aea006b3b6b44516",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -55.414650172
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          71.25
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -110.978662,
+          -82.494664,
+          8.65
+        ],
+        [
+          -88.5,
+          -60.005336,
+          52.65
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 6944,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.07125
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 6944,
+      "vertices": 4720
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          -127.91465,
+          -11.244664,
+          0.0
+        ],
+        [
+          -105.435987,
+          11.244664,
+          57.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 4218,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_rook_h1",
+      "label": "stone_rook_a1",
+      "metallic": 0.0,
+      "record_sha256": "01ed1f7d1fec165dee3bc7500aa2f6257bb1d6e6f4c981f9bd4630e76a6ae060",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -16.935987741
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -110.978662,
+          88.505336,
+          8.65
+        ],
+        [
+          -88.5,
+          110.994664,
+          65.65
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 4218,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 4218,
+      "vertices": 3217
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          -98.435987,
+          -11.244664,
+          0.0
+        ],
+        [
+          -75.957325,
+          11.244664,
+          57.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 5968,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_rook_h8",
+      "label": "steel_rook_a8",
+      "metallic": 0.0,
+      "record_sha256": "2b73cf831718f454600adbe97e9a04e00e45b704192d01e92db79adf4282886f",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          12.54267469
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -110.978662,
+          -110.994664,
+          9.0
+        ],
+        [
+          -88.5,
+          -88.505336,
+          66.0
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 5968,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 5968,
+      "vertices": 3917
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          -59.957325,
+          -11.244664,
+          0.0
+        ],
+        [
+          -37.478662,
+          11.244664,
+          59.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 4228,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_knight_g1",
+      "label": "stone_knight_b1",
+      "metallic": 0.0,
+      "record_sha256": "04a7f22f666ef2254e0a2f4bf7c6c1e520d5df98da2bbf7664697392fc4f544f",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          22.521337122
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -82.478662,
+          88.505336,
+          9.0
+        ],
+        [
+          -60.0,
+          110.994664,
+          68.0
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 4228,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.07125
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 4228,
+      "vertices": 3223
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          -30.478662,
+          -11.244664,
+          0.0
+        ],
+        [
+          -8.0,
+          11.244664,
+          59.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 5910,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_knight_g8",
+      "label": "steel_knight_b8",
+      "metallic": 0.0,
+      "record_sha256": "23f28e1be3a8480e78d677322f26bedb785ed9cedef57b54916a1cdfbc477966",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          51.999999553
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -82.478662,
+          -110.994664,
+          8.65
+        ],
+        [
+          -60.0,
+          -88.505336,
+          67.65
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 5910,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.07125
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 5910,
+      "vertices": 3801
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          8.0,
+          -11.244664,
+          0.0
+        ],
+        [
+          30.478662,
+          11.244664,
+          61.000001
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 4650,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_bishop_f1",
+      "label": "stone_bishop_c1",
+      "metallic": 0.0,
+      "record_sha256": "712a2791a9a2d13702b7be503ceebc11deaa632b32e9351ea6a05db5754c58f0",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          61.978661984
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -53.978662,
+          88.505336,
+          8.65
+        ],
+        [
+          -31.5,
+          110.994664,
+          69.650001
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 4650,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.04275
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 4650,
+      "vertices": 3599
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          37.478662,
+          -11.244664,
+          0.0
+        ],
+        [
+          59.957325,
+          11.244664,
+          61.000001
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 6512,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_bishop_f8",
+      "label": "steel_bishop_c8",
+      "metallic": 0.0,
+      "record_sha256": "ed0b4ab7e330fa0258fdcc0349953fb25b6bdb32f746c4aec30fcf5d44c116f7",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          91.457324415
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -53.978662,
+          -110.994664,
+          9.0
+        ],
+        [
+          -31.5,
+          -88.505336,
+          70.000001
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 6512,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.04275
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 6512,
+      "vertices": 4445
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          75.957325,
+          -11.244664,
+          0.0
+        ],
+        [
+          98.435987,
+          11.244664,
+          68.000004
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 4324,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_queen_d1",
+      "label": "stone_queen_d1",
+      "metallic": 0.0,
+      "record_sha256": "e2263bed97831512ab5e94ed2f0db9715dd40444d4c370a67a04b7e56d7c4fbf",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          101.435986847
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -25.478662,
+          88.505336,
+          9.0
+        ],
+        [
+          -3.0,
+          110.994664,
+          77.000004
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 4324,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.01425
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 4324,
+      "vertices": 3401
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          105.435987,
+          -11.244664,
+          0.0
+        ],
+        [
+          127.91465,
+          11.244664,
+          68.000004
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 6090,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_queen_d8",
+      "label": "steel_queen_d8",
+      "metallic": 0.0,
+      "record_sha256": "60a81ffd87b5dacc916c3e9d761eb5cb88e0543fbb8bc961917b976113d12561",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          130.914649278
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          -25.478662,
+          -110.994664,
+          8.65
+        ],
+        [
+          -3.0,
+          -88.505336,
+          76.650004
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 6090,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          -0.01425
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 6090,
+      "vertices": 4125
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          143.91465,
+          -11.244664,
+          0.0
+        ],
+        [
+          166.393312,
+          11.244664,
+          74.349999
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 4622,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "stone_king_e1",
+      "label": "stone_king_e1",
+      "metallic": 0.0,
+      "record_sha256": "ca9969020908709ac8b31ae04e3424b1f69515004a08398a550d3b214285204a",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          140.893311709
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          -99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -8.65
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          3.021338,
+          88.505336,
+          8.65
+        ],
+        [
+          25.5,
+          110.994664,
+          82.999999
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 4622,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.01425
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.00865
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 4622,
+      "vertices": 3548
+    },
+    {
+      "bounds_cad_mm": [
+        [
+          173.393312,
+          -11.244664,
+          0.0
+        ],
+        [
+          195.871975,
+          11.244664,
+          74.349999
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 6648,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "geometry": "steel_king_e8",
+      "label": "steel_king_e8",
+      "metallic": 0.0,
+      "record_sha256": "591d8feeaafdb1750fec905e757c2ff732e1fc852b59789b99aacadafa1a60ca",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          170.37197414
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          99.75
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -9.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.72,
+      "source_bounds_cad_mm": [
+        [
+          3.021338,
+          -110.994664,
+          9.0
+        ],
+        [
+          25.5,
+          -88.505336,
+          83.349999
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 6648,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.01425
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.009
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.09975
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 6648,
+      "vertices": 4571
+    }
+  ],
+  "scene_nodes_sha256": "be5716965960c378486c86ddc45f8c69eba9d4b0c23ba1b3fcd04cf79299e269",
+  "schema": "workshop.cad-preview-render.v2",
+  "view": "rank-lineup",
+  "warnings": []
+}

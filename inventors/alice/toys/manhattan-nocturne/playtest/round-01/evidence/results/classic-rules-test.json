@@ -1,0 +1,53 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "claims": [
+    "The deterministic model preserves a standard 8 by 8 board, 32-piece inventory, and R N B Q K B N R back rank without changing chess rules.",
+    "Classic-edition Playtest fails because role and side recognition from the exact top and neutral-material geometry is not proven at the frozen thresholds."
+  ],
+  "config_sha256": "bb4874fd5e33c60552e30742abde224625ac4e13c3eb2a5abb6ec718869bce74",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [
+    "rank-crown-silhouette-collapse",
+    "side-language-base-heavy",
+    "neutral-top-recognition-unproven"
+  ],
+  "lane_checks": {
+    "board_cells": 64,
+    "exact_starting_inventory": true,
+    "recognition_thresholds_satisfied": false,
+    "rule_changes": 0,
+    "standard_back_rank": true
+  },
+  "passed": false,
+  "physical_print": false,
+  "round": 1,
+  "schema_version": 1,
+  "simulation": "Standard-chess inventory/setup audit plus role-legibility review from exact-CAD player and top views",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "7934677bb1d23ea72df3e8b5dd1a31c6d382a058fe94a2a029e64181aa8ebe2c"
+    },
+    {
+      "path": "sources/chess-layout.json",
+      "sha256": "865ea0b836cef32c3833691e8077ccfa5218f0dffaf41cb92ae0997c52794b14"
+    },
+    {
+      "path": "sources/render-review.json",
+      "sha256": "f1a882d207774daf1c29cd1301259696b6cf8c02dfe97f227f3cf36b127f00ac"
+    },
+    {
+      "path": "sources/geometry-validation.json",
+      "sha256": "d8ea90f053479b55cfe576422f81eda430d99318cf3b9c90d03fe028234501a3"
+    }
+  ]
+}

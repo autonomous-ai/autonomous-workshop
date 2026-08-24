@@ -1,0 +1,38 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "claims": [
+    "All 33 exact STEP occurrences pass the selected topological validation with positive closed B-rep geometry under the recorded command.",
+    "The starting assembly has zero forbidden B-rep clashes above 0.001 cubic millimetres across all 528 occurrence pairs, with 32 candidate pairs tested and 496 rejected by bounding boxes.",
+    "The algebraic product audit passes board envelope, base clearance, inventory, starting-square uniqueness, relief, and height checks."
+  ],
+  "config_sha256": "bb4874fd5e33c60552e30742abde224625ac4e13c3eb2a5abb6ec718869bce74",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "limitations": [
+    "The B-rep validation skipped the expensive self-intersection subcheck and does not replace final strict mesh validation.",
+    "Digital geometry cannot establish friction, real tip resistance, hand feel, fatigue, warp, impact behavior, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 1,
+  "schema_version": 1,
+  "simulation": "AI mechanical panel interpreted deterministic STEP validation, algebraic dimensions, bed envelope, and assembly interference",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "7934677bb1d23ea72df3e8b5dd1a31c6d382a058fe94a2a029e64181aa8ebe2c"
+    },
+    {
+      "path": "sources/geometry-validation.json",
+      "sha256": "d8ea90f053479b55cfe576422f81eda430d99318cf3b9c90d03fe028234501a3"
+    }
+  ]
+}

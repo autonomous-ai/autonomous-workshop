@@ -60,12 +60,20 @@ under `validation/orca-profiles/` and must remain content-hashed.
 
 ```sh
 ORCASLICER_CLI="${ORCASLICER_CLI:?point to OrcaSlicer 2.3.2}"
-ORCA_PROFILE="$PWD/$PROJECT/validation/orca-profiles/p2s-machine-standard.json;$PWD/$PROJECT/validation/orca-profiles/p2s-process-standard.json;$PWD/$PROJECT/validation/orca-profiles/pla-basic-standard.json"
+
+"$CAD_PY" "$PROJECT/validation/slice_product.py" \
+  --orca "$ORCASLICER_CLI" \
+  --cad-python "$CAD_PY"
 ```
 
-The product-specific slicer runner writes parsed time, material, support, error,
-profile, executable, and STL hashes into `validation/slicer-receipt.json`. A CLI
-exit code without parsed measurements is held, not passed.
+The product-specific runner exports all thirteen unique STL files, checks every
+mesh, slices every unique entry, then submits all 32 pieces together to prove
+that Orca can arrange and slice the complete inventory on one P2S plate. It
+writes parsed time, material, support, error, profile, executable, STL, and
+G-code hashes into `validation/slicer-receipt.json`. A CLI exit code without
+parsed measurements is held, not passed. The large temporary G-code is hashed
+for the receipt and discarded; it is reproducible from the sealed STL and
+profiles.
 
 ## What this cannot prove
 

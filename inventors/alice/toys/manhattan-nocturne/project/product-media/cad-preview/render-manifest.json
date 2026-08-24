@@ -2,38 +2,84 @@
   "concept_art": false,
   "input": {
     "path": "../../exports/manhattan-nocturne.glb",
-    "sha256": "a5ae9ec954f48daaa17ea54a9cbab005a852da12a8a07099050665d6c25c453c"
+    "sha256": "734e78caca4e2f51e28a01b9f2bd674caa999f14e6ac77e43bfcec2c3360096c"
   },
   "physical_print": false,
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 1
+    "version": 2
   },
-  "renderer_source_sha256": "f52ed34ad4ffdcc02d6c6c5a63c0d963f068eb2e93ae90158b2f9c67a1470ccb",
-  "schema": "workshop.cad-preview-render-manifest.v1",
+  "renderer_source_sha256": "b0a9b3b7472f6d07709e8f461baa939d6dc846e64fa95bebef3bf86468404005",
+  "schema": "workshop.cad-preview-render-manifest.v2",
   "views": [
     {
+      "evidence_class": "exact-cad-preview",
       "png": "01-hero-stone.png",
-      "png_sha256": "a0bde03e5893da546b2067832c98d7ea578d77106f82ce535a6bb4be3d9ba1b3",
+      "png_sha256": "a0b15d9a622df5bdf3ff18a14d86ed2391533d9c6628a9493b0938c147ded983",
+      "product_beauty_render": true,
       "receipt": "01-hero-stone.render.json",
-      "receipt_sha256": "89d9b1adc410346d0f4d26605550f49d083642e80e38de3a95cccd479e9af4e2",
+      "receipt_sha256": "2ef1d1b71de1d32a6c6c8a1c8e1a57216dba303b7504a23e4f257a1ed0638b0e",
       "view": "hero-stone",
       "warnings": []
     },
     {
+      "evidence_class": "exact-cad-preview",
       "png": "02-hero-steel.png",
-      "png_sha256": "fd9204c7af39261064ffb9ec99f8507735a646f08b47e386865ffbd3ecac28b2",
+      "png_sha256": "fd5f70e65fac72c3a7054eb4a00239138b6da1d580100e510ff3db156b6c967f",
+      "product_beauty_render": true,
       "receipt": "02-hero-steel.render.json",
-      "receipt_sha256": "1ae69892205ca9201b42ae973ffe30d471f9fb7f15184000895d9e01cdb45833",
+      "receipt_sha256": "eb0061f20b0fab710a865badca50e0afcbbf5fd62a2f99c1795f742f6cebb5e9",
       "view": "hero-steel",
       "warnings": []
     },
     {
+      "evidence_class": "exact-cad-preview",
       "png": "03-top-inventory.png",
-      "png_sha256": "9eea25252dc4069813dd2590e6e1437677c281682fea3cce70ea15b27ac1873e",
+      "png_sha256": "0a346c28735559e310021d6f5ca02e80f6ec60e1544344b5896643b690280b80",
+      "product_beauty_render": false,
       "receipt": "03-top-inventory.render.json",
-      "receipt_sha256": "8b385d2bee3ada9da0514f01d93cfcf89a23b7eb3baea3ea05168f0b6444f3aa",
+      "receipt_sha256": "6becb6d015a47ae61a36dca475f124b32aae6322e47d10a5009498afe2210848",
       "view": "top-inventory",
+      "warnings": []
+    },
+    {
+      "evidence_class": "exact-cad-recognition-input",
+      "png": "04-rank-lineup.png",
+      "png_sha256": "57fa8b33f5a183185e2456fbba9c7214c5ee9903448e1eac0547d08fe0e81c9a",
+      "product_beauty_render": false,
+      "receipt": "04-rank-lineup.render.json",
+      "receipt_sha256": "6247093cfa01f0539d146f39070ea1898337f55521ab0b8f034f2febff784f68",
+      "view": "rank-lineup",
+      "warnings": []
+    },
+    {
+      "evidence_class": "exact-cad-recognition-input",
+      "png": "05-side-detail.png",
+      "png_sha256": "731ce3346b4629e5ecb1dab6a816d6ba888ded1342bef11f5949f169068bc616",
+      "product_beauty_render": false,
+      "receipt": "05-side-detail.render.json",
+      "receipt_sha256": "8b95fcb81309f319a41c9ebdc11d99345fb2fcc8ce5d0bc3076844b2795dfb95",
+      "view": "side-detail",
+      "warnings": []
+    },
+    {
+      "evidence_class": "exact-cad-engineering-view",
+      "png": "06-board-inventory-engineering.png",
+      "png_sha256": "708475bf026dbaf18b09794a880e36e6f577d7f7f0d51970817e8dbdaaabe900",
+      "product_beauty_render": false,
+      "receipt": "06-board-inventory-engineering.render.json",
+      "receipt_sha256": "77770aa645c6fb39ebaa4ad65774603377d350fa96654f591621f00d79a605df",
+      "view": "board-inventory-engineering",
+      "warnings": []
+    },
+    {
+      "evidence_class": "exact-cad-recognition-input",
+      "png": "07-neutral-start-recognition.png",
+      "png_sha256": "fc7fb5d7a39aa100b9d7038994362d3a04897d665cf28d1796e1701b3163d90c",
+      "product_beauty_render": false,
+      "receipt": "07-neutral-start-recognition.render.json",
+      "receipt_sha256": "2e7064f33f7ed82ac73a65b549253191e24f6d3b3e87049bcc0f1bbfa4271868",
+      "view": "neutral-start-recognition",
       "warnings": []
     }
   ]

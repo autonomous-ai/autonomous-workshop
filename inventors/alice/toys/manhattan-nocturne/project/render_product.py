@@ -29,7 +29,11 @@ import trimesh
 
 
 RENDERER_ID = "manhattan-nocturne-software-cad-preview"
-RENDERER_VERSION = 1
+RENDERER_VERSION = 2
+
+ROLE_ORDER = ("pawn", "rook", "knight", "bishop", "queen", "king")
+SIDE_ORDER = ("stone", "steel")
+NEUTRAL_REVIEW_RGBA = (142, 145, 149, 255)
 
 FALLBACK_COLORS: Mapping[str, tuple[int, int, int, int]] = {
     "board": (27, 32, 40, 255),
@@ -49,6 +53,11 @@ class ViewRecipe:
     margin_fraction: float = 0.075
     shadow: bool = True
     depth_edges: bool = False
+    scene_mode: str = "full"
+    material_mode: str = "glb"
+    lighting_mode: str = "studio"
+    evidence_class: str = "exact-cad-preview"
+    product_beauty_render: bool = True
 
 
 VIEW_RECIPES: Mapping[str, ViewRecipe] = {
@@ -72,6 +81,60 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         margin_fraction=0.045,
         shadow=False,
         depth_edges=True,
+        product_beauty_render=False,
+    ),
+    "rank-lineup": ViewRecipe(
+        key="rank-lineup",
+        filename="04-rank-lineup.png",
+        semantic_side=None,
+        fallback_direction_cad=(0.0, -1.0, 0.10),
+        margin_fraction=0.045,
+        shadow=True,
+        scene_mode="rank-lineup",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+    ),
+    "side-detail": ViewRecipe(
+        key="side-detail",
+        filename="05-side-detail.png",
+        semantic_side=None,
+        fallback_direction_cad=(0.42, -1.0, 0.16),
+        margin_fraction=0.055,
+        shadow=True,
+        scene_mode="side-detail",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+    ),
+    "board-inventory-engineering": ViewRecipe(
+        key="board-inventory-engineering",
+        filename="06-board-inventory-engineering.png",
+        semantic_side=None,
+        fallback_direction_cad=(0.65, -1.0, 1.10),
+        margin_fraction=0.045,
+        shadow=True,
+        depth_edges=True,
+        scene_mode="board-inventory-engineering",
+        material_mode="glb",
+        lighting_mode="studio",
+        evidence_class="exact-cad-engineering-view",
+        product_beauty_render=False,
+    ),
+    "neutral-start-recognition": ViewRecipe(
+        key="neutral-start-recognition",
+        filename="07-neutral-start-recognition.png",
+        semantic_side="stone",
+        fallback_direction_cad=(1.0, -1.2, 0.85),
+        margin_fraction=0.075,
+        shadow=True,
+        scene_mode="full",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
     ),
 }
 
@@ -81,11 +144,16 @@ class SceneNode:
     label: str
     geometry_name: str
     source_transform_glb: np.ndarray
+    review_transform_cad: np.ndarray
+    source_bounds_cad_mm: np.ndarray
     vertices_cad_mm: np.ndarray
     faces: np.ndarray
     face_rgba: np.ndarray
     color_source: str
     color_encoding: str
+    source_face_rgba: np.ndarray
+    source_color_source: str
+    source_color_encoding: str
     closed_outward_winding: bool
     roughness: float
     metallic: float
@@ -269,16 +337,22 @@ def load_native_glb(path: Path, unit_scale_to_mm: float = 1000.0) -> list[SceneN
         rgba, color_source, color_encoding, roughness, metallic = _material_colors(
             source, str(node_name)
         )
+        source_bounds = np.vstack((vertices.min(axis=0), vertices.max(axis=0)))
         nodes.append(
             SceneNode(
                 label=str(node_name),
                 geometry_name=str(geometry_name),
                 source_transform_glb=np.asarray(transform, dtype=np.float64),
+                review_transform_cad=np.eye(4, dtype=np.float64),
+                source_bounds_cad_mm=source_bounds,
                 vertices_cad_mm=vertices,
                 faces=faces,
                 face_rgba=rgba,
                 color_source=color_source,
                 color_encoding=color_encoding,
+                source_face_rgba=rgba.copy(),
+                source_color_source=color_source,
+                source_color_encoding=color_encoding,
                 closed_outward_winding=closed,
                 roughness=roughness,
                 metallic=metallic,
@@ -300,6 +374,229 @@ def _scene_bounds(nodes: Iterable[SceneNode]) -> np.ndarray:
             np.max([value[1] for value in bounds], axis=0),
         )
     )
+
+
+def _transformed_node(
+    node: SceneNode,
+    matrix_cad: np.ndarray,
+    *,
+    label: str | None = None,
+) -> SceneNode:
+    matrix = np.asarray(matrix_cad, dtype=np.float64)
+    if matrix.shape != (4, 4):
+        raise ValueError("review transform must be a 4x4 matrix")
+    vertices = _apply_transform(node.vertices_cad_mm, matrix)
+    faces = node.faces.copy()
+    closed = node.closed_outward_winding
+    if float(np.linalg.det(matrix[:3, :3])) < 0.0:
+        faces = faces[:, [0, 2, 1]]
+    return SceneNode(
+        label=label or node.label,
+        geometry_name=node.geometry_name,
+        source_transform_glb=node.source_transform_glb.copy(),
+        review_transform_cad=matrix @ node.review_transform_cad,
+        source_bounds_cad_mm=node.source_bounds_cad_mm.copy(),
+        vertices_cad_mm=vertices,
+        faces=faces,
+        face_rgba=node.face_rgba.copy(),
+        color_source=node.color_source,
+        color_encoding=node.color_encoding,
+        source_face_rgba=node.source_face_rgba.copy(),
+        source_color_source=node.source_color_source,
+        source_color_encoding=node.source_color_encoding,
+        closed_outward_winding=closed,
+        roughness=node.roughness,
+        metallic=node.metallic,
+    )
+
+
+def _translation(x: float, y: float, z: float) -> np.ndarray:
+    matrix = np.eye(4, dtype=np.float64)
+    matrix[:3, 3] = (x, y, z)
+    return matrix
+
+
+def _place_on_review_floor(
+    node: SceneNode,
+    target_x: float,
+    target_y: float,
+) -> SceneNode:
+    bounds = node.bounds
+    center = (bounds[0] + bounds[1]) * 0.5
+    matrix = _translation(
+        target_x - float(center[0]),
+        target_y - float(center[1]),
+        -float(bounds[0, 2]),
+    )
+    return _transformed_node(node, matrix)
+
+
+def _representative(
+    nodes: Sequence[SceneNode],
+    side: str,
+    role: str,
+) -> SceneNode:
+    prefix = f"{side}_{role}_"
+    matches = sorted(
+        (node for node in nodes if node.label.casefold().startswith(prefix)),
+        key=lambda node: node.label.casefold(),
+    )
+    if not matches:
+        raise ValueError(f"GLB is missing a labeled {side} {role} occurrence")
+    return matches[0]
+
+
+def _board_node(nodes: Sequence[SceneNode]) -> SceneNode:
+    matches = [node for node in nodes if node.label.casefold() == "board"]
+    if len(matches) != 1:
+        raise ValueError(f"expected exactly one board node, found {len(matches)}")
+    return matches[0]
+
+
+def _line_layout(
+    entries: Sequence[tuple[str, str, SceneNode]],
+    *,
+    within_pair_gap: float = 7.0,
+    between_pair_gap: float = 16.0,
+) -> tuple[list[SceneNode], list[Mapping[str, object]]]:
+    cursor = 0.0
+    planned: list[tuple[str, str, SceneNode, float]] = []
+    for index, (side, role, node) in enumerate(entries):
+        width = float(node.bounds[1, 0] - node.bounds[0, 0])
+        center_x = cursor + width * 0.5
+        planned.append((side, role, node, center_x))
+        cursor += width
+        if index + 1 < len(entries):
+            next_role = entries[index + 1][1]
+            cursor += within_pair_gap if next_role == role else between_pair_gap
+
+    overall_center = cursor * 0.5
+    placed: list[SceneNode] = []
+    layout: list[Mapping[str, object]] = []
+    for side, role, node, center_x in planned:
+        target_x = center_x - overall_center
+        result = _place_on_review_floor(node, target_x, 0.0)
+        placed.append(result)
+        layout.append(
+            {
+                "source_label": node.label,
+                "side": side,
+                "role": role,
+                "target_base_center_cad_mm": [round(target_x, 6), 0.0, 0.0],
+            }
+        )
+    return placed, layout
+
+
+def _neutral_material(node: SceneNode) -> SceneNode:
+    result = _transformed_node(node, np.eye(4, dtype=np.float64))
+    color = np.asarray(NEUTRAL_REVIEW_RGBA, dtype=np.uint8)
+    result.face_rgba = np.repeat(color[None, :], len(result.faces), axis=0)
+    result.color_source = "neutral-recognition-review-override"
+    result.color_encoding = "srgb-u8"
+    result.roughness = 0.72
+    result.metallic = 0.0
+    return result
+
+
+def _prepare_view_scene(
+    source_nodes: Sequence[SceneNode],
+    recipe: ViewRecipe,
+) -> tuple[list[SceneNode], Mapping[str, object]]:
+    layout: list[Mapping[str, object]] = []
+
+    if recipe.scene_mode == "full":
+        nodes = [
+            _transformed_node(node, np.eye(4, dtype=np.float64))
+            for node in source_nodes
+        ]
+    elif recipe.scene_mode == "rank-lineup":
+        entries = [
+            (side, role, _representative(source_nodes, side, role))
+            for role in ROLE_ORDER
+            for side in SIDE_ORDER
+        ]
+        nodes, layout = _line_layout(entries)
+    elif recipe.scene_mode == "side-detail":
+        detail_roles = ("bishop", "queen")
+        entries = [
+            (side, role, _representative(source_nodes, side, role))
+            for role in detail_roles
+            for side in SIDE_ORDER
+        ]
+        nodes, layout = _line_layout(
+            entries,
+            within_pair_gap=9.0,
+            between_pair_gap=24.0,
+        )
+    elif recipe.scene_mode == "board-inventory-engineering":
+        board = _place_on_review_floor(_board_node(source_nodes), -145.0, 0.0)
+        nodes = [board]
+        layout.append(
+            {
+                "source_label": "board",
+                "purpose": "clean one-piece board",
+                "target_base_center_cad_mm": [-145.0, 0.0, 0.0],
+            }
+        )
+        first_x = 18.0
+        pitch_x = 37.0
+        for side_index, side in enumerate(SIDE_ORDER):
+            target_y = -39.0 if side_index == 0 else 39.0
+            for role_index, role in enumerate(ROLE_ORDER):
+                source = _representative(source_nodes, side, role)
+                target_x = first_x + pitch_x * role_index
+                nodes.append(_place_on_review_floor(source, target_x, target_y))
+                layout.append(
+                    {
+                        "source_label": source.label,
+                        "side": side,
+                        "role": role,
+                        "target_base_center_cad_mm": [
+                            round(target_x, 6),
+                            round(target_y, 6),
+                            0.0,
+                        ],
+                    }
+                )
+    else:
+        raise ValueError(f"unknown review scene mode {recipe.scene_mode!r}")
+
+    source_material_summary = {
+        node.label: {
+            "source": node.source_color_source,
+            "encoding": node.source_color_encoding,
+            "colors": _color_summary_values(node.source_face_rgba),
+        }
+        for node in nodes
+    }
+    if recipe.material_mode == "neutral-review":
+        nodes = [_neutral_material(node) for node in nodes]
+        material_override: Mapping[str, object] | None = {
+            "mode": "neutral-recognition-review",
+            "rgba_srgb": list(NEUTRAL_REVIEW_RGBA),
+            "applies_to": "display only; source GLB materials remain in each node receipt",
+        }
+    elif recipe.material_mode == "glb":
+        material_override = None
+    else:
+        raise ValueError(f"unknown material mode {recipe.material_mode!r}")
+
+    derivation: Mapping[str, object] = {
+        "mode": recipe.scene_mode,
+        "source_node_count": len(source_nodes),
+        "selected_node_count": len(nodes),
+        "selected_source_labels": [node.label for node in nodes],
+        "review_layout": layout,
+        "material_mode": recipe.material_mode,
+        "material_override": material_override,
+        "source_material_summary": source_material_summary,
+        "geometry_policy": (
+            "exact source triangles with deterministic rigid review transforms; "
+            "no generated or altered product geometry"
+        ),
+    }
+    return nodes, derivation
 
 
 def _semantic_direction(
@@ -401,6 +698,7 @@ def _linear_to_srgb(values: np.ndarray) -> np.ndarray:
 def _shade_faces(
     node: SceneNode,
     camera_direction: np.ndarray,
+    lighting_mode: str,
 ) -> tuple[np.ndarray, np.ndarray]:
     triangles = node.vertices_cad_mm[node.faces]
     normals = np.cross(
@@ -411,9 +709,21 @@ def _shade_faces(
     valid = lengths > 1e-12
     normals[valid] /= lengths[valid, None]
 
-    key = _normalize((0.42, -0.52, 0.75))
-    fill = _normalize((-0.55, 0.28, 0.57))
     camera = _normalize(camera_direction)
+    if lighting_mode == "studio":
+        key = _normalize((0.42, -0.52, 0.75))
+        fill = _normalize((-0.55, 0.28, 0.57))
+        key_weight = 0.53
+        fill_weight = 0.17
+    elif lighting_mode == "symmetric-review":
+        right, up = _camera_basis(camera)
+        key = _normalize(camera * 0.38 + up * 0.88 + right * 0.18)
+        fill = _normalize(camera * 0.38 + up * 0.88 - right * 0.18)
+        key_weight = 0.35
+        fill_weight = 0.35
+    else:
+        raise ValueError(f"unknown lighting mode {lighting_mode!r}")
+
     key_term = np.maximum(normals @ key, 0.0)
     fill_term = np.maximum(normals @ fill, 0.0)
     rim_term = 1.0 - np.clip(np.abs(normals @ camera), 0.0, 1.0)
@@ -424,7 +734,11 @@ def _shade_faces(
     specular_power = 18.0 + 46.0 * float(node.roughness)
     specular = np.power(np.maximum(normals @ half_vector, 0.0), specular_power)
     specular_strength = 0.025 + 0.055 * (1.0 - float(node.roughness))
-    diffuse = np.clip(0.31 + 0.53 * key_term + 0.17 * fill_term + 0.045 * rim_term, 0.20, 1.05)
+    diffuse = np.clip(
+        0.31 + key_weight * key_term + fill_weight * fill_term + 0.045 * rim_term,
+        0.20,
+        1.05,
+    )
 
     encoded = node.face_rgba[:, :3].astype(np.float64) / 255.0
     if node.color_encoding == "linear-rgb-factor-u8":
@@ -612,7 +926,11 @@ def render_view(
         screen = (projected - center) * scale
         screen[:, 0] += internal_width * 0.5
         screen[:, 1] = internal_height * 0.5 - screen[:, 1]
-        shaded, visible = _shade_faces(node, camera_direction)
+        shaded, visible = _shade_faces(
+            node,
+            camera_direction,
+            lighting_mode=recipe.lighting_mode,
+        )
         for face_index, face in enumerate(node.faces):
             if not bool(visible[face_index]):
                 culled_triangles += 1
@@ -668,6 +986,8 @@ def render_view(
         "rendered_triangles": rendered_triangles,
         "culled_triangles": culled_triangles,
         "shadow": recipe.shadow,
+        "lighting_mode": recipe.lighting_mode,
+        "material_mode": recipe.material_mode,
         "depth_edge_emphasis": {
             "enabled": recipe.depth_edges,
             "threshold_mm": depth_edge_threshold_mm,
@@ -677,8 +997,8 @@ def render_view(
     return image, stats, warnings
 
 
-def _color_summary(node: SceneNode) -> list[Mapping[str, object]]:
-    unique, counts = np.unique(node.face_rgba, axis=0, return_counts=True)
+def _color_summary_values(values: np.ndarray) -> list[Mapping[str, object]]:
+    unique, counts = np.unique(values, axis=0, return_counts=True)
     order = np.argsort(-counts)
     return [
         {"rgba": unique[index].astype(int).tolist(), "faces": int(counts[index])}
@@ -686,20 +1006,45 @@ def _color_summary(node: SceneNode) -> list[Mapping[str, object]]:
     ]
 
 
+def _color_summary(node: SceneNode) -> list[Mapping[str, object]]:
+    return _color_summary_values(node.face_rgba)
+
+
+def _canonical_sha256(payload: object) -> str:
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _node_receipt(node: SceneNode) -> Mapping[str, object]:
-    return {
+    payload: dict[str, object] = {
         "label": node.label,
         "geometry": node.geometry_name,
         "source_transform_glb": np.round(node.source_transform_glb, 9).tolist(),
+        "review_transform_cad": np.round(node.review_transform_cad, 9).tolist(),
+        "source_bounds_cad_mm": np.round(node.source_bounds_cad_mm, 6).tolist(),
         "bounds_cad_mm": np.round(node.bounds, 6).tolist(),
         "vertices": int(len(node.vertices_cad_mm)),
         "triangles": int(len(node.faces)),
-        "colors": _color_summary(node),
-        "color_source": node.color_source,
-        "color_encoding": node.color_encoding,
+        "display_material": {
+            "colors": _color_summary(node),
+            "source": node.color_source,
+            "encoding": node.color_encoding,
+        },
+        "source_glb_material": {
+            "colors": _color_summary_values(node.source_face_rgba),
+            "source": node.source_color_source,
+            "encoding": node.source_color_encoding,
+        },
         "roughness": round(float(node.roughness), 6),
         "metallic": round(float(node.metallic), 6),
     }
+    payload["record_sha256"] = _canonical_sha256(payload)
+    return payload
 
 
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
@@ -718,17 +1063,18 @@ def render_product(
     supersample: int,
     unit_scale_to_mm: float,
 ) -> Mapping[str, object]:
-    nodes = load_native_glb(input_path, unit_scale_to_mm=unit_scale_to_mm)
+    source_nodes = load_native_glb(input_path, unit_scale_to_mm=unit_scale_to_mm)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     script_path = Path(__file__).resolve()
     input_hash = _sha256(input_path)
     script_hash = _sha256(script_path)
-    node_receipts = [_node_receipt(node) for node in nodes]
     results: list[Mapping[str, object]] = []
 
     for key in view_keys:
         recipe = VIEW_RECIPES[key]
+        nodes, scene_derivation = _prepare_view_scene(source_nodes, recipe)
+        node_receipts = [_node_receipt(node) for node in nodes]
         output_path = output_dir / recipe.filename
         image, render_stats, warnings = render_view(
             nodes,
@@ -741,7 +1087,7 @@ def render_product(
 
         receipt_path = output_path.with_suffix(".render.json")
         receipt: Mapping[str, object] = {
-            "schema": "workshop.cad-preview-render.v1",
+            "schema": "workshop.cad-preview-render.v2",
             "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
             "view": key,
             "input": {
@@ -763,10 +1109,13 @@ def render_product(
                 "sha256": script_hash,
             },
             "render": render_stats,
+            "scene_derivation": scene_derivation,
             "scene_nodes": node_receipts,
+            "scene_nodes_sha256": _canonical_sha256(node_receipts),
             "warnings": warnings,
-            "evidence_class": "exact-cad-preview",
+            "evidence_class": recipe.evidence_class,
             "concept_art": False,
+            "product_beauty_render": recipe.product_beauty_render,
             "physical_print": False,
             "printability_proof": False,
         }
@@ -778,13 +1127,15 @@ def render_product(
                 "png_sha256": _sha256(output_path),
                 "receipt": receipt_path.name,
                 "receipt_sha256": _sha256(receipt_path),
+                "evidence_class": recipe.evidence_class,
+                "product_beauty_render": recipe.product_beauty_render,
                 "warnings": warnings,
             }
         )
 
     manifest_path = output_dir / "render-manifest.json"
     manifest: Mapping[str, object] = {
-        "schema": "workshop.cad-preview-render-manifest.v1",
+        "schema": "workshop.cad-preview-render-manifest.v2",
         "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
         "input": {
             "path": _portable_path(input_path, manifest_path),
