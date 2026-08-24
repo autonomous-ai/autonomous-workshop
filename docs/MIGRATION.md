@@ -6,7 +6,8 @@ and the same six jobs:
 
 ```text
 Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
-             feedback
+        ^    feedback                                      |
+        +------------- what owners say --------------------+
 ```
 
 Migration is incremental. Preserve characterized behavior and persisted

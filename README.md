@@ -113,9 +113,9 @@ Classics made yours · Taste only
 |                      SHARED WORKSHOP                          |
 |                                                               |
 |  Wish -> Make <-> Playtest -> Instructions -> Deliver          |
-|               useful feedback                    |             |
-|                                                  v             |
-|                                              Reviews           |
+|            ^     feedback                          |           |
+|            |                                       v           |
+|            +--------- what owners say --------- Reviews        |
 +---------------------------------------------------------------+
         |
         v
@@ -160,7 +160,7 @@ Every toy goes through the same six steps:
 | **Playtest** | AI players play it, poke at it, and try to break it, then tell Make what is wrong — round after round until it passes or the rounds run out. |
 | **Instructions** | Write the honest product page and the paper that goes in the box — rules for a game, instructions for anything else. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
-| **Reviews** | Read what the people who got it say about living with it, and feed that into the next toy. |
+| **Reviews** | Read what the people who got it say about living with it, and use it — to build a better version of this toy, and to make the next one better too. |
 
 Playtest is simulation. AI players run the game or handle the object thousands
 of times: are the rules sound, is it balanced, can you cheat, does it move, do
@@ -169,7 +169,9 @@ it finds what is broken.
 
 What it cannot tell you is whether someone loved it. That answer only exists
 after a real person opens the box, and it comes back as **Reviews** — in their
-words, after delivery. Reviews never hold a toy up; they change the next one.
+words, after delivery. Reviews never hold a toy up. They go back to Make: the
+same toy comes round again as a better version, and what was learned travels
+to the next wish in that lane.
 
 For **games that don't exist yet**, nothing gets written up or shipped until at
 least **1,000 full games** have been played from a fixed seed by four kinds of

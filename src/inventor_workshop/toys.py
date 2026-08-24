@@ -258,8 +258,8 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "reviews.learn",
         "reviews",
-        "Turn those reviews into findings the next Wish in this lane should know.",
-        "Findings tied to the reviews that support them, and what changes because of them.",
+        "Turn those reviews into a better version of this toy, and into findings the next Wish should know.",
+        "Findings tied to the reviews that support them, and the changes each one asks for.",
         "review-findings",
     ),
 )

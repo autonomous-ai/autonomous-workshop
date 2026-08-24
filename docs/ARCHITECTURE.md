@@ -49,7 +49,8 @@ The complete Workshop vocabulary is:
 
 ```text
 Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
-             feedback
+        ^    feedback                                      |
+        +------------- what owners say --------------------+
 ```
 
 - **Wish** preserves what the person asked for and the relevant constraints.
@@ -63,8 +64,9 @@ Wish -> Make <-> Playtest -> Instructions -> Deliver -> Reviews
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 - **Reviews** collects what the people who received the toy said about living
-  with it, and turns those words into findings for the next Wish in the lane.
-  Reviews never hold a product back; they change what comes after it.
+  with it. Those words return to Make, so the same toy can come round again as
+  a better version, and they become findings for the next Wish in the lane.
+  Reviews never hold a product back; they improve what follows.
 
 `Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
