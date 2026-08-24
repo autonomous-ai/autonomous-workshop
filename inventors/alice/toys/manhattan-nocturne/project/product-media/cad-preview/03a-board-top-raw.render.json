@@ -1,0 +1,302 @@
+{
+  "concept_art": false,
+  "evidence_class": "exact-cad-board-acceptance",
+  "input": {
+    "format": "native-glb",
+    "native_axes": "Y-up",
+    "native_units": "metres",
+    "path": "../../exports/manhattan-nocturne.glb",
+    "restored_axes": "CAD XY bed plane, +Z up",
+    "sha256": "3205b925e218742d29ba1f928ae43f57d83388e0ce31e94943ab36a3beefc427",
+    "unit_scale_to_mm": 1000.0
+  },
+  "output": {
+    "format": "png",
+    "path": "03a-board-top-raw.png",
+    "sha256": "e13f2c44df4c4d7b7b18beb6fb37792fa9f1de6946a161cc5bf2ccbce80c5a29"
+  },
+  "physical_print": false,
+  "printability_proof": false,
+  "product_beauty_render": false,
+  "render": {
+    "camera": {
+      "direction_cad": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "framed_projected_bounds_cad_mm": [
+        [
+          -122.000001,
+          -122.000001
+        ],
+        [
+          122.000001,
+          122.000001
+        ]
+      ],
+      "projection": "orthographic",
+      "resolution": {
+        "mode": "fixed",
+        "semantic_side": null
+      },
+      "right_cad": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "up_cad": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    "culled_triangles": 0,
+    "depth_edge_emphasis": {
+      "basis": "exact z-buffer discontinuities",
+      "enabled": false,
+      "threshold_mm": 0.08
+    },
+    "display_crop": {
+      "enabled": false,
+      "minimum_local_z_mm": null,
+      "policy": "none"
+    },
+    "framing": {
+      "mode": "scene",
+      "product_geometry_changed": false
+    },
+    "internal_pixels": [
+      3200,
+      1800
+    ],
+    "lighting_mode": "studio",
+    "material_mode": "glb",
+    "output_pixels": [
+      1600,
+      900
+    ],
+    "rendered_triangles": 1044,
+    "scene_bounds_cad_mm": [
+      [
+        -122.000001,
+        -122.000001,
+        0.0
+      ],
+      [
+        122.000001,
+        122.000001,
+        9.0
+      ]
+    ],
+    "shadow": false,
+    "supersample": 2
+  },
+  "renderer": {
+    "id": "manhattan-nocturne-software-cad-preview",
+    "version": 3
+  },
+  "renderer_source": {
+    "path": "../../render_product.py",
+    "sha256": "17119aab328ab9e15b6dad0c9f6533224e9e29c044931361267e12c08849efb8"
+  },
+  "scene_derivation": {
+    "display_crop_below_local_z_mm": null,
+    "framing_mode": "scene",
+    "framing_value_mm": null,
+    "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
+    "material_mode": "glb",
+    "material_override": null,
+    "mode": "board-only",
+    "review_layout": [
+      {
+        "purpose": "unmodified board-only review",
+        "source_label": "board",
+        "target_base_center_cad_mm": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "selected_node_count": 1,
+    "selected_source_labels": [
+      "board"
+    ],
+    "source_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 1044,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      }
+    },
+    "source_node_count": 33
+  },
+  "scene_integrity": {
+    "bounds_sha256": "ba5d02a7645ede8e1c2a5a4d8d0b1f09279619e6dc4c04a9f99e0097a3a20cb9",
+    "labels_sha256": "849ee7625a81b272c3a3747767346ed0693cd9d99976158e9f14e5dc558552a4",
+    "materials_sha256": "a338893bc70ef2b16831105e1a482ec47d1c394117172dce2d88f9e889cd6211",
+    "node_records_sha256": "4fffa5bcba2195cb30dc72b2e380fa408b35d0e05ff1c0592acff5afd85ba21b",
+    "transforms_sha256": "4a7e9b836bf7801869aded7504b7a80e8dcfd40bc3ee7dd99301cb1a3ce3f5b7"
+  },
+  "scene_nodes": [
+    {
+      "bounds_cad_mm": [
+        [
+          -122.000001,
+          -122.000001,
+          0.0
+        ],
+        [
+          122.000001,
+          122.000001,
+          9.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 1044,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "geometry": "board",
+      "integrity": {
+        "display_material_sha256": "aeb0f566b086510c673f2d5ce47d578f0cdb87fdeb913c24a2e51f142f5c4098",
+        "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
+        "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
+        "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "source_material_sha256": "aeb0f566b086510c673f2d5ce47d578f0cdb87fdeb913c24a2e51f142f5c4098",
+        "source_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae"
+      },
+      "label": "board",
+      "metallic": 0.0,
+      "record_sha256": "e8e8fbffdef9d44b0d296f7ca5c003067d4674e212279cb61e6b2a5d9f9cf594",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.55,
+      "source_bounds_cad_mm": [
+        [
+          -122.000001,
+          -122.000001,
+          0.0
+        ],
+        [
+          122.000001,
+          122.000001,
+          9.0
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 1044,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 1044,
+      "vertices": 1572
+    }
+  ],
+  "schema": "workshop.cad-preview-render.v3",
+  "view": "board-top-raw",
+  "view_contract": {
+    "acceptance_dimensions": [
+      "board-parity"
+    ],
+    "acceptance_output_contract": {
+      "output_pixels": [
+        1600,
+        900
+      ],
+      "supersample": 2,
+      "unit_scale_to_mm": 1000.0
+    },
+    "camera_policy": "frozen-literal-direction",
+    "diagnostic": false,
+    "native_material_required": true,
+    "neutral_material_evidence": false,
+    "recipe_acceptance_eligible": true,
+    "run_acceptance_eligible": true,
+    "synthetic_depth_edges": false
+  },
+  "warnings": []
+}

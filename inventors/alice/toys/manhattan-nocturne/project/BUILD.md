@@ -66,11 +66,13 @@ ORCASLICER_CLI="${ORCASLICER_CLI:?point to OrcaSlicer 2.3.2}"
   --cad-python "$CAD_PY"
 ```
 
-The product-specific runner exports all thirteen unique STL files, checks every
-mesh, slices every unique entry, then submits all 32 pieces together to prove
-that Orca can arrange and slice the complete inventory on one P2S plate. It
-writes parsed time, material, support, error, profile, executable, STL, and
-G-code hashes into `validation/slicer-receipt.json`. A CLI exit code without
+The product-specific runner exports all thirteen unique STL files at the pinned
+fine-mesh tolerances, checks every mesh, and runs the current CAD skill's
+`check_thickness --nozzle 0.4` wall gate before slicing anything. It then
+slices every unique entry and submits all 32 pieces together to prove that Orca
+can arrange and slice the complete inventory on one P2S plate. It writes parsed
+time, material, support, warning, profile, validation-tool, STL, wall-report,
+and G-code hashes into `validation/slicer-receipt.json`. A CLI exit code without
 parsed measurements is held, not passed. The large temporary G-code is hashed
 for the receipt and discarded; it is reproducible from the sealed STL and
 profiles.

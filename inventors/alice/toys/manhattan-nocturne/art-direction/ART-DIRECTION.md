@@ -1,6 +1,6 @@
 # Art direction — Midnight Manhattan
 
-Status: frozen for the first CAD revision.
+Status: governing direction for the digital prototype.
 
 ## Character
 
@@ -16,7 +16,7 @@ one protected building or assigning a tourist landmark to every rank.
 - **Stone** — warm limestone in product imagery; broad horizontal setback bands
   and one tactile groove around every base.
 - **Steel** — midnight graphite; restrained vertical fins and two tactile base
-  grooves.
+  channels held between three broad printable rails.
 
 Both sides keep the same rank envelopes so chess remains legible. Geometry, not
 color alone, must identify the side from overhead and by touch.
@@ -39,10 +39,10 @@ color alone, must identify the side from overhead and by touch.
 
 ## Board
 
-The board is a calm street plan, not 64 miniature buildings. Low-relief square
-texture and orthogonal avenue lines preserve instant grid reading. Quadrant
-seams follow square boundaries. A restrained Broadway diagonal appears only in
-the outer border or underside so it cannot confuse legal squares.
+The board is a calm street plan, not 64 miniature buildings. A seamless
+two-level square field and orthogonal border streets preserve instant grid
+reading. One restrained, stepped Broadway cue stays wholly in the outer border
+so it cannot confuse legal squares.
 
 ## Canonical views
 

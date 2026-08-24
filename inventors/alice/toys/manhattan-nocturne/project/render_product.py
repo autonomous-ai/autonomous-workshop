@@ -76,6 +76,7 @@ class ViewRecipe:
     acceptance_dimensions: tuple[str, ...] = ()
     framing_mode: str = "scene"
     framing_value_mm: float | None = None
+    display_crop_below_local_z_mm: float | None = None
 
 
 VIEW_RECIPES: Mapping[str, ViewRecipe] = {
@@ -254,6 +255,7 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         acceptance_dimensions=("side-coding",),
         framing_mode="upper-body",
         framing_value_mm=17.0,
+        display_crop_below_local_z_mm=17.0,
     ),
     "manhattan-identity-neutral": ViewRecipe(
         key="manhattan-identity-neutral",
@@ -819,6 +821,7 @@ def _prepare_view_scene(
         "material_override": material_override,
         "framing_mode": recipe.framing_mode,
         "framing_value_mm": recipe.framing_value_mm,
+        "display_crop_below_local_z_mm": recipe.display_crop_below_local_z_mm,
         "source_material_summary": source_material_summary,
         "geometry_policy": (
             "exact source triangles with deterministic rigid review transforms; "
@@ -1078,10 +1081,12 @@ def _background(width: int, height: int) -> np.ndarray:
 def _raster_triangle(
     screen_xy: np.ndarray,
     depths: np.ndarray,
+    cad_z_mm: np.ndarray,
     color: np.ndarray,
     image: np.ndarray,
     object_mask: np.ndarray,
     zbuffer: np.ndarray,
+    minimum_cad_z_mm: float | None = None,
 ) -> None:
     height, width = zbuffer.shape
     min_x = max(int(math.floor(float(screen_xy[:, 0].min()))) - 1, 0)
@@ -1104,6 +1109,9 @@ def _raster_triangle(
     l1 = ((y2 - y0) * (xs - x2) + (x0 - x2) * (ys - y2)) / denominator
     l2 = 1.0 - l0 - l1
     inside = (l0 >= -1e-6) & (l1 >= -1e-6) & (l2 >= -1e-6)
+    if minimum_cad_z_mm is not None:
+        interpolated_cad_z = l0 * cad_z_mm[0] + l1 * cad_z_mm[1] + l2 * cad_z_mm[2]
+        inside &= interpolated_cad_z >= minimum_cad_z_mm - 1e-9
     if not bool(np.any(inside)):
         return
 
@@ -1245,6 +1253,11 @@ def render_view(
             camera_direction,
             lighting_mode=recipe.lighting_mode,
         )
+        minimum_cad_z_mm = None
+        if recipe.display_crop_below_local_z_mm is not None:
+            minimum_cad_z_mm = (
+                float(node.bounds[0, 2]) + recipe.display_crop_below_local_z_mm
+            )
         for face_index, face in enumerate(node.faces):
             if not bool(visible[face_index]):
                 culled_triangles += 1
@@ -1252,10 +1265,12 @@ def render_view(
             _raster_triangle(
                 screen[face],
                 depths[face],
+                node.vertices_cad_mm[face, 2],
                 shaded[face_index],
                 object_pixels,
                 object_mask,
                 zbuffer,
+                minimum_cad_z_mm=minimum_cad_z_mm,
             )
             rendered_triangles += 1
 
@@ -1303,6 +1318,15 @@ def render_view(
         "lighting_mode": recipe.lighting_mode,
         "material_mode": recipe.material_mode,
         "framing": framing,
+        "display_crop": {
+            "enabled": recipe.display_crop_below_local_z_mm is not None,
+            "minimum_local_z_mm": recipe.display_crop_below_local_z_mm,
+            "policy": (
+                "review-only raster mask; exact source triangles and receipts unchanged"
+                if recipe.display_crop_below_local_z_mm is not None
+                else "none"
+            ),
+        },
         "depth_edge_emphasis": {
             "enabled": recipe.depth_edges,
             "threshold_mm": depth_edge_threshold_mm,
@@ -1609,6 +1633,13 @@ def validate_view_recipes() -> Mapping[str, object]:
                 errors.append(f"{key}: crop framing requires a positive millimetre value")
         elif recipe.framing_mode != "scene":
             errors.append(f"{key}: unknown framing mode {recipe.framing_mode!r}")
+        if recipe.display_crop_below_local_z_mm is not None:
+            if recipe.display_crop_below_local_z_mm <= 0.0:
+                errors.append(f"{key}: display crop must be a positive local z height")
+            if recipe.framing_mode != "upper-body":
+                errors.append(f"{key}: display crop is reserved for upper-body evidence")
+            if recipe.product_beauty_render:
+                errors.append(f"{key}: a cropped recognition panel cannot be beauty art")
 
     if errors:
         raise ValueError("Round 3 render recipe self-check failed:\n- " + "\n- ".join(errors))

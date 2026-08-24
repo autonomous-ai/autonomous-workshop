@@ -3,7 +3,7 @@
 STEP-first source for Alice's one-piece-board NYC architectural chess set.
 The twelve canonical piece entries differ geometrically, not just by color:
 Stone uses horizontal masonry bands and one base groove; Steel uses vertical
-structural fins and two base grooves.
+structural fins and two tactile channels between three broad base rails.
 
 ## Source map
 
@@ -48,3 +48,8 @@ Run from the repository root with the project Python environment:
 Generation proves only that the parametric B-reps were created. Printability,
 surface quality, tactile feel, durability, and real stability remain held until
 the pinned slicer and physical Deliver evidence exist.
+
+The checked-in final digital gate also runs `check_mesh` and
+`check_thickness --nozzle 0.4` on all thirteen fine-mesh STL exports. See
+`validation/slicer-receipt.json` and `validation/thickness-reports/`. These are
+digital manufacturing checks, not proof of a successful physical print.

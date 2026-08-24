@@ -20,26 +20,23 @@ python3 "$PROJECT/render_product.py" \
   --out "$PROJECT/product-media/cad-preview"
 ```
 
-The renderer freezes seven review views:
+The renderer freezes nineteen review recipes in seven groups:
 
-1. low three-quarter hero from the Stone side;
-2. matching hero from the Steel side;
-3. orthographic starting inventory and exact square-depth proof;
-4. all six rank families from both sides in one neutral-material lineup;
-5. a neutral side-coding macro comparing bishops and queens;
-6. a clean board plus one of every canonical side/rank variant; and
-7. the complete starting position under one neutral review material.
+1. mirrored raw Stone and Steel hero views;
+2. raw top, both raw obliques, and a south-border board crop;
+3. one clearly marked depth-edge board diagnostic plus a raw top inventory;
+4. front, rear, and top neutral lineups of all twelve side/rank variants;
+5. front, rear, and upper-body-only neutral side-code comparisons for all six roles;
+6. neutral Manhattan identity, raw engineering, and clearly marked depth diagnostic views; and
+7. neutral full-start recognition from both player seats.
 
-Hero cameras resolve the army side from node labels containing `stone` or
-`steel`; if those labels are absent the renderer records a warning and uses the
-frozen fallback camera.
-
-Views 4, 5, and 7 are recognition evidence inputs, not product beauty renders.
-They intentionally replace the display material with one neutral gray while
-preserving the exact GLB material in the receipt. They contain no rank or side
-labels that would leak the expected answer to a Player. View 6 is an
-engineering review layout. It repositions one exact occurrence of each
-canonical piece beside the exact board; it is not a packing or assembly claim.
+Every camera direction is a frozen literal vector. Acceptance views never use
+synthetic depth edges; the two diagnostic filenames and receipts say
+`diagnostic` and are ineligible as beauty or acceptance evidence. Neutral views
+replace only the display material, preserve exact triangles and source-material
+hashes, and contain no rank or side labels that leak the expected answer to a
+Player. Review layouts apply only rigid transforms and never claim packing or
+assembly.
 
 Every PNG has a sibling `.render.json` receipt containing:
 

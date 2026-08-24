@@ -42,7 +42,7 @@
   "limitations": [
     "Digital geometry, mesh, thickness, fit, packing, and slicer evidence do not prove a successful physical print.",
     "Surface finish, warp resistance, handling, durability, storage, and human delight remain unverified until a production set is printed and reviewed.",
-    "The current OrcaSlicer command-line run emits an acknowledged T65535 tool-selection warning, so production-printer acceptance remains held."
+    "The generated G-code has not been accepted or run by a physical production printer."
   ],
   "physical_prototype": false,
   "site_status": "pending-instructions",

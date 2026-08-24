@@ -1,19 +1,19 @@
 {
   "concept_art": false,
-  "evidence_class": "exact-cad-preview",
+  "evidence_class": "exact-cad-recognition-input",
   "input": {
     "format": "native-glb",
     "native_axes": "Y-up",
     "native_units": "metres",
     "path": "../../exports/manhattan-nocturne.glb",
     "restored_axes": "CAD XY bed plane, +Z up",
-    "sha256": "734e78caca4e2f51e28a01b9f2bd674caa999f14e6ac77e43bfcec2c3360096c",
+    "sha256": "3205b925e218742d29ba1f928ae43f57d83388e0ce31e94943ab36a3beefc427",
     "unit_scale_to_mm": 1000.0
   },
   "output": {
     "format": "png",
-    "path": "03-top-inventory.png",
-    "sha256": "0a346c28735559e310021d6f5ca02e80f6ec60e1544344b5896643b690280b80"
+    "path": "07a-neutral-start-stone.png",
+    "sha256": "5ab072daca2c6ea40653921b9d67d82b1c6996ff8f5c96d34f238deb61d85b70"
   },
   "physical_print": false,
   "printability_proof": false,
@@ -21,18 +21,18 @@
   "render": {
     "camera": {
       "direction_cad": [
-        0.0,
-        0.0,
-        1.0
+        -0.39778203,
+        0.723453833,
+        0.564255268
       ],
       "framed_projected_bounds_cad_mm": [
         [
-          -122.000001,
-          -122.000001
+          -165.686426,
+          -93.489439
         ],
         [
-          122.000001,
-          122.000001
+          165.686426,
+          136.781864
         ]
       ],
       "projection": "orthographic",
@@ -41,33 +41,42 @@
         "semantic_side": null
       },
       "right_cad": [
-        1.0,
-        0.0,
-        0.0
+        0.876276039,
+        0.481809406,
+        -0.0
       ],
       "up_cad": [
-        0.0,
-        1.0,
-        0.0
+        0.271863496,
+        -0.494443371,
+        0.825600383
       ]
     },
     "culled_triangles": 0,
     "depth_edge_emphasis": {
       "basis": "exact z-buffer discontinuities",
-      "enabled": true,
+      "enabled": false,
       "threshold_mm": 0.08
+    },
+    "display_crop": {
+      "enabled": false,
+      "minimum_local_z_mm": null,
+      "policy": "none"
+    },
+    "framing": {
+      "mode": "scene",
+      "product_geometry_changed": false
     },
     "internal_pixels": [
       3200,
       1800
     ],
-    "lighting_mode": "studio",
-    "material_mode": "glb",
+    "lighting_mode": "symmetric-review",
+    "material_mode": "neutral-review",
     "output_pixels": [
       1600,
       900
     ],
-    "rendered_triangles": 188092,
+    "rendered_triangles": 127832,
     "scene_bounds_cad_mm": [
       [
         -122.000001,
@@ -80,21 +89,33 @@
         83.349999
       ]
     ],
-    "shadow": false,
+    "shadow": true,
     "supersample": 2
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 2
+    "version": 3
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "b0a9b3b7472f6d07709e8f461baa939d6dc846e64fa95bebef3bf86468404005"
+    "sha256": "17119aab328ab9e15b6dad0c9f6533224e9e29c044931361267e12c08849efb8"
   },
   "scene_derivation": {
+    "display_crop_below_local_z_mm": null,
+    "framing_mode": "scene",
+    "framing_value_mm": null,
     "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
-    "material_mode": "glb",
-    "material_override": null,
+    "material_mode": "neutral-review",
+    "material_override": {
+      "applies_to": "display only; source GLB materials remain in each node receipt",
+      "mode": "neutral-recognition-review",
+      "rgba_srgb": [
+        142,
+        145,
+        149,
+        255
+      ]
+    },
     "mode": "full",
     "review_layout": [],
     "selected_node_count": 33,
@@ -137,7 +158,7 @@
       "board": {
         "colors": [
           {
-            "faces": 540,
+            "faces": 1044,
             "rgba": [
               3,
               3,
@@ -152,7 +173,7 @@
       "steel_bishop_c8": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
               13,
               20,
@@ -167,7 +188,7 @@
       "steel_bishop_f8": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
               13,
               20,
@@ -182,7 +203,7 @@
       "steel_king_e8": {
         "colors": [
           {
-            "faces": 6648,
+            "faces": 2592,
             "rgba": [
               13,
               20,
@@ -197,7 +218,7 @@
       "steel_knight_b8": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
               13,
               20,
@@ -212,7 +233,7 @@
       "steel_knight_g8": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
               13,
               20,
@@ -227,7 +248,7 @@
       "steel_pawn_a7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -242,7 +263,7 @@
       "steel_pawn_b7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -257,7 +278,7 @@
       "steel_pawn_c7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -272,7 +293,7 @@
       "steel_pawn_d7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -287,7 +308,7 @@
       "steel_pawn_e7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -302,7 +323,7 @@
       "steel_pawn_f7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -317,7 +338,7 @@
       "steel_pawn_g7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -332,7 +353,7 @@
       "steel_pawn_h7": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -347,7 +368,7 @@
       "steel_queen_d8": {
         "colors": [
           {
-            "faces": 6090,
+            "faces": 2228,
             "rgba": [
               13,
               20,
@@ -362,7 +383,7 @@
       "steel_rook_a8": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
               13,
               20,
@@ -377,7 +398,7 @@
       "steel_rook_h8": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
               13,
               20,
@@ -392,7 +413,7 @@
       "stone_bishop_c1": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
               122,
               100,
@@ -407,7 +428,7 @@
       "stone_bishop_f1": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
               122,
               100,
@@ -437,7 +458,7 @@
       "stone_knight_b1": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
               122,
               100,
@@ -452,7 +473,7 @@
       "stone_knight_g1": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
               122,
               100,
@@ -467,7 +488,7 @@
       "stone_pawn_a2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -482,7 +503,7 @@
       "stone_pawn_b2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -497,7 +518,7 @@
       "stone_pawn_c2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -512,7 +533,7 @@
       "stone_pawn_d2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -527,7 +548,7 @@
       "stone_pawn_e2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -542,7 +563,7 @@
       "stone_pawn_f2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -557,7 +578,7 @@
       "stone_pawn_g2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -572,7 +593,7 @@
       "stone_pawn_h2": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -587,7 +608,7 @@
       "stone_queen_d1": {
         "colors": [
           {
-            "faces": 4324,
+            "faces": 4338,
             "rgba": [
               122,
               100,
@@ -602,7 +623,7 @@
       "stone_rook_a1": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
               122,
               100,
@@ -617,7 +638,7 @@
       "stone_rook_h1": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
               122,
               100,
@@ -631,6 +652,13 @@
       }
     },
     "source_node_count": 33
+  },
+  "scene_integrity": {
+    "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+    "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
+    "materials_sha256": "bb17769c5807fa2c1ee7e203bf1cc0a8680e37fb431b9a79966e5a40ff1977cf",
+    "node_records_sha256": "b79c6da2e2d3419146bf3a56f2ea9ba3bdbe7dcf74adbbde4eb2e99369937689",
+    "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
   },
   "scene_nodes": [
     {
@@ -649,22 +677,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 540,
+            "faces": 1044,
             "rgba": [
-              3,
-              3,
-              4,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "board",
+      "integrity": {
+        "display_material_sha256": "8741511b1c7f5093206a4d1bc63d4e12c5a51c7dfce1475e5d39c4f9047e2f6d",
+        "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
+        "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
+        "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "source_material_sha256": "aeb0f566b086510c673f2d5ce47d578f0cdb87fdeb913c24a2e51f142f5c4098",
+        "source_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae"
+      },
       "label": "board",
       "metallic": 0.0,
-      "record_sha256": "3144bd66db2e47a2e745666f7ce96a4a7dd8e4bcedf8a911c3f333f840d1e4a1",
+      "record_sha256": "d66088c5b6e9dd44c4d1d53087be4d82f5ab9cb26f69d10a9cd0514b0e24c303",
       "review_transform_cad": [
         [
           1.0,
@@ -691,7 +729,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -122.000001,
@@ -707,7 +745,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 540,
+            "faces": 1044,
             "rgba": [
               3,
               3,
@@ -745,8 +783,8 @@
           1.0
         ]
       ],
-      "triangles": 540,
-      "vertices": 816
+      "triangles": 1044,
+      "vertices": 1572
     },
     {
       "bounds_cad_mm": [
@@ -764,22 +802,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_bishop_f8",
+      "integrity": {
+        "display_material_sha256": "f206354a8e86b5400e5c10cdd3b4638458466ab8e8c63f5e867e23c5607630e9",
+        "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
+        "label_sha256": "436100650824a2b9a3e80e0340e42d9795524350ae833971b4df18858f11995d",
+        "review_bounds_sha256": "d83f7dc7d6cf562a3e4010dd1bc0014f00f0a8b5b2877f349ec9b0d84d6cfba5",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "d83f7dc7d6cf562a3e4010dd1bc0014f00f0a8b5b2877f349ec9b0d84d6cfba5",
+        "source_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
+        "source_transform_sha256": "ef9fb9526e27b57487fa6e2b9d6d6fc7677602becb79c6db9dc682acf244a74f"
+      },
       "label": "steel_bishop_c8",
       "metallic": 0.0,
-      "record_sha256": "e591cebae64951a8d599d17359d15e39d542c3064842777c7fb3f5e7abc2d676",
+      "record_sha256": "91ba8bff1921e257afef8bf069d673625aa5c005b1b382e2b0ca6992c8008fa4",
       "review_transform_cad": [
         [
           1.0,
@@ -806,7 +854,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -822,7 +870,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
               13,
               20,
@@ -860,41 +908,51 @@
           1.0
         ]
       ],
-      "triangles": 6512,
-      "vertices": 4445
+      "triangles": 2312,
+      "vertices": 2553
     },
     {
       "bounds_cad_mm": [
         [
           31.521338,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           54.0,
           -88.505336,
-          69.650001
+          69.200001
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_bishop_f8",
+      "integrity": {
+        "display_material_sha256": "f206354a8e86b5400e5c10cdd3b4638458466ab8e8c63f5e867e23c5607630e9",
+        "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
+        "label_sha256": "a86550facba2985a21c4faa02ab73f677215c16147e634c65f9f94abfcf897c4",
+        "review_bounds_sha256": "b31957faf616785e19f063e242b040549a76ab2e99ef6f181968d93683ad288e",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "b31957faf616785e19f063e242b040549a76ab2e99ef6f181968d93683ad288e",
+        "source_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
+        "source_transform_sha256": "ca8e796fd91e28d8a7dbb1671e86dfaedab0edb02ec4de64f846640e3768738a"
+      },
       "label": "steel_bishop_f8",
       "metallic": 0.0,
-      "record_sha256": "434b2a8b70cf40a9428d536a11704cbac514352275cc9096d5377442fdc75fe0",
+      "record_sha256": "434c733b588959a2ea760efa703960c8d1093549b4b59f0f7af6f144797082b1",
       "review_transform_cad": [
         [
           1.0,
@@ -921,23 +979,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           54.0,
           -88.505336,
-          69.650001
+          69.200001
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6512,
+            "faces": 2312,
             "rgba": [
               13,
               20,
@@ -960,7 +1018,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -975,8 +1033,8 @@
           1.0
         ]
       ],
-      "triangles": 6512,
-      "vertices": 4445
+      "triangles": 2312,
+      "vertices": 2553
     },
     {
       "bounds_cad_mm": [
@@ -994,22 +1052,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6648,
+            "faces": 2592,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_king_e8",
+      "integrity": {
+        "display_material_sha256": "b570468ae01f163efd97305ffd7addbfd578a3c6b8ef6f09ac3a95fc8ab709d6",
+        "geometry_label_sha256": "a84504fd6b5db8f6703952284705160faa434c22db40662e7757f7c691524c71",
+        "label_sha256": "21149f215e6fe6cd7da541766b206b5e023dd60d968496c113a3366bbe33a478",
+        "review_bounds_sha256": "93e9b4210ee92b0ab6fa73d2bf356bdc62f16a6ca4025455602e4b29e886e16c",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "93e9b4210ee92b0ab6fa73d2bf356bdc62f16a6ca4025455602e4b29e886e16c",
+        "source_material_sha256": "50875e644af7266fab348da9f34770750b2d154f72b895fb18391f613e88574d",
+        "source_transform_sha256": "e3510cbbbb066c8142834469a909576d97c184f688eda899bcc09e22f52f172a"
+      },
       "label": "steel_king_e8",
       "metallic": 0.0,
-      "record_sha256": "ff052d6a61b5c7bcdadc2a7b869adf0bf1a4f261d470f461bd2906aeb4d1ba83",
+      "record_sha256": "efb4fa825854997757c2b8a4bfb4c36ff040ab245bdcb94e5782f670c7f3e8da",
       "review_transform_cad": [
         [
           1.0,
@@ -1036,7 +1104,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -1052,7 +1120,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6648,
+            "faces": 2592,
             "rgba": [
               13,
               20,
@@ -1090,41 +1158,51 @@
           1.0
         ]
       ],
-      "triangles": 6648,
-      "vertices": 4571
+      "triangles": 2592,
+      "vertices": 2718
     },
     {
       "bounds_cad_mm": [
         [
           -82.478662,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           -60.0,
           -88.505336,
-          67.65
+          67.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_knight_g8",
+      "integrity": {
+        "display_material_sha256": "4924c661d7ac83fcb4466c7eb44c0f78a2bc9b8a2c013a3ef7777ac52bc91951",
+        "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
+        "label_sha256": "7e21bf1216d81c6553ece2ffe424f1b75ed478ea3484f22164ca120849b13199",
+        "review_bounds_sha256": "939f991f3c0f2a1eb7e9da3a686bdd1b38a441301790d5af7f531e41bba0f892",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "939f991f3c0f2a1eb7e9da3a686bdd1b38a441301790d5af7f531e41bba0f892",
+        "source_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
+        "source_transform_sha256": "dfb503d5f9279c1693d574fee5dbbddf15e38b46556bb840c61ddad9ce5253ce"
+      },
       "label": "steel_knight_b8",
       "metallic": 0.0,
-      "record_sha256": "3d146eebe5db3ae785bd657b927107a60fd1d7c501c23985d559fb55c82936ce",
+      "record_sha256": "5970e9a3001b89449f148a4212be57c3fa512fefc3eb7174fb45b7b18cfe873a",
       "review_transform_cad": [
         [
           1.0,
@@ -1151,23 +1229,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           -60.0,
           -88.505336,
-          67.65
+          67.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
               13,
               20,
@@ -1190,7 +1268,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -1205,8 +1283,8 @@
           1.0
         ]
       ],
-      "triangles": 5910,
-      "vertices": 3801
+      "triangles": 3044,
+      "vertices": 3159
     },
     {
       "bounds_cad_mm": [
@@ -1224,22 +1302,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_knight_g8",
+      "integrity": {
+        "display_material_sha256": "4924c661d7ac83fcb4466c7eb44c0f78a2bc9b8a2c013a3ef7777ac52bc91951",
+        "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
+        "label_sha256": "9bbb3aed4910acf3d462dbad9d3fb8f59ab3984315af1eda47fd4648dde1ecb8",
+        "review_bounds_sha256": "0d32cfb54c8fb383d70a04fee0879e47cc437dd850e72caa3966bfc5f615543a",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "0d32cfb54c8fb383d70a04fee0879e47cc437dd850e72caa3966bfc5f615543a",
+        "source_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
+        "source_transform_sha256": "383a0b87cfbfc4ad758d56b7a2a18972cf647d4157a002bd0fc82867f48524de"
+      },
       "label": "steel_knight_g8",
       "metallic": 0.0,
-      "record_sha256": "f22d13a423965c0004802cb2850908e199ae6ac70287336d9ac76ecce5ff4e11",
+      "record_sha256": "74d9e7878a44b43a35af663270a2be59af894c069017de2089d81bc06def6ce6",
       "review_transform_cad": [
         [
           1.0,
@@ -1266,7 +1354,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -1282,7 +1370,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5910,
+            "faces": 3044,
             "rgba": [
               13,
               20,
@@ -1320,41 +1408,51 @@
           1.0
         ]
       ],
-      "triangles": 5910,
-      "vertices": 3801
+      "triangles": 3044,
+      "vertices": 3159
     },
     {
       "bounds_cad_mm": [
         [
           -110.978662,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           -88.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "05cc1359529c061837d3cadaacea109fbef6045f3de9fae95b9604b7e7c4da78",
+        "review_bounds_sha256": "1ba712b80f461212f1ed24275fbd72a767d02a858d580025b8db83cca871bdf2",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "1ba712b80f461212f1ed24275fbd72a767d02a858d580025b8db83cca871bdf2",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "bf719c4b701a5f1b054fd4febccb60397b0441f0ac56d8c8541f6928510e5893"
+      },
       "label": "steel_pawn_a7",
       "metallic": 0.0,
-      "record_sha256": "7edb69601ce6deddae93abad612c4b76df1671441d65209bf4ae445096cc332b",
+      "record_sha256": "9b16a28ce61e9672e94f67f11ec8bbc9adbaedb080781cab5f82c2ed6fa3da08",
       "review_transform_cad": [
         [
           1.0,
@@ -1381,23 +1479,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           -88.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -1420,7 +1518,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -1435,8 +1533,8 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
@@ -1454,22 +1552,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "ecbbbc806cb148f43bf99deee7be4730dca23874623a50246567343a3a8501c6",
+        "review_bounds_sha256": "dc170252d62ff7e15e0752827c012086a3b09df26cd89708cd9626167c4fb9d1",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "dc170252d62ff7e15e0752827c012086a3b09df26cd89708cd9626167c4fb9d1",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "4f1e2a8d981000b969d0db14ebf2458fbf61e99dee4021d7a746ccd3ceacd560"
+      },
       "label": "steel_pawn_b7",
       "metallic": 0.0,
-      "record_sha256": "4e2cf56cb53269af6cd6c0258b0a336179b23b8c119c4ac0e8863ab2110a7c19",
+      "record_sha256": "8d6a9b606c1e937bde50bf566d863d3cc13d39d78f23f8466336a6d80514017e",
       "review_transform_cad": [
         [
           1.0,
@@ -1496,7 +1604,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -1512,7 +1620,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -1550,41 +1658,51 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
         [
           -53.978662,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           -31.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "865a1ba5732990e7c42d0e084930ad00e88ee20710ae17c14a7889f23272c896",
+        "review_bounds_sha256": "418d93b55f4685c674c9d27f76a09b607a6f3ff2b1b2ed8e97aa30662c8f0381",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "418d93b55f4685c674c9d27f76a09b607a6f3ff2b1b2ed8e97aa30662c8f0381",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "7b808d055166d447248d9b6cce8f669956b72359faf1001016de6b928d89327e"
+      },
       "label": "steel_pawn_c7",
       "metallic": 0.0,
-      "record_sha256": "9ae1e0eff7c8714334627e5eb39cbd2695d6483b011e9f510d75f5a9fe7dec15",
+      "record_sha256": "144906ced3687a3378e2f08d6b11970760955956252422544f3b6da8e593d248",
       "review_transform_cad": [
         [
           1.0,
@@ -1611,23 +1729,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           -31.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -1650,7 +1768,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -1665,8 +1783,8 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
@@ -1684,22 +1802,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "c2c89dddc6ab6bfa1dc16241995a2543fbb4fcf9d57d8966c343465ff6899af4",
+        "review_bounds_sha256": "132dfee3e05eb77c7aa0022a3ece97873e52ea83352c6f5267b6e7e30aa12636",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "132dfee3e05eb77c7aa0022a3ece97873e52ea83352c6f5267b6e7e30aa12636",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "7469775d2b00bd77c26f718a4713c4fa7461ed7f066f241163c64d2a73f7bf8d"
+      },
       "label": "steel_pawn_d7",
       "metallic": 0.0,
-      "record_sha256": "e5b687777aa70753832ce13865d6749d022828d991fe37b5a0e1e22d3e6def20",
+      "record_sha256": "c9cf0cd98016e95da30c3ee6caebcc54a06a8eb5f5d8e9828a87590ce46f9d88",
       "review_transform_cad": [
         [
           1.0,
@@ -1726,7 +1854,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -1742,7 +1870,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -1780,41 +1908,51 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
         [
           3.021338,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           25.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "ff0eb1e9c76ecbb96e75f56af1a31ec1f0183f94eae3893b7e7404ed8a98cf64",
+        "review_bounds_sha256": "985ade7a49876f581e4dc1cb6699f5fd007048a887519150cc68df54f6515ca3",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "985ade7a49876f581e4dc1cb6699f5fd007048a887519150cc68df54f6515ca3",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "5fb66b9ca6f289513319019d65ce13e4841d43b5a8953e1037c67434735cf46d"
+      },
       "label": "steel_pawn_e7",
       "metallic": 0.0,
-      "record_sha256": "715ced596556e0b2a0c8e6d6bd486658781d25aef71b809312d989f5128eb21e",
+      "record_sha256": "c837f6ecba7b3c6464812ad2175531bab4cd1e497f6469b61807d6b074dfcd27",
       "review_transform_cad": [
         [
           1.0,
@@ -1841,23 +1979,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           25.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -1880,7 +2018,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -1895,8 +2033,8 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
@@ -1914,22 +2052,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "1310eaea4287ff9bef05aeb9df1bbf76c75b300219c0e2b3a6d51eac9de168e0",
+        "review_bounds_sha256": "51a4bafa037ff3a2afc83bba99c2ed3da92fb63404f517c2b8d5e333e33c0431",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "51a4bafa037ff3a2afc83bba99c2ed3da92fb63404f517c2b8d5e333e33c0431",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "019ab687c134ec9f100399ce07290f35992368eebed942e1e6734ad62c5b8e76"
+      },
       "label": "steel_pawn_f7",
       "metallic": 0.0,
-      "record_sha256": "2866b7af2875b1b4279979538df6e5e9fc995965708175e03c8b7556ecabe43c",
+      "record_sha256": "40cb8df88c2af636c1e2fe2178b0288ff999689940de800653795f635397efec",
       "review_transform_cad": [
         [
           1.0,
@@ -1956,7 +2104,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -1972,7 +2120,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -2010,41 +2158,51 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
         [
           60.021338,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           82.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "6fa32a38c1bb9dc1a604a6f682f453b74bf185f2e73cb40aeabc8339a3226e55",
+        "review_bounds_sha256": "56075b46e07f79ce01e901b2ddb6e5251cef37c3ac9e62358353c78058fa3e80",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "56075b46e07f79ce01e901b2ddb6e5251cef37c3ac9e62358353c78058fa3e80",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "ea8102a827606f0f031f1707ca56c642ba9423ff3a269eb7d3b999d37da01277"
+      },
       "label": "steel_pawn_g7",
       "metallic": 0.0,
-      "record_sha256": "f8798086e75da060b6276280c56d27a625e0c260572860d72e076f1afb8bb29e",
+      "record_sha256": "57b4a56b7b8d90e6c441ca04b21a1b4739ae0c8aa1c899425c2477d659372e58",
       "review_transform_cad": [
         [
           1.0,
@@ -2071,23 +2229,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
           -82.494664,
-          8.65
+          8.2
         ],
         [
           82.5,
           -60.005336,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -2110,7 +2268,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -2125,8 +2283,8 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
@@ -2144,22 +2302,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
+      "integrity": {
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
+        "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
+        "label_sha256": "feeab1b8fce5351e8780c96008c1026b0602b03e4614cd6794749b95cac8e593",
+        "review_bounds_sha256": "1ad941d1c52024a2398c391168187feee25fd3dc532e23d094ad2c4373d7e666",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "1ad941d1c52024a2398c391168187feee25fd3dc532e23d094ad2c4373d7e666",
+        "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "source_transform_sha256": "5ad451e9568e8649aa32d33dbf04efa3ff42b12a070d417decf57491849ef135"
+      },
       "label": "steel_pawn_h7",
       "metallic": 0.0,
-      "record_sha256": "3f74bc8faf2424ee4033276789b246a7319f64632ed0bd0df435e9b251ed67ff",
+      "record_sha256": "d02474a07f6f7750358f2a17fd9194efd229a7bf997f6d0c102bc6cb45281a96",
       "review_transform_cad": [
         [
           1.0,
@@ -2186,7 +2354,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -2202,7 +2370,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6944,
+            "faces": 2976,
             "rgba": [
               13,
               20,
@@ -2240,41 +2408,51 @@
           1.0
         ]
       ],
-      "triangles": 6944,
-      "vertices": 4720
+      "triangles": 2976,
+      "vertices": 2959
     },
     {
       "bounds_cad_mm": [
         [
           -25.478662,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           -3.0,
           -88.505336,
-          76.650004
+          76.200004
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 6090,
+            "faces": 2228,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_queen_d8",
+      "integrity": {
+        "display_material_sha256": "2b8d0821b4f12cbb6a3ff394b8106bc2df91e5d494ae9bbdd5f350e52b889d53",
+        "geometry_label_sha256": "80f16f60a7558dc6167c37c6513f7692ceeedbd003d394cc5122d3d41c5e3926",
+        "label_sha256": "3b9bde5d6ece016692b547f7c4309c7b935efdfb6671795c7a1ec4f7cbccc8b2",
+        "review_bounds_sha256": "1aabd38fb15464161ffc6cbda62ef71545e8640bc672935f5088d521536869cd",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "1aabd38fb15464161ffc6cbda62ef71545e8640bc672935f5088d521536869cd",
+        "source_material_sha256": "cbf879170b43c7b75fec1150e2ce5e0f878a3fb5c42a664e6dd2ddc4b2036444",
+        "source_transform_sha256": "1fa0a7d8d348bcb06ab3a9dcfc00eb59a7404981dc3f5ec577ded38b9614abf9"
+      },
       "label": "steel_queen_d8",
       "metallic": 0.0,
-      "record_sha256": "1730f6437234e0712dd539abedd28a42a92dc752b7fa6e601cd1d320bd890ccf",
+      "record_sha256": "c25ed31037624f54002d3ac215735f0cc8290d8ce442cb4138535fa700c41435",
       "review_transform_cad": [
         [
           1.0,
@@ -2301,23 +2479,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           -3.0,
           -88.505336,
-          76.650004
+          76.200004
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 6090,
+            "faces": 2228,
             "rgba": [
               13,
               20,
@@ -2340,7 +2518,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -2355,8 +2533,8 @@
           1.0
         ]
       ],
-      "triangles": 6090,
-      "vertices": 4125
+      "triangles": 2228,
+      "vertices": 2467
     },
     {
       "bounds_cad_mm": [
@@ -2374,22 +2552,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_rook_h8",
+      "integrity": {
+        "display_material_sha256": "ea9535d03f308883d5be7952e10f8e943fa2351ed313b01fd81483658c587cb4",
+        "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
+        "label_sha256": "241f812adee2ab44cd1e50ec2bb9dd76b11015735857e0105255b74fbe8e45dd",
+        "review_bounds_sha256": "919bbc1b5a46f3d1f253a54f1844fa3ec4b2128449227c30ad6babbfb9ea8287",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "919bbc1b5a46f3d1f253a54f1844fa3ec4b2128449227c30ad6babbfb9ea8287",
+        "source_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
+        "source_transform_sha256": "ab83e76a6bbaadd29c3ff75894558c7a393c93232a9ee409b3e90804dd1b37ec"
+      },
       "label": "steel_rook_a8",
       "metallic": 0.0,
-      "record_sha256": "6c29ff12e2e0263791b20b9d681b9971131b2e1ee57b46d25568fe0d32573bb3",
+      "record_sha256": "c3777402f1ad9bd51916a1ca0538fefb3cfe93763cada4d70da73e6b6123dd46",
       "review_transform_cad": [
         [
           1.0,
@@ -2416,7 +2604,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -2432,7 +2620,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
               13,
               20,
@@ -2470,41 +2658,51 @@
           1.0
         ]
       ],
-      "triangles": 5968,
-      "vertices": 3917
+      "triangles": 2182,
+      "vertices": 2367
     },
     {
       "bounds_cad_mm": [
         [
           88.521338,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           111.0,
           -88.505336,
-          65.65
+          65.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_rook_h8",
+      "integrity": {
+        "display_material_sha256": "ea9535d03f308883d5be7952e10f8e943fa2351ed313b01fd81483658c587cb4",
+        "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
+        "label_sha256": "bd22ba8b5cf1309994b17bf18b8ed2cc2e2326bb6305ae4996fa2656aeb53d1a",
+        "review_bounds_sha256": "2f42c17ecc3e55e7be4827ea6468ed6f52ec62e116f0664135e3c602bfc28fb2",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "2f42c17ecc3e55e7be4827ea6468ed6f52ec62e116f0664135e3c602bfc28fb2",
+        "source_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
+        "source_transform_sha256": "bec6812495a188b44d6287d12e8a7d7efc502f058f66aac689bf3ec64e12fd27"
+      },
       "label": "steel_rook_h8",
       "metallic": 0.0,
-      "record_sha256": "ef834104f3a5650225935f556ad52c6c1bce67bb757497f6d4b3d0cef8b5f42e",
+      "record_sha256": "2058dcf579fffef8b35404cfd427df696e2cfafda1409c02d4667085fe222a8a",
       "review_transform_cad": [
         [
           1.0,
@@ -2531,23 +2729,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
           -110.994664,
-          8.65
+          8.2
         ],
         [
           111.0,
           -88.505336,
-          65.65
+          65.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5968,
+            "faces": 2182,
             "rgba": [
               13,
               20,
@@ -2570,7 +2768,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -2585,41 +2783,51 @@
           1.0
         ]
       ],
-      "triangles": 5968,
-      "vertices": 3917
+      "triangles": 2182,
+      "vertices": 2367
     },
     {
       "bounds_cad_mm": [
         [
           -53.978662,
           88.505336,
-          8.65
+          8.2
         ],
         [
           -31.5,
           110.994664,
-          69.650001
+          69.200001
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_bishop_f1",
+      "integrity": {
+        "display_material_sha256": "de16ffaf619eaa9f164844b37dec31a43504f0af0db34eb22da2f1127d7fbd3f",
+        "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
+        "label_sha256": "889ad85f56962ccebadd03f4b55552667619364d9a0b0fba61b765c0fc48a5ba",
+        "review_bounds_sha256": "380f1eec1c28f227ff6e27143b954e611c2ed4122dec1820d4b0da633cd82ca6",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "380f1eec1c28f227ff6e27143b954e611c2ed4122dec1820d4b0da633cd82ca6",
+        "source_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
+        "source_transform_sha256": "6e982c3ec9bd418994a567695f1e5417abb3d9bc401f6a719e4001e8ced4000d"
+      },
       "label": "stone_bishop_c1",
       "metallic": 0.0,
-      "record_sha256": "b0aab0eca5062355726955678f1033521a264b2aa79781c54ab09161ec18c258",
+      "record_sha256": "a5d56a670f16d578d13bf580d1682d0c1d71f736fbd70e47386cc4c031e2874c",
       "review_transform_cad": [
         [
           1.0,
@@ -2646,23 +2854,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
           88.505336,
-          8.65
+          8.2
         ],
         [
           -31.5,
           110.994664,
-          69.650001
+          69.200001
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
               122,
               100,
@@ -2685,7 +2893,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -2700,8 +2908,8 @@
           1.0
         ]
       ],
-      "triangles": 4650,
-      "vertices": 3599
+      "triangles": 4326,
+      "vertices": 3381
     },
     {
       "bounds_cad_mm": [
@@ -2719,22 +2927,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_bishop_f1",
+      "integrity": {
+        "display_material_sha256": "de16ffaf619eaa9f164844b37dec31a43504f0af0db34eb22da2f1127d7fbd3f",
+        "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
+        "label_sha256": "69f683b6bf20f76f5160383842bfedae72cdeec2eb157e15f026eb48b1f4ea5e",
+        "review_bounds_sha256": "5c085e2a1707448d4a5e5c684d9be6c5c5c14b133c8c3571926ae7e48ddb9269",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "5c085e2a1707448d4a5e5c684d9be6c5c5c14b133c8c3571926ae7e48ddb9269",
+        "source_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
+        "source_transform_sha256": "7102b65d3f2dc698a411d45d56be72ccdd1f7567bb318bc35d377d9f908d1650"
+      },
       "label": "stone_bishop_f1",
       "metallic": 0.0,
-      "record_sha256": "1539d2924a972f12e5aaeda038d85faf3f90e6351ca7ff6e4bf038990ad663c6",
+      "record_sha256": "dfd6c0221679591d29f2775a7d8d1ded924b6142d17fa5a29c85a4adf48d453d",
       "review_transform_cad": [
         [
           1.0,
@@ -2761,7 +2979,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -2777,7 +2995,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4650,
+            "faces": 4326,
             "rgba": [
               122,
               100,
@@ -2815,20 +3033,20 @@
           1.0
         ]
       ],
-      "triangles": 4650,
-      "vertices": 3599
+      "triangles": 4326,
+      "vertices": 3381
     },
     {
       "bounds_cad_mm": [
         [
           3.021338,
           88.505336,
-          8.65
+          8.2
         ],
         [
           25.5,
           110.994664,
-          82.999999
+          82.549999
         ]
       ],
       "display_material": {
@@ -2836,20 +3054,30 @@
           {
             "faces": 4622,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_king_e1",
+      "integrity": {
+        "display_material_sha256": "6755b953bb61af1ffd9ac8683fd4af26345f55b0cb151965f4cd0c2b830d9990",
+        "geometry_label_sha256": "d0b5908b2eec1275bf3b11c7593d4cfab4b7527c9f5e4b9648b27b670c9acaa7",
+        "label_sha256": "4c58018139a8c0af62cb8f7d708cf4b8e3e3229d541b47f12676505897e85100",
+        "review_bounds_sha256": "58ef10d481b9ce1d839f3f14c4c1a35d8881c07731f94c5c8202a35690f0e5c5",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "58ef10d481b9ce1d839f3f14c4c1a35d8881c07731f94c5c8202a35690f0e5c5",
+        "source_material_sha256": "e32463a7877b17a7d85f8652c2da8c72355926ce6950de1ffb14297f94073d16",
+        "source_transform_sha256": "f2fe1f2981c12943e50d649c39d68138770d02ec273be6adbc680ce96e836329"
+      },
       "label": "stone_king_e1",
       "metallic": 0.0,
-      "record_sha256": "e6984b70766e81ad2fae1e1aa06bd95d6f58324a45623b7b7f194135b014c753",
+      "record_sha256": "7491a1918383003ed2f9290877bef729767e7b8a86ff0089e90f926489a231ee",
       "review_transform_cad": [
         [
           1.0,
@@ -2876,17 +3104,17 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
           88.505336,
-          8.65
+          8.2
         ],
         [
           25.5,
           110.994664,
-          82.999999
+          82.549999
         ]
       ],
       "source_glb_material": {
@@ -2915,7 +3143,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -2949,22 +3177,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_knight_g1",
+      "integrity": {
+        "display_material_sha256": "302d3acc50d13131114c224ab103cdca0a8a027c1a3de2a9d79d0b89682a422e",
+        "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
+        "label_sha256": "e769e7e3cd34316309f05c0db67e59354edb53a17517d829226a3211b9dd8f6b",
+        "review_bounds_sha256": "79af27f4dee98ab231ac7f5c6a839210d5e5d73253ecd22ef052995b865bd685",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "79af27f4dee98ab231ac7f5c6a839210d5e5d73253ecd22ef052995b865bd685",
+        "source_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
+        "source_transform_sha256": "2ac3f4d9d6caa34b086d70d527c44f54143da0a0285b9c963b86c0bb64dd8111"
+      },
       "label": "stone_knight_b1",
       "metallic": 0.0,
-      "record_sha256": "d36603af799ff36eb351bbb528def3fed3e00295209718c4397e1ff685a589ad",
+      "record_sha256": "a853112de09f415bc7d0de46ab5f6a6caa0b068c655e3f6afcb15f8bec16270c",
       "review_transform_cad": [
         [
           1.0,
@@ -2991,7 +3229,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -3007,7 +3245,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
               122,
               100,
@@ -3045,41 +3283,51 @@
           1.0
         ]
       ],
-      "triangles": 4228,
-      "vertices": 3223
+      "triangles": 5176,
+      "vertices": 4210
     },
     {
       "bounds_cad_mm": [
         [
           60.021338,
           88.505336,
-          8.65
+          8.2
         ],
         [
           82.5,
           110.994664,
-          67.65
+          67.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_knight_g1",
+      "integrity": {
+        "display_material_sha256": "302d3acc50d13131114c224ab103cdca0a8a027c1a3de2a9d79d0b89682a422e",
+        "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
+        "label_sha256": "953c9e508b04a474743092ea9db49320df5f3b90a4eeff78edf3abef6961fb2f",
+        "review_bounds_sha256": "332ae2eb1aacc65bda6dcc716628c5e4fa2f774e222559d0d3705b85fc2c1715",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "332ae2eb1aacc65bda6dcc716628c5e4fa2f774e222559d0d3705b85fc2c1715",
+        "source_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
+        "source_transform_sha256": "48ffea5d94dec05a5177fb7b54b4952abe9d375bfdc0349a69a3c1da72ab6468"
+      },
       "label": "stone_knight_g1",
       "metallic": 0.0,
-      "record_sha256": "0bc50ab906b715e11a06421fe168382a585545713738f30679dd95e504335b9d",
+      "record_sha256": "26e72625291c4e176cfac832ed667877c9e317086db511ccdab281e6fac945bf",
       "review_transform_cad": [
         [
           1.0,
@@ -3106,23 +3354,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
           88.505336,
-          8.65
+          8.2
         ],
         [
           82.5,
           110.994664,
-          67.65
+          67.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4228,
+            "faces": 5176,
             "rgba": [
               122,
               100,
@@ -3145,7 +3393,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -3160,8 +3408,8 @@
           1.0
         ]
       ],
-      "triangles": 4228,
-      "vertices": 3223
+      "triangles": 5176,
+      "vertices": 4210
     },
     {
       "bounds_cad_mm": [
@@ -3179,22 +3427,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "c5e05022b60fc09a71aa39d05b277dcce4d19bf3158ca256e727c8a40e4b3850",
+        "review_bounds_sha256": "7785638906892dfd1e9d47823cec8b9693aae47fb8ee3a472bc197d06b88a9dc",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "7785638906892dfd1e9d47823cec8b9693aae47fb8ee3a472bc197d06b88a9dc",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "22a8bfef9aba834993920cb64ac038478b29f1f6f87ff6434e4f24844ae94863"
+      },
       "label": "stone_pawn_a2",
       "metallic": 0.0,
-      "record_sha256": "b1561e8e3924342b3b85a8a647c79493a2b0bd3d269ff507cda844066a1f5a71",
+      "record_sha256": "eeb817fcb6b6b43e61635ece574c326f9c068ec95251674e8c29ff51b351b4df",
       "review_transform_cad": [
         [
           1.0,
@@ -3221,7 +3479,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -3237,7 +3495,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3275,41 +3533,51 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
         [
           -82.478662,
           60.005336,
-          8.65
+          8.2
         ],
         [
           -60.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "57ebc543e5df5a4724f8d8c88d4272a3d54c8f7408b8f98162c70627a4d9119d",
+        "review_bounds_sha256": "4105b3f57aed114731cbdceb0e9d0af705c3965623511e481016a770dae9f31b",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "4105b3f57aed114731cbdceb0e9d0af705c3965623511e481016a770dae9f31b",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "fb3e651a866e0c370bec17556b831855acd67b03e57b9b3a18442c9e1abdb8cb"
+      },
       "label": "stone_pawn_b2",
       "metallic": 0.0,
-      "record_sha256": "0ea77661cdd540c004afff345aa887987110085cc5353aebfeaddd86b6ef6144",
+      "record_sha256": "e8a432f129e21a14f5970b6cc04632e465be0e22c52bcea88fe9daeb6103f2db",
       "review_transform_cad": [
         [
           1.0,
@@ -3336,23 +3604,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
           60.005336,
-          8.65
+          8.2
         ],
         [
           -60.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3375,7 +3643,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -3390,8 +3658,8 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
@@ -3409,22 +3677,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "4cfccf303cfabf28111b000b76cabf1d58f465f195c764439b2aba494617cfce",
+        "review_bounds_sha256": "1e7e5d691fbc48957c5ee491d76bf7522d98bc34039fbe2b09e1fc14eb7f1718",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "1e7e5d691fbc48957c5ee491d76bf7522d98bc34039fbe2b09e1fc14eb7f1718",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "def21b5b293464ce4b1ba6c8d01a6749281e845c25dc2598cd58ef0d4e68e369"
+      },
       "label": "stone_pawn_c2",
       "metallic": 0.0,
-      "record_sha256": "e9a2797e289bbec205966940553285ad289f0efb14f42f39fe08e9ec52648781",
+      "record_sha256": "af9632cd97c5f7c3a4d9308519e14d6628149aa9dc47099bfdb58f214f2d2b1e",
       "review_transform_cad": [
         [
           1.0,
@@ -3451,7 +3729,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -3467,7 +3745,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3505,41 +3783,51 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
         [
           -25.478662,
           60.005336,
-          8.65
+          8.2
         ],
         [
           -3.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "03008195ed433d814e3e5f94804e3aa0caeb09931ffd7726f2a051a882fc92e4",
+        "review_bounds_sha256": "382829094cfde80fbe1baadff9182a534bbd1e61303fc5b5199ada6bf3f8ddb2",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "382829094cfde80fbe1baadff9182a534bbd1e61303fc5b5199ada6bf3f8ddb2",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "12f32e9652b624251182939bd7b4d941ec2880b721d7c002d00f38aa5b2d0a24"
+      },
       "label": "stone_pawn_d2",
       "metallic": 0.0,
-      "record_sha256": "b5d8ebe7447e4733b30cc95dda9e41e47b1f0d9747a7372139ad9807d87a7f9f",
+      "record_sha256": "b6b398a73aced8c69c807fb6275102693e735cb0b45232de70f8b1cf0bde05fc",
       "review_transform_cad": [
         [
           1.0,
@@ -3566,23 +3854,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
           60.005336,
-          8.65
+          8.2
         ],
         [
           -3.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3605,7 +3893,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -3620,8 +3908,8 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
@@ -3639,22 +3927,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "63bb455299f1f001a3b49a06de62798ee26f19b7813051b35c3407f129055c8d",
+        "review_bounds_sha256": "740f84aec99cab3a0aee17d0d8ac9e860b001a5afc26475cc6f97f226ad469e3",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "740f84aec99cab3a0aee17d0d8ac9e860b001a5afc26475cc6f97f226ad469e3",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "bb3530b416386a278e2d9937acaa5169f140b163a6b9f8c56fa64dd958134b1f"
+      },
       "label": "stone_pawn_e2",
       "metallic": 0.0,
-      "record_sha256": "25aa2a60309396431fbf79a5d82ac4771ae0d0e83b08ed333c644dab414406d5",
+      "record_sha256": "d319924be84ef6229082170c23b150ea7d867e3e1f9546bcff9c54d86a313545",
       "review_transform_cad": [
         [
           1.0,
@@ -3681,7 +3979,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -3697,7 +3995,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3735,41 +4033,51 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
         [
           31.521338,
           60.005336,
-          8.65
+          8.2
         ],
         [
           54.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "28ebb4bf6fed0bfbc3d8755c2c64bf27470988905fe10e3aa659eae970a97f48",
+        "review_bounds_sha256": "2a2481b7d0d5f30398604197f6ac32ee3d0557c1dc369565f06c4a4a45c5484c",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "2a2481b7d0d5f30398604197f6ac32ee3d0557c1dc369565f06c4a4a45c5484c",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "769c13bcb70a20ee70d56c0d6ff6d983688f18857dda8131e89aecf8758efb4e"
+      },
       "label": "stone_pawn_f2",
       "metallic": 0.0,
-      "record_sha256": "c351113bf41a2f08bcb26c1cc8deaff8bf028a290374aad5f219482884f75a0c",
+      "record_sha256": "6e5f7340427b8b4fcabdb97a5180af2c61ccff1652bcbde78b388c81e85ea844",
       "review_transform_cad": [
         [
           1.0,
@@ -3796,23 +4104,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
           60.005336,
-          8.65
+          8.2
         ],
         [
           54.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3835,7 +4143,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -3850,8 +4158,8 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
@@ -3869,22 +4177,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "136c0de5b3ec76ca34fe939854db449d83864cdd0587365e63a604e5a4f8ab27",
+        "review_bounds_sha256": "0d0e59e78df9f1bdc4cc1a90f56654b66f60d144a126b486e7c4d11c8f560ef5",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "0d0e59e78df9f1bdc4cc1a90f56654b66f60d144a126b486e7c4d11c8f560ef5",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "cd7974ed7b83fb023899dca3b03df7b3b16f45db9a22cc603cea99dff8533ef3"
+      },
       "label": "stone_pawn_g2",
       "metallic": 0.0,
-      "record_sha256": "400ac559a99f21bc3ba3b25004457ebbb47e83059292179e1ef2cd24fff64ece",
+      "record_sha256": "bd61d403020b474fe100fdbe111383edad8d35ee1b35d5ef13a5392bb6ef385c",
       "review_transform_cad": [
         [
           1.0,
@@ -3911,7 +4229,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -3927,7 +4245,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -3965,41 +4283,51 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
         [
           88.521338,
           60.005336,
-          8.65
+          8.2
         ],
         [
           111.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
+      "integrity": {
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
+        "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
+        "label_sha256": "f16220788755099bdc89b6faa1bdb359e907dd642a1dc93a167420115cf3f458",
+        "review_bounds_sha256": "8f3ac68ec15950fbe814f0366dd76743597a510aa40ae47920bf9d70967c6df9",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "8f3ac68ec15950fbe814f0366dd76743597a510aa40ae47920bf9d70967c6df9",
+        "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "source_transform_sha256": "e2a0ed96f2ef3a8cbd9c344e2eb2e1a251748f94343ffef26a111571e40a6247"
+      },
       "label": "stone_pawn_h2",
       "metallic": 0.0,
-      "record_sha256": "b4d97027d89aaf831601bf9353e5413ec84177952a26393506226534af951145",
+      "record_sha256": "a4303f25b875f31b6934c1576822ca951c7950cf6bb8b6f9e1a71acb11a44b66",
       "review_transform_cad": [
         [
           1.0,
@@ -4026,23 +4354,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
           60.005336,
-          8.65
+          8.2
         ],
         [
           111.0,
           82.494664,
-          52.65
+          52.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 5918,
+            "faces": 5816,
             "rgba": [
               122,
               100,
@@ -4065,7 +4393,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -4080,8 +4408,8 @@
           1.0
         ]
       ],
-      "triangles": 5918,
-      "vertices": 4712
+      "triangles": 5816,
+      "vertices": 4610
     },
     {
       "bounds_cad_mm": [
@@ -4099,22 +4427,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 4324,
+            "faces": 4338,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_queen_d1",
+      "integrity": {
+        "display_material_sha256": "9f8162ff8e5e9a25ce5ddf85944b0f4eb60e015aba400ffa46b97ab745d8acf2",
+        "geometry_label_sha256": "a94027db870099bf6d9f9f4574b39fb7bb8fa5e6582a0e2142394c2ea1e076b9",
+        "label_sha256": "62fb4b55ad9285a054b96f43ebd2d5901305ad33c8eb7c773117a348e1bd97ae",
+        "review_bounds_sha256": "c6d9dbd9700ff5eb7430da70c74fc7855703a940170a20b30fccb10f1b9bc1ae",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "c6d9dbd9700ff5eb7430da70c74fc7855703a940170a20b30fccb10f1b9bc1ae",
+        "source_material_sha256": "3bc1ad429b8ec8bf1919cf65d72dbea64b987e3513b86c553d2022cf4a14406f",
+        "source_transform_sha256": "0c4a4510d3d31d5fd254ba1ccf0d2b99df14b895c35672bf14ab3d15bd8284ce"
+      },
       "label": "stone_queen_d1",
       "metallic": 0.0,
-      "record_sha256": "03322e8d470b4cd240b5da471c0392cb9669408e2119cd3d47cdfd78fea522e7",
+      "record_sha256": "7e3f6b2a0d49ab196cfd19d38f9f1311df0c4aaab7a2c8aad34f8f399725121f",
       "review_transform_cad": [
         [
           1.0,
@@ -4141,7 +4479,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -4157,7 +4495,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4324,
+            "faces": 4338,
             "rgba": [
               122,
               100,
@@ -4195,41 +4533,51 @@
           1.0
         ]
       ],
-      "triangles": 4324,
-      "vertices": 3401
+      "triangles": 4338,
+      "vertices": 3417
     },
     {
       "bounds_cad_mm": [
         [
           -110.978662,
           88.505336,
-          8.65
+          8.2
         ],
         [
           -88.5,
           110.994664,
-          65.65
+          65.2
         ]
       ],
       "display_material": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_rook_h1",
+      "integrity": {
+        "display_material_sha256": "9de8540c219a3b62e4bb7be476a3338f466c5d39f017b34dad047fd17611bf66",
+        "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
+        "label_sha256": "616e985614fc1c5a12fc8bf3a6c9c04a578afc6f0170ee51f508effda533bc00",
+        "review_bounds_sha256": "cc1d40b8d7650faefd7bbe107baf797973a0ea567a2663397e097ddc32327536",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "cc1d40b8d7650faefd7bbe107baf797973a0ea567a2663397e097ddc32327536",
+        "source_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
+        "source_transform_sha256": "a8e16dfd47b0e2e8bce5b7e3c1d6523121cb1db958c23cd5f8b5344fa5d687e0"
+      },
       "label": "stone_rook_a1",
       "metallic": 0.0,
-      "record_sha256": "7811c52651c7895d15b676a5f8107da26b3a5e13c7a1499e2975b9abecfbeede",
+      "record_sha256": "584f843a342b45e95150cfd4b7bdb75c0f3cd6383b3879a4d50696f414a02297",
       "review_transform_cad": [
         [
           1.0,
@@ -4256,23 +4604,23 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
           88.505336,
-          8.65
+          8.2
         ],
         [
           -88.5,
           110.994664,
-          65.65
+          65.2
         ]
       ],
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
               122,
               100,
@@ -4295,7 +4643,7 @@
           0.0,
           1.0,
           0.0,
-          0.00865
+          0.0082
         ],
         [
           0.0,
@@ -4310,8 +4658,8 @@
           1.0
         ]
       ],
-      "triangles": 4218,
-      "vertices": 3217
+      "triangles": 4296,
+      "vertices": 3343
     },
     {
       "bounds_cad_mm": [
@@ -4329,22 +4677,32 @@
       "display_material": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_rook_h1",
+      "integrity": {
+        "display_material_sha256": "9de8540c219a3b62e4bb7be476a3338f466c5d39f017b34dad047fd17611bf66",
+        "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
+        "label_sha256": "28037e8674da47ab9d8f2b9596e30d761c6edd3d7ac058face1acc5b6c89fc2c",
+        "review_bounds_sha256": "a588a1957fdc6bb058c8945e3c64fde05afbe19c0c7568601870d52c39215750",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "a588a1957fdc6bb058c8945e3c64fde05afbe19c0c7568601870d52c39215750",
+        "source_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
+        "source_transform_sha256": "a9b86ddaaab4b13f01165f05c224da00ff19356c565ccc17530c1d0cacfa058e"
+      },
       "label": "stone_rook_h1",
       "metallic": 0.0,
-      "record_sha256": "ac5bd1ec3c9fb2f5129da23d4f13a45c4e60e690d27addb9d0a18e1c536085e0",
+      "record_sha256": "41737f1073a03395a0d2aa098129007bf7e8caa092bf70491c82bd6eca7567dd",
       "review_transform_cad": [
         [
           1.0,
@@ -4371,7 +4729,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -4387,7 +4745,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 4218,
+            "faces": 4296,
             "rgba": [
               122,
               100,
@@ -4425,12 +4783,33 @@
           1.0
         ]
       ],
-      "triangles": 4218,
-      "vertices": 3217
+      "triangles": 4296,
+      "vertices": 3343
     }
   ],
-  "scene_nodes_sha256": "2e2ed44d2185c1b81829c748e19dd7ba53fc997e8c82d3ab60437036947d559e",
-  "schema": "workshop.cad-preview-render.v2",
-  "view": "top-inventory",
+  "schema": "workshop.cad-preview-render.v3",
+  "view": "neutral-start-stone",
+  "view_contract": {
+    "acceptance_dimensions": [
+      "manhattan-identity",
+      "side-coding",
+      "role-legibility"
+    ],
+    "acceptance_output_contract": {
+      "output_pixels": [
+        1600,
+        900
+      ],
+      "supersample": 2,
+      "unit_scale_to_mm": 1000.0
+    },
+    "camera_policy": "frozen-literal-direction",
+    "diagnostic": false,
+    "native_material_required": false,
+    "neutral_material_evidence": true,
+    "recipe_acceptance_eligible": true,
+    "run_acceptance_eligible": true,
+    "synthetic_depth_edges": false
+  },
   "warnings": []
 }
