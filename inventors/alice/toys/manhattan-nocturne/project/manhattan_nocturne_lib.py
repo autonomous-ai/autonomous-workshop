@@ -293,10 +293,19 @@ def build_knight(side: str):
     """Angular bridge tower: horse-readable in profile, architectural in detail."""
 
     shape = build_pedestal(side)
+    # One revolved silhouette carries the D13.9 pedestal into the D18.4
+    # footing. Keeping the flare and footing in one B-rep avoids a shallow
+    # annular underside at their former Boolean seam on fine STL exports.
+    footing_profile = (
+        (0.0, p.KNIGHT_FOOTING_FLARE_Z),
+        (p.KNIGHT_FOOTING_FLARE_RADIUS_BOTTOM, p.KNIGHT_FOOTING_FLARE_Z),
+        (p.KNIGHT_FOOTING_RADIUS, p.KNIGHT_FOOTING_SHOULDER_Z),
+        (p.KNIGHT_FOOTING_RADIUS, p.KNIGHT_FOOTING_TOP_Z),
+        (0.0, p.KNIGHT_FOOTING_TOP_Z),
+    )
     shape = _fuse_checked(
         shape,
-        _zloc(p.KNIGHT_FOOTING_Z)
-        * _cylinder(p.KNIGHT_FOOTING_RADIUS, p.KNIGHT_FOOTING_HEIGHT),
+        _revolved_profile(footing_profile),
     )
     with BuildSketch(Plane.XZ) as profile:
         Polygon(*p.KNIGHT_PROFILE)

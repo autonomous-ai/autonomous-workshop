@@ -208,8 +208,10 @@ KNIGHT_ARCH_WIDTH = 4.6                        # mm [exploration]
 KNIGHT_ARCH_HEIGHT = 8.0                       # mm [exploration]
 KNIGHT_ARCH_Z = 18.2                           # mm [assumed]
 KNIGHT_ARCH_CENTER_X = 0.0                     # mm [derived symmetry]
-KNIGHT_FOOTING_Z = 15.20                       # mm [assumed] supports profile root
-KNIGHT_FOOTING_HEIGHT = 2.50                   # mm [exploration]
+KNIGHT_FOOTING_FLARE_Z = 12.00                 # mm [derived] begins on D13.9 pedestal crown
+KNIGHT_FOOTING_SHOULDER_Z = 15.30              # mm [exploration] reaches full radius before profile root
+KNIGHT_FOOTING_TOP_Z = 18.00                   # mm [derived] preserves the established footing top
+KNIGHT_FOOTING_FLARE_RADIUS_BOTTOM = 6.95       # mm [derived] flush with pedestal crown
 KNIGHT_FOOTING_RADIUS = 9.20                   # mm [derived] > profile corner by 0.9 mm
 KNIGHT_STONE_FACE_BANDS = (                     # (z, x width) mm [assumed]
     (29.60, 9.50),
@@ -421,6 +423,10 @@ def validate_parameters() -> None:
     assert all(height >= MIN_WALL for _, _, height in ROOK_FOOTING_TIERS)
     assert ROOK_FOOTING_TIERS[0][1] * 2.0**0.5 <= 2.0 * 6.95 + 1e-9
     assert abs(ROOK_TOWER_Z + ROOK_TOWER_HEIGHT - 43.5) < 1e-9
+    assert KNIGHT_FOOTING_FLARE_RADIUS_BOTTOM == 6.95
+    assert KNIGHT_FOOTING_FLARE_Z < KNIGHT_FOOTING_SHOULDER_Z
+    assert KNIGHT_FOOTING_SHOULDER_Z < min(z for _, z in KNIGHT_PROFILE)
+    assert KNIGHT_FOOTING_TOP_Z > min(z for _, z in KNIGHT_PROFILE)
     assert KNIGHT_HEIGHT < BISHOP_HEIGHT
     assert abs(BISHOP_SPIRE_TOP_Z + BISHOP_SPIRE_TOP_HEIGHT - BISHOP_HEIGHT) < 1e-9
     assert BISHOP_SPIRE_LOWER_Z + BISHOP_SPIRE_LOWER_HEIGHT > BISHOP_SPIRE_MID_Z
