@@ -50,6 +50,41 @@ from .doors import (
 from .integrations import Adapter
 from .inspection import Inspection
 from .playtest import Playtest
+from .deliver import DefaultDeliver
+from .docs import DefaultDocs, REQUIRED_PRODUCT_IMAGES
+from .gameplay import (
+    ExecutableGame,
+    GameTrace,
+    LeagueConfig,
+    LeagueReport,
+    PlayerPolicy,
+    RandomPlayer,
+    run_game,
+    run_league,
+)
+from .jobs import (
+    DeliverContext,
+    Delivered,
+    DocsContext,
+    Feedback,
+    Made,
+    MakeContext,
+    Need,
+    PlaytestContext,
+    Playtested,
+    ProductDocs,
+    WaitingFor,
+    WorkshopRun,
+)
+from .toys import (
+    PLAYTHING_LANES,
+    TOY_TASKS,
+    WORKSHOP_JOBS,
+    ToyBlueprint,
+    ToyTask,
+    playful_make_request,
+)
+from .workshop import CUSTOMIZATION_LEVELS, Workshop, WorkshopTools
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
@@ -107,7 +142,7 @@ from .store import InventorStore
 from .taste import Taste, TasteProfile, load_taste, load_taste_profile
 
 __all__ = [
-    # Workshop 0.4 canonical surface.
+    # Toy Workshop 0.5 canonical surface.
     "Adapter",
     "AmbiguousEffectError",
     "Artifact",
@@ -115,15 +150,36 @@ __all__ = [
     "ArtifactPlan",
     "CadBuildResult",
     "CadReleaseBundle",
+    "CUSTOMIZATION_LEVELS",
+    "DefaultDeliver",
+    "DefaultDocs",
+    "DeliverContext",
+    "Delivered",
+    "DocsContext",
     "EffectError",
+    "ExecutableGame",
+    "Feedback",
+    "GameTrace",
     "InventorManifest",
     "KernelBodyObservation",
+    "LeagueConfig",
+    "LeagueReport",
     "MAKER_MARK_MODES",
     "MakeResult",
+    "Made",
+    "MakeContext",
     "MakerMark",
+    "Need",
+    "PLAYTHING_LANES",
+    "PlayerPolicy",
     "Playtest",
+    "PlaytestContext",
     "PlaytestPolicy",
     "PlaytestResult",
+    "Playtested",
+    "ProductDocs",
+    "REQUIRED_PRODUCT_IMAGES",
+    "RandomPlayer",
     "Receipt",
     "ReceiptError",
     "Runtime",
@@ -132,8 +188,16 @@ __all__ = [
     "StlPathInspectionError",
     "StlTopologyReceipt",
     "Taste",
+    "TOY_TASKS",
+    "ToyBlueprint",
+    "ToyTask",
+    "WaitingFor",
     "Wish",
+    "WORKSHOP_JOBS",
     "Workbench",
+    "Workshop",
+    "WorkshopRun",
+    "WorkshopTools",
     "Workflow",
     "WorkflowSpec",
     "WorkshopError",
@@ -149,7 +213,10 @@ __all__ = [
     "load_manifest",
     "load_taste",
     "plan_artifact",
+    "playful_make_request",
     "resolve_schemas_root",
+    "run_game",
+    "run_league",
     "seal_artifact",
     # Compatibility surface for Workshop 0.3 and older callers.
     "AgentPort",
@@ -206,4 +273,4 @@ __all__ = [
     "plan_pack",
 ]
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"

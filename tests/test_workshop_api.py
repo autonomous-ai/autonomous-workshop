@@ -67,7 +67,7 @@ class WorkshopApiTest(unittest.TestCase):
         return manifest, result
 
     def test_canonical_surface_uses_the_short_workshop_story(self):
-        self.assertEqual(inventor_workshop.__version__, "0.4.0")
+        self.assertEqual(inventor_workshop.__version__, "0.5.0")
         self.assertEqual(Wish.__name__, "Wish")
         self.assertEqual(Workbench.__name__, "Workbench")
         self.assertEqual(Playtest.__name__, "Playtest")
