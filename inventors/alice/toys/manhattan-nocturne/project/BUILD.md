@@ -37,6 +37,23 @@ runs the project fit/parameter audit, exports GLB/STL, and validates each mesh.
 Project-specific inventory, dimensions, placement, stability proxies, and
 quantity-aware bed packing still run separately through `measure/check_fit.py`.
 
+Factory also requires one unambiguous combined STL at the project root. Export
+it from the same assembly source after the final geometry gate:
+
+```sh
+"$CAD_PY" skills/cad/scripts/export \
+  "$PROJECT/manhattan_nocturne.step.py" \
+  --stl assembled.stl
+
+"$CAD_PY" skills/cad/scripts/check_mesh \
+  "$PROJECT/assembled.stl" --bed 256x256x256 --assembly
+
+"$CAD_PY" "$PROJECT/validation/check_factory_handoff.py"
+```
+
+`assembled.step.json` is the matching 33-occurrence renderer map. Keep its
+`parts` order identical to the `.add()` order in `manhattan_nocturne.step.py`.
+
 ## 4. Verify the real finish contract
 
 ```sh

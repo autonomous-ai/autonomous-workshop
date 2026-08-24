@@ -5,17 +5,17 @@
   "taste_sha256": "2d3217df630eb707695b9f60c5bebbec180d2a8553c46445b641c5583e1a5f3c",
   "make": {
     "root": "inventors/alice/toys/manhattan-nocturne/project",
-    "manifest": "inventors/alice/toys/manhattan-nocturne/playtest/round-05/make-manifest.json",
-    "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f"
+    "manifest": "inventors/alice/toys/manhattan-nocturne/playtest/round-06/make-manifest.json",
+    "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec"
   },
   "playtest": {
-    "root": "inventors/alice/toys/manhattan-nocturne/playtest/round-05",
-    "evidence_artifact_sha256": "d3d37be5d0069205a78602096ad48b78a5768b74ca9f2ff24ab69e9abbfc3703",
-    "index_sha256": "d3b376453d947808598dcb8b17c1cb3f67506e117d0a4103aa6fee882e161f1d"
+    "root": "inventors/alice/toys/manhattan-nocturne/playtest/round-06",
+    "evidence_artifact_sha256": "7639e8bf29c56ac5a2a11536bf691b66d0d6a3b8fcda078dc213b410dd457b8e",
+    "index_sha256": "eba6a1f7fddcfc2118cf042c7bafb7383cf4dd16dd137a1d287960884a50acc6"
   },
   "instructions": {
     "root": "inventors/alice/toys/manhattan-nocturne/instructions",
     "manifest": "inventors/alice/toys/manhattan-nocturne/instructions-manifest.json",
-    "artifact_sha256": "d37a8c5e7971ea9e277ebc5f0a9bd94e6336095bb79650640816ace75ddc8570"
+    "artifact_sha256": "83b81c5a2feca7ae7d2a5d4de43e34e07d636c73b63c26a303cbb73051902d5c"
   }
 }

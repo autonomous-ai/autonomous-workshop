@@ -1,0 +1,39 @@
+{
+  "agent_roles": [
+    "provenance verifier",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec",
+  "claims": [
+    "Two Round 5 independent blind AI Player sessions each immediately read an alternating 8 by 8 board and a light square on the right from both corrected player orientations: Stone south has h1 on the right and Steel north has a8 on the right.",
+    "Each prior session identifies all six chess roles. Bishop and queen are the weaker pair, but both still pass; the aggregate is 12 of 12 session-role decisions and king-or-queen is 4 of 4.",
+    "Each prior session identifies two systematic neutral-material geometry families across all six role pairs. The knight is the weakest paired distinction and color is faster than geometry, but side recognition still passes in neutral material.",
+    "Without seeing the brief, both prior sessions spontaneously lead with Manhattan or NYC-associated Art Deco/noir language. This supports NYC building style but does not claim unique landmark recognition or exclusive city identification.",
+    "Round 6 changes only two build documents and adds a derived combined mesh, its renderer sidecar, and its validation checker; all 123 prior Make entries that remain present retain their exact SHA-256 identities."
+  ],
+  "config_sha256": "02292eb735d03cbdbf92e1ead6b46e9e4da90602a08b954d1faa87ff0d8e0bee",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [],
+  "human_playtest": false,
+  "limitations": [
+    "Round 6 records no new blind AI Player session; it reuses the two Round 5 sessions only because every named visual and geometry input is content-identical.",
+    "AI visual interpretation is not a human playtest, physical print, production image-generation proof, or customer Review."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "production_finish_execution": false,
+  "round": 6,
+  "schema_version": 1,
+  "simulation": "Two AI evidence-auditor roles checked the Round 5 player findings against the Round 6 manifest delta and refused reuse outside the unchanged content-addressed inputs.",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "aca8b221ca0f6dbfef54f8871fe86578352b6ddaace2addc3f1803f371460423"
+    },
+    {
+      "path": "sources/prior-evidence-reuse.json",
+      "sha256": "38ebfca651f2fa86fbc57270c80e5ebd922a24569d1b7cc8149dd6c04d19a10c"
+    }
+  ]
+}
