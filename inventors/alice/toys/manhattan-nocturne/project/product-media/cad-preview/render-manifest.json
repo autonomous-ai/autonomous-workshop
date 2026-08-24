@@ -1,10 +1,56 @@
 {
   "concept_art": false,
+  "coordinate_restoration": {
+    "cad_x": "glb_x",
+    "cad_y": "-glb_z",
+    "cad_z": "glb_y",
+    "handedness": "preserved (proper rotation, determinant +1)"
+  },
   "input": {
     "path": "../../exports/manhattan-nocturne.glb",
     "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b"
   },
   "physical_print": false,
+  "player_orientation": {
+    "basis": "exact restored GLB occurrence bounds",
+    "status": "ok",
+    "steel": {
+      "a8_center_cad_mm": [
+        -99.739331,
+        99.75,
+        37.5
+      ],
+      "h8_center_cad_mm": [
+        99.760669,
+        99.75,
+        36.7
+      ],
+      "projected_u_cad_mm": {
+        "a8": 39.338697,
+        "h8": -135.478372
+      },
+      "right_light_corner": "a8",
+      "side": "north/+Y"
+    },
+    "stone": {
+      "a1_center_cad_mm": [
+        -99.739331,
+        -99.75,
+        36.7
+      ],
+      "h1_center_cad_mm": [
+        99.760669,
+        -99.75,
+        37.5
+      ],
+      "projected_u_cad_mm": {
+        "a1": -135.459674,
+        "h1": 39.357396
+      },
+      "right_light_corner": "h1",
+      "side": "south/-Y"
+    }
+  },
   "printability_proof": false,
   "production_finish": {
     "boundary_cad_z_mm": 8.2,
@@ -26,10 +72,10 @@
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 4
+    "version": 5
   },
-  "renderer_source_sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b",
-  "schema": "workshop.cad-preview-render-manifest.v4",
+  "renderer_source_sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e",
+  "schema": "workshop.cad-preview-render-manifest.v5",
   "views": [
     {
       "acceptance_dimensions": [
@@ -39,18 +85,18 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-preview",
       "png": "01-hero-stone.png",
-      "png_sha256": "908ed0964ba77eecce64a58d04989bc90656d11aeb27769e91070a581dac2545",
+      "png_sha256": "0a8689290ca1a528e4b02d8975594b82f3bf25e3adf41120aeb67069753997c3",
       "product_beauty_render": true,
       "production_finish_display": true,
       "receipt": "01-hero-stone.render.json",
-      "receipt_sha256": "44a7fdbb6d1c6830a160704018954a5015271b917b1f12b5188c6b89b4b860bb",
+      "receipt_sha256": "a433374b2b262d218ed4cec2883d1a0121de8211ed3643c727374503462bd48f",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+        "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
         "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
         "materials_sha256": "435d0487834d682e3d4d0f6a5213ffdbd96b302df17cf1a35bf87b9f195995f8",
-        "node_records_sha256": "4d61036c839fea413b331e4fee65d1ea8667c6c71000381a54640ae4c9f7da8b",
+        "node_records_sha256": "2fb1ed961f19037e41ae9ac19e3b001287dcfb2635a663fb4a735e147b7fd499",
         "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
       },
       "view": "hero-stone",
@@ -64,18 +110,18 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-preview",
       "png": "02-hero-steel.png",
-      "png_sha256": "4bf3fd00c1e1eeb24c196bdeef9f550bf15d59f543e473a5c6e7ddfb8f4c1ce1",
+      "png_sha256": "b7f8a6ca64f674d83edc719a17c394d397587f3334359b69de1cffe12d68189c",
       "product_beauty_render": true,
       "production_finish_display": true,
       "receipt": "02-hero-steel.render.json",
-      "receipt_sha256": "241878d6615e789281b25e940d8a66a6c4f703ff168a79087c018de1fe28cf85",
+      "receipt_sha256": "56629587c0b1237f0a6479debc267da94811ee147c81a82f67c1cb856409d40e",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+        "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
         "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
         "materials_sha256": "435d0487834d682e3d4d0f6a5213ffdbd96b302df17cf1a35bf87b9f195995f8",
-        "node_records_sha256": "4d61036c839fea413b331e4fee65d1ea8667c6c71000381a54640ae4c9f7da8b",
+        "node_records_sha256": "2fb1ed961f19037e41ae9ac19e3b001287dcfb2635a663fb4a735e147b7fd499",
         "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
       },
       "view": "hero-steel",
@@ -88,11 +134,11 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-acceptance",
       "png": "03a-board-top-production-finish.png",
-      "png_sha256": "e01e44c76b2cd8546a3fe634ea0f73b2e77de72deba2370dba0afe9f4694a19c",
+      "png_sha256": "6bd805995a1766bf68a0f33d719cce05540826b729158b52d10854ba6c46f51d",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "03a-board-top-production-finish.render.json",
-      "receipt_sha256": "cf0ba07e79f964a0bed1c2378a6db55dc66fcda16251ff8618b624da69be9d95",
+      "receipt_sha256": "a75ca9b7f6e3072da2f0384d71db125e3f6dc12df69791857a9b27fffd0304fe",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
@@ -110,11 +156,11 @@
       "diagnostic": true,
       "evidence_class": "exact-cad-depth-diagnostic",
       "png": "03b-board-top-depth-diagnostic.png",
-      "png_sha256": "d3dce166814653c6726d93890a5a0fca26bdc585786516deafafed849bada9b1",
+      "png_sha256": "301ea63bae4b3ea9c3530a72c030076fe75ada139d028b396c0fe6d236d8bee2",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "03b-board-top-depth-diagnostic.render.json",
-      "receipt_sha256": "c260461f20a5f20fa5bfa7ce0bd3c4f993c88540f505f201dfe6d38be20944fb",
+      "receipt_sha256": "b7dd0f620546dd3711783bf03ecb2b11cac375c3eab5cfede700a9e9c288cc24",
       "recipe_acceptance_eligible": false,
       "run_acceptance_eligible": false,
       "scene_integrity": {
@@ -134,11 +180,11 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-acceptance",
       "png": "03c-board-oblique-stone-production-finish.png",
-      "png_sha256": "1634d51b4c75c552960274f8346296702c235469e76e671643827f0f683c0ca0",
+      "png_sha256": "39fc2dcf3f524c5233ad92292bad303a5a732bc429847226449e9fee0a125874",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "03c-board-oblique-stone-production-finish.render.json",
-      "receipt_sha256": "8b4fe86aed22c7315a5526a4b8a54fcd9078c52f6c00002c3cf1e7cc9d82f78d",
+      "receipt_sha256": "d9fd909a17ad43deb2c614f16efbd4d6fe481e75e76a0b89549a7e4c8891f668",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
@@ -158,11 +204,11 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-acceptance",
       "png": "03d-board-oblique-steel-production-finish.png",
-      "png_sha256": "4e58a9ff776c094c47962d3e16e3fb1de577a59f6f5e514f411ad57463dfbc67",
+      "png_sha256": "603a7b12c3322f845b043207d6bb892c67f608693f53759db2d00bf732dd7ea9",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "03d-board-oblique-steel-production-finish.render.json",
-      "receipt_sha256": "00a1a0f98dcea7b30ce72ac89374fefe6467cab64f294ea8b389758471e10be8",
+      "receipt_sha256": "8d85fc9f78c30d6a1c0d342e45218a5a92ea521d0f1d3a959e52f342f7e8716d",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
@@ -183,11 +229,11 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-acceptance",
       "png": "03e-south-border-production-finish.png",
-      "png_sha256": "b6726076d006dd0829d79b2c0d82c2f674db0dbd44eb2a4e0e798bc261b9c3a1",
+      "png_sha256": "d9990e20b3cd7d126cf99d4b3db6c868ecb8a05c10dbd33fd7732e647c81d0b7",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "03e-south-border-production-finish.render.json",
-      "receipt_sha256": "5069df9fb61a4bb6fa6c6e00b4227a4a3de22e88088f1deb581ae11e930878a5",
+      "receipt_sha256": "403e1bd092e2cb56b14193b6839b07062f2ae99854619cc08b81151e6a01e85d",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
@@ -209,18 +255,18 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-production-finish-acceptance",
       "png": "03f-top-inventory-production-finish.png",
-      "png_sha256": "0baecabb61c844f9d1ac044c8723466e6dfc2f99591c051ccc9e50d68e0ae44b",
+      "png_sha256": "53bc4686db8da737a10799609230da23977437aaad10972ece285dc8a37a711d",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "03f-top-inventory-production-finish.render.json",
-      "receipt_sha256": "188af4fa35c65b9afcf30b4cdd5137c7f519cd6cad320066f2693ab961012e38",
+      "receipt_sha256": "dcf8ecc4dd24c525c4fa11f07aa29e1830c8899ac5393189c6ddaa96b673c319",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+        "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
         "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
         "materials_sha256": "435d0487834d682e3d4d0f6a5213ffdbd96b302df17cf1a35bf87b9f195995f8",
-        "node_records_sha256": "4d61036c839fea413b331e4fee65d1ea8667c6c71000381a54640ae4c9f7da8b",
+        "node_records_sha256": "2fb1ed961f19037e41ae9ac19e3b001287dcfb2635a663fb4a735e147b7fd499",
         "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
       },
       "view": "top-inventory-production-finish",
@@ -234,19 +280,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "04a-rank-lineup-front-neutral.png",
-      "png_sha256": "d3c2ec28b5d42ff6029792a98cb0931572250e356127e777a0a0e69a2069df26",
+      "png_sha256": "6d2d751a0ecdf01ab0c344f7d0d7c1e2b650fe2084e275c1d816dbe0507c3a4c",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "04a-rank-lineup-front-neutral.render.json",
-      "receipt_sha256": "2ee74c83105be0a6710a535c8a05152f52351c1e1e3545e70f55ddbf1b9310d9",
+      "receipt_sha256": "b03e47969282b9ff6b9c8e9bdaf0bd1bc204892a3fcb8b35c402412d7b68a121",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "830789075e24e81de22a1db09e1a3085246d5cb4383f48fbf657cfba03e55265",
+        "bounds_sha256": "777cdd0b4e4e087c099fc545a767bc25e83f1c8d474ee5333ce21255928f9f1b",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "51943dd0025d02854bd4ce20cf6957d264d3f7b4b6b477b9e5ba7731cf19af66",
-        "transforms_sha256": "9b3e8191b4443749bedd88140b6da2fef4b024ec09866c30608eafd984b3fe6f"
+        "node_records_sha256": "7319f16628b498ad22c931a1a08e0807674fd4b9cf28e806a7ba39d16267bcc0",
+        "transforms_sha256": "f0de62b3f025c6b9de9438e26548f67a35c0b8c24e7536820de11ed24e820525"
       },
       "view": "rank-lineup-front",
       "warnings": []
@@ -259,19 +305,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "04b-rank-lineup-rear-neutral.png",
-      "png_sha256": "6d2d751a0ecdf01ab0c344f7d0d7c1e2b650fe2084e275c1d816dbe0507c3a4c",
+      "png_sha256": "d3c2ec28b5d42ff6029792a98cb0931572250e356127e777a0a0e69a2069df26",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "04b-rank-lineup-rear-neutral.render.json",
-      "receipt_sha256": "026d91f7b55341227b6c19f319b7cc4751a0240864c7bd366260f347598348ec",
+      "receipt_sha256": "a6e27955fe06473554c6080775b5c26c09850ad54005410be01a82df44b745bf",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "830789075e24e81de22a1db09e1a3085246d5cb4383f48fbf657cfba03e55265",
+        "bounds_sha256": "777cdd0b4e4e087c099fc545a767bc25e83f1c8d474ee5333ce21255928f9f1b",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "51943dd0025d02854bd4ce20cf6957d264d3f7b4b6b477b9e5ba7731cf19af66",
-        "transforms_sha256": "9b3e8191b4443749bedd88140b6da2fef4b024ec09866c30608eafd984b3fe6f"
+        "node_records_sha256": "7319f16628b498ad22c931a1a08e0807674fd4b9cf28e806a7ba39d16267bcc0",
+        "transforms_sha256": "f0de62b3f025c6b9de9438e26548f67a35c0b8c24e7536820de11ed24e820525"
       },
       "view": "rank-lineup-rear",
       "warnings": []
@@ -284,19 +330,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "04c-rank-lineup-top-neutral.png",
-      "png_sha256": "337e89b15e433d6a08938974569a54f8a9e83f7a872c1eb89525c7bb4a7d4a0e",
+      "png_sha256": "fa4db8fa19f8fd282320570ce419c009de8cc41a39ed8fbf9ebadaee4cfcef01",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "04c-rank-lineup-top-neutral.render.json",
-      "receipt_sha256": "26c4f21666a62665cc838e9c3078501443ef0c22d8791663afafb783fabf5cc5",
+      "receipt_sha256": "64913e1d7742b082ac444b02ca66352904fbb529b0416a925b501042145bb759",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "830789075e24e81de22a1db09e1a3085246d5cb4383f48fbf657cfba03e55265",
+        "bounds_sha256": "777cdd0b4e4e087c099fc545a767bc25e83f1c8d474ee5333ce21255928f9f1b",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "51943dd0025d02854bd4ce20cf6957d264d3f7b4b6b477b9e5ba7731cf19af66",
-        "transforms_sha256": "9b3e8191b4443749bedd88140b6da2fef4b024ec09866c30608eafd984b3fe6f"
+        "node_records_sha256": "7319f16628b498ad22c931a1a08e0807674fd4b9cf28e806a7ba39d16267bcc0",
+        "transforms_sha256": "f0de62b3f025c6b9de9438e26548f67a35c0b8c24e7536820de11ed24e820525"
       },
       "view": "rank-lineup-top",
       "warnings": []
@@ -309,19 +355,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "05a-side-code-pairs-front-neutral.png",
-      "png_sha256": "d3291254eaa0399c8bead9c808ae0aa2f68a95cf04e924d430d352a335718cec",
+      "png_sha256": "1d24081447c88b1cd67adab717702984ae212370ede385f55f9d7710f67b5293",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "05a-side-code-pairs-front-neutral.render.json",
-      "receipt_sha256": "8303a447ce10fe6b02036f0ab99a47149ea410eeb75b253ef9686ede082b7db7",
+      "receipt_sha256": "e77a62ed268a017a3013f0387f5d1a823e9c02c409fd90efde8fe92b78746b93",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "65e0282e819539e998f841e9c7eaef473018b4520e89690b3699dba23fa7c206",
+        "bounds_sha256": "11112b7950d727f45e4d8039bbb387113b45cb30c59d8c3fe665baae8e8a538e",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "6a279abcc80fc409a65e18c117d78bf81147cb8fd09fe664fabd6b1a9db11cfc",
-        "transforms_sha256": "ebed58b175b325106a7997de548e3495350bb8a1f32326bcc9f562244452930c"
+        "node_records_sha256": "bda5d5d3d1fa8b404ead8393cf581112f7995554f65e0f466534aeff225c11fa",
+        "transforms_sha256": "7e01d349fb4aa07781cc70f8fa8bde7e7fc5f0fc095155bee8715032551838fb"
       },
       "view": "side-code-pairs-front",
       "warnings": []
@@ -334,19 +380,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "05b-side-code-pairs-rear-neutral.png",
-      "png_sha256": "b837c78778dee522ca82553d6d537e06e4a37b57048458d4a070eaad6490ad70",
+      "png_sha256": "2c6d3d02b59fa428b568a1f664a3b210e9b92b68f2144066baa3edf4cf737ce9",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "05b-side-code-pairs-rear-neutral.render.json",
-      "receipt_sha256": "9e4c1b6a51eb7ce41433dced3dfe549cc120b27feeb1be894c8374a0c8fd20d7",
+      "receipt_sha256": "c21478baa50e319d246590a072c7d7fc2aebbb6ebfc93a3853b853d58c175407",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "65e0282e819539e998f841e9c7eaef473018b4520e89690b3699dba23fa7c206",
+        "bounds_sha256": "11112b7950d727f45e4d8039bbb387113b45cb30c59d8c3fe665baae8e8a538e",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "6a279abcc80fc409a65e18c117d78bf81147cb8fd09fe664fabd6b1a9db11cfc",
-        "transforms_sha256": "ebed58b175b325106a7997de548e3495350bb8a1f32326bcc9f562244452930c"
+        "node_records_sha256": "bda5d5d3d1fa8b404ead8393cf581112f7995554f65e0f466534aeff225c11fa",
+        "transforms_sha256": "7e01d349fb4aa07781cc70f8fa8bde7e7fc5f0fc095155bee8715032551838fb"
       },
       "view": "side-code-pairs-rear",
       "warnings": []
@@ -358,19 +404,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "05c-side-code-upper-body-neutral.png",
-      "png_sha256": "b4a8e967fab4f1449c8214d92d94b4e268de882c5f48046a1a08b5515f0ed538",
+      "png_sha256": "34e83cd5237312c99e482230249dc080a4acea4d414c3aa1d034d03ede89b3e3",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "05c-side-code-upper-body-neutral.render.json",
-      "receipt_sha256": "af66c57fda7c9890ca0dbb649df77ab9e72525617f11c93654c05956b14532b4",
+      "receipt_sha256": "be0b82f874aa39381df163a801da4a611e85d3d3c52568f6ae5739e52acd67a2",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "65e0282e819539e998f841e9c7eaef473018b4520e89690b3699dba23fa7c206",
+        "bounds_sha256": "11112b7950d727f45e4d8039bbb387113b45cb30c59d8c3fe665baae8e8a538e",
         "labels_sha256": "c7e2a34bafd3c144663acde5ca45d62d48725f2836f51f100996ed8c80bf3256",
         "materials_sha256": "c54dae323dd9021332a649465519dea6d74352ba6ce6aea1bcafc051db12d16e",
-        "node_records_sha256": "6a279abcc80fc409a65e18c117d78bf81147cb8fd09fe664fabd6b1a9db11cfc",
-        "transforms_sha256": "ebed58b175b325106a7997de548e3495350bb8a1f32326bcc9f562244452930c"
+        "node_records_sha256": "bda5d5d3d1fa8b404ead8393cf581112f7995554f65e0f466534aeff225c11fa",
+        "transforms_sha256": "7e01d349fb4aa07781cc70f8fa8bde7e7fc5f0fc095155bee8715032551838fb"
       },
       "view": "side-code-upper-body",
       "warnings": []
@@ -384,19 +430,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "06a-manhattan-identity-finished-board-neutral-pieces.png",
-      "png_sha256": "6e227313f1058c0735dca49dece1781e95f552d950d59bb588b84a65eb293d66",
+      "png_sha256": "74e0b1266a1e962acc656ece498a073c797cfec70a9a30cf29e4afd7c740f443",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "06a-manhattan-identity-finished-board-neutral-pieces.render.json",
-      "receipt_sha256": "200854b68ca9e1e121c06e1c70193f241eaba80c8b6dea225b0dfcdcd20d5549",
+      "receipt_sha256": "63447f0a443f7ee250dc1acf8fdf0958ac693d52e6767a7024fbcb9aa8c47c4e",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "80482d1bbd568bc741c0bfe5e0d5986e8fb74713af63b17fc676a5e6dd0421cb",
+        "bounds_sha256": "ee907ba023986bae42713f86990aadac913e07a1dbccd9b5a24b1a8974b8e5f1",
         "labels_sha256": "aa471fb8f0f376fdc5533c26ca3b351af55cb5e8463d88d8858e7e6b8a0bbcfe",
         "materials_sha256": "937da3d9ecdb0ccc377f577ade7f9a7d5981c1dfc2f8ebb2248a29ef9106fc10",
-        "node_records_sha256": "c275759bdf527509550113724a8fe683d699f14bb58e34eb8d62b67cd523bfea",
-        "transforms_sha256": "81aba615f1989719c3f03406fb3e700eb37569ba4679344eecbb8b7b3a1ccabf"
+        "node_records_sha256": "3ab5ef936de4ece1e0c30ac52b8403e6e9f985e93c0457d4c05965431d2f1b22",
+        "transforms_sha256": "01d9122b4515531afd50a7487b9ae67db40648d1347a3f8e7340c98822f60f4f"
       },
       "view": "manhattan-identity-neutral",
       "warnings": []
@@ -406,19 +452,19 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-engineering-view",
       "png": "06b-board-inventory-engineering-raw.png",
-      "png_sha256": "4cdc09b6b3ae740dcc7278ca414de2b51bb24a3a98f440f51048bbe5567efd37",
+      "png_sha256": "1a69a89e833c92a7b9df5785589d7f21b0df119fb14ac36a7bd51e7195ec1b7d",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "06b-board-inventory-engineering-raw.render.json",
-      "receipt_sha256": "4e2ef6646ed44e6fde232a70344dbdc0263e12fc0db6bc04e6f24cf837ca30a5",
+      "receipt_sha256": "85f4d0ea7fafae473caa9b9b002f94b892953909063ae59c788249915205ab60",
       "recipe_acceptance_eligible": false,
       "run_acceptance_eligible": false,
       "scene_integrity": {
-        "bounds_sha256": "80482d1bbd568bc741c0bfe5e0d5986e8fb74713af63b17fc676a5e6dd0421cb",
+        "bounds_sha256": "ee907ba023986bae42713f86990aadac913e07a1dbccd9b5a24b1a8974b8e5f1",
         "labels_sha256": "aa471fb8f0f376fdc5533c26ca3b351af55cb5e8463d88d8858e7e6b8a0bbcfe",
         "materials_sha256": "7418a22cee53c93db074cd83f4894ae678aa64cf9155cce38e18c73213271fd3",
-        "node_records_sha256": "514d23f677d53a5d8ce1733cba430dcc852ea3d7a721ece754a5ba92871fd4de",
-        "transforms_sha256": "81aba615f1989719c3f03406fb3e700eb37569ba4679344eecbb8b7b3a1ccabf"
+        "node_records_sha256": "52a2f97b4d5218f72d6e4dcc42700d3dda8cc7e4d9b298da148b34d27c79aa2f",
+        "transforms_sha256": "01d9122b4515531afd50a7487b9ae67db40648d1347a3f8e7340c98822f60f4f"
       },
       "view": "board-inventory-engineering-raw",
       "warnings": []
@@ -428,19 +474,19 @@
       "diagnostic": true,
       "evidence_class": "exact-cad-depth-diagnostic",
       "png": "06c-board-inventory-depth-diagnostic.png",
-      "png_sha256": "9c660893295d8300c8ca4b0299dba24af8f91d4b61b5b61dcb44167f6779b91e",
+      "png_sha256": "748c1f73122571d07ccbc244860a48b28f513fd28df278cce8b8041b7d541e54",
       "product_beauty_render": false,
       "production_finish_display": false,
       "receipt": "06c-board-inventory-depth-diagnostic.render.json",
-      "receipt_sha256": "d69c4367a0f8cf67769a5a6c8e8d2a198ae4a05f486fd1b722c96e09c4374d4e",
+      "receipt_sha256": "60bb86af53851f15d19f37b4996205daabacb11c69fc1b2a116ce995cbaf84e5",
       "recipe_acceptance_eligible": false,
       "run_acceptance_eligible": false,
       "scene_integrity": {
-        "bounds_sha256": "80482d1bbd568bc741c0bfe5e0d5986e8fb74713af63b17fc676a5e6dd0421cb",
+        "bounds_sha256": "ee907ba023986bae42713f86990aadac913e07a1dbccd9b5a24b1a8974b8e5f1",
         "labels_sha256": "aa471fb8f0f376fdc5533c26ca3b351af55cb5e8463d88d8858e7e6b8a0bbcfe",
         "materials_sha256": "7418a22cee53c93db074cd83f4894ae678aa64cf9155cce38e18c73213271fd3",
-        "node_records_sha256": "514d23f677d53a5d8ce1733cba430dcc852ea3d7a721ece754a5ba92871fd4de",
-        "transforms_sha256": "81aba615f1989719c3f03406fb3e700eb37569ba4679344eecbb8b7b3a1ccabf"
+        "node_records_sha256": "52a2f97b4d5218f72d6e4dcc42700d3dda8cc7e4d9b298da148b34d27c79aa2f",
+        "transforms_sha256": "01d9122b4515531afd50a7487b9ae67db40648d1347a3f8e7340c98822f60f4f"
       },
       "view": "board-inventory-depth-diagnostic",
       "warnings": []
@@ -454,18 +500,18 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "07a-neutral-start-stone-finished-board.png",
-      "png_sha256": "13d5ebbe3f74cef0dabf0b24c3d1b6d2ba91df99757070e5554a713260201416",
+      "png_sha256": "0cdbaafbac0b9f9a45e072c2f1995e773c7c1426d8a0e64e80a584eb8830f5fc",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "07a-neutral-start-stone-finished-board.render.json",
-      "receipt_sha256": "b507a01447b0af07dc39fffbeec9f83faf647044eb4e16e9f2b36b6210a300a3",
+      "receipt_sha256": "e096f784c8f7acccfa019c1050cca5440dea543a8f65fcf3e71c130568c7211f",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+        "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
         "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
         "materials_sha256": "31b8a177f1a2d2cc67803f4c48a3f362a38b9144549c947cb000c9d775a28d0d",
-        "node_records_sha256": "7f1b434eab37ec27911f21fc30a4e032b43f7cf056c5a21c76e7bc32b7317c34",
+        "node_records_sha256": "e9c38d4290a267f393ff4dd760f040efb66a2a8fcac286dd495afbe2dea36357",
         "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
       },
       "view": "neutral-start-stone",
@@ -480,18 +526,18 @@
       "diagnostic": false,
       "evidence_class": "exact-cad-recognition-input",
       "png": "07b-neutral-start-steel-finished-board.png",
-      "png_sha256": "386102ba39a6f18f3160bd167a598557a0ee5cd7438865bc9b2cb096496e282c",
+      "png_sha256": "585c86d11e25a5862b13cd999f4391224b7a443fd36562c651d107bd78cbdd01",
       "product_beauty_render": false,
       "production_finish_display": true,
       "receipt": "07b-neutral-start-steel-finished-board.render.json",
-      "receipt_sha256": "ae53065a2dc45f4df9abc75b7d504f5b193c4ec0e44cbcb659200c907fc7960e",
+      "receipt_sha256": "ec4fa29d75d2d891ae01e6e36fc455f9047f703738f75a7a533ef9bbabccfa3c",
       "recipe_acceptance_eligible": true,
       "run_acceptance_eligible": true,
       "scene_integrity": {
-        "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+        "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
         "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
         "materials_sha256": "31b8a177f1a2d2cc67803f4c48a3f362a38b9144549c947cb000c9d775a28d0d",
-        "node_records_sha256": "7f1b434eab37ec27911f21fc30a4e032b43f7cf056c5a21c76e7bc32b7317c34",
+        "node_records_sha256": "e9c38d4290a267f393ff4dd760f040efb66a2a8fcac286dd495afbe2dea36357",
         "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
       },
       "view": "neutral-start-steel",

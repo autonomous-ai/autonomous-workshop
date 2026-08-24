@@ -8,6 +8,12 @@ midnight, matching `validation/finish-plan.json`. This display operation changes
 no triangle, transform, or bound. It does not use the mood image and does not
 claim that the finish has been physically executed.
 
+The native GLB is Y-up and stores CAD coordinates as `(X, Z, -Y)`. The renderer
+restores them exactly as `(GLB X, -GLB Z, GLB Y)` before any camera or review
+transform. Its self-check also projects the canonical corner centers: Stone is
+south/−Y with h1/light on screen-right, and Steel is north/+Y with a8/light on
+screen-right. Every receipt records this right-handed coordinate contract.
+
 Generate the GLB with the same Python interpreter used for the CAD skill, then
 render it with the local Python that provides NumPy, Pillow, and trimesh:
 

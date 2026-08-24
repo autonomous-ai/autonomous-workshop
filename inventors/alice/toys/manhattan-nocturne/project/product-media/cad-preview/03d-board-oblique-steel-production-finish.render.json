@@ -2,30 +2,77 @@
   "concept_art": false,
   "evidence_class": "exact-cad-production-finish-acceptance",
   "input": {
+    "axis_mapping_to_cad": {
+      "cad_x": "glb_x",
+      "cad_y": "-glb_z",
+      "cad_z": "glb_y",
+      "handedness": "preserved (proper rotation, determinant +1)"
+    },
     "format": "native-glb",
     "native_axes": "Y-up",
     "native_units": "metres",
     "path": "../../exports/manhattan-nocturne.glb",
-    "restored_axes": "CAD XY bed plane, +Z up",
+    "restored_axes": "right-handed CAD XY bed plane, +Z up",
     "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
     "unit_scale_to_mm": 1000.0
   },
   "output": {
     "format": "png",
     "path": "03d-board-oblique-steel-production-finish.png",
-    "sha256": "4e58a9ff776c094c47962d3e16e3fb1de577a59f6f5e514f411ad57463dfbc67"
+    "sha256": "603a7b12c3322f845b043207d6bb892c67f608693f53759db2d00bf732dd7ea9"
   },
   "physical_finish_execution_verified": false,
   "physical_print": false,
+  "player_orientation": {
+    "basis": "exact restored GLB occurrence bounds",
+    "status": "ok",
+    "steel": {
+      "a8_center_cad_mm": [
+        -99.739331,
+        99.75,
+        37.5
+      ],
+      "h8_center_cad_mm": [
+        99.760669,
+        99.75,
+        36.7
+      ],
+      "projected_u_cad_mm": {
+        "a8": 39.338697,
+        "h8": -135.478372
+      },
+      "right_light_corner": "a8",
+      "side": "north/+Y"
+    },
+    "stone": {
+      "a1_center_cad_mm": [
+        -99.739331,
+        -99.75,
+        36.7
+      ],
+      "h1_center_cad_mm": [
+        99.760669,
+        -99.75,
+        37.5
+      ],
+      "projected_u_cad_mm": {
+        "a1": -135.459674,
+        "h1": 39.357396
+      },
+      "right_light_corner": "h1",
+      "side": "south/-Y"
+    }
+  },
   "printability_proof": false,
   "product_beauty_render": false,
   "render": {
     "camera": {
       "direction_cad": [
-        0.39778203,
-        -0.723453833,
+        -0.39778203,
+        0.723453833,
         0.564255268
       ],
+      "direction_convention": "object-to-camera in right-handed CAD XYZ",
       "framed_projected_bounds_cad_mm": [
         [
           -165.686426,
@@ -46,9 +93,10 @@
         -0.481809406,
         0.0
       ],
+      "screen_right_basis": "cross(CAD +Z, object-to-camera)",
       "up_cad": [
-        -0.271863496,
-        0.494443371,
+        0.271863496,
+        -0.494443371,
         0.825600383
       ]
     },
@@ -95,11 +143,11 @@
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 4
+    "version": 5
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b"
+    "sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
@@ -337,7 +385,7 @@
       "vertices": 1488
     }
   ],
-  "schema": "workshop.cad-preview-render.v4",
+  "schema": "workshop.cad-preview-render.v5",
   "view": "board-oblique-steel-production-finish",
   "view_contract": {
     "acceptance_dimensions": [

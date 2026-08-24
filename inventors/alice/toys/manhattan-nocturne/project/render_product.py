@@ -5,9 +5,10 @@ This is deliberately a CAD-preview renderer, not a concept-art generator and
 not evidence of a physical print.  It uses only NumPy, Pillow, and trimesh so
 it can run without a display server, GPU, browser, or Blender installation.
 
-The native GLB written by the Workshop CAD tools is Y-up and metre-scaled.
-This script restores the authored CAD coordinate convention (XY bed plane,
-+Z up, millimetres), applies every occurrence transform, keeps node labels and
+The native GLB written by the Workshop CAD tools is Y-up and metre-scaled,
+with (GLB X, GLB Y, GLB Z) = (CAD X, CAD Z, -CAD Y).  This script restores the
+authored right-handed CAD coordinate convention (XY bed plane, +Z up,
+millimetres), applies every occurrence transform, keeps node labels and
 material colours, and writes a receipt beside every PNG.
 
 Round 5 production-finish views apply an explicit display material schedule to
@@ -34,7 +35,7 @@ import trimesh
 
 
 RENDERER_ID = "manhattan-nocturne-software-cad-preview"
-RENDERER_VERSION = 4
+RENDERER_VERSION = 5
 
 ROLE_ORDER = ("pawn", "rook", "knight", "bishop", "queen", "king")
 SIDE_ORDER = ("stone", "steel")
@@ -47,8 +48,10 @@ WARM_BRASS_FINISH_RGBA = (190, 143, 64, 255)
 # centroids.  Regenerating the same product with a denser tessellation must not
 # move the review camera by even a fraction of a degree.
 CAMERA_TOP = (0.0, 0.0, 1.0)
-CAMERA_HERO_STONE = (-0.397782030, 0.723453833, 0.564255268)
-CAMERA_HERO_STEEL = (0.397782030, -0.723453833, 0.564255268)
+# Stone starts at CAD -Y (south); Steel starts at CAD +Y (north).  These
+# directions are object-to-camera vectors, frozen behind the named player.
+CAMERA_HERO_STONE = (0.397782030, -0.723453833, 0.564255268)
+CAMERA_HERO_STEEL = (-0.397782030, 0.723453833, 0.564255268)
 CAMERA_RANK_FRONT = (0.0, -0.995037190, 0.099503719)
 CAMERA_RANK_REAR = (0.0, 0.995037190, 0.099503719)
 CAMERA_SIDE_FRONT = (0.383086684, -0.912111153, 0.145937784)
@@ -561,14 +564,18 @@ def load_native_glb(path: Path, unit_scale_to_mm: float = 1000.0) -> list[SceneN
             continue
 
         world_glb = _apply_transform(np.asarray(source.vertices), np.asarray(transform))
-        # cadgen native GLB: (CAD X, CAD Z, CAD Y) metres. Restore the authored
-        # XY bed plane and +Z-up convention in millimetres.
-        vertices = np.column_stack((world_glb[:, 0], world_glb[:, 2], world_glb[:, 1]))
+        # cadgen native GLB: (CAD X, CAD Z, -CAD Y) metres.  Restore the
+        # authored right-handed XY bed plane and +Z-up convention in
+        # millimetres.  This is a proper rotation (determinant +1), not the
+        # reflected Y/Z swap used by the pre-v5 preview renderer.
+        vertices = np.column_stack(
+            (world_glb[:, 0], -world_glb[:, 2], world_glb[:, 1])
+        )
         vertices *= float(unit_scale_to_mm)
 
-        # Swapping GLB Y/Z is a reflection. Reverse triangle winding once, then
-        # make it outward if a closed solid still reports negative volume.
-        faces = np.asarray(source.faces, dtype=np.int64)[:, [0, 2, 1]].copy()
+        # The axis restoration above preserves handedness, so source winding is
+        # retained.  Closed solids are still normalized outward defensively.
+        faces = np.asarray(source.faces, dtype=np.int64).copy()
         volume = _signed_volume(vertices, faces)
         closed = bool(getattr(source, "is_watertight", False)) and abs(volume) > 1e-9
         if closed and volume < 0.0:
@@ -1029,6 +1036,8 @@ def _semantic_direction(
 
 
 def _camera_basis(direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return conventional screen-right/up from an object-to-camera vector."""
+
     view = _normalize(direction)
     world_up = np.array((0.0, 0.0, 1.0), dtype=np.float64)
     if abs(float(np.dot(view, world_up))) > 0.999:
@@ -1036,9 +1045,136 @@ def _camera_basis(direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
             np.array((1.0, 0.0, 0.0), dtype=np.float64),
             np.array((0.0, 1.0, 0.0), dtype=np.float64),
         )
-    right = _normalize(np.cross(view, world_up))
-    up = _normalize(np.cross(right, view))
+    # `view` points from the object toward the camera, so conventional image
+    # right is world-up cross view.  The reversed cross product horizontally
+    # mirrored every non-top image in renderer versions <=4.
+    right = _normalize(np.cross(world_up, view))
+    up = _normalize(np.cross(view, right))
     return right, up
+
+
+def _static_player_orientation_contract() -> Mapping[str, object]:
+    """Prove the frozen cameras put each standard light corner on the right."""
+
+    corners = {
+        "a1": np.array((-1.0, -1.0, 0.0), dtype=np.float64),
+        "h1": np.array((1.0, -1.0, 0.0), dtype=np.float64),
+        "a8": np.array((-1.0, 1.0, 0.0), dtype=np.float64),
+        "h8": np.array((1.0, 1.0, 0.0), dtype=np.float64),
+    }
+    stone_right, _ = _camera_basis(np.asarray(CAMERA_HERO_STONE))
+    steel_right, _ = _camera_basis(np.asarray(CAMERA_HERO_STEEL))
+    projected = {
+        "stone_a1": float(corners["a1"] @ stone_right),
+        "stone_h1": float(corners["h1"] @ stone_right),
+        "steel_a8": float(corners["a8"] @ steel_right),
+        "steel_h8": float(corners["h8"] @ steel_right),
+    }
+    if projected["stone_h1"] <= projected["stone_a1"]:
+        raise ValueError("Stone camera must project h1/light to screen-right of a1")
+    if projected["steel_a8"] <= projected["steel_h8"]:
+        raise ValueError("Steel camera must project a8/light to screen-right of h8")
+    if CAMERA_HERO_STONE[1] >= 0.0 or CAMERA_HERO_STEEL[1] <= 0.0:
+        raise ValueError("Stone camera must be south/-Y and Steel camera north/+Y")
+    return {
+        "cad_square_frame": "a1 southwest/-X,-Y; h1 southeast/+X,-Y",
+        "parity": "a1 dark; h1 light; a8 light; h8 dark",
+        "camera_vector_convention": "object-to-camera in right-handed CAD XYZ",
+        "screen_right_basis": "cross(CAD +Z, object-to-camera)",
+        "stone": {
+            "side": "south/-Y",
+            "screen_right_light_corner": "h1",
+            "projected_u": {
+                "a1": round(projected["stone_a1"], 9),
+                "h1": round(projected["stone_h1"], 9),
+            },
+        },
+        "steel": {
+            "side": "north/+Y",
+            "screen_right_light_corner": "a8",
+            "projected_u": {
+                "a8": round(projected["steel_a8"], 9),
+                "h8": round(projected["steel_h8"], 9),
+            },
+        },
+        "status": "ok",
+    }
+
+
+def _source_player_orientation_contract(
+    nodes: Sequence[SceneNode],
+) -> Mapping[str, object]:
+    """Validate exact restored GLB occurrences against the player contract."""
+
+    by_label = {node.label: node for node in nodes}
+    required = (
+        "stone_rook_a1",
+        "stone_rook_h1",
+        "steel_rook_a8",
+        "steel_rook_h8",
+    )
+    missing = [label for label in required if label not in by_label]
+    if missing:
+        raise ValueError(
+            "player-orientation proof is missing exact occurrences: "
+            + ", ".join(missing)
+        )
+    centers = {label: by_label[label].center for label in required}
+    stone_a1 = centers["stone_rook_a1"]
+    stone_h1 = centers["stone_rook_h1"]
+    steel_a8 = centers["steel_rook_a8"]
+    steel_h8 = centers["steel_rook_h8"]
+    tolerance = 1e-6
+    if not (
+        stone_a1[1] < -tolerance
+        and stone_h1[1] < -tolerance
+        and steel_a8[1] > tolerance
+        and steel_h8[1] > tolerance
+    ):
+        raise ValueError("restored occurrences must place Stone south and Steel north")
+    if not (
+        stone_a1[0] < stone_h1[0] - tolerance
+        and steel_a8[0] < steel_h8[0] - tolerance
+    ):
+        raise ValueError("restored occurrences must increase files from a/-X to h/+X")
+
+    stone_right, _ = _camera_basis(np.asarray(CAMERA_HERO_STONE))
+    steel_right, _ = _camera_basis(np.asarray(CAMERA_HERO_STEEL))
+    projected = {
+        "stone_a1": float(stone_a1 @ stone_right),
+        "stone_h1": float(stone_h1 @ stone_right),
+        "steel_a8": float(steel_a8 @ steel_right),
+        "steel_h8": float(steel_h8 @ steel_right),
+    }
+    if projected["stone_h1"] <= projected["stone_a1"]:
+        raise ValueError("exact Stone h1/light does not project on screen-right")
+    if projected["steel_a8"] <= projected["steel_h8"]:
+        raise ValueError("exact Steel a8/light does not project on screen-right")
+
+    return {
+        "basis": "exact restored GLB occurrence bounds",
+        "stone": {
+            "side": "south/-Y",
+            "right_light_corner": "h1",
+            "a1_center_cad_mm": np.round(stone_a1, 6).tolist(),
+            "h1_center_cad_mm": np.round(stone_h1, 6).tolist(),
+            "projected_u_cad_mm": {
+                "a1": round(projected["stone_a1"], 6),
+                "h1": round(projected["stone_h1"], 6),
+            },
+        },
+        "steel": {
+            "side": "north/+Y",
+            "right_light_corner": "a8",
+            "a8_center_cad_mm": np.round(steel_a8, 6).tolist(),
+            "h8_center_cad_mm": np.round(steel_h8, 6).tolist(),
+            "projected_u_cad_mm": {
+                "a8": round(projected["steel_a8"], 6),
+                "h8": round(projected["steel_h8"], 6),
+            },
+        },
+        "status": "ok",
+    }
 
 
 def _bounds_corners(bounds: np.ndarray) -> np.ndarray:
@@ -1430,6 +1566,8 @@ def render_view(
     scene_bounds = _scene_bounds(nodes)
     camera = {
         "projection": recipe.projection,
+        "direction_convention": "object-to-camera in right-handed CAD XYZ",
+        "screen_right_basis": "cross(CAD +Z, object-to-camera)",
         "direction_cad": np.round(camera_direction, 9).tolist(),
         "right_cad": np.round(right, 9).tolist(),
         "up_cad": np.round(up, 9).tolist(),
@@ -1590,6 +1728,7 @@ def render_product(
 ) -> Mapping[str, object]:
     validate_view_recipes()
     source_nodes = load_native_glb(input_path, unit_scale_to_mm=unit_scale_to_mm)
+    player_orientation = _source_player_orientation_contract(source_nodes)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     script_path = Path(__file__).resolve()
@@ -1621,7 +1760,7 @@ def render_product(
 
         receipt_path = output_path.with_suffix(".render.json")
         receipt: Mapping[str, object] = {
-            "schema": "workshop.cad-preview-render.v4",
+            "schema": "workshop.cad-preview-render.v5",
             "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
             "view": key,
             "view_contract": {
@@ -1649,9 +1788,16 @@ def render_product(
                 "format": "native-glb",
                 "native_axes": "Y-up",
                 "native_units": "metres",
-                "restored_axes": "CAD XY bed plane, +Z up",
+                "axis_mapping_to_cad": {
+                    "cad_x": "glb_x",
+                    "cad_y": "-glb_z",
+                    "cad_z": "glb_y",
+                    "handedness": "preserved (proper rotation, determinant +1)",
+                },
+                "restored_axes": "right-handed CAD XY bed plane, +Z up",
                 "unit_scale_to_mm": unit_scale_to_mm,
             },
+            "player_orientation": player_orientation,
             "output": {
                 "path": output_path.name,
                 "sha256": _sha256(output_path),
@@ -1696,13 +1842,20 @@ def render_product(
 
     manifest_path = output_dir / "render-manifest.json"
     manifest: Mapping[str, object] = {
-        "schema": "workshop.cad-preview-render-manifest.v4",
+        "schema": "workshop.cad-preview-render-manifest.v5",
         "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
         "input": {
             "path": _portable_path(input_path, manifest_path),
             "sha256": input_hash,
         },
         "renderer_source_sha256": script_hash,
+        "coordinate_restoration": {
+            "cad_x": "glb_x",
+            "cad_y": "-glb_z",
+            "cad_z": "glb_y",
+            "handedness": "preserved (proper rotation, determinant +1)",
+        },
+        "player_orientation": player_orientation,
         "views": results,
         "concept_art": False,
         "physical_print": False,
@@ -1724,6 +1877,7 @@ def validate_view_recipes() -> Mapping[str, object]:
     """Fail fast on any recipe change that weakens the Round 5 proof contract."""
 
     errors: list[str] = []
+    player_orientation = _static_player_orientation_contract()
     actual_keys = frozenset(VIEW_RECIPES)
     missing = sorted(ROUND_5_REQUIRED_VIEWS - actual_keys)
     unexpected = sorted(actual_keys - ROUND_5_REQUIRED_VIEWS)
@@ -1813,6 +1967,31 @@ def validate_view_recipes() -> Mapping[str, object]:
             if recipe.product_beauty_render:
                 errors.append(f"{key}: a cropped recognition panel cannot be beauty art")
 
+    for key in (
+        "hero-stone",
+        "board-oblique-stone-production-finish",
+        "neutral-start-stone",
+    ):
+        if not np.allclose(
+            VIEW_RECIPES[key].fallback_direction_cad,
+            CAMERA_HERO_STONE,
+            rtol=0.0,
+            atol=1e-12,
+        ):
+            errors.append(f"{key}: must use the frozen south/-Y Stone camera")
+    for key in (
+        "hero-steel",
+        "board-oblique-steel-production-finish",
+        "neutral-start-steel",
+    ):
+        if not np.allclose(
+            VIEW_RECIPES[key].fallback_direction_cad,
+            CAMERA_HERO_STEEL,
+            rtol=0.0,
+            atol=1e-12,
+        ):
+            errors.append(f"{key}: must use the frozen north/+Y Steel camera")
+
     if errors:
         raise ValueError("Round 5 render recipe self-check failed:\n- " + "\n- ".join(errors))
 
@@ -1828,6 +2007,8 @@ def validate_view_recipes() -> Mapping[str, object]:
             1 for recipe in VIEW_RECIPES.values() if recipe.diagnostic
         ),
         "all_cameras_frozen": True,
+        "coordinate_restoration": "CAD=(GLB X,-GLB Z,GLB Y); right-handed",
+        "player_orientation": player_orientation,
         "synthetic_depth_edges_excluded_from_acceptance": True,
         "production_finish_boundary_cad_z_mm": BOARD_FINISH_BOUNDARY_Z_MM,
         "production_finish_geometry_changed": False,

@@ -2,30 +2,77 @@
   "concept_art": false,
   "evidence_class": "exact-cad-production-finish-preview",
   "input": {
+    "axis_mapping_to_cad": {
+      "cad_x": "glb_x",
+      "cad_y": "-glb_z",
+      "cad_z": "glb_y",
+      "handedness": "preserved (proper rotation, determinant +1)"
+    },
     "format": "native-glb",
     "native_axes": "Y-up",
     "native_units": "metres",
     "path": "../../exports/manhattan-nocturne.glb",
-    "restored_axes": "CAD XY bed plane, +Z up",
+    "restored_axes": "right-handed CAD XY bed plane, +Z up",
     "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
     "unit_scale_to_mm": 1000.0
   },
   "output": {
     "format": "png",
     "path": "01-hero-stone.png",
-    "sha256": "908ed0964ba77eecce64a58d04989bc90656d11aeb27769e91070a581dac2545"
+    "sha256": "0a8689290ca1a528e4b02d8975594b82f3bf25e3adf41120aeb67069753997c3"
   },
   "physical_finish_execution_verified": false,
   "physical_print": false,
+  "player_orientation": {
+    "basis": "exact restored GLB occurrence bounds",
+    "status": "ok",
+    "steel": {
+      "a8_center_cad_mm": [
+        -99.739331,
+        99.75,
+        37.5
+      ],
+      "h8_center_cad_mm": [
+        99.760669,
+        99.75,
+        36.7
+      ],
+      "projected_u_cad_mm": {
+        "a8": 39.338697,
+        "h8": -135.478372
+      },
+      "right_light_corner": "a8",
+      "side": "north/+Y"
+    },
+    "stone": {
+      "a1_center_cad_mm": [
+        -99.739331,
+        -99.75,
+        36.7
+      ],
+      "h1_center_cad_mm": [
+        99.760669,
+        -99.75,
+        37.5
+      ],
+      "projected_u_cad_mm": {
+        "a1": -135.459674,
+        "h1": 39.357396
+      },
+      "right_light_corner": "h1",
+      "side": "south/-Y"
+    }
+  },
   "printability_proof": false,
   "product_beauty_render": true,
   "render": {
     "camera": {
       "direction_cad": [
-        -0.39778203,
-        0.723453833,
+        0.39778203,
+        -0.723453833,
         0.564255268
       ],
+      "direction_convention": "object-to-camera in right-handed CAD XYZ",
       "framed_projected_bounds_cad_mm": [
         [
           -165.686426,
@@ -33,7 +80,7 @@
         ],
         [
           165.686426,
-          136.781864
+          137.442344
         ]
       ],
       "projection": "orthographic",
@@ -46,9 +93,10 @@
         0.481809406,
         -0.0
       ],
+      "screen_right_basis": "cross(CAD +Z, object-to-camera)",
       "up_cad": [
-        0.271863496,
-        -0.494443371,
+        -0.271863496,
+        0.494443371,
         0.825600383
       ]
     },
@@ -95,11 +143,11 @@
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 4
+    "version": 5
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b"
+    "sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
@@ -1177,10 +1225,10 @@
     "source_node_count": 33
   },
   "scene_integrity": {
-    "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
+    "bounds_sha256": "24ffa05d07e67a19768dc36628f9e61c21fc562f03c14d24e7ef1cc8f6b369f0",
     "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
     "materials_sha256": "435d0487834d682e3d4d0f6a5213ffdbd96b302df17cf1a35bf87b9f195995f8",
-    "node_records_sha256": "4d61036c839fea413b331e4fee65d1ea8667c6c71000381a54640ae4c9f7da8b",
+    "node_records_sha256": "2fb1ed961f19037e41ae9ac19e3b001287dcfb2635a663fb4a735e147b7fd499",
     "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
   },
   "scene_nodes": [
@@ -1322,12 +1370,12 @@
       "bounds_cad_mm": [
         [
           -53.978662,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           -31.5,
-          -88.505336,
+          110.994664,
           70.000001
         ]
       ],
@@ -1351,15 +1399,15 @@
         "display_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
         "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
         "label_sha256": "436100650824a2b9a3e80e0340e42d9795524350ae833971b4df18858f11995d",
-        "review_bounds_sha256": "d83f7dc7d6cf562a3e4010dd1bc0014f00f0a8b5b2877f349ec9b0d84d6cfba5",
+        "review_bounds_sha256": "cb79a9763ac4e520ab595f4f938140acc212444458b99319416dd5ac8e03164e",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "d83f7dc7d6cf562a3e4010dd1bc0014f00f0a8b5b2877f349ec9b0d84d6cfba5",
+        "source_bounds_sha256": "cb79a9763ac4e520ab595f4f938140acc212444458b99319416dd5ac8e03164e",
         "source_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
         "source_transform_sha256": "ef9fb9526e27b57487fa6e2b9d6d6fc7677602becb79c6db9dc682acf244a74f"
       },
       "label": "steel_bishop_c8",
       "metallic": 0.0,
-      "record_sha256": "526eee1113140758b5ad72220335b97a82d6f0662fe567af5242933d39e02bc5",
+      "record_sha256": "6005759fd5f31323e0ec22909e13ae15cec548aec9946538c00d98ef4d105c2c",
       "review_transform_cad": [
         [
           1.0,
@@ -1390,12 +1438,12 @@
       "source_bounds_cad_mm": [
         [
           -53.978662,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           -31.5,
-          -88.505336,
+          110.994664,
           70.000001
         ]
       ],
@@ -1447,12 +1495,12 @@
       "bounds_cad_mm": [
         [
           31.521338,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           54.0,
-          -88.505336,
+          110.994664,
           69.200001
         ]
       ],
@@ -1476,15 +1524,15 @@
         "display_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
         "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
         "label_sha256": "a86550facba2985a21c4faa02ab73f677215c16147e634c65f9f94abfcf897c4",
-        "review_bounds_sha256": "b31957faf616785e19f063e242b040549a76ab2e99ef6f181968d93683ad288e",
+        "review_bounds_sha256": "21ff32009e121c4656f368f4cf3cb2ef2ae11c394e31803ae253ae232a4b1fb5",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "b31957faf616785e19f063e242b040549a76ab2e99ef6f181968d93683ad288e",
+        "source_bounds_sha256": "21ff32009e121c4656f368f4cf3cb2ef2ae11c394e31803ae253ae232a4b1fb5",
         "source_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
         "source_transform_sha256": "ca8e796fd91e28d8a7dbb1671e86dfaedab0edb02ec4de64f846640e3768738a"
       },
       "label": "steel_bishop_f8",
       "metallic": 0.0,
-      "record_sha256": "045d6e1638b97d8f4ffb3e2f65c8c767799eceb76715169bc223999f58e10ea0",
+      "record_sha256": "59b71e1a69210d2a4886c619e8213027e543a60f453834672fb30b549f297a2e",
       "review_transform_cad": [
         [
           1.0,
@@ -1515,12 +1563,12 @@
       "source_bounds_cad_mm": [
         [
           31.521338,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           54.0,
-          -88.505336,
+          110.994664,
           69.200001
         ]
       ],
@@ -1572,12 +1620,12 @@
       "bounds_cad_mm": [
         [
           3.021338,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           25.5,
-          -88.505336,
+          110.994664,
           83.349999
         ]
       ],
@@ -1601,15 +1649,15 @@
         "display_material_sha256": "50875e644af7266fab348da9f34770750b2d154f72b895fb18391f613e88574d",
         "geometry_label_sha256": "a84504fd6b5db8f6703952284705160faa434c22db40662e7757f7c691524c71",
         "label_sha256": "21149f215e6fe6cd7da541766b206b5e023dd60d968496c113a3366bbe33a478",
-        "review_bounds_sha256": "93e9b4210ee92b0ab6fa73d2bf356bdc62f16a6ca4025455602e4b29e886e16c",
+        "review_bounds_sha256": "baeebc87bd66f2466fc3eecaf7139649e62a7869e996fb6d6e0772e66b698d34",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "93e9b4210ee92b0ab6fa73d2bf356bdc62f16a6ca4025455602e4b29e886e16c",
+        "source_bounds_sha256": "baeebc87bd66f2466fc3eecaf7139649e62a7869e996fb6d6e0772e66b698d34",
         "source_material_sha256": "50875e644af7266fab348da9f34770750b2d154f72b895fb18391f613e88574d",
         "source_transform_sha256": "e3510cbbbb066c8142834469a909576d97c184f688eda899bcc09e22f52f172a"
       },
       "label": "steel_king_e8",
       "metallic": 0.0,
-      "record_sha256": "7b221575a3cf48ffb415e04afec7989857919a07342d21da36a39ce7d7d62d6c",
+      "record_sha256": "dcea96500d6fca0b4515edbb5c2159b19d6da7315aa2d1e58924d2cb7441d80b",
       "review_transform_cad": [
         [
           1.0,
@@ -1640,12 +1688,12 @@
       "source_bounds_cad_mm": [
         [
           3.021338,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           25.5,
-          -88.505336,
+          110.994664,
           83.349999
         ]
       ],
@@ -1697,12 +1745,12 @@
       "bounds_cad_mm": [
         [
           -82.478662,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           -60.0,
-          -88.505336,
+          110.994664,
           67.2
         ]
       ],
@@ -1726,15 +1774,15 @@
         "display_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
         "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
         "label_sha256": "7e21bf1216d81c6553ece2ffe424f1b75ed478ea3484f22164ca120849b13199",
-        "review_bounds_sha256": "939f991f3c0f2a1eb7e9da3a686bdd1b38a441301790d5af7f531e41bba0f892",
+        "review_bounds_sha256": "94d1952ca7738d8e5949c089f1decc88e4d039ea7252c4ce76934d1b2ba3cfe8",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "939f991f3c0f2a1eb7e9da3a686bdd1b38a441301790d5af7f531e41bba0f892",
+        "source_bounds_sha256": "94d1952ca7738d8e5949c089f1decc88e4d039ea7252c4ce76934d1b2ba3cfe8",
         "source_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
         "source_transform_sha256": "dfb503d5f9279c1693d574fee5dbbddf15e38b46556bb840c61ddad9ce5253ce"
       },
       "label": "steel_knight_b8",
       "metallic": 0.0,
-      "record_sha256": "7bd17c322dcd3ea718d0ffdf047c0f87eeb27db1d1ab0991be5952ee1349455d",
+      "record_sha256": "67ccaade3abd12140e4879fe61d1280eb467dfe6cffec0741cb4981af8ff5ce3",
       "review_transform_cad": [
         [
           1.0,
@@ -1765,12 +1813,12 @@
       "source_bounds_cad_mm": [
         [
           -82.478662,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           -60.0,
-          -88.505336,
+          110.994664,
           67.2
         ]
       ],
@@ -1822,12 +1870,12 @@
       "bounds_cad_mm": [
         [
           60.021338,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           82.5,
-          -88.505336,
+          110.994664,
           68.0
         ]
       ],
@@ -1851,15 +1899,15 @@
         "display_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
         "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
         "label_sha256": "9bbb3aed4910acf3d462dbad9d3fb8f59ab3984315af1eda47fd4648dde1ecb8",
-        "review_bounds_sha256": "0d32cfb54c8fb383d70a04fee0879e47cc437dd850e72caa3966bfc5f615543a",
+        "review_bounds_sha256": "897fb003b9583011be1e83187aaffb755024405bc899a0c8c4112e33d8950418",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "0d32cfb54c8fb383d70a04fee0879e47cc437dd850e72caa3966bfc5f615543a",
+        "source_bounds_sha256": "897fb003b9583011be1e83187aaffb755024405bc899a0c8c4112e33d8950418",
         "source_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
         "source_transform_sha256": "383a0b87cfbfc4ad758d56b7a2a18972cf647d4157a002bd0fc82867f48524de"
       },
       "label": "steel_knight_g8",
       "metallic": 0.0,
-      "record_sha256": "99d5edc14a537f683aa8edcdb0cac2e976611a8a78a40c4575b22bae59cf804c",
+      "record_sha256": "29565f673b1dfdee806d2abeffafc91ed7320768e3a6309e9afd3c79228f30c1",
       "review_transform_cad": [
         [
           1.0,
@@ -1890,12 +1938,12 @@
       "source_bounds_cad_mm": [
         [
           60.021338,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           82.5,
-          -88.505336,
+          110.994664,
           68.0
         ]
       ],
@@ -1947,12 +1995,12 @@
       "bounds_cad_mm": [
         [
           -110.978662,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           -88.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -1976,15 +2024,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "05cc1359529c061837d3cadaacea109fbef6045f3de9fae95b9604b7e7c4da78",
-        "review_bounds_sha256": "1ba712b80f461212f1ed24275fbd72a767d02a858d580025b8db83cca871bdf2",
+        "review_bounds_sha256": "1dfef099b40cb28dfccac8c473609c7bb1fd27a3e447e04398f7985c03e30c40",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "1ba712b80f461212f1ed24275fbd72a767d02a858d580025b8db83cca871bdf2",
+        "source_bounds_sha256": "1dfef099b40cb28dfccac8c473609c7bb1fd27a3e447e04398f7985c03e30c40",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "bf719c4b701a5f1b054fd4febccb60397b0441f0ac56d8c8541f6928510e5893"
       },
       "label": "steel_pawn_a7",
       "metallic": 0.0,
-      "record_sha256": "ab24510a12044d51364edaf04f6217f9131b21c4d70d2b408601d0b1a7d8cd80",
+      "record_sha256": "55eb274405dda3c2b1ed905f8f3faafda3858fa1687f2071eaadb13c57aa7654",
       "review_transform_cad": [
         [
           1.0,
@@ -2015,12 +2063,12 @@
       "source_bounds_cad_mm": [
         [
           -110.978662,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           -88.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2072,12 +2120,12 @@
       "bounds_cad_mm": [
         [
           -82.478662,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           -60.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2101,15 +2149,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "ecbbbc806cb148f43bf99deee7be4730dca23874623a50246567343a3a8501c6",
-        "review_bounds_sha256": "dc170252d62ff7e15e0752827c012086a3b09df26cd89708cd9626167c4fb9d1",
+        "review_bounds_sha256": "886c6449b48a03e02b620caf039ee01d17b7edfdaab8054556761592d65d8c23",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "dc170252d62ff7e15e0752827c012086a3b09df26cd89708cd9626167c4fb9d1",
+        "source_bounds_sha256": "886c6449b48a03e02b620caf039ee01d17b7edfdaab8054556761592d65d8c23",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "4f1e2a8d981000b969d0db14ebf2458fbf61e99dee4021d7a746ccd3ceacd560"
       },
       "label": "steel_pawn_b7",
       "metallic": 0.0,
-      "record_sha256": "5b99a95d6509537060918dcb569f99f2dc5009164606f358fc48230cfeac8317",
+      "record_sha256": "ac519c073dcd1354e67a971455107fd3ce7b170a384061a037815b0592c180ff",
       "review_transform_cad": [
         [
           1.0,
@@ -2140,12 +2188,12 @@
       "source_bounds_cad_mm": [
         [
           -82.478662,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           -60.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2197,12 +2245,12 @@
       "bounds_cad_mm": [
         [
           -53.978662,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           -31.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2226,15 +2274,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "865a1ba5732990e7c42d0e084930ad00e88ee20710ae17c14a7889f23272c896",
-        "review_bounds_sha256": "418d93b55f4685c674c9d27f76a09b607a6f3ff2b1b2ed8e97aa30662c8f0381",
+        "review_bounds_sha256": "db3233734b1396db52a04f8f9d58d3c73d17f19636724e54eeb33323a1c9de71",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "418d93b55f4685c674c9d27f76a09b607a6f3ff2b1b2ed8e97aa30662c8f0381",
+        "source_bounds_sha256": "db3233734b1396db52a04f8f9d58d3c73d17f19636724e54eeb33323a1c9de71",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "7b808d055166d447248d9b6cce8f669956b72359faf1001016de6b928d89327e"
       },
       "label": "steel_pawn_c7",
       "metallic": 0.0,
-      "record_sha256": "6427a681496017c33fa0d425d1343c4140e639b6fad34aee351c24e42d92684a",
+      "record_sha256": "ca041b75361520e06f0c8514061ef90d57b4c092220ca5f569d8ac25b9e531a8",
       "review_transform_cad": [
         [
           1.0,
@@ -2265,12 +2313,12 @@
       "source_bounds_cad_mm": [
         [
           -53.978662,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           -31.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2322,12 +2370,12 @@
       "bounds_cad_mm": [
         [
           -25.478662,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           -3.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2351,15 +2399,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "c2c89dddc6ab6bfa1dc16241995a2543fbb4fcf9d57d8966c343465ff6899af4",
-        "review_bounds_sha256": "132dfee3e05eb77c7aa0022a3ece97873e52ea83352c6f5267b6e7e30aa12636",
+        "review_bounds_sha256": "f29cc7d038faf539f18c68e8426351152e30b8213b3bfb00a8d59b09e24ad222",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "132dfee3e05eb77c7aa0022a3ece97873e52ea83352c6f5267b6e7e30aa12636",
+        "source_bounds_sha256": "f29cc7d038faf539f18c68e8426351152e30b8213b3bfb00a8d59b09e24ad222",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "7469775d2b00bd77c26f718a4713c4fa7461ed7f066f241163c64d2a73f7bf8d"
       },
       "label": "steel_pawn_d7",
       "metallic": 0.0,
-      "record_sha256": "cac9f2e0a8201756064dd41a3eb02ef27330d84907ce2cd1e0b9dda5900b1049",
+      "record_sha256": "c28f1475c42ff9d0b113779e50e26f3807fe923773d6907f729b6a63351f81c3",
       "review_transform_cad": [
         [
           1.0,
@@ -2390,12 +2438,12 @@
       "source_bounds_cad_mm": [
         [
           -25.478662,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           -3.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2447,12 +2495,12 @@
       "bounds_cad_mm": [
         [
           3.021338,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           25.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2476,15 +2524,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "ff0eb1e9c76ecbb96e75f56af1a31ec1f0183f94eae3893b7e7404ed8a98cf64",
-        "review_bounds_sha256": "985ade7a49876f581e4dc1cb6699f5fd007048a887519150cc68df54f6515ca3",
+        "review_bounds_sha256": "863be4d157adc0cea8accd54f34fad39234ff2bdceab9d63c2636935b440d380",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "985ade7a49876f581e4dc1cb6699f5fd007048a887519150cc68df54f6515ca3",
+        "source_bounds_sha256": "863be4d157adc0cea8accd54f34fad39234ff2bdceab9d63c2636935b440d380",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "5fb66b9ca6f289513319019d65ce13e4841d43b5a8953e1037c67434735cf46d"
       },
       "label": "steel_pawn_e7",
       "metallic": 0.0,
-      "record_sha256": "2cee70b7c11a45834a81822f11b3ed26adb0bb2d0e60a7c7ebeb0fe86bcc7acc",
+      "record_sha256": "300d178ef159c3b64115efc934e8637aa4a9ebbccef5b83c6f1b1c3d2495950b",
       "review_transform_cad": [
         [
           1.0,
@@ -2515,12 +2563,12 @@
       "source_bounds_cad_mm": [
         [
           3.021338,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           25.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2572,12 +2620,12 @@
       "bounds_cad_mm": [
         [
           31.521338,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           54.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2601,15 +2649,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "1310eaea4287ff9bef05aeb9df1bbf76c75b300219c0e2b3a6d51eac9de168e0",
-        "review_bounds_sha256": "51a4bafa037ff3a2afc83bba99c2ed3da92fb63404f517c2b8d5e333e33c0431",
+        "review_bounds_sha256": "693ae898d1cb653833b7b0ddfef4f18bfcd96d25f523cc283925ac9472079565",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "51a4bafa037ff3a2afc83bba99c2ed3da92fb63404f517c2b8d5e333e33c0431",
+        "source_bounds_sha256": "693ae898d1cb653833b7b0ddfef4f18bfcd96d25f523cc283925ac9472079565",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "019ab687c134ec9f100399ce07290f35992368eebed942e1e6734ad62c5b8e76"
       },
       "label": "steel_pawn_f7",
       "metallic": 0.0,
-      "record_sha256": "16809a37ba4dc433461d298b3a59acfd77c7ab999291f36a1097a7476c71581f",
+      "record_sha256": "6994038191f55f2d20efa63bf5cd5c130a29e98a2152ae2ff852227ff5906967",
       "review_transform_cad": [
         [
           1.0,
@@ -2640,12 +2688,12 @@
       "source_bounds_cad_mm": [
         [
           31.521338,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           54.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2697,12 +2745,12 @@
       "bounds_cad_mm": [
         [
           60.021338,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           82.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2726,15 +2774,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "6fa32a38c1bb9dc1a604a6f682f453b74bf185f2e73cb40aeabc8339a3226e55",
-        "review_bounds_sha256": "56075b46e07f79ce01e901b2ddb6e5251cef37c3ac9e62358353c78058fa3e80",
+        "review_bounds_sha256": "07acccfeef5f431bbd8a6cc37dd3d0533b6fdf0b4e5c794526b8962970d5bfc6",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "56075b46e07f79ce01e901b2ddb6e5251cef37c3ac9e62358353c78058fa3e80",
+        "source_bounds_sha256": "07acccfeef5f431bbd8a6cc37dd3d0533b6fdf0b4e5c794526b8962970d5bfc6",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "ea8102a827606f0f031f1707ca56c642ba9423ff3a269eb7d3b999d37da01277"
       },
       "label": "steel_pawn_g7",
       "metallic": 0.0,
-      "record_sha256": "1af9426fbb3c531c9593eb0f6d103e3ed48dda76e2dbcca9912239ff1fa7166c",
+      "record_sha256": "8b309829b9ece2f7b60d997baefccd040289917066d72db91094aa825f2c725a",
       "review_transform_cad": [
         [
           1.0,
@@ -2765,12 +2813,12 @@
       "source_bounds_cad_mm": [
         [
           60.021338,
-          -82.494664,
+          60.005336,
           8.2
         ],
         [
           82.5,
-          -60.005336,
+          82.494664,
           52.2
         ]
       ],
@@ -2822,12 +2870,12 @@
       "bounds_cad_mm": [
         [
           88.521338,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           111.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2851,15 +2899,15 @@
         "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "feeab1b8fce5351e8780c96008c1026b0602b03e4614cd6794749b95cac8e593",
-        "review_bounds_sha256": "1ad941d1c52024a2398c391168187feee25fd3dc532e23d094ad2c4373d7e666",
+        "review_bounds_sha256": "430c8b270b81f703efe4128a97c1c5b4267220be9b8f0eef9e4d64edb581f035",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "1ad941d1c52024a2398c391168187feee25fd3dc532e23d094ad2c4373d7e666",
+        "source_bounds_sha256": "430c8b270b81f703efe4128a97c1c5b4267220be9b8f0eef9e4d64edb581f035",
         "source_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
         "source_transform_sha256": "5ad451e9568e8649aa32d33dbf04efa3ff42b12a070d417decf57491849ef135"
       },
       "label": "steel_pawn_h7",
       "metallic": 0.0,
-      "record_sha256": "3fea51b3ca6f5c7f4ee4686ea43f698f5414131c8c1ab36d6f1d86abffb01cc2",
+      "record_sha256": "b6045f9bfd43abb1de96851d88eb78c58a3fd0c555d2fe1249b2a8b6ed8020c8",
       "review_transform_cad": [
         [
           1.0,
@@ -2890,12 +2938,12 @@
       "source_bounds_cad_mm": [
         [
           88.521338,
-          -82.494664,
+          60.005336,
           9.0
         ],
         [
           111.0,
-          -60.005336,
+          82.494664,
           53.0
         ]
       ],
@@ -2947,12 +2995,12 @@
       "bounds_cad_mm": [
         [
           -25.478662,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           -3.0,
-          -88.505336,
+          110.994664,
           76.200004
         ]
       ],
@@ -2976,15 +3024,15 @@
         "display_material_sha256": "cbf879170b43c7b75fec1150e2ce5e0f878a3fb5c42a664e6dd2ddc4b2036444",
         "geometry_label_sha256": "80f16f60a7558dc6167c37c6513f7692ceeedbd003d394cc5122d3d41c5e3926",
         "label_sha256": "3b9bde5d6ece016692b547f7c4309c7b935efdfb6671795c7a1ec4f7cbccc8b2",
-        "review_bounds_sha256": "1aabd38fb15464161ffc6cbda62ef71545e8640bc672935f5088d521536869cd",
+        "review_bounds_sha256": "edd5dca12e9777d8f638378aaecf200bbef7fdb1368c9ebb47c37c289892db0c",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "1aabd38fb15464161ffc6cbda62ef71545e8640bc672935f5088d521536869cd",
+        "source_bounds_sha256": "edd5dca12e9777d8f638378aaecf200bbef7fdb1368c9ebb47c37c289892db0c",
         "source_material_sha256": "cbf879170b43c7b75fec1150e2ce5e0f878a3fb5c42a664e6dd2ddc4b2036444",
         "source_transform_sha256": "1fa0a7d8d348bcb06ab3a9dcfc00eb59a7404981dc3f5ec577ded38b9614abf9"
       },
       "label": "steel_queen_d8",
       "metallic": 0.0,
-      "record_sha256": "dc51446e7ca8db7f9b0eaeb7fb4767590da01f5961d1b79480f5a9afcb815781",
+      "record_sha256": "566aa7adf2577475c3c937876ad3b9dda0d5bb39122fdd3119f4c901847daeba",
       "review_transform_cad": [
         [
           1.0,
@@ -3015,12 +3063,12 @@
       "source_bounds_cad_mm": [
         [
           -25.478662,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           -3.0,
-          -88.505336,
+          110.994664,
           76.200004
         ]
       ],
@@ -3072,12 +3120,12 @@
       "bounds_cad_mm": [
         [
           -110.978662,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           -88.5,
-          -88.505336,
+          110.994664,
           66.0
         ]
       ],
@@ -3101,15 +3149,15 @@
         "display_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
         "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
         "label_sha256": "241f812adee2ab44cd1e50ec2bb9dd76b11015735857e0105255b74fbe8e45dd",
-        "review_bounds_sha256": "919bbc1b5a46f3d1f253a54f1844fa3ec4b2128449227c30ad6babbfb9ea8287",
+        "review_bounds_sha256": "3a7bc548a06cfe34841d8366e2b642824bc1c60ca377b12b3fc56775b2bb1e5a",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "919bbc1b5a46f3d1f253a54f1844fa3ec4b2128449227c30ad6babbfb9ea8287",
+        "source_bounds_sha256": "3a7bc548a06cfe34841d8366e2b642824bc1c60ca377b12b3fc56775b2bb1e5a",
         "source_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
         "source_transform_sha256": "ab83e76a6bbaadd29c3ff75894558c7a393c93232a9ee409b3e90804dd1b37ec"
       },
       "label": "steel_rook_a8",
       "metallic": 0.0,
-      "record_sha256": "82d87135573f4dad3c543786b33eac486ce11f5cb8bcaf852903521c2a621c4f",
+      "record_sha256": "3dc013f9e8672a80b611ee03b5c0db5b145e6df4d18462925748240d00f7d8cd",
       "review_transform_cad": [
         [
           1.0,
@@ -3140,12 +3188,12 @@
       "source_bounds_cad_mm": [
         [
           -110.978662,
-          -110.994664,
+          88.505336,
           9.0
         ],
         [
           -88.5,
-          -88.505336,
+          110.994664,
           66.0
         ]
       ],
@@ -3197,12 +3245,12 @@
       "bounds_cad_mm": [
         [
           88.521338,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           111.0,
-          -88.505336,
+          110.994664,
           65.2
         ]
       ],
@@ -3226,15 +3274,15 @@
         "display_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
         "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
         "label_sha256": "bd22ba8b5cf1309994b17bf18b8ed2cc2e2326bb6305ae4996fa2656aeb53d1a",
-        "review_bounds_sha256": "2f42c17ecc3e55e7be4827ea6468ed6f52ec62e116f0664135e3c602bfc28fb2",
+        "review_bounds_sha256": "e76d9352de7d12e66415111809c8c5411b85671a40280ef72181a38b0c591dcb",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "2f42c17ecc3e55e7be4827ea6468ed6f52ec62e116f0664135e3c602bfc28fb2",
+        "source_bounds_sha256": "e76d9352de7d12e66415111809c8c5411b85671a40280ef72181a38b0c591dcb",
         "source_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
         "source_transform_sha256": "bec6812495a188b44d6287d12e8a7d7efc502f058f66aac689bf3ec64e12fd27"
       },
       "label": "steel_rook_h8",
       "metallic": 0.0,
-      "record_sha256": "ae175d1fb40b8919ace5eb3a700e0242090416bc2596bbdb658836dc1e70d966",
+      "record_sha256": "acda22ccba472a0ab97a01df43a9159c7d65750528258018edf260065c10f7f1",
       "review_transform_cad": [
         [
           1.0,
@@ -3265,12 +3313,12 @@
       "source_bounds_cad_mm": [
         [
           88.521338,
-          -110.994664,
+          88.505336,
           8.2
         ],
         [
           111.0,
-          -88.505336,
+          110.994664,
           65.2
         ]
       ],
@@ -3322,12 +3370,12 @@
       "bounds_cad_mm": [
         [
           -53.978662,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           -31.5,
-          110.994664,
+          -88.505336,
           69.200001
         ]
       ],
@@ -3351,15 +3399,15 @@
         "display_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
         "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
         "label_sha256": "889ad85f56962ccebadd03f4b55552667619364d9a0b0fba61b765c0fc48a5ba",
-        "review_bounds_sha256": "380f1eec1c28f227ff6e27143b954e611c2ed4122dec1820d4b0da633cd82ca6",
+        "review_bounds_sha256": "2f8fcdae74f8911c19a6ab0ed4ef2c2c77385c913dfe73ff46428f841fbdfa5f",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "380f1eec1c28f227ff6e27143b954e611c2ed4122dec1820d4b0da633cd82ca6",
+        "source_bounds_sha256": "2f8fcdae74f8911c19a6ab0ed4ef2c2c77385c913dfe73ff46428f841fbdfa5f",
         "source_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
         "source_transform_sha256": "6e982c3ec9bd418994a567695f1e5417abb3d9bc401f6a719e4001e8ced4000d"
       },
       "label": "stone_bishop_c1",
       "metallic": 0.0,
-      "record_sha256": "e585db03f9323494544332d0b5b2f4cbfa302b62394cd2440672f96f99dd8030",
+      "record_sha256": "311e4c22e58d2a149015ff5aea831758c85658d8d6d86f438cfb432d222a754e",
       "review_transform_cad": [
         [
           1.0,
@@ -3390,12 +3438,12 @@
       "source_bounds_cad_mm": [
         [
           -53.978662,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           -31.5,
-          110.994664,
+          -88.505336,
           69.200001
         ]
       ],
@@ -3447,12 +3495,12 @@
       "bounds_cad_mm": [
         [
           31.521338,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           54.0,
-          110.994664,
+          -88.505336,
           70.000001
         ]
       ],
@@ -3476,15 +3524,15 @@
         "display_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
         "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
         "label_sha256": "69f683b6bf20f76f5160383842bfedae72cdeec2eb157e15f026eb48b1f4ea5e",
-        "review_bounds_sha256": "5c085e2a1707448d4a5e5c684d9be6c5c5c14b133c8c3571926ae7e48ddb9269",
+        "review_bounds_sha256": "c36a7d610e385eecb71c331dff2c5ceacb3568a63f22040b214cf7d1bdf40294",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "5c085e2a1707448d4a5e5c684d9be6c5c5c14b133c8c3571926ae7e48ddb9269",
+        "source_bounds_sha256": "c36a7d610e385eecb71c331dff2c5ceacb3568a63f22040b214cf7d1bdf40294",
         "source_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
         "source_transform_sha256": "7102b65d3f2dc698a411d45d56be72ccdd1f7567bb318bc35d377d9f908d1650"
       },
       "label": "stone_bishop_f1",
       "metallic": 0.0,
-      "record_sha256": "c8ca500fbab2ffd8ef365bac0e3421b473556edfc98b61ecfa9cdb02b852fae0",
+      "record_sha256": "98945a481666ad324b5cfc170f0d57709af4abd082cd05122fba640391a7d4b7",
       "review_transform_cad": [
         [
           1.0,
@@ -3515,12 +3563,12 @@
       "source_bounds_cad_mm": [
         [
           31.521338,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           54.0,
-          110.994664,
+          -88.505336,
           70.000001
         ]
       ],
@@ -3572,12 +3620,12 @@
       "bounds_cad_mm": [
         [
           3.021338,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           25.5,
-          110.994664,
+          -88.505336,
           82.549999
         ]
       ],
@@ -3601,15 +3649,15 @@
         "display_material_sha256": "e32463a7877b17a7d85f8652c2da8c72355926ce6950de1ffb14297f94073d16",
         "geometry_label_sha256": "d0b5908b2eec1275bf3b11c7593d4cfab4b7527c9f5e4b9648b27b670c9acaa7",
         "label_sha256": "4c58018139a8c0af62cb8f7d708cf4b8e3e3229d541b47f12676505897e85100",
-        "review_bounds_sha256": "58ef10d481b9ce1d839f3f14c4c1a35d8881c07731f94c5c8202a35690f0e5c5",
+        "review_bounds_sha256": "761b000a4b4405ed808061ac8da3d7fb6c2a29e359d4223db0c641b26bec82c5",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "58ef10d481b9ce1d839f3f14c4c1a35d8881c07731f94c5c8202a35690f0e5c5",
+        "source_bounds_sha256": "761b000a4b4405ed808061ac8da3d7fb6c2a29e359d4223db0c641b26bec82c5",
         "source_material_sha256": "e32463a7877b17a7d85f8652c2da8c72355926ce6950de1ffb14297f94073d16",
         "source_transform_sha256": "f2fe1f2981c12943e50d649c39d68138770d02ec273be6adbc680ce96e836329"
       },
       "label": "stone_king_e1",
       "metallic": 0.0,
-      "record_sha256": "74bea8a8abe887a7569d6ed0bde85d32565bfce44f6a1e08d1aeac3c4d690387",
+      "record_sha256": "4328f2985a5d97003db7200d8fe9c76e5cd0969886bcc0f44c88adacf6b3812a",
       "review_transform_cad": [
         [
           1.0,
@@ -3640,12 +3688,12 @@
       "source_bounds_cad_mm": [
         [
           3.021338,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           25.5,
-          110.994664,
+          -88.505336,
           82.549999
         ]
       ],
@@ -3697,12 +3745,12 @@
       "bounds_cad_mm": [
         [
           -82.478662,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           -60.0,
-          110.994664,
+          -88.505336,
           68.0
         ]
       ],
@@ -3726,15 +3774,15 @@
         "display_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
         "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
         "label_sha256": "e769e7e3cd34316309f05c0db67e59354edb53a17517d829226a3211b9dd8f6b",
-        "review_bounds_sha256": "79af27f4dee98ab231ac7f5c6a839210d5e5d73253ecd22ef052995b865bd685",
+        "review_bounds_sha256": "89d19e9e0f8ae0aa44432a251281ff346bd71767632182ec322c6a11d51fbf77",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "79af27f4dee98ab231ac7f5c6a839210d5e5d73253ecd22ef052995b865bd685",
+        "source_bounds_sha256": "89d19e9e0f8ae0aa44432a251281ff346bd71767632182ec322c6a11d51fbf77",
         "source_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
         "source_transform_sha256": "2ac3f4d9d6caa34b086d70d527c44f54143da0a0285b9c963b86c0bb64dd8111"
       },
       "label": "stone_knight_b1",
       "metallic": 0.0,
-      "record_sha256": "4e0c530ef5079037b6664318437545fd06d276732b2a6e45e22459aa0da0a11b",
+      "record_sha256": "90e550605ad5c9abf2d6c0f29764634f6c0a1bd41e78edb5b07b8ed3480f2707",
       "review_transform_cad": [
         [
           1.0,
@@ -3765,12 +3813,12 @@
       "source_bounds_cad_mm": [
         [
           -82.478662,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           -60.0,
-          110.994664,
+          -88.505336,
           68.0
         ]
       ],
@@ -3822,12 +3870,12 @@
       "bounds_cad_mm": [
         [
           60.021338,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           82.5,
-          110.994664,
+          -88.505336,
           67.2
         ]
       ],
@@ -3851,15 +3899,15 @@
         "display_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
         "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
         "label_sha256": "953c9e508b04a474743092ea9db49320df5f3b90a4eeff78edf3abef6961fb2f",
-        "review_bounds_sha256": "332ae2eb1aacc65bda6dcc716628c5e4fa2f774e222559d0d3705b85fc2c1715",
+        "review_bounds_sha256": "1b649dc4baddf6673f79e274711c100de9ee81ba75291fd24a3499a8bc0a6cae",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "332ae2eb1aacc65bda6dcc716628c5e4fa2f774e222559d0d3705b85fc2c1715",
+        "source_bounds_sha256": "1b649dc4baddf6673f79e274711c100de9ee81ba75291fd24a3499a8bc0a6cae",
         "source_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
         "source_transform_sha256": "48ffea5d94dec05a5177fb7b54b4952abe9d375bfdc0349a69a3c1da72ab6468"
       },
       "label": "stone_knight_g1",
       "metallic": 0.0,
-      "record_sha256": "11b024de36b9ac568543e37e5d59c8bc9e003ecc50e27cb76d62d99c510ba7ca",
+      "record_sha256": "10cea3301771ff06898718796d470ab4a0320746bdeee302a7370fe03ceb405a",
       "review_transform_cad": [
         [
           1.0,
@@ -3890,12 +3938,12 @@
       "source_bounds_cad_mm": [
         [
           60.021338,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           82.5,
-          110.994664,
+          -88.505336,
           67.2
         ]
       ],
@@ -3947,12 +3995,12 @@
       "bounds_cad_mm": [
         [
           -110.978662,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           -88.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -3976,15 +4024,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "c5e05022b60fc09a71aa39d05b277dcce4d19bf3158ca256e727c8a40e4b3850",
-        "review_bounds_sha256": "7785638906892dfd1e9d47823cec8b9693aae47fb8ee3a472bc197d06b88a9dc",
+        "review_bounds_sha256": "b3209afdaf68957b6e38eb71dc1a52de2a4e6620916fd86983ba53f7d3b63f98",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "7785638906892dfd1e9d47823cec8b9693aae47fb8ee3a472bc197d06b88a9dc",
+        "source_bounds_sha256": "b3209afdaf68957b6e38eb71dc1a52de2a4e6620916fd86983ba53f7d3b63f98",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "22a8bfef9aba834993920cb64ac038478b29f1f6f87ff6434e4f24844ae94863"
       },
       "label": "stone_pawn_a2",
       "metallic": 0.0,
-      "record_sha256": "244313a7efdaf5e0623f839b93578652d677527192dab085051e379293650439",
+      "record_sha256": "0a01693ce5dfca7ae7aec619d8e21e04fc521b9ab7630f56581cc8d8faf09481",
       "review_transform_cad": [
         [
           1.0,
@@ -4015,12 +4063,12 @@
       "source_bounds_cad_mm": [
         [
           -110.978662,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           -88.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4072,12 +4120,12 @@
       "bounds_cad_mm": [
         [
           -82.478662,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           -60.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4101,15 +4149,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "57ebc543e5df5a4724f8d8c88d4272a3d54c8f7408b8f98162c70627a4d9119d",
-        "review_bounds_sha256": "4105b3f57aed114731cbdceb0e9d0af705c3965623511e481016a770dae9f31b",
+        "review_bounds_sha256": "a65f23298d314654f008dd358692cb3155f9f8aa53dff6ac4b72422fc6fd60a2",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "4105b3f57aed114731cbdceb0e9d0af705c3965623511e481016a770dae9f31b",
+        "source_bounds_sha256": "a65f23298d314654f008dd358692cb3155f9f8aa53dff6ac4b72422fc6fd60a2",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "fb3e651a866e0c370bec17556b831855acd67b03e57b9b3a18442c9e1abdb8cb"
       },
       "label": "stone_pawn_b2",
       "metallic": 0.0,
-      "record_sha256": "13ca3c423ee1f3cb744291d966e31a3cee0a444c529caeb4616d9e3eb6af8a98",
+      "record_sha256": "380cd78884d4677df8ab2ea65688191f557079776beb19de4cc26a2329dd1062",
       "review_transform_cad": [
         [
           1.0,
@@ -4140,12 +4188,12 @@
       "source_bounds_cad_mm": [
         [
           -82.478662,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           -60.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4197,12 +4245,12 @@
       "bounds_cad_mm": [
         [
           -53.978662,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           -31.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4226,15 +4274,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "4cfccf303cfabf28111b000b76cabf1d58f465f195c764439b2aba494617cfce",
-        "review_bounds_sha256": "1e7e5d691fbc48957c5ee491d76bf7522d98bc34039fbe2b09e1fc14eb7f1718",
+        "review_bounds_sha256": "878d1d2c3911c24d548240664e90c692051a78c9f8eb8f3005bd388620a84a2e",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "1e7e5d691fbc48957c5ee491d76bf7522d98bc34039fbe2b09e1fc14eb7f1718",
+        "source_bounds_sha256": "878d1d2c3911c24d548240664e90c692051a78c9f8eb8f3005bd388620a84a2e",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "def21b5b293464ce4b1ba6c8d01a6749281e845c25dc2598cd58ef0d4e68e369"
       },
       "label": "stone_pawn_c2",
       "metallic": 0.0,
-      "record_sha256": "5171cbe23152a6c4c73a93bcab31a511c3742893f515922d6d1420663c97e11a",
+      "record_sha256": "52f3451299714c2ecbbb799936f510313d0a395704dba903cde6a33e459e120d",
       "review_transform_cad": [
         [
           1.0,
@@ -4265,12 +4313,12 @@
       "source_bounds_cad_mm": [
         [
           -53.978662,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           -31.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4322,12 +4370,12 @@
       "bounds_cad_mm": [
         [
           -25.478662,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           -3.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4351,15 +4399,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "03008195ed433d814e3e5f94804e3aa0caeb09931ffd7726f2a051a882fc92e4",
-        "review_bounds_sha256": "382829094cfde80fbe1baadff9182a534bbd1e61303fc5b5199ada6bf3f8ddb2",
+        "review_bounds_sha256": "d8c6dc5785f9ad1c13db4bdf3dcc7e5fffa1b3bb0cc8e778ee7dcc29e1666a6a",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "382829094cfde80fbe1baadff9182a534bbd1e61303fc5b5199ada6bf3f8ddb2",
+        "source_bounds_sha256": "d8c6dc5785f9ad1c13db4bdf3dcc7e5fffa1b3bb0cc8e778ee7dcc29e1666a6a",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "12f32e9652b624251182939bd7b4d941ec2880b721d7c002d00f38aa5b2d0a24"
       },
       "label": "stone_pawn_d2",
       "metallic": 0.0,
-      "record_sha256": "56804098cf2ee0589bae53f416755a9f571b7dcfd25798bf73ccd81c93d64138",
+      "record_sha256": "20d19371cd264ae6f004c1e933d6a366674093968ded4fc4033ed01371dba789",
       "review_transform_cad": [
         [
           1.0,
@@ -4390,12 +4438,12 @@
       "source_bounds_cad_mm": [
         [
           -25.478662,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           -3.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4447,12 +4495,12 @@
       "bounds_cad_mm": [
         [
           3.021338,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           25.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4476,15 +4524,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "63bb455299f1f001a3b49a06de62798ee26f19b7813051b35c3407f129055c8d",
-        "review_bounds_sha256": "740f84aec99cab3a0aee17d0d8ac9e860b001a5afc26475cc6f97f226ad469e3",
+        "review_bounds_sha256": "00fd099a105a6772376bfda9b79029f6f8336c887370d52a095741c9993a6648",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "740f84aec99cab3a0aee17d0d8ac9e860b001a5afc26475cc6f97f226ad469e3",
+        "source_bounds_sha256": "00fd099a105a6772376bfda9b79029f6f8336c887370d52a095741c9993a6648",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "bb3530b416386a278e2d9937acaa5169f140b163a6b9f8c56fa64dd958134b1f"
       },
       "label": "stone_pawn_e2",
       "metallic": 0.0,
-      "record_sha256": "87200268ed61a583b072d1dec6066f8f977887eb45e0eb0dc5fdaab3f43f8f8e",
+      "record_sha256": "30d2e94fe6e60d428b2f371cf3686bad52cee711d7c6b72d0ddeb2e2464f3926",
       "review_transform_cad": [
         [
           1.0,
@@ -4515,12 +4563,12 @@
       "source_bounds_cad_mm": [
         [
           3.021338,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           25.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4572,12 +4620,12 @@
       "bounds_cad_mm": [
         [
           31.521338,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           54.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4601,15 +4649,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "28ebb4bf6fed0bfbc3d8755c2c64bf27470988905fe10e3aa659eae970a97f48",
-        "review_bounds_sha256": "2a2481b7d0d5f30398604197f6ac32ee3d0557c1dc369565f06c4a4a45c5484c",
+        "review_bounds_sha256": "5709a372888cdf725669f4697ce250ace5ba969744f3df19c4b23bbe256f53dd",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "2a2481b7d0d5f30398604197f6ac32ee3d0557c1dc369565f06c4a4a45c5484c",
+        "source_bounds_sha256": "5709a372888cdf725669f4697ce250ace5ba969744f3df19c4b23bbe256f53dd",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "769c13bcb70a20ee70d56c0d6ff6d983688f18857dda8131e89aecf8758efb4e"
       },
       "label": "stone_pawn_f2",
       "metallic": 0.0,
-      "record_sha256": "82a904bd89266b30d6255a6c2a558f343acdfd6f8f78c758153ff58bd9b3d2ad",
+      "record_sha256": "893ec1e1d217dcceff0f6852e9daa3f91f32b62d21ca55d8102037cba6472196",
       "review_transform_cad": [
         [
           1.0,
@@ -4640,12 +4688,12 @@
       "source_bounds_cad_mm": [
         [
           31.521338,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           54.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4697,12 +4745,12 @@
       "bounds_cad_mm": [
         [
           60.021338,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           82.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4726,15 +4774,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "136c0de5b3ec76ca34fe939854db449d83864cdd0587365e63a604e5a4f8ab27",
-        "review_bounds_sha256": "0d0e59e78df9f1bdc4cc1a90f56654b66f60d144a126b486e7c4d11c8f560ef5",
+        "review_bounds_sha256": "b84196dcbcd2dcada4f7289873d1c1bb86f250d0e4547df35d1b09f423dcb832",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "0d0e59e78df9f1bdc4cc1a90f56654b66f60d144a126b486e7c4d11c8f560ef5",
+        "source_bounds_sha256": "b84196dcbcd2dcada4f7289873d1c1bb86f250d0e4547df35d1b09f423dcb832",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "cd7974ed7b83fb023899dca3b03df7b3b16f45db9a22cc603cea99dff8533ef3"
       },
       "label": "stone_pawn_g2",
       "metallic": 0.0,
-      "record_sha256": "e48e00fd9a09e847fe30cb3615a3ff4e1e2e80f758c268071035a04960e36ac9",
+      "record_sha256": "4e1c3add4c77d6229dfa26086b8481b7e8f5f28346b823c320a67bbfc85232e4",
       "review_transform_cad": [
         [
           1.0,
@@ -4765,12 +4813,12 @@
       "source_bounds_cad_mm": [
         [
           60.021338,
-          60.005336,
+          -82.494664,
           9.0
         ],
         [
           82.5,
-          82.494664,
+          -60.005336,
           53.0
         ]
       ],
@@ -4822,12 +4870,12 @@
       "bounds_cad_mm": [
         [
           88.521338,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           111.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4851,15 +4899,15 @@
         "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "f16220788755099bdc89b6faa1bdb359e907dd642a1dc93a167420115cf3f458",
-        "review_bounds_sha256": "8f3ac68ec15950fbe814f0366dd76743597a510aa40ae47920bf9d70967c6df9",
+        "review_bounds_sha256": "0a3afbc3e9d81adb093c65520cc15db44499ad0518d12cd5b3232e75609c1e9f",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "8f3ac68ec15950fbe814f0366dd76743597a510aa40ae47920bf9d70967c6df9",
+        "source_bounds_sha256": "0a3afbc3e9d81adb093c65520cc15db44499ad0518d12cd5b3232e75609c1e9f",
         "source_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
         "source_transform_sha256": "e2a0ed96f2ef3a8cbd9c344e2eb2e1a251748f94343ffef26a111571e40a6247"
       },
       "label": "stone_pawn_h2",
       "metallic": 0.0,
-      "record_sha256": "19b2caf68bc858d7cf4eecd54d0818c5d49e3c607edb836e070eef10335bbcf7",
+      "record_sha256": "bf4dcfcf0cd48b54086ffde66d6ebae8b17ffa02a6bdb76e48e0efa6784adc31",
       "review_transform_cad": [
         [
           1.0,
@@ -4890,12 +4938,12 @@
       "source_bounds_cad_mm": [
         [
           88.521338,
-          60.005336,
+          -82.494664,
           8.2
         ],
         [
           111.0,
-          82.494664,
+          -60.005336,
           52.2
         ]
       ],
@@ -4947,12 +4995,12 @@
       "bounds_cad_mm": [
         [
           -25.478662,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           -3.0,
-          110.994664,
+          -88.505336,
           77.000004
         ]
       ],
@@ -4976,15 +5024,15 @@
         "display_material_sha256": "3bc1ad429b8ec8bf1919cf65d72dbea64b987e3513b86c553d2022cf4a14406f",
         "geometry_label_sha256": "a94027db870099bf6d9f9f4574b39fb7bb8fa5e6582a0e2142394c2ea1e076b9",
         "label_sha256": "62fb4b55ad9285a054b96f43ebd2d5901305ad33c8eb7c773117a348e1bd97ae",
-        "review_bounds_sha256": "c6d9dbd9700ff5eb7430da70c74fc7855703a940170a20b30fccb10f1b9bc1ae",
+        "review_bounds_sha256": "14073702f0570f978a61986b1ada7173dbac72ca9053b7c60d816fe56fab0d93",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "c6d9dbd9700ff5eb7430da70c74fc7855703a940170a20b30fccb10f1b9bc1ae",
+        "source_bounds_sha256": "14073702f0570f978a61986b1ada7173dbac72ca9053b7c60d816fe56fab0d93",
         "source_material_sha256": "3bc1ad429b8ec8bf1919cf65d72dbea64b987e3513b86c553d2022cf4a14406f",
         "source_transform_sha256": "0c4a4510d3d31d5fd254ba1ccf0d2b99df14b895c35672bf14ab3d15bd8284ce"
       },
       "label": "stone_queen_d1",
       "metallic": 0.0,
-      "record_sha256": "fc420b96cd22f0a9d90d65bd122691e033b9bca13e5aa53fa669ad588ccf23ac",
+      "record_sha256": "3380dea56fda95cf78321dd4b3454101c4fe15793c0f3af94ea6fe20cf3f653c",
       "review_transform_cad": [
         [
           1.0,
@@ -5015,12 +5063,12 @@
       "source_bounds_cad_mm": [
         [
           -25.478662,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           -3.0,
-          110.994664,
+          -88.505336,
           77.000004
         ]
       ],
@@ -5072,12 +5120,12 @@
       "bounds_cad_mm": [
         [
           -110.978662,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           -88.5,
-          110.994664,
+          -88.505336,
           65.2
         ]
       ],
@@ -5101,15 +5149,15 @@
         "display_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
         "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
         "label_sha256": "616e985614fc1c5a12fc8bf3a6c9c04a578afc6f0170ee51f508effda533bc00",
-        "review_bounds_sha256": "cc1d40b8d7650faefd7bbe107baf797973a0ea567a2663397e097ddc32327536",
+        "review_bounds_sha256": "e08ca9c5921ec90b75251c78c812e253ccfda4cef3daa768310f344d0dc1a38a",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "cc1d40b8d7650faefd7bbe107baf797973a0ea567a2663397e097ddc32327536",
+        "source_bounds_sha256": "e08ca9c5921ec90b75251c78c812e253ccfda4cef3daa768310f344d0dc1a38a",
         "source_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
         "source_transform_sha256": "a8e16dfd47b0e2e8bce5b7e3c1d6523121cb1db958c23cd5f8b5344fa5d687e0"
       },
       "label": "stone_rook_a1",
       "metallic": 0.0,
-      "record_sha256": "b3ce6ead3afa0602dbf4eff019a509c993071ca08b5db398605c77d4c3fc6c2e",
+      "record_sha256": "6c6c088687b79b116950bb2943ea41b9d3a6804a5dcd98322b7c3cdd5955a9e1",
       "review_transform_cad": [
         [
           1.0,
@@ -5140,12 +5188,12 @@
       "source_bounds_cad_mm": [
         [
           -110.978662,
-          88.505336,
+          -110.994664,
           8.2
         ],
         [
           -88.5,
-          110.994664,
+          -88.505336,
           65.2
         ]
       ],
@@ -5197,12 +5245,12 @@
       "bounds_cad_mm": [
         [
           88.521338,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           111.0,
-          110.994664,
+          -88.505336,
           66.0
         ]
       ],
@@ -5226,15 +5274,15 @@
         "display_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
         "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
         "label_sha256": "28037e8674da47ab9d8f2b9596e30d761c6edd3d7ac058face1acc5b6c89fc2c",
-        "review_bounds_sha256": "a588a1957fdc6bb058c8945e3c64fde05afbe19c0c7568601870d52c39215750",
+        "review_bounds_sha256": "f5ce2b6f8fc4dac2abf3fcdf25c12e85500ec81e7e01d5906cf12564a9fa0fc8",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
-        "source_bounds_sha256": "a588a1957fdc6bb058c8945e3c64fde05afbe19c0c7568601870d52c39215750",
+        "source_bounds_sha256": "f5ce2b6f8fc4dac2abf3fcdf25c12e85500ec81e7e01d5906cf12564a9fa0fc8",
         "source_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
         "source_transform_sha256": "a9b86ddaaab4b13f01165f05c224da00ff19356c565ccc17530c1d0cacfa058e"
       },
       "label": "stone_rook_h1",
       "metallic": 0.0,
-      "record_sha256": "8f803d7e2c3f05c35b2e4ebd53ba6edc050dd1091d0ff844fa7ba0ae1d6d3917",
+      "record_sha256": "6834459735be0de24c05c53fc58fd5bab6f90f806452f0b81163b1536effe596",
       "review_transform_cad": [
         [
           1.0,
@@ -5265,12 +5313,12 @@
       "source_bounds_cad_mm": [
         [
           88.521338,
-          88.505336,
+          -110.994664,
           9.0
         ],
         [
           111.0,
-          110.994664,
+          -88.505336,
           66.0
         ]
       ],
@@ -5319,7 +5367,7 @@
       "vertices": 3343
     }
   ],
-  "schema": "workshop.cad-preview-render.v4",
+  "schema": "workshop.cad-preview-render.v5",
   "view": "hero-stone",
   "view_contract": {
     "acceptance_dimensions": [
