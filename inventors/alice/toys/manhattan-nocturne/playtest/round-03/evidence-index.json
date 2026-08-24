@@ -7,9 +7,9 @@
   "evaluator": "alice.manhattan-nocturne.ai-players",
   "evaluator_version": "3.0.0",
   "evidence_manifest": {
-    "artifact_sha256": "8750b00f04743de351725086b11f3bf22396119ec12912feab480abb2170252b",
+    "artifact_sha256": "dc635166a83cffaf32923543c08edaf8bb3385142edf0ce914d9f8dcfef96421",
     "path": "evidence-manifest.json",
-    "sha256": "a8de5441ba818c100fa4f8e79f579fd3038879df6cb747e8aa1ad756c3166868"
+    "sha256": "1d27ad49875687d73d66a9706385c8a41ae293b099d05dabbf6b55cf76d00480"
   },
   "feedback": {
     "count": 2,
@@ -37,35 +37,35 @@
   "results": [
     {
       "evidence_ref": "evidence/results/agent-playtest.json",
-      "evidence_sha256": "6e8afceed385b56a2df3346a00e526d7fc7b2544e1aa95ea253607edba1e30fc",
+      "evidence_sha256": "8c8ac308771d797be3cd641f69ef5a83e0236690db78a55733d4ee86a1445b1b",
       "passed": false,
       "playtest_id": "agent-playtest",
       "wrapper": "wrappers/agent-playtest.json",
-      "wrapper_sha256": "1337820436b4c4ee1bfec257900d8af25c6f58f0024da35a2b719a78cbd068e8"
+      "wrapper_sha256": "768355b7059e3fb52be5ab41363f706617acc78b0324e6fb225fba8ae8a33fbe"
     },
     {
       "evidence_ref": "evidence/results/classic-rules-test.json",
-      "evidence_sha256": "1ac7cea42fa7c00eeb204679aabe2d234be97d493443023033fde9433804c162",
+      "evidence_sha256": "4b66a25b3e23b8aea00e2ec4e86b7cc94d69a2d6fc441ddfba66dfa6000930a3",
       "passed": true,
       "playtest_id": "classic-rules-test",
       "wrapper": "wrappers/classic-rules-test.json",
-      "wrapper_sha256": "b687fda2acd8dc9ef24f0b487a7164a18deb88727db27a2fe0be48451614d2ea"
+      "wrapper_sha256": "4f7c59e55c0bca7c7bc22e6983bf77ce58345fd4c49cdd4a427d4863a9e94f78"
     },
     {
       "evidence_ref": "evidence/results/mechanical-test.json",
-      "evidence_sha256": "5d960f91855531fda6c5fc166e99b72be3ba8917404fff4b1996416b51e4ceb0",
+      "evidence_sha256": "e0fbc828b7346553e22a7ae9fe245032c8c2f29832edb13935578df683e814ac",
       "passed": true,
       "playtest_id": "mechanical-test",
       "wrapper": "wrappers/mechanical-test.json",
-      "wrapper_sha256": "f8c6dd9b5872843d8cca136c9ebbe55c69a186083381bc6cfe19600de94e63f9"
+      "wrapper_sha256": "3eaee402b7a68a1b0db669b3b6098d500c26edaea4cdaa89b706136a1bb9ce83"
     },
     {
       "evidence_ref": "evidence/results/print-test.json",
-      "evidence_sha256": "29c06c76e10072bf90a0de1213710754460290533718208473baa81de556586c",
+      "evidence_sha256": "795450b219a23c0c7bb5ebe585375ebbba642a42a7c1fa2bbdc47a63fee47c1e",
       "passed": true,
       "playtest_id": "print-test",
       "wrapper": "wrappers/print-test.json",
-      "wrapper_sha256": "1920c3bda94353e8b3a693f9c0be1e872d6a2f594f1e86a4b6205c93fe52eee4"
+      "wrapper_sha256": "3e2e0345d3a74db057b7dbdde1486df090eb7422254958b23e8c64752d942c13"
     }
   ],
   "reviews": "Customer Reviews begin only after Deliver and are not part of this AI Playtest evidence.",
