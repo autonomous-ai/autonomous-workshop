@@ -184,10 +184,10 @@ Bob continues one legacy authority in place. If canonical and legacy sources,
 settings, credentials, projections, or state files disagree, he refuses to
 send until an operator resolves the split.
 
-The historical text2game server was named `box`; `BOB_SEND_VIA=box` and
-`bob export <slug>` preserve that compatibility edge for manual investigation.
-The autonomous loop never exports, SSHes, or treats its stdout/design id as a
-receipt. The obsolete
+The historical text2game server was named `box`; `bob export <slug>` preserves
+its payload format for local manual investigation only. `push_box` and
+`BOB_SEND_VIA=box` fail closed before rsync, SSH, or remote publication. The
+autonomous loop never exports or treats external stdout/design ids as receipts. The obsolete
 `mark-published` command fails closed.
 
 The checked-in `g0003` / Clearance draft remains intentionally stranded. It

@@ -10,19 +10,15 @@ Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recog
 - Lane: `little-worlds`
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
-- Actual stop: **Deliver / waiting**, round 1
-- Exact artifact: `cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54`
-- Private product draft: https://www.autonomous.ai/factory/product/rackhaven-night-shift (owner sign-in required)
+- Actual stop: **Instructions / waiting**, round 1
+- Exact artifact: `5f8a1b5cf56b325b7b1720cc7e1bd0d164821c2b91e6444010126c9b87e837b2`
+- Product page: sealed locally; waiting for the Workshop site account
 
-AI Playtest passed. Shared Instructions imported the exact Make artifact, uploaded
-the five sealed views, wrote the page and in-box guide, and verified the enriched
-private draft through an authenticated Shop readback. The owner can review and
-make that draft public; the Workshop's next job is production and shipping in
-Deliver.
+AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.
 
 ## Still needed
 
-- `production-and-shipping` — The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured.
+- `site-page` — The page and in-box guide are sealed, but this run has no authenticated Workshop site account.
 
 ## Inspect it
 
@@ -31,12 +27,12 @@ Deliver.
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
 - [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
-- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/product.json`](instructions/product.json) — the sealed factual handoff for Factory enrichment
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
-The private draft is not a public listing. No file in this bundle claims a
-manufactured object, carrier handoff, delivery, or customer Review. Those facts
-belong to Deliver and Reviews.
+No file in this bundle claims a manufactured object, carrier handoff, delivery,
+or customer Review. Those facts belong to Deliver and Reviews.

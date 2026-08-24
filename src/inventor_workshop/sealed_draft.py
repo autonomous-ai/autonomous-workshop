@@ -38,6 +38,7 @@ from .shop import (
     ShopDoor,
     ShopInstructionsWriter,
     Transport,
+    _factory_enrichment_readback,
     urllib_transport,
 )
 from .store import InventorStore
@@ -46,6 +47,13 @@ from .toys import ToyBlueprint
 
 
 DESCRIPTOR_KIND = "workshop.sealed-private-draft"
+_FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES = frozenset(
+    (
+        ".avi", ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg",
+        ".m4v", ".mkv", ".mov", ".mp4", ".png", ".svg", ".tif",
+        ".tiff", ".webm", ".webp",
+    )
+)
 DEFAULT_STATE_DIRECTORY = ".runtime/sealed-product-publication"
 _CANONICAL_SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -514,10 +522,23 @@ def _validate_instructions(
     root: Path,
     manifest: ArtifactManifest,
 ) -> Mapping[str, Any]:
+    forbidden_media = [
+        entry.path
+        for entry in manifest.entries
+        if PurePosixPath(entry.path).suffix.casefold()
+        in _FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES
+    ]
+    if forbidden_media:
+        raise ContractError(
+            "sealed Instructions cannot contain creator page media: %s"
+            % forbidden_media
+        )
     page = ShopInstructionsWriter._read_page(root)
     claims = evidence_claims(context)
     expected = {
-        "status": "ready",
+        "schema_version": 2,
+        "kind": "workshop.instructions-facts",
+        "status": "facts-ready",
         "title": str(context.made.product["title"]),
         "summary": attribute_product_description(
             context.made.product["summary"], context.taste.name
@@ -534,6 +555,16 @@ def _validate_instructions(
         raise ContractError(
             "sealed Instructions belong to a different Wish, Make, Playtest, or inventor"
         )
+    if {"images", "use_case", "story_blocks"} & set(page):
+        raise ContractError(
+            "sealed Instructions cannot contain creator-owned page copy or media"
+        )
+    if page.get("factory_enrichment") != {
+        "copy_owner": "factory",
+        "media_owner": "factory",
+        "status": "pending",
+    }:
+        raise ContractError("sealed Instructions must leave Factory enrichment pending")
     if not (root / "INSTRUCTIONS.md").is_file():
         raise ContractError("sealed Instructions require INSTRUCTIONS.md")
     return page
@@ -698,12 +729,8 @@ class CanonicalSlugDoor(ShopDoor):
         filename: str,
         content: bytes,
         metadata: Mapping[str, Any],
-        *,
-        thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
-        response = super().import_design_bytes(
-            filename, content, metadata, thumbnail=thumbnail
-        )
+        response = super().import_design_bytes(filename, content, metadata)
         if response.status == 201:
             design = _response_object(response, "Shop import")
             if design.get("slug") != self.expected_slug:
@@ -816,17 +843,15 @@ def _verify_fresh_draft(
         raise StateConflict("private draft has no succeeded durable intent")
     request = intent.get("request")
     category = design.get("category")
+    enrichment = _factory_enrichment_readback(design)
     if (
         not isinstance(request, Mapping)
-        or design.get("title") != request.get("title")
-        or design.get("description") != request.get("description")
         or design.get("origin") != "import"
         or design.get("tags") != request.get("tags")
         or not isinstance(category, Mapping)
         or category.get("slug") != request.get("category")
-        or design.get("thumbnail_urls") != persisted.details.get("server_cover_urls")
     ):
-        raise ReceiptError("fresh Shop readback changed sealed listing content")
+        raise ReceiptError("fresh Shop readback changed sealed import identity")
     if store.shop_effects_for_publish_intent(intent["id"]):
         raise ReceiptError(
             "Factory-owned enrichment cannot contain Workshop page effects"
@@ -840,6 +865,7 @@ def _verify_fresh_draft(
         "artifact_sha256": sealed.made.artifact_sha256,
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
         "observed_at": fresh.observed_at,
+        "factory_enrichment": enrichment,
     }
 
 

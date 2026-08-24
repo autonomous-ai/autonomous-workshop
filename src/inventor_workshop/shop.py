@@ -55,14 +55,11 @@ SHOP_LISTING_STRING_LIMITS = {
     "prompt": 50_000,
     "license": 60,
 }
+FACTORY_STORY_PROMPT_LIMIT = SHOP_LISTING_STRING_LIMITS["prompt"]
 WORKSHOP_SHOP_LISTING_FIELDS = frozenset(
     (
         "_workshop_artifact_sha256",
         "_workshop_handoff_artifact_sha256",
-        "_workshop_cover_bytes",
-        "_workshop_cover_content_type",
-        "_workshop_cover_filename",
-        "_workshop_cover_sha256",
         "_workshop_instructions_sha256",
         "_workshop_playtest_evidence_sha256",
         "_workshop_owner_id",
@@ -80,8 +77,6 @@ LEGACY_SHOP_LISTING_FIELDS = frozenset(
     )
 )
 MAX_RESPONSE_BYTES = 2 * 1024 * 1024
-MAX_UPLOAD_BYTES = 50 * 1024 * 1024
-SHOP_INSTRUCTIONS_IMAGES = ("hero", "play", "detail", "parts", "box")
 SHOP_CATEGORY_BY_LANE = {
     "classics-made-yours": "toys",
     "invented-games": "toys",
@@ -89,11 +84,6 @@ SHOP_CATEGORY_BY_LANE = {
     "holdable-science": "toys",
     "little-worlds": "toys",
 }
-SHOP_CONTENT_IMAGE_URL_LIMIT = 2_048
-SHOP_CONTENT_VIDEO_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".avi")
-SHOP_IMPORT_THUMBNAIL_MAX_BYTES = 5 * 1024 * 1024
-SHOP_IMPORT_THUMBNAIL_TYPES = frozenset(("image/jpeg", "image/png", "image/webp"))
-
 # These trees are useful while Making and Playtesting, but they are not part of
 # the model handoff.  In particular, the Factory importer treats PNGs below a
 # ``review``/``*_review``/``renders`` directory as authoritative covers.  A
@@ -101,14 +91,48 @@ SHOP_IMPORT_THUMBNAIL_TYPES = frozenset(("image/jpeg", "image/png", "image/webp"
 # media pipeline.
 SHOP_MODEL_HANDOFF_EXCLUDED_DIRS = frozenset(
     (
+        "attachments",
+        "gallery",
         "images",
+        "marketing",
+        "marketing-media",
         "measure",
+        "media",
+        "page",
+        "page-copy",
         "previews",
         "product-media",
         "review",
         "renders",
+        "story-blocks",
+        "thumbnails",
+        "use-case",
         "validation",
     )
+)
+SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
+    (
+        ".avi",
+        ".avif",
+        ".bmp",
+        ".gif",
+        ".heic",
+        ".jpeg",
+        ".jpg",
+        ".m4v",
+        ".mkv",
+        ".mov",
+        ".mp4",
+        ".png",
+        ".svg",
+        ".tif",
+        ".tiff",
+        ".webm",
+        ".webp",
+    )
+)
+FACTORY_OUTPUT_FIELD_NAMES = frozenset(
+    ("attachments", "images", "story_blocks", "use_case")
 )
 
 
@@ -130,10 +154,12 @@ def _assert_shop_importable_pack(content: bytes) -> None:
     """Mirror the Shop's shallow design discovery before bearer-bound HTTP.
 
     Workshop Packs contain the Made artifact at archive root.  The deployed
-    importer recognizes that root only when it has a usable ``project.json`` or
-    a top-level Python source containing ``def gen_step``.  Checking the exact
-    sealed Pack prevents an avoidable rejected import and, critically, never
-    patches un-Playtested bytes into the archive after Make.
+    importer recognizes that root only when it has a top-level Python source
+    containing ``def gen_step``, or a usable ``project.json`` plus a root
+    primary model named ``assembled.stl`` (preferred by Factory) or
+    ``<project-id>.stl``. Checking the exact sealed Pack prevents both rejected
+    imports and accidental selection of a small nested part. Critically, this
+    guard never patches un-Playtested bytes into the archive after Make.
     """
 
     try:
@@ -151,6 +177,8 @@ def _assert_shop_importable_pack(content: bytes) -> None:
                         % name
                     )
                 top_level_generator = True
+            if top_level_generator:
+                return
             if "project.json" in names:
                 try:
                     project = json.loads(
@@ -159,15 +187,212 @@ def _assert_shop_importable_pack(content: bytes) -> None:
                 except (UnicodeDecodeError, ValueError):
                     project = None
                 if isinstance(project, Mapping):
-                    return
-            if top_level_generator:
-                return
+                    project_id = project.get("id")
+                    if (
+                        isinstance(project_id, str)
+                        and re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", project_id)
+                        and (
+                            "assembled.stl" in names
+                            or (project_id + ".stl") in names
+                        )
+                    ):
+                        return
     except (KeyError, OSError, UnicodeDecodeError, ValueError, zipfile.BadZipFile) as exc:
         raise ContractError("Shop importability check could not read the sealed Pack") from exc
     raise ContractError(
-        "Shop import requires a valid root project.json or a top-level *.py "
-        "defining gen_step in the sealed Made artifact"
+        "Shop import requires a top-level *.py defining gen_step, or a valid "
+        "root project.json with root assembled.stl (preferred) or <slug>.stl "
+        "in the sealed Made artifact"
     )
+
+
+def _factory_story_value(
+    value: Any, label: str, limit: int
+) -> Optional[str]:
+    """Render one verified fact within a per-section, whole-value cap."""
+
+    if value is None or value == "" or value == [] or value == {}:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if len(text) <= limit:
+            return text
+        digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+        marker = " … [truncated; full value sha256=%s]" % digest
+        if len(marker) >= limit:
+            raise ContractError("Factory story prompt %s cap is too small" % label)
+        return text[: limit - len(marker)].rstrip() + marker
+    try:
+        rendered = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+    except (TypeError, ValueError) as exc:
+        raise ContractError(
+            "Factory story prompt %s must contain finite JSON facts" % label
+        ) from exc
+    if len(rendered) <= limit:
+        return rendered
+    digest = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+    summary: Dict[str, Any] = {
+        "_workshop_full_source": "workshop-product-facts.json",
+        "_workshop_source_sha256": digest,
+        "_workshop_truncated": True,
+    }
+    if isinstance(value, Mapping):
+        summary["top_level_keys"] = sorted(str(key) for key in value)[:32]
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        summary["item_count"] = len(value)
+    bounded = json.dumps(
+        summary,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    if len(bounded) > limit:
+        raise ContractError("Factory story prompt %s cap is too small" % label)
+    return bounded
+
+
+def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
+    """Build bounded factual input for Factory-owned copy and media generation.
+
+    This prompt is not page copy. It carries only selected, verified Make,
+    Wish, Taste, and Instructions facts; the complete canonical record remains
+    in ``workshop-product-facts.json``. The inventor credit is always retained
+    even if an unusually large optional story section must be truncated.
+    """
+
+    product = context.made.product
+    if not isinstance(product, Mapping):
+        raise ContractError("Factory story prompt requires Made product facts")
+    inventor_name = getattr(context.taste, "name", None)
+    if (
+        not isinstance(inventor_name, str)
+        or not inventor_name.strip()
+        or inventor_name != inventor_name.strip()
+    ):
+        raise ContractError("Factory story prompt requires the exact inventor name")
+    credit = "By %s." % inventor_name
+    use_facts = {
+        key: value
+        for key, value in (
+            ("product_instructions", product.get("instructions")),
+            ("product_rules", product.get("rules")),
+            ("box_how_to_play", page.get("how_to_play")),
+            ("box_how_to_use", page.get("how_to_use")),
+        )
+        if value not in (None, "", [], {})
+    }
+    # Caps sum well below the 50k API maximum. Story and art direction are
+    # intentionally early and receive the largest structured allocations.
+    facts = (
+        ("Wish", context.wish.objective, 3_000),
+        ("Product title", product.get("title"), 400),
+        ("Story", product.get("story"), 7_000),
+        ("Art direction", product.get("art_direction"), 7_000),
+        ("Product lane", product.get("lane"), 150),
+        ("Product summary", product.get("summary"), 2_500),
+        ("Product description", product.get("description"), 5_000),
+        ("What arrives", product.get("components"), 3_000),
+        ("Design facts", product.get("design"), 4_500),
+        ("Specifications", product.get("specifications"), 3_500),
+        ("Instructions and rules", use_facts, 5_000),
+        ("Limitations", product.get("limitations"), 2_500),
+    )
+    sections = [
+        "FACTORY STORY INPUT — verified facts, not pre-authored page copy.",
+        (
+            "Generate the customer-facing story, images, and video from the exact "
+            "primary model and these facts. Do not treat AI Playtest as a physical "
+            "print, delivery, customer review, or human endorsement."
+        ),
+    ]
+    for label, value, limit in facts:
+        rendered = _factory_story_value(value, label, limit)
+        if rendered is not None:
+            sections.append("%s:\n%s" % (label, rendered))
+    tail = "\n\nInventor attribution (retain exactly): %s" % credit
+    body = "\n\n".join(sections).strip()
+    prompt = body + tail
+    if not prompt or prompt != prompt.strip() or len(prompt) > FACTORY_STORY_PROMPT_LIMIT:
+        raise ContractError("Factory story prompt is not safely bounded")
+    return prompt
+
+
+def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
+    """Bind Factory facts and selected primary model to the sealed Made tree."""
+
+    context.made.assert_current()
+    root = Path(context.made.artifact_root).resolve(strict=True)
+    product_path = root / "product.json"
+    project_path = root / "project.json"
+    for path, label in (
+        (product_path, "Made product.json"),
+        (project_path, "Made project.json"),
+    ):
+        if path.is_symlink() or not path.is_file():
+            raise ContractError("%s must be a sealed regular file" % label)
+        if path.stat().st_size <= 0 or path.stat().st_size > MAX_RESPONSE_BYTES:
+            raise ContractError("%s is empty or exceeds the JSON limit" % label)
+    try:
+        sealed_product = _json_body(HttpResponse(200, {}, product_path.read_bytes()))
+        project = _json_body(HttpResponse(200, {}, project_path.read_bytes()))
+    except (OSError, PublishError) as exc:
+        raise ContractError("sealed Made Factory metadata is malformed") from exc
+    if _canonical_sha256(sealed_product) != _canonical_sha256(context.made.product):
+        raise ContractError(
+            "Made product facts do not match sealed artifact/product.json"
+        )
+    if project.get("id") != context.wish.product_id:
+        raise ContractError("sealed project.json id must equal Wish product_id")
+
+    top_generators = []
+    for path in sorted(root.glob("*.py")):
+        if path.is_symlink() or not path.is_file():
+            raise ContractError("Factory primary generator must be a regular file")
+        content = path.read_bytes()
+        if b"def gen_step" in content:
+            top_generators.append((path, content))
+    if top_generators:
+        if len(top_generators) != 1:
+            raise ContractError("Factory handoff must select one top-level gen_step")
+        path, content = top_generators[0]
+        return {
+            "kind": "generator",
+            "path": path.name,
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+
+    assembled = root / "assembled.stl"
+    canonical = root / (context.wish.product_id + ".stl")
+    candidates = [path for path in (assembled, canonical) if path.is_file()]
+    if not candidates:
+        raise ContractError(
+            "project-marker Made artifact requires root assembled.stl or <slug>.stl"
+        )
+    if any(path.is_symlink() for path in candidates):
+        raise ContractError("Factory primary STL must be a sealed regular file")
+    if assembled.is_file() and canonical.is_file():
+        if assembled.read_bytes() != canonical.read_bytes():
+            raise ContractError(
+                "root assembled.stl and <slug>.stl diverge; Factory would prefer assembled.stl"
+            )
+    selected = assembled if assembled.is_file() else canonical
+    content = selected.read_bytes()
+    if not content:
+        raise ContractError("Factory primary STL is empty")
+    return {
+        "kind": "mesh",
+        "path": selected.name,
+        "sha256": hashlib.sha256(content).hexdigest(),
+    }
 
 
 def _model_handoff_excludes(manifest: ArtifactManifest) -> Tuple[str, ...]:
@@ -196,21 +421,44 @@ def _model_handoff_excludes(manifest: ArtifactManifest) -> Tuple[str, ...]:
 
 
 def _assert_model_only_handoff(content: bytes) -> None:
-    """Prove a handoff cannot supply Factory-discoverable local covers."""
+    """Prove a handoff cannot supply creator-owned page media anywhere."""
 
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             for name in archive.namelist():
-                parts = PurePosixPath(name).parts
-                directories = tuple(part.casefold() for part in parts[:-1])
-                if name.casefold().endswith((".png", ".jpg", ".jpeg", ".webp")) and any(
+                path = PurePosixPath(name)
+                directories = tuple(part.casefold() for part in path.parts[:-1])
+                if any(
                     directory in SHOP_MODEL_HANDOFF_EXCLUDED_DIRS
                     or directory.endswith("_review")
                     for directory in directories
                 ):
                     raise ContractError(
+                        "Factory model handoff contains creator page-output tree: %s"
+                        % name
+                    )
+                if PurePosixPath(name).suffix.casefold() in (
+                    SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES
+                ):
+                    raise ContractError(
                         "Factory model handoff contains local page media: %s" % name
                     )
+            if "product.json" in archive.namelist():
+                try:
+                    product = json.loads(
+                        archive.read("product.json").decode("utf-8")
+                    )
+                except (UnicodeError, ValueError) as exc:
+                    raise ContractError(
+                        "Factory model handoff product.json is malformed"
+                    ) from exc
+                if isinstance(product, Mapping):
+                    forbidden = FACTORY_OUTPUT_FIELD_NAMES & set(product)
+                    if forbidden:
+                        raise ContractError(
+                            "Factory model handoff product.json contains creator output: %s"
+                            % sorted(forbidden)
+                        )
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
         raise ContractError("Factory model handoff is not a readable Pack") from exc
 
@@ -262,36 +510,9 @@ def _build_model_handoff_pack(
         if facts_path.exists():
             raise ContractError("Made artifact reserves workshop-product-facts.json")
         facts_path.write_bytes(facts_payload)
-        result = build_pack(staging, destination)
+        result = dict(build_pack(staging, destination))
+    result["product_facts_sha256"] = hashlib.sha256(facts_payload).hexdigest()
     return result
-
-
-def _normalize_import_thumbnail(value: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
-    if value is None:
-        return None
-    if not isinstance(value, Mapping):
-        raise ContractError("Shop import thumbnail must be an object")
-    filename = _validate_upload_filename(value.get("filename"))
-    content = value.get("content")
-    content_type = value.get("content_type")
-    if (
-        type(content) is not bytes
-        or not content
-        or len(content) > SHOP_IMPORT_THUMBNAIL_MAX_BYTES
-    ):
-        raise ContractError("Shop import thumbnail must be 1 byte..5 MB")
-    if content_type not in SHOP_IMPORT_THUMBNAIL_TYPES:
-        raise ContractError("Shop import thumbnail must be PNG, JPEG, or WebP")
-    digest = hashlib.sha256(content).hexdigest()
-    expected_digest = value.get("sha256")
-    if expected_digest is not None and expected_digest != digest:
-        raise ContractError("Shop import thumbnail sha256 does not match its bytes")
-    return {
-        "filename": filename,
-        "content": content,
-        "content_type": content_type,
-        "sha256": digest,
-    }
 
 
 def _https_url(value: Any, label: str) -> str:
@@ -312,6 +533,61 @@ def _https_url(value: Any, label: str) -> str:
     return value
 
 
+def _factory_enrichment_readback(design: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Validate and expose mutable copy/media that Factory generated.
+
+    These fields are observations only. They are deliberately not compared to
+    Workshop's factual import seed because Factory owns their enrichment.
+    """
+
+    title = design.get("title")
+    description = design.get("description")
+    if not isinstance(title, str) or not title.strip():
+        raise ReceiptError("Factory enrichment readback has no title")
+    if not isinstance(description, str) or not description.strip():
+        raise ReceiptError("Factory enrichment readback has no description")
+    covers = design.get("thumbnail_urls")
+    if not isinstance(covers, list) or not covers:
+        raise ReceiptError("Factory enrichment readback has no server cover")
+    try:
+        cover_urls = [
+            _https_url(url, "Factory-generated cover URL") for url in covers
+        ]
+    except ContractError as exc:
+        raise ReceiptError("Factory enrichment cover readback is malformed") from exc
+    raw_attachments = design.get("attachments") or []
+    if not isinstance(raw_attachments, list):
+        raise ReceiptError("Factory enrichment attachments are malformed")
+    attachments = []
+    for item in raw_attachments:
+        if (
+            not isinstance(item, Mapping)
+            or item.get("kind") not in ("image", "video")
+        ):
+            raise ReceiptError("Factory enrichment attachment is malformed")
+        try:
+            url = _https_url(
+                item.get("url"), "Factory-generated attachment URL"
+            )
+        except ContractError as exc:
+            raise ReceiptError("Factory enrichment attachment is malformed") from exc
+        attachments.append({"kind": item["kind"], "url": url})
+    use_case = design.get("use_case")
+    story_blocks = design.get("story_blocks")
+    if use_case is not None and not isinstance(use_case, Mapping):
+        raise ReceiptError("Factory enrichment use_case is malformed")
+    if story_blocks is not None and not isinstance(story_blocks, list):
+        raise ReceiptError("Factory enrichment story_blocks are malformed")
+    return {
+        "title": title,
+        "description": description,
+        "cover_urls": cover_urls,
+        "attachments": attachments,
+        "has_use_case": use_case is not None,
+        "story_block_count": len(story_blocks or []),
+    }
+
+
 def _shop_product_page_url(slug: Any) -> str:
     """Return the customer page, never the immutable project CDN directory."""
 
@@ -329,120 +605,6 @@ def _shop_category_for_lane(lane: Any) -> str:
     if not isinstance(lane, str) or lane not in SHOP_CATEGORY_BY_LANE:
         raise ContractError("product page lane has no Shop category mapping")
     return SHOP_CATEGORY_BY_LANE[lane]
-
-
-def _shop_content_image_url(value: Any, label: str) -> str:
-    """Apply the stricter URL contract used by Shop product-page images."""
-
-    url = _https_url(value, label)
-    if len(url) > SHOP_CONTENT_IMAGE_URL_LIMIT:
-        raise ContractError(
-            "%s must be at most %d characters" % (label, SHOP_CONTENT_IMAGE_URL_LIMIT)
-        )
-    path = urllib.parse.urlsplit(url).path.casefold()
-    if any(path.endswith(suffix) for suffix in SHOP_CONTENT_VIDEO_SUFFIXES):
-        raise ContractError("%s must identify a static image" % label)
-    return url
-
-
-def _plain_text(value: Any, label: str, minimum: int, maximum: int) -> str:
-    if (
-        not isinstance(value, str)
-        or value != value.strip()
-        or not minimum <= len(value) <= maximum
-        or "<" in value
-        or ">" in value
-        or any(
-            ord(character) < 32 and character not in "\n\r\t"
-            or ord(character) == 127
-            for character in value
-        )
-    ):
-        raise ContractError(
-            "%s must be %d..%d characters of plain text" % (label, minimum, maximum)
-        )
-    return value
-
-
-def _normalize_attachments(value: Sequence[Mapping[str, Any]]) -> list:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-        raise ContractError("Shop attachments must be a sequence")
-    if len(value) > 12:
-        raise ContractError("Shop accepts at most 12 attachments")
-    normalized = []
-    for index, item in enumerate(value):
-        if (
-            not isinstance(item, Mapping)
-            or set(item) != {"kind", "url"}
-            or item.get("kind") not in ("image", "video")
-        ):
-            raise ContractError("Shop attachment %d is malformed" % index)
-        normalized.append(
-            {
-                "kind": item["kind"],
-                "url": _https_url(item.get("url"), "Shop attachment URL"),
-            }
-        )
-    return normalized
-
-
-def _normalize_use_case(value: Mapping[str, Any]) -> Dict[str, str]:
-    if not isinstance(value, Mapping) or set(value) != {"label", "body", "image"}:
-        raise ContractError("Shop use_case must contain label, body, and image")
-    return {
-        "label": _plain_text(value.get("label"), "use_case.label", 1, 40),
-        "body": _plain_text(value.get("body"), "use_case.body", 180, 400),
-        "image": _shop_content_image_url(value.get("image"), "use_case.image"),
-    }
-
-
-def _normalize_story_blocks(value: Sequence[Mapping[str, Any]]) -> list:
-    if (
-        isinstance(value, (str, bytes))
-        or not isinstance(value, Sequence)
-        or len(value) > 10
-    ):
-        raise ContractError("Shop story_blocks must contain at most 10 blocks")
-    normalized = []
-    for index, item in enumerate(value):
-        if not isinstance(item, Mapping):
-            raise ContractError("story_blocks[%d] must be an object" % index)
-        unknown = set(item) - {"lead", "body", "hero_image", "pair_images"}
-        if unknown or not {"lead", "body"} <= set(item):
-            raise ContractError("story_blocks[%d] is malformed" % index)
-        block: Dict[str, Any] = {
-            "lead": _plain_text(
-                item.get("lead"), "story_blocks[%d].lead" % index, 1, 40
-            ),
-            "body": _plain_text(
-                item.get("body"), "story_blocks[%d].body" % index, 180, 400
-            ),
-        }
-        hero = item.get("hero_image")
-        if hero:
-            block["hero_image"] = _shop_content_image_url(
-                hero, "story_blocks[%d].hero_image" % index
-            )
-        pairs = item.get("pair_images", [])
-        if (
-            isinstance(pairs, (str, bytes))
-            or not isinstance(pairs, Sequence)
-            or len(pairs) > 10
-        ):
-            raise ContractError(
-                "story_blocks[%d].pair_images must contain at most 10 URLs" % index
-            )
-        normalized_pairs = [
-            _shop_content_image_url(url, "story_blocks[%d].pair_images" % index)
-            for url in pairs
-        ]
-        # The Shop's Go response uses ``omitempty`` for this optional gallery.
-        # Omitting an empty list here makes the sent value, persisted proof, and
-        # authenticated readback share one canonical representation.
-        if normalized_pairs:
-            block["pair_images"] = normalized_pairs
-        normalized.append(block)
-    return normalized
 
 
 def _design_with_normalized_currency(design: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -745,11 +907,13 @@ class ShopDoor:
         *,
         thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
+        if thumbnail is not None:
+            raise ContractError(
+                "Workshop model imports cannot supply thumbnails; Factory owns page media"
+            )
         packet = Path(packet)
         content = _load_pack(packet)[0]
-        return self.import_design_bytes(
-            packet.name, content, metadata, thumbnail=thumbnail
-        )
+        return self.import_design_bytes(packet.name, content, metadata)
 
     def import_design_bytes(
         self,
@@ -759,9 +923,14 @@ class ShopDoor:
         *,
         thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
+        if thumbnail is not None:
+            raise ContractError(
+                "Workshop model imports cannot supply thumbnails; Factory owns page media"
+            )
         filename = _validate_upload_filename(filename)
         content = _validate_pack_bytes(content)[0]
-        normalized_thumbnail = _normalize_import_thumbnail(thumbnail)
+        _assert_shop_importable_pack(content)
+        _assert_model_only_handoff(content)
         metadata = _normalize_shop_listing(
             metadata, allow_workshop_fields=True
         )
@@ -779,15 +948,6 @@ class ShopDoor:
             fields.append(("tags", ""))
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
         files = [("file", filename, content_type, content)]
-        if normalized_thumbnail is not None:
-            files.append(
-                (
-                    "thumbnails",
-                    normalized_thumbnail["filename"],
-                    normalized_thumbnail["content_type"],
-                    normalized_thumbnail["content"],
-                )
-            )
         body, multipart_type = _multipart(fields, files)
         return self._request("POST", "/designs/import", body, multipart_type)
 
@@ -800,55 +960,25 @@ class ShopDoor:
         content: bytes,
         content_type: Optional[str] = None,
     ) -> HttpResponse:
-        filename = _validate_upload_filename(filename)
-        if type(content) is not bytes or not content or len(content) > MAX_UPLOAD_BYTES:
-            raise ContractError("Shop media must be 1 byte..50 MB of immutable bytes")
-        assert_packable_content(filename, content)
-        selected_type = content_type or mimetypes.guess_type(filename)[0]
-        selected_type = selected_type or "application/octet-stream"
-        if (
-            not isinstance(selected_type, str)
-            or not selected_type
-            or len(selected_type) > 200
-            or "\r" in selected_type
-            or "\n" in selected_type
-        ):
-            raise ContractError("Shop media content type is malformed")
-        body, multipart_type = _multipart(
-            (), (("file", filename, selected_type, content),)
+        del filename, content, content_type
+        raise ContractError(
+            "Workshop cannot upload product-page media; Factory owns generated media"
         )
-        return self._request("POST", "/uploads", body, multipart_type)
 
     def patch_use_case(
         self, slug: str, use_case: Mapping[str, Any]
     ) -> HttpResponse:
-        body = json.dumps(
-            _normalize_use_case(use_case),
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ).encode("utf-8")
-        return self._request(
-            "PATCH",
-            "/designs/%s/use-case" % urllib.parse.quote(slug, safe=""),
-            body,
-            "application/json",
+        del slug, use_case
+        raise ContractError(
+            "Workshop cannot write use_case copy; Factory owns generated page copy"
         )
 
     def put_story_blocks(
         self, slug: str, story_blocks: Sequence[Mapping[str, Any]]
     ) -> HttpResponse:
-        body = json.dumps(
-            {"story_blocks": _normalize_story_blocks(story_blocks)},
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ).encode("utf-8")
-        return self._request(
-            "PUT",
-            "/designs/%s/story-blocks" % urllib.parse.quote(slug, safe=""),
-            body,
-            "application/json",
+        del slug, story_blocks
+        raise ContractError(
+            "Workshop cannot write story_blocks copy; Factory owns generated page copy"
         )
 
     def publish(
@@ -867,21 +997,21 @@ class ShopDoor:
             raise ContractError(
                 "price_cents must be an integer in the Shop Door's 100..1000000 range"
             )
-        if title is not None and (
-            not isinstance(title, str)
-            or not title.strip()
-            or len(title) > 120
-            or any(ord(character) < 32 or ord(character) == 127 for character in title)
-        ):
-            raise ContractError("Shop publish title must be 1..120 control-free characters")
-        normalized_attachments = _normalize_attachments(attachments)
-        request: Dict[str, Any] = {}
         if title is not None:
-            request["title"] = title
+            raise ContractError(
+                "Workshop cannot replace Factory page titles; Factory owns generated copy"
+            )
+        if isinstance(attachments, (str, bytes)) or not isinstance(
+            attachments, Sequence
+        ):
+            raise ContractError("Shop publish attachments must be an empty sequence")
+        if len(attachments):
+            raise ContractError(
+                "Workshop cannot attach creator media; Factory owns generated media"
+            )
+        request: Dict[str, Any] = {}
         if price_cents is not None:
             request["listing"] = {"price_cents": price_cents}
-        if normalized_attachments:
-            request["attachments"] = normalized_attachments
         path = "/designs/%s/publish" % urllib.parse.quote(slug, safe="")
         if not request:
             return self._request("POST", path)
@@ -928,19 +1058,21 @@ class _ShopSender:
         source_artifact_sha256: Optional[str] = None,
         model_only_handoff: bool = False,
     ) -> PublicationOutcome:
+        if thumbnail is not None:
+            raise ContractError(
+                "Workshop draft publication cannot supply thumbnails; "
+                "Factory owns generated media"
+            )
         packet = Path(packet)
         metadata = _normalize_shop_listing(
             metadata, inventor_name=inventor_name
         )
         packet_bytes, packet_sha, handoff_artifact_sha = _load_pack(packet)
         _assert_shop_importable_pack(packet_bytes)
-        if model_only_handoff:
-            _assert_model_only_handoff(packet_bytes)
-        normalized_thumbnail = _normalize_import_thumbnail(thumbnail)
-        if model_only_handoff and normalized_thumbnail is not None:
-            raise ContractError(
-                "Factory model-only handoff cannot supply a local thumbnail"
-            )
+        # There is no creator-media mode.  Every shared publication entry point
+        # enforces the same model-only boundary, including legacy Launchpad and
+        # Sender aliases that do not pass ``model_only_handoff=True``.
+        _assert_model_only_handoff(packet_bytes)
         artifact_sha = (
             require_sha256(source_artifact_sha256, "source Made artifact sha256")
             if source_artifact_sha256 is not None
@@ -968,15 +1100,6 @@ class _ShopSender:
             request["_workshop_playtest_evidence_sha256"] = require_sha256(
                 playtest_evidence_sha256, "Playtest evidence sha256"
             )
-        if normalized_thumbnail is not None:
-            request.update(
-                {
-                    "_workshop_cover_filename": normalized_thumbnail["filename"],
-                    "_workshop_cover_content_type": normalized_thumbnail["content_type"],
-                    "_workshop_cover_bytes": len(normalized_thumbnail["content"]),
-                    "_workshop_cover_sha256": normalized_thumbnail["sha256"],
-                }
-            )
         intent = self.store.prepare_publish(
             product_id,
             packet_sha,
@@ -1000,7 +1123,6 @@ class _ShopSender:
                 packet.name,
                 packet_bytes,
                 intent["request"],
-                thumbnail=normalized_thumbnail,
             )
         except Exception as exc:
             self.store.mark_publish_unknown(
@@ -1086,27 +1208,27 @@ class _ShopSender:
             raise ContractError(
                 "price_cents must be an integer in the Shop Door's 100..1000000 range"
             )
-        if title is not None and (
-            not isinstance(title, str)
-            or not title.strip()
-            or len(title) > 120
-            or any(ord(character) < 32 or ord(character) == 127 for character in title)
+        if title is not None:
+            raise ContractError(
+                "Workshop cannot replace Factory page titles; Factory owns generated copy"
+            )
+        if isinstance(attachments, (str, bytes)) or not isinstance(
+            attachments, Sequence
         ):
-            raise ContractError("Shop publish title must be 1..120 control-free characters")
+            raise ContractError("Shop publish attachments must be an empty sequence")
+        if len(attachments):
+            raise ContractError(
+                "Workshop cannot attach creator media; Factory owns generated media"
+            )
         # Build the complete request before checking for a completed intent so
         # replay means exact idempotency, never silent acceptance of a new price,
-        # attachment set, title, or proof under an old receipt.
+        # attachment set or proof under an old receipt.
         live_request: Dict[str, Any] = {
             "api_origin": self.client.api_origin,
             "owner_id": self.owner_id,
         }
         if price_cents is not None:
             live_request["listing"] = {"price_cents": price_cents}
-        if title is not None:
-            live_request["title"] = title
-        normalized_attachments = _normalize_attachments(attachments)
-        if normalized_attachments:
-            live_request["attachments"] = normalized_attachments
         if proof is not None:
             live_request["proof"] = dict(proof)
         intent = self.store.get_publish_intent(intent_id)
@@ -1136,8 +1258,6 @@ class _ShopSender:
             response = self.client.publish(
                 draft.slug,
                 listing.get("price_cents") if isinstance(listing, Mapping) else None,
-                title=persisted.get("title"),
-                attachments=persisted.get("attachments") or (),
             )
         except Exception as exc:
             self.store.mark_live_unknown(
@@ -1206,64 +1326,40 @@ class _ShopSender:
             live_request = intent.get("live_request")
             if not isinstance(live_request, Mapping):
                 raise ReceiptError("publish intent lacks its persisted live request")
-            draft_request = intent.get("request")
-            if (
-                isinstance(draft_request, Mapping)
-                and draft_request.get("_workshop_instructions_sha256") is not None
-                and (
-                    design.get("title") != draft_request.get("title")
-                    or design.get("description") != draft_request.get("description")
-                )
-            ):
-                raise ReceiptError(
-                    "public readback does not contain the sealed Instructions title and summary"
-                )
             listing_request = live_request.get("listing")
             if listing_request is not None and not isinstance(listing_request, Mapping):
                 raise ReceiptError("publish intent has a malformed listing request")
             if isinstance(listing_request, Mapping):
                 receipt.assert_listing(listing_request.get("price_cents"))
-            expected_attachments = live_request.get("attachments") or []
+            if live_request.get("attachments") is not None:
+                raise ReceiptError(
+                    "Workshop public request must not contain creator media"
+                )
             observed_attachments = design.get("attachments") or []
             if not isinstance(observed_attachments, list):
                 raise ReceiptError("public readback attachments are malformed")
-            projected_attachments = []
             for item in observed_attachments:
-                if not isinstance(item, Mapping):
-                    raise ReceiptError("public readback attachment is malformed")
-                projected_attachments.append(
-                    {"kind": item.get("kind"), "url": item.get("url")}
-                )
-            if projected_attachments != expected_attachments:
-                raise ReceiptError(
-                    "public readback does not contain the exact Instructions media"
-                )
-            for page_effect in self.store.shop_effects_for_publish_intent(intent_id):
-                if page_effect.get("kind") not in ("use-case", "story-blocks"):
-                    continue
-                effect_request = page_effect.get("request")
                 if (
-                    page_effect.get("state") != "succeeded"
-                    or not isinstance(effect_request, Mapping)
-                    or not ShopInstructionsWriter._content_matches(
-                        page_effect["kind"], design, effect_request.get("content")
-                    )
+                    not isinstance(item, Mapping)
+                    or item.get("kind") not in ("image", "video")
                 ):
-                    raise ReceiptError(
-                        "public readback does not contain the sealed Instructions copy"
-                    )
-            renamed = live_request.get("title") is not None
+                    raise ReceiptError("public readback attachment is malformed")
+                _https_url(item.get("url"), "Factory-generated attachment URL")
+            forbidden_effects = {
+                effect.get("kind")
+                for effect in self.store.shop_effects_for_publish_intent(intent_id)
+                if effect.get("kind") in ("media-upload", "use-case", "story-blocks")
+            }
+            if forbidden_effects:
+                raise ReceiptError(
+                    "Workshop publication contains forbidden creator media or page-copy effects"
+                )
             if (
                 receipt.design_id != draft.design_id
                 or receipt.root_id != draft.root_id
                 or receipt.current_history_id != draft.current_history_id
-                or (
-                    not renamed
-                    and (
-                        receipt.slug != draft.slug
-                        or receipt.project_url != draft.project_url
-                    )
-                )
+                or receipt.slug != draft.slug
+                or receipt.project_url != draft.project_url
             ):
                 raise ReceiptError("public readback does not identify the exact draft history")
             proof = live_request.get("proof")
@@ -1305,7 +1401,7 @@ class _ShopSender:
 class ShopInstructionsWriter:
     """Shared model handoff inherited by every inventor.
 
-    ``DefaultInstructions`` seals the box paper and product-page document, then
+    ``DefaultInstructions`` seals the box paper and factual product handoff, then
     calls this object as ``writer(context, root, manifest)``.  This adapter
     imports a model-only subset of the exact Made artifact as a private draft.
     It deliberately does not upload local marketing images or write product-page
@@ -1350,6 +1446,17 @@ class ShopInstructionsWriter:
         current = build_artifact_manifest(resolved, created_at=manifest.created_at)
         if current.to_dict() != manifest.to_dict():
             raise ContractError("Instructions bytes changed after they were sealed")
+        forbidden_media = [
+            entry.path
+            for entry in manifest.entries
+            if PurePosixPath(entry.path).suffix.casefold()
+            in SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES
+        ]
+        if forbidden_media:
+            raise ContractError(
+                "Shop Instructions cannot contain creator page media: %s"
+                % forbidden_media
+            )
         return resolved
 
     @staticmethod
@@ -1360,6 +1467,9 @@ class ShopInstructionsWriter:
         content = path.read_bytes()
         page = _json_body(HttpResponse(200, {}, content))
         required = {
+            "schema_version",
+            "kind",
+            "status",
             "title",
             "summary",
             "lane",
@@ -1368,298 +1478,25 @@ class ShopInstructionsWriter:
         }
         if not required <= set(page):
             raise ContractError("sealed product.json is missing required page fields")
-        return page
-
-    @staticmethod
-    def _read_media(
-        root: Path,
-        manifest: ArtifactManifest,
-        page: Mapping[str, Any],
-    ) -> Mapping[str, Mapping[str, Any]]:
-        images = page.get("images")
-        if not isinstance(images, Mapping) or set(images) != set(SHOP_INSTRUCTIONS_IMAGES):
-            raise ContractError(
-                "Shop Instructions require hero, play, detail, parts, and box images"
-            )
-        manifest_entries = {entry.path: entry for entry in manifest.entries}
-        media: Dict[str, Mapping[str, Any]] = {}
-        for role in SHOP_INSTRUCTIONS_IMAGES:
-            relative = images.get(role)
-            candidate = Path(relative) if isinstance(relative, str) else Path(".")
-            if (
-                not isinstance(relative, str)
-                or not relative
-                or candidate.is_absolute()
-                or ".." in candidate.parts
-                or "\\" in relative
-                or candidate.as_posix() != relative
-            ):
-                raise ContractError("Instructions image %s has an unsafe path" % role)
-            path = root / candidate
-            try:
-                resolved = path.resolve(strict=True)
-                resolved.relative_to(root)
-            except (OSError, ValueError) as exc:
-                raise ContractError("Instructions image %s is missing" % role) from exc
-            if path.is_symlink() or not resolved.is_file():
-                raise ContractError("Instructions image %s is not a regular file" % role)
-            entry = manifest_entries.get(relative)
-            if entry is None:
-                raise ContractError("Instructions image %s is not in the sealed manifest" % role)
-            content = resolved.read_bytes()
-            digest = hashlib.sha256(content).hexdigest()
-            if len(content) != entry.bytes or digest != entry.sha256:
-                raise ContractError("Instructions image %s changed after sealing" % role)
-            content_type = mimetypes.guess_type(resolved.name)[0] or "application/octet-stream"
-            if not content_type.startswith("image/"):
-                raise ContractError("Instructions image %s is not an image" % role)
-            media[role] = {
-                "filename": resolved.name,
-                "content": content,
-                "content_type": content_type,
-                "sha256": digest,
-            }
-        return media
-
-    @staticmethod
-    def _resolve_page_content(
-        page: Mapping[str, Any], urls: Mapping[str, str]
-    ) -> Tuple[Optional[Mapping[str, Any]], Optional[Sequence[Mapping[str, Any]]]]:
-        raw_use_case = page.get("use_case")
-        use_case = None
-        if raw_use_case is not None:
-            if not isinstance(raw_use_case, Mapping):
-                raise ContractError("product.json use_case must be an object")
-            image_role = raw_use_case.get("image")
-            if image_role not in urls:
-                raise ContractError("product.json use_case.image must name an image role")
-            resolved_use_case = dict(raw_use_case)
-            resolved_use_case["image"] = urls[image_role]
-            use_case = _normalize_use_case(resolved_use_case)
-        raw_blocks = page.get("story_blocks")
-        story_blocks = None
-        if raw_blocks is not None:
-            if isinstance(raw_blocks, (str, bytes)) or not isinstance(raw_blocks, Sequence):
-                raise ContractError("product.json story_blocks must be an array")
-            resolved_blocks = []
-            for index, raw in enumerate(raw_blocks):
-                if not isinstance(raw, Mapping):
-                    raise ContractError("product.json story_blocks[%d] is malformed" % index)
-                block = dict(raw)
-                hero = block.get("hero_image")
-                if hero:
-                    if hero not in urls:
-                        raise ContractError(
-                            "story_blocks[%d].hero_image must name an image role" % index
-                        )
-                    block["hero_image"] = urls[hero]
-                pairs = block.get("pair_images", [])
-                if isinstance(pairs, (str, bytes)) or not isinstance(pairs, Sequence):
-                    raise ContractError(
-                        "story_blocks[%d].pair_images must name image roles" % index
-                    )
-                try:
-                    block["pair_images"] = [urls[role] for role in pairs]
-                except (KeyError, TypeError) as exc:
-                    raise ContractError(
-                        "story_blocks[%d].pair_images must name image roles" % index
-                    ) from exc
-                resolved_blocks.append(block)
-            story_blocks = _normalize_story_blocks(resolved_blocks)
-        return use_case, story_blocks
-
-    @staticmethod
-    def _valid_upload_response(
-        response: Mapping[str, Any], expected: Mapping[str, Any]
-    ) -> str:
-        if not isinstance(response, Mapping):
-            raise ReceiptError("Shop upload response is not an object")
-        url = _https_url(response.get("url"), "Shop upload URL")
         if (
-            response.get("sha256") != expected["sha256"]
-            or response.get("size") != len(expected["content"])
-            or not isinstance(response.get("ref"), str)
-            or not response.get("ref")
-            or not isinstance(response.get("content_type"), str)
-            or not response.get("content_type", "").startswith("image/")
+            page.get("schema_version") != 2
+            or page.get("kind") != "workshop.instructions-facts"
+            or page.get("status") != "facts-ready"
         ):
-            raise ReceiptError("Shop upload readback does not identify the sent image bytes")
-        return url
-
-    def _upload_media(
-        self,
-        intent_id: str,
-        instructions_sha256: str,
-        role: str,
-        media: Mapping[str, Any],
-        assert_current: Callable[[], None],
-        lease_token: Optional[str],
-    ) -> str:
-        request = {
-            "instructions_sha256": instructions_sha256,
-            "role": role,
-            "filename": media["filename"],
-            "content_type": media["content_type"],
-            "bytes": len(media["content"]),
-            "sha256": media["sha256"],
-        }
-        effect = self.store.prepare_shop_effect(
-            intent_id, "media-upload", role, request, lease_token
-        )
-        if effect["state"] == "succeeded":
-            return self._valid_upload_response(effect["response"], media)
-        if effect["state"] in ("sending", "unknown"):
-            raise AmbiguousPublishError(
-                "Instructions image upload %s is ambiguous; do not upload duplicate bytes"
-                % role
+            raise ContractError("sealed product.json is not a factual Instructions handoff")
+        forbidden = {"images", "use_case", "story_blocks"} & set(page)
+        if forbidden:
+            raise ContractError(
+                "sealed product.json cannot contain creator page copy or media: %s"
+                % sorted(forbidden)
             )
-        effect = self.store.begin_shop_effect(effect["id"], lease_token)
-        token = effect["effect_token"]
-        assert_current()
-        try:
-            response = self.client.upload_file_bytes(
-                media["filename"], media["content"], media["content_type"]
-            )
-        except Exception as exc:
-            self.store.mark_shop_effect_unknown(
-                effect["id"], token, "%s: %s" % (type(exc).__name__, exc)
-            )
-            raise AmbiguousPublishError(
-                "Instructions image upload %s has an unknown outcome" % role
-            ) from exc
-        if response.status != 201:
-            summary = response.body.decode("utf-8", "replace")[:500]
-            if response.status in PROVEN_NO_EFFECT_STATUSES:
-                self.store.mark_shop_effect_rejected(
-                    effect["id"], token, "HTTP %s: %s" % (response.status, summary)
-                )
-                raise PublishError(
-                    "Shop rejected Instructions image %s (HTTP %s)"
-                    % (role, response.status)
-                )
-            self.store.mark_shop_effect_unknown(
-                effect["id"], token, "HTTP %s: %s" % (response.status, summary)
-            )
-            raise AmbiguousPublishError(
-                "Instructions image upload %s has an unknown outcome" % role
-            )
-        try:
-            body = _json_body(response)
-            url = self._valid_upload_response(body, media)
-            self.store.mark_shop_effect_succeeded(effect["id"], token, body)
-            return url
-        except Exception as exc:
-            try:
-                current = self.store.get_shop_effect(effect["id"])
-                if current["state"] == "sending":
-                    self.store.mark_shop_effect_unknown(
-                        effect["id"], token, "accepted upload returned malformed proof"
-                    )
-            except Exception:
-                pass
-            raise AmbiguousPublishError(
-                "Shop accepted image %s without trustworthy byte proof" % role
-            ) from exc
-
-    @staticmethod
-    def _content_matches(
-        kind: str, observed: Mapping[str, Any], expected: Any
-    ) -> bool:
-        if not isinstance(observed, Mapping):
-            return False
-        if kind == "use-case":
-            return observed.get("use_case") == expected
-        return observed.get("story_blocks") == expected
-
-    def _reconcile_content_effect(
-        self,
-        effect: Mapping[str, Any],
-        slug: str,
-        kind: str,
-        expected: Any,
-    ) -> Mapping[str, Any]:
-        try:
-            response = self.client.get_design(slug)
-            if response.status == 200:
-                observed = _json_body(response)
-                if self._content_matches(kind, observed, expected):
-                    return self.store.resolve_shop_effect_succeeded(
-                        effect["id"], observed
-                    )
-        except Exception:
-            pass
-        raise AmbiguousPublishError(
-            "Shop %s write is ambiguous and readback does not prove the sealed copy"
-            % kind
-        )
-
-    def _write_content(
-        self,
-        intent_id: str,
-        slug: str,
-        instructions_sha256: str,
-        kind: str,
-        content: Any,
-        assert_current: Callable[[], None],
-        lease_token: Optional[str],
-    ) -> None:
-        request = {
-            "instructions_sha256": instructions_sha256,
-            "content": content,
-        }
-        effect = self.store.prepare_shop_effect(
-            intent_id, kind, "sealed-page", request, lease_token
-        )
-        if effect["state"] == "succeeded":
-            if not self._content_matches(kind, effect["response"], content):
-                raise ReceiptError("persisted Shop content proof is malformed")
-            return
-        if effect["state"] == "unknown":
-            self._reconcile_content_effect(effect, slug, kind, content)
-            return
-        if effect["state"] == "sending":
-            raise AmbiguousPublishError("Shop %s effect is stranded in flight" % kind)
-        effect = self.store.begin_shop_effect(effect["id"], lease_token)
-        token = effect["effect_token"]
-        assert_current()
-        try:
-            response = (
-                self.client.patch_use_case(slug, content)
-                if kind == "use-case"
-                else self.client.put_story_blocks(slug, content)
-            )
-        except Exception as exc:
-            unknown = self.store.mark_shop_effect_unknown(
-                effect["id"], token, "%s: %s" % (type(exc).__name__, exc)
-            )
-            self._reconcile_content_effect(unknown, slug, kind, content)
-            return
-        if response.status == 200:
-            try:
-                observed = _json_body(response)
-                if not self._content_matches(kind, observed, content):
-                    raise ReceiptError("Shop content response does not match sealed copy")
-                self.store.mark_shop_effect_succeeded(effect["id"], token, observed)
-                return
-            except Exception:
-                unknown = self.store.mark_shop_effect_unknown(
-                    effect["id"], token, "content response did not prove the sealed copy"
-                )
-                self._reconcile_content_effect(unknown, slug, kind, content)
-                return
-        summary = response.body.decode("utf-8", "replace")[:500]
-        if response.status in PROVEN_NO_EFFECT_STATUSES:
-            self.store.mark_shop_effect_rejected(
-                effect["id"], token, "HTTP %s: %s" % (response.status, summary)
-            )
-            raise PublishError(
-                "Shop rejected %s Instructions content (HTTP %s)"
-                % (kind, response.status)
-            )
-        unknown = self.store.mark_shop_effect_unknown(
-            effect["id"], token, "HTTP %s: %s" % (response.status, summary)
-        )
-        self._reconcile_content_effect(unknown, slug, kind, content)
+        if page.get("factory_enrichment") != {
+            "copy_owner": "factory",
+            "media_owner": "factory",
+            "status": "pending",
+        }:
+            raise ContractError("sealed product.json must leave Factory enrichment pending")
+        return page
 
     @staticmethod
     def _assert_instructions_draft_receipt(
@@ -1685,6 +1522,17 @@ class ShopInstructionsWriter:
         require_sha256(
             receipt.details.get("product_facts_sha256"),
             "Shop product facts sha256",
+        )
+        primary_path = receipt.details.get("primary_model_path")
+        if (
+            not isinstance(primary_path, str)
+            or not primary_path
+            or PurePosixPath(primary_path).name != primary_path
+        ):
+            raise ReceiptError("Shop primary model path is malformed")
+        require_sha256(
+            receipt.details.get("primary_model_sha256"),
+            "Shop primary model sha256",
         )
         if (
             receipt.details.get("enrichment_status") != "pending"
@@ -1752,8 +1600,6 @@ class ShopInstructionsWriter:
             author = design.get("author")
             if (
                 not isinstance(request, Mapping)
-                or design.get("title") != request.get("title")
-                or design.get("description") != request.get("description")
                 or design.get("origin") != "import"
                 or design.get("tags") != request.get("tags")
                 or not isinstance(category, Mapping)
@@ -1821,8 +1667,17 @@ class ShopInstructionsWriter:
         product_id = context.wish.product_id
         inventor_name = context.taste.name
         lease_token = getattr(context, "lease_token", None)
+        forbidden_product_fields = FACTORY_OUTPUT_FIELD_NAMES & set(
+            context.made.product
+        )
+        if forbidden_product_fields:
+            raise ContractError(
+                "Made product facts cannot contain creator-owned Factory output: %s"
+                % sorted(forbidden_product_fields)
+            )
+        primary_model = _sealed_factory_primary(context)
         product_facts = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "workshop.product-facts",
             "source_artifact_sha256": artifact_sha256,
             "instructions_sha256": instructions_sha256,
@@ -1830,8 +1685,12 @@ class ShopInstructionsWriter:
             "inventor": {"name": inventor_name},
             "wish": context.wish.to_dict(),
             "product": dict(context.made.product),
+            "primary_model": dict(primary_model),
+            # This is a story/facts input, never pre-authored page output. It
+            # gives Factory the verified rules, components, limitations, and
+            # Playtest claims it needs to generate accurate copy and imagery.
+            "instructions": dict(page),
         }
-        product_facts_sha256 = _canonical_sha256(product_facts)
 
         def assert_current() -> None:
             context.assert_current()
@@ -1853,7 +1712,7 @@ class ShopInstructionsWriter:
                     "title": title,
                     "description": summary,
                     "category": _shop_category_for_lane(lane),
-                    "prompt": context.wish.objective,
+                    "prompt": _factory_story_prompt(context, page),
                     "tags": ["toy", lane],
                 },
                 inventor_name=inventor_name,
@@ -1891,7 +1750,9 @@ class ShopInstructionsWriter:
             "cover_url": cover_url,
             "server_cover_urls": list(cover_urls),
             "handoff_artifact_sha256": handoff["artifact_sha256"],
-            "product_facts_sha256": product_facts_sha256,
+            "product_facts_sha256": handoff["product_facts_sha256"],
+            "primary_model_path": primary_model["path"],
+            "primary_model_sha256": primary_model["sha256"],
             "content_brief_sha256": _canonical_sha256(page),
             "enrichment_status": "pending",
             "page_ready": False,

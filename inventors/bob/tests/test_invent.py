@@ -803,9 +803,7 @@ class CrashCounterTest(_HomeCase):
 
 
 class PageKitTest(_HomeCase):
-    """listing.json non-negotiables: ai-created survives any tag cap, and
-    the deterministic fallback clears curate()'s content walls so a
-    degraded publish never parks on page copy."""
+    """Local listing facts survive fallback without owning Factory copy."""
 
     def _game_dir_with_bill(self, slug):
         gdir = os.path.join(self.home, "toys", slug)
@@ -834,8 +832,7 @@ class PageKitTest(_HomeCase):
         self.assertEqual(listing["tags"][0], "ai-created")
         self.assertLessEqual(len(listing["tags"]), 10)
 
-    def test_fallback_listing_clears_curate_walls(self):
-        from harness import send
+    def test_fallback_listing_keeps_server_enrichment_facts(self):
         slug = "fallback"
         self._game_dir_with_bill(slug)
         # No bob-page-writer fixture: the agent path degrades to the
@@ -844,9 +841,10 @@ class PageKitTest(_HomeCase):
         listing = self._read(slug, "listing.json")
         self.assertIn("use_case", listing)
         self.assertEqual(len(listing["story_blocks"]), 2)
-        walls = send._content_walls(listing["use_case"],
-                                       listing["story_blocks"])
-        self.assertEqual(walls, [], walls)
+        # These are local product facts only. Bob's retired curate() path
+        # cannot send them to Factory; Workshop imports the model and the
+        # server owns rich page enrichment.
+        self.assertTrue(listing["use_case"]["body"])
         self.assertIn("ai-created", listing["tags"])
 
 
@@ -854,7 +852,7 @@ class RealSendSingleAdvanceTest(_HomeCase):
     """The live-path regression: send_draft advances reviewed->published
     and flip_public advances published->live, so _send must NOT advance
     again (the third advance was an illegal live->published ValueError on
-    EVERY real publish) — and a curate() failure degrades, never blocks."""
+    EVERY real publish). Rich copy/media stay server-owned."""
 
     def _reviewed_game(self, slug):
         queue.add_game(slug, "Lane War", direction={
@@ -898,7 +896,7 @@ class RealSendSingleAdvanceTest(_HomeCase):
           {"aggregate": {"would_play_again_fraction": 1.0}})
         return sha
 
-    def test_real_send_advances_once_and_tolerates_curate_failure(self):
+    def test_real_send_advances_once_without_inventor_page_writes(self):
         # BOB_SHOP_PUBLIC=1 exercises the optional Shop Door public path,
         # off today per Dee's draft-first ruling 2026-08-22).
         from harness import send
@@ -909,16 +907,11 @@ class RealSendSingleAdvanceTest(_HomeCase):
         self.addCleanup(os.environ.pop, "BOB_SHOP_PUBLIC", None)
         calls = []
         saved = {name: getattr(send, name)
-                 for name in ("validate", "send_draft", "curate",
-                              "flip_public")}
+                 for name in ("validate", "send_draft", "flip_public")}
 
         def fake_import(s):
             calls.append("import")
             queue.advance(s, "published", "draft imported (mock)")
-
-        def fake_curate(s):
-            calls.append("curate")
-            raise send.SendError("content walls (mock)")
 
         def fake_flip(s, price_cents):
             calls.append("flip:%d" % price_cents)
@@ -926,7 +919,6 @@ class RealSendSingleAdvanceTest(_HomeCase):
 
         send.validate = lambda s: []
         send.send_draft = fake_import
-        send.curate = fake_curate
         send.flip_public = fake_flip
         try:
             self._tick_once("reviewed")  # must not raise ValueError
@@ -935,8 +927,7 @@ class RealSendSingleAdvanceTest(_HomeCase):
                 setattr(send, name, fn)
 
         self.assertEqual(
-            calls, ["import", "curate",
-                    "flip:%d" % invent.PRICE_CENTS_DEFAULT])
+            calls, ["import", "flip:%d" % invent.PRICE_CENTS_DEFAULT])
         game = queue.load()["games"][slug]
         self.assertEqual(game["state"], "live")
         # The win still lands on the ledger even though the flip (not
@@ -948,8 +939,9 @@ class RealSendSingleAdvanceTest(_HomeCase):
 
     def test_draft_first_default_stops_before_the_flip(self):
         # Dee 2026-08-22 (second ruling): "publish draft is fine. it's one
-        # click for me to review for now." Default = import + curate, NO
-        # flip_public; the game rests at published awaiting the human click.
+        # click for me to review for now." Default = Workshop import, NO
+        # flip_public; the model-only draft rests at published awaiting the
+        # human click while Factory owns page enrichment.
         from harness import send
         slug = "draftone"
         self._reviewed_game(slug)
@@ -957,8 +949,7 @@ class RealSendSingleAdvanceTest(_HomeCase):
         os.environ.pop("BOB_SHOP_PUBLIC", None)
         calls = []
         saved = {name: getattr(send, name)
-                 for name in ("validate", "send_draft", "curate",
-                              "flip_public")}
+                 for name in ("validate", "send_draft", "flip_public")}
 
         def fake_import(s):
             calls.append("import")
@@ -966,7 +957,6 @@ class RealSendSingleAdvanceTest(_HomeCase):
 
         send.validate = lambda s: []
         send.send_draft = fake_import
-        send.curate = lambda s: calls.append("curate")
         send.flip_public = \
             lambda s, price_cents: calls.append("flip:%d" % price_cents)
         try:
@@ -974,7 +964,7 @@ class RealSendSingleAdvanceTest(_HomeCase):
         finally:
             for name, fn in saved.items():
                 setattr(send, name, fn)
-        self.assertEqual(calls, ["import", "curate"])
+        self.assertEqual(calls, ["import"])
         self.assertEqual(queue.load()["games"][slug]["state"], "published")
 
     def test_legacy_box_mode_parks_without_export_ssh_or_send_authority(self):

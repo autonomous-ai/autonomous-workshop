@@ -1,4 +1,4 @@
-"""Legacy/manual export in text2game's historical publish contract.
+"""Local-only export in text2game's historical payload format.
 
 Dee (2026-08-22): "here's the repo for automating the publishing pipeline —
 github.com/nohope88/text2game." That pipeline's publish.py is the PROVEN
@@ -11,10 +11,10 @@ infrastructure secrets).
 
 Bob's autonomous send path never invokes this module. Workshop's canonical
 pack, durable Sender intent, Shop Door adapter, and validated Stamp are the
-only send authority. This module remains so an operator can assemble
-the EXACT out/<slug>/ payload text2game's publish.py consumed and, deliberately,
-push it to the old box. Neither operation writes send.json, advances Bob's
-queue, or turns box stdout/a design id into a Stamp. Contract mirrored from
+only send authority. This module remains so an operator can assemble and
+inspect the exact ``out/<slug>/`` payload text2game's publish.py once consumed.
+It cannot rsync, SSH, invoke that publisher, write send.json, advance Bob's
+queue, or turn box stdout/a design id into a Stamp. Contract mirrored from
 text2game/publish.py @ 2026-08-22:
 
     out/<slug>/
@@ -40,16 +40,11 @@ Two rules baked in:
 import json
 import os
 import shutil
-import subprocess
 
 #: Dee 2026-08-24, verbatim: the listing byline is exactly "By Bob." — the
 #: same shape Alice used on Blindcap. AI authorship rides on the byline and
 #: the ai-created tag, never a paragraph of explanation.
 DISCLOSURE_LINE = "By Bob."
-
-#: What text2game's publish.py hard-requires before it can import at all.
-REQUIRED = ("assembled.stl", "renders/assembled.png")
-
 
 def _home():
     from harness import queue
@@ -177,7 +172,6 @@ def export_text2game(slug):
                       "per Tam's 2026-08-20 call)")
 
     complete = not missing
-    box_dir = os.environ.get("BOB_BOX_TEXT2GAME", "/root/text2game")
     manifest = {
         "slug": slug,
         "export_dir": out,
@@ -185,8 +179,8 @@ def export_text2game(slug):
         "missing": missing,
         "copied": copied,
         "instructions": [
-            "rsync -av '%s/' <box>:%s/out/%s/" % (out, box_dir, slug),
-            "ssh <box> 'cd %s && ./publish.py %s'" % (box_dir, slug),
+            "Local compatibility export only; inspect these files in place.",
+            "Use the shared Workshop model-only Shop path for any draft.",
         ],
     }
     with open(os.path.join(os.path.dirname(out), "export_manifest.json"),
@@ -196,33 +190,9 @@ def export_text2game(slug):
 
 
 def push_box(slug, timeout_s=900):
-    """Manually rsync to the legacy box and run its historical publish.py.
-
-    Needs BOB_BOX_SSH (an ssh alias/host the Mac can reach). Returns the
-    publish stdout tail on success, None when unconfigured, and raises
-    RuntimeError on a transport/remote failure. The return value is an operator
-    observation only: it never writes Bob's send projection or queue and can
-    never substitute for a Workshop-backed Shop Door Stamp.
-    """
-    host = os.environ.get("BOB_BOX_SSH", "").strip()
-    if not host:
-        return None
-    box_dir = os.environ.get("BOB_BOX_TEXT2GAME", "/root/text2game")
-    manifest = _read_json_or_none(os.path.join(
-        _game_dir(slug), "export_text2game", "export_manifest.json"))
-    if not manifest or not manifest.get("complete"):
-        raise RuntimeError("export incomplete — missing: %s"
-                           % ", ".join((manifest or {}).get("missing", ["?"])))
-    src = manifest["export_dir"]
-    dest = "%s:%s/out/%s/" % (host, box_dir, slug)
-    r = subprocess.run(["rsync", "-az", "--timeout=120", src + "/", dest],
-                       capture_output=True, text=True, timeout=timeout_s)
-    if r.returncode != 0:
-        raise RuntimeError("rsync to %s failed: %s" % (host, r.stderr[-300:]))
-    r = subprocess.run(["ssh", "-o", "BatchMode=yes", host,
-                        "cd %s && ./publish.py %s" % (box_dir, slug)],
-                       capture_output=True, text=True, timeout=timeout_s)
-    if r.returncode != 0:
-        raise RuntimeError("box publish failed: %s"
-                           % (r.stderr[-300:] or r.stdout[-300:]))
-    return r.stdout.strip()[-500:]
+    """Refuse the retired rsync/SSH publisher before any local or remote I/O."""
+    del slug, timeout_s
+    raise RuntimeError(
+        "push_box is retired: bob export is local inspection only; send the "
+        "inspected model through the shared Workshop model-only Shop path"
+    )

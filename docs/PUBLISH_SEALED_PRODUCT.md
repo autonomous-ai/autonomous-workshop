@@ -36,7 +36,11 @@ network request.
 ```
 
 The final Make root must contain root `wish.json`, `product.json`, and
-`project.json`. The selected round must seal exactly the lane's required AI
+`project.json`. A project-marker artifact must also seal its primary model at
+root as `assembled.stl` (Factory's preferred name) or `<product-id>.stl`; a
+top-level Python generator defining `gen_step` is the alternative. A nested
+`cad/product.stl` alone is rejected because Factory may select a small part
+instead. The selected round must seal exactly the lane's required AI
 Playtest capabilities, with every result passing and no `improve` or `block`
 feedback. Instructions must contain `INSTRUCTIONS.md` and an exact
 `product.json` content brief. Local renders may remain in the sealed source as
@@ -48,6 +52,11 @@ omitting `review`, `*_review`, `renders`, `product-media`, and other local
 inspection/media trees. It sends no multipart thumbnail, makes no `/uploads`
 calls, and never writes `use_case` or `story_blocks`. This lets Factory own the
 later images and copy instead of allowing a local CAD preview to override them.
+The multipart `prompt` is a bounded factual story input assembled from the
+verified Wish, product description, components, rules/instructions, optional
+design facts/specifications, structured story and art direction, limitations,
+and exact inventor credit.
+It is not final page copy; Factory authors that output.
 
 Provide credentials only through the process environment:
 

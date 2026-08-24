@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
+  "artifact_sha256": "de1ac792c970ff8df85f579b4ebe435f43fbeeb12659694a586c3cea5f25f5df",
   "check": "digital-lane-model",
   "checks": {
     "classic": "English checkers geometry: 8x8 grid, 12 pieces per side",

@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "4028cbb23f823d66c3f88c4273c19e9fca81d2f4a120e0535616bb095b170a7a",
+      "evidence_sha256": "2947737f3e17537fea190d329e93e437e01899abfe2ef2c82919c88fa375cf7e",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "b95fbd9ebe4b1d3121c4339e06d5e0302290611ba8144a6bfad56b6484835e0c",
+      "evidence_sha256": "a5a8aca5550bf3a8cd2f0574e8ed676328f902f897ede99087eddf946c4580ad",
       "passed": true
     },
     "motion-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "motion-test.json",
-      "evidence_sha256": "27fdab9361f82598b765ed57bef20fbabe8812aec8b6a6b3e77f37d80688da4a",
+      "evidence_sha256": "e77b101bc6870bf1dc71e40d998279379865764c68e75e090238231e3f4208ea",
       "passed": true
     },
     "print-test": {
@@ -42,52 +42,29 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "e762dd00a3acb057c23ea48bd037dce372938f3ae444f985907e8d541a33d277",
+      "evidence_sha256": "369a326974ad134cab8f003fe9c59933971b16d2df947755832b1fa7077e129a",
       "passed": true
     }
   },
-  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
-  "images": {
-    "box": "images/box.png",
-    "detail": "images/detail.png",
-    "hero": "images/hero.png",
-    "parts": "images/parts.png",
-    "play": "images/play.png"
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
   },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "instructions_kind": "instructions",
+  "kind": "workshop.instructions-facts",
   "lane": "moving-machines",
   "limitations": [
     "AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver.",
     "Customer observations begin as Reviews only after delivery."
   ],
-  "playtest_evidence_artifact_sha256": "9c873d14dad20ff359b9869d0662ae2335438642f6caa8cc84acfd6010bd143a",
-  "product_artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
-  "schema_version": 1,
-  "status": "ready",
-  "story_blocks": [
-    {
-      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-      "hero_image": "play",
-      "lead": "How to use",
-      "pair_images": [
-        "detail",
-        "parts"
-      ]
-    },
-    {
-      "body": "The box contains one base, one hand crank, one comet drive wheel, one six-station Geneva wheel. AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver. Customer observations begin as Reviews only after delivery.",
-      "hero_image": "box",
-      "lead": "What arrives",
-      "pair_images": []
-    }
-  ],
+  "playtest_evidence_artifact_sha256": "f15645442662e8113312e23582be076fc8108c260a159c71c539bb7fe7e222cf",
+  "product_artifact_sha256": "b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0",
+  "schema_version": 2,
+  "status": "facts-ready",
   "summary": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps.\n\nBy Bob.",
   "title": "Comet Geneva",
-  "use_case": {
-    "body": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps. It turns one person's request into this exact plaything instead of decorating a generic download.",
-    "image": "hero",
-    "label": "Made from your wish"
-  },
   "what_arrives": [
     "one base",
     "one hand crank",

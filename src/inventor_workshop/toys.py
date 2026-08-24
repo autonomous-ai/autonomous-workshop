@@ -221,16 +221,16 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "instructions.create",
         "instructions",
-        "Explain the plaything with box-ready instructions, beautiful truthful images, copy, and rules.",
-        "Box insert or rulebook plus an authenticated live site page bound to the approved artifact.",
+        "Write the box-ready instructions and hand verified product facts to Factory.",
+        "Box insert or rulebook plus an authenticated model-only draft bound to the approved artifact.",
         "product-instructions",
         external=True,
     ),
     ToyTask(
         "instructions.truth",
         "instructions",
-        "Reject claims, images, or specifications unsupported by Playtest evidence.",
-        "Claim-to-evidence map and exact page-history hash.",
+        "Reject unsupported claims and keep creator page copy or media out of the handoff.",
+        "Claim-to-evidence map and exact model-history hash; Factory enrichment remains pending.",
         "instructions-review",
     ),
     ToyTask(

@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "2062f2df1ef69fed164565d53da899970a4238641bb69d309ea4f5b71c969d29",
+      "evidence_sha256": "9387ee8ad140ce504d9be19004c6b9f0bce6addd54c08950dea785261f0544b5",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "d1b213a003976d5635281a43d8d4220b22278df1252fa822fb53b6fb944f017b",
+      "evidence_sha256": "738cb59cf269ecf1d3785793549cc4767a77666aa4d22510b0b37668e64c5df4",
       "passed": true
     },
     "print-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "80381219c4d2431d243e14135d581b1b405a19a1963bf3a0e47dfef8bc5fdff7",
+      "evidence_sha256": "e954be27a32b5507a69f045ce4d96f0f4e72dfbc5745270532492241bf8436f0",
       "passed": true
     },
     "science-test": {
@@ -42,52 +42,29 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "science-test.json",
-      "evidence_sha256": "a868eb2654ba8759b8aa6873e9b23b2fe3df7d141c41cb4b42d111a706379fbd",
+      "evidence_sha256": "8ac7be2a0f4a5727f525ba53b2b6a22aaaca063cd627ae9c55f358f08fb4af66",
       "passed": true
     }
   },
-  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
-  "images": {
-    "box": "images/box.png",
-    "detail": "images/detail.png",
-    "hero": "images/hero.png",
-    "parts": "images/parts.png",
-    "play": "images/play.png"
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
   },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "instructions_kind": "instructions",
+  "kind": "workshop.instructions-facts",
   "lane": "holdable-science",
   "limitations": [
     "The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.",
     "Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews."
   ],
-  "playtest_evidence_artifact_sha256": "591cd607e4422639d501b28ccb6e31a184773bd0de62dc6f511b3f8a7f6beda8",
-  "product_artifact_sha256": "6862be923c719570c0c8fcbb5af6518f9ffe7c5a714515996162a0532c16aa49",
-  "schema_version": 1,
-  "status": "ready",
-  "story_blocks": [
-    {
-      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-      "hero_image": "play",
-      "lead": "How to use",
-      "pair_images": [
-        "detail",
-        "parts"
-      ]
-    },
-    {
-      "body": "The box contains one Montauk base, one tide-alignment arm, one Sun marker, one Moon marker. The model is qualitative and not a tide forecast; AI science players keep that simplification explicit. Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews.",
-      "hero_image": "box",
-      "lead": "What arrives",
-      "pair_images": []
-    }
-  ],
+  "playtest_evidence_artifact_sha256": "ef4f97051186edecaa0178d06475f2c16e7d430793a1e75cbacc7ed469192e43",
+  "product_artifact_sha256": "57a7b031522488c8e8552a9f1d5110138a451939b064c906808020d12e3ab077",
+  "schema_version": 2,
+  "status": "facts-ready",
   "summary": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.\n\nBy Ivy.",
   "title": "Montauk Tide Orrery",
-  "use_case": {
-    "body": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk. It turns one person's request into this exact plaything instead of decorating a generic download.",
-    "image": "hero",
-    "label": "Made from your wish"
-  },
   "what_arrives": [
     "one Montauk base",
     "one tide-alignment arm",

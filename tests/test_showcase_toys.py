@@ -97,6 +97,7 @@ class ShowcaseToyTest(unittest.TestCase):
         required_artifacts = {
             "project.json",
             "product.json",
+            "assembled.stl",
             "cad/design.json",
             "cad/model.py",
             "cad/product.step",
@@ -132,6 +133,10 @@ class ShowcaseToyTest(unittest.TestCase):
                     for entry in load_json(toy / "artifact-manifest.json")["entries"]
                 }
                 self.assertTrue(required_artifacts.issubset(artifact_paths))
+                self.assertEqual(
+                    (toy / "artifact" / "assembled.stl").read_bytes(),
+                    (toy / "artifact" / "cad" / "product.stl").read_bytes(),
+                )
                 evidence_index = load_json(toy / "evidence" / "evidence-index.json")
                 self.assertEqual(evidence_index["status"], "passed-ai-playtest")
                 self.assertEqual(evidence_index["unresolved_canonical_capabilities"], [])
@@ -147,9 +152,17 @@ class ShowcaseToyTest(unittest.TestCase):
                     instructions_page["playtest_evidence_artifact_sha256"],
                     receipt["evidence_sha256"],
                 )
+                self.assertFalse(
+                    {"images", "use_case", "story_blocks"}
+                    & set(instructions_page)
+                )
                 self.assertEqual(
-                    set(instructions_page["images"]),
-                    {"hero", "play", "detail", "parts", "box"},
+                    instructions_page["factory_enrichment"],
+                    {
+                        "copy_owner": "factory",
+                        "media_owner": "factory",
+                        "status": "pending",
+                    },
                 )
 
 

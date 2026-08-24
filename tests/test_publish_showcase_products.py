@@ -10,9 +10,13 @@ from email.policy import default as email_policy
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.errors import ContractError, StateConflict
-from inventor_workshop.shop import HttpResponse
+from inventor_workshop.jobs import MakeContext
+from inventor_workshop.shop import HttpResponse, ShopDoor, ShopInstructionsWriter
 from inventor_workshop.store import InventorStore
+from inventor_workshop.taste import load_taste
+from inventor_workshop.toys import ToyBlueprint
 from tools import publish_showcase_products as publisher
 
 
@@ -58,6 +62,7 @@ class ShowcaseShopTransport:
         self.category = None
         self.cover_url = "https://cdn.example/showcase/cover.png"
         self.imported_thumbnail = None
+        self.prompt = None
         self.use_case = None
         self.story_blocks = []
         self.upload_index = 0
@@ -113,6 +118,7 @@ class ShowcaseShopTransport:
             }
             self.title = fields["title"]
             self.description = fields["description"]
+            self.prompt = fields["prompt"]
             self.tags = [item["content"].decode("utf-8") for item in parts["tags"]]
             self.category = fields["category"]
             if "thumbnails" in parts:
@@ -211,6 +217,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
             self.assertIn("project.json", archive.namelist())
             self.assertIn("product.json", archive.namelist())
+            self.assertIn("assembled.stl", archive.namelist())
             self.assertIn("workshop-product-facts.json", archive.namelist())
             self.assertNotIn("images/hero.png", archive.namelist())
             self.assertEqual(
@@ -218,9 +225,43 @@ class PublishShowcaseProductsTest(unittest.TestCase):
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
             )
             self.assertEqual(
+                archive.read("assembled.stl"),
+                archive.read("cad/product.stl"),
+            )
+            self.assertEqual(
                 json.loads(archive.read("product.json"))["inventor"]["name"],
                 "Alice",
             )
+            product = json.loads(archive.read("product.json"))
+            facts_payload = archive.read("workshop-product-facts.json")
+            facts = json.loads(facts_payload)
+            self.assertEqual(facts["product"], product)
+            self.assertEqual(facts["wish"], product["wish"])
+            self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+            self.assertEqual(
+                facts["primary_model"]["sha256"],
+                hashlib.sha256(archive.read("assembled.stl")).hexdigest(),
+            )
+            self.assertEqual(facts["product"]["components"], [
+                "one checkers board",
+                "twelve five-ring pieces",
+                "twelve five-spoke pieces",
+            ])
+            self.assertIn("midnight grid", facts["product"]["description"])
+            self.assertTrue(facts["product"]["limitations"])
+            self.assertEqual(facts["product"]["story"], self.spec.story)
+            self.assertEqual(
+                facts["product"]["art_direction"], self.spec.art_direction
+            )
+            self.assertEqual(facts["product"]["design"], self.spec.design)
+        self.assertIn("Story:\n", transport.prompt)
+        self.assertIn(self.spec.story["core_promise"], transport.prompt)
+        self.assertIn("Art direction:\n", transport.prompt)
+        self.assertIn(self.spec.art_direction["palette"], transport.prompt)
+        self.assertIn(self.spec.art_direction["must_show_media"][0], transport.prompt)
+        self.assertIn("Design facts:\n", transport.prompt)
+        self.assertIn('"assembled_extents_mm":[132.0,132.0,10.0]', transport.prompt)
+        self.assertTrue(transport.prompt.endswith("By Alice."))
         methods_after_first = [call[0] for call in transport.calls]
         self.assertEqual(
             methods_after_first,
@@ -243,6 +284,14 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertEqual(len(transport.calls), count_after_first)
         self.assertEqual(_sealed_bytes(self.bundle), before)
 
+        # Factory may enrich mutable page copy and media after the model-only
+        # import. Fresh verification observes that output; it must not require
+        # it to equal Workshop's factual seed or original server cover.
+        transport.title = "Factory-polished Five-Job Checkers"
+        transport.description = "A Factory-generated midnight table story."
+        transport.cover_url = "https://cdn.example/showcase/generated-cover.webp"
+        transport.use_case = {"body": "Factory-generated use case"}
+        transport.story_blocks = [{"body": "Factory-generated story"}]
         verified = publisher.publish_one(
             self.spec,
             token="test-token",
@@ -256,6 +305,16 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertEqual(
             verified["draft_verification"]["status"], "verified-draft"
         )
+        enrichment = verified["draft_verification"]["factory_enrichment"]
+        self.assertEqual(
+            enrichment["title"], "Factory-polished Five-Job Checkers"
+        )
+        self.assertEqual(
+            enrichment["cover_urls"],
+            ["https://cdn.example/showcase/generated-cover.webp"],
+        )
+        self.assertTrue(enrichment["has_use_case"])
+        self.assertEqual(enrichment["story_block_count"], 1)
         run = json.loads((self.bundle / "workshop-run.json").read_text())
         customer_page = (
             "https://www.autonomous.ai/factory/product/five-job-checkers"
@@ -265,6 +324,14 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertTrue(run["assertions"]["site_draft_verified"])
         self.assertFalse(run["assertions"]["site_page_live"])
         self.assertEqual(run["site_receipt"]["status"], "draft")
+        self.assertEqual(
+            run["site_receipt"]["details"]["product_facts_sha256"],
+            hashlib.sha256(facts_payload).hexdigest(),
+        )
+        self.assertEqual(
+            run["site_receipt"]["details"]["primary_model_path"],
+            "assembled.stl",
+        )
         self.assertIsNone(run["site_receipt"]["published_history_id"])
         self.assertEqual(
             run["site_receipt"]["details"]["page_url"], customer_page
@@ -299,6 +366,90 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             0,
         )
 
+    def test_normal_showcase_make_mapping_survives_configured_shop_writer(self):
+        wish = publisher.showcase._load_profile("alice").create_wish(
+            self.spec.slug, self.spec.objective
+        )
+        taste = load_taste(publisher.REPO_ROOT / "inventors" / "alice")
+        made = publisher.showcase.showcase_make(
+            MakeContext(
+                wish,
+                taste,
+                ToyBlueprint.for_lane(self.spec.lane),
+                1,
+                (self.root / "normal-make").resolve(),
+                playtest_rounds=self.spec.playtest_rounds,
+            )
+        )
+        self.assertEqual(
+            made.product,
+            json.loads((made.artifact_root / "product.json").read_text()),
+        )
+        self.assertEqual(made.product["story"], self.spec.story)
+        self.assertEqual(made.product["art_direction"], self.spec.art_direction)
+        self.assertEqual(made.product["design"], self.spec.design)
+        instructions = self.root / "normal-instructions"
+        instructions.mkdir()
+        (instructions / "INSTRUCTIONS.md").write_text(
+            "# Five-Job Checkers\n\nUse the known rules.\n", encoding="utf-8"
+        )
+        (instructions / "product.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "kind": "workshop.instructions-facts",
+                    "status": "facts-ready",
+                    "title": self.spec.title,
+                    "summary": self.spec.summary + "\n\nBy Alice.",
+                    "lane": self.spec.lane,
+                    "factory_enrichment": {
+                        "copy_owner": "factory",
+                        "media_owner": "factory",
+                        "status": "pending",
+                    },
+                    "product_artifact_sha256": made.artifact_sha256,
+                    "playtest_evidence_artifact_sha256": "e" * 64,
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        instructions_manifest = build_artifact_manifest(
+            instructions, created_at="content-addressed"
+        )
+        store = InventorStore(self.root / "normal-writer.sqlite3")
+        store.register_product(
+            self.spec.slug, "instructions", artifact_sha256=made.artifact_sha256
+        )
+        lease = store.acquire_lease(self.spec.slug, "configured-writer-test")
+
+        class Context:
+            lease_token = lease
+
+            def __init__(self):
+                self.made = made
+                self.wish = wish
+                self.taste = taste
+
+            def assert_current(self):
+                self.made.assert_current()
+
+        context = Context()
+        transport = ShowcaseShopTransport(self.spec.slug, "owner-1")
+        try:
+            receipt = ShopInstructionsWriter(
+                store, ShopDoor("test-token", transport=transport), "owner-1"
+            )(
+                context,
+                instructions.resolve(strict=True),
+                instructions_manifest,
+            )
+        finally:
+            store.release_lease(self.spec.slug, lease)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+
     def test_all_five_checked_in_bundles_reconstruct_without_running_jobs(self):
         with mock.patch.object(
             publisher.showcase,
@@ -332,6 +483,9 @@ class PublishShowcaseProductsTest(unittest.TestCase):
                 (item.bundle / "artifact" / "product.json").read_text()
             )
             self.assertTrue(product["description"].endswith(suffix))
+            self.assertEqual(product["story"], item.spec.story)
+            self.assertEqual(product["art_direction"], item.spec.art_direction)
+            self.assertEqual(product["design"], item.spec.design)
             self.assertEqual(
                 json.loads((item.bundle / "artifact" / "project.json").read_text()),
                 {"id": item.spec.slug, "name": item.spec.title},

@@ -7,6 +7,13 @@ facts and attribution, and finishes only after authenticated readback proves
 the canonical design is still a private draft. It uploads no local marketing
 images and writes no final page copy.
 
+Every showcase seals `artifact/assembled.stl` as an exact byte alias of its
+Playtested `artifact/cad/product.stl`. Factory therefore renders the assembled
+toy instead of guessing among nested part meshes. The shared handoff also sends
+a bounded factual story prompt derived from the sealed Wish, description,
+components, design facts/specifications, rules/instructions, optional story and
+art direction, limitations, and inventor credit; Factory still owns the resulting page copy and media.
+
 The tool never calls Factory's `/publish` endpoint. Making a reviewed draft
 public is an explicit owner action outside the Workshop pipeline.
 

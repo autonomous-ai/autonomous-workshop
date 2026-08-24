@@ -53,6 +53,7 @@ from inventor_workshop.shop import (
     ShopDoor,
     ShopInstructionsWriter,
     Transport,
+    _factory_enrichment_readback,
     urllib_transport,
 )
 from inventor_workshop.store import InventorStore
@@ -325,11 +326,7 @@ def _load_sealed_showcase(
     made = Made(
         (bundle / "artifact").resolve(strict=True),
         artifact_manifest,
-        {
-            "title": product.get("title"),
-            "summary": product.get("summary"),
-            "lane": product.get("lane"),
-        },
+        dict(product),
     )
     if (
         page.get("title") != product.get("title")
@@ -337,7 +334,15 @@ def _load_sealed_showcase(
         or page.get("summary")
         != attribute_product_description(product.get("summary"), taste.name)
     ):
-        raise ContractError("sealed product page does not describe the exact Made result")
+        raise ContractError("sealed product facts do not describe the exact Made result")
+    if {"images", "use_case", "story_blocks"} & set(page):
+        raise ContractError("sealed Instructions contain creator-owned page copy or media")
+    if page.get("factory_enrichment") != {
+        "copy_owner": "factory",
+        "media_owner": "factory",
+        "status": "pending",
+    }:
+        raise ContractError("sealed Instructions do not leave enrichment to Factory")
 
     index = _read_object(bundle / "evidence" / "evidence-index.json", "evidence index")
     if (
@@ -543,12 +548,8 @@ class _CanonicalSlugDoor(ShopDoor):
         filename: str,
         content: bytes,
         metadata: Mapping[str, Any],
-        *,
-        thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
-        response = super().import_design_bytes(
-            filename, content, metadata, thumbnail=thumbnail
-        )
+        response = super().import_design_bytes(filename, content, metadata)
         if response.status == 201:
             design = _response_object(response, "Shop import")
             if design.get("slug") != self.expected_slug:
@@ -678,6 +679,12 @@ def _assert_draft_receipt(
         receipt.details.get("product_facts_sha256"),
         "Factory product facts sha256",
     )
+    if receipt.details.get("primary_model_path") != "assembled.stl":
+        raise ReceiptError("Factory receipt did not select root assembled.stl")
+    if receipt.details.get("primary_model_sha256") != _sha256_file(
+        sealed.bundle / "artifact" / "assembled.stl"
+    ):
+        raise ReceiptError("Factory receipt primary model differs from sealed assembly")
     if (
         receipt.details.get("enrichment_status") != "pending"
         or receipt.details.get("page_ready") is not False
@@ -742,7 +749,7 @@ video. The Workshop's next job is production and shipping in Deliver.
 - [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
-- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/product.json`](instructions/product.json) — the sealed factual handoff for Factory enrichment
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
@@ -863,16 +870,14 @@ def _verify_draft(
     if not isinstance(request, Mapping) or intent.get("live_request") is not None:
         raise ReceiptError("durable Shop draft request is malformed")
     category = design.get("category")
+    enrichment = _factory_enrichment_readback(design)
     if (
-        design.get("title") != request.get("title")
-        or design.get("description") != request.get("description")
-        or design.get("origin") != "import"
+        design.get("origin") != "import"
         or design.get("tags") != request.get("tags")
         or not isinstance(category, Mapping)
         or category.get("slug") != request.get("category")
-        or design.get("thumbnail_urls") != persisted.details.get("server_cover_urls")
     ):
-        raise ReceiptError("fresh Shop readback changed sealed title or attribution")
+        raise ReceiptError("fresh Shop readback changed sealed import identity")
     if store.shop_effects_for_publish_intent(intent["id"]):
         raise ReceiptError("Factory-owned enrichment contains Workshop page effects")
     handoff_sha256 = require_sha256(
@@ -891,6 +896,10 @@ def _verify_draft(
         "server_cover_urls": persisted.details.get("server_cover_urls"),
         "handoff_artifact_sha256": handoff_sha256,
         "product_facts_sha256": product_facts_sha256,
+        "primary_model_path": "assembled.stl",
+        "primary_model_sha256": _sha256_file(
+            sealed.bundle / "artifact" / "assembled.stl"
+        ),
         "content_brief_sha256": _sha256_bytes(_canonical(sealed.page)),
         "enrichment_status": "pending",
         "page_ready": False,
@@ -906,6 +915,7 @@ def _verify_draft(
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
         "observed_at": fresh.observed_at,
+        "factory_enrichment": enrichment,
     }
 
 

@@ -10,11 +10,13 @@ from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
 from inventor_workshop.models import PublicationReceipt
 from inventor_workshop.shop import (
+    FACTORY_STORY_PROMPT_LIMIT,
     HttpResponse,
     SHOP_USER_AGENT,
     ShopDoor,
     ShopInstructionsWriter,
-    _normalize_use_case,
+    _factory_story_prompt,
+    _sealed_factory_primary,
     _shop_category_for_lane,
 )
 from inventor_workshop.store import InventorStore
@@ -155,6 +157,9 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         (product / "toy.step").write_text("exact product bytes\n", encoding="utf-8")
+        (product / "assembled.stl").write_text(
+            "solid verified-toy\nendsolid verified-toy\n", encoding="utf-8"
+        )
         for directory, marker in (
             ("review", b"local review cover"),
             ("renders", b"local render cover"),
@@ -163,14 +168,30 @@ class InstructionsSiteTest(unittest.TestCase):
             media_directory = product / directory
             media_directory.mkdir()
             (media_directory / "hero.png").write_bytes(marker)
-        self.made = Made.from_root(
-            product,
-            {
-                "title": "Verified Toy",
-                "summary": "A small exact toy.",
-                "lane": "classics-made-yours",
+        made_product = {
+            "title": "Verified Toy",
+            "summary": "A small exact toy.",
+            "description": "A brass puzzle whose shadow reveals a hidden star. By Alice.",
+            "lane": "classics-made-yours",
+            "components": ["one brass puzzle", "one folded rule card"],
+            "design": {"rings": 3, "shadow_aperture": "five-point star"},
+            "specifications": {"assembled_diameter_mm": 84},
+            "instructions": "Turn the three rings until their shadows align.",
+            "rules": {"goal": "reveal the hidden star", "moves": 3},
+            "story": {
+                "setting": "a midnight observatory",
+                "piece_meaning": "each ring marks one unfinished wish",
             },
+            "art_direction": {
+                "light": "hard moonlight",
+                "palette": ["blackened brass", "deep indigo"],
+            },
+            "limitations": ["digital Playtest only; physical QA happens in Deliver"],
+        }
+        (product / "product.json").write_text(
+            json.dumps(made_product, sort_keys=True) + "\n", encoding="utf-8"
         )
+        self.made = Made.from_root(product, made_product)
         self.store = InventorStore(self.root / "state.sqlite3")
         self.store.register_product(
             "verified-toy",
@@ -178,16 +199,8 @@ class InstructionsSiteTest(unittest.TestCase):
             artifact_sha256=self.made.artifact_sha256,
         )
         self.instructions = self.root / "instructions"
-        images = self.instructions / "images"
-        images.mkdir(parents=True)
+        self.instructions.mkdir(parents=True)
         self.media = {}
-        image_paths = {}
-        for role in ("hero", "play", "detail", "parts", "box"):
-            content = ("exact image %s\n" % role).encode()
-            path = images / (role + ".png")
-            path.write_bytes(content)
-            self.media[role] = content
-            image_paths[role] = "images/%s.png" % role
         (self.instructions / "INSTRUCTIONS.md").write_text(
             "# Verified Toy\n\nUse the toy.\n", encoding="utf-8"
         )
@@ -195,12 +208,17 @@ class InstructionsSiteTest(unittest.TestCase):
         (self.instructions / "product.json").write_text(
             json.dumps(
                 {
-                    "schema_version": 1,
-                    "status": "ready",
+                    "schema_version": 2,
+                    "kind": "workshop.instructions-facts",
+                    "status": "facts-ready",
                     "title": "Verified Toy",
                     "summary": "An exact toy page.\n\nBy Alice.",
                     "lane": "classics-made-yours",
-                    "images": image_paths,
+                    "factory_enrichment": {
+                        "copy_owner": "factory",
+                        "media_owner": "factory",
+                        "status": "pending",
+                    },
                     "product_artifact_sha256": self.made.artifact_sha256,
                     "playtest_evidence_artifact_sha256": self.playtest_sha,
                 },
@@ -243,6 +261,13 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertIs(receipt.details["page_ready"], False)
         self.assertRegex(receipt.details["handoff_artifact_sha256"], r"^[0-9a-f]{64}$")
         self.assertRegex(receipt.details["product_facts_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertEqual(
+            receipt.details["primary_model_sha256"],
+            hashlib.sha256(
+                (self.made.artifact_root / "assembled.stl").read_bytes()
+            ).hexdigest(),
+        )
         self.assertEqual(receipt.details["cover_url"], "https://cdn.example/cover.png")
         self.assertEqual(
             [call[0] for call in transport.calls],
@@ -260,22 +285,66 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertNotIn(b"local product media", import_body)
         self.assertIn(b"exact product bytes", import_body)
         self.assertIn(b'name="prompt"', import_body)
+        self.assertIn(b"midnight observatory", import_body)
+        self.assertIn(b"blackened brass", import_body)
+        self.assertIn(b"reveal the hidden star", import_body)
+        self.assertIn(b"five-point star", import_body)
+        self.assertIn(b"assembled_diameter_mm", import_body)
+        self.assertIn(b"one folded rule card", import_body)
+        self.assertIn(b"Inventor attribution (retain exactly): By Alice.", import_body)
+        self.assertNotIn(b"story_blocks", import_body)
+        self.assertNotIn(b"use_case", import_body)
         self.assertIn(b'name="category"\r\n\r\ntoys\r\n', import_body)
         category_part = import_body.split(b'name="category"', 1)[1].split(
             b"\r\n--", 1
         )[0]
         self.assertNotIn(b"classics-made-yours\r\n", category_part)
         with self.store._connection() as connection:
-            states = connection.execute(
-                "SELECT state FROM shop_effects ORDER BY created_at, effect_key"
-            ).fetchall()
-        self.assertEqual(states, [])
+            effect_table = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='shop_effects'"
+            ).fetchone()
+        self.assertIsNone(effect_table)
         intent = self.store.latest_publish_intent("verified-toy")
         self.assertNotIn("_workshop_cover_sha256", intent["request"])
         self.assertEqual(
             intent["request"]["_workshop_handoff_artifact_sha256"],
             receipt.details["handoff_artifact_sha256"],
         )
+
+    def test_factory_story_prompt_is_bounded_without_losing_attribution(self):
+        product = dict(self.made.product)
+        product["art_direction"] = {"notes": "nocturne " * 8_000}
+        made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        page = json.loads((self.instructions / "product.json").read_text())
+
+        prompt = _factory_story_prompt(context, page)
+
+        self.assertLessEqual(len(prompt), FACTORY_STORY_PROMPT_LIMIT)
+        self.assertTrue(prompt.endswith("By Alice."))
+        self.assertIn("_workshop_truncated", prompt)
+
+    def test_unsealed_product_story_mutation_fails_before_http(self):
+        product = dict(self.made.product)
+        product["story"] = {"setting": "a substituted story"}
+        made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        transport = SuccessfulShopTransport(context, self.media)
+
+        with self.assertRaisesRegex(ContractError, "artifact/product.json"):
+            ShopInstructionsWriter(
+                self.store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, self.manifest)
+        self.assertEqual(transport.calls, [])
+
+    def test_divergent_root_primary_models_fail_closed(self):
+        canonical = self.made.artifact_root / "verified-toy.stl"
+        canonical.write_text("solid different\nendsolid different\n", encoding="utf-8")
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+
+        with self.assertRaisesRegex(ContractError, "diverge"):
+            _sealed_factory_primary(context)
 
     def test_workshop_lanes_map_to_the_shops_public_taxonomy(self):
         for lane in (
@@ -289,15 +358,38 @@ class InstructionsSiteTest(unittest.TestCase):
         with self.assertRaises(ContractError):
             _shop_category_for_lane("unknown-lane")
 
-    def test_curated_page_images_reject_video_urls_before_import(self):
-        with self.assertRaises(ContractError):
-            _normalize_use_case(
-                {
-                    "label": "Made for your table",
-                    "body": "U" * 180,
-                    "image": "https://cdn.example/looks-like-an-image.mp4",
-                }
-            )
+    def test_low_level_shop_door_rejects_every_creator_media_bypass(self):
+        calls = []
+
+        def forbidden_transport(method, url, headers, body, timeout):
+            calls.append((method, url))
+            raise AssertionError("creator media must be rejected before HTTP")
+
+        door = ShopDoor("token", transport=forbidden_transport)
+        cases = (
+            lambda: door.import_design_bytes(
+                "model.zip",
+                b"not-even-a-pack",
+                {"title": "Model"},
+                thumbnail={"filename": "cover.png"},
+            ),
+            lambda: door.upload_file_bytes("hero.png", b"creator render", "image/png"),
+            lambda: door.patch_use_case("verified-toy", {"body": "creator copy"}),
+            lambda: door.put_story_blocks("verified-toy", [{"body": "creator copy"}]),
+            lambda: door.publish(
+                "verified-toy",
+                4200,
+                attachments=[{"kind": "image", "url": "https://cdn.example/hero.png"}],
+            ),
+            lambda: door.publish(
+                "verified-toy", 4200, title="Creator replacement"
+            ),
+        )
+        for operation in cases:
+            with self.subTest(operation=operation):
+                with self.assertRaisesRegex(ContractError, "Factory owns"):
+                    operation()
+        self.assertEqual(calls, [])
 
     def test_model_handoff_never_calls_image_upload(self):
         context = InstructionsSiteContext(self.made, "verified-toy")
@@ -353,7 +445,7 @@ class InstructionsSiteTest(unittest.TestCase):
             )
         self.assertEqual(len(transport.calls), calls_after_draft)
 
-    def test_local_curated_copy_is_a_brief_not_a_remote_page_write(self):
+    def test_creator_page_copy_is_rejected_before_import(self):
         page_path = self.instructions / "product.json"
         page = json.loads(page_path.read_text(encoding="utf-8"))
         page["use_case"] = {
@@ -383,18 +475,39 @@ class InstructionsSiteTest(unittest.TestCase):
         )
         context = InstructionsSiteContext(self.made, "verified-toy")
         transport = CuratedShopTransport(context, self.media)
-        receipt = ShopInstructionsWriter(
-            self.store, ShopDoor("token", transport=transport), "owner-1"
-        )(context, self.instructions, manifest)
+        with self.assertRaisesRegex(ContractError, "creator page copy"):
+            ShopInstructionsWriter(
+                self.store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, manifest)
+        self.assertEqual(transport.calls, [])
 
-        self.assertTrue(receipt.is_verified_draft)
-        self.assertIsNone(transport.use_case)
-        self.assertEqual(transport.story_blocks, [])
-        self.assertEqual(receipt.details["enrichment_status"], "pending")
-        self.assertEqual(
-            [call[0] for call in transport.calls],
-            ["POST", "GET"],
+    def test_creator_factory_output_in_made_facts_is_rejected_before_import(self):
+        product = dict(self.made.product)
+        product["story_blocks"] = [{"body": "creator-authored page block"}]
+        made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        transport = SuccessfulShopTransport(context, self.media)
+
+        with self.assertRaisesRegex(ContractError, "creator-owned Factory output"):
+            ShopInstructionsWriter(
+                self.store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, self.manifest)
+        self.assertEqual(transport.calls, [])
+
+    def test_creator_media_in_instructions_is_rejected_before_import(self):
+        image = self.instructions / "hero.png"
+        image.write_bytes(b"creator page render")
+        manifest = build_artifact_manifest(
+            self.instructions, created_at="content-addressed"
         )
+        context = InstructionsSiteContext(self.made, "verified-toy")
+        transport = SuccessfulShopTransport(context, self.media)
+
+        with self.assertRaisesRegex(ContractError, "creator page media"):
+            ShopInstructionsWriter(
+                self.store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, manifest)
+        self.assertEqual(transport.calls, [])
 
 
 if __name__ == "__main__":

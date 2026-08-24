@@ -2,10 +2,11 @@
 
 This module deliberately stops at the supported Vibe HTTP contract. Alice's
 release path supplies the already manufactured Vibe design/history and explicit
-price; the deployed page observer may add merchandising media/copy. An older
-text-only create/resume path remains available for non-release workflows. Alice
-publishes once, then observes the anonymous design representation until the
-existing page verifier says the customer-facing page is complete.
+price. Factory owns the post-publish enrichment of merchandising media and copy.
+An older text-only create/resume path remains available for non-release
+workflows. Alice publishes once, then observes the anonymous design
+representation until the existing page verifier says Factory's customer-facing
+page is complete.
 
 Every mutating request is fenced by a durable publication intent.  A lost or
 malformed response is therefore *ambiguous* and is never automatically retried.
@@ -43,12 +44,22 @@ PUBLICATION_TARGET = "vibe_pipeline"
 # history, packet, and policy hashes in its success receipt.
 REVISION_BOUND_PUBLISH_CAPABILITY = "packet_hash_bound_publish"
 LISTING_BOUND_PUBLISH_CAPABILITY = "sku_currency_bound_publish"
-RICH_PAGE_BOUND_PUBLISH_CAPABILITY = "rich_page_bound_publish"
 REQUIRED_PUBLIC_WRITE_CAPABILITIES = frozenset(
     {
         REVISION_BOUND_PUBLISH_CAPABILITY,
         LISTING_BOUND_PUBLISH_CAPABILITY,
-        RICH_PAGE_BOUND_PUBLISH_CAPABILITY,
+    }
+)
+SERVER_AUTHORED_PAGE_FIELDS = frozenset(
+    {
+        "media",
+        "primary_thumbnail_url",
+        "story_blocks",
+        "thumbnail",
+        "thumbnail_url",
+        "thumbnail_urls",
+        "use_case",
+        "video_url",
     }
 )
 ALICE_REVISION_BOUND_RELEASE_CAPABILITIES = (
@@ -58,7 +69,7 @@ ALICE_REVISION_BOUND_RELEASE_CAPABILITIES = (
     "page_pipeline_readback",
     "expected_history_cas",
     "exact_sku_currency_binding",
-    "atomic_rich_page_precondition",
+    "server_enrichment_readback",
 )
 PAUSED_JOB_STATUSES = frozenset(
     {
@@ -233,7 +244,6 @@ class VibePipelineRequest:
             "publication": {
                 "price_cents": self.price_cents,
                 "currency": "USD",
-                "require_rich_page_complete": True,
             },
         }
 
@@ -942,6 +952,26 @@ class VibePipeline:
                 "sku": self._manifest_sku(record),
                 "currency": "USD",
             }
+            publish_payload = {
+                "listing": {
+                    "price_cents": price_cents,
+                    "sku": self._manifest_sku(record),
+                    "currency": "USD",
+                },
+                "expected_history_id": self._required_progress_text(
+                    record, "history_id"
+                ),
+                "packet_hash": self._packet_hash(record),
+                "policy_hash": self._policy_hash(record),
+                "project_sha256": self._project_sha256(record),
+                "preconditions": {
+                    "history_id": self._required_progress_text(
+                        record, "history_id"
+                    ),
+                    "project_sha256": self._project_sha256(record),
+                },
+            }
+            self._assert_server_authored_page_fields_absent(publish_payload)
             progress = self._progress(record)
             progress.update(
                 {
@@ -981,26 +1011,7 @@ class VibePipeline:
             try:
                 published = self.transport.publish_design(
                     target,
-                    {
-                        "listing": {
-                            "price_cents": price_cents,
-                            "sku": self._manifest_sku(record),
-                            "currency": "USD",
-                        },
-                        "expected_history_id": self._required_progress_text(
-                            record, "history_id"
-                        ),
-                        "packet_hash": self._packet_hash(record),
-                        "policy_hash": self._policy_hash(record),
-                        "project_sha256": self._project_sha256(record),
-                        "preconditions": {
-                            "rich_page_complete": True,
-                            "history_id": self._required_progress_text(
-                                record, "history_id"
-                            ),
-                            "project_sha256": self._project_sha256(record),
-                        },
-                    },
+                    publish_payload,
                     operation_key=write_key,
                 )
             except BaseException as exc:
@@ -1077,7 +1088,7 @@ class VibePipeline:
             preflight_project_url=design.get("project_url"),
             revision_binding_capability=REVISION_BOUND_PUBLISH_CAPABILITY,
             listing_binding_capability=LISTING_BOUND_PUBLISH_CAPABILITY,
-            rich_page_binding_capability=RICH_PAGE_BOUND_PUBLISH_CAPABILITY,
+            server_enrichment="read_only_post_publish",
         )
 
     def _wait_for_generation(
@@ -1253,29 +1264,10 @@ class VibePipeline:
                 "publish receipt did not echo the release policy hash; do not retry",
                 ambiguous_stage="publish_sending",
             )
-        if published.get("rich_page_complete") is not True:
-            self._mark_ambiguous(
-                record,
-                "publish receipt did not echo the atomic rich-page precondition; "
-                "do not retry",
-                ambiguous_stage="publish_sending",
-            )
         if not self._published_revision_matches(record, published, price_cents):
             self._mark_ambiguous(
                 record,
                 "publish returned no exact revision-bound listing receipt; do not retry",
-                ambiguous_stage="publish_sending",
-            )
-        verification = self.page_verifier(
-            published,
-            expected_price_cents=price_cents,
-            expected_currency="USD",
-        )
-        if not isinstance(verification, PageVerification) or not verification.complete:
-            self._mark_ambiguous(
-                record,
-                "publish receipt did not contain the complete bound rich page; "
-                "do not retry",
                 ambiguous_stage="publish_sending",
             )
         progress = self._progress(record)
@@ -1644,7 +1636,6 @@ class VibePipeline:
             and isinstance(listing, Mapping)
             and listing.get("sku") == expected_sku
             and listing.get("currency") == "USD"
-            and design.get("rich_page_complete") is True
             and design.get("id") == progress.get("design_id")
             and design.get("slug") == progress.get("slug")
             and design.get("published_history_id") == progress.get("history_id")
@@ -1653,6 +1644,27 @@ class VibePipeline:
             and design.get("packet_hash") == self._packet_hash(record)
             and design.get("policy_hash") == self._policy_hash(record)
         )
+
+    @staticmethod
+    def _assert_server_authored_page_fields_absent(payload: Mapping[str, Any]) -> None:
+        """Reject any inventor-authored media/copy before the public write."""
+
+        pending: list[Mapping[str, Any]] = [payload]
+        while pending:
+            value = pending.pop()
+            forbidden = SERVER_AUTHORED_PAGE_FIELDS.intersection(value)
+            if forbidden:
+                raise VibePipelineError(
+                    "publish payload contains Factory-owned enrichment fields: "
+                    + ", ".join(sorted(forbidden))
+                )
+            for child in value.values():
+                if isinstance(child, Mapping):
+                    pending.append(child)
+                elif isinstance(child, (list, tuple)):
+                    pending.extend(
+                        item for item in child if isinstance(item, Mapping)
+                    )
 
     @staticmethod
     def _manifest_sku(record: PublicationRecord) -> str:

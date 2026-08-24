@@ -43,7 +43,7 @@ except ImportError as exc:  # pragma: no cover - deliberately fail closed
 
 from inventor_workshop import attribute_product_description
 from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.jobs import (
     Made,
     MakeContext,
@@ -81,6 +81,8 @@ class ProductSpec:
     description: str
     extension_level: str
     playtest_rounds: int
+    story: Mapping[str, Any]
+    art_direction: Mapping[str, Any]
     design: Mapping[str, Any]
     limitations: Sequence[str]
 
@@ -98,12 +100,32 @@ SPECS: tuple[ProductSpec, ...] = (
         "taste-only",
         2,
         {
+            "core_promise": "Familiar English checkers, recast as an architectural portrait of the Workshop’s five jobs without changing a rule.",
+            "geometry_and_meaning": "A 132 × 132 × 10 mm assembled set with an 8×8 grid, 14.5 mm cells, twelve five-ring pieces and twelve five-spoke pieces. The two tactile silhouettes identify the sides. Five raised threshold bars at the board edge represent Wish, Make, Playtest, Instructions, and Deliver.",
+            "interaction_story": "The setup and play remain ordinary checkers; the personalization lives in the board, piece language, tactility, and table presence.",
+            "attribution": "By Alice.",
+        },
+        {
+            "palette": "Midnight black #12151D with warm brass-like gold #D6A449; architectural, restrained, high contrast.",
+            "must_show_media": [
+                "Full three-quarter hero with all 24 pieces and all five threshold bars visible.",
+                "True top-down view proving the complete 8×8 grid.",
+                "Macro comparison of five-ring versus five-spoke geometry.",
+                "Low edge view showing the five raised Workshop thresholds.",
+                "Opening-position-to-midgame transition using familiar checkers movement.",
+                "Clean inventory view: board, 12 ring pieces, 12 spoke pieces.",
+            ],
+            "avoid_limitations": "Do not invent new rules, labels, logos, or extra components. Digital checks establish geometry, topology, known-rule compatibility, and bed fit—not physical print quality or customer delight.",
+        },
+        {
             "kind": "classic-checkers-edition",
             "known_rules": "English draughts/checkers; this edition does not alter play",
             "board_mm": [132.0, 132.0, 5.5],
+            "assembled_extents_mm": [132.0, 132.0, 10.0],
             "grid": [8, 8],
             "cell_mm": 14.5,
             "piece_count": {"five-ring": 12, "five-spoke": 12},
+            "thresholds": ["Wish", "Make", "Playtest", "Instructions", "Deliver"],
             "wish_features": [
                 "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
                 "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",
@@ -127,13 +149,35 @@ SPECS: tuple[ProductSpec, ...] = (
         "custom-make",
         4,
         {
+            "core_promise": "A hand-cranked desk machine where continuous motion becomes six deliberate orbital jumps—and the exposed mechanism is the spectacle.",
+            "geometry_and_meaning": "The assembly is 94 × 68 × 20 mm. A cratered 36 mm drive wheel carries the visible comet pin and hand knob; it engages a roughly 46 mm six-slot Geneva wheel. The 4.3 mm pin enters 5.0 mm slots with 0.7 mm nominal pin-slot clearance. Each crank revolution advances the orbit by 60°.",
+            "interaction_story": "The user turns the drive wheel continuously, watches the comet pin enter a radial slot, pushes the orbit one station, then sees it pause before the next encounter.",
+            "attribution": "By Bob.",
+        },
+        {
+            "palette": "Charcoal #1C1F26 with ember/coral #EE5F3E; exposed, mechanical, dramatic.",
+            "must_show_media": [
+                "Full three-quarter hero revealing both wheels and their relationship.",
+                "Overhead view showing all six radial slots and station markers.",
+                "Macro of the comet pin approaching and entering one slot.",
+                "Slow-motion single 60° index from engagement through release.",
+                "One uninterrupted six-jump/full-cycle sequence.",
+                "Parts view: base, axles, comet drive, six-slot orbit.",
+            ],
+            "avoid_limitations": "Do not depict gears, electronics, automatic motion, or a decorative plaque. The evidence covers dimensional and kinematic intent only; physical fit, wear, cycle life, pinch behavior, and satisfying hand feel still require Deliver QA.",
+        },
+        {
             "kind": "six-step-geneva-machine",
             "base_mm": [94.0, 68.0, 5.0],
+            "assembled_extents_mm": [94.0, 68.0, 20.0],
             "geneva_slots": 6,
             "step_degrees": 60.0,
             "drive_radius_mm": 18.0,
             "geneva_radius_mm": 23.0,
-            "nominal_clearance_mm": 0.35,
+            "drive_pin_diameter_mm": 4.3,
+            "slot_width_mm": 5.0,
+            "nominal_pin_slot_clearance_mm": 0.7,
+            "nominal_clearance_per_side_mm": 0.35,
             "wish_features": [
                 "continuous crank becomes six discrete orbital jumps",
                 "comet pin is the visible cause of motion",
@@ -157,14 +201,36 @@ SPECS: tuple[ProductSpec, ...] = (
         "taste-only",
         3,
         {
+            "core_promise": "A three-node homelab transformed into a tiny orbital engine room whose identities are visible in geometry, watched by one lone operator.",
+            "geometry_and_meaning": "The assembled world is 108 × 72 × 43.6 mm on a rounded engine deck crossed by three circuit trenches. Comet is a 34 mm tower with six swept side fins; Moss is a 35 mm structure with paired exposed coolant pipes; Void rises to 37.7 mm beneath a vertical orbital halo. A single 16 mm operator faces all three and establishes scale.",
+            "interaction_story": "The trenches make the nodes read as one connected machine city; the operator turns the arrangement into a night-shift scene rather than three unrelated server blocks.",
+            "attribution": "By Eve.",
+        },
+        {
+            "palette": "Deep navy #141C2A with industrial teal #5EC5BF; cinematic and technical, never cute.",
+            "must_show_media": [
+                "Operator-eye hero framing all three nodes as one room.",
+                "Comet detail showing all six fins.",
+                "Moss detail showing the paired coolant pipes.",
+                "Void silhouette centered on its vertical halo.",
+                "Overhead view showing the connecting circuit trenches.",
+                "Slow orbit around the complete 108 mm deck, with the operator always legible.",
+            ],
+            "avoid_limitations": "No nameplates, generic rack labels, added cables, invented personal history, or private likeness details. The only personalization source was the Wish text; physical detail survival and handling durability remain Deliver checks.",
+        },
+        {
             "kind": "personalized-homelab-diorama",
             "deck_mm": [108.0, 72.0, 5.0],
+            "assembled_extents_mm": [108.0, 72.0, 43.6],
             "nodes": ["Comet", "Moss", "Void"],
+            "circuit_trench_count": 3,
+            "operator_height_mm": 16.0,
             "node_signatures": {
-                "Comet": "swept cooling fins",
-                "Moss": "paired vertical coolant pipes",
-                "Void": "suspended orbital halo",
+                "Comet": {"height_mm": 34.0, "feature": "six swept side fins"},
+                "Moss": {"height_mm": 35.0, "feature": "paired exposed coolant pipes"},
+                "Void": {"height_mm": 37.7, "feature": "vertical orbital halo"},
             },
+            "reference_scope": "Wish text only; no private likeness assets were used",
             "wish_features": [
                 "three node identities are geometry, not labels",
                 "circuit trenches connect the rack city",
@@ -188,9 +254,32 @@ SPECS: tuple[ProductSpec, ...] = (
         "taste-only",
         3,
         {
+            "core_promise": "Hold the spring–neap relationship in your hands, make a prediction, then rotate the model to see how alignment changes the result.",
+            "geometry_and_meaning": "This must read first as a 104 mm circular phase-base instrument, not a post or cylinder. The full assembly is approximately 104.5 × 104 × 31.2 mm. Four raised phase markers sit around the disc at 0°, 90°, 180°, and 270°. A center post carries a 96 × 16 mm two-lobed tide arm spanning nearly the base diameter, with a 16 mm Earth hub at center, a 19 mm-high Moon marker on the arm, and a 21 mm Sun arrow near the rim.",
+            "interaction_story": "Aligned and opposed positions represent spring-tide configurations; the two quadrature positions represent neap-tide configurations. The tactile arm makes comparison and prediction the interaction.",
+            "attribution": "By Ivy.",
+        },
+        {
+            "palette": "Deep ocean #122630 with instrument gold #EDC250; elegant, scientific, display-worthy.",
+            "must_show_media": [
+                "Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun.",
+                "Low three-quarter view establishing the disc’s thin base and layered assembly.",
+                "Macro of the Earth hub, center post, and tide arm.",
+                "Rotation through 0° → 90° → 180° → 270°, stopping clearly at each phase.",
+                "Side-by-side aligned/opposed versus quadrature configurations.",
+                "Final overhead tableau with the 104 mm circular silhouette unmistakable.",
+            ],
+            "avoid_limitations": "Never render it as a generic pedestal, narrow cylinder, solar-system model, or literal Montauk tide predictor. It is qualitative, not to scale and not predictive; physical detent feel and hands-on comprehension remain unproven until Deliver and Reviews.",
+        },
+        {
             "kind": "qualitative-tide-orrery",
             "base_diameter_mm": 104.0,
+            "assembled_extents_mm": [104.5, 104.0, 31.2],
             "phase_positions_degrees": [0, 90, 180, 270],
+            "tide_arm_mm": [96.0, 16.0],
+            "earth_hub_diameter_mm": 16.0,
+            "moon_marker_height_mm": 19.0,
+            "sun_arrow_length_mm": 21.0,
             "relationship": {
                 "aligned_or_opposed": "spring-tide configuration",
                 "quadrature": "neap-tide configuration",
@@ -220,12 +309,47 @@ SPECS: tuple[ProductSpec, ...] = (
         "custom-playtest",
         10,
         {
+            "core_promise": "An original two-player alignment duel where every placement is followed by a shared orbit rotation, so adjacency—and both plans—changes every turn.",
+            "geometry_and_meaning": "A roughly 104 mm circular assembly with a fixed 70 mm core containing five inner wells and a rotating outer ring containing ten wells. Each player has five tactile signals: five ring stones versus five spoke stones, each about 7.4 mm wide. The five inner stations represent the Workshop’s five jobs.",
+            "interaction_story": "Place one signal in any empty inner or outer well, rotate the outer orbit exactly one notch clockwise or counterclockwise, then check for a wedge: one occupied inner station plus its two currently framed outer wells. A wedge wins; otherwise the game resolves after all ten signals are placed.",
+            "attribution": "By Leo.",
+        },
+        {
+            "palette": "Near-black violet #181726 with electric amethyst #BC5DE8; mysterious and high-contrast.",
+            "must_show_media": [
+                "True top-down empty-board view clearly separating five inner and ten outer wells.",
+                "Inventory shot with five ring and five spoke signals.",
+                "Placement followed by a visible one-notch orbit rotation.",
+                "Before/after split showing how the same inner station frames different outer wells.",
+                "Three-signal wedge forming across core and orbit.",
+                "Short complete-turn montage emphasizing interference and counterplay.",
+            ],
+            "avoid_limitations": "Do not present it as a reskinned classic or make the orbit decorative. AI Playtest ran 1,200 terminating games across 16 style matchups, but this proves executability and termination—not balance or fun; the recorded first-seat win rate was 81.58%, so avoid any ‘perfectly balanced’ claim.",
+        },
+        {
             "kind": "original-two-player-orbit-game",
+            "assembled_diameter_mm": 104.0,
+            "fixed_core_diameter_mm": 70.0,
             "players": 2,
             "maximum_turns": 10,
             "inner_wells": 5,
             "outer_wells": 10,
             "tokens_per_player": 5,
+            "token_styles": {"ring": 5, "spoke": 5},
+            "token_diameter_mm": 7.4,
+            "turn": [
+                "place one signal in any empty inner or outer well",
+                "rotate the outer orbit exactly one notch clockwise or counterclockwise",
+                "check the occupied inner station and its two currently framed outer wells for a wedge",
+            ],
+            "win_condition": "a three-signal wedge wins; if both players complete one on the same move, the mover wins",
+            "playtest_evidence": {
+                "simulated_games": 1200,
+                "terminating_games": 1200,
+                "style_matchups": 16,
+                "first_seat_win_rate": 0.815833,
+                "claim_scope": "executability and termination only; not balance or fun",
+            },
             "player_styles": ["optimizing", "social", "exploratory", "adversarial"],
             "wish_features": [
                 "five inner stations are the five Workshop jobs",
@@ -1117,6 +1241,11 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     attributed_description = attribute_product_description(
         spec.description, spec.inventor_name
     )
+    product_instructions = (
+        "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written."
+        if spec.inventor_id == "leo"
+        else "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind."
+    )
     product = {
         "schema_version": 1,
         "kind": "workshop-showcase-prototype",
@@ -1131,6 +1260,10 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         "audience": "grown-ups-14-plus",
         "wish": context.wish.to_dict(),
         "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
+        "instructions": product_instructions,
+        "story": dict(spec.story),
+        "art_direction": dict(spec.art_direction),
+        "design": dict(spec.design),
         "digital_files": [
             "declarative CAD source",
             "real STEP and STL exports",
@@ -1145,6 +1278,8 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     }
     if not product["description"].endswith("By %s." % spec.inventor_name):
         raise RuntimeError("product attribution must be the description's exact ending")
+    if product["story"].get("attribution") != "By %s." % spec.inventor_name:
+        raise RuntimeError("product story must preserve the exact inventor attribution")
     _write_json(artifact / "product.json", product)
     _write_text(artifact / "README.md", _artifact_readme(spec))
 
@@ -1165,6 +1300,10 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     _write_text(artifact / "cad" / "model.py", MODEL_WRAPPER, executable=True)
     geometry = GEOMETRY_BUILDERS[spec.inventor_id](spec)
     cad_record = _build_cad_files(geometry, artifact / "cad")
+    # Factory selects ``assembled.stl`` before nested part meshes. Keep this
+    # exact alias inside Made so the primary model is sealed by Playtest; the
+    # publication handoff must never invent or patch geometry afterward.
+    shutil.copyfile(artifact / "cad" / "product.stl", artifact / "assembled.stl")
     render_record = _render_exact_mesh(
         artifact / "cad" / "product.stl", artifact / "images" / "hero.png", spec.inventor_id
     )
@@ -1216,27 +1355,11 @@ def showcase_make(context: MakeContext) -> Made:
     if spec is None or spec.lane != context.blueprint.lane:
         raise RuntimeError("showcase Make received an unknown or cross-lane Wish")
     artifact = _build_artifact(spec, context)
-    instructions = (
-        "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written."
-        if spec.inventor_id == "leo"
-        else "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind."
-    )
-    return Made.from_root(
-        artifact,
-        {
-            "title": spec.title,
-            "summary": spec.summary,
-            "description": attribute_product_description(
-                spec.description, spec.inventor_name
-            ),
-            "lane": spec.lane,
-            "inventor": spec.inventor_name,
-            "prototype_status": "digital-only",
-            "instructions": instructions,
-            "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
-            "limitations": list(spec.limitations),
-        },
-    )
+    # One canonical mapping crosses Make, Playtest, Instructions, and Factory.
+    # Returning a hand-maintained subset would leave story facts outside the
+    # sealed artifact and let callers mutate them without invalidating Playtest.
+    product = json.loads((artifact / "product.json").read_text(encoding="utf-8"))
+    return Made.from_root(artifact, product)
 
 
 def _evidence_result(
@@ -1499,21 +1622,6 @@ def showcase_playtest(context: PlaytestContext):
     )
 
 
-def showcase_instructions_media(context):
-    """Render five distinct, exact-geometry views for shared Instructions."""
-
-    image_root = context.workspace / "images"
-    image_root.mkdir(parents=True, exist_ok=False)
-    stl = context.made.artifact_root / "cad" / "product.stl"
-    inventor_id = str(context.made.product["inventor"]).casefold()
-    paths = {}
-    for role in REQUIRED_PRODUCT_IMAGES:
-        destination = image_root / (role + ".png")
-        _render_exact_mesh(stl, destination, inventor_id, role)
-        paths[role] = destination.relative_to(context.workspace).as_posix()
-    return paths
-
-
 def _waiting_site_writer(context, sealed_root, sealed_manifest):
     del context, sealed_root, sealed_manifest
     raise WaitingFor(
@@ -1540,7 +1648,7 @@ def _showcase_instructions(runtime_root: Path) -> DefaultInstructions:
             ShopDoor(token),
             owner_id,
         )
-    return DefaultInstructions(showcase_instructions_media, site_writer)
+    return DefaultInstructions(site_writer=site_writer)
 
 
 def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
@@ -1555,10 +1663,10 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
         else "- Product page: sealed locally; waiting for the Workshop site account"
     )
     stop_explanation = (
-        "AI Playtest passed and shared Instructions created, enriched, and verified the private product draft. "
+        "AI Playtest passed and shared Instructions handed off the model and facts, then verified the private product draft. "
         "The owner controls the later public flip; the Workshop is now waiting for production and shipping in Deliver."
         if run["job"] == "deliver"
-        else "AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account."
+        else "AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account."
     )
     return f"""\
 # {spec.title}
@@ -1590,9 +1698,10 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
 - [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
-- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/product.json`](instructions/product.json) — the sealed factual handoff for Factory enrichment
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
@@ -1800,6 +1909,12 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     )
     if product["inventor"] != {"id": spec.inventor_id, "name": spec.inventor_name}:
         raise RuntimeError("product inventor metadata mismatch")
+    if product.get("story") != spec.story:
+        raise RuntimeError("product lost its reviewed story facts")
+    if product.get("art_direction") != spec.art_direction:
+        raise RuntimeError("product lost its reviewed art direction")
+    if product.get("design") != spec.design:
+        raise RuntimeError("product lost its exact design facts")
     if project != {"id": spec.slug, "name": spec.title}:
         raise RuntimeError("Factory project marker does not identify this exact showcase")
     if not product["description"].endswith("By %s." % spec.inventor_name):
@@ -1837,13 +1952,14 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
         raise RuntimeError("Instructions page points at different product bytes")
     if page["playtest_evidence_artifact_sha256"] != current_evidence.artifact_sha256:
         raise RuntimeError("Instructions page points at different AI Playtest bytes")
-    for role, relative in page["images"].items():
-        if role not in REQUIRED_PRODUCT_IMAGES:
-            raise RuntimeError("Instructions page contains an unknown image role")
-        image = Image.open(bundle / "instructions" / relative)
-        image.verify()
-    if set(page["images"]) != set(REQUIRED_PRODUCT_IMAGES):
-        raise RuntimeError("Instructions page does not contain all five image roles")
+    if {"images", "use_case", "story_blocks"} & set(page):
+        raise RuntimeError("Instructions facts contain creator-owned page copy or media")
+    if page.get("factory_enrichment") != {
+        "copy_owner": "factory",
+        "media_owner": "factory",
+        "status": "pending",
+    }:
+        raise RuntimeError("Instructions facts do not leave enrichment to Factory")
     if receipt["run"]["job"] == "deliver":
         if not receipt["site_receipt"] or not receipt["run"].get("page_url"):
             raise RuntimeError("Deliver wait must preserve the verified private draft")
@@ -1877,6 +1993,10 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
             raise RuntimeError("independent CAD revalidation disagrees for part %s" % part_name)
     if build["product"]["stl"]["sha256"] != _sha_file(bundle / "artifact" / "cad" / "product.stl"):
         raise RuntimeError("digital build points at different product STL bytes")
+    if (bundle / "artifact" / "assembled.stl").read_bytes() != (
+        bundle / "artifact" / "cad" / "product.stl"
+    ).read_bytes():
+        raise RuntimeError("Factory root assembled.stl differs from the Playtested product STL")
     current_builder_sha256 = _sha_file(Path(__file__).resolve())
     if (
         build["generator"]["sha256"] != current_builder_sha256

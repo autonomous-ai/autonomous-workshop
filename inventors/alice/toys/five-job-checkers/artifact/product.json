@@ -1,4 +1,16 @@
 {
+  "art_direction": {
+    "avoid_limitations": "Do not invent new rules, labels, logos, or extra components. Digital checks establish geometry, topology, known-rule compatibility, and bed fit\u2014not physical print quality or customer delight.",
+    "must_show_media": [
+      "Full three-quarter hero with all 24 pieces and all five threshold bars visible.",
+      "True top-down view proving the complete 8\u00d78 grid.",
+      "Macro comparison of five-ring versus five-spoke geometry.",
+      "Low edge view showing the five raised Workshop thresholds.",
+      "Opening-position-to-midgame transition using familiar checkers movement.",
+      "Clean inventory view: board, 12 ring pieces, 12 spoke pieces."
+    ],
+    "palette": "Midnight black #12151D with warm brass-like gold #D6A449; architectural, restrained, high contrast."
+  },
   "audience": "grown-ups-14-plus",
   "components": [
     "one checkers board",
@@ -6,6 +18,41 @@
     "twelve five-spoke pieces"
   ],
   "description": "A regulation-readable checkers edition whose five-ring and five-spoke pieces, five brass-like threshold markers, and midnight grid turn the Workshop workflow into table presence without changing the known game.\n\nBy Alice.",
+  "design": {
+    "assembled_extents_mm": [
+      132.0,
+      132.0,
+      10.0
+    ],
+    "board_mm": [
+      132.0,
+      132.0,
+      5.5
+    ],
+    "cell_mm": 14.5,
+    "grid": [
+      8,
+      8
+    ],
+    "kind": "classic-checkers-edition",
+    "known_rules": "English draughts/checkers; this edition does not alter play",
+    "piece_count": {
+      "five-ring": 12,
+      "five-spoke": 12
+    },
+    "thresholds": [
+      "Wish",
+      "Make",
+      "Playtest",
+      "Instructions",
+      "Deliver"
+    ],
+    "wish_features": [
+      "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
+      "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",
+      "black and warm-gold architectural composition"
+    ]
+  },
   "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
@@ -13,6 +60,7 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
+  "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "inventor": {
     "id": "alice",
     "name": "Alice"
@@ -30,6 +78,12 @@
   "site_status": "pending-instructions",
   "slug": "five-job-checkers",
   "status": "digital-prototype",
+  "story": {
+    "attribution": "By Alice.",
+    "core_promise": "Familiar English checkers, recast as an architectural portrait of the Workshop\u2019s five jobs without changing a rule.",
+    "geometry_and_meaning": "A 132 \u00d7 132 \u00d7 10 mm assembled set with an 8\u00d78 grid, 14.5 mm cells, twelve five-ring pieces and twelve five-spoke pieces. The two tactile silhouettes identify the sides. Five raised threshold bars at the board edge represent Wish, Make, Playtest, Instructions, and Deliver.",
+    "interaction_story": "The setup and play remain ordinary checkers; the personalization lives in the board, piece language, tactility, and table presence."
+  },
   "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.",
   "title": "Five-Job Checkers",
   "wish": {

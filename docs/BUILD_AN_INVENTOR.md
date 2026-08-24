@@ -467,9 +467,9 @@ Playtest evidence, event chain, and Instructions manifest, then calls only the
 shared model-handoff writer. Make, Playtest, and the sealed content brief are
 not repeated.
 
-The media provider must render or photograph the approved artifact. Concept art
-may appear only when clearly labeled as concept art; it cannot stand in for a
-product render, printed prototype, or packed box.
+Do not add a media provider to Instructions. Factory renders the approved model
+and owns all customer-facing page images and video. Local renders may remain
+Make or Playtest evidence, but the model-only handoff excludes them.
 
 Copy must retain evidence qualifiers. Good copy can be magical without
 inventing facts:
@@ -528,7 +528,9 @@ At minimum, an inventor's tests should prove:
 - slicer output cannot be presented as a successful physical print;
 - production and hands-on QA cannot be presented as Playtest;
 - customer Reviews cannot rewrite the Playtest evidence for a shipped toy;
-- Instructions claims and images remain bound to the approved product;
+- Instructions facts and in-box paper remain bound to the approved product;
+- creator code cannot add marketing images, video, `use_case`, `story_blocks`,
+  or publication attachments to the Factory handoff;
 - Instructions completes only with authenticated readback of the exact private
   draft, without requiring public visibility or an active listing;
 - changed Instructions bytes cannot enter Deliver;

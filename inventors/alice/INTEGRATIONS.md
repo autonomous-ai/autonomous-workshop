@@ -3,6 +3,15 @@
 This map separates current production contracts from useful experiments. Alice
 must not revive a retired path simply because its code is convenient.
 
+> **Current publishing ruling (2026-08-24).** Alice sends inspected models and
+> product facts only through the shared Workshop. Factory generates use-case,
+> story blocks, images, and video on the server. The former
+> `page_builder.ShopDoorAdapter` mutation path is retired and fails before any
+> subprocess or remote write; it remains only for authenticated read-only
+> reconciliation of an already-bound legacy draft. Any later description of
+> `vibe-ideas/board-game/tools/publish.py` as an active writer is historical
+> archaeology, not an operating instruction.
+
 Names containing `panda` below are immutable upstream repository identifiers,
 not Alice or Workshop vocabulary. The active commerce boundary is a storefront
 adapter. The implementation class `ShopDoorAdapter` retains its historical name
@@ -26,7 +35,7 @@ for compatibility.
 | Team CAD work | `peterat617/text-to-3d` | Borrow verified CAD helpers with the corrections below |
 | Team CAD toolchain | `nohope88/text2cad` | Clean, commit-pinned runtime prerequisite for text2game phases 2/3 CAD, measurement, gating, and render helpers; exclude its old admin/completion logic |
 
-## Text2game invention to existing rich-page draft
+## Text2game invention to Workshop model-only draft
 
 Alice treats the internal repositories as one R&D library, not as mutually
 exclusive products. The supported board-game path deliberately composes their
@@ -35,9 +44,10 @@ strongest parts:
 ```text
 Alice accepted game and exact rules
   -> text2game's separated rules, CAD, repair, gate, render, and slice stages
-  -> deterministic, hash-preserving export into a Vibe board-game workspace
-  -> vibe-ideas board-game/tools/publish.py <slug>
-  -> authenticated, complete private storefront draft
+  -> deterministic, hash-preserving Workshop product package
+  -> shared Workshop model-only draft import
+  -> Factory server enrichment for copy, images, and video
+  -> authenticated private storefront draft readback
   -> Dee reviews and clicks publish
 ```
 
@@ -47,7 +57,7 @@ binds the source repository commit and every accepted rule/CAD artifact hash,
 and creates the Vibe workspace atomically. It never calls
 `text2game/publish.py`, never changes the Vibe queue to `shipped`, and never
 performs a remote write. A separate Alice gate must accept the exported
-workspace before the existing rich-page adapter can run.
+workspace before Workshop may import its model-only draft.
 
 This is a connected runtime, not only an export format. The Alice integration
 was reviewed against `nohope88/text2game` commit
@@ -97,7 +107,7 @@ viewer work finishes, and has no operation-key reconciliation or immutable
 rich-page readback. Its useful invention and CAD work remains reusable; its
 publisher is not the production boundary.
 
-## Existing rich-page draft and future publication
+## Workshop draft and future publication
 
 The historically named `pack.product` task uses Workshop's canonical artifact
 boundary. It archives Alice's exact inspected production manifest as
@@ -122,29 +132,27 @@ owner-only release snapshot. The bootstrap disables Python site initialization
 with `-I -S` before adding that snapshot, preventing editable-install `.pth`
 hooks from pre-caching an unsealed Workshop module.
 
-Alice uses the production operator already built in `reinSPQR/vibe-ideas` and
-the normal Vibe public flip. It does **not** contain a second copywriter, image
-generator, video generator, or product-page renderer:
+Alice uses Workshop's shared model-only import and the normal public flip. It
+does **not** contain a copywriter, image generator, video generator, or
+product-page renderer:
 
 ```text
 verified production workspace + slug
-  -> vibe-ideas board-game/tools/publish.py <slug>
-  -> private storefront draft with rules, use case, story, specs, and covers
+  -> Workshop sealed product packet
+  -> private model-only storefront draft
   -> authenticated readback + remote artifact hashes for that exact history
   -> prototype print + production validation of that draft history
   -> Dee's one-click review and public flip of the same history (current)
+  -> Factory server enrichment for copy, images, and video
   -> capability-gated automatic Vibe public flip (future `live` mode)
-  -> deployed page observer/enrichment, if produced
   -> anonymous storefront readback -> Alice public-page verification
 ```
 
-The existing draft operator is the supported local entry point. It calls the
-hot backend's own import services, so CDN snapshots, `_tree.json`, GLB,
-thumbnails, `design_history`, and unique slugs retain their production
-semantics. It also fills the current product-page fields from the production
-workspace: complete `RULES.md`, the use-case block, rules walkthrough story
-blocks, print specs, description, and approved covers. Alice invokes that
-operator; it never reimplements those transformations.
+Workshop is the only supported mutation entry point. It calls the backend's
+model-only import service without a thumbnail multipart field and without
+`use_case`/`story_blocks` writes, so CDN snapshots, `_tree.json`, GLB,
+`design_history`, and unique slugs retain their production semantics while
+Factory remains authoritative for generated page media and copy.
 
 The deployed enrichment worker remains out of band and can add further public
 merchandising. The San Francisco chess set and Arrows Across the River are the
@@ -167,68 +175,19 @@ no category and the San Francisco set has historically shown the wrong one.
 Alice should provide the intended category upstream and keep the warning open
 for merchandising/SEO cleanup.
 
-`alice.page_builder.ShopDoorAdapter` owns the private-draft handoff; its class
-name is retained for compatibility. The old
-`PageBuilderAdapter` import remains a compatibility alias only. It is
-available only in `draft` or `live`. Its reviewed configuration pins the exact
-clean Vibe Git commit, interpreter bytes, `publish.py`, its local import closure
-(`journal.py`, `telegram.py`, and `animation_gate.py`), the Git executable, and
-the compiled `publishdesign` helper. Its command is exactly one absolute
-interpreter followed by that checkout's absolute
-`board-game/tools/publish.py`; wrappers, flags, extra arguments, and another
-operator path are rejected. Alice internally adds fixed Python isolation flags,
-appends only `<slug>`, and never uses `--force`. Untracked files under the tools
-directory, bytecode caches, hidden index state, replacement refs, source drift,
-or a missing/mismatched helper all fail readiness. The operator must statically declare
-`RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"`; Alice pins its source
-hash against configuration and rechecks the complete execution boundary
-immediately before the import. The reviewed
-upstream change is preserved in
-a patch kept in the private working copy because the current maintainer
-checkout cannot push to that repository. For ordinary Vibe workspaces, the
-source queue must still say `shipped`. A text2game export can bypass that older
-pre-draft owner gate only when its Alice receipt, complete artifact map,
-project hash, rules hash, root `idea.json` copy, source-artifact manifest,
-operation key, and input hash all match; the operator does not mutate the queue
-or claim an owner shipped it. `gate.json` must still
-pass. Readiness also requires an authenticated read of a configured private
-draft whose owner and current history match exactly and which has no published
-history. `WORKSHOP_SHOP_OWNER_ID` must be that same owner; backend and GCS inputs are
-explicit owner-only local files, and a Vibe-workspace `.env` is forbidden so it
-cannot rehydrate messaging or process-injection variables. Telegram remains
-forced off for the Alice invocation. The CAD and DFM receipts must agree on
-a relative-path artifact hash map. Alice hashes the whole project, writes a
-small `alice-provenance.json`, persists a canonical input hash and operation
-key, then authenticates back to the draft and streams every accepted artifact
-plus provenance from its immutable `project_url` to verify the bytes. The
-receipt binds `design_id`, canonical remote `slug`, `history_id`, `project_url`,
-`project_sha256`, artifact hashes, and the rich-page fields. A local
-`published.json` without Alice's matching sidecar is ambiguous and is never
-adopted automatically. The CDN fetch is intentionally anonymous and accepts
-only a configured credential-free HTTPS host with redirects disabled.
+`alice.page_builder.ShopDoorAdapter` is a retired compatibility reader; its
+class name and the old `PageBuilderAdapter` alias remain only for legacy
+receipts. New invocations fail before local preparation or remote mutation. An
+existing exact sidecar may be authenticated and reconciled read-only; a bare
+`published.json` is ambiguous and is never adopted. Historical Vibe source and
+helper pins remain evidence for that reconciliation only. They cannot activate
+`publish.py`, `publishdesign`, cover uploads, page copy, or a second importer.
+All new models go through Workshop.
 
-This first-import path is never a revision fallback. A known game is durably
-bound to its exact storefront design ID and canonical slug; any later improvement
-must append a history to that record or stop. Blindcap is currently public, and
-the deployed version-import route immediately publishes a replacement history,
-so its improvements remain local until the storefront advertises an atomic staged-
-version capability that preserves the old public history for review. A 404,
-identity mismatch, collision-suffixed slug, or missing capability must never
-cause Alice to create another design. All Alice-authored descriptions must end
-with the exact suffix `By Alice.` with no trailing whitespace.
-
-The current Alice checkout does not execute `publishdesign -dry-run` during
-`doctor`: adding that credential-bearing Mongo/GCS probe was not authorized by
-the execution boundary. Before operational activation, an accountable operator
-must run the pinned helper's documented read-only dry run and verify the exact
-owner, draft status, database, and bucket. It must be a first-import dry run
-over a nonempty absolute project archive with positive byte count and one or
-more absolute cover paths; content-only probes do not qualify. Alice accepts
-only a canonical, owner-only manual receipt whose configured SHA-256 binds that
-captured result to the exact Vibe/operator/helper, backend config, and GCS
-credential hashes. The receipt is revalidated in `doctor` and immediately
-before the effect; no receipt, stale local binding, or changed byte can claim
-draft readiness.
+A known game remains bound to its exact storefront design ID and history. An
+identity mismatch, missing capability, or unknown outcome must never cause
+Alice to create another design. All Alice-authored descriptions must end with
+the exact suffix `By Alice.` with no trailing whitespace.
 
 `alice.vibe_pipeline.VibePipeline.run` still owns the earlier text-only
 create/resume flow where needed. The release worker uses `publish_existing`:
@@ -240,50 +199,29 @@ without another generation job, and rereads the finished public page. This
 prevents a newly generated, unprinted artifact from replacing the game that
 cleared production.
 
-### Low-level draft import
+### Draft import boundary
 
-The live draft endpoint is:
-
-```http
-POST /api/v1/designs/import
-Authorization: Bearer <dedicated Alice owner token>
-Content-Type: multipart/form-data
-
-file=<zip>
-status=draft
-title=<title>
-description=<description>
-category=<category>
-tags=<repeatable>
-license=<license>
-prompt=<provenance-safe prompt>
-```
-
-Alice always sends `status=draft`; omission currently defaults to public. The
-archive safety ceiling is 95 MiB, with a generator defining `gen_step` or a
-`project.json`. Recommended retained artifacts are `project.json`, `spec.md`,
-canonical assembled STL, GLB, review and section images, and
-`alice-provenance.json`. The backend regenerates `_tree.json`.
-
-A successful `201` includes `id`, `slug`, `status`, `current_history_id`,
-optional `published_history_id`, and `project_url`. Alice persists the receipt,
-reads the design back, requests slicing exactly once, then polls the slice GET.
-Repeated slice POST resets/requeues the job and is prohibited.
+Alice has no low-level draft importer. `ShopDoorClient.create_draft` and its
+`FactoryClient` alias fail before archive access, authentication, or HTTP. The
+shared Workshop owns the model-only import request, durable intent, and Stamp.
+Alice consumes the resulting design/history/project identity through read-only
+reconciliation. This keeps an inventor from attaching local thumbnails,
+use-case copy, story blocks, or video to the Factory page.
 
 ### Current risk envelope and desirable backend hardening
 
-The import endpoint does not honor an idempotency key. A timeout after commit
-can create a duplicate if retried. Alice therefore claims one durable runtime effect
-before launching the existing import operator; a second worker stops, and any
-post-launch uncertainty is terminally ambiguous.
+The provider import endpoint does not honor an idempotency key. Workshop owns
+the durable pre-write intent and treats a timeout after commit as ambiguous;
+Alice cannot route around that fence with her retired client or page writer.
 
 Public publishing is currently **blocked**, not merely degraded. The checked
-storefront deployment does not advertise all three public-write capabilities
-Alice requires: `packet_hash_bound_publish`, `sku_currency_bound_publish`, and
-`rich_page_bound_publish`. The write boundary must atomically compare the
-caller's expected history and project plus the complete rich-page precondition,
-apply the exact reviewed SKU, price, and USD currency, and return those fields
-with the accepted history/project/packet/policy binding. The Vibe adapter fails
+storefront deployment does not advertise both public-write capabilities Alice
+requires: `packet_hash_bound_publish` and `sku_currency_bound_publish`. The
+write boundary must atomically compare the caller's expected history and
+project, apply the exact reviewed SKU, price, and USD currency, and return those
+fields with the accepted history/project/packet/policy binding. Factory's page
+enrichment happens only after that write and is consumed through readback; it
+is never inventor-authored or a publish precondition. The Vibe adapter fails
 capability preflight before its POST when any part is missing. A partial local
 backend change that merely accepts extra JSON fields is not sufficient and is
 not deployment evidence. The production semantic change needs explicit owner
@@ -306,16 +244,18 @@ The backend should still be hardened to enforce:
 3. `sku_currency_bound_publish`: the same write atomically applies and echoes
    the exact reviewed SKU, price in cents, and `USD`; no estimated default or
    later listing mutation may silently replace them.
-4. `rich_page_bound_publish`: the same write rejects an incomplete or different
-   rich page and echoes the accepted rich-page/history/project precondition.
+4. `server_enrichment_readback`: after publish, Factory-generated copy, images,
+   and video are available through authenticated and anonymous reads without an
+   inventor mutation endpoint.
 5. `order_to_print_job`: each paid SKU/order maps to the exact published
    CAD/BOM packet and one idempotent print job.
 
-`alice.shop_door.ShopDoorClient` is the low-level verified draft importer. The
-old `alice.factory.FactoryClient` path remains a compatibility import only.
-Its capability-gated `publish_live` method describes the stronger future API;
-the supported board-game draft handoff is the existing `vibe-ideas` operator,
-and the public flip remains `alice.vibe_pipeline`.
+`alice.shop_door.ShopDoorClient` is now a read/reconcile compatibility client.
+Its direct `create_draft` method fails before reading an archive or opening
+HTTP, and the old `alice.factory.FactoryClient` alias cannot revive it. Only
+Workshop may perform the model-only draft import. The capability-gated
+`publish_live` method describes the stronger future API, while authenticated
+GETs preserve read-only reconciliation of existing server content.
 
 On an ambiguous current import, Alice records `ambiguous`, inspects the owner's
 drafts and retained `alice-provenance.json`, and never retries automatically.

@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "6862be923c719570c0c8fcbb5af6518f9ffe7c5a714515996162a0532c16aa49",
+  "artifact_sha256": "57a7b031522488c8e8552a9f1d5110138a451939b064c906808020d12e3ab077",
   "check": "digital-lane-model",
   "checks": {
     "claim_scope": "qualitative demonstration; not to scale, not a Montauk tide prediction",

@@ -83,9 +83,10 @@ directories continue in place
 only when they are the single authority. If more than one candidate exists,
 Bob stops and asks the operator to resolve it.
 
-The old text2game server variables support only an explicit manual
-`bob export`. Scheduled ticks never export, SSH, or turn that server's output
-into a receipt. Its historical server name, `box`, survives only at this
+The old text2game server variables cannot authorize a remote effect.
+`bob export` writes a local inspection payload only; `push_box` fails before
+rsync or SSH. Scheduled ticks never export or turn external output into a
+receipt. Its historical server name, `box`, survives only as data at this
 compatibility edge.
 
 ## Why these intervals

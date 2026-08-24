@@ -1,4 +1,16 @@
 {
+  "art_direction": {
+    "avoid_limitations": "Do not present it as a reskinned classic or make the orbit decorative. AI Playtest ran 1,200 terminating games across 16 style matchups, but this proves executability and termination\u2014not balance or fun; the recorded first-seat win rate was 81.58%, so avoid any \u2018perfectly balanced\u2019 claim.",
+    "must_show_media": [
+      "True top-down empty-board view clearly separating five inner and ten outer wells.",
+      "Inventory shot with five ring and five spoke signals.",
+      "Placement followed by a visible one-notch orbit rotation.",
+      "Before/after split showing how the same inner station frames different outer wells.",
+      "Three-signal wedge forming across core and orbit.",
+      "Short complete-turn montage emphasizing interference and counterplay."
+    ],
+    "palette": "Near-black violet #181726 with electric amethyst #BC5DE8; mysterious and high-contrast."
+  },
   "audience": "grown-ups-14-plus",
   "components": [
     "one fixed core",
@@ -7,6 +19,45 @@
     "one rulebook"
   ],
   "description": "Place one of five signal stones, rotate the shared orbit, and try to hold a three-point wedge while every move reframes both players' plans. The five-job topology changes play rather than decorating it.\n\nBy Leo.",
+  "design": {
+    "assembled_diameter_mm": 104.0,
+    "fixed_core_diameter_mm": 70.0,
+    "inner_wells": 5,
+    "kind": "original-two-player-orbit-game",
+    "maximum_turns": 10,
+    "outer_wells": 10,
+    "player_styles": [
+      "optimizing",
+      "social",
+      "exploratory",
+      "adversarial"
+    ],
+    "players": 2,
+    "playtest_evidence": {
+      "claim_scope": "executability and termination only; not balance or fun",
+      "first_seat_win_rate": 0.815833,
+      "simulated_games": 1200,
+      "style_matchups": 16,
+      "terminating_games": 1200
+    },
+    "token_diameter_mm": 7.4,
+    "token_styles": {
+      "ring": 5,
+      "spoke": 5
+    },
+    "tokens_per_player": 5,
+    "turn": [
+      "place one signal in any empty inner or outer well",
+      "rotate the outer orbit exactly one notch clockwise or counterclockwise",
+      "check the occupied inner station and its two currently framed outer wells for a wedge"
+    ],
+    "win_condition": "a three-signal wedge wins; if both players complete one on the same move, the mover wins",
+    "wish_features": [
+      "five inner stations are the five Workshop jobs",
+      "the shared rotating orbit changes adjacency after every placement",
+      "opposition is literal interference with a surviving alignment plan"
+    ]
+  },
   "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
@@ -14,6 +65,7 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
+  "instructions": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written.",
   "inventor": {
     "id": "leo",
     "name": "Leo"
@@ -31,6 +83,12 @@
   "site_status": "pending-instructions",
   "slug": "counterorbit",
   "status": "digital-prototype",
+  "story": {
+    "attribution": "By Leo.",
+    "core_promise": "An original two-player alignment duel where every placement is followed by a shared orbit rotation, so adjacency\u2014and both plans\u2014changes every turn.",
+    "geometry_and_meaning": "A roughly 104 mm circular assembly with a fixed 70 mm core containing five inner wells and a rotating outer ring containing ten wells. Each player has five tactile signals: five ring stones versus five spoke stones, each about 7.4 mm wide. The five inner stations represent the Workshop\u2019s five jobs.",
+    "interaction_story": "Place one signal in any empty inner or outer well, rotate the outer orbit exactly one notch clockwise or counterclockwise, then check for a wedge: one occupied inner station plus its two currently framed outer wells. A wedge wins; otherwise the game resolves after all ten signals are placed."
+  },
   "summary": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit.",
   "title": "Counterorbit",
   "wish": {

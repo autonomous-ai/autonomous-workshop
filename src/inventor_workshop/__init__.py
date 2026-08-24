@@ -61,7 +61,6 @@ from .deliver import DefaultDeliver
 from .instructions import (
     DefaultInstructions,
     InstructionsSiteWriter,
-    REQUIRED_PRODUCT_IMAGES,
 )
 from .gameplay import (
     ExecutableGame,
@@ -241,7 +240,6 @@ __all__ = [
     "PlaytestResult",
     "Playtested",
     "ProductInstructions",
-    "REQUIRED_PRODUCT_IMAGES",
     "RandomPlayer",
     "ReviewsPolicy",
     "Receipt",

@@ -1,6 +1,7 @@
-"""Compatibility imports for Alice's pre-Workshop Shop Door names.
+"""Read-only compatibility imports for Alice's pre-Workshop Shop names.
 
-New code imports :mod:`alice.shop_door`.
+New code imports :mod:`alice.shop_door`. ``FactoryClient.create_draft`` is a
+fail-closed compatibility method; only shared Workshop may import a model.
 """
 
 from .shop_door import (

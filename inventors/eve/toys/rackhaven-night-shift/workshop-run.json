@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
+  "artifact_sha256": "5f8a1b5cf56b325b7b1720cc7e1bd0d164821c2b91e6444010126c9b87e837b2",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -8,15 +8,15 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
-    "site_draft_verified": true,
+    "site_draft_verified": false,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
-  "blueprint_sha256": "920e278909ff582a74226e87598d904adee3d2fc8310357bce11ded443af48b4",
-  "evidence_sha256": "917bf5cc658af8f6e81495c1e85b2e78c5328711f3d9c1380381cb756086dc80",
-  "instructions_sha256": "aec6c5c9ca385a32c0a832864f5d1c7b45d327282c229f9b8d4a2a43db8de3ca",
+  "blueprint_sha256": "da4952c5ae0c78ce82134e7c17c2018c11d130a8cf9e043677e7bc824cfb7c1e",
+  "evidence_sha256": "53eaac85168d1285eb76a6aec8574d029f59344395c2d3ff102352e804d1262e",
+  "instructions_sha256": "c12faf29a793b2fe099bdf1d5fada7f34089f111e984fe9984c56cd8d231fe34",
   "inventor": {
     "extension_level": "taste-only",
     "id": "eve",
@@ -25,19 +25,19 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
+    "artifact_sha256": "5f8a1b5cf56b325b7b1720cc7e1bd0d164821c2b91e6444010126c9b87e837b2",
     "delivery": null,
-    "instructions_sha256": "aec6c5c9ca385a32c0a832864f5d1c7b45d327282c229f9b8d4a2a43db8de3ca",
-    "job": "deliver",
+    "instructions_sha256": null,
+    "job": "instructions",
     "needs": [
       {
-        "capability": "production-and-shipping",
-        "instructions": "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
-        "job": "deliver",
-        "reason": "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured."
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
     ],
-    "page_url": "https://www.autonomous.ai/factory/product/rackhaven-night-shift",
+    "page_url": null,
     "playtest_rounds": 3,
     "product_id": "rackhaven-night-shift",
     "round": 1,
@@ -46,45 +46,11 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac",
+    "builder_sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "site_receipt": {
-    "artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
-    "current_history_id": "6a8be96a6ddacb62db04c4dd",
-    "design_id": "6a8be96a6ddacb62db04c4dc",
-    "details": {
-      "cover_sha256": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e",
-      "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8be96a6ddacb62db04c4dc/cover.png",
-      "instructions_sha256": "aec6c5c9ca385a32c0a832864f5d1c7b45d327282c229f9b8d4a2a43db8de3ca",
-      "kind": "shop-design",
-      "media_sha256": {
-        "box": "019cac7be3db6e6996f82ef27bee440e7e8f97feaca6a0e81521ca5809818479",
-        "detail": "7d178207bff17ac87d769842ae5ee46b7f26b073e6e9292d3a5f4c1ddc90cea6",
-        "hero": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e",
-        "parts": "90a9ddfcdd6bcf339736cac0a8321e166b80c2405850779b59c07ee4fe28dc51",
-        "play": "018c812e4136fc053200a5f595c0d9caabd578ea05afe597da7f9442a5a9da92"
-      },
-      "page_content_sha256": "397e667c9fa0cf8f49c1b17fe76f895f9e6b7586a2ed5677a66b0ba06ad7abe8",
-      "page_url": "https://www.autonomous.ai/factory/product/rackhaven-night-shift",
-      "playtest_evidence_sha256": "917bf5cc658af8f6e81495c1e85b2e78c5328711f3d9c1380381cb756086dc80"
-    },
-    "door": "shop",
-    "listing_active": null,
-    "listing_currency": null,
-    "listing_price_cents": null,
-    "listing_sku": null,
-    "observed_at": "2026-08-24T06:49:20.347564+00:00",
-    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
-    "pack_sha256": "3297e4cdd690c60910e3daaceab5fc23689adc5ff9114d21ea08aa7484d6bb6d",
-    "project_url": "https://cdn.autonomous.ai/panda-social/6a8be96a6ddacb62db04c4dc/6a8be96a6ddacb62db04c4dd/",
-    "published_history_id": null,
-    "reference": "6a8be96a6ddacb62db04c4dc",
-    "root_id": "6a8be96a6ddacb62db04c4dc",
-    "slug": "rackhaven-night-shift",
-    "status": "draft"
-  },
+  "site_receipt": null,
   "taste_sha256": "de525b7acbb5586488eb1343e93220e366dcb40c71d0831d0cfedd70e919f1f7",
   "wish": {
     "constraints": {
@@ -94,7 +60,7 @@
     "context": {
       "inventor_id": "eve"
     },
-    "objective": "I wish my three-node homelab—Comet, Moss, and Void—became a tiny orbital engine room with one night-shift operator.",
+    "objective": "I wish my three-node homelab\u2014Comet, Moss, and Void\u2014became a tiny orbital engine room with one night-shift operator.",
     "product_id": "rackhaven-night-shift",
     "schema_version": 1
   }

@@ -66,6 +66,12 @@ what shipped the existing board games).
 
 ### Path B — HTTP import API (Bob's path)
 
+> Current Workshop ruling (2026-08-24): this document records the measured
+> provider surface, not Bob's authority. Bob uses only Workshop's model-only
+> import plus explicit public/unpublish operations. Factory owns server-side
+> copy, images, and video. Bob's former `curate()` compatibility name fails
+> before credentials or HTTP and the content endpoints below are not called.
+
 Everything Bob needs is public API surface on
 `https://panda-social-api.autonomous.ai/api/v1`:
 
@@ -74,7 +80,7 @@ Everything Bob needs is public API surface on
 | 1 | `POST /auth/oauth/google` or PKCE device flow | mint bob's JWTs (one-time human act; §2) |
 | 2 | `POST /auth/refresh` | rotate access+refresh before expiry; on every tick |
 | 3 | `POST /designs/import` | multipart zip, **`status=draft`**, 201 → design JSON |
-| 4 | `PATCH /designs/{slug}/use-case`, `PUT /designs/{slug}/story-blocks` | curated rules page |
+| 4 | Server enrichment | Factory generates use-case, story blocks, images, and video; Bob does not write the measured content endpoints |
 | 5 | *(human)* `POST /designs/{slug}/publish` with `{listing:{price_cents}}` | draft→public + sale |
 | 6 | updates: `POST /designs/{slug}/import` (new version), content API (page), `PATCH /designs/{slug}` (metadata) | never re-import via step 3 |
 
@@ -123,7 +129,11 @@ If the refresh chain ever dies (revoked/expired), publishing halts and Bob
 raises a human task — it cannot re-mint alone. That's acceptable: publishing is
 the end of the pipeline, not the tick loop.
 
-## 3. `POST /designs/import` — exact request Bob sends
+## 3. `POST /designs/import` — measured provider contract
+
+Workshop, not Bob, adapts this provider contract. Bob supplies the inspected
+model and bounded listing facts to Workshop; he does not construct this
+multipart request or attach page media himself.
 
 ```
 POST /api/v1/designs/import
@@ -141,7 +151,7 @@ Content-Type: multipart/form-data
 | `category` | active slug from `GET /design-categories` (e.g. `toys-games` if active) | unknown/inactive → 400 |
 | `license` | omit (defaults `CC-BY-NC-SA`) | ≤60 chars |
 | `prompt` | the game concept sentence | shown in design history |
-| `thumbnails` | hero render first, QA sheet second | jpg/png/webp ≤5 MB, max 5; first file = cover |
+| `thumbnails` | **omitted by Bob** | Factory generates page images on the server |
 
 **Zip contract** (one zip = one design; two design folders → 400):
 
@@ -152,9 +162,9 @@ Content-Type: multipart/form-data
   primary-mesh ranking). Include a client-exported `.glb` if available (server
   fallback conversion is "unindexed — a client-side trimesh export is
   smaller/nicer"; >2 M triangle meshes are skipped).
-- Renders in `<slug>_review/` — filename scoring: contains `assembled` +100,
-  `iso` +50, starts with `_` +20, `section/exploded/print` −40. Convention:
-  **`<stem>_review/_assembled.png`** is the highest-scoring name possible.
+- Historical imports ranked renders in `<slug>_review/`. Bob now strips every
+  `*_review/` directory from the Workshop pack so local QA cannot become a
+  Factory thumbnail.
 - **`RULES.md` written into the zip** — publish.py precedent: the zip is the
   only surface with no length cap, so the *complete* rulebook ships there
   ("a game whose rules only half-arrived is not a game anyone can play").
@@ -186,7 +196,7 @@ places** (publish.py's exact split):
 3. `description` — the pitch + facts ("2-4 players · 30 min") + the pointer
    "The complete rules ship with the files as RULES.md."
 
-Endpoints (all owner-only, bearer required, same-shape response, no
+Historical measured endpoints (all owner-only, bearer required, same-shape response, no
 `updated_at` bump so curating never re-pins the feed):
 
 - `PATCH /designs/{slug}/use-case` — first write must carry `label` + `body` +
@@ -201,10 +211,10 @@ Endpoints (all owner-only, bearer required, same-shape response, no
   curated spec row OUTRANKS the slicer's measured one for good … a guess here
   would permanently mask the real number."
 
-Order matters: import first (to have a cover URL), then use-case, then
-story-blocks. If content writes fail, the design is still correct — retry the
-content step only (publishdesign has the same recovery: "The design itself is
-already written and correct; only the curated page failed.")
+These observations are retained for archaeology only. Bob does not execute
+either content write. After Workshop imports the model, Factory's enrichment
+pipeline owns the page; authenticated inventor reads may inspect its result but
+must not replace it.
 
 ## 5. AI-authorship disclosure — where it goes
 

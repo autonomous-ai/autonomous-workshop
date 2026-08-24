@@ -74,7 +74,7 @@ class LaunchTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(
-            ContractError, "valid root project.json.*defining gen_step"
+            ContractError, "top-level.*gen_step.*root project.json.*assembled.stl"
         ):
             coordinator.import_draft(
                 "undiscoverable", packet, {"title": "Undiscoverable"}
@@ -82,6 +82,31 @@ class LaunchTest(unittest.TestCase):
 
         self.assertEqual(transport.calls, [])
         self.assertIsNone(self.store.latest_publish_intent("undiscoverable"))
+
+    def test_project_marker_requires_a_root_primary_model_before_network(self):
+        product = Path(self.temp.name) / "nested-primary"
+        (product / "cad").mkdir(parents=True)
+        (product / "project.json").write_text(
+            '{"id":"nested-primary"}\n', encoding="utf-8"
+        )
+        (product / "cad" / "product.stl").write_text(
+            "solid nested\nendsolid nested\n", encoding="utf-8"
+        )
+        packet = Path(self.temp.name) / "nested-primary.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "nested-primary", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+
+        with self.assertRaisesRegex(ContractError, "root assembled.stl.*<slug>.stl"):
+            Launchpad(
+                self.store, Portal("token", transport=transport), "owner"
+            ).import_draft("nested-primary", packet, {"title": "Nested Primary"})
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("nested-primary"))
 
     def test_import_rejects_nested_generator_that_would_drop_artifact_files(self):
         product = Path(self.temp.name) / "narrowed"
@@ -107,6 +132,37 @@ class LaunchTest(unittest.TestCase):
 
         self.assertEqual(transport.calls, [])
         self.assertIsNone(self.store.latest_publish_intent("narrowed"))
+
+    def test_every_shared_import_rejects_factory_discoverable_local_page_media(self):
+        product = Path(self.temp.name) / "creator-media"
+        (product / "review").mkdir(parents=True)
+        (product / "project.json").write_text(
+            '{"id":"creator-media"}\n', encoding="utf-8"
+        )
+        (product / "toy.step").write_text("exact model\n", encoding="utf-8")
+        (product / "creator-media.stl").write_text(
+            "solid exact\nendsolid exact\n", encoding="utf-8"
+        )
+        (product / "review" / "hero.png").write_bytes(b"creator cover")
+        packet = Path(self.temp.name) / "creator-media.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "creator-media", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+
+        with self.assertRaisesRegex(ContractError, "creator page-output|local page media"):
+            Portal("token", transport=transport).import_design(
+                packet, {"title": "Creator Media"}
+            )
+        with self.assertRaisesRegex(ContractError, "creator page-output|local page media"):
+            self.coordinator(transport).import_draft(
+                "creator-media", packet, {"title": "Creator Media"}
+            )
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("creator-media"))
 
     @staticmethod
     def design(status="draft", price_cents=4000):
@@ -206,6 +262,67 @@ class LaunchTest(unittest.TestCase):
             self.store.get_publish_intent(draft.intent_id)["state"], "live"
         )
         self.assertEqual([call[0] for call in transport.calls], ["POST", "POST", "GET"])
+
+    def test_public_readback_accepts_factory_generated_copy_and_media(self):
+        enriched = self.design("public")
+        enriched.update(
+            {
+                "title": "Factory-polished title",
+                "description": "Factory-generated product story.",
+                "attachments": [
+                    {
+                        "kind": "video",
+                        "url": "https://cdn.example/generated/product-story.mp4",
+                    },
+                    {
+                        "kind": "image",
+                        "url": "https://cdn.example/generated/product-story.webp",
+                    },
+                ],
+            }
+        )
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, enriched),
+                self.response(200, enriched),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        live = coordinator.publish_live(draft.intent_id, 4000)
+
+        self.assertTrue(live.is_verified_public)
+        publish_body = json.loads(transport.calls[1][3].decode("utf-8"))
+        self.assertNotIn("attachments", publish_body)
+
+    def test_shared_sender_rejects_thumbnail_and_attachment_bypasses_before_http(self):
+        transport = QueueTransport([])
+        coordinator = self.coordinator(transport)
+
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.import_draft(
+                "game",
+                self.packet,
+                {"title": "Game"},
+                thumbnail={"filename": "cover.png"},
+            )
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.publish_live(
+                "missing-intent",
+                4000,
+                attachments=[
+                    {"kind": "image", "url": "https://cdn.example/creator.png"}
+                ],
+            )
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.publish_live(
+                "missing-intent", 4000, title="Creator replacement"
+            )
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("game"))
 
     def test_transport_failure_is_unknown_and_blocks_retry(self):
         transport = QueueTransport([OSError("connection reset")])

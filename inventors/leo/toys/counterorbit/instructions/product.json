@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "e25558c45868b791dda4dac9c639aa931e61964d15bd30cad6e959693a7f36a9",
+      "evidence_sha256": "1887e46e6e972efbc250f5c182ae558a3b9a14386560c2ac66925c62e0c09c78",
       "passed": true
     },
     "game-simulation": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "game-simulation.json",
-      "evidence_sha256": "d9dc259dff16e38449ad85b40d13f9f733d0b46527c28b064091bf53955a90de",
+      "evidence_sha256": "ac73627f2990b4b47c62746e79ce31379863d271f10da60d1e7ed2704688b115",
       "passed": true
     },
     "mechanical-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "471b7625c3031d2c0aedb81125a5fd3bfc23ad678a38a406296042a670dae822",
+      "evidence_sha256": "3de8117ce51fea7a5baddeb7231a7edfef2c206bdd98e294585179f4cd243c20",
       "passed": true
     },
     "print-test": {
@@ -42,52 +42,29 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "3fe84598b436779df1815ec9938dad4c4db3f5def0146848334fbae944daba76",
+      "evidence_sha256": "b1ffe0dfd784ed937f46158c49ff470d7e55b0af6a05be795c2aafd09fea2253",
       "passed": true
     }
   },
-  "how_to_play": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written.",
-  "images": {
-    "box": "images/box.png",
-    "detail": "images/detail.png",
-    "hero": "images/hero.png",
-    "parts": "images/parts.png",
-    "play": "images/play.png"
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
   },
+  "how_to_play": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written.",
   "instructions_kind": "rulebook",
+  "kind": "workshop.instructions-facts",
   "lane": "invented-games",
   "limitations": [
     "AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight.",
     "Customer reactions are collected after delivery as Reviews and can improve a future edition."
   ],
-  "playtest_evidence_artifact_sha256": "bd2e07401bc766a7e711ff6a7d7340365c643d0437c3479d37fb98c54205011e",
-  "product_artifact_sha256": "c6f44cf73d743ca61bec3ad3a2c539c3ac8b3af1eff8a6bc748a27b7abb2a92e",
-  "schema_version": 1,
-  "status": "ready",
-  "story_blocks": [
-    {
-      "body": "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-      "hero_image": "play",
-      "lead": "How to play",
-      "pair_images": [
-        "detail",
-        "parts"
-      ]
-    },
-    {
-      "body": "The box contains one fixed core, one rotating outer orbit, ten signal stones, one rulebook. AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight. Customer reactions are collected after delivery as Reviews and can improve a future edition.",
-      "hero_image": "box",
-      "lead": "What arrives",
-      "pair_images": []
-    }
-  ],
+  "playtest_evidence_artifact_sha256": "8107bb464138c07fd52bd256c30d3cfe378d3dfffec6774d02ea05dfdb2e3fef",
+  "product_artifact_sha256": "67077b16496a76646d4cedb26a295538783e83ee6343c86e6357abd0156708f4",
+  "schema_version": 2,
+  "status": "facts-ready",
   "summary": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit.\n\nBy Leo.",
   "title": "Counterorbit",
-  "use_case": {
-    "body": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit. It turns one person's request into this exact plaything instead of decorating a generic download.",
-    "image": "hero",
-    "label": "Made from your wish"
-  },
   "what_arrives": [
     "one fixed core",
     "one rotating outer orbit",

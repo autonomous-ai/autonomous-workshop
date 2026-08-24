@@ -15,9 +15,7 @@ from .jobs import InstructionsContext, Need, ProductInstructions, WaitingFor
 from .models import Receipt
 
 
-REQUIRED_PRODUCT_IMAGES = ("hero", "play", "detail", "parts", "box")
 INSTRUCTIONS_MANIFEST_FILENAME = "instructions-manifest.json"
-_IMAGE_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp"))
 InstructionsSiteWriter = Callable[
     [InstructionsContext, Path, ArtifactManifest], Receipt
 ]
@@ -118,57 +116,6 @@ def sealed_instructions_manifest(root: Path) -> ArtifactManifest:
     return manifest
 
 
-def _site_paragraph(*parts: Any) -> str:
-    """Build bounded plain copy for the site's curated product sections."""
-
-    text = " ".join(
-        " ".join(str(part).split())
-        for part in parts
-        if isinstance(part, str) and part.strip()
-    ).strip()
-    fillers = (
-        "The images on this page stay tied to the exact approved design.",
-        "AI players simulated the product and returned evidence-bound feedback before this page was written.",
-        "Printing, hands-on quality checks, packing, and shipping remain part of Deliver.",
-    )
-    for sentence in fillers:
-        if len(text) >= 180:
-            break
-        text = (text + " " + sentence).strip()
-    if len(text) > 400:
-        shortened = text[:399]
-        boundary = shortened.rfind(" ")
-        if boundary >= 180:
-            shortened = shortened[:boundary]
-        text = shortened.rstrip(" ,;:-") + "."
-    if not 180 <= len(text) <= 400:
-        raise ContractError("Instructions could not form bounded site copy")
-    return text
-
-
-def _safe_relative_file(root: Path, value: Any, label: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ContractError("Instructions media %s must be a relative path" % label)
-    relative = Path(value)
-    if relative.is_absolute() or ".." in relative.parts or "\\" in value:
-        raise ContractError(
-            "Instructions media %s must stay inside the Instructions workspace" % label
-        )
-    path = root / relative
-    try:
-        resolved = path.resolve(strict=True)
-        resolved.relative_to(root.resolve(strict=True))
-    except (OSError, ValueError) as exc:
-        raise ContractError(
-            "Instructions media %s is missing or outside the workspace" % label
-        ) from exc
-    if not resolved.is_file() or resolved.suffix.casefold() not in _IMAGE_SUFFIXES:
-        raise ContractError(
-            "Instructions media %s must be a PNG, JPEG, or WebP file" % label
-        )
-    return relative.as_posix()
-
-
 def evidence_claims(context: InstructionsContext) -> Dict[str, Any]:
     """Expose exactly what Playtest proved; never upgrade evidence in copy."""
 
@@ -197,29 +144,32 @@ def evidence_claims(context: InstructionsContext) -> Dict[str, Any]:
 
 
 class DefaultInstructions:
-    """Build the box insert and save its product page as one Shop draft.
-
-    The optional ``media_maker`` writes fixed-view product images into the given
-    Instructions workspace and returns relative paths keyed by
-    :data:`REQUIRED_PRODUCT_IMAGES`.  Keeping image generation behind this one
-    callback lets every inventor share the page contract while the Workshop chooses
-    render/image providers centrally.
+    """Build the box insert and hand factual product context to one Shop draft.
 
     ``site_writer`` receives the unchanged context, the sealed Instructions root,
-    and its content-addressed manifest.  It must create and enrich a private page
-    draft, then return an authenticated :class:`~inventor_workshop.models.Receipt`
-    from owner readback.  The Receipt details must include
+    and its content-addressed manifest. It may import only the model and factual
+    handoff; Factory generates the customer-facing copy, images, and video. The
+    writer returns an authenticated :class:`~inventor_workshop.models.Receipt`
+    from private-draft readback. The Receipt details must include
     ``instructions_sha256`` equal to the supplied manifest's artifact hash.  This
-    single binding covers product.json, INSTRUCTIONS.md, every fixed-view image,
-    and the Playtest evidence identity recorded in product.json.
+    binding covers product.json, INSTRUCTIONS.md, and the Playtest evidence
+    identity recorded in product.json.
+
+    ``media_maker`` is a rejected compatibility keyword. Keeping the rejection at
+    construction makes stale inventor integrations fail before they can generate
+    or upload page media.
     """
 
     def __init__(
         self,
-        media_maker: Optional[Callable[[InstructionsContext], Mapping[str, str]]] = None,
         site_writer: Optional[InstructionsSiteWriter] = None,
+        *,
+        media_maker: Optional[Callable[[InstructionsContext], Mapping[str, str]]] = None,
     ) -> None:
-        self.media_maker = media_maker
+        if media_maker is not None:
+            raise ContractError(
+                "Instructions media_maker is retired; Factory owns generated page media"
+            )
         self.site_writer = site_writer
 
     def __call__(self, context: InstructionsContext) -> ProductInstructions:
@@ -229,32 +179,19 @@ class DefaultInstructions:
             )
         context.assert_current()
         needs = []
-        if self.media_maker is None:
-            needs.append(
-                Need(
-                    "instructions",
-                    "product-images",
-                    "The product passed Playtest, but a truthful beautiful page "
-                    "needs fixed-view renders.",
-                    "Configure the shared Instructions renderer/image provider; "
-                    "do not substitute concept art for product proof.",
-                )
-            )
         if self.site_writer is None:
             needs.append(
                 Need(
                     "instructions",
                     "site-page",
-                    "Instructions includes the product page, and it is not complete "
-                    "until its private draft is proven in the Shop.",
+                    "Instructions includes the factual model handoff, and it is not "
+                    "complete until its private draft is proven in the Shop.",
                     "Configure the shared Instructions site writer with authenticated "
                     "draft readback; do not treat local files or an HTTP success as proof.",
                 )
             )
         if needs:
             raise WaitingFor(*needs)
-        # Narrow Optional callback types after the truthful capability check.
-        assert self.media_maker is not None
         assert self.site_writer is not None
         root = context.workspace
         if root.exists():
@@ -262,20 +199,6 @@ class DefaultInstructions:
                 raise ContractError("Instructions workspace must be fresh and empty")
         else:
             root.mkdir(parents=True, mode=0o700)
-        raw_media = self.media_maker(context)
-        # Rendering may be remote or long-running.  Refuse its output if the
-        # product changed while those views were being made.
-        context.assert_current()
-        if not isinstance(raw_media, Mapping):
-            raise ContractError("Instructions media maker must return a path mapping")
-        media = {
-            name: _safe_relative_file(root, raw_media.get(name), name)
-            for name in REQUIRED_PRODUCT_IMAGES
-        }
-        if len(set(media.values())) != len(REQUIRED_PRODUCT_IMAGES):
-            raise ContractError(
-                "Instructions require a distinct file for every fixed image view"
-            )
         claims = evidence_claims(context)
         title = str(context.made.product["title"])
         summary = attribute_product_description(
@@ -294,17 +217,10 @@ class DefaultInstructions:
             else "Follow the included setup, operation, and interaction instructions."
         )
         instructions = context.made.product.get("instructions", fallback)
-        component_copy = ", ".join(
-            str(item) for item in context.made.product.get("components", [])
-        ) or "the exact parts listed in the product manifest"
-        limitation_copy = " ".join(
-            str(item) for item in context.made.product.get("limitations", [])
-        )
         page = {
-            "schema_version": 1,
-            # This is desired content state, not evidence that the remote draft
-            # exists.  The authenticated site Receipt below is the sole proof.
-            "status": "ready",
+            "schema_version": 2,
+            "kind": "workshop.instructions-facts",
+            "status": "facts-ready",
             "title": title,
             "summary": summary,
             "lane": context.blueprint.lane,
@@ -313,41 +229,17 @@ class DefaultInstructions:
             "instructions_kind": instructions_kind,
             use_key: str(instructions),
             "what_arrives": context.made.product.get("components", []),
-            "images": media,
             "product_artifact_sha256": context.made.artifact_sha256,
             "playtest_evidence_artifact_sha256": (
                 context.playtested.evidence.evidence_artifact_sha256
             ),
             "claims": claims,
             "limitations": context.made.product.get("limitations", []),
-            "use_case": {
-                "label": "Made from your wish",
-                "body": _site_paragraph(
-                    str(context.made.product["summary"]),
-                    "It turns one person's request into this exact plaything instead of decorating a generic download.",
-                ),
-                "image": "hero",
+            "factory_enrichment": {
+                "copy_owner": "factory",
+                "media_owner": "factory",
+                "status": "pending",
             },
-            "story_blocks": [
-                {
-                    "lead": use_heading,
-                    "body": _site_paragraph(
-                        str(instructions),
-                        "The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-                    ),
-                    "hero_image": "play",
-                    "pair_images": ["detail", "parts"],
-                },
-                {
-                    "lead": "What arrives",
-                    "body": _site_paragraph(
-                        "The box contains %s." % component_copy,
-                        limitation_copy,
-                    ),
-                    "hero_image": "box",
-                    "pair_images": [],
-                },
-            ],
         }
         (root / "product.json").write_text(
             json.dumps(page, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
@@ -400,7 +292,7 @@ class DefaultInstructions:
     def resume(self, context: InstructionsContext) -> ProductInstructions:
         """Resume only the site portion of one already sealed Instructions job.
 
-        Media, copy, and paper instructions are intentionally never regenerated.
+        Facts and paper instructions are intentionally never regenerated.
         The Workshop event log binds the manifest identity before this method is
         called; this method independently rechecks both that seal and its exact
         Made/Playtested context before retrying the idempotent site writer.
@@ -416,7 +308,7 @@ class DefaultInstructions:
                 Need(
                     "instructions",
                     "site-page",
-                    "The sealed Instructions page still has no configured site writer.",
+                    "The sealed Instructions facts still have no configured model-handoff writer.",
                     "Configure the shared Instructions site writer with authenticated readback, then resume this exact job.",
                 )
             )
@@ -479,7 +371,7 @@ class DefaultInstructions:
                 Need(
                     "instructions",
                     "site-reconciliation",
-                    "The site may have accepted part or all of this exact Instructions page, so retrying could duplicate it.",
+                    "The site may have accepted this exact model/facts handoff, so retrying could duplicate it.",
                     "Reconcile the recorded site intent with authenticated readback, then resume this same Instructions job.",
                 )
             ) from exc
@@ -488,8 +380,8 @@ class DefaultInstructions:
                 Need(
                     "instructions",
                     "site-page",
-                    "The site rejected this exact Instructions page before a verified private draft was recorded.",
-                    "Correct the site account, copy, media, or draft input and resume this same Instructions job.",
+                    "The site rejected this exact Instructions handoff before a verified private draft was recorded.",
+                    "Correct the site account or model/facts input and resume this same Instructions job.",
                 )
             ) from exc
         context.assert_current()
@@ -504,7 +396,6 @@ __all__ = [
     "DefaultInstructions",
     "INSTRUCTIONS_MANIFEST_FILENAME",
     "InstructionsSiteWriter",
-    "REQUIRED_PRODUCT_IMAGES",
     "evidence_claims",
     "sealed_instructions_manifest",
 ]

@@ -11,7 +11,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from alice.adapters import adapter_input_sha256
 from alice.cli import _adapters
 from alice.config import load_config
 from alice.page_builder import (
@@ -501,7 +500,7 @@ print(f"publish: {slug} -> import ok")
         dfm.update(lineage)
         return payload
 
-    def test_invokes_only_existing_operator_and_binds_exact_rich_draft(self) -> None:
+    def test_new_rich_draft_fails_before_writer_claim_or_remote_read(self) -> None:
         ignored_binary = self._git(
             "status",
             "--ignored",
@@ -511,62 +510,41 @@ print(f"publish: {slug} -> import ok")
         )
         self.assertTrue(ignored_binary.startswith("!!"))
         payload = self.payload()
-        receipt = self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
+        snapshot = snapshot_project(self.project)
+        effect_key = (
+            "alice.effect:rich-draft:candidate-1:v7:"
+            f"{snapshot.project_sha256[:20]}"
+        )
 
-        self.assertEqual(receipt.status, "passed")
-        self.assertEqual(receipt.evidence_class, "shop_door")
-        self.assertEqual(
-            receipt.input_sha256,
-            adapter_input_sha256(PAGE_BUILDER_OPERATION, payload),
-        )
-        self.assertEqual(receipt.payload["design_id"], "design-1")
-        self.assertEqual(receipt.payload["history_id"], "history-1")
-        self.assertEqual(receipt.payload["status"], "draft")
-        self.assertEqual(
-            receipt.payload["project_sha256"], snapshot_project(self.project).project_sha256
-        )
-        self.assertEqual(
-            receipt.payload["rich_page"]["use_case"]["label"], "On the table"
-        )
-        call = json.loads(self.calls.read_text(encoding="utf-8").splitlines()[0])
-        self.assertEqual(call["args"], ["river-council"])
-        self.assertEqual(call["operation_key"], receipt.payload["operation_key"])
-        self.assertEqual(call["input_sha256"], receipt.input_sha256)
-        self.assertEqual(call["project_sha256"], receipt.payload["project_sha256"])
-        self.assertEqual(call["dont_write_bytecode"], "1")
-        self.assertTrue(call["pycache_prefix"])
-        self.assertEqual(call["telegram_bot_token"], "")
-        self.assertEqual(call["telegram_chat_dm"], "")
-        self.assertEqual(call["telegram_chat_journal"], "")
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
+            self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
+
+        self.assertFalse(self.calls.exists())
+        self.assertEqual(self.readback.calls, [])
+        self.assertEqual(self.readback.file_calls, [])
+        self.assertIsNone(self.store.get_state(effect_key))
+        self.assertFalse((self.project / "alice-provenance.json").exists())
         self.assertFalse((self.operator.parent / "__pycache__").exists())
-        self.assertEqual(
-            set(self.readback.file_calls),
-            {"river-council.stl", "RULES.md", "alice-provenance.json"},
-        )
-        self.assertTrue((self.idea / ".alice-rich-draft.json").is_file())
+        self.assertFalse((self.idea / ".alice-rich-draft.json").exists())
 
-    def test_text2game_export_binds_the_exact_vibe_idea_and_source_lineage(self) -> None:
+    def test_even_exact_text2game_lineage_cannot_enable_retired_writer(self) -> None:
         payload = self.add_text2game_handoff(self.payload())
 
-        receipt = self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
+            self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
 
-        binding = receipt.payload["text2game_export"]
-        self.assertEqual(
-            binding["vibe_idea_sha256"],
-            hashlib.sha256((self.idea / "idea.json").read_bytes()).hexdigest(),
-        )
-        self.assertEqual(binding["source_repo_commit"], "4" * 40)
+        self.assertFalse(self.calls.exists())
+        self.assertEqual(self.readback.calls, [])
 
-    def test_authenticated_draft_readback_requires_exact_alice_attribution(self) -> None:
+    def test_new_write_never_uses_remote_record_as_page_authority(self) -> None:
         self.readback.design["description"] = (
             "A complete physical strategy game.\n\nNote: By Alice."
         )
 
-        with self.assertRaisesRegex(
-            AmbiguousPageBuilderEffect, "exact receipt/readback"
-        ):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             self.adapter().invoke(PAGE_BUILDER_OPERATION, self.payload())
 
+        self.assertEqual(self.readback.calls, [])
         self.assertEqual(self.readback.file_calls, [])
 
     def test_text2game_root_idea_drift_is_rejected_before_the_operator(self) -> None:
@@ -591,15 +569,15 @@ print(f"publish: {slug} -> import ok")
 
         self.assertFalse(self.calls.exists())
 
-    def test_matching_sidecar_makes_restart_a_verified_noop(self) -> None:
+    def test_repeat_new_invocation_stays_fail_closed_without_claim(self) -> None:
         adapter = self.adapter()
         payload = self.payload()
-        first = adapter.invoke(PAGE_BUILDER_OPERATION, payload)
-        second = adapter.invoke(PAGE_BUILDER_OPERATION, payload)
+        for _ in range(2):
+            with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
+                adapter.invoke(PAGE_BUILDER_OPERATION, payload)
 
-        self.assertEqual(first.payload["history_id"], second.payload["history_id"])
-        self.assertEqual(len(self.calls.read_text(encoding="utf-8").splitlines()), 1)
-        self.assertEqual(self.readback.calls, ["river-council", "river-council"])
+        self.assertFalse(self.calls.exists())
+        self.assertEqual(self.readback.calls, [])
 
     def test_preexisting_unbound_publish_is_ambiguous_and_never_invoked(self) -> None:
         (self.idea / "published.json").write_text(
@@ -641,16 +619,17 @@ print(f"publish: {slug} -> import ok")
         with self.assertRaisesRegex(PageBuilderError, "printable"):
             snapshot_project(self.project)
 
-    def test_backend_readback_must_be_private_exact_and_rich(self) -> None:
+    def test_public_remote_record_cannot_enable_retired_writer(self) -> None:
         self.readback.design["status"] = "public"
 
-        with self.assertRaisesRegex(AmbiguousPageBuilderEffect, "exact receipt/readback"):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             self.adapter().invoke(PAGE_BUILDER_OPERATION, self.payload())
 
-        self.assertTrue((self.idea / "published.json").is_file())
+        self.assertEqual(self.readback.calls, [])
+        self.assertFalse((self.idea / "published.json").exists())
         self.assertFalse((self.idea / ".alice-rich-draft.json").exists())
 
-    def test_any_nonzero_exit_after_launch_is_ambiguous(self) -> None:
+    def test_retired_writer_binary_is_never_launched(self) -> None:
         self.operator.write_text(
             'RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"\n'
             'ALICE_DRAFT_HANDOFF_CONTRACT = "alice-text2game-export-v1"\n'
@@ -660,14 +639,13 @@ print(f"publish: {slug} -> import ok")
         self._commit_operator("nonzero operator fixture")
         adapter = self.adapter()
 
-        with self.assertRaisesRegex(
-            AmbiguousPageBuilderEffect, "exited 7 after launch"
-        ):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             adapter.invoke(PAGE_BUILDER_OPERATION, self.payload())
 
+        self.assertFalse(self.calls.exists())
         self.assertEqual(self.readback.calls, [])
 
-    def test_operator_output_is_bounded_after_single_writer_claim(self) -> None:
+    def test_retired_writer_cannot_emit_page_copy(self) -> None:
         self.operator.write_text(
             'RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"\n'
             'ALICE_DRAFT_HANDOFF_CONTRACT = "alice-text2game-export-v1"\n'
@@ -677,18 +655,19 @@ print(f"publish: {slug} -> import ok")
         self._commit_operator("large output operator fixture")
         adapter = self.adapter(maximum_stdout_bytes=128)
 
-        with self.assertRaisesRegex(AmbiguousPageBuilderEffect, "stdout exceeded"):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             adapter.invoke(PAGE_BUILDER_OPERATION, self.payload())
 
-    def test_remote_history_must_contain_the_exact_cad_artifact(self) -> None:
+        self.assertFalse(self.calls.exists())
+
+    def test_remote_history_is_not_read_to_enable_new_page_write(self) -> None:
         self.readback.remote_hash_overrides["river-council.stl"] = "0" * 64
 
-        with self.assertRaisesRegex(
-            AmbiguousPageBuilderEffect, "exact artifact 'river-council.stl'"
-        ):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             self.adapter().invoke(PAGE_BUILDER_OPERATION, self.payload())
 
-        self.assertTrue((self.idea / "published.json").is_file())
+        self.assertEqual(self.readback.file_calls, [])
+        self.assertFalse((self.idea / "published.json").exists())
         self.assertFalse((self.idea / ".alice-rich-draft.json").exists())
 
     def test_rejects_any_other_operation(self) -> None:
@@ -806,26 +785,20 @@ print(f"publish: {slug} -> import ok")
         with self.assertRaisesRegex(ValueError, "git inspection"):
             self.adapter(git_binary=Path(sys.executable).resolve())
 
-    def test_tracked_drift_after_preparation_is_caught_before_effect(self) -> None:
+    def test_retired_writer_stops_before_local_preparation(self) -> None:
         import alice.page_builder as page_builder_module
 
         adapter = self.adapter()
-        original_write = page_builder_module._write_exact_file
-
-        def write_then_drift(path: Path, content: bytes) -> None:
-            original_write(path, content)
-            ignore = self.workspace / ".gitignore"
-            ignore.write_text(
-                ignore.read_text(encoding="utf-8") + "# tracked drift\n",
-                encoding="utf-8",
-            )
 
         with patch.object(
-            page_builder_module, "_write_exact_file", side_effect=write_then_drift
-        ):
-            with self.assertRaisesRegex(PageBuilderError, "tracked drift"):
+            page_builder_module,
+            "_write_exact_file",
+            side_effect=AssertionError("retired writer prepared local files"),
+        ) as local_write:
+            with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
                 adapter.invoke(PAGE_BUILDER_OPERATION, self.payload())
 
+        local_write.assert_not_called()
         self.assertFalse(self.calls.exists())
 
     def test_dependency_drift_fails_diagnostics_before_remote_read(self) -> None:
@@ -986,26 +959,20 @@ print(f"publish: {slug} -> import ok")
             diagnostics_adapter.invoke(PAGE_BUILDER_OPERATION, self.payload())
         self.assertFalse(self.calls.exists())
 
-    def test_preflight_receipt_is_rechecked_after_last_local_preparation(self) -> None:
+    def test_retired_writer_never_reaches_last_local_preparation(self) -> None:
         import alice.page_builder as page_builder_module
 
         adapter = self.adapter()
-        original_write = page_builder_module._write_exact_file
-
-        def write_then_invalidate_receipt(path: Path, content: bytes) -> None:
-            original_write(path, content)
-            self.publishdesign_preflight_receipt.write_bytes(
-                self.publishdesign_preflight_receipt.read_bytes() + b"\n"
-            )
 
         with patch.object(
             page_builder_module,
             "_write_exact_file",
-            side_effect=write_then_invalidate_receipt,
-        ):
-            with self.assertRaisesRegex(PageBuilderError, "receipt SHA-256"):
+            side_effect=AssertionError("retired writer prepared local files"),
+        ) as local_write:
+            with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
                 adapter.invoke(PAGE_BUILDER_OPERATION, self.payload())
 
+        local_write.assert_not_called()
         self.assertFalse(self.calls.exists())
 
     def test_default_operator_environment_excludes_telegram_credentials(self) -> None:
@@ -1112,7 +1079,7 @@ print(f"publish: {slug} -> import ok")
                 self.assertFalse(diagnostics["authenticated"])
                 self.assertEqual(diagnostics["reason"], reason)
 
-    def test_durable_sender_claim_prevents_a_second_import(self) -> None:
+    def test_existing_legacy_claim_cannot_reenable_retired_writer(self) -> None:
         payload = self.payload()
         snapshot = snapshot_project(self.project)
         operation_key = (
@@ -1125,9 +1092,7 @@ print(f"publish: {slug} -> import ok")
             None,
         )
 
-        with self.assertRaisesRegex(
-            AmbiguousPageBuilderEffect, "already claimed"
-        ):
+        with self.assertRaisesRegex(PageBuilderError, "writer is retired"):
             self.adapter().invoke(PAGE_BUILDER_OPERATION, payload)
 
         self.assertFalse(self.calls.exists())

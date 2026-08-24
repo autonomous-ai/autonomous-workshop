@@ -203,9 +203,10 @@ separate, explicitly priced action (`bob send <slug> --price-cents ...` or
 `BOB_SHOP_PUBLIC=1` for the scheduled loop). An ambiguous public action is
 reconciled by readback and never blindly repeated.
 
-`BOB_SEND_VIA=box` is not an autonomous mode. The historical text2game server
-name `box` exists only behind manual `bob export`. It cannot write effect
-authority or advance Bob.
+`BOB_SEND_VIA=box` is not an autonomous mode and fails closed. The historical
+text2game server name `box` exists only in the local payload produced by
+`bob export`; `push_box` cannot rsync, SSH, publish, write effect authority, or
+advance Bob.
 
 ## Compatibility edge
 

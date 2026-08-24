@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
+  "artifact_sha256": "de1ac792c970ff8df85f579b4ebe435f43fbeeb12659694a586c3cea5f25f5df",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -8,15 +8,15 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
-    "site_draft_verified": true,
+    "site_draft_verified": false,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
-  "blueprint_sha256": "aa2cc01c516e86bdfd741724e619de4a99b24866f84073fe79a456cd4b433de9",
-  "evidence_sha256": "cf755b891fd53ae8f6c2bc1c4534d730587d4830f174df4ce0e8558058fc11d7",
-  "instructions_sha256": "876218356789d97d173e3e585c6dff73f9550ade14720075a736fbfe8c364ad6",
+  "blueprint_sha256": "3b74057c2d747be170b6e0febbe4223a1fda0ddd1f2d4c1d6f7b3630f8e9a108",
+  "evidence_sha256": "fa8093aa0292c3f168451e6b54e8431cbbcea8fb8d623579267edff43b6b48ea",
+  "instructions_sha256": "ca48f1139b9fa95747b2e401260753df20295c02085e1309a8d79abe65d6e4ad",
   "inventor": {
     "extension_level": "taste-only",
     "id": "alice",
@@ -25,19 +25,19 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
+    "artifact_sha256": "de1ac792c970ff8df85f579b4ebe435f43fbeeb12659694a586c3cea5f25f5df",
     "delivery": null,
-    "instructions_sha256": "876218356789d97d173e3e585c6dff73f9550ade14720075a736fbfe8c364ad6",
-    "job": "deliver",
+    "instructions_sha256": null,
+    "job": "instructions",
     "needs": [
       {
-        "capability": "production-and-shipping",
-        "instructions": "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
-        "job": "deliver",
-        "reason": "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured."
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
     ],
-    "page_url": "https://www.autonomous.ai/factory/product/five-job-checkers",
+    "page_url": null,
     "playtest_rounds": 2,
     "product_id": "five-job-checkers",
     "round": 1,
@@ -46,45 +46,11 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac",
+    "builder_sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "site_receipt": {
-    "artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
-    "current_history_id": "6a8be9356ddacb62db04c4cd",
-    "design_id": "6a8be9356ddacb62db04c4cc",
-    "details": {
-      "cover_sha256": "82b8f3dd498522c62fd3480d00f21b8343ec64e40d11a35d35e89f620ac01d71",
-      "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8be9356ddacb62db04c4cc/cover.png",
-      "instructions_sha256": "876218356789d97d173e3e585c6dff73f9550ade14720075a736fbfe8c364ad6",
-      "kind": "shop-design",
-      "media_sha256": {
-        "box": "6160fa0a0bbd4f0882e43ab77865c2eb0dd522937f1a4e4609117c31f90b09e2",
-        "detail": "8449f2de72cab72f690746343f5b6a4716855707bcc7ec400b21d702b3e75b3b",
-        "hero": "82b8f3dd498522c62fd3480d00f21b8343ec64e40d11a35d35e89f620ac01d71",
-        "parts": "09b21dea65c27109bf1a2e0f3f0f162e5c48883f1b70734a19840be7045ecdae",
-        "play": "31ba2ff53e7a16c26e9848a19fb7bc3b14e987db9c552e1d7d36c540309cbbc5"
-      },
-      "page_content_sha256": "77e5f93035bf4fbeebc70a332449eadf4addcdb2c66697043cc4d92eb9a8673f",
-      "page_url": "https://www.autonomous.ai/factory/product/five-job-checkers",
-      "playtest_evidence_sha256": "cf755b891fd53ae8f6c2bc1c4534d730587d4830f174df4ce0e8558058fc11d7"
-    },
-    "door": "shop",
-    "listing_active": null,
-    "listing_currency": null,
-    "listing_price_cents": null,
-    "listing_sku": null,
-    "observed_at": "2026-08-24T06:48:28.687332+00:00",
-    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
-    "pack_sha256": "43e3f90cd592577b99fedb2a54e95b23c21098c3f3b07c109d48bd060be48441",
-    "project_url": "https://cdn.autonomous.ai/panda-social/6a8be9356ddacb62db04c4cc/6a8be9356ddacb62db04c4cd/",
-    "published_history_id": null,
-    "reference": "6a8be9356ddacb62db04c4cc",
-    "root_id": "6a8be9356ddacb62db04c4cc",
-    "slug": "five-job-checkers",
-    "status": "draft"
-  },
+  "site_receipt": null,
   "taste_sha256": "2d3217df630eb707695b9f60c5bebbec180d2a8553c46445b641c5583e1a5f3c",
   "wish": {
     "constraints": {
@@ -94,7 +60,7 @@
     "context": {
       "inventor_id": "alice"
     },
-    "objective": "I wish our five-job Workshop became a checkers set for late-night design reviews—black and warm gold, architectural rather than cute.",
+    "objective": "I wish our five-job Workshop became a checkers set for late-night design reviews\u2014black and warm gold, architectural rather than cute.",
     "product_id": "five-job-checkers",
     "schema_version": 1
   }

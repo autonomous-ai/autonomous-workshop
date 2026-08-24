@@ -389,6 +389,10 @@ class PublishSealedProductTest(unittest.TestCase):
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
             )
             self.assertNotIn("images/hero.png", names)
+            self.assertIn("assembled.stl", names)
+            self.assertEqual(
+                archive.read("assembled.stl"), archive.read("cad/product.stl")
+            )
             self.assertIn("workshop-product-facts.json", names)
             self.assertEqual(
                 json.loads(archive.read("product.json"))["description"].count(
@@ -454,12 +458,9 @@ class PublishSealedProductTest(unittest.TestCase):
         self.assertEqual(transport.calls, [])
         self.assertFalse((self.root / "failed-state").exists())
 
-    def test_local_instruction_images_are_not_uploaded_or_page_written(self):
+    def test_local_instruction_media_is_rejected_before_network(self):
         instructions = self.fixture.bundle / "instructions"
-        shutil.copyfile(
-            instructions / "images" / "hero.png",
-            instructions / "images" / "play.png",
-        )
+        (instructions / "creator-hero.png").write_bytes(b"creator marketing image")
         manifest = build_artifact_manifest(
             instructions, created_at="content-addressed"
         )
@@ -470,19 +471,16 @@ class PublishSealedProductTest(unittest.TestCase):
         descriptor["instructions"]["artifact_sha256"] = manifest.artifact_sha256
         _write_json(self.fixture.descriptor, descriptor)
         transport = PrivateDraftTransport("five-job-checkers", "owner-1")
-        result = command.publish_sealed_draft(
-            self.fixture.descriptor,
-            token="test-token",
-            owner_id="owner-1",
-            repo_root=self.fixture.repo,
-            state_root=self.root / "duplicate-image-state",
-            transport=transport,
-        )
-        self.assertEqual(result["enrichment_status"], "pending")
-        self.assertEqual([call[0] for call in transport.calls], ["GET", "POST", "GET"])
-        self.assertEqual(transport.uploads, [])
-        self.assertIsNone(transport.use_case)
-        self.assertEqual(transport.story_blocks, [])
+        with self.assertRaisesRegex(ContractError, "creator page media"):
+            command.publish_sealed_draft(
+                self.fixture.descriptor,
+                token="test-token",
+                owner_id="owner-1",
+                repo_root=self.fixture.repo,
+                state_root=self.root / "duplicate-image-state",
+                transport=transport,
+            )
+        self.assertEqual(transport.calls, [])
 
     def test_cli_credentials_are_environment_only(self):
         with self.assertRaises(SystemExit):
