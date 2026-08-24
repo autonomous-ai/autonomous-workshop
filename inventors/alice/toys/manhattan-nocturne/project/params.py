@@ -130,9 +130,9 @@ PAWN_COLUMN_TAPER_HEIGHT = 11.00                 # mm [derived] preserves origin
 PAWN_COLUMN_RADIUS_BOTTOM = 6.95                # mm [derived] flush with pedestal crown
 PAWN_COLUMN_RADIUS_TOP = 5.10                   # mm [assumed]
 PAWN_TANK_Z = 28.45                            # mm [derived overlap]
-PAWN_TANK_HEIGHT = 7.80                         # mm [assumed]
 PAWN_TANK_RADIUS = 7.10                         # mm [assumed]
 PAWN_ROOF_Z = 35.70                            # mm [derived overlap]
+PAWN_TANK_HEIGHT = PAWN_ROOF_Z - PAWN_TANK_Z   # mm [derived] ends flush at roof spring line
 PAWN_ROOF_HEIGHT = 5.55                         # mm [assumed]
 PAWN_ROOF_RADIUS_BOTTOM = 7.10                  # mm [derived]
 PAWN_ROOF_RADIUS_TOP = 1.85                     # mm [assumed]
@@ -419,6 +419,9 @@ def validate_parameters() -> None:
     assert PAWN_HEIGHT < ROOK_HEIGHT < BISHOP_HEIGHT < QUEEN_HEIGHT < KING_HEIGHT
     assert PAWN_COLUMN_STRAIGHT_HEIGHT >= MIN_WALL
     assert PAWN_COLUMN_Z + PAWN_COLUMN_STRAIGHT_HEIGHT > PAWN_COLUMN_TAPER_Z
+    assert abs(PAWN_TANK_Z + PAWN_TANK_HEIGHT - PAWN_ROOF_Z) < 1e-9
+    assert abs(PAWN_TANK_RADIUS - PAWN_ROOF_RADIUS_BOTTOM) < 1e-9
+    assert PAWN_ROOF_Z + PAWN_ROOF_HEIGHT > PAWN_FINIAL_Z
     assert ROOK_PEDESTAL_CROWN_HEIGHT >= MIN_WALL
     assert all(height >= MIN_WALL for _, _, height in ROOK_FOOTING_TIERS)
     assert ROOK_FOOTING_TIERS[0][1] * 2.0**0.5 <= 2.0 * 6.95 + 1e-9

@@ -239,6 +239,15 @@ def build_pawn(side: str):
     """Rooftop water tower: the smallest repeated Manhattan silhouette."""
 
     shape = build_pedestal(side)
+    # Tank wall and roof are one revolved silhouette. A former 0.55 mm axial
+    # overlap left a shallow annular tank lip above the taper on fine meshes.
+    tank_roof_profile = (
+        (0.0, p.PAWN_TANK_Z),
+        (p.PAWN_TANK_RADIUS, p.PAWN_TANK_Z),
+        (p.PAWN_ROOF_RADIUS_BOTTOM, p.PAWN_ROOF_Z),
+        (p.PAWN_ROOF_RADIUS_TOP, p.PAWN_ROOF_Z + p.PAWN_ROOF_HEIGHT),
+        (0.0, p.PAWN_ROOF_Z + p.PAWN_ROOF_HEIGHT),
+    )
     shape = _fuse_checked(
         shape,
         _zloc(p.PAWN_COLUMN_Z)
@@ -249,9 +258,7 @@ def build_pawn(side: str):
             p.PAWN_COLUMN_RADIUS_TOP,
             p.PAWN_COLUMN_TAPER_HEIGHT,
         ),
-        _zloc(p.PAWN_TANK_Z) * _cylinder(p.PAWN_TANK_RADIUS, p.PAWN_TANK_HEIGHT),
-        _zloc(p.PAWN_ROOF_Z)
-        * _cone(p.PAWN_ROOF_RADIUS_BOTTOM, p.PAWN_ROOF_RADIUS_TOP, p.PAWN_ROOF_HEIGHT),
+        _revolved_profile(tank_roof_profile),
         _zloc(p.PAWN_FINIAL_Z) * _cylinder(p.PAWN_FINIAL_RADIUS, p.PAWN_FINIAL_HEIGHT),
     )
     shape = _fuse_checked(shape, *_pawn_upper_side_code(side))
