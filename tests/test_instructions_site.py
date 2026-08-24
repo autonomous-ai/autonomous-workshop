@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.errors import AmbiguousPublishError, ContractError
+from inventor_workshop.errors import ContractError, ReceiptError
 from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
+from inventor_workshop.models import PublicationReceipt
 from inventor_workshop.shop import (
     HttpResponse,
     SHOP_USER_AGENT,
@@ -154,6 +155,14 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         (product / "toy.step").write_text("exact product bytes\n", encoding="utf-8")
+        for directory, marker in (
+            ("review", b"local review cover"),
+            ("renders", b"local render cover"),
+            ("product-media", b"local product media"),
+        ):
+            media_directory = product / directory
+            media_directory.mkdir()
+            (media_directory / "hero.png").write_bytes(marker)
         self.made = Made.from_root(
             product,
             {
@@ -204,7 +213,7 @@ class InstructionsSiteTest(unittest.TestCase):
             self.instructions, created_at="content-addressed"
         )
 
-    def test_shared_instructions_writer_creates_enriched_private_draft_under_workshop_lease(self):
+    def test_shared_writer_creates_model_only_draft_with_pending_enrichment(self):
         lease = self.store.acquire_lease("verified-toy", "toy-workshop")
         context = InstructionsSiteContext(self.made, "verified-toy", lease)
         transport = SuccessfulShopTransport(context, self.media)
@@ -230,23 +239,27 @@ class InstructionsSiteTest(unittest.TestCase):
             "https://www.autonomous.ai/factory/product/verified-toy",
         )
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha)
-        self.assertEqual(set(receipt.details["media_sha256"]), set(self.media))
-        self.assertEqual(
-            receipt.details["cover_sha256"],
-            hashlib.sha256(self.media["hero"]).hexdigest(),
-        )
+        self.assertEqual(receipt.details["enrichment_status"], "pending")
+        self.assertIs(receipt.details["page_ready"], False)
+        self.assertRegex(receipt.details["handoff_artifact_sha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(receipt.details["product_facts_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(receipt.details["cover_url"], "https://cdn.example/cover.png")
         self.assertEqual(
             [call[0] for call in transport.calls],
-            ["POST", "POST", "POST", "POST", "POST", "POST", "GET"],
+            ["POST", "GET"],
         )
         self.assertTrue(
             all(call[2].get("User-Agent") == SHOP_USER_AGENT for call in transport.calls)
         )
         self.assertFalse(any(call[1].endswith("/publish") for call in transport.calls))
         import_body = transport.calls[0][3]
-        self.assertIn(b'name="thumbnails"; filename="hero.png"', import_body)
-        self.assertIn(self.media["hero"], import_body)
+        self.assertNotIn(b'name="thumbnails"', import_body)
+        self.assertFalse(any(content in import_body for content in self.media.values()))
+        self.assertNotIn(b"local review cover", import_body)
+        self.assertNotIn(b"local render cover", import_body)
+        self.assertNotIn(b"local product media", import_body)
+        self.assertIn(b"exact product bytes", import_body)
+        self.assertIn(b'name="prompt"', import_body)
         self.assertIn(b'name="category"\r\n\r\ntoys\r\n', import_body)
         category_part = import_body.split(b'name="category"', 1)[1].split(
             b"\r\n--", 1
@@ -256,11 +269,12 @@ class InstructionsSiteTest(unittest.TestCase):
             states = connection.execute(
                 "SELECT state FROM shop_effects ORDER BY created_at, effect_key"
             ).fetchall()
-        self.assertEqual([row[0] for row in states], ["succeeded"] * 5)
+        self.assertEqual(states, [])
         intent = self.store.latest_publish_intent("verified-toy")
+        self.assertNotIn("_workshop_cover_sha256", intent["request"])
         self.assertEqual(
-            intent["request"]["_workshop_cover_sha256"],
-            hashlib.sha256(self.media["hero"]).hexdigest(),
+            intent["request"]["_workshop_handoff_artifact_sha256"],
+            receipt.details["handoff_artifact_sha256"],
         )
 
     def test_workshop_lanes_map_to_the_shops_public_taxonomy(self):
@@ -285,27 +299,41 @@ class InstructionsSiteTest(unittest.TestCase):
                 }
             )
 
-    def test_ambiguous_image_upload_is_not_repeated(self):
+    def test_model_handoff_never_calls_image_upload(self):
         context = InstructionsSiteContext(self.made, "verified-toy")
         successful = SuccessfulShopTransport(context, self.media)
 
-        def fail_first_upload(method, url, headers, body, timeout):
-            if url.endswith("/designs/import"):
-                return successful(method, url, headers, body, timeout)
-            successful.calls.append((method, url, headers, body, timeout))
-            raise OSError("connection reset after upload")
+        def reject_upload(method, url, headers, body, timeout):
+            if url.endswith("/uploads"):
+                raise AssertionError("Workshop must not upload Factory page media")
+            return successful(method, url, headers, body, timeout)
 
         writer = ShopInstructionsWriter(
             self.store,
-            ShopDoor("token", transport=fail_first_upload),
+            ShopDoor("token", transport=reject_upload),
             "owner-1",
         )
-        with self.assertRaises(AmbiguousPublishError):
-            writer(context, self.instructions, self.manifest)
-        calls_after_unknown = len(successful.calls)
-        with self.assertRaises(AmbiguousPublishError):
-            writer(context, self.instructions, self.manifest)
-        self.assertEqual(len(successful.calls), calls_after_unknown)
+        receipt = writer(context, self.instructions, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual([call[0] for call in successful.calls], ["POST", "GET"])
+
+    def test_pending_model_handoff_cannot_claim_page_ready(self):
+        context = InstructionsSiteContext(self.made, "verified-toy")
+        transport = SuccessfulShopTransport(context, self.media)
+        writer = ShopInstructionsWriter(
+            self.store, ShopDoor("token", transport=transport), "owner-1"
+        )
+        receipt = writer(context, self.instructions, self.manifest)
+        changed = receipt.to_dict()
+        changed["details"] = dict(changed["details"])
+        changed["details"]["enrichment_status"] = "complete"
+        changed["details"]["page_ready"] = True
+        with self.assertRaisesRegex(ReceiptError, "cannot claim"):
+            writer._assert_instructions_draft_receipt(
+                PublicationReceipt.from_dict(changed),
+                self.made.artifact_sha256,
+                self.manifest.artifact_sha256,
+            )
 
     def test_completed_draft_replays_without_http_and_rejects_price_policy(self):
         context = InstructionsSiteContext(self.made, "verified-toy")
@@ -325,7 +353,7 @@ class InstructionsSiteTest(unittest.TestCase):
             )
         self.assertEqual(len(transport.calls), calls_after_draft)
 
-    def test_optional_curated_copy_is_written_and_verified_in_final_readback(self):
+    def test_local_curated_copy_is_a_brief_not_a_remote_page_write(self):
         page_path = self.instructions / "product.json"
         page = json.loads(page_path.read_text(encoding="utf-8"))
         page["use_case"] = {
@@ -360,15 +388,12 @@ class InstructionsSiteTest(unittest.TestCase):
         )(context, self.instructions, manifest)
 
         self.assertTrue(receipt.is_verified_draft)
-        self.assertEqual(transport.use_case["image"], transport.urls["hero"])
-        self.assertEqual(
-            transport.story_blocks[0]["pair_images"],
-            [transport.urls["detail"], transport.urls["parts"]],
-        )
-        self.assertNotIn("pair_images", transport.story_blocks[1])
+        self.assertIsNone(transport.use_case)
+        self.assertEqual(transport.story_blocks, [])
+        self.assertEqual(receipt.details["enrichment_status"], "pending")
         self.assertEqual(
             [call[0] for call in transport.calls],
-            ["POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "GET"],
+            ["POST", "GET"],
         )
 
 

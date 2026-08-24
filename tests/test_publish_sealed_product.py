@@ -10,7 +10,7 @@ from email.parser import BytesParser
 from email.policy import default as email_policy
 from pathlib import Path
 
-from inventor_workshop.artifacts import build_artifact_manifest, build_pack
+from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.shop import HttpResponse
 from inventor_workshop.store import InventorStore
@@ -141,7 +141,8 @@ class PrivateDraftTransport:
                 item["content"].decode("utf-8") for item in parts["tags"]
             ]
             self.category = fields["category"]
-            self.imported_thumbnail = parts["thumbnails"][0]["content"]
+            if "thumbnails" in parts:
+                raise AssertionError("model-only import must not send thumbnails")
             self.exists = True
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
         if method == "POST" and url.endswith("/uploads"):
@@ -353,9 +354,6 @@ class PublishSealedProductTest(unittest.TestCase):
 
     def test_exact_seals_create_one_private_draft_and_retry_idempotently(self):
         before = _tree_bytes(self.fixture.bundle)
-        expected_pack_path = self.root / "expected.zip"
-        build_pack(self.fixture.bundle / "artifact", expected_pack_path)
-        expected_pack = expected_pack_path.read_bytes()
         transport = PrivateDraftTransport("five-job-checkers", "owner-1")
 
         first = command.publish_sealed_draft(
@@ -368,17 +366,10 @@ class PublishSealedProductTest(unittest.TestCase):
         )
 
         self.assertEqual(first["status"], "draft-created")
-        self.assertEqual(transport.imported_pack, expected_pack)
-        self.assertEqual(
-            transport.imported_thumbnail,
-            (self.fixture.bundle / "instructions/images/hero.png").read_bytes(),
-        )
-        self.assertEqual(len(transport.uploads), 5)
-        self.assertEqual([role for role, _ in transport.uploads], list(transport.roles))
-        self.assertEqual(len({content for _, content in transport.uploads}), 5)
-        for role, content in transport.uploads:
-            expected = self.fixture.bundle / "instructions" / "images" / (role + ".png")
-            self.assertEqual(content, expected.read_bytes())
+        self.assertEqual(first["enrichment_status"], "pending")
+        self.assertIs(first["page_ready"], False)
+        self.assertIsNone(transport.imported_thumbnail)
+        self.assertEqual(transport.uploads, [])
         self.assertTrue(transport.description.endswith("By Alice."))
         self.assertEqual(transport.description.count("By Alice."), 1)
         self.assertEqual(transport.design()["status"], "draft")
@@ -386,22 +377,28 @@ class PublishSealedProductTest(unittest.TestCase):
         self.assertEqual(_tree_bytes(self.fixture.bundle), before)
         self.assertEqual(
             [call[0] for call in transport.calls],
-            ["GET", "POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "GET"],
+            ["GET", "POST", "GET"],
         )
         self.assertFalse(
             any(url.endswith("/publish") for _, url, _, _, _ in transport.calls)
         )
         with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
+            names = set(archive.namelist())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
             )
+            self.assertNotIn("images/hero.png", names)
+            self.assertIn("workshop-product-facts.json", names)
             self.assertEqual(
                 json.loads(archive.read("product.json"))["description"].count(
                     "By Alice."
                 ),
                 1,
             )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["product"]["description"].count("By Alice."), 1)
+            self.assertEqual(facts["source_artifact_sha256"], self.fixture.make_sha256)
 
         call_count = len(transport.calls)
         replay = command.publish_sealed_draft(
@@ -457,7 +454,7 @@ class PublishSealedProductTest(unittest.TestCase):
         self.assertEqual(transport.calls, [])
         self.assertFalse((self.root / "failed-state").exists())
 
-    def test_duplicate_image_bytes_are_rejected_before_network(self):
+    def test_local_instruction_images_are_not_uploaded_or_page_written(self):
         instructions = self.fixture.bundle / "instructions"
         shutil.copyfile(
             instructions / "images" / "hero.png",
@@ -473,17 +470,19 @@ class PublishSealedProductTest(unittest.TestCase):
         descriptor["instructions"]["artifact_sha256"] = manifest.artifact_sha256
         _write_json(self.fixture.descriptor, descriptor)
         transport = PrivateDraftTransport("five-job-checkers", "owner-1")
-        with self.assertRaisesRegex(ContractError, "five distinct"):
-            command.publish_sealed_draft(
-                self.fixture.descriptor,
-                token="test-token",
-                owner_id="owner-1",
-                repo_root=self.fixture.repo,
-                state_root=self.root / "duplicate-image-state",
-                transport=transport,
-            )
-        self.assertEqual(transport.calls, [])
-        self.assertFalse((self.root / "duplicate-image-state").exists())
+        result = command.publish_sealed_draft(
+            self.fixture.descriptor,
+            token="test-token",
+            owner_id="owner-1",
+            repo_root=self.fixture.repo,
+            state_root=self.root / "duplicate-image-state",
+            transport=transport,
+        )
+        self.assertEqual(result["enrichment_status"], "pending")
+        self.assertEqual([call[0] for call in transport.calls], ["GET", "POST", "GET"])
+        self.assertEqual(transport.uploads, [])
+        self.assertIsNone(transport.use_case)
+        self.assertEqual(transport.story_blocks, [])
 
     def test_cli_credentials_are_environment_only(self):
         with self.assertRaises(SystemExit):

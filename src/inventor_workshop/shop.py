@@ -58,6 +58,7 @@ SHOP_LISTING_STRING_LIMITS = {
 WORKSHOP_SHOP_LISTING_FIELDS = frozenset(
     (
         "_workshop_artifact_sha256",
+        "_workshop_handoff_artifact_sha256",
         "_workshop_cover_bytes",
         "_workshop_cover_content_type",
         "_workshop_cover_filename",
@@ -92,6 +93,23 @@ SHOP_CONTENT_IMAGE_URL_LIMIT = 2_048
 SHOP_CONTENT_VIDEO_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".avi")
 SHOP_IMPORT_THUMBNAIL_MAX_BYTES = 5 * 1024 * 1024
 SHOP_IMPORT_THUMBNAIL_TYPES = frozenset(("image/jpeg", "image/png", "image/webp"))
+
+# These trees are useful while Making and Playtesting, but they are not part of
+# the model handoff.  In particular, the Factory importer treats PNGs below a
+# ``review``/``*_review``/``renders`` directory as authoritative covers.  A
+# local inspection render must never pre-empt Factory's server-owned product
+# media pipeline.
+SHOP_MODEL_HANDOFF_EXCLUDED_DIRS = frozenset(
+    (
+        "images",
+        "measure",
+        "previews",
+        "product-media",
+        "review",
+        "renders",
+        "validation",
+    )
+)
 
 
 def _canonical_sha256(value: Any) -> str:
@@ -150,6 +168,102 @@ def _assert_shop_importable_pack(content: bytes) -> None:
         "Shop import requires a valid root project.json or a top-level *.py "
         "defining gen_step in the sealed Made artifact"
     )
+
+
+def _model_handoff_excludes(manifest: ArtifactManifest) -> Tuple[str, ...]:
+    """Return exact Make-relative trees omitted from Factory's model handoff.
+
+    The source Make remains immutable and keeps its complete inspection record.
+    Only the transport Pack is narrowed.  ``build_pack`` writes a fresh
+    content-addressed inventory for that subset, while the durable publication
+    request records both the source Make identity and the handoff identity.
+    """
+
+    if not isinstance(manifest, ArtifactManifest):
+        raise ContractError("Factory model handoff requires a Made manifest")
+    excluded = set()
+    for entry in manifest.entries:
+        parts = PurePosixPath(entry.path).parts
+        for position, part in enumerate(parts[:-1]):
+            lowered = part.casefold()
+            if (
+                lowered in SHOP_MODEL_HANDOFF_EXCLUDED_DIRS
+                or lowered.endswith("_review")
+            ):
+                excluded.add("/".join(parts[: position + 1]))
+                break
+    return tuple(sorted(excluded))
+
+
+def _assert_model_only_handoff(content: bytes) -> None:
+    """Prove a handoff cannot supply Factory-discoverable local covers."""
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            for name in archive.namelist():
+                parts = PurePosixPath(name).parts
+                directories = tuple(part.casefold() for part in parts[:-1])
+                if name.casefold().endswith((".png", ".jpg", ".jpeg", ".webp")) and any(
+                    directory in SHOP_MODEL_HANDOFF_EXCLUDED_DIRS
+                    or directory.endswith("_review")
+                    for directory in directories
+                ):
+                    raise ContractError(
+                        "Factory model handoff contains local page media: %s" % name
+                    )
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
+        raise ContractError("Factory model handoff is not a readable Pack") from exc
+
+
+def _build_model_handoff_pack(
+    root: Path,
+    manifest: ArtifactManifest,
+    destination: Path,
+    facts: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """Build a canonical transport Pack without local page/inspection media."""
+
+    root = Path(root).resolve(strict=True)
+    if build_artifact_manifest(root, created_at=manifest.created_at).to_dict() != manifest.to_dict():
+        raise ContractError("Made bytes changed before Factory model handoff")
+    facts_payload = (
+        json.dumps(
+            facts,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        + b"\n"
+    )
+    assert_packable_content("workshop-product-facts.json", facts_payload)
+    excluded = set(_model_handoff_excludes(manifest))
+
+    def excluded_entry(path: str) -> bool:
+        parts = PurePosixPath(path).parts
+        return any("/".join(parts[:position]) in excluded for position in range(1, len(parts)))
+
+    with tempfile.TemporaryDirectory(prefix="workshop-model-handoff-") as directory:
+        staging = Path(directory)
+        for entry in manifest.entries:
+            if excluded_entry(entry.path):
+                continue
+            source = root.joinpath(*PurePosixPath(entry.path).parts)
+            content = source.read_bytes()
+            if len(content) != entry.bytes or hashlib.sha256(content).hexdigest() != entry.sha256:
+                raise ContractError(
+                    "Made file changed while building Factory handoff: %s" % entry.path
+                )
+            target = staging.joinpath(*PurePosixPath(entry.path).parts)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(content)
+            target.chmod(0o755 if entry.executable else 0o644)
+        facts_path = staging / "workshop-product-facts.json"
+        if facts_path.exists():
+            raise ContractError("Made artifact reserves workshop-product-facts.json")
+        facts_path.write_bytes(facts_payload)
+        result = build_pack(staging, destination)
+    return result
 
 
 def _normalize_import_thumbnail(value: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -811,14 +925,27 @@ class _ShopSender:
         instructions_sha256: Optional[str] = None,
         playtest_evidence_sha256: Optional[str] = None,
         thumbnail: Optional[Mapping[str, Any]] = None,
+        source_artifact_sha256: Optional[str] = None,
+        model_only_handoff: bool = False,
     ) -> PublicationOutcome:
         packet = Path(packet)
         metadata = _normalize_shop_listing(
             metadata, inventor_name=inventor_name
         )
-        packet_bytes, packet_sha, artifact_sha = _load_pack(packet)
+        packet_bytes, packet_sha, handoff_artifact_sha = _load_pack(packet)
         _assert_shop_importable_pack(packet_bytes)
+        if model_only_handoff:
+            _assert_model_only_handoff(packet_bytes)
         normalized_thumbnail = _normalize_import_thumbnail(thumbnail)
+        if model_only_handoff and normalized_thumbnail is not None:
+            raise ContractError(
+                "Factory model-only handoff cannot supply a local thumbnail"
+            )
+        artifact_sha = (
+            require_sha256(source_artifact_sha256, "source Made artifact sha256")
+            if source_artifact_sha256 is not None
+            else handoff_artifact_sha
+        )
         _validate_upload_filename(packet.name)
         product = self.store.get_product(product_id)
         if not product.get("artifact_sha256"):
@@ -829,6 +956,8 @@ class _ShopSender:
             )
         request = dict(metadata)
         request["_workshop_artifact_sha256"] = artifact_sha
+        if source_artifact_sha256 is not None or model_only_handoff:
+            request["_workshop_handoff_artifact_sha256"] = handoff_artifact_sha
         request["_workshop_owner_id"] = self.owner_id
         request["_workshop_api_origin"] = self.client.api_origin
         if instructions_sha256 is not None:
@@ -1174,15 +1303,17 @@ class _ShopSender:
 
 
 class ShopInstructionsWriter:
-    """Shared Instructions-to-site adapter inherited by every inventor.
+    """Shared model handoff inherited by every inventor.
 
     ``DefaultInstructions`` seals the box paper and product-page document, then
     calls this object as ``writer(context, root, manifest)``.  This adapter
-    imports the exact Made artifact as a private draft, uploads the five sealed
-    views, applies optional curated page sections, and returns authenticated
-    private-draft readback bound to both Made and Instructions bytes.  It never
-    makes the page public: that customer-visible transition belongs to a later,
-    explicit owner action.
+    imports a model-only subset of the exact Made artifact as a private draft.
+    It deliberately does not upload local marketing images or write product-page
+    copy: Factory owns that later enrichment.  The returned authenticated
+    readback is bound to the source Make, the narrowed handoff Pack, the factual
+    product record, Playtest, and Instructions.  Its enrichment state remains
+    ``pending``; a draft import is not proof that Factory produced final images,
+    copy, or video.  This adapter never makes the page public.
     """
 
     def __init__(
@@ -1232,7 +1363,6 @@ class ShopInstructionsWriter:
             "title",
             "summary",
             "lane",
-            "images",
             "product_artifact_sha256",
             "playtest_evidence_artifact_sha256",
         }
@@ -1544,7 +1674,25 @@ class ShopInstructionsWriter:
         _https_url(receipt.details.get("cover_url"), "Shop draft cover URL")
         if receipt.details.get("instructions_sha256") != instructions_sha256:
             raise ReceiptError("Shop receipt is not bound to the sealed Instructions bytes")
-        require_sha256(receipt.details.get("cover_sha256"), "Shop draft cover sha256")
+        require_sha256(
+            receipt.details.get("playtest_evidence_sha256"),
+            "Shop draft Playtest evidence sha256",
+        )
+        require_sha256(
+            receipt.details.get("handoff_artifact_sha256"),
+            "Shop model handoff artifact sha256",
+        )
+        require_sha256(
+            receipt.details.get("product_facts_sha256"),
+            "Shop product facts sha256",
+        )
+        if (
+            receipt.details.get("enrichment_status") != "pending"
+            or receipt.details.get("page_ready") is not False
+        ):
+            raise ReceiptError(
+                "model import cannot claim Factory page enrichment is complete"
+            )
 
     def _readback_draft(
         self,
@@ -1553,7 +1701,7 @@ class ShopInstructionsWriter:
         proof: Mapping[str, Any],
         lease_token: Optional[str],
     ) -> PublicationReceipt:
-        """Prove the enriched page still identifies the exact imported draft."""
+        """Prove the model draft still identifies the exact imported handoff."""
 
         try:
             response = self.client.get_design(imported.slug)
@@ -1623,20 +1771,15 @@ class ShopInstructionsWriter:
                 raise ReceiptError(
                     "Shop draft readback does not preserve the sealed Instructions import"
                 )
-            for page_effect in self.store.shop_effects_for_publish_intent(intent_id):
-                if page_effect.get("kind") not in ("use-case", "story-blocks"):
-                    continue
-                effect_request = page_effect.get("request")
-                if (
-                    page_effect.get("state") != "succeeded"
-                    or not isinstance(effect_request, Mapping)
-                    or not self._content_matches(
-                        page_effect["kind"], design, effect_request.get("content")
-                    )
-                ):
-                    raise ReceiptError(
-                        "Shop draft readback does not contain the sealed Instructions copy"
-                    )
+            forbidden_effects = {
+                effect.get("kind")
+                for effect in self.store.shop_effects_for_publish_intent(intent_id)
+                if effect.get("kind") in ("media-upload", "use-case", "story-blocks")
+            }
+            if forbidden_effects:
+                raise ReceiptError(
+                    "Factory-owned enrichment cannot contain Workshop page effects"
+                )
             receipt = _receipt_with_details(receipt, proof)
             persisted = self.store.mark_instructions_draft_ready(
                 intent_id, receipt, lease_token
@@ -1661,17 +1804,6 @@ class ShopInstructionsWriter:
             sealed_manifest.artifact_sha256, "sealed Instructions sha256"
         )
         page = self._read_page(root)
-        media = self._read_media(root, sealed_manifest, page)
-        # Validate every optional curated field before importing a draft or
-        # uploading immutable media. Role placeholders exercise the exact same
-        # copy/shape contract without creating a remote side effect.
-        self._resolve_page_content(
-            page,
-            {
-                role: "https://preflight.invalid/%s.png" % role
-                for role in SHOP_INSTRUCTIONS_IMAGES
-            },
-        )
         artifact_sha256 = require_sha256(
             page.get("product_artifact_sha256"), "product page artifact sha256"
         )
@@ -1689,14 +1821,30 @@ class ShopInstructionsWriter:
         product_id = context.wish.product_id
         inventor_name = context.taste.name
         lease_token = getattr(context, "lease_token", None)
+        product_facts = {
+            "schema_version": 1,
+            "kind": "workshop.product-facts",
+            "source_artifact_sha256": artifact_sha256,
+            "instructions_sha256": instructions_sha256,
+            "playtest_evidence_sha256": playtest_sha256,
+            "inventor": {"name": inventor_name},
+            "wish": context.wish.to_dict(),
+            "product": dict(context.made.product),
+        }
+        product_facts_sha256 = _canonical_sha256(product_facts)
 
         def assert_current() -> None:
             context.assert_current()
             self._assert_sealed(root, sealed_manifest)
 
         with tempfile.TemporaryDirectory(prefix="workshop-instructions-") as directory:
-            packet = Path(directory) / "product.zip"
-            build_pack(context.made.artifact_root, packet)
+            packet = Path(directory) / "model-handoff.zip"
+            handoff = _build_model_handoff_pack(
+                context.made.artifact_root,
+                context.made.artifact_manifest,
+                packet,
+                product_facts,
+            )
             assert_current()
             outcome = self._sender.import_draft(
                 product_id,
@@ -1705,12 +1853,14 @@ class ShopInstructionsWriter:
                     "title": title,
                     "description": summary,
                     "category": _shop_category_for_lane(lane),
+                    "prompt": context.wish.objective,
                     "tags": ["toy", lane],
                 },
                 inventor_name=inventor_name,
                 instructions_sha256=instructions_sha256,
                 playtest_evidence_sha256=playtest_sha256,
-                thumbnail=media["hero"],
+                source_artifact_sha256=artifact_sha256,
+                model_only_handoff=True,
                 lease_token=lease_token,
             )
         if outcome.receipt.details.get("instructions_sha256") is not None:
@@ -1721,37 +1871,6 @@ class ShopInstructionsWriter:
         if outcome.receipt.status != "draft":
             raise StateConflict(
                 "Shop Instructions cannot reuse an intent already made public"
-            )
-        uploaded_urls: Dict[str, str] = {}
-        for role in SHOP_INSTRUCTIONS_IMAGES:
-            uploaded_urls[role] = self._upload_media(
-                outcome.intent_id,
-                instructions_sha256,
-                role,
-                media[role],
-                assert_current,
-                lease_token,
-            )
-        use_case, story_blocks = self._resolve_page_content(page, uploaded_urls)
-        if use_case is not None:
-            self._write_content(
-                outcome.intent_id,
-                outcome.receipt.slug,
-                instructions_sha256,
-                "use-case",
-                use_case,
-                assert_current,
-                lease_token,
-            )
-        if story_blocks is not None:
-            self._write_content(
-                outcome.intent_id,
-                outcome.receipt.slug,
-                instructions_sha256,
-                "story-blocks",
-                story_blocks,
-                assert_current,
-                lease_token,
             )
         persisted_intent = self.store.get_publish_intent(outcome.intent_id)
         import_response = persisted_intent.get("response")
@@ -1769,12 +1888,13 @@ class ShopInstructionsWriter:
             "instructions_sha256": instructions_sha256,
             "playtest_evidence_sha256": playtest_sha256,
             "page_url": _shop_product_page_url(outcome.receipt.slug),
-            "cover_sha256": media["hero"]["sha256"],
             "cover_url": cover_url,
-            "media_sha256": {
-                role: media[role]["sha256"] for role in SHOP_INSTRUCTIONS_IMAGES
-            },
-            "page_content_sha256": _canonical_sha256(page),
+            "server_cover_urls": list(cover_urls),
+            "handoff_artifact_sha256": handoff["artifact_sha256"],
+            "product_facts_sha256": product_facts_sha256,
+            "content_brief_sha256": _canonical_sha256(page),
+            "enrichment_status": "pending",
+            "page_ready": False,
         }
         assert_current()
         receipt = self._readback_draft(

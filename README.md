@@ -166,10 +166,11 @@ all three extension levels, and different Playtest allowances.
 
 Every bundle contains an exact-geometry render, CAD source, STEP and STL
 files, content-addressed manifests, complete AI Playtest evidence, the in-box
-guide, five exact-product page images, and the Workshop run receipt. All five
+guide, a structured product brief, and the Workshop run receipt. All five
 pass Playtest. Their page bundles are sealed; these checked-in runs wait in
 Instructions because no Workshop site credential is present to create and
-authenticate their private drafts. Printing and shipping happen later in
+authenticate their private model drafts. Factory—not the inventor—owns later
+marketing images and page copy. Printing and shipping happen later in
 Deliver. Afterward, an owner may review a draft and make it public outside the
 five-job pipeline. Customer experience is collected after delivery as Reviews.
 
@@ -182,7 +183,7 @@ Every toy goes through the same five steps:
 | **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
 | **Make** | Invent the thing and draw the parts so they can really be printed. |
 | **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
-| **Instructions** | Write the honest product page and the paper that goes in the box, save and enrich the page as a private Factory draft, and authenticate that exact draft. |
+| **Instructions** | Write the paper that goes in the box and a factual content brief, import the model as a private Factory draft, and authenticate that exact handoff. Factory enriches the page separately. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
 
 Playtest is entirely simulated by AI agents. They play complete games, adopt
@@ -218,13 +219,14 @@ Start with the least you need.
 | **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, its own Make, and its own Playtest | The loop around them, Instructions, Deliver, storage, files, and connections |
 
 Its own Playtest requires its own Make. Instructions and Deliver are always
-shared. Instructions creates the page and in-box guide, preserves the terminal
-`By <Inventor>.` product byline, puts the page in Factory as a private draft,
-and records authenticated draft readback before Deliver can begin. It does not
-make the page public or require an active listing. An owner reviews the draft
-and may make it public later, outside the five-job pipeline. That keeps the
-page, print, and box tied to the exact thing that passed without confusing
-draft creation with release.
+shared. Instructions creates the in-box guide and factual content brief,
+preserves the terminal `By <Inventor>.` attribution, puts a model-only handoff
+in Factory as a private draft, and records authenticated draft readback before
+Deliver can begin. It uploads no local marketing images and writes no final
+page copy. The receipt remains `enrichment_status=pending` and
+`page_ready=false` until a separate Factory content pipeline proves otherwise.
+It does not make the page public or require an active listing. An owner reviews
+the finished draft and may make it public later, outside the five-job pipeline.
 
 A custom Make is one function. `workshop create inventor … --level custom-make`
 writes it for you, already wired up and waiting:

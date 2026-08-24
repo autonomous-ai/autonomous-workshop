@@ -1730,14 +1730,13 @@ class InventorStore:
         receipt: PublicationReceipt,
         lease_token: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind a fully enriched private Shop draft to sealed Instructions.
+        """Bind a model-only private Shop draft to sealed Instructions.
 
-        The import transition records the remote design before any page media
-        or curated copy is written.  Instructions completes only after those
-        durable child effects have succeeded and authenticated readback has
-        produced ``receipt``.  This method enriches the existing draft receipt
-        without changing the intent's terminal ``succeeded`` state; making the
-        draft public remains a separate, explicit effect.
+        Factory owns the downstream images, copy, and optional video.  This
+        transition therefore records authenticated model/history readback and
+        an explicit pending-enrichment handoff; it must not claim the customer
+        page is ready.  Making the draft public remains a separate, explicit
+        effect.
         """
 
         intent = self.get_publish_intent(intent_id)
@@ -1755,13 +1754,16 @@ class InventorStore:
         require_sha256(playtest_sha256, "Instructions Playtest evidence sha256")
         details = receipt.details
         required_details = {
-            "cover_sha256",
             "cover_url",
+            "server_cover_urls",
             "instructions_sha256",
             "playtest_evidence_sha256",
             "page_url",
-            "media_sha256",
-            "page_content_sha256",
+            "handoff_artifact_sha256",
+            "product_facts_sha256",
+            "content_brief_sha256",
+            "enrichment_status",
+            "page_ready",
         }
         if not required_details <= set(details):
             raise ReceiptError("Instructions draft receipt proof is incomplete")
@@ -1769,11 +1771,27 @@ class InventorStore:
             raise ReceiptError("Instructions draft receipt describes different Instructions bytes")
         if details.get("playtest_evidence_sha256") != playtest_sha256:
             raise ReceiptError("Instructions draft receipt describes different Playtest evidence")
-        cover_sha256 = request.get("_workshop_cover_sha256")
-        require_sha256(cover_sha256, "Instructions draft cover sha256")
-        if details.get("cover_sha256") != cover_sha256:
-            raise ReceiptError("Instructions draft receipt describes different cover bytes")
-        require_sha256(details.get("page_content_sha256"), "Instructions page content sha256")
+        handoff_sha256 = request.get("_workshop_handoff_artifact_sha256")
+        require_sha256(handoff_sha256, "Factory model handoff sha256")
+        if details.get("handoff_artifact_sha256") != handoff_sha256:
+            raise ReceiptError(
+                "Instructions draft receipt describes a different model handoff"
+            )
+        require_sha256(
+            details.get("product_facts_sha256"),
+            "Instructions product facts sha256",
+        )
+        require_sha256(
+            details.get("content_brief_sha256"),
+            "Instructions content brief sha256",
+        )
+        if (
+            details.get("enrichment_status") != "pending"
+            or details.get("page_ready") is not False
+        ):
+            raise ReceiptError(
+                "model handoff cannot claim Factory page enrichment is complete"
+            )
         for url_name in ("page_url", "cover_url"):
             url = details.get(url_name)
             try:
@@ -1794,12 +1812,14 @@ class InventorStore:
                 raise ReceiptError(
                     "Instructions draft %s must be absolute HTTPS" % url_name
                 )
-        media = details.get("media_sha256")
-        if not isinstance(media, Mapping) or not media:
-            raise ReceiptError("Instructions draft media proof must be a non-empty object")
-        for role, digest in media.items():
-            _required_text(role, "Instructions media role")
-            require_sha256(digest, "Instructions media sha256")
+        server_covers = details.get("server_cover_urls")
+        if (
+            not isinstance(server_covers, list)
+            or not server_covers
+            or server_covers[0] != details.get("cover_url")
+            or any(not isinstance(url, str) or not url for url in server_covers)
+        ):
+            raise ReceiptError("Factory model handoff cover readback is malformed")
 
         with self._transaction() as connection:
             row = connection.execute(
@@ -1825,7 +1845,7 @@ class InventorStore:
             if (
                 not isinstance(imported_covers, list)
                 or not imported_covers
-                or imported_covers[0] != details.get("cover_url")
+                or imported_covers != server_covers
             ):
                 raise ReceiptError(
                     "Instructions draft cover does not match authenticated import readback"
@@ -1856,36 +1876,13 @@ class InventorStore:
                 return self._row(row)
 
             effects = connection.execute(
-                """SELECT kind, effect_key, state, request_json
-                   FROM shop_effects WHERE publish_intent_id=?""",
+                """SELECT kind, state FROM shop_effects
+                   WHERE publish_intent_id=?""",
                 (intent_id,),
             ).fetchall()
-            media_effects = {
-                effect["effect_key"]: effect for effect in effects
-                if effect["kind"] == "media-upload"
-            }
-            if set(media_effects) != set(media):
+            if effects:
                 raise ReceiptError(
-                    "Instructions draft media proof does not match durable uploads"
-                )
-            for role, effect in media_effects.items():
-                effect_request = _object(effect["request_json"])
-                if (
-                    effect["state"] != "succeeded"
-                    or not isinstance(effect_request, Mapping)
-                    or effect_request.get("instructions_sha256") != instructions_sha256
-                    or effect_request.get("sha256") != media[role]
-                ):
-                    raise ReceiptError(
-                        "Instructions draft media upload is not durably proven"
-                    )
-            if media.get("hero") != cover_sha256:
-                raise ReceiptError(
-                    "Instructions draft cover is not the sealed hero image"
-                )
-            if any(effect["state"] != "succeeded" for effect in effects):
-                raise ReceiptError(
-                    "Instructions draft still has an incomplete Shop page effect"
+                    "Factory-owned enrichment cannot contain Workshop page effects"
                 )
             connection.execute(
                 """UPDATE publish_intents SET receipt_json=?, updated_at=?

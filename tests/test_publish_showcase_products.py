@@ -10,7 +10,6 @@ from email.policy import default as email_policy
 from pathlib import Path
 from unittest import mock
 
-from inventor_workshop.artifacts import build_pack
 from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.shop import HttpResponse
 from inventor_workshop.store import InventorStore
@@ -116,7 +115,8 @@ class ShowcaseShopTransport:
             self.description = fields["description"]
             self.tags = [item["content"].decode("utf-8") for item in parts["tags"]]
             self.category = fields["category"]
-            self.imported_thumbnail = parts["thumbnails"][0]["content"]
+            if "thumbnails" in parts:
+                raise AssertionError("model-only import must not send thumbnails")
             self.exists = True
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
         if method == "POST" and url.endswith("/uploads"):
@@ -174,9 +174,6 @@ class PublishShowcaseProductsTest(unittest.TestCase):
 
     def test_exact_checked_in_bundle_drafts_once_and_durably_replays(self):
         before = _sealed_bytes(self.bundle)
-        expected_pack_path = self.root / "expected.zip"
-        build_pack(self.bundle / "artifact", expected_pack_path)
-        expected_pack = expected_pack_path.read_bytes()
         transport = ShowcaseShopTransport(self.spec.slug, "owner-1")
 
         with mock.patch.object(
@@ -206,14 +203,16 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             )
 
         self.assertEqual(first["status"], "draft-created")
-        self.assertEqual(transport.imported_pack, expected_pack)
-        hero = self.bundle / "instructions" / "images" / "hero.png"
-        self.assertEqual(transport.imported_thumbnail, hero.read_bytes())
+        self.assertEqual(first["enrichment_status"], "pending")
+        self.assertIs(first["page_ready"], False)
+        self.assertIsNone(transport.imported_thumbnail)
         self.assertTrue(transport.description.endswith("By Alice."))
         self.assertEqual(_sealed_bytes(self.bundle), before)
         with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
             self.assertIn("project.json", archive.namelist())
             self.assertIn("product.json", archive.namelist())
+            self.assertIn("workshop-product-facts.json", archive.namelist())
+            self.assertNotIn("images/hero.png", archive.namelist())
             self.assertEqual(
                 json.loads(archive.read("project.json")),
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
@@ -225,7 +224,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         methods_after_first = [call[0] for call in transport.calls]
         self.assertEqual(
             methods_after_first,
-            ["GET", "POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "GET"],
+            ["GET", "POST", "GET"],
         )
         self.assertFalse(
             any(url.endswith("/publish") for _, url, _, _, _ in transport.calls)
@@ -270,6 +269,10 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertEqual(
             run["site_receipt"]["details"]["page_url"], customer_page
         )
+        self.assertEqual(
+            run["site_receipt"]["details"]["enrichment_status"], "pending"
+        )
+        self.assertIs(run["site_receipt"]["details"]["page_ready"], False)
         self.assertTrue(
             run["site_receipt"]["project_url"].startswith(
                 "https://cdn.autonomous.ai/"
@@ -293,7 +296,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             len(store.shop_effects_for_publish_intent(
                 store.latest_publish_intent(self.spec.slug)["id"]
             )),
-            7,
+            0,
         )
 
     def test_all_five_checked_in_bundles_reconstruct_without_running_jobs(self):

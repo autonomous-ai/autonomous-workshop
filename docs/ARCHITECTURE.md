@@ -61,11 +61,13 @@ after delivery: customer Reviews -> a future revision of this toy
   every relevant angle. A failed check returns actionable feedback to Make,
   producing a new immutable round. Playtest never means a human
   print-and-play session.
-- **Instructions** creates the truthful product page, exact-product images, and
-  paper that belongs in the box—a rulebook for a game or instructions for
-  another toy. It preserves the terminal `By <Inventor>.` byline, creates and
-  enriches a private Factory draft, and authenticates that exact draft before the
-  job passes. It does not make the page public or require an active listing.
+- **Instructions** creates the paper that belongs in the box and a factual,
+  evidence-bound content brief. It preserves the terminal `By <Inventor>.`
+  attribution, sends a model-only private draft to Factory, and authenticates
+  that handoff. Factory owns later marketing images and page copy; the handoff
+  remains explicitly pending and not page-ready until a separate content
+  pipeline confirms enrichment. Instructions does not make the page public or
+  require an active listing.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
@@ -333,12 +335,14 @@ pass. An inventor's own confidence is not independent evidence.
 ## Instructions is part of the proof chain
 
 Instructions begins only after Playtest passes for the exact Make. The shared
-default creates the in-box instructions plus a page with five fixed image
-roles—hero, play, detail, parts, and box—and a claim-to-evidence map. It then
-creates and enriches that page in Factory as a private draft. A local page is
-not a completed Instructions job: the result must include authenticated owner
-readback proving that the exact approved product, sealed page, guide, media,
-and terminal `By <Inventor>.` byline are present in that private draft.
+default creates the in-box instructions plus a structured content brief and
+claim-to-evidence map. It derives a model-only handoff from the exact Make and
+imports it into Factory as a private draft. Local CAD previews, inspection
+renders, `use_case`, and `story_blocks` are never sent as marketing content.
+Authenticated owner readback proves the exact approved model history and
+sealed fact identities. It also records `enrichment_status=pending` and
+`page_ready=false`; model import alone does not prove that final images, copy,
+or video exist.
 
 Instructions stops there and advances to Deliver. It neither makes the page
 public nor requires an active listing. An owner may review the draft and make
@@ -348,8 +352,9 @@ pipeline.
 Before any site effect, Workshop seals both the approved Make/Playtest
 checkpoint and the complete Instructions tree. If credentials disappear or a
 site response is ambiguous, `workshop.resume_instructions(wish)` reuses those
-exact bytes and retries only the idempotent site writer. It never reruns Make,
-Playtest, copy, or image generation.
+exact bytes and retries only the idempotent model-handoff writer. It never
+reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
+separate handoff, not a silently retried Workshop side effect.
 
 Images must depict the product actually approved. Concept art can guide Make,
 but it cannot masquerade as a render or photograph of printable geometry. Copy

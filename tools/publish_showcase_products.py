@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Create five enriched private Shop drafts from the checked-in showcase bundles.
+"""Create five private Shop model drafts from the checked-in showcase bundles.
 
 Each toy gets an ignored, persistent outbox at
 ``.runtime/showcase-publication/<slug>/workshop.sqlite3``.  A retry therefore
-resumes the exact recorded Shop effects instead of importing or uploading a
-second copy.  Instructions ends at an authenticated private-draft readback;
-this tool never flips a draft public.  Make and Playtest are deliberately
+resumes the exact recorded import instead of creating a second copy.
+Instructions ends at an authenticated private-draft model readback with
+Factory enrichment explicitly pending; this tool never uploads page media,
+writes page copy, or flips a draft public. Make and Playtest are deliberately
 absent from this tool.
 """
 
@@ -43,7 +44,7 @@ from inventor_workshop.errors import ContractError, PublishError, ReceiptError, 
 from inventor_workshop.instructions import evidence_claims
 from inventor_workshop.jobs import InstructionsContext, Made, Playtested
 from inventor_workshop.make import Wish
-from inventor_workshop.models import PlaytestResult, PublicationReceipt
+from inventor_workshop.models import PlaytestResult, PublicationReceipt, require_sha256
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.shop import (
     DEFAULT_SHOP_PAGE_BASE,
@@ -660,13 +661,28 @@ def _assert_draft_receipt(
         != sealed.evidence_manifest.artifact_sha256
     ):
         raise ReceiptError("Shop receipt is not bound to exact Instructions and Playtest bytes")
-    hero_path = sealed.bundle / "instructions" / sealed.page["images"]["hero"]
     if (
-        receipt.details.get("cover_sha256") != _sha256_file(hero_path)
-        or not isinstance(receipt.details.get("cover_url"), str)
+        not isinstance(receipt.details.get("cover_url"), str)
         or not receipt.details["cover_url"].startswith("https://")
+        or not isinstance(receipt.details.get("server_cover_urls"), list)
+        or not receipt.details["server_cover_urls"]
+        or receipt.details["server_cover_urls"][0]
+        != receipt.details["cover_url"]
     ):
-        raise ReceiptError("Shop receipt is not bound to the sealed hero cover")
+        raise ReceiptError("Shop receipt lacks authenticated server cover readback")
+    require_sha256(
+        receipt.details.get("handoff_artifact_sha256"),
+        "Factory model handoff sha256",
+    )
+    require_sha256(
+        receipt.details.get("product_facts_sha256"),
+        "Factory product facts sha256",
+    )
+    if (
+        receipt.details.get("enrichment_status") != "pending"
+        or receipt.details.get("page_ready") is not False
+    ):
+        raise ReceiptError("model draft cannot claim Factory enrichment is ready")
     return page_url
 
 
@@ -707,11 +723,11 @@ def _draft_bundle_readme(sealed: SealedShowcase, run: Mapping[str, Any]) -> byte
 - Exact artifact: `{run['artifact_sha256']}`
 - Private product draft: {run['page_url']} (owner sign-in required)
 
-AI Playtest passed. Shared Instructions imported the exact Make artifact, uploaded
-the five sealed views, wrote the page and in-box guide, and verified the enriched
-private draft through an authenticated Shop readback. The owner can review and
-make that draft public; the Workshop's next job is production and shipping in
-Deliver.
+AI Playtest passed. Shared Instructions derived a model-only handoff from the
+exact Make, included the factual product brief and inventor attribution, and
+verified the private draft through authenticated Shop readback. Factory page
+enrichment remains pending; this draft does not claim final images, copy, or
+video. The Workshop's next job is production and shipping in Deliver.
 
 ## Still needed
 
@@ -854,38 +870,37 @@ def _verify_draft(
         or design.get("tags") != request.get("tags")
         or not isinstance(category, Mapping)
         or category.get("slug") != request.get("category")
-        or design.get("thumbnail_urls") != [persisted.details.get("cover_url")]
+        or design.get("thumbnail_urls") != persisted.details.get("server_cover_urls")
     ):
         raise ReceiptError("fresh Shop readback changed sealed title or attribution")
-    for effect in store.shop_effects_for_publish_intent(intent["id"]):
-        if effect.get("kind") not in ("use-case", "story-blocks"):
-            continue
-        effect_request = effect.get("request")
-        if (
-            effect.get("state") != "succeeded"
-            or not isinstance(effect_request, Mapping)
-            or not ShopInstructionsWriter._content_matches(
-                effect["kind"], design, effect_request.get("content")
-            )
-        ):
-            raise ReceiptError("fresh Shop readback changed sealed Instructions copy")
-    media_hashes = {
-        role: _sha256_file(sealed.bundle / "instructions" / relative)
-        for role, relative in sealed.page["images"].items()
-    }
+    if store.shop_effects_for_publish_intent(intent["id"]):
+        raise ReceiptError("Factory-owned enrichment contains Workshop page effects")
+    handoff_sha256 = require_sha256(
+        request.get("_workshop_handoff_artifact_sha256"),
+        "Factory model handoff sha256",
+    )
+    product_facts_sha256 = require_sha256(
+        persisted.details.get("product_facts_sha256"),
+        "Factory product facts sha256",
+    )
     expected_proof = {
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
         "playtest_evidence_sha256": sealed.evidence_manifest.artifact_sha256,
         "page_url": page_url,
-        "cover_sha256": media_hashes["hero"],
         "cover_url": persisted.details.get("cover_url"),
-        "media_sha256": media_hashes,
-        "page_content_sha256": _sha256_bytes(_canonical(sealed.page)),
+        "server_cover_urls": persisted.details.get("server_cover_urls"),
+        "handoff_artifact_sha256": handoff_sha256,
+        "product_facts_sha256": product_facts_sha256,
+        "content_brief_sha256": _sha256_bytes(_canonical(sealed.page)),
+        "enrichment_status": "pending",
+        "page_ready": False,
     }
     if any(persisted.details.get(key) != value for key, value in expected_proof.items()):
         raise ReceiptError("durable Shop draft proof no longer matches checked-in bytes")
     return {
         "status": "verified-draft",
+        "enrichment_status": "pending",
+        "page_ready": False,
         "slug": sealed.spec.slug,
         "page_url": page_url,
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
@@ -953,6 +968,8 @@ def publish_one(
             else "draft-created"
         ),
         "page_url": page_url,
+        "enrichment_status": receipt.details.get("enrichment_status"),
+        "page_ready": receipt.details.get("page_ready"),
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
         "evidence_sha256": sealed.evidence_manifest.artifact_sha256,
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,

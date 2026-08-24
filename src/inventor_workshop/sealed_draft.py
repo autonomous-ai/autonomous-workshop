@@ -6,10 +6,11 @@ trees; the loader reconstructs the typed Workshop objects and fails before any
 network request unless every required Playtest result passes and no actionable
 feedback remains.
 
-The remote boundary is equally narrow: import the exact Made bytes with
-``status=draft``, upload the five sealed Instructions views, apply the sealed
-page copy, and authenticate the same private draft by readback.  There is no
-public-publish operation in this module.
+The remote boundary is equally narrow: derive a model-only Pack from the exact
+Made bytes, import it with ``status=draft``, and authenticate the same private
+draft by readback. Factory owns later page images, copy, and optional video; the
+receipt records that enrichment as pending. There is no public-publish operation
+in this module.
 """
 
 from __future__ import annotations
@@ -514,19 +515,6 @@ def _validate_instructions(
     manifest: ArtifactManifest,
 ) -> Mapping[str, Any]:
     page = ShopInstructionsWriter._read_page(root)
-    media = ShopInstructionsWriter._read_media(root, manifest, page)
-    if (
-        len({page["images"][role] for role in page["images"]}) != 5
-        or len({media[role]["sha256"] for role in media}) != 5
-    ):
-        raise ContractError("Instructions require five distinct product images")
-    ShopInstructionsWriter._resolve_page_content(
-        page,
-        {
-            role: "https://preflight.invalid/%s.png" % role
-            for role in ("hero", "play", "detail", "parts", "box")
-        },
-    )
     claims = evidence_claims(context)
     expected = {
         "status": "ready",
@@ -548,8 +536,6 @@ def _validate_instructions(
         )
     if not (root / "INSTRUCTIONS.md").is_file():
         raise ContractError("sealed Instructions require INSTRUCTIONS.md")
-    if len(media["hero"]["content"]) > 5 * 1024 * 1024:
-        raise ContractError("Instructions hero exceeds the Shop thumbnail limit")
     return page
 
 
@@ -838,23 +824,17 @@ def _verify_fresh_draft(
         or design.get("tags") != request.get("tags")
         or not isinstance(category, Mapping)
         or category.get("slug") != request.get("category")
-        or design.get("thumbnail_urls") != [persisted.details.get("cover_url")]
+        or design.get("thumbnail_urls") != persisted.details.get("server_cover_urls")
     ):
         raise ReceiptError("fresh Shop readback changed sealed listing content")
-    for effect in store.shop_effects_for_publish_intent(intent["id"]):
-        if effect.get("kind") not in ("use-case", "story-blocks"):
-            continue
-        effect_request = effect.get("request")
-        if (
-            effect.get("state") != "succeeded"
-            or not isinstance(effect_request, Mapping)
-            or not ShopInstructionsWriter._content_matches(
-                effect["kind"], design, effect_request.get("content")
-            )
-        ):
-            raise ReceiptError("fresh Shop readback changed sealed page copy")
+    if store.shop_effects_for_publish_intent(intent["id"]):
+        raise ReceiptError(
+            "Factory-owned enrichment cannot contain Workshop page effects"
+        )
     return {
         "status": "verified-draft",
+        "enrichment_status": "pending",
+        "page_ready": False,
         "slug": sealed.slug,
         "page_url": _customer_page_url(sealed.slug),
         "artifact_sha256": sealed.made.artifact_sha256,
@@ -956,6 +936,8 @@ def publish_sealed_draft(
         ),
         "slug": sealed.slug,
         "page_url": product_instructions.page_url,
+        "enrichment_status": receipt.details.get("enrichment_status"),
+        "page_ready": receipt.details.get("page_ready"),
         "artifact_sha256": sealed.made.artifact_sha256,
         "evidence_sha256": sealed.evidence_manifest.artifact_sha256,
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,

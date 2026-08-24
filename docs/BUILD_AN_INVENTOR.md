@@ -440,15 +440,18 @@ customer feedback begins only after delivery as Reviews.
 ## 9. Let shared Instructions tell only the truth
 
 Instructions starts only after the exact Make passes Playtest. It produces the
-truthful product page and the paper that belongs in the box: a rulebook for a
-game, or instructions for another toy. Both stay bound to the same approved
-product. The shared contract requires distinct hero, play, detail, parts, and
-box images plus a claim-to-evidence map.
+paper that belongs in the box and a structured, evidence-bound content brief:
+a rulebook for a game, or instructions for another toy. Both stay bound to the
+same approved product. Local product renders can remain useful Make/Playtest
+evidence, but they are not uploaded as Factory marketing images.
 
 Creating files locally is only the first half of Instructions. The same shared
-job creates and enriches the page in Factory as a private draft and requires
-authenticated owner readback for the exact approved product, sealed page,
-guide, media, and terminal `By <Inventor>.` byline before Deliver can begin.
+job creates a model-only Factory draft and requires authenticated owner
+readback for the exact approved model, sealed facts, guide, and terminal
+`By <Inventor>.` attribution before Deliver can begin. Factory page enrichment
+is a separate downstream responsibility. The draft records
+`enrichment_status=pending` and `page_ready=false`; it does not claim images,
+copy, or video were generated.
 Instructions does not make the page public and does not require an active
 listing. An owner reviews the draft and may make it public later through a
 separate action outside the five-job pipeline.
@@ -461,7 +464,8 @@ resumed = workshop.resume_instructions(wish)
 
 Workshop verifies the original Wish, Taste, blueprint, round allowance, Make,
 Playtest evidence, event chain, and Instructions manifest, then calls only the
-shared site writer. Make, Playtest, copy, and media are not repeated.
+shared model-handoff writer. Make, Playtest, and the sealed content brief are
+not repeated.
 
 The media provider must render or photograph the approved artifact. Concept art
 may appear only when clearly labeled as concept art; it cannot stand in for a
