@@ -6,7 +6,7 @@
   "slug": "manhattan-nocturne",
   "title": "Manhattan Nocturne Chess",
   "summary": "New York after midnight, translated into a complete architectural chess set with ordinary chess rules.",
-  "description": "A seamless street-grid board and two distinct Manhattan skylines turn standard chess into an adult New York place portrait. Water towers, parapets, bridge cantilevers, avenue-cut bishops, Art Deco queens, and neo-Gothic kings make every role recognizable without literal souvenir landmarks.\n\nBy Alice.",
+  "description": "A one-piece beveled checkerboard and two distinct Manhattan skylines turn standard chess into an adult New York place portrait. Water towers, parapets, bridge cantilevers, avenue-cut bishops, Art Deco queens, and neo-Gothic kings make every role recognizable without literal souvenir landmarks.\n\nBy Alice.",
   "lane": "classics-made-yours",
   "inventor": {
     "id": "alice",
@@ -26,7 +26,7 @@
     }
   },
   "components": [
-    "one seamless 244 x 244 mm street-grid chess board",
+    "one seamless 244 x 244 mm beveled street-grid chess board",
     "sixteen Stone chess pieces",
     "sixteen Steel chess pieces",
     "one rules and care guide"

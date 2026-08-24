@@ -7,13 +7,13 @@
     "native_units": "metres",
     "path": "../../exports/manhattan-nocturne.glb",
     "restored_axes": "CAD XY bed plane, +Z up",
-    "sha256": "3205b925e218742d29ba1f928ae43f57d83388e0ce31e94943ab36a3beefc427",
+    "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
     "unit_scale_to_mm": 1000.0
   },
   "output": {
     "format": "png",
     "path": "06a-manhattan-identity-neutral.png",
-    "sha256": "3f50c84493647e36d0798563c8007eaea4f7ffaf40ab5c97ce42ed8499bf6214"
+    "sha256": "a44d0bfe6392b544e4523f2f2ac752a4d112a1e13e60fe77cd105073e029a055"
   },
   "physical_print": false,
   "printability_proof": false,
@@ -32,7 +32,7 @@
         ],
         [
           290.353026,
-          174.617395
+          174.029322
         ]
       ],
       "projection": "orthographic",
@@ -76,7 +76,7 @@
       1600,
       900
     ],
-    "rendered_triangles": 44952,
+    "rendered_triangles": 44896,
     "scene_bounds_cad_mm": [
       [
         -267.000001,
@@ -98,7 +98,7 @@
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "17119aab328ab9e15b6dad0c9f6533224e9e29c044931361267e12c08849efb8"
+    "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
@@ -268,7 +268,7 @@
       "board": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               3,
               3,
@@ -466,8 +466,8 @@
   "scene_integrity": {
     "bounds_sha256": "80482d1bbd568bc741c0bfe5e0d5986e8fb74713af63b17fc676a5e6dd0421cb",
     "labels_sha256": "aa471fb8f0f376fdc5533c26ca3b351af55cb5e8463d88d8858e7e6b8a0bbcfe",
-    "materials_sha256": "abf0a7c33ddfe81dbf42d9ea90f0fc07dfec4f041249a631b242dbb681d7a1c0",
-    "node_records_sha256": "1361d0fea99ae8c26edd1e25d602ded529cddae6c34b67b68772a175b1929ce7",
+    "materials_sha256": "08430d0f4473d8c51db2dbe4c1cf0a29d7e821b474118bc2e12b9b2cb9565a80",
+    "node_records_sha256": "949ca28c5209b046bf065ba876a704ed8e0bf5adc37586f56422e578e399e4a8",
     "transforms_sha256": "81aba615f1989719c3f03406fb3e700eb37569ba4679344eecbb8b7b3a1ccabf"
   },
   "scene_nodes": [
@@ -487,7 +487,7 @@
       "display_material": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               142,
               145,
@@ -501,18 +501,18 @@
       },
       "geometry": "board",
       "integrity": {
-        "display_material_sha256": "8741511b1c7f5093206a4d1bc63d4e12c5a51c7dfce1475e5d39c4f9047e2f6d",
+        "display_material_sha256": "5ab2ddd7668f2af9cdddd9d5009892158de60cf68175e69cfb6e019cf6e47cc8",
         "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
         "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
         "review_bounds_sha256": "1810e76f7b38ad8dd173b1fec281462888777a0ab9bd134c510d6d465468d6a2",
         "review_transform_sha256": "cfb088530bb80d5a4cac91b944b4f655318c8809925bdc4c29a1a84efe74a630",
         "source_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
-        "source_material_sha256": "aeb0f566b086510c673f2d5ce47d578f0cdb87fdeb913c24a2e51f142f5c4098",
+        "source_material_sha256": "40f2f5b40a0eeb7d7e7ed708599ce5294479a4e96f524ed53cb34eaa49466a55",
         "source_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae"
       },
       "label": "board",
       "metallic": 0.0,
-      "record_sha256": "b14f8ac100653333d3bc09f33038a640f6867314f5ca8a1d5d4565800221b608",
+      "record_sha256": "b08cc6d5930c7cf3394b2c7e647e5e3a8ee8e39f4c6ae5416c7c1f230972ffa8",
       "review_transform_cad": [
         [
           1.0,
@@ -555,7 +555,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               3,
               3,
@@ -593,8 +593,8 @@
           1.0
         ]
       ],
-      "triangles": 1044,
-      "vertices": 1572
+      "triangles": 988,
+      "vertices": 1488
     },
     {
       "bounds_cad_mm": [

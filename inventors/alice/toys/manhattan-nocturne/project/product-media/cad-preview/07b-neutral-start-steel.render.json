@@ -7,13 +7,13 @@
     "native_units": "metres",
     "path": "../../exports/manhattan-nocturne.glb",
     "restored_axes": "CAD XY bed plane, +Z up",
-    "sha256": "3205b925e218742d29ba1f928ae43f57d83388e0ce31e94943ab36a3beefc427",
+    "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
     "unit_scale_to_mm": 1000.0
   },
   "output": {
     "format": "png",
     "path": "07b-neutral-start-steel.png",
-    "sha256": "7c2e9f126a296bce3669e718c272d4b8447a4baa8962722e1074910dec3a8bcb"
+    "sha256": "8e1b4b5f040365989af31badc519f7056836fccdfd30272013b6a75c4f9d2a94"
   },
   "physical_print": false,
   "printability_proof": false,
@@ -76,7 +76,7 @@
       1600,
       900
     ],
-    "rendered_triangles": 127832,
+    "rendered_triangles": 127776,
     "scene_bounds_cad_mm": [
       [
         -122.000001,
@@ -98,7 +98,7 @@
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "17119aab328ab9e15b6dad0c9f6533224e9e29c044931361267e12c08849efb8"
+    "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
@@ -158,7 +158,7 @@
       "board": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               3,
               3,
@@ -656,8 +656,8 @@
   "scene_integrity": {
     "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
     "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
-    "materials_sha256": "bb17769c5807fa2c1ee7e203bf1cc0a8680e37fb431b9a79966e5a40ff1977cf",
-    "node_records_sha256": "b79c6da2e2d3419146bf3a56f2ea9ba3bdbe7dcf74adbbde4eb2e99369937689",
+    "materials_sha256": "fb3b93c675ed7765a24a9765714d71a83dc4865d341915a090114a3e57dcd7e8",
+    "node_records_sha256": "e71377ebebf862cfbe11808b4385faa9893a42f35de917695a90e3cc4b9d2961",
     "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
   },
   "scene_nodes": [
@@ -677,7 +677,7 @@
       "display_material": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               142,
               145,
@@ -691,18 +691,18 @@
       },
       "geometry": "board",
       "integrity": {
-        "display_material_sha256": "8741511b1c7f5093206a4d1bc63d4e12c5a51c7dfce1475e5d39c4f9047e2f6d",
+        "display_material_sha256": "5ab2ddd7668f2af9cdddd9d5009892158de60cf68175e69cfb6e019cf6e47cc8",
         "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
         "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
         "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
         "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
         "source_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
-        "source_material_sha256": "aeb0f566b086510c673f2d5ce47d578f0cdb87fdeb913c24a2e51f142f5c4098",
+        "source_material_sha256": "40f2f5b40a0eeb7d7e7ed708599ce5294479a4e96f524ed53cb34eaa49466a55",
         "source_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae"
       },
       "label": "board",
       "metallic": 0.0,
-      "record_sha256": "d66088c5b6e9dd44c4d1d53087be4d82f5ab9cb26f69d10a9cd0514b0e24c303",
+      "record_sha256": "3603a23fef9f14c0224e15ad23fb45aff4f59277f5204b8df49288ab28350644",
       "review_transform_cad": [
         [
           1.0,
@@ -745,7 +745,7 @@
       "source_glb_material": {
         "colors": [
           {
-            "faces": 1044,
+            "faces": 988,
             "rgba": [
               3,
               3,
@@ -783,8 +783,8 @@
           1.0
         ]
       ],
-      "triangles": 1044,
-      "vertices": 1572
+      "triangles": 988,
+      "vertices": 1488
     },
     {
       "bounds_cad_mm": [
