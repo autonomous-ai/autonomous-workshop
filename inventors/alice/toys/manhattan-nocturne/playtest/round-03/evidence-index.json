@@ -1,0 +1,82 @@
+{
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "config": {
+    "path": "config.json",
+    "sha256": "6e899ce7c6fe6ec1c77b844f83c80d64d122c631a8ae6bd647c7dcbc952afa10"
+  },
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "3.0.0",
+  "evidence_manifest": {
+    "artifact_sha256": "8750b00f04743de351725086b11f3bf22396119ec12912feab480abb2170252b",
+    "path": "evidence-manifest.json",
+    "sha256": "a8de5441ba818c100fa4f8e79f579fd3038879df6cb747e8aa1ad756c3166868"
+  },
+  "feedback": {
+    "count": 2,
+    "path": "feedback.json",
+    "sha256": "75ddfbc01bb7b3d6a3e0c39fd1c3d33e2890a3aa4a4d7fd7ab7b7e5bf65663d6"
+  },
+  "kind": "manhattan-nocturne-ai-playtest-round",
+  "make_manifest": {
+    "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+    "git_commit": "b8010d9d2b928245f64e733c50b24a7e5547a1f4",
+    "path": "make-manifest.json",
+    "sha256": "1e7fb66bb5d793d2179246943cf7091f2db8c5e502a2e6c45f07c459b7a8bf3a"
+  },
+  "overall_passed": false,
+  "result_summary": {
+    "failed": [
+      "agent-playtest"
+    ],
+    "passed": [
+      "classic-rules-test",
+      "mechanical-test",
+      "print-test"
+    ]
+  },
+  "results": [
+    {
+      "evidence_ref": "evidence/results/agent-playtest.json",
+      "evidence_sha256": "6e8afceed385b56a2df3346a00e526d7fc7b2544e1aa95ea253607edba1e30fc",
+      "passed": false,
+      "playtest_id": "agent-playtest",
+      "wrapper": "wrappers/agent-playtest.json",
+      "wrapper_sha256": "1337820436b4c4ee1bfec257900d8af25c6f58f0024da35a2b719a78cbd068e8"
+    },
+    {
+      "evidence_ref": "evidence/results/classic-rules-test.json",
+      "evidence_sha256": "1ac7cea42fa7c00eeb204679aabe2d234be97d493443023033fde9433804c162",
+      "passed": true,
+      "playtest_id": "classic-rules-test",
+      "wrapper": "wrappers/classic-rules-test.json",
+      "wrapper_sha256": "b687fda2acd8dc9ef24f0b487a7164a18deb88727db27a2fe0be48451614d2ea"
+    },
+    {
+      "evidence_ref": "evidence/results/mechanical-test.json",
+      "evidence_sha256": "5d960f91855531fda6c5fc166e99b72be3ba8917404fff4b1996416b51e4ceb0",
+      "passed": true,
+      "playtest_id": "mechanical-test",
+      "wrapper": "wrappers/mechanical-test.json",
+      "wrapper_sha256": "f8c6dd9b5872843d8cca136c9ebbe55c69a186083381bc6cfe19600de94e63f9"
+    },
+    {
+      "evidence_ref": "evidence/results/print-test.json",
+      "evidence_sha256": "29c06c76e10072bf90a0de1213710754460290533718208473baa81de556586c",
+      "passed": true,
+      "playtest_id": "print-test",
+      "wrapper": "wrappers/print-test.json",
+      "wrapper_sha256": "1920c3bda94353e8b3a693f9c0be1e872d6a2f594f1e86a4b6205c93fe52eee4"
+    }
+  ],
+  "reviews": "Customer Reviews begin only after Deliver and are not part of this AI Playtest evidence.",
+  "round": 3,
+  "schema_version": 1,
+  "status": "failed-needs-make-revision",
+  "unresolved_canonical_capabilities": [
+    "agent-playtest"
+  ],
+  "warnings": [
+    "Digital print-test passes, but no physical print, human playtest, or customer Review claim is made.",
+    "All 14 OrcaSlicer invocations exited zero and the receipt's top-level slicer_warnings array is empty, while every invocation stdout retains '[error] Invalid T command (T65535).'."
+  ]
+}

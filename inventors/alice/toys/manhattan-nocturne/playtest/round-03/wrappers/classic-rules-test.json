@@ -1,0 +1,26 @@
+{
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "config_sha256": "6e899ce7c6fe6ec1c77b844f83c80d64d122c631a8ae6bd647c7dcbc952afa10",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "3.0.0",
+  "evidence": {
+    "agent_roles": [
+      "first-time chess player",
+      "competitive chess player",
+      "low-color-vision player",
+      "NYC design critic",
+      "print breaker",
+      "adversarial player"
+    ],
+    "evidence_class": "ai-simulation",
+    "result_file_sha256": "4b66a25b3e23b8aea00e2ec4e86b7cc94d69a2d6fc441ddfba66dfa6000930a3",
+    "rule_changes": 0,
+    "setup_errors": 0,
+    "standard_inventory_and_setup": true
+  },
+  "evidence_ref": "results/classic-rules-test.json",
+  "evidence_sha256": "4b66a25b3e23b8aea00e2ec4e86b7cc94d69a2d6fc441ddfba66dfa6000930a3",
+  "inspection_id": "classic-rules-test",
+  "observed_at": "2026-08-24T11:24:53+00:00",
+  "passed": true
+}

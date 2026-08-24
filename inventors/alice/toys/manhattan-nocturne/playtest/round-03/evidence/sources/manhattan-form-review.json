@@ -1,0 +1,49 @@
+{
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "claim_scope": "One AI NYC-design-critic lens over exact-CAD renders; not an independent human preference study",
+  "criteria": [
+    {
+      "finding": "The six rank families remain recognizable and use a coherent architectural silhouette language rather than literal souvenir landmarks.",
+      "name": "architectural role language",
+      "passed": true
+    },
+    {
+      "finding": "Stone horizontal terraces and Steel vertical ribs remain distinguishable in neutral material across front, rear, top, and upper-body views.",
+      "name": "neutral side language",
+      "passed": true
+    },
+    {
+      "finding": "The raw south-border view reduces the street plan to faint short grooves. It does not read as a deliberate Manhattan perimeter at ordinary presentation scale.",
+      "name": "border street identity",
+      "passed": false
+    },
+    {
+      "finding": "Broadway is not isolated as one unmistakable diagonal cue in the raw acceptance views; the board reads as generic stepped or sawtooth relief instead of Manhattan's grid crossed by Broadway.",
+      "name": "Broadway identity",
+      "passed": false
+    }
+  ],
+  "feedback_codes": [
+    "manhattan-border-identity-weak"
+  ],
+  "passed": false,
+  "role": "NYC design critic",
+  "schema_version": 1,
+  "views": [
+    {
+      "path": "project/product-media/cad-preview/03e-south-border-street-plan-raw.png",
+      "receipt_sha256": "a37c33cc2d530a3dd3208e484d5214144e88ba15b19a765a397ab2b32a9db1ac",
+      "sha256": "835d1a41e9ac9814d3ea26c505b8791ffe4e2648904672e5eb0d08b1f54f3ea7"
+    },
+    {
+      "path": "project/product-media/cad-preview/06a-manhattan-identity-neutral.png",
+      "receipt_sha256": "b677ddfda88164c8ef70123cd17ba29987cfe9b6938aeb2c61f58252ff9aae53",
+      "sha256": "3f50c84493647e36d0798563c8007eaea4f7ffaf40ab5c97ce42ed8499bf6214"
+    },
+    {
+      "path": "project/product-media/cad-preview/06b-board-inventory-engineering-raw.png",
+      "receipt_sha256": "1b38e7ff98b9a90bd287f9c75e4bc76693458c1e73dccbdbb33bba6238704b9a",
+      "sha256": "7bcd6c38fc8190fd20c6447f9e053e99ee4066f15e08e359759807e2bf317b6d"
+    }
+  ]
+}
