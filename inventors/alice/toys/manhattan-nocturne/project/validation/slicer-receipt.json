@@ -9,15 +9,15 @@
     "tactile_feel_verified": false
   },
   "estimated_totals": {
-    "packed_filament_g": 362.24,
-    "packed_model_seconds": 37905,
-    "separate_part_filament_g": 361.47,
-    "separate_part_model_seconds": 54958
+    "packed_filament_g": 362.17,
+    "packed_model_seconds": 37902,
+    "separate_part_filament_g": 361.39,
+    "separate_part_model_seconds": 54954
   },
   "evidence_class": "digital-slicer",
   "full_piece_inventory_slice": {
-    "arranged_slice_filament_g": 150.98,
-    "arrangement_delta_filament_g": 0.77,
+    "arranged_slice_filament_g": 150.99,
+    "arrangement_delta_filament_g": 0.78,
     "individual_slice_sum_filament_g": 150.21,
     "input_objects": 32,
     "passed": true,
@@ -25,16 +25,16 @@
       {
         "filament_cm3": 119.83,
         "filament_cost": 3.77,
-        "filament_g": 150.98,
-        "filament_mm": 49819.07,
-        "gcode_bytes": 32789935,
-        "gcode_sha256": "b8687196a4b92bbc0384140e30a6da1d1bd070ccb915d600528972eb13ab328a",
-        "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:09",
+        "filament_g": 150.99,
+        "filament_mm": 49821.44,
+        "gcode_bytes": 32792925,
+        "gcode_sha256": "4c95be6323ae5bfbe43230ec9a2f583ebe4a83245576899f8bb0b377cb1c9887",
+        "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:13",
         "layers": 372,
         "max_z_mm": 74.4,
-        "model_seconds": 22639,
+        "model_seconds": 22640,
         "support_enabled": false,
-        "total_seconds": 22652
+        "total_seconds": 22654
       }
     ],
     "plates": 1
@@ -62,7 +62,7 @@
       "label": "board",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:01.864818] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:06.439615] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -87,7 +87,7 @@
       "label": "stone_pawn",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:02.370157] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:06.932256] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -112,7 +112,7 @@
       "label": "stone_rook",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:02.698566] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:07.255109] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -137,7 +137,7 @@
       "label": "stone_knight",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:03.023111] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:07.579497] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -162,7 +162,7 @@
       "label": "stone_bishop",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:03.353557] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:07.912101] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -187,7 +187,7 @@
       "label": "stone_queen",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:03.694757] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:08.249292] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -212,7 +212,7 @@
       "label": "stone_king",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:04.043849] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:08.597960] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -237,7 +237,7 @@
       "label": "steel_pawn",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:04.402683] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:08.956981] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -262,7 +262,7 @@
       "label": "steel_rook",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:04.742956] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:09.297870] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -287,7 +287,7 @@
       "label": "steel_knight",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:05.092865] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:09.639972] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -312,7 +312,7 @@
       "label": "steel_bishop",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:05.457908] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:09.990785] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -337,7 +337,7 @@
       "label": "steel_queen",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:05.832745] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:10.348151] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -362,7 +362,7 @@
       "label": "steel_king",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:06.204824] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:10.715995] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     },
     {
@@ -418,7 +418,7 @@
       "label": "all-32-pieces",
       "stderr": [],
       "stdout": [
-        "[2026-08-24 05:35:13.608241] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
+        "[2026-08-24 05:37:18.089174] [0x00000001ffd160c0] [error]   Invalid T command (T65535)."
       ]
     }
   ],
@@ -429,7 +429,7 @@
   "mesh_checks": [
     {
       "mesh_log": "validation/mesh-logs/part_board.txt",
-      "mesh_log_sha256": "53231573475daded523088c4a998ce8c505993d1ca8d32104acf6ecc5da577a7",
+      "mesh_log_sha256": "72addc7ca8bff269c6b9269852279122734943280d758b0549d864239a53f805",
       "mesh_passed": true,
       "part": "board",
       "quantity": 1,
@@ -441,7 +441,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_pawn.txt",
-      "mesh_log_sha256": "4b672fc656f4476f10122a9b1d94e9938ddcc7600e65114c9e5888614bea27ed",
+      "mesh_log_sha256": "fa642c50451a18eb9c33ca15d3f8b76ffa1762b5c4946698e02aab692f45e7a6",
       "mesh_passed": true,
       "part": "stone_pawn",
       "quantity": 8,
@@ -453,7 +453,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_rook.txt",
-      "mesh_log_sha256": "8dac5aae8d39f6a5ef1cbc1595ec9ae9f8395dd44cc44ea9987c7f90819d7d3b",
+      "mesh_log_sha256": "b9224889e94d22c6fe2a4fedcb7f2110dd38c57b72c34bb2bda3fd25e4acd725",
       "mesh_passed": true,
       "part": "stone_rook",
       "quantity": 2,
@@ -465,7 +465,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_knight.txt",
-      "mesh_log_sha256": "513352d83b4cea31b9ae0adfa7c8e118b69d68d039394b06f5e44e3d861f6bd9",
+      "mesh_log_sha256": "438eeb0a5f8c2b44232ee05847ff3253ab63db5f65d8938870249b8bfc2f23e8",
       "mesh_passed": true,
       "part": "stone_knight",
       "quantity": 2,
@@ -477,7 +477,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_bishop.txt",
-      "mesh_log_sha256": "faf058a5722bf797c637d98358fb0319a6824eca849b9bc0281851848df2b754",
+      "mesh_log_sha256": "8166dacf9e8517d8c74015216d516c61c4feb956fcbc8535f140f893bd05075a",
       "mesh_passed": true,
       "part": "stone_bishop",
       "quantity": 2,
@@ -489,7 +489,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_queen.txt",
-      "mesh_log_sha256": "fff00de3ea91840f066c1f1f1c767b7227381914117a7a72136f576aca7c2997",
+      "mesh_log_sha256": "505b527fc58c6d234edf49fa9c4608ca38111d8dc859f596e2b9d7ebb6312a85",
       "mesh_passed": true,
       "part": "stone_queen",
       "quantity": 1,
@@ -501,7 +501,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_stone_king.txt",
-      "mesh_log_sha256": "6df9fb15ffc63afef2a640caef38a507f7facd25661a8bf87ac31a97d0fd5649",
+      "mesh_log_sha256": "33c0ada4871535703eab3073da43047923350ff0d1251f510357a10a666a6734",
       "mesh_passed": true,
       "part": "stone_king",
       "quantity": 1,
@@ -513,7 +513,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_pawn.txt",
-      "mesh_log_sha256": "ee0b83524ed68d94968983a1eb648ee4ffd6ddee8f55f808308f28a9374092a0",
+      "mesh_log_sha256": "c3f1b5bb6791842efa13eaf2e5c72cac447f749f4adcdad69d3ba5a7f949bd42",
       "mesh_passed": true,
       "part": "steel_pawn",
       "quantity": 8,
@@ -525,7 +525,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_rook.txt",
-      "mesh_log_sha256": "c18bbd513369384d2de50b74aa0a713f581a376bb9268353754f5ba159a5c625",
+      "mesh_log_sha256": "6cc1cc6bb35a14464fc13eb1263883b1747c05b61182f8977386aa2d9fc5ba9d",
       "mesh_passed": true,
       "part": "steel_rook",
       "quantity": 2,
@@ -537,7 +537,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_knight.txt",
-      "mesh_log_sha256": "b17f0bea5052704ef9ff699a947f84a4c0cf75b3c90ff255aab040398532fa9e",
+      "mesh_log_sha256": "ed4008a8757e3fcba3318498efc6871e21d27314153b3b488d5e2bedc6cd528f",
       "mesh_passed": true,
       "part": "steel_knight",
       "quantity": 2,
@@ -549,7 +549,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_bishop.txt",
-      "mesh_log_sha256": "88c73e251785636a64964d1a6352fc4b81ae01d8ad53837e679b994253d701b8",
+      "mesh_log_sha256": "f080bce5247e896a13b349289d738ecfede1dfe31053630a4de7e191556320bd",
       "mesh_passed": true,
       "part": "steel_bishop",
       "quantity": 2,
@@ -561,7 +561,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_queen.txt",
-      "mesh_log_sha256": "691efa0df1a8ba580e6384c674f76d58647c624500899605020dad44f93b16a2",
+      "mesh_log_sha256": "87622e8ff740e84ca8d860858805421d3de515f3e4e0715ad3d0a744793e45b4",
       "mesh_passed": true,
       "part": "steel_queen",
       "quantity": 1,
@@ -573,7 +573,7 @@
     },
     {
       "mesh_log": "validation/mesh-logs/part_steel_king.txt",
-      "mesh_log_sha256": "499bd049b150ab4ccf856989b491a45f8ee976e0ab0afa1e188c87e776e434e2",
+      "mesh_log_sha256": "d9dd6e030d09867ce85be116d95ffc1a94122e087e10015a734ad6f9ac9d4518",
       "mesh_passed": true,
       "part": "steel_king",
       "quantity": 1,
@@ -584,7 +584,7 @@
       "stl_sha256": "24c55321e4c386656200535d1e67a8f42087e501c48f50d0fca02d1940bef27e"
     }
   ],
-  "observed_at": "2026-08-24T09:35:14Z",
+  "observed_at": "2026-08-24T09:37:19Z",
   "passed": true,
   "product": "manhattan-nocturne",
   "schema_version": 1,
@@ -615,22 +615,22 @@
   },
   "unique_part_slices": [
     {
-      "filament_cm3": 167.67,
+      "filament_cm3": 167.6,
       "filament_cost": 5.28,
-      "filament_g": 211.26,
-      "filament_mm": 69707.31,
-      "gcode_bytes": 7026237,
-      "gcode_sha256": "3e77743f7b2bf8cba1197a852e46a88503afa2386811e330de204cb4035eb70f",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:01",
+      "filament_g": 211.18,
+      "filament_mm": 69680.82,
+      "gcode_bytes": 7025929,
+      "gcode_sha256": "82635733c8ac667394fca1e4c1bd3970afabb29efdeb962cf10c2d2d3a8c7f81",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:06",
       "layers": 45,
       "max_z_mm": 9.0,
-      "model_seconds": 15266,
+      "model_seconds": 15262,
       "part": "board",
       "quantity": 1,
-      "quantity_total_filament_g": 211.26,
-      "quantity_total_model_seconds": 15266,
+      "quantity_total_filament_g": 211.18,
+      "quantity_total_model_seconds": 15262,
       "support_enabled": false,
-      "total_seconds": 15280
+      "total_seconds": 15277
     },
     {
       "filament_cm3": 2.93,
@@ -638,8 +638,8 @@
       "filament_g": 3.69,
       "filament_mm": 1219.09,
       "gcode_bytes": 1202431,
-      "gcode_sha256": "3b7b82b46a41cfe19d815a6abb875ea28f651d218b6f9fa1c9f1ec7f7d282afb",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "gcode_sha256": "a78ee74fdcdb62ffaeb89ee4073604b2388b873bc353435f88d9c1df791e593c",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:06",
       "layers": 220,
       "max_z_mm": 44.0,
       "model_seconds": 1006,
@@ -656,8 +656,8 @@
       "filament_g": 6.64,
       "filament_mm": 2192.24,
       "gcode_bytes": 1233959,
-      "gcode_sha256": "266c843dce07da162e8e91c02476bd3199fe0786729c11a3705ac221525a0b5f",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "gcode_sha256": "3518dbc8d7a90b73fc8e14fda3c1b8ecca667585ab20096dfd410b2262ef60c0",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:07",
       "layers": 285,
       "max_z_mm": 57.0,
       "model_seconds": 1491,
@@ -672,10 +672,10 @@
       "filament_cm3": 3.63,
       "filament_cost": 0.11,
       "filament_g": 4.57,
-      "filament_mm": 1508.6,
-      "gcode_bytes": 1067701,
-      "gcode_sha256": "3172d5fef359af5969141536669f60f046cae2f0d72491936c6b814d1a96f96e",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:02",
+      "filament_mm": 1508.4,
+      "gcode_bytes": 1067589,
+      "gcode_sha256": "bc1164581424052140a91a15ccf9674054b6a27982fc9185f6b57e014203e841",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:07",
       "layers": 293,
       "max_z_mm": 59.0,
       "model_seconds": 1355,
@@ -690,10 +690,10 @@
       "filament_cm3": 4.17,
       "filament_cost": 0.13,
       "filament_g": 5.25,
-      "filament_mm": 1732.08,
-      "gcode_bytes": 1179645,
-      "gcode_sha256": "3eb659d5ff008fd31f2557e6d02c27190ea2d0488263ac72d2e7eda4da257ec2",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "filament_mm": 1732.26,
+      "gcode_bytes": 1182274,
+      "gcode_sha256": "56af3253121106d71cadf92c83caa1acefd0442c13da6cfa467e8c1bb9a6ee4b",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:07",
       "layers": 305,
       "max_z_mm": 61.0,
       "model_seconds": 1422,
@@ -708,10 +708,10 @@
       "filament_cm3": 4.99,
       "filament_cost": 0.16,
       "filament_g": 6.28,
-      "filament_mm": 2073.24,
-      "gcode_bytes": 1272505,
-      "gcode_sha256": "665809cf9ef607971775b87c0b0034fade565070c4b6d05cb40f35b71694f61b",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "filament_mm": 2073.46,
+      "gcode_bytes": 1272780,
+      "gcode_sha256": "bba6f14aeb77de9af0c4d43fa1106b328a7d39b1e427e12ba4448728c866686a",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:08",
       "layers": 339,
       "max_z_mm": 68.0,
       "model_seconds": 1621,
@@ -720,16 +720,16 @@
       "quantity_total_filament_g": 6.28,
       "quantity_total_model_seconds": 1621,
       "support_enabled": false,
-      "total_seconds": 1634
+      "total_seconds": 1635
     },
     {
       "filament_cm3": 4.68,
       "filament_cost": 0.15,
       "filament_g": 5.9,
-      "filament_mm": 1946.87,
-      "gcode_bytes": 1346285,
-      "gcode_sha256": "36c980e5860997873c09a6f8abdac38b5a7141d0b2a36cc7f6372bb45b1e538b",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:03",
+      "filament_mm": 1946.92,
+      "gcode_bytes": 1346805,
+      "gcode_sha256": "a453da04d633f0a49fa4c954ef788c61faa66a94308deebe6751a23760d46c40",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:08",
       "layers": 372,
       "max_z_mm": 74.4,
       "model_seconds": 1661,
@@ -746,8 +746,8 @@
       "filament_g": 3.73,
       "filament_mm": 1229.94,
       "gcode_bytes": 1161332,
-      "gcode_sha256": "8ff1299b3cb6d8f443909e1b8a00c99e5aad5c30e7f3c7ebcf7cee7aaaf16d6e",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "gcode_sha256": "1380ec5bdd48d92fe4cdb9fa94ccf931f68a98e767ddd02d7b7d329f6ae7ab60",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:08",
       "layers": 220,
       "max_z_mm": 44.0,
       "model_seconds": 1001,
@@ -762,10 +762,10 @@
       "filament_cm3": 5.31,
       "filament_cost": 0.17,
       "filament_g": 6.7,
-      "filament_mm": 2209.23,
-      "gcode_bytes": 1349645,
-      "gcode_sha256": "701470a792119c70081b947db932e4867756abfeb4d8cb83b82476747b89b79b",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "filament_mm": 2209.34,
+      "gcode_bytes": 1349850,
+      "gcode_sha256": "7408fce0822fce212b78100de5925d7427276de6a93618fe351bb7c845729cbc",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:09",
       "layers": 285,
       "max_z_mm": 57.0,
       "model_seconds": 1492,
@@ -780,10 +780,10 @@
       "filament_cm3": 3.69,
       "filament_cost": 0.12,
       "filament_g": 4.65,
-      "filament_mm": 1533.44,
-      "gcode_bytes": 1103687,
-      "gcode_sha256": "c56a25b8c70f8b4602d444ce33f2684a8545336fea69ee54d9902c19d8d7fe71",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:04",
+      "filament_mm": 1533.06,
+      "gcode_bytes": 1103559,
+      "gcode_sha256": "3b0fd6a55aafe95596b06881be746755431dc2eaa3a2f3552261ba0626983269",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:09",
       "layers": 293,
       "max_z_mm": 59.0,
       "model_seconds": 1356,
@@ -798,10 +798,10 @@
       "filament_cm3": 4.27,
       "filament_cost": 0.13,
       "filament_g": 5.38,
-      "filament_mm": 1775.32,
-      "gcode_bytes": 1305840,
-      "gcode_sha256": "cc77f755957a96e33072b6532fb38986bb1379b4a820449e4a8623a5532d6e1b",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:05",
+      "filament_mm": 1775.34,
+      "gcode_bytes": 1305932,
+      "gcode_sha256": "ec9c0b1526c9ef1b70773b24f33d2ea835ca34b9dd3e95480444e4defad85851",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:09",
       "layers": 305,
       "max_z_mm": 61.0,
       "model_seconds": 1429,
@@ -817,9 +817,9 @@
       "filament_cost": 0.16,
       "filament_g": 6.34,
       "filament_mm": 2092.66,
-      "gcode_bytes": 1383631,
-      "gcode_sha256": "a92a34eb9759e07f94bb111a704c39e951b96b502089a1e84536d7ff603ca3d1",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:05",
+      "gcode_bytes": 1383597,
+      "gcode_sha256": "51c55e3eef723ed19b2f9197a6fe0c763c2a9c1e2a93c70a8ad5df89ea9a550d",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:10",
       "layers": 339,
       "max_z_mm": 68.0,
       "model_seconds": 1616,
@@ -835,9 +835,9 @@
       "filament_cost": 0.15,
       "filament_g": 5.95,
       "filament_mm": 1963.04,
-      "gcode_bytes": 1498574,
-      "gcode_sha256": "194b480d2b4809790923b6bb09f32f4ff7295dfdb2af436698277fa3fff02d73",
-      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:35:06",
+      "gcode_bytes": 1498606,
+      "gcode_sha256": "855d6ba9a83526d26be56ab84bc4d70edd4feec97e14223935c032a05406d773",
+      "generated_by": "OrcaSlicer 2.3.2 on 2026-08-24 at 05:37:10",
       "layers": 372,
       "max_z_mm": 74.4,
       "model_seconds": 1648,

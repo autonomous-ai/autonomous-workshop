@@ -1,7 +1,8 @@
 /Users/ab/code/inventors/inventors/alice/toys/manhattan-nocturne/project/exports/stl/part_steel_pawn.stl: 6944 triangles, 3474 vertices
-  PASS  degenerate triangles               0 zero-area (dropped; slicers ignore these)
+  PASS  sliver triangles                   0 under 1e-06 mm altitude (dropped)
   PASS  watertight (no open edges)         0 boundary edges
-  PASS  manifold                           0 edges shared by >2 faces
+  PASS  manifold edges                     0 edges shared by >2 faces
+  PASS  manifold vertices                  0 pinched (two cones of material meeting at a point)
   PASS  consistent winding                 0 edges with flipped neighbours
   PASS  positive volume (normals point out) 7.17 cm3
   PASS  connected shells                   1 (>1 = separate bodies; check they touch, not float)
