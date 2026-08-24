@@ -1,0 +1,11 @@
+# NYC chess art directions — generation prompt
+
+Create a premium industrial-design concept board showing THREE clearly separated NYC-inspired chess set art directions side by side, photographed as high-end collectible products on dark studio plinths. Wide 16:9 composition, no captions, no logos, no readable text, no people.
+
+LEFT — "Midnight Manhattan": sophisticated Art Deco noir. Matte near-black board with a subtle Manhattan street-grid border; opposing pieces in warm architectural ivory and burnished bronze. Chess pieces use original Manhattan skyscraper archetypes, not exact landmark replicas: pawns are rooftop water towers, rooks are weighty stepped fortress towers, knights are dynamic bridge-cantilever silhouettes while still instantly recognizable as knights, bishops have a clean diagonal negative-space cut, queen has a luminous stepped crown, king has a restrained tall antenna. Elegant setbacks, vertical fluting, sharp silhouette hierarchy. Adult, cinematic, cool.
+
+CENTER — "City in Section": structural New York / exposed engineering. Graphite and oxidized-copper palette, board resembles an architect's physical model with avenue lines and subway-map-like insets. Pieces reveal structural frames, trusses, brownstone stoops, bridge cables and rooftop machinery, but remain robust and plausible for FDM printing with no hair-thin features. Bold, mechanical, tactile, slightly brutalist. Never cute, never tourist souvenir.
+
+RIGHT — "After Dark Grid": near-future Manhattan at night. Deep navy and pale stone with restrained cyan light accents; monolithic geometric towers, faceted setbacks, controlled window bands and negative space. Board is a black Manhattan grid with subtle luminous avenue channels. Sleek, mysterious, high-contrast silhouettes, still recognizably a complete chess set and plausible as 3D printed objects.
+
+Across all three: accurate 8x8 chessboard, full chess armies, consistent six piece roles, realistic tabletop scale, premium materials, beautiful three-quarter hero angle, close enough to judge piece design, crisp product photography, no impossible floating parts, no tiny unsupported spires, no generic Staunton bodies with buildings pasted on top. Emphasize coherent product families and printable architectural massing.
