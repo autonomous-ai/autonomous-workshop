@@ -1,0 +1,207 @@
+{
+  "agent_roles": [
+    "blind first-time owner",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "blind_first_read": {
+    "board_parity": {
+      "finding": "The 8 by 8 grid can be counted, but alternating parity is not immediate. Near-uniform tone and shallow edge cues require deliberate tracing.",
+      "passed": false
+    },
+    "manhattan_identity": {
+      "finding": "The immediate read is New York City, especially Manhattan or Midtown, with Art Deco skyscraper and nocturnal Gotham character.",
+      "passed": true
+    },
+    "role_silhouettes": {
+      "finding": "King, queen, bishop, knight, rook, and pawn are recognizable; queen versus bishop is the closest pair but remains distinguishable.",
+      "passed": true
+    },
+    "side_families": {
+      "finding": "The slab-sided or vertically fluted family and the banded, stepped, or waisted family remain distinguishable even when bases are removed.",
+      "passed": true
+    }
+  },
+  "claim_scope": "Independent AI Player observations over exact acceptance-eligible CAD renders plus a deterministic raw top-view pixel audit",
+  "diagnostic_views": [
+    {
+      "path": "product-media/cad-preview/03b-board-top-depth-diagnostic.png",
+      "reason_ineligible": "synthetic depth edges cannot satisfy acceptance",
+      "sha256": "d3dce166814653c6726d93890a5a0fca26bdc585786516deafafed849bada9b1"
+    },
+    {
+      "path": "product-media/cad-preview/06c-board-inventory-depth-diagnostic.png",
+      "reason_ineligible": "synthetic depth edges cannot satisfy acceptance",
+      "sha256": "9c660893295d8300c8ca4b0299dba24af8f91d4b61b5b61dcb44167f6779b91e"
+    }
+  ],
+  "feedback_codes": [
+    "board-parity-not-immediate"
+  ],
+  "independent_ai_player_sessions": 2,
+  "passed": false,
+  "raw_board_top_metric": {
+    "image": "product-media/cad-preview/03a-board-top-raw.png",
+    "image_sha256": "1ff0904816952415b164fce99ab130c44f89f811f2373d01cda4dc370afd9d9c",
+    "population_standard_deviation": 0.0,
+    "red_channel_maximum": 20,
+    "red_channel_minimum": 20,
+    "sample_count": 64,
+    "square_center_rgb": [
+      20,
+      20,
+      24
+    ],
+    "unique_rgb_values": 1
+  },
+  "render_binding": {
+    "glb": {
+      "path": "exports/manhattan-nocturne.glb",
+      "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b"
+    },
+    "manifest": {
+      "acceptance_views": 17,
+      "diagnostic_views": 2,
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "a28fd138f100e7d82bbf3bfa020c21aecd3a398e14653b930c3bdca042f1f984",
+      "warnings": 0
+    },
+    "renderer": {
+      "path": "render_product.py",
+      "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
+    }
+  },
+  "schema_version": 1,
+  "scores": {
+    "blind_first_read_board_parity_sessions": "0/1 (0%)",
+    "blind_first_read_manhattan_identity_sessions": "1/1 (100%)",
+    "king_and_queen_front_and_rear": "8/8 (100%)",
+    "neutral_material_role_front_and_rear": "24/24 (100%)",
+    "neutral_material_side_front_and_rear": "24/24 (100%)",
+    "neutral_material_side_upper_body": "12/12 (100%)"
+  },
+  "views": [
+    {
+      "dimensions": ["board-parity", "manhattan-identity"],
+      "path": "product-media/cad-preview/01-hero-stone.png",
+      "receipt_path": "product-media/cad-preview/01-hero-stone.render.json",
+      "receipt_sha256": "95bdeca56507a7aa387910f2daa80bf285affe5146b0b10a005cb40a80f89362",
+      "sha256": "6285cb8dbfb792b88ef8f28b250327ff5250d63a99dd48d301bd1a8029ad9524"
+    },
+    {
+      "dimensions": ["board-parity", "manhattan-identity"],
+      "path": "product-media/cad-preview/02-hero-steel.png",
+      "receipt_path": "product-media/cad-preview/02-hero-steel.render.json",
+      "receipt_sha256": "71997c026e212fec9470fd9ac78cf1da692fea7023ffa63225f0ed1a784fc18a",
+      "sha256": "9c9510f48cff0de40c88903451214b7253ab2c1ed65b3738053dd8c71df3f818"
+    },
+    {
+      "dimensions": ["board-parity"],
+      "path": "product-media/cad-preview/03a-board-top-raw.png",
+      "receipt_path": "product-media/cad-preview/03a-board-top-raw.render.json",
+      "receipt_sha256": "05857ab1fcb7f62c4ff29715a40aeb33b9a0a06c00c2cb71eb7ce9ec6d16ee99",
+      "sha256": "1ff0904816952415b164fce99ab130c44f89f811f2373d01cda4dc370afd9d9c"
+    },
+    {
+      "dimensions": ["board-parity"],
+      "path": "product-media/cad-preview/03c-board-oblique-stone-raw.png",
+      "receipt_path": "product-media/cad-preview/03c-board-oblique-stone-raw.render.json",
+      "receipt_sha256": "7daf9558198628e58ba966efb819b640547041dfcd5345cafa7ee8a70f0740b6",
+      "sha256": "7556a763bf16b38618be5201ccead19591f2d32d919ab7efbef9f18aef135fc3"
+    },
+    {
+      "dimensions": ["board-parity"],
+      "path": "product-media/cad-preview/03d-board-oblique-steel-raw.png",
+      "receipt_path": "product-media/cad-preview/03d-board-oblique-steel-raw.render.json",
+      "receipt_sha256": "651b3456986a0dc64e51b124c49c9720fac30223c72244161a35369b8d3fea24",
+      "sha256": "950836ec5269f80bbec54e63d31996f69e7626d87ed0a9f46ab438b6d4c7f405"
+    },
+    {
+      "dimensions": ["board-parity", "manhattan-identity"],
+      "path": "product-media/cad-preview/03e-south-border-street-plan-raw.png",
+      "receipt_path": "product-media/cad-preview/03e-south-border-street-plan-raw.render.json",
+      "receipt_sha256": "b0ce128bfa72e184e0423d8a3b125735f63b936816bb735065e537b94128f104",
+      "sha256": "15c0a7f38c992f3640ddd5d6b0721d79b0192b171bb9c5892c05b70b89ae71af"
+    },
+    {
+      "dimensions": ["board-parity", "role-legibility", "side-coding"],
+      "path": "product-media/cad-preview/03f-top-inventory-raw.png",
+      "receipt_path": "product-media/cad-preview/03f-top-inventory-raw.render.json",
+      "receipt_sha256": "0caf9140818a135c533603c328945c907452b16677dbebc26d1aecd5ebc7183f",
+      "sha256": "da49f6b8cb7a7bf46f10a91da0c583be7d078a2a6fe9f50a4379e2e390462016"
+    },
+    {
+      "dimensions": ["role-legibility", "side-coding"],
+      "path": "product-media/cad-preview/04a-rank-lineup-front-neutral.png",
+      "receipt_path": "product-media/cad-preview/04a-rank-lineup-front-neutral.render.json",
+      "receipt_sha256": "a7e5d5a5f88f912ec416b1e9ed53f0a5f1c4ebcc14ec3509a64cb7593a07bf95",
+      "sha256": "d3c2ec28b5d42ff6029792a98cb0931572250e356127e777a0a0e69a2069df26"
+    },
+    {
+      "dimensions": ["role-legibility", "side-coding"],
+      "path": "product-media/cad-preview/04b-rank-lineup-rear-neutral.png",
+      "receipt_path": "product-media/cad-preview/04b-rank-lineup-rear-neutral.render.json",
+      "receipt_sha256": "26b08306ca21c10c38c94eb37cd329159d1d697eb2536b1b7ea53d4de252e1da",
+      "sha256": "6d2d751a0ecdf01ab0c344f7d0d7c1e2b650fe2084e275c1d816dbe0507c3a4c"
+    },
+    {
+      "dimensions": ["role-legibility", "side-coding"],
+      "path": "product-media/cad-preview/04c-rank-lineup-top-neutral.png",
+      "receipt_path": "product-media/cad-preview/04c-rank-lineup-top-neutral.render.json",
+      "receipt_sha256": "568a2059be6a97f07ad6cd14e0348dc1a1c1e097b194e5cf858fcb259bbe1250",
+      "sha256": "337e89b15e433d6a08938974569a54f8a9e83f7a872c1eb89525c7bb4a7d4a0e"
+    },
+    {
+      "dimensions": ["side-coding", "role-legibility"],
+      "path": "product-media/cad-preview/05a-side-code-pairs-front-neutral.png",
+      "receipt_path": "product-media/cad-preview/05a-side-code-pairs-front-neutral.render.json",
+      "receipt_sha256": "47f87b4aae4b0f40de2e7b0400659e15cb74a19bc77117dc29eecaaf3c32fdd9",
+      "sha256": "d3291254eaa0399c8bead9c808ae0aa2f68a95cf04e924d430d352a335718cec"
+    },
+    {
+      "dimensions": ["side-coding", "role-legibility"],
+      "path": "product-media/cad-preview/05b-side-code-pairs-rear-neutral.png",
+      "receipt_path": "product-media/cad-preview/05b-side-code-pairs-rear-neutral.render.json",
+      "receipt_sha256": "fe9c2e293401447b061073a8771564b3776c49a85069e7595b8c1fadb57f1fd9",
+      "sha256": "b837c78778dee522ca82553d6d537e06e4a37b57048458d4a070eaad6490ad70"
+    },
+    {
+      "dimensions": ["side-coding"],
+      "path": "product-media/cad-preview/05c-side-code-upper-body-neutral.png",
+      "receipt_path": "product-media/cad-preview/05c-side-code-upper-body-neutral.render.json",
+      "receipt_sha256": "06c2e6097ba2567b544a9d817c7b4c35080add3e2ca3fe4778e9eb5edb43585f",
+      "sha256": "b4a8e967fab4f1449c8214d92d94b4e268de882c5f48046a1a08b5515f0ed538"
+    },
+    {
+      "dimensions": ["manhattan-identity", "side-coding", "role-legibility"],
+      "path": "product-media/cad-preview/06a-manhattan-identity-neutral.png",
+      "receipt_path": "product-media/cad-preview/06a-manhattan-identity-neutral.render.json",
+      "receipt_sha256": "41013672a0b1c07de0f19a4849fda7cd8e5626e155d78f925711606c25874f8f",
+      "sha256": "a44d0bfe6392b544e4523f2f2ac752a4d112a1e13e60fe77cd105073e029a055"
+    },
+    {
+      "dimensions": ["board-parity", "manhattan-identity"],
+      "path": "product-media/cad-preview/06b-board-inventory-engineering-raw.png",
+      "receipt_path": "product-media/cad-preview/06b-board-inventory-engineering-raw.render.json",
+      "receipt_sha256": "d45989da9552476b939e18814518698634b6dd3fb9a8cff81a9a625970ecf743",
+      "sha256": "4cdc09b6b3ae740dcc7278ca414de2b51bb24a3a98f440f51048bbe5567efd37"
+    },
+    {
+      "dimensions": ["manhattan-identity", "side-coding", "role-legibility"],
+      "path": "product-media/cad-preview/07a-neutral-start-stone.png",
+      "receipt_path": "product-media/cad-preview/07a-neutral-start-stone.render.json",
+      "receipt_sha256": "a5732d722980604c4f8b795dd39c5cae25e0c46b665afa1a161623eb1565eab8",
+      "sha256": "aee719ed4efc8bf6de997880f15991d1c75ba5f1d2679266a38467f033552ac0"
+    },
+    {
+      "dimensions": ["manhattan-identity", "side-coding", "role-legibility"],
+      "path": "product-media/cad-preview/07b-neutral-start-steel.png",
+      "receipt_path": "product-media/cad-preview/07b-neutral-start-steel.render.json",
+      "receipt_sha256": "45d42c020ad9ce11faac6bd359974654f46ee14353efdaf53d004c335ba289f0",
+      "sha256": "8e1b4b5f040365989af31badc519f7056836fccdfd30272013b6a75c4f9d2a94"
+    }
+  ]
+}

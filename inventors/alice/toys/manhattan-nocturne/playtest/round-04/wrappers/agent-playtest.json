@@ -1,0 +1,29 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "config_sha256": "e1c4e670024c95bb623d58d4f3a153fc968cbb6fea1dc8c746ec5678829748eb",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "4.0.0",
+  "evidence": {
+    "agent_roles": [
+      "blind first-time owner",
+      "competitive chess player",
+      "low-color-vision player",
+      "NYC design critic",
+      "adversarial evidence auditor"
+    ],
+    "board_square_center_rgb": "20,20,24 for all 64 centers; red min=20 max=20 population_std=0.0",
+    "evidence_class": "ai-simulation",
+    "feedback_codes": [
+      "board-parity-not-immediate"
+    ],
+    "manhattan_identity_passed": true,
+    "rank_recognition_percent": 100,
+    "result_file_sha256": "a6c22fc1200f7cd404adaa316bc72e74452feae40aa254fab3114bc0c6a30904",
+    "side_recognition_percent": 100
+  },
+  "evidence_ref": "results/agent-playtest.json",
+  "evidence_sha256": "a6c22fc1200f7cd404adaa316bc72e74452feae40aa254fab3114bc0c6a30904",
+  "inspection_id": "agent-playtest",
+  "observed_at": "2026-08-24T11:55:42+00:00",
+  "passed": false
+}

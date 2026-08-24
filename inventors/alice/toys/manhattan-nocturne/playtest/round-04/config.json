@@ -1,0 +1,58 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "board_readability_thresholds": {
+    "alternating_square_parity_percent_min": 100,
+    "blind_first_read_must_be_immediate": true,
+    "diagnostic_views_can_satisfy_acceptance": false,
+    "raw_square_center_red_channel_std_is_reported": true
+  },
+  "claim_boundaries": {
+    "customer_review": false,
+    "human_playtest": false,
+    "physical_print": false,
+    "scope": "Independent AI-player review of exact digital CAD, deterministic geometry checks, and parsed digital slicer evidence only"
+  },
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "4.0.0",
+  "manhattan_identity_thresholds": {
+    "blind_first_read_must_name_new_york_or_manhattan": true,
+    "blocking_findings_max": 0
+  },
+  "player_roles": [
+    "blind first-time owner",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial evidence auditor"
+  ],
+  "recognition_thresholds": {
+    "aggregate_rank_percent_min": 95,
+    "each_rank_percent_min": 90,
+    "king_and_queen_percent_min": 100,
+    "neutral_material_side_percent_min": 100
+  },
+  "round": 4,
+  "schema_version": 1,
+  "visual_inputs": [
+    "product-media/cad-preview/01-hero-stone.png",
+    "product-media/cad-preview/02-hero-steel.png",
+    "product-media/cad-preview/03a-board-top-raw.png",
+    "product-media/cad-preview/03b-board-top-depth-diagnostic.png",
+    "product-media/cad-preview/03c-board-oblique-stone-raw.png",
+    "product-media/cad-preview/03d-board-oblique-steel-raw.png",
+    "product-media/cad-preview/03e-south-border-street-plan-raw.png",
+    "product-media/cad-preview/03f-top-inventory-raw.png",
+    "product-media/cad-preview/04a-rank-lineup-front-neutral.png",
+    "product-media/cad-preview/04b-rank-lineup-rear-neutral.png",
+    "product-media/cad-preview/04c-rank-lineup-top-neutral.png",
+    "product-media/cad-preview/05a-side-code-pairs-front-neutral.png",
+    "product-media/cad-preview/05b-side-code-pairs-rear-neutral.png",
+    "product-media/cad-preview/05c-side-code-upper-body-neutral.png",
+    "product-media/cad-preview/06a-manhattan-identity-neutral.png",
+    "product-media/cad-preview/06b-board-inventory-engineering-raw.png",
+    "product-media/cad-preview/06c-board-inventory-depth-diagnostic.png",
+    "product-media/cad-preview/07a-neutral-start-stone.png",
+    "product-media/cad-preview/07b-neutral-start-steel.png"
+  ]
+}
