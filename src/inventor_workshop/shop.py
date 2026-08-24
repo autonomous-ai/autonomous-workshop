@@ -327,7 +327,14 @@ def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
 
 
 def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
-    """Bind Factory facts and selected primary model to the sealed Made tree."""
+    """Bind Factory facts and the safest primary model to sealed Made bytes.
+
+    A root assembled mesh is the exact output that Make and Playtest sealed.
+    When source capable of regenerating that model is present too, Factory must
+    receive the mesh as primary: executing the source would introduce a second
+    dependency/toolchain decision after Playtest. Generator-only artifacts
+    remain supported for inventors that have not exported a root mesh yet.
+    """
 
     context.made.assert_current()
     root = Path(context.made.artifact_root).resolve(strict=True)
@@ -353,6 +360,30 @@ def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
     if project.get("id") != context.wish.product_id:
         raise ContractError("sealed project.json id must equal Wish product_id")
 
+    assembled = root / "assembled.stl"
+    canonical = root / (context.wish.product_id + ".stl")
+    for path in (assembled, canonical):
+        if path.is_symlink():
+            raise ContractError("Factory primary STL must be a sealed regular file")
+        if path.exists() and not path.is_file():
+            raise ContractError("Factory primary STL must be a sealed regular file")
+    candidates = [path for path in (assembled, canonical) if path.is_file()]
+    if assembled.is_file() and canonical.is_file():
+        if assembled.read_bytes() != canonical.read_bytes():
+            raise ContractError(
+                "root assembled.stl and <slug>.stl diverge; Factory would prefer assembled.stl"
+            )
+    if candidates:
+        selected = assembled if assembled.is_file() else canonical
+        content = selected.read_bytes()
+        if not content:
+            raise ContractError("Factory primary STL is empty")
+        return {
+            "kind": "mesh",
+            "path": selected.name,
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+
     top_generators = []
     for path in sorted(root.glob("*.py")):
         if path.is_symlink() or not path.is_file():
@@ -369,30 +400,10 @@ def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
             "path": path.name,
             "sha256": hashlib.sha256(content).hexdigest(),
         }
-
-    assembled = root / "assembled.stl"
-    canonical = root / (context.wish.product_id + ".stl")
-    candidates = [path for path in (assembled, canonical) if path.is_file()]
-    if not candidates:
-        raise ContractError(
-            "project-marker Made artifact requires root assembled.stl or <slug>.stl"
-        )
-    if any(path.is_symlink() for path in candidates):
-        raise ContractError("Factory primary STL must be a sealed regular file")
-    if assembled.is_file() and canonical.is_file():
-        if assembled.read_bytes() != canonical.read_bytes():
-            raise ContractError(
-                "root assembled.stl and <slug>.stl diverge; Factory would prefer assembled.stl"
-            )
-    selected = assembled if assembled.is_file() else canonical
-    content = selected.read_bytes()
-    if not content:
-        raise ContractError("Factory primary STL is empty")
-    return {
-        "kind": "mesh",
-        "path": selected.name,
-        "sha256": hashlib.sha256(content).hexdigest(),
-    }
+    raise ContractError(
+        "project-marker Made artifact requires root assembled.stl or <slug>.stl, "
+        "or one top-level generator defining gen_step"
+    )
 
 
 def _model_handoff_excludes(manifest: ArtifactManifest) -> Tuple[str, ...]:
@@ -468,8 +479,15 @@ def _build_model_handoff_pack(
     manifest: ArtifactManifest,
     destination: Path,
     facts: Mapping[str, Any],
+    primary_model: Mapping[str, str],
 ) -> Mapping[str, Any]:
-    """Build a canonical transport Pack without local page/inspection media."""
+    """Build a canonical transport Pack without local page/inspection media.
+
+    If the sealed primary is a mesh, top-level ``gen_step`` sources are
+    deliberately omitted from this transport-only subset. The complete source
+    remains in Made, but Factory cannot accidentally execute it instead of
+    ingesting the exact mesh that Playtest approved.
+    """
 
     root = Path(root).resolve(strict=True)
     if build_artifact_manifest(root, created_at=manifest.created_at).to_dict() != manifest.to_dict():
@@ -485,7 +503,32 @@ def _build_model_handoff_pack(
         + b"\n"
     )
     assert_packable_content("workshop-product-facts.json", facts_payload)
+    if (
+        not isinstance(primary_model, Mapping)
+        or primary_model.get("kind") not in ("mesh", "generator")
+        or not isinstance(primary_model.get("path"), str)
+    ):
+        raise ContractError("Factory model handoff primary facts are malformed")
+    primary_path = PurePosixPath(primary_model["path"])
+    primary_sha256 = require_sha256(
+        primary_model.get("sha256"), "Factory primary model sha256"
+    )
+    primary_entry = next(
+        (entry for entry in manifest.entries if entry.path == primary_path.as_posix()),
+        None,
+    )
+    expected_suffix = ".stl" if primary_model["kind"] == "mesh" else ".py"
+    if (
+        len(primary_path.parts) != 1
+        or primary_path.name != primary_model["path"]
+        or primary_path.suffix.casefold() != expected_suffix
+        or primary_entry is None
+        or primary_entry.sha256 != primary_sha256
+        or facts.get("primary_model") != dict(primary_model)
+    ):
+        raise ContractError("Factory model handoff primary facts are malformed")
     excluded = set(_model_handoff_excludes(manifest))
+    omit_top_level_generators = primary_model["kind"] == "mesh"
 
     def excluded_entry(path: str) -> bool:
         parts = PurePosixPath(path).parts
@@ -502,6 +545,14 @@ def _build_model_handoff_pack(
                 raise ContractError(
                     "Made file changed while building Factory handoff: %s" % entry.path
                 )
+            relative = PurePosixPath(entry.path)
+            if (
+                omit_top_level_generators
+                and len(relative.parts) == 1
+                and relative.suffix.casefold() == ".py"
+                and b"def gen_step" in content
+            ):
+                continue
             target = staging.joinpath(*PurePosixPath(entry.path).parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
@@ -1703,6 +1754,7 @@ class ShopInstructionsWriter:
                 context.made.artifact_manifest,
                 packet,
                 product_facts,
+                primary_model,
             )
             assert_current()
             outcome = self._sender.import_draft(

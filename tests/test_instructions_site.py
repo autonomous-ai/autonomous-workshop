@@ -1,7 +1,11 @@
 import hashlib
+import io
 import json
 import tempfile
 import unittest
+import zipfile
+from email.parser import BytesParser
+from email.policy import default as email_policy
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
@@ -15,11 +19,28 @@ from inventor_workshop.shop import (
     SHOP_USER_AGENT,
     ShopDoor,
     ShopInstructionsWriter,
+    _assert_shop_importable_pack,
+    _build_model_handoff_pack,
     _factory_story_prompt,
     _sealed_factory_primary,
     _shop_category_for_lane,
 )
 from inventor_workshop.store import InventorStore
+
+
+def _multipart_parts(headers, body):
+    message = BytesParser(policy=email_policy).parsebytes(
+        (
+            "Content-Type: %s\r\nMIME-Version: 1.0\r\n\r\n"
+            % headers["Content-Type"]
+        ).encode()
+        + body
+    )
+    parts = {}
+    for part in message.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        parts.setdefault(name, []).append(part.get_payload(decode=True))
+    return parts
 
 
 class InstructionsSiteContext:
@@ -310,6 +331,158 @@ class InstructionsSiteTest(unittest.TestCase):
             intent["request"]["_workshop_handoff_artifact_sha256"],
             receipt.details["handoff_artifact_sha256"],
         )
+
+    def test_exact_root_mesh_wins_and_generator_is_omitted_from_import_zip(self):
+        generator = self.made.artifact_root / "main.py"
+        generator.write_text(
+            "def gen_step():\n    raise RuntimeError('Factory must not execute me')\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        self.assertEqual(
+            _sealed_factory_primary(context),
+            {
+                "kind": "mesh",
+                "path": "assembled.stl",
+                "sha256": hashlib.sha256(
+                    (made.artifact_root / "assembled.stl").read_bytes()
+                ).hexdigest(),
+            },
+        )
+
+        page_path = self.instructions / "product.json"
+        page = json.loads(page_path.read_text(encoding="utf-8"))
+        page["product_artifact_sha256"] = made.artifact_sha256
+        page_path.write_text(
+            json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        instructions_manifest = build_artifact_manifest(
+            self.instructions, created_at="content-addressed"
+        )
+        store = InventorStore(self.root / "mesh-preference.sqlite3")
+        store.register_product(
+            "verified-toy", "instructions", artifact_sha256=made.artifact_sha256
+        )
+        lease = store.acquire_lease("verified-toy", "mesh-preference-test")
+        context = InstructionsSiteContext(made, "verified-toy", lease)
+        transport = SuccessfulShopTransport(context, self.media)
+        try:
+            receipt = ShopInstructionsWriter(
+                store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, instructions_manifest)
+        finally:
+            store.release_lease("verified-toy", lease)
+
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        import_call = transport.calls[0]
+        self.assertEqual(import_call[0], "POST")
+        multipart = _multipart_parts(import_call[2], import_call[3])
+        self.assertEqual(len(multipart["file"]), 1)
+        with zipfile.ZipFile(io.BytesIO(multipart["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("assembled.stl", names)
+            self.assertNotIn("main.py", names)
+            self.assertNotIn(generator.read_bytes(), multipart["file"][0])
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["primary_model"]["kind"], "mesh")
+            self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+
+    def test_generator_only_artifact_remains_importable_and_keeps_generator(self):
+        product_root = self.root / "generator-only"
+        product_root.mkdir()
+        product = {
+            "title": "Generator Toy",
+            "summary": "A sealed code-native toy.",
+            "description": "A sealed code-native toy. By Alice.",
+            "lane": "moving-machines",
+        }
+        (product_root / "project.json").write_text(
+            '{"id":"generator-toy","name":"Generator Toy"}\n',
+            encoding="utf-8",
+        )
+        (product_root / "product.json").write_text(
+            json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        generator = product_root / "generator.py"
+        generator.write_text(
+            "def gen_step():\n    return 'sealed generator output'\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(product_root, product)
+        context = InstructionsSiteContext(made, "generator-toy")
+        primary = _sealed_factory_primary(context)
+        self.assertEqual(primary["kind"], "generator")
+        self.assertEqual(primary["path"], "generator.py")
+
+        packet = self.root / "generator-only.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+        _build_model_handoff_pack(
+            made.artifact_root,
+            made.artifact_manifest,
+            packet,
+            facts,
+            primary,
+        )
+        content = packet.read_bytes()
+        _assert_shop_importable_pack(content)
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            self.assertIn("generator.py", archive.namelist())
+            self.assertEqual(archive.read("generator.py"), generator.read_bytes())
+            self.assertNotIn("assembled.stl", archive.namelist())
+            self.assertNotIn("generator-toy.stl", archive.namelist())
+
+    def test_slug_named_root_mesh_also_wins_over_generator(self):
+        product_root = self.root / "slug-mesh"
+        product_root.mkdir()
+        product = {
+            "title": "Slug Mesh Toy",
+            "summary": "An exact slug-named mesh.",
+            "description": "An exact slug-named mesh. By Alice.",
+            "lane": "moving-machines",
+        }
+        (product_root / "project.json").write_text(
+            '{"id":"slug-mesh-toy","name":"Slug Mesh Toy"}\n',
+            encoding="utf-8",
+        )
+        (product_root / "product.json").write_text(
+            json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        mesh = product_root / "slug-mesh-toy.stl"
+        mesh.write_text(
+            "solid slug-mesh-toy\nendsolid slug-mesh-toy\n", encoding="utf-8"
+        )
+        generator = product_root / "main.py"
+        generator.write_text(
+            "def gen_step():\n    raise RuntimeError('sealed mesh must win')\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(product_root, product)
+        context = InstructionsSiteContext(made, "slug-mesh-toy")
+        primary = _sealed_factory_primary(context)
+        self.assertEqual(primary["kind"], "mesh")
+        self.assertEqual(primary["path"], "slug-mesh-toy.stl")
+
+        packet = self.root / "slug-mesh.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+        _build_model_handoff_pack(
+            made.artifact_root,
+            made.artifact_manifest,
+            packet,
+            facts,
+            primary,
+        )
+        with zipfile.ZipFile(packet) as archive:
+            self.assertIn("slug-mesh-toy.stl", archive.namelist())
+            self.assertNotIn("main.py", archive.namelist())
 
     def test_factory_story_prompt_is_bounded_without_losing_attribution(self):
         product = dict(self.made.product)
