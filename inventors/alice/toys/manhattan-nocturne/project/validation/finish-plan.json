@@ -1,0 +1,58 @@
+{
+  "schema": "workshop.finish-plan.v1",
+  "product": "manhattan-nocturne",
+  "part": "BOARD",
+  "required_contrast": {
+    "base": "midnight",
+    "light_pads": "warm-brass-gold"
+  },
+  "finish_boundary": {
+    "z_mm": 8.2,
+    "layer_height_mm": 0.2,
+    "completed_layers": 41,
+    "at_or_below": "continuous midnight base",
+    "above": "only 32 isolated warm-brass-gold light pads",
+    "top_z_mm": 9.0
+  },
+  "checker_field": {
+    "files": 8,
+    "ranks": 8,
+    "light_pad_count": 32,
+    "light_pad_top_size_mm": 25.0,
+    "a1": "dark"
+  },
+  "execution": {
+    "job_scope": "BOARD only",
+    "piece_artifacts": "excluded",
+    "required_method": "choose exactly one at Deliver",
+    "allowed_methods": [
+      {
+        "id": "single-layer-material-change",
+        "instruction": "Print midnight through the completed layer ending at Z8.20, pause, then resume all BOARD toolpaths above Z8.20 in warm brass/gold.",
+        "boundary_z_mm": 8.2
+      },
+      {
+        "id": "masked-post-print-top-finish",
+        "instruction": "Print the sealed BOARD geometry, mask every surface at or below Z8.20, then apply warm brass/gold only to exposed light-pad slopes and tops above Z8.20.",
+        "boundary_z_mm": 8.2
+      }
+    ]
+  },
+  "texture": {
+    "added": false,
+    "reason": "The 0.80 mm bevel already creates real light response; texture would reduce the flat D22.5 piece landing."
+  },
+  "geometry_seal": {
+    "mutation_allowed": false,
+    "algorithm": "sha256 of canonical compact JSON mapping project-relative path to sha256",
+    "file_count": 27,
+    "sha256": "477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54"
+  },
+  "claims": {
+    "digital_contract": "verified by validation/check_finish.py",
+    "physical_execution": "unverified-until-deliver",
+    "finish_color": "unverified-until-deliver",
+    "finish_adhesion": "unverified-until-deliver",
+    "piece_stability": "geometry-only; physical behavior unverified-until-deliver"
+  }
+}

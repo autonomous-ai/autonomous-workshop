@@ -32,6 +32,13 @@ EXPLORATION_NOZZLE_DIAMETER = 0.40             # mm [assumed] pinned slicer prof
 BOOLEAN_OVERLAP = 0.08                         # mm [assumed] robust B-rep union
 BOOLEAN_OVERSHOOT = 0.50                       # mm [assumed] robust through-cut
 
+# Round-5 finish contract. These values describe manufacturing presentation
+# only; no piece or board B-rep consumes them.
+BOARD_BASE_FINISH = "midnight"                 # [assumed] continuous base through the boundary
+LIGHT_PAD_FINISH = "warm-brass-gold"           # [assumed] required contrasting finish above boundary
+FINISH_BOUNDARY_Z = BOARD_THICKNESS             # mm [derived] completed Z8.20 layer plane
+FINISH_TEXTURE_ENABLED = False                  # [derived] preserve flat, stable piece landings
+
 # The seven internal file/rank lines echo through each border as independent
 # recessed street dashes.  A 0.80 mm deep ruled loft gives every dash broad
 # native-CAD sloped walls while leaving 1.20 mm at both border edges.
@@ -391,6 +398,11 @@ def validate_parameters() -> None:
     assert BOARD_SIZE <= 256.0
     assert abs(BOARD_TOTAL_HEIGHT - 9.0) < 1e-9
     assert abs(BOARD_THICKNESS - 8.2) < 1e-9
+    assert abs(FINISH_BOUNDARY_Z - BOARD_THICKNESS) < 1e-9
+    assert abs(FINISH_BOUNDARY_Z / EXPLORATION_LAYER_HEIGHT - 41.0) < 1e-9
+    assert BOARD_BASE_FINISH == "midnight"
+    assert LIGHT_PAD_FINISH == "warm-brass-gold"
+    assert FINISH_TEXTURE_ENABLED is False
     assert abs(SQUARE_RELIEF / EXPLORATION_LAYER_HEIGHT - 4.0) < 1e-9
     assert abs(BOARD_THICKNESS - LIGHT_PAD_LOWER_Z - LIGHT_PAD_EMBED) < 1e-9
     assert LIGHT_PAD_EMBED >= BOOLEAN_OVERLAP

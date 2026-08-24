@@ -37,7 +37,22 @@ runs the project fit/parameter audit, exports GLB/STL, and validates each mesh.
 Project-specific inventory, dimensions, placement, stability proxies, and
 quantity-aware bed packing still run separately through `measure/check_fit.py`.
 
-## 4. Exact-CAD previews
+## 4. Verify the real finish contract
+
+```sh
+"$CAD_PY" "$PROJECT/validation/check_finish.py"
+```
+
+This read-only gate hashes all 27 canonical STEP/STL artifacts, verifies the
+continuous midnight base ends at Z8.20, proves that only 32 isolated light pads
+continue to Z9.00, and requires warm brass/gold above that boundary. It accepts
+one BOARD-only layer-height material change or one masked post-print top
+finish. It does not claim that either method has been physically executed.
+
+No shallow texture is added: the exact bevel provides light response and each
+25.0 mm top remains a flat landing for a D22.5 piece base.
+
+## 5. Exact-CAD previews
 
 ```sh
 "$CAD_PY" skills/cad/scripts/export \
@@ -53,7 +68,7 @@ python3 "$PROJECT/render_product.py" \
 Every preview is derived from the exact colored CAD assembly and carries a
 receipt. Mood art under `../art-direction/` is never substituted for this gate.
 
-## 5. OrcaSlicer 2.3.2
+## 6. OrcaSlicer 2.3.2
 
 Use the official OrcaSlicer 2.3.2 CLI. The exact three P2S profiles are copied
 under `validation/orca-profiles/` and must remain content-hashed.
