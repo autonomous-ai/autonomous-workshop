@@ -10,6 +10,7 @@ from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
 from inventor_workshop.shop import (
     HttpResponse,
+    SHOP_USER_AGENT,
     ShopDoor,
     ShopInstructionsWriter,
     _normalize_use_case,
@@ -53,7 +54,7 @@ class SuccessfulShopTransport:
             "project_url": "https://cdn.autonomous.ai/projects/history-1/",
             "origin": "import",
             "tags": ["toy", "classics-made-yours"],
-            "category": {"slug": "tabletop"},
+            "category": {"slug": "toys"},
             "author": {"id": "owner-1"},
             "thumbnail_urls": ["https://cdn.example/cover.png"],
         }
@@ -239,11 +240,14 @@ class InstructionsSiteTest(unittest.TestCase):
             [call[0] for call in transport.calls],
             ["POST", "POST", "POST", "POST", "POST", "POST", "GET"],
         )
+        self.assertTrue(
+            all(call[2].get("User-Agent") == SHOP_USER_AGENT for call in transport.calls)
+        )
         self.assertFalse(any(call[1].endswith("/publish") for call in transport.calls))
         import_body = transport.calls[0][3]
         self.assertIn(b'name="thumbnails"; filename="hero.png"', import_body)
         self.assertIn(self.media["hero"], import_body)
-        self.assertIn(b'name="category"\r\n\r\ntabletop\r\n', import_body)
+        self.assertIn(b'name="category"\r\n\r\ntoys\r\n', import_body)
         category_part = import_body.split(b'name="category"', 1)[1].split(
             b"\r\n--", 1
         )[0]
@@ -260,9 +264,13 @@ class InstructionsSiteTest(unittest.TestCase):
         )
 
     def test_workshop_lanes_map_to_the_shops_public_taxonomy(self):
-        self.assertEqual(_shop_category_for_lane("classics-made-yours"), "tabletop")
-        self.assertEqual(_shop_category_for_lane("invented-games"), "tabletop")
-        for lane in ("moving-machines", "holdable-science", "little-worlds"):
+        for lane in (
+            "classics-made-yours",
+            "invented-games",
+            "moving-machines",
+            "holdable-science",
+            "little-worlds",
+        ):
             self.assertEqual(_shop_category_for_lane(lane), "toys")
         with self.assertRaises(ContractError):
             _shop_category_for_lane("unknown-lane")

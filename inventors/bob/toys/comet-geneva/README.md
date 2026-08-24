@@ -10,15 +10,19 @@ A compact exposed Geneva machine: turn the cratered drive wheel and its comet pi
 - Lane: `moving-machines`
 - Extension level: `custom-make`
 - Configured Playtest rounds: `4`
-- Actual stop: **Instructions / waiting**, round 1
+- Actual stop: **Deliver / waiting**, round 1
 - Exact artifact: `dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447`
-- Product page: sealed locally; waiting for the Workshop site account
+- Private product draft: https://www.autonomous.ai/factory/product/comet-geneva (owner sign-in required)
 
-AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account.
+AI Playtest passed. Shared Instructions imported the exact Make artifact, uploaded
+the five sealed views, wrote the page and in-box guide, and verified the enriched
+private draft through an authenticated Shop readback. The owner can review and
+make that draft public; the Workshop's next job is production and shipping in
+Deliver.
 
 ## Still needed
 
-- `site-page` — The page and in-box guide are sealed, but this run has no authenticated Workshop site account.
+- `production-and-shipping` — The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured.
 
 ## Inspect it
 
@@ -33,5 +37,6 @@ AI Playtest passed. Shared Instructions created the page, guide, and five exact-
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
-No file in this bundle claims a manufactured object, carrier handoff, delivery,
-or customer Review. Those facts belong to Deliver and Reviews.
+The private draft is not a public listing. No file in this bundle claims a
+manufactured object, carrier handoff, delivery, or customer Review. Those facts
+belong to Deliver and Reviews.

@@ -8,7 +8,7 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
-    "site_draft_verified": false,
+    "site_draft_verified": true,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
@@ -27,17 +27,17 @@
   "run": {
     "artifact_sha256": "c6f44cf73d743ca61bec3ad3a2c539c3ac8b3af1eff8a6bc748a27b7abb2a92e",
     "delivery": null,
-    "instructions_sha256": null,
-    "job": "instructions",
+    "instructions_sha256": "bc9fb74f106d5ae191ae734c646ca8c95481d7bc6c2f168f6fbc8e8f3489c81b",
+    "job": "deliver",
     "needs": [
       {
-        "capability": "site-page",
-        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
-        "job": "instructions",
-        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
+        "capability": "production-and-shipping",
+        "instructions": "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
+        "job": "deliver",
+        "reason": "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured."
       }
     ],
-    "page_url": null,
+    "page_url": "https://www.autonomous.ai/factory/product/counterorbit",
     "playtest_rounds": 10,
     "product_id": "counterorbit",
     "round": 1,
@@ -50,7 +50,41 @@
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "site_receipt": null,
+  "site_receipt": {
+    "artifact_sha256": "c6f44cf73d743ca61bec3ad3a2c539c3ac8b3af1eff8a6bc748a27b7abb2a92e",
+    "current_history_id": "6a8be9796ddacb62db04c4e3",
+    "design_id": "6a8be9796ddacb62db04c4e2",
+    "details": {
+      "cover_sha256": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2",
+      "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8be9796ddacb62db04c4e2/cover.png",
+      "instructions_sha256": "bc9fb74f106d5ae191ae734c646ca8c95481d7bc6c2f168f6fbc8e8f3489c81b",
+      "kind": "shop-design",
+      "media_sha256": {
+        "box": "e263e8fdb17149b98f6822abc877072e3ce5c956a9cd3a1d596c6d06d36240f2",
+        "detail": "bc96e4cb5928f876f618df788f4987844a89bed8b5446e299f6af64413bd751f",
+        "hero": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2",
+        "parts": "00851ca54b72eda42de1e6fce4ed454015348f143a9805dc4d7b40ae394f5b81",
+        "play": "74473e74783df2f9169cbf9db068632830cbbb5d2444c2cea0fc51d75d8f0012"
+      },
+      "page_content_sha256": "3d03de32a2093bc58ff2b54b48bc28f8200648e4834f5c8eb71ac9e5a6abf595",
+      "page_url": "https://www.autonomous.ai/factory/product/counterorbit",
+      "playtest_evidence_sha256": "bd2e07401bc766a7e711ff6a7d7340365c643d0437c3479d37fb98c54205011e"
+    },
+    "door": "shop",
+    "listing_active": null,
+    "listing_currency": null,
+    "listing_price_cents": null,
+    "listing_sku": null,
+    "observed_at": "2026-08-24T06:49:35.189166+00:00",
+    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
+    "pack_sha256": "10ab19d46efe47f2490cff1696bae5d75fdd4685ed1ad45a2c3181a89d9c2889",
+    "project_url": "https://cdn.autonomous.ai/panda-social/6a8be9796ddacb62db04c4e2/6a8be9796ddacb62db04c4e3/",
+    "published_history_id": null,
+    "reference": "6a8be9796ddacb62db04c4e2",
+    "root_id": "6a8be9796ddacb62db04c4e2",
+    "slug": "counterorbit",
+    "status": "draft"
+  },
   "taste_sha256": "7941ac6fc22874faa75c1c368f7efa34ab2a23c998bb44c84f4b1885e285c3fc",
   "wish": {
     "constraints": {

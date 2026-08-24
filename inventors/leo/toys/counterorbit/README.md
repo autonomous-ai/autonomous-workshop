@@ -10,15 +10,19 @@ Place one of five signal stones, rotate the shared orbit, and try to hold a thre
 - Lane: `invented-games`
 - Extension level: `custom-playtest`
 - Configured Playtest rounds: `10`
-- Actual stop: **Instructions / waiting**, round 1
+- Actual stop: **Deliver / waiting**, round 1
 - Exact artifact: `c6f44cf73d743ca61bec3ad3a2c539c3ac8b3af1eff8a6bc748a27b7abb2a92e`
-- Product page: sealed locally; waiting for the Workshop site account
+- Private product draft: https://www.autonomous.ai/factory/product/counterorbit (owner sign-in required)
 
-AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account.
+AI Playtest passed. Shared Instructions imported the exact Make artifact, uploaded
+the five sealed views, wrote the page and in-box guide, and verified the enriched
+private draft through an authenticated Shop readback. The owner can review and
+make that draft public; the Workshop's next job is production and shipping in
+Deliver.
 
 ## Still needed
 
-- `site-page` — The page and in-box guide are sealed, but this run has no authenticated Workshop site account.
+- `production-and-shipping` — The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured.
 
 ## Inspect it
 
@@ -33,5 +37,6 @@ AI Playtest passed. Shared Instructions created the page, guide, and five exact-
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
-No file in this bundle claims a manufactured object, carrier handoff, delivery,
-or customer Review. Those facts belong to Deliver and Reviews.
+The private draft is not a public listing. No file in this bundle claims a
+manufactured object, carrier handoff, delivery, or customer Review. Those facts
+belong to Deliver and Reviews.

@@ -8,7 +8,7 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
-    "site_draft_verified": false,
+    "site_draft_verified": true,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
@@ -27,17 +27,17 @@
   "run": {
     "artifact_sha256": "6862be923c719570c0c8fcbb5af6518f9ffe7c5a714515996162a0532c16aa49",
     "delivery": null,
-    "instructions_sha256": null,
-    "job": "instructions",
+    "instructions_sha256": "9be159b7bf162accdd71bf009fd2ce66b6e05da51d2359a667ab9061d70d1435",
+    "job": "deliver",
     "needs": [
       {
-        "capability": "site-page",
-        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
-        "job": "instructions",
-        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
+        "capability": "production-and-shipping",
+        "instructions": "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
+        "job": "deliver",
+        "reason": "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured."
       }
     ],
-    "page_url": null,
+    "page_url": "https://www.autonomous.ai/factory/product/montauk-tide-orrery",
     "playtest_rounds": 3,
     "product_id": "montauk-tide-orrery",
     "round": 1,
@@ -50,7 +50,41 @@
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "site_receipt": null,
+  "site_receipt": {
+    "artifact_sha256": "6862be923c719570c0c8fcbb5af6518f9ffe7c5a714515996162a0532c16aa49",
+    "current_history_id": "6a8be97138cdf05af4e17d30",
+    "design_id": "6a8be97138cdf05af4e17d2f",
+    "details": {
+      "cover_sha256": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb",
+      "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8be97138cdf05af4e17d2f/cover.png",
+      "instructions_sha256": "9be159b7bf162accdd71bf009fd2ce66b6e05da51d2359a667ab9061d70d1435",
+      "kind": "shop-design",
+      "media_sha256": {
+        "box": "990d9c4fa097a37083da618972f21e3d95bffdbdd05f1f98288594265b339ea1",
+        "detail": "23e5eff03fa983b2cc56c51364b9ea527e80fe3c7555876096cb1c4219b4336f",
+        "hero": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb",
+        "parts": "6271ace6f628c9bcd1b8961326c38d55572abbf5c3f0ac3cba8f6f49bc6f3f14",
+        "play": "2159ffbcbde6c1c4bdf19c01e2c0a855d0774f0b222a77210bbe46140dd9de71"
+      },
+      "page_content_sha256": "6375a89f2ea256a649175be01fa83ae9bbddf617afb7ab49c86dcfea5e3ae47d",
+      "page_url": "https://www.autonomous.ai/factory/product/montauk-tide-orrery",
+      "playtest_evidence_sha256": "591cd607e4422639d501b28ccb6e31a184773bd0de62dc6f511b3f8a7f6beda8"
+    },
+    "door": "shop",
+    "listing_active": null,
+    "listing_currency": null,
+    "listing_price_cents": null,
+    "listing_sku": null,
+    "observed_at": "2026-08-24T06:49:27.229306+00:00",
+    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
+    "pack_sha256": "32670f8fa2c5c8ae92a5104fc52cbd5c4cf5b49c792bb2545e6ac6ae1467aebf",
+    "project_url": "https://cdn.autonomous.ai/panda-social/6a8be97138cdf05af4e17d2f/6a8be97138cdf05af4e17d30/",
+    "published_history_id": null,
+    "reference": "6a8be97138cdf05af4e17d2f",
+    "root_id": "6a8be97138cdf05af4e17d2f",
+    "slug": "montauk-tide-orrery",
+    "status": "draft"
+  },
   "taste_sha256": "6893a9e4033b73813998db78a446081c371ee297e7cb3acbd6d0e4d12d5bc9fc",
   "wish": {
     "constraints": {

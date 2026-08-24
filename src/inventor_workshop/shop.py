@@ -38,6 +38,7 @@ from .store import InventorStore
 
 DEFAULT_SHOP_API = "https://panda-social-api.autonomous.ai/api/v1"
 DEFAULT_SHOP_PAGE_BASE = "https://www.autonomous.ai/factory/product"
+SHOP_USER_AGENT = "Mozilla/5.0 (compatible; AutonomousWorkshop/1.0)"
 HTTP_TIMEOUT_SECONDS = 120
 Transport = Callable[[str, str, Mapping[str, str], Optional[bytes], int], "HttpResponse"]
 
@@ -81,8 +82,8 @@ MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 SHOP_INSTRUCTIONS_IMAGES = ("hero", "play", "detail", "parts", "box")
 SHOP_CATEGORY_BY_LANE = {
-    "classics-made-yours": "tabletop",
-    "invented-games": "tabletop",
+    "classics-made-yours": "toys",
+    "invented-games": "toys",
     "moving-machines": "toys",
     "holdable-science": "toys",
     "little-worlds": "toys",
@@ -605,7 +606,14 @@ class ShopDoor:
         body: Optional[bytes] = None,
         content_type: Optional[str] = None,
     ) -> HttpResponse:
-        headers = {"Authorization": "Bearer %s" % self._token, "Accept": "application/json"}
+        # Cloudflare rejects urllib's implicit ``Python-urllib/*`` signature
+        # before the request reaches the Shop API (Error 1010).  Give every
+        # shared Shop request a stable, honest Workshop identity instead.
+        headers = {
+            "Authorization": "Bearer %s" % self._token,
+            "Accept": "application/json",
+            "User-Agent": SHOP_USER_AGENT,
+        }
         if content_type:
             headers["Content-Type"] = content_type
         return self.transport(
