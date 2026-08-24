@@ -1,60 +1,60 @@
 {
-  "artifact_sha256": "fce9c76db73e8368f25bb9e89cbf1b1b2beaff9e67756d780c40c48a97a3c8e1",
+  "artifact_sha256": "f6c12a56d377a885613622e638b564f0123139f559ee00e7d845f9fe9ca9d491",
   "created_at": "content-addressed",
   "entries": [
     {
       "bytes": 588,
       "executable": false,
       "path": "agent-playtest.json",
-      "sha256": "917162c9855b497164cd24c7b6245aeb636bdbef005fc09cd55f74e255e4c03a"
+      "sha256": "5060952d6f1aeeaba072dbf39b5099baf51c306a872dd1391aeec11a8e035da2"
     },
     {
       "bytes": 445,
       "executable": false,
       "path": "digital-geometry.json",
-      "sha256": "61af82128f7d643f22b38a391bdf334ab4d7734c7b0f0a6658c5070d32f09812"
+      "sha256": "6bff6dbd0ffa9e015dcfe59378984d02a923e89b87046b87335996dab8b73878"
     },
     {
       "bytes": 581,
       "executable": false,
       "path": "digital-lane.json",
-      "sha256": "30860bd31462eb8a4b4460031cef6371af7574a813b41028b74ea204793ed355"
+      "sha256": "e26c09f2ab513aaf062a75d469551c432a960b8c0732579e3b46640713e73026"
     },
     {
       "bytes": 481,
       "executable": false,
       "path": "digital-printability.json",
-      "sha256": "7546200b6d8a1fe0e793fd00f2c0c66813b5103bfa9dd7043b6b8f005bb02284"
+      "sha256": "05a2d053a43aa6d0b001a9b0501dd72d4175e824a5606b53ab627e276489aaaa"
     },
     {
       "bytes": 779,
       "executable": false,
       "path": "evidence-index.json",
-      "sha256": "d424ad2ff6ec55a75743abe1ab341dc4a91b941a3669cb473af74202fe35016f"
+      "sha256": "9558de596ef94275ac5ae05663e5fd144764c3554b82300f513b9aab6454bb77"
     },
     {
       "bytes": 6972,
       "executable": false,
       "path": "game-simulation.json",
-      "sha256": "ad8c2f55cba6f543cfb38428b6669bae899ddfbd3ab656af3c88d0567cd03f5e"
+      "sha256": "553dffaa4c3da257fd6f6b19e11b386c007a35733f50e1200f0051716ae00669"
     },
     {
       "bytes": 613,
       "executable": false,
       "path": "mechanical-test.json",
-      "sha256": "e3fc25138eb9fbe69e3cfa6614afb5ecabe70e2e8918639aadfcd11f954e5038"
+      "sha256": "76d05e19cccce094ba8920f1a3af2633a81cccb2238d42f6e40f1f2137793581"
     },
     {
       "bytes": 631,
       "executable": false,
       "path": "print-test.json",
-      "sha256": "82f1444dc90a826cadc6340aefb9544b02fe493b5844f953232018f9ca00ffdb"
+      "sha256": "451ad4c51a8f0aa64b646e321884323ab49a14aac20e2469aee029bf372c156a"
     },
     {
       "bytes": 873,
       "executable": false,
       "path": "wish-taste-trace.json",
-      "sha256": "245c59662b2868a6e1fef88c23616d18ac863d04ddc0a36c920b0d2da3e859e5"
+      "sha256": "7b0fc907186ecbddeb7c3b76c0867e376af163557a452bb2c52ce9d424264585"
     }
   ],
   "schema_version": 1,

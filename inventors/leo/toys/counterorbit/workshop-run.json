@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+  "artifact_sha256": "62dd0a939dae69e4f5855547d1def7611e58486455fbd4681fe7389f3eb1b677",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -14,8 +14,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "e2c69b700f99162be8de8d4eb078adc052cfc7c94fb41c3f56daf08bdb7fdeb8",
-  "evidence_sha256": "fce9c76db73e8368f25bb9e89cbf1b1b2beaff9e67756d780c40c48a97a3c8e1",
-  "instructions_sha256": "9ebe029973aa955b2bead4aa3285290124777e1eadc1f96d49fb091b6b82d9fe",
+  "evidence_sha256": "f6c12a56d377a885613622e638b564f0123139f559ee00e7d845f9fe9ca9d491",
+  "instructions_sha256": "6f06ac06c3b9fe9ca5e7132065b90740a28421c80cbed2ce1f639301c21b77f8",
   "inventor": {
     "extension_level": "custom-playtest",
     "id": "leo",
@@ -24,7 +24,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+    "artifact_sha256": "62dd0a939dae69e4f5855547d1def7611e58486455fbd4681fe7389f3eb1b677",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -50,7 +50,7 @@
     "playtest": "showcase-digital-playtest-v1"
   },
   "site_receipt": null,
-  "taste_sha256": "f255c2a01edb25a586907da9e4daa724ce441a8b87ff27c03c3baff1ae63666c",
+  "taste_sha256": "7941ac6fc22874faa75c1c368f7efa34ab2a23c998bb44c84f4b1885e285c3fc",
   "wish": {
     "constraints": {
       "audience": "grown-ups-14-plus",

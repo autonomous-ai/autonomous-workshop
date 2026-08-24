@@ -1,12 +1,12 @@
 {
-  "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+  "artifact_sha256": "62dd0a939dae69e4f5855547d1def7611e58486455fbd4681fe7389f3eb1b677",
   "blueprint_sha256": "e2c69b700f99162be8de8d4eb078adc052cfc7c94fb41c3f56daf08bdb7fdeb8",
   "check": "wish-taste-trace",
   "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
   "download_bar_answer": "Wish details alter geometry, topology, interaction, or scientific framing; they are not a nameplate.",
   "passed": true,
   "schema_version": 1,
-  "taste_sha256": "f255c2a01edb25a586907da9e4daa724ce441a8b87ff27c03c3baff1ae63666c",
+  "taste_sha256": "7941ac6fc22874faa75c1c368f7efa34ab2a23c998bb44c84f4b1885e285c3fc",
   "wish_features": [
     "five inner stations are the five Workshop jobs",
     "the shared rotating orbit changes adjacency after every placement",

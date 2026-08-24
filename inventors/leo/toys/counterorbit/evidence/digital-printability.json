@@ -1,7 +1,7 @@
 {
   "all_exported_parts_inside_bed": true,
   "all_exported_parts_watertight": true,
-  "artifact_sha256": "5c10d6ad8bfab542eae583e78eaab8bd3366f03c0afbaa40f1facc973a28cd9a",
+  "artifact_sha256": "62dd0a939dae69e4f5855547d1def7611e58486455fbd4681fe7389f3eb1b677",
   "check": "digital-printability",
   "claim_scope": "AI print simulation only; Deliver proves the manufactured object",
   "declared_bed_mm": [
