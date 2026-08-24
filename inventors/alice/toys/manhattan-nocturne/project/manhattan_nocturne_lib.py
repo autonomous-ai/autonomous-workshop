@@ -20,6 +20,7 @@ from build123d import (
     Polygon,
     Torus,
     extrude,
+    fillet,
     revolve,
 )
 
@@ -67,11 +68,20 @@ def _revolved_profile(profile: tuple[tuple[float, float], ...]):
     return result
 
 
-def _base_groove(z: float):
+def _stone_base_groove(z: float):
     return _zloc(z) * Torus(
         major_radius=p.BASE_GROOVE_MAJOR_RADIUS,
         minor_radius=p.BASE_GROOVE_MINOR_RADIUS,
     )
+
+
+def _steel_base_rails():
+    """Three printable rails leave two tactile grooves between them."""
+
+    return [
+        _zloc(z) * _cylinder(p.STEEL_BASE_RAIL_RADIUS, p.STEEL_BASE_RAIL_HEIGHT)
+        for z in p.STEEL_BASE_RAIL_Z
+    ]
 
 
 def _stone_horizontal_bands():
@@ -209,10 +219,16 @@ def build_pedestal(side: str):
     pedestal = _revolved_profile(p.PEDESTAL_PROFILE)
     if side == "stone":
         pedestal = _fuse_checked(pedestal, *_stone_horizontal_bands())
-        pedestal = _cut_checked(pedestal, *(_base_groove(z) for z in p.STONE_GROOVE_Z))
+        pedestal = _cut_checked(
+            pedestal,
+            *(_stone_base_groove(z) for z in p.STONE_GROOVE_Z),
+        )
     elif side == "steel":
-        pedestal = _fuse_checked(pedestal, *_steel_vertical_fins())
-        pedestal = _cut_checked(pedestal, *(_base_groove(z) for z in p.STEEL_GROOVE_Z))
+        pedestal = _fuse_checked(
+            pedestal,
+            *_steel_base_rails(),
+            *_steel_vertical_fins(),
+        )
     else:
         raise ValueError(f"unknown army side: {side!r}")
     pedestal.label = f"{side}_tactile_pedestal"
@@ -226,7 +242,13 @@ def build_pawn(side: str):
     shape = _fuse_checked(
         shape,
         _zloc(p.PAWN_COLUMN_Z)
-        * _cone(p.PAWN_COLUMN_RADIUS_BOTTOM, p.PAWN_COLUMN_RADIUS_TOP, p.PAWN_COLUMN_HEIGHT),
+        * _cylinder(p.PAWN_COLUMN_RADIUS_BOTTOM, p.PAWN_COLUMN_STRAIGHT_HEIGHT),
+        _zloc(p.PAWN_COLUMN_TAPER_Z)
+        * _cone(
+            p.PAWN_COLUMN_RADIUS_BOTTOM,
+            p.PAWN_COLUMN_RADIUS_TOP,
+            p.PAWN_COLUMN_TAPER_HEIGHT,
+        ),
         _zloc(p.PAWN_TANK_Z) * _cylinder(p.PAWN_TANK_RADIUS, p.PAWN_TANK_HEIGHT),
         _zloc(p.PAWN_ROOF_Z)
         * _cone(p.PAWN_ROOF_RADIUS_BOTTOM, p.PAWN_ROOF_RADIUS_TOP, p.PAWN_ROOF_HEIGHT),
@@ -243,6 +265,12 @@ def build_rook(side: str):
     shape = build_pedestal(side)
     shape = _fuse_checked(
         shape,
+        _zloc(p.ROOK_PEDESTAL_CROWN_Z)
+        * _cylinder(p.ROOK_PEDESTAL_CROWN_RADIUS, p.ROOK_PEDESTAL_CROWN_HEIGHT),
+        *(
+            _zloc(z) * _box(size, size, height)
+            for z, size, height in p.ROOK_FOOTING_TIERS
+        ),
         _zloc(p.ROOK_TOWER_Z) * _box(p.ROOK_TOWER_SIZE, p.ROOK_TOWER_SIZE, p.ROOK_TOWER_HEIGHT),
         _zloc(p.ROOK_SETBACK_Z) * _box(p.ROOK_SETBACK_SIZE, p.ROOK_SETBACK_SIZE, p.ROOK_SETBACK_HEIGHT),
         _zloc(p.ROOK_ROOF_Z) * _box(p.ROOK_ROOF_SIZE, p.ROOK_ROOF_SIZE, p.ROOK_ROOF_HEIGHT),
@@ -265,9 +293,18 @@ def build_knight(side: str):
     """Angular bridge tower: horse-readable in profile, architectural in detail."""
 
     shape = build_pedestal(side)
+    shape = _fuse_checked(
+        shape,
+        _zloc(p.KNIGHT_FOOTING_Z)
+        * _cylinder(p.KNIGHT_FOOTING_RADIUS, p.KNIGHT_FOOTING_HEIGHT),
+    )
     with BuildSketch(Plane.XZ) as profile:
         Polygon(*p.KNIGHT_PROFILE)
     bridge_tower = extrude(profile.sketch, amount=p.KNIGHT_DEPTH / 2.0, both=True)
+    extrusion_edges = set(bridge_tower.edges().filter_by(Axis.Y))
+    face_perimeter = [edge for edge in bridge_tower.edges() if edge not in extrusion_edges]
+    bridge_tower = fillet(face_perimeter, radius=p.KNIGHT_FACE_EDGE_FILLET)
+    assert len(bridge_tower.solids()) == 1 and bridge_tower.is_valid
     arch = Location((p.KNIGHT_ARCH_CENTER_X, 0.0, p.KNIGHT_ARCH_Z)) * _box(
         p.KNIGHT_ARCH_WIDTH,
         p.KNIGHT_DEPTH + 2.0 * p.BOOLEAN_OVERSHOOT,
@@ -302,21 +339,37 @@ def build_bishop(side: str):
         ),
         _zloc(p.BISHOP_CROWN_Z)
         * _box(p.BISHOP_CROWN_SIZE, p.BISHOP_CROWN_SIZE, p.BISHOP_CROWN_HEIGHT),
-        _zloc(p.BISHOP_SPIRE_Z)
-        * _cone(
-            p.BISHOP_SPIRE_RADIUS_BOTTOM,
-            p.BISHOP_SPIRE_RADIUS_TOP,
-            p.BISHOP_SPIRE_HEIGHT,
+        _zloc(p.BISHOP_SPIRE_LOWER_Z)
+        * _box(
+            p.BISHOP_SPIRE_LOWER_SIZE,
+            p.BISHOP_SPIRE_LOWER_SIZE,
+            p.BISHOP_SPIRE_LOWER_HEIGHT,
+        ),
+        _zloc(p.BISHOP_SPIRE_MID_Z)
+        * _box(
+            p.BISHOP_SPIRE_MID_SIZE,
+            p.BISHOP_SPIRE_MID_SIZE,
+            p.BISHOP_SPIRE_MID_HEIGHT,
+        ),
+        _zloc(p.BISHOP_SPIRE_TOP_Z)
+        * _box(
+            p.BISHOP_SPIRE_TOP_SIZE,
+            p.BISHOP_SPIRE_TOP_SIZE,
+            p.BISHOP_SPIRE_TOP_HEIGHT,
         ),
     )
     shape = _fuse_checked(
         shape,
         *_tower_side_code(side, p.BISHOP_STONE_TERRACES, p.BISHOP_STEEL_RIB_TIERS),
     )
-    slot = Location(
-        (0.0, 0.0, p.BISHOP_SLOT_CENTER_Z),
-        (0.0, p.BISHOP_SLOT_ANGLE_DEG, 0.0),
-    ) * _box(p.BISHOP_SLOT_WIDTH, p.BISHOP_SLOT_DEPTH, p.BISHOP_SLOT_HEIGHT)
+    with BuildSketch(Plane.XZ) as slot_profile:
+        Polygon(
+            (-p.BISHOP_SLOT_WIDTH / 2.0, p.BISHOP_SLOT_BOTTOM_LEFT_Z),
+            (p.BISHOP_SLOT_WIDTH / 2.0, p.BISHOP_SLOT_BOTTOM_RIGHT_Z),
+            (p.BISHOP_SLOT_WIDTH / 2.0, p.BISHOP_SLOT_TOP_Z),
+            (-p.BISHOP_SLOT_WIDTH / 2.0, p.BISHOP_SLOT_TOP_Z),
+        )
+    slot = extrude(slot_profile.sketch, amount=p.BISHOP_SLOT_DEPTH / 2.0, both=True)
     shape = _cut_checked(shape, slot)
     shape.label = f"{side}_bishop_light_canyon"
     return shape
@@ -374,6 +427,12 @@ def build_king(side: str):
             p.KING_SETBACK_TWO_SIZE,
             p.KING_SETBACK_TWO_HEIGHT,
         ),
+        _zloc(p.KING_SPIRE_PLINTH_Z)
+        * _box(
+            p.KING_SPIRE_PLINTH_SIZE,
+            p.KING_SPIRE_PLINTH_SIZE,
+            p.KING_SPIRE_PLINTH_HEIGHT,
+        ),
         _zloc(p.KING_SPIRE_Z)
         * _cone(p.KING_SPIRE_RADIUS_BOTTOM, p.KING_SPIRE_RADIUS_TOP, p.KING_SPIRE_HEIGHT),
         _zloc(p.KING_CROSS_Z)
@@ -414,33 +473,76 @@ def build_piece(side: str, role: str):
 
 
 def build_board():
-    """Build the seamless 8x8 board with dark squares recessed 0.35 mm."""
+    """Build the seamless board with readable relief and a border street plan."""
 
     board = _box(p.BOARD_SIZE, p.BOARD_SIZE, p.BOARD_TOTAL_HEIGHT)
     recesses = []
     for file_index in range(p.FILES):
         for rank_index in range(p.RANKS):
             if (file_index + rank_index) % 2 == 0:  # a1 is dark
-                x, y = p.square_center(file_index, rank_index)
+                x, recess_width = p.square_recess_axis(file_index)
+                y, recess_depth = p.square_recess_axis(rank_index)
                 recesses.append(
                     Location((x, y, p.BOARD_THICKNESS))
                     * _box(
-                        p.SQUARE_PITCH - p.SQUARE_GRID_LAND,
-                        p.SQUARE_PITCH - p.SQUARE_GRID_LAND,
+                        recess_width,
+                        recess_depth,
                         p.SQUARE_RELIEF + p.BOOLEAN_OVERSHOOT,
                     )
                 )
 
-    avenue = Location(
-        (0.0, p.AVENUE_GROOVE_CENTER_Y, p.BOARD_TOTAL_HEIGHT - p.AVENUE_GROOVE_DEPTH),
-        (0.0, 0.0, p.AVENUE_GROOVE_ANGLE_DEG),
-    ) * _box(
-        p.AVENUE_GROOVE_LENGTH,
-        p.AVENUE_GROOVE_WIDTH,
-        p.AVENUE_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
-    )
-    cut_tool = Compound(children=[*recesses, avenue])
-    board = _cut_checked(board, cut_tool)
+    street_grooves = []
+    street_z = p.BOARD_TOTAL_HEIGHT - p.BORDER_STREET_GROOVE_DEPTH
+    for coordinate in p.INTERNAL_GRID_COORDINATES:
+        # File lines continue north/south through the 8 mm border only.
+        for y in (-p.BORDER_STREET_GROOVE_CENTER, p.BORDER_STREET_GROOVE_CENTER):
+            street_grooves.append(
+                Location((coordinate, y, street_z))
+                * _box(
+                    p.BORDER_STREET_GROOVE_WIDTH,
+                    p.BORDER_STREET_GROOVE_LENGTH,
+                    p.BORDER_STREET_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
+                )
+            )
+
+        # Rank lines continue east/west through the 8 mm border only.
+        for x in (-p.BORDER_STREET_GROOVE_CENTER, p.BORDER_STREET_GROOVE_CENTER):
+            street_grooves.append(
+                Location((x, coordinate, street_z))
+                * _box(
+                    p.BORDER_STREET_GROOVE_LENGTH,
+                    p.BORDER_STREET_GROOVE_WIDTH,
+                    p.BORDER_STREET_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
+                )
+            )
+
+    avenue_z = p.BOARD_TOTAL_HEIGHT - p.AVENUE_GROOVE_DEPTH
+    avenue_segments = []
+    for (x0, y0), (x1, y1) in zip(
+        p.AVENUE_STEP_POINTS, p.AVENUE_STEP_POINTS[1:]
+    ):
+        if abs(y1 - y0) < 1e-9:
+            avenue_segments.append(
+                Location(((x0 + x1) / 2.0, y0, avenue_z))
+                * _box(
+                    abs(x1 - x0) + p.AVENUE_GROOVE_WIDTH,
+                    p.AVENUE_GROOVE_WIDTH,
+                    p.AVENUE_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
+                )
+            )
+        else:
+            avenue_segments.append(
+                Location((x0, (y0 + y1) / 2.0, avenue_z))
+                * _box(
+                    p.AVENUE_GROOVE_WIDTH,
+                    abs(y1 - y0) + p.AVENUE_GROOVE_WIDTH,
+                    p.AVENUE_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
+                )
+            )
+    avenue = _fuse_checked(avenue_segments[0], *avenue_segments[1:])
+    board = _cut_checked(board, Compound(children=recesses))
+    board = _cut_checked(board, Compound(children=street_grooves))
+    board = _cut_checked(board, avenue)
     board.label = "board_manhattan_grid"
     assert abs(board.bounding_box().min.Z) < 1e-7
     return board
