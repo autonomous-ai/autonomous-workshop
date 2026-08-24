@@ -312,9 +312,10 @@ QUEEN_STEEL_RIB_TIERS = (                       # (z, height, tower size) mm [de
 # --- King: neo-Gothic setback stack with printable beacon cross ------------
 
 KING_HEIGHT = 74.35                            # mm [derived] 83.35 mm assembly
-KING_TOWER_Z = 16.55                           # mm [derived overlap]
+KING_TOWER_Z = 15.80                           # mm [derived] 1.20 mm embedded footing in pedestal
 KING_TOWER_SIZE = 14.40                         # mm [assumed]
-KING_TOWER_HEIGHT = 19.00                       # mm [assumed]
+KING_TOWER_TOP_Z = 35.55                        # mm [derived] preserves established tower silhouette
+KING_TOWER_HEIGHT = KING_TOWER_TOP_Z - KING_TOWER_Z  # mm [derived]
 KING_SETBACK_ONE_Z = 35.00                      # mm [derived overlap]
 KING_SETBACK_ONE_SIZE = 11.80                   # mm [assumed]
 KING_SETBACK_ONE_HEIGHT = 12.00                 # mm [assumed]
@@ -322,7 +323,7 @@ KING_SETBACK_TWO_Z = 46.40                      # mm [derived overlap]
 KING_SETBACK_TWO_SIZE = 9.40                    # mm [assumed]
 KING_SETBACK_TWO_HEIGHT = 9.50                  # mm [assumed]
 KING_SPIRE_PLINTH_Z = 54.90                     # mm [derived overlap with second setback]
-KING_SPIRE_PLINTH_SIZE = 10.80                  # mm [assumed] supports D10.4 spire foot
+KING_SPIRE_PLINTH_SIZE = 11.80                  # mm [exploration] 1.20 mm printable crown projection
 KING_SPIRE_PLINTH_HEIGHT = 1.40                 # mm [exploration] printable crown ledge
 KING_SPIRE_Z = 55.30                            # mm [derived overlap]
 KING_SPIRE_HEIGHT = 9.50                        # mm [assumed]
@@ -435,7 +436,10 @@ def validate_parameters() -> None:
     assert BISHOP_SPIRE_LOWER_Z + BISHOP_SPIRE_LOWER_HEIGHT > BISHOP_SPIRE_MID_Z
     assert BISHOP_SPIRE_MID_Z + BISHOP_SPIRE_MID_HEIGHT > BISHOP_SPIRE_TOP_Z
     assert (BISHOP_SPIRE_TOP_SIZE - BISHOP_SLOT_WIDTH) / 2.0 >= MIN_FREE_FEATURE - 1e-9
+    assert PEDESTAL_HEIGHT - KING_TOWER_Z + 1e-9 >= MIN_WALL
+    assert abs(KING_TOWER_Z + KING_TOWER_HEIGHT - KING_TOWER_TOP_Z) < 1e-9
     assert KING_SPIRE_PLINTH_SIZE >= 2.0 * KING_SPIRE_RADIUS_BOTTOM
+    assert (KING_SPIRE_PLINTH_SIZE - KING_SETBACK_TWO_SIZE) / 2.0 >= MIN_WALL
     assert KING_SPIRE_PLINTH_HEIGHT >= MIN_WALL
     assert abs(BOARD_TOTAL_HEIGHT + KING_HEIGHT - 83.35) < 1e-9
     assert len(BACK_RANK) == FILES
