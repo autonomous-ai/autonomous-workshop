@@ -37,19 +37,39 @@ check(
     "four-layer relief",
     p.SQUARE_RELIEF == 0.80 and p.BOARD_THICKNESS == 8.20
     and p.SQUARE_RELIEF / p.EXPLORATION_LAYER_HEIGHT == 4.0,
-    "0.80 mm relief over an 8.20 mm dark landing at 0.20 mm/layer",
+    "32 light pads rise 0.80 mm over the continuous Z8.20 dark base",
+)
+light_pad_count = sum(
+    p.is_light_square(file_index, rank_index)
+    for file_index in range(p.FILES)
+    for rank_index in range(p.RANKS)
 )
 check(
-    "play-field edge land",
-    p.SQUARE_GRID_LAND == 0.50 and p.PLAY_EDGE_LAND >= 1.20,
-    "0.50 mm internal grid land; 1.20 mm three-line perimeter land",
+    "isolated light pads",
+    light_pad_count == 32
+    and p.LIGHT_PAD_LOWER_SIZE < p.SQUARE_PITCH
+    and p.LIGHT_PAD_EMBED >= p.BOOLEAN_OVERLAP,
+    f"{light_pad_count} pads; {p.LIGHT_PAD_LOWER_SIZE:.2f} mm lower footprint; "
+    f"{p.LIGHT_PAD_EMBED:.2f} mm base overlap",
+)
+light_landing_margin = (p.LIGHT_PAD_TOP_SIZE - p.MAX_BASE_DIAMETER) / 2.0
+check(
+    "light-square landing",
+    light_landing_margin >= p.MIN_WALL,
+    f"{p.LIGHT_PAD_TOP_SIZE:.2f} mm top leaves {light_landing_margin:.2f} mm around D{p.MAX_BASE_DIAMETER:.1f}",
+)
+check(
+    "pad shading slope",
+    (p.LIGHT_PAD_LOWER_SIZE - p.LIGHT_PAD_TOP_SIZE) / 2.0 + 1e-9 >= p.MIN_WALL,
+    f"{(p.LIGHT_PAD_LOWER_SIZE - p.LIGHT_PAD_TOP_SIZE) / 2.0:.2f} mm native sloped-face run",
 )
 check(
     "border street plan",
     len(p.INTERNAL_GRID_COORDINATES) == 7
-    and p.BORDER_STREET_GROOVE_WIDTH == 1.20
-    and p.BORDER_STREET_GROOVE_DEPTH == 0.40,
-    "seven file/rank lines, 1.20 mm wide x 0.40 mm deep",
+    and p.BORDER_STREET_GROOVE_TOP_WIDTH == 2.00
+    and p.BORDER_STREET_GROOVE_BOTTOM_WIDTH == 1.20
+    and p.BORDER_STREET_GROOVE_DEPTH == 0.80,
+    "seven sloped file/rank dashes per edge; 2.00→1.20 mm x 0.80 mm",
 )
 broadway_inner_margin = -p.PLAY_SPAN / 2.0 - p.AVENUE_GROOVE_MAX_Y
 broadway_outer_margin = p.AVENUE_GROOVE_MIN_Y + p.BOARD_SIZE / 2.0
@@ -61,20 +81,19 @@ check(
 check(
     "Broadway street clearance",
     min(abs(p.AVENUE_GROOVE_CENTER_X - coordinate) for coordinate in p.INTERNAL_GRID_COORDINATES)
+    - p.AVENUE_HALF_EXTENT_X
     >= 10.0,
-    "cue centred between file-line grooves; no sub-line island at an intersection",
+    f"true {p.AVENUE_ANGLE_DEG:.0f}° diagonal centred between file streets",
 )
 check(
     "base clearance",
     p.MAX_BASE_DIAMETER + 2.0 * p.BASE_CLEARANCE_PER_SIDE == p.SQUARE_PITCH,
     f"D{p.MAX_BASE_DIAMETER:.1f} + 2 x {p.BASE_CLEARANCE_PER_SIDE:.1f} = {p.SQUARE_PITCH:.1f}",
 )
-dark_landing_margin = (
-    p.SQUARE_PITCH - p.SQUARE_GRID_LAND - p.MAX_BASE_DIAMETER
-) / 2.0
+dark_landing_margin = (p.SQUARE_PITCH - p.MAX_BASE_DIAMETER) / 2.0
 check(
     "dark landing margin",
-    dark_landing_margin >= 2.75,
+    dark_landing_margin >= 3.00,
     f"{dark_landing_margin:.2f} mm per side around D{p.MAX_BASE_DIAMETER:.1f} base",
 )
 check("Stone tactile code", len(p.STONE_GROOVE_Z) == 1 and len(p.STONE_BAND_Z) >= 2,

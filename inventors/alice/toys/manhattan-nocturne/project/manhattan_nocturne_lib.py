@@ -18,9 +18,11 @@ from build123d import (
     Location,
     Plane,
     Polygon,
+    Rectangle,
     Torus,
     extrude,
     fillet,
+    loft,
     revolve,
 )
 
@@ -63,6 +65,39 @@ def _revolved_profile(profile: tuple[tuple[float, float], ...]):
     with BuildSketch(Plane.XZ) as sketch:
         Polygon(*profile)
     result = revolve(sketch.sketch, axis=Axis.Z)
+    assert len(result.solids()) == 1
+    assert result.is_valid
+    return result
+
+
+def _ruled_rect_loft(
+    lower_x: float,
+    lower_y: float,
+    lower_z: float,
+    upper_x: float,
+    upper_y: float,
+    upper_z: float,
+    through_z: float | None = None,
+    hold_lower_until_z: float | None = None,
+):
+    """Make a printable rectangular frustum, optionally extended through Z."""
+
+    with BuildSketch(Plane.XY.offset(lower_z)) as lower:
+        Rectangle(lower_x, lower_y)
+    sections = [lower.sketch]
+    if hold_lower_until_z is not None:
+        assert lower_z < hold_lower_until_z < upper_z
+        with BuildSketch(Plane.XY.offset(hold_lower_until_z)) as shoulder:
+            Rectangle(lower_x, lower_y)
+        sections.append(shoulder.sketch)
+    with BuildSketch(Plane.XY.offset(upper_z)) as upper:
+        Rectangle(upper_x, upper_y)
+    sections.append(upper.sketch)
+    if through_z is not None:
+        with BuildSketch(Plane.XY.offset(through_z)) as through:
+            Rectangle(upper_x, upper_y)
+        sections.append(through.sketch)
+    result = loft(sections, ruled=True)
     assert len(result.solids()) == 1
     assert result.is_valid
     return result
@@ -489,77 +524,71 @@ def build_piece(side: str, role: str):
 
 
 def build_board():
-    """Build the seamless board with readable relief and a border street plan."""
+    """Build one base with 32 isolated light pads and a sloped street plan."""
 
-    board = _box(p.BOARD_SIZE, p.BOARD_SIZE, p.BOARD_TOTAL_HEIGHT)
-    recesses = []
+    board = _box(p.BOARD_SIZE, p.BOARD_SIZE, p.BOARD_THICKNESS)
+    pad = _ruled_rect_loft(
+        p.LIGHT_PAD_LOWER_SIZE,
+        p.LIGHT_PAD_LOWER_SIZE,
+        p.LIGHT_PAD_LOWER_Z,
+        p.LIGHT_PAD_TOP_SIZE,
+        p.LIGHT_PAD_TOP_SIZE,
+        p.BOARD_TOTAL_HEIGHT,
+        hold_lower_until_z=p.BOARD_THICKNESS,
+    )
+    light_pads = []
     for file_index in range(p.FILES):
         for rank_index in range(p.RANKS):
-            if (file_index + rank_index) % 2 == 0:  # a1 is dark
-                x, recess_width = p.square_recess_axis(file_index)
-                y, recess_depth = p.square_recess_axis(rank_index)
-                recesses.append(
-                    Location((x, y, p.BOARD_THICKNESS))
-                    * _box(
-                        recess_width,
-                        recess_depth,
-                        p.SQUARE_RELIEF + p.BOOLEAN_OVERSHOOT,
-                    )
-                )
+            if p.is_light_square(file_index, rank_index):
+                x, y = p.square_center(file_index, rank_index)
+                light_pads.append(Location((x, y, 0.0)) * pad)
+    assert len(light_pads) == 32
+    board = _fuse_checked(board, *light_pads)
 
+    groove_bottom_z = p.BOARD_THICKNESS - p.BORDER_STREET_GROOVE_DEPTH
+    groove_through_z = p.BOARD_THICKNESS + p.BOOLEAN_OVERSHOOT
+    file_street = _ruled_rect_loft(
+        p.BORDER_STREET_GROOVE_BOTTOM_WIDTH,
+        p.BORDER_STREET_GROOVE_BOTTOM_LENGTH,
+        groove_bottom_z,
+        p.BORDER_STREET_GROOVE_TOP_WIDTH,
+        p.BORDER_STREET_GROOVE_TOP_LENGTH,
+        p.BOARD_THICKNESS,
+        groove_through_z,
+    )
+    rank_street = _ruled_rect_loft(
+        p.BORDER_STREET_GROOVE_BOTTOM_LENGTH,
+        p.BORDER_STREET_GROOVE_BOTTOM_WIDTH,
+        groove_bottom_z,
+        p.BORDER_STREET_GROOVE_TOP_LENGTH,
+        p.BORDER_STREET_GROOVE_TOP_WIDTH,
+        p.BOARD_THICKNESS,
+        groove_through_z,
+    )
     street_grooves = []
-    street_z = p.BOARD_TOTAL_HEIGHT - p.BORDER_STREET_GROOVE_DEPTH
     for coordinate in p.INTERNAL_GRID_COORDINATES:
-        # File lines continue north/south through the 8 mm border only.
         for y in (-p.BORDER_STREET_GROOVE_CENTER, p.BORDER_STREET_GROOVE_CENTER):
-            street_grooves.append(
-                Location((coordinate, y, street_z))
-                * _box(
-                    p.BORDER_STREET_GROOVE_WIDTH,
-                    p.BORDER_STREET_GROOVE_LENGTH,
-                    p.BORDER_STREET_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
-                )
-            )
+            street_grooves.append(Location((coordinate, y, 0.0)) * file_street)
 
-        # Rank lines continue east/west through the 8 mm border only.
         for x in (-p.BORDER_STREET_GROOVE_CENTER, p.BORDER_STREET_GROOVE_CENTER):
-            street_grooves.append(
-                Location((x, coordinate, street_z))
-                * _box(
-                    p.BORDER_STREET_GROOVE_LENGTH,
-                    p.BORDER_STREET_GROOVE_WIDTH,
-                    p.BORDER_STREET_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
-                )
-            )
+            street_grooves.append(Location((x, coordinate, 0.0)) * rank_street)
 
-    avenue_z = p.BOARD_TOTAL_HEIGHT - p.AVENUE_GROOVE_DEPTH
-    avenue_segments = []
-    for (x0, y0), (x1, y1) in zip(
-        p.AVENUE_STEP_POINTS, p.AVENUE_STEP_POINTS[1:]
-    ):
-        if abs(y1 - y0) < 1e-9:
-            avenue_segments.append(
-                Location(((x0 + x1) / 2.0, y0, avenue_z))
-                * _box(
-                    abs(x1 - x0) + p.AVENUE_GROOVE_WIDTH,
-                    p.AVENUE_GROOVE_WIDTH,
-                    p.AVENUE_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
-                )
-            )
-        else:
-            avenue_segments.append(
-                Location((x0, (y0 + y1) / 2.0, avenue_z))
-                * _box(
-                    p.AVENUE_GROOVE_WIDTH,
-                    abs(y1 - y0) + p.AVENUE_GROOVE_WIDTH,
-                    p.AVENUE_GROOVE_DEPTH + p.BOOLEAN_OVERSHOOT,
-                )
-            )
-    avenue = _fuse_checked(avenue_segments[0], *avenue_segments[1:])
-    board = _cut_checked(board, Compound(children=recesses))
-    board = _cut_checked(board, Compound(children=street_grooves))
-    board = _cut_checked(board, avenue)
-    board.label = "board_manhattan_grid"
+    avenue = _ruled_rect_loft(
+        p.AVENUE_GROOVE_BOTTOM_LENGTH,
+        p.AVENUE_GROOVE_BOTTOM_WIDTH,
+        p.BOARD_THICKNESS - p.AVENUE_GROOVE_DEPTH,
+        p.AVENUE_GROOVE_TOP_LENGTH,
+        p.AVENUE_GROOVE_TOP_WIDTH,
+        p.BOARD_THICKNESS,
+        groove_through_z,
+    )
+    avenue = Location(
+        (p.AVENUE_GROOVE_CENTER_X, p.AVENUE_GROOVE_CENTER_Y, 0.0),
+        (0.0, 0.0, p.AVENUE_ANGLE_DEG),
+    ) * avenue
+    board = _cut_checked(board, Compound(children=[*street_grooves, avenue]))
+    board.label = "board_checker_pads_street_plan"
+    assert len(board.solids()) == 1 and board.is_valid
     assert abs(board.bounding_box().min.Z) < 1e-7
     return board
 

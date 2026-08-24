@@ -10,6 +10,8 @@ tags match ``manhattan_nocturne_spec.md``:
 
 from __future__ import annotations
 
+import math
+
 # --- Board and coordinate contract -----------------------------------------
 
 FILES = 8                                      # [observed] standard chess
@@ -21,51 +23,55 @@ BOARD_SIZE = PLAY_SPAN + 2.0 * OUTER_BORDER    # mm [derived]
 BOARD_TOTAL_HEIGHT = 9.00                      # mm [assumed] preserved product envelope
 SQUARE_RELIEF = 0.80                           # mm [assumed] four visible 0.20 mm layers
 BOARD_THICKNESS = BOARD_TOTAL_HEIGHT - SQUARE_RELIEF  # mm [derived] 8.20 mm dark landing
-SQUARE_GRID_LAND = 0.50                        # mm [exploration] avoids non-manifold four-corner steps
-PLAY_EDGE_LAND = 1.20                          # mm [exploration] three-line floor at field perimeter
+LIGHT_PAD_LOWER_SIZE = 27.40                   # mm [exploration] broad embedded chamfer footprint
+LIGHT_PAD_TOP_SIZE = 25.00                     # mm [derived] D22.5 base + 1.25 mm landing each side
+LIGHT_PAD_EMBED = 0.20                         # mm [exploration] one-layer overlap into continuous base
+LIGHT_PAD_LOWER_Z = BOARD_THICKNESS - LIGHT_PAD_EMBED  # mm [derived]
 EXPLORATION_LAYER_HEIGHT = 0.20                # mm [assumed] pinned slicer profile
 EXPLORATION_NOZZLE_DIAMETER = 0.40             # mm [assumed] pinned slicer profile
 BOOLEAN_OVERLAP = 0.08                         # mm [assumed] robust B-rep union
 BOOLEAN_OVERSHOOT = 0.50                       # mm [assumed] robust through-cut
 
-# The seven internal file/rank lines continue through the outer border as a
-# shallow Manhattan street plan.  Their cutters overshoot only the outside
-# edge; they begin at the 8x8 play-field boundary and never score a square.
+# The seven internal file/rank lines echo through each border as independent
+# recessed street dashes.  A 0.80 mm deep ruled loft gives every dash broad
+# native-CAD sloped walls while leaving 1.20 mm at both border edges.
 INTERNAL_GRID_COORDINATES = tuple(              # mm [derived] seven lines per axis
     -PLAY_SPAN / 2.0 + index * SQUARE_PITCH
     for index in range(1, FILES)
 )
-BORDER_STREET_GROOVE_WIDTH = 1.20              # mm [exploration] three nozzle widths
-BORDER_STREET_GROOVE_DEPTH = 0.40              # mm [exploration] two 0.20 mm layers
-BORDER_STREET_GROOVE_LENGTH = OUTER_BORDER + BOOLEAN_OVERLAP  # mm [derived]
+BORDER_STREET_MARGIN = 1.20                    # mm [exploration] three-line land to play/outer edges
+BORDER_STREET_GROOVE_TOP_WIDTH = 2.00          # mm [exploration] visible five-line mouth
+BORDER_STREET_GROOVE_BOTTOM_WIDTH = 1.20       # mm [exploration] printable three-line floor
+BORDER_STREET_GROOVE_DEPTH = 0.80              # mm [exploration] four layers with sloped faces
+BORDER_STREET_GROOVE_TOP_LENGTH = OUTER_BORDER - 2.0 * BORDER_STREET_MARGIN  # mm [derived]
+BORDER_STREET_GROOVE_BOTTOM_LENGTH = (          # mm [derived] 0.40 mm end slopes
+    BORDER_STREET_GROOVE_TOP_LENGTH
+    - (BORDER_STREET_GROOVE_TOP_WIDTH - BORDER_STREET_GROOVE_BOTTOM_WIDTH)
+)
 BORDER_STREET_GROOVE_CENTER = (                 # mm [derived] from board origin
-    PLAY_SPAN / 2.0 + BORDER_STREET_GROOVE_LENGTH / 2.0
+    PLAY_SPAN / 2.0 + OUTER_BORDER / 2.0
 )
 
-# One Broadway cue stays wholly inside the south border.  Its stepped Manhattan
-# path uses only axis-aligned printable walls; the 8.0 x 4.4 mm centreline
-# envelope still travels diagonally without creating a sub-nozzle acute wedge.
-AVENUE_GROOVE_WIDTH = 1.20                     # mm [exploration] three nozzle widths
-AVENUE_GROOVE_DEPTH = 0.40                     # mm [exploration] two layers
+# One true Broadway diagonal stays wholly inside the south border.  It uses
+# the same ruled, inward-sloping groove language as the file/rank street dashes.
+AVENUE_GROOVE_TOP_WIDTH = 2.00                 # mm [exploration] visible five-line mouth
+AVENUE_GROOVE_BOTTOM_WIDTH = 1.20              # mm [exploration] printable three-line floor
+AVENUE_GROOVE_TOP_LENGTH = 8.00                # mm [assumed] restrained south-border cue
+AVENUE_GROOVE_BOTTOM_LENGTH = 7.20             # mm [derived] sloped end faces
+AVENUE_GROOVE_DEPTH = BORDER_STREET_GROOVE_DEPTH  # mm [derived] shared street depth
+AVENUE_ANGLE_DEG = 20.0                        # degrees [assumed] recognizable diagonal
 AVENUE_GROOVE_CENTER_X = SQUARE_PITCH / 2.0    # mm [derived] midway between file-line grooves
 AVENUE_GROOVE_CENTER_Y = -(BOARD_SIZE / 2.0 - OUTER_BORDER / 2.0)  # [derived]
-AVENUE_STEP_OFFSETS = (                         # (x, y) mm [assumed] relative to cue centre
-    (-4.0, -2.2),
-    (-2.0, -2.2),
-    (-2.0, -1.1),
-    (0.0, -1.1),
-    (0.0, 0.0),
-    (2.0, 0.0),
-    (2.0, 1.1),
-    (4.0, 1.1),
-    (4.0, 2.2),
+AVENUE_HALF_EXTENT_X = 0.5 * (                  # mm [derived] rotated top-mouth AABB
+    AVENUE_GROOVE_TOP_LENGTH * math.cos(math.radians(AVENUE_ANGLE_DEG))
+    + AVENUE_GROOVE_TOP_WIDTH * math.sin(math.radians(AVENUE_ANGLE_DEG))
 )
-AVENUE_STEP_POINTS = tuple(                     # (x, y) mm [derived] board coordinates
-    (AVENUE_GROOVE_CENTER_X + x, AVENUE_GROOVE_CENTER_Y + y)
-    for x, y in AVENUE_STEP_OFFSETS
+AVENUE_HALF_EXTENT_Y = 0.5 * (                  # mm [derived] rotated top-mouth AABB
+    AVENUE_GROOVE_TOP_LENGTH * math.sin(math.radians(AVENUE_ANGLE_DEG))
+    + AVENUE_GROOVE_TOP_WIDTH * math.cos(math.radians(AVENUE_ANGLE_DEG))
 )
-AVENUE_GROOVE_MIN_Y = min(y for _, y in AVENUE_STEP_POINTS) - AVENUE_GROOVE_WIDTH / 2.0
-AVENUE_GROOVE_MAX_Y = max(y for _, y in AVENUE_STEP_POINTS) + AVENUE_GROOVE_WIDTH / 2.0
+AVENUE_GROOVE_MIN_Y = AVENUE_GROOVE_CENTER_Y - AVENUE_HALF_EXTENT_Y
+AVENUE_GROOVE_MAX_Y = AVENUE_GROOVE_CENTER_Y + AVENUE_HALF_EXTENT_Y
 
 
 # --- Shared piece envelope and printable feature floors --------------------
@@ -366,30 +372,16 @@ def square_center(file_index: int, rank_index: int) -> tuple[float, float]:
     return x, y
 
 
-def square_recess_axis(index: int) -> tuple[float, float]:
-    """Return centre and span for one recessed-square axis.
+def is_light_square(file_index: int, rank_index: int) -> bool:
+    """Return standard chess parity: a1 dark, h1 light."""
 
-    The nominal 0.50 mm land remains unchanged between play squares.  At the
-    outside edge of the 8x8 field, a recessed square keeps a full three-line
-    1.20 mm top land instead of splitting the nominal land into a 0.25 mm
-    sliver.  This avoids an unprintable exposed corner without changing pitch.
-    """
-
-    center = (index - (FILES - 1) / 2.0) * SQUARE_PITCH
-    lower = center - (SQUARE_PITCH - SQUARE_GRID_LAND) / 2.0
-    upper = center + (SQUARE_PITCH - SQUARE_GRID_LAND) / 2.0
-    if index == 0:
-        lower = -PLAY_SPAN / 2.0 + PLAY_EDGE_LAND
-    elif index == FILES - 1:
-        upper = PLAY_SPAN / 2.0 - PLAY_EDGE_LAND
-    return (lower + upper) / 2.0, upper - lower
+    return (file_index + rank_index) % 2 == 1
 
 
 def square_top_z(file_index: int, rank_index: int) -> float:
-    """a1 is dark/recessed; h1 is light/raised, as standard chess requires."""
+    """Dark squares are the base; isolated light pads rise to Z=9.00."""
 
-    is_light = (file_index + rank_index) % 2 == 1
-    return BOARD_THICKNESS + (SQUARE_RELIEF if is_light else 0.0)
+    return BOARD_TOTAL_HEIGHT if is_light_square(file_index, rank_index) else BOARD_THICKNESS
 
 
 def validate_parameters() -> None:
@@ -400,20 +392,37 @@ def validate_parameters() -> None:
     assert abs(BOARD_TOTAL_HEIGHT - 9.0) < 1e-9
     assert abs(BOARD_THICKNESS - 8.2) < 1e-9
     assert abs(SQUARE_RELIEF / EXPLORATION_LAYER_HEIGHT - 4.0) < 1e-9
-    assert PLAY_EDGE_LAND + 1e-9 >= 3.0 * EXPLORATION_NOZZLE_DIAMETER
+    assert abs(BOARD_THICKNESS - LIGHT_PAD_LOWER_Z - LIGHT_PAD_EMBED) < 1e-9
+    assert LIGHT_PAD_EMBED >= BOOLEAN_OVERLAP
+    assert LIGHT_PAD_TOP_SIZE <= LIGHT_PAD_LOWER_SIZE < SQUARE_PITCH
+    assert (LIGHT_PAD_LOWER_SIZE - LIGHT_PAD_TOP_SIZE) / 2.0 + 1e-9 >= MIN_WALL
+    assert (LIGHT_PAD_TOP_SIZE - MAX_BASE_DIAMETER) / 2.0 + 1e-9 >= MIN_WALL
+    assert sum(
+        is_light_square(file_index, rank_index)
+        for file_index in range(FILES)
+        for rank_index in range(RANKS)
+    ) == 32
     assert len(INTERNAL_GRID_COORDINATES) == FILES - 1
-    assert BORDER_STREET_GROOVE_WIDTH + 1e-9 >= 3.0 * EXPLORATION_NOZZLE_DIAMETER
+    assert BORDER_STREET_GROOVE_BOTTOM_WIDTH + 1e-9 >= 3.0 * EXPLORATION_NOZZLE_DIAMETER
+    assert BORDER_STREET_GROOVE_TOP_WIDTH > BORDER_STREET_GROOVE_BOTTOM_WIDTH
+    assert BORDER_STREET_GROOVE_TOP_LENGTH > BORDER_STREET_GROOVE_BOTTOM_LENGTH
+    assert abs(BORDER_STREET_GROOVE_DEPTH / EXPLORATION_LAYER_HEIGHT - 4.0) < 1e-9
     assert abs(
-        BORDER_STREET_GROOVE_CENTER - BORDER_STREET_GROOVE_LENGTH / 2.0
-        - PLAY_SPAN / 2.0
+        BORDER_STREET_GROOVE_CENTER - BORDER_STREET_GROOVE_TOP_LENGTH / 2.0
+        - PLAY_SPAN / 2.0 - BORDER_STREET_MARGIN
+    ) < 1e-9
+    assert abs(
+        BOARD_SIZE / 2.0
+        - (BORDER_STREET_GROOVE_CENTER + BORDER_STREET_GROOVE_TOP_LENGTH / 2.0)
+        - BORDER_STREET_MARGIN
     ) < 1e-9
     assert AVENUE_GROOVE_MAX_Y <= -PLAY_SPAN / 2.0
     assert AVENUE_GROOVE_MIN_Y >= -BOARD_SIZE / 2.0
-    assert min(abs(AVENUE_GROOVE_CENTER_X - coordinate) for coordinate in INTERNAL_GRID_COORDINATES) >= 10.0
-    assert all(
-        abs(x1 - x0) < 1e-9 or abs(y1 - y0) < 1e-9
-        for (x0, y0), (x1, y1) in zip(AVENUE_STEP_POINTS, AVENUE_STEP_POINTS[1:])
-    )
+    assert min(abs(AVENUE_GROOVE_CENTER_X - coordinate)
+               for coordinate in INTERNAL_GRID_COORDINATES) - AVENUE_HALF_EXTENT_X >= 10.0
+    assert AVENUE_GROOVE_BOTTOM_WIDTH + 1e-9 >= 3.0 * EXPLORATION_NOZZLE_DIAMETER
+    assert AVENUE_GROOVE_TOP_WIDTH > AVENUE_GROOVE_BOTTOM_WIDTH
+    assert AVENUE_GROOVE_TOP_LENGTH > AVENUE_GROOVE_BOTTOM_LENGTH
     assert MAX_BASE_DIAMETER <= SQUARE_PITCH - 2.0 * BASE_CLEARANCE_PER_SIDE + 1e-9
     assert BASE_CLEARANCE_PER_SIDE >= 3.0
     assert MIN_FREE_FEATURE >= MIN_WALL

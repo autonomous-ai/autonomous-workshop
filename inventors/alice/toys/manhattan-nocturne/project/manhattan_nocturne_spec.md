@@ -18,13 +18,15 @@ Status: **HELD — digital prototype in Make. Deliver requires physical evidence
 - Three adjectives: nocturnal, architectural, heirloom.
 - Scale anchor: 28.5 mm chess square; assembled envelope 244 × 244 × 83.35 mm
   in the initial position, including board and tallest placed piece.
-- Primary forms: calm square grid, six unmistakable rank silhouettes, Stone and
-  Steel armies with different façade rhythm.
+- Primary forms: an immediate checker field made from 32 isolated sloped light
+  pads over one continuous dark base, six unmistakable rank silhouettes, and
+  Stone and Steel armies with different façade rhythm.
 - Secondary forms: Manhattan setbacks, masonry bands, vertical fins, parapets,
-  water towers, seven file/rank streets continued through the outer border,
-  and one stepped Broadway cue contained within that border.
+  water towers, seven sloped file/rank street dashes in each outer border, and
+  one true diagonal Broadway cue contained within the south border.
 - Detail forms: printable grooves and windows, never required for rank recognition.
-- Seams: none across the playing surface; the board is one printed part.
+- Seams: none across the playing surface; every light pad overlaps and fuses
+  into the same base, so the board remains one printed solid.
 - Material/color breaks: charcoal board; Stone and Steel are visually and
   tactually distinct. Geometry must pass in neutral grayscale.
 - Forbidden shortcuts: see `../art-direction/ART-DIRECTION.md`.
@@ -39,8 +41,9 @@ Status: **HELD — digital prototype in Make. Deliver requires physical evidence
 - Coordinates: board centered at world XY origin; +Z is up. Every printable
   part has its bed datum at Z=0.
 - Overall board: 244 × 244 × 9.0 mm, one piece on a 256 mm bed.
-- Functional features: 64 readable squares, 32 stable pieces, tactile side
-  coding, rank-specific silhouettes, and support-conscious details.
+- Functional features: 64 readable squares from native sloped-face shading,
+  25.0 mm light-square top landings, 32 stable pieces, tactile side coding,
+  rank-specific silhouettes, and support-conscious details.
 - Standard mechanical components: none. No fasteners, bearings, magnets, or
   purchased components are used, so no STEP-parts catalog form is triggered.
 - Validation: exact inventory, bounding boxes, positive-volume solids, strict
@@ -85,8 +88,11 @@ Status: **HELD — digital prototype in Make. Deliver requires physical evidence
 | `outer_border` | 8.0 mm | derived | high | `params.py` | 244 mm board envelope |
 | `board_total_height` | 9.00 mm | assumed | high | `params.py` | preserved board envelope |
 | `square_relief` | 0.80 mm | assumed | high | `params.py` | four 0.20 mm layers, grid readability |
-| `board_thickness` | 8.20 mm | derived | high | `params.py` | total height minus square relief |
-| `border_street_groove` | 1.20 × 0.40 mm | assumed | medium | `params.py` | seven file/rank continuations and Broadway cue |
+| `board_thickness` | 8.20 mm | derived | high | `params.py` | continuous one-piece dark base |
+| `light_pad_lower_size` | 27.40 mm | exploration | medium | `params.py` | embedded footprint and visible slope |
+| `light_pad_top_size` | 25.00 mm | derived | high | `params.py` | 1.25 mm landing around D22.5 base |
+| `light_pad_embed` | 0.20 mm | exploration | medium | `params.py` | avoids coplanar/point-only pad contact |
+| `border_street_groove` | 2.00→1.20 × 0.80 mm | exploration | medium | `params.py` | sloped file/rank dashes and Broadway cue |
 | `max_base_diameter` | 22.5 mm | derived | high | `params.py` | adjacent clearance |
 | `min_wall` | 1.2 mm | exploration | low | `params.py` | façade/crown details |
 | `min_free_feature` | 2.2 mm | exploration | low | `params.py` | king finial, fins |
@@ -151,7 +157,7 @@ remain held until bound to exact produced artifacts and operator receipts.
 
 ## Bounds and unresolved claims
 
-- Maximum three AI Playtest repair rounds for this Make.
+- Maximum four AI Playtest repair rounds for this Make.
 - Maximum two CAD repair passes per failed deterministic gate before reporting
   the remaining failure honestly.
 - No untested connector or board-locking claim.
