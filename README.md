@@ -1,164 +1,161 @@
 # Autonomous Workshop
 
-Santa's workshop for autonomous inventors. A person makes a Wish, waits, and
-receives a box containing a playful object with a soul.
+A request-driven toy workshop for physical products. A person makes one Wish;
+the Workshop Manager searches an open catalog, explains which inventor fits
+best, and makes one assignment. The shared Workshop makes, improves, explains,
+and delivers the result.
+
+This is not a fleet of agents wandering the internet around the clock. The
+first version wakes up for a Wish and works until that Wish passes its evidence
+bar or truthfully stops. Always-on operation can be added later as an adapter;
+it is not the Workshop's identity.
 
 ```text
-PERSON       makes a wish ---------------- waits ----------------> receives a box
-                    |
-                    v
-WORKSHOP          WISH -> MAKE <-> PLAYTEST -> DOCS -> DELIVER
-                                ^          |
-                                + feedback-+
+one person's Wish
+        |
+        v
+Inventor catalog (TASTE.md name + description)
+        |
+        v
+semantic shortlist -> full TASTE.md judgment
+        |
+        v
+Alice chosen, with a reason
+Classics made yours · Taste only
+        |
+        v
++--------------------------------------------------------+
+|                    SHARED WORKSHOP                     |
+|                                                        |
+| Wish -> Make <-> Playtest -> Instructions -> Deliver   |
+|               useful feedback                         |
++--------------------------------------------------------+
+        |
+        v
+the approved product
+
+Alice supplies taste. Workshop supplies the repeatable work.
 ```
 
-Those five words are the complete creation pipeline. The machinery underneath
-them can be sophisticated; the language every elf and developer shares should
-stay simple.
+## The product bar
 
-## What this Workshop makes
+The Workshop makes playthings for grown-ups. Every product must pass one simple
+test:
 
-The first Workshop makes **playthings for grown-ups (14+)**:
+> This could not have been downloaded before this Wish existed.
 
-- tabletop games;
-- desk toys;
-- tiny models and characters;
-- puzzles and keepsakes with play in them.
+Personalization must change the design, rules, mechanism, scientific framing,
+or world—not merely add a name to a generic model. The tone is **cool, not
+cute or twee**. A playful answer can be beautiful, strange, ingenious, or
+funny, but it should never feel like generic decoration.
 
-The rule is simple: a useful Wish gets the playful version. A cable holder
-becomes a whale that swallows cables. A phone stand becomes a little creature
-that holds the phone. Nothing is merely useful; everything should invite
-curiosity, touch, surprise, or play.
+The repository ships five built-in showcase inventors, one for each initial
+product lane:
+
+| Inventor | Product lane | Extension level | Taste |
+|---|---|---|---|
+| **Alice** | **Classics made yours** (`classics-made-yours`) | Taste only | Known games and puzzles transformed into singular physical editions while their proven rules stay intact. |
+| **Leo** | **Games that don't exist yet** (`invented-games`) | Custom Make + Playtest | New rules, interactions, and table experiences invented for one Wish. |
+| **Bob** | **Machines that move** (`moving-machines`) | Custom Make | Kinetic toys, mechanisms, automata, and tiny machines that do one delightful thing. |
+| **Ivy** | **Science you can hold** (`holdable-science`) | Taste only | Orreries, pendulums, mathematical forms, and physical phenomena made tangible. |
+| **Eve** | **Little worlds** (`little-worlds`) | Taste only | A person's animals, places, gear, and stories turned into personalized miniature worlds. |
+
+The built-in folders are `inventors/alice/`, `inventors/leo/`,
+`inventors/bob/`, `inventors/ivy/`, and `inventors/eve/`. They are examples,
+not a closed roster. Anyone can add another inventor, and many inventors can
+explore the same category from different niches and tastes. The same Manager
+design can route among five inventors or thousands.
+
+## The Workshop Manager
+
+The Workshop Manager is the front door. For every Wish it:
+
+1. discovers every inventor's compact `TASTE.md` name and description from the
+   open catalog;
+2. searches those descriptions to make a semantic shortlist;
+3. reads the shortlisted finalists' full `TASTE.md` files and judges the Wish
+   against what each inventor loves, rejects, and knows how to make;
+4. chooses exactly one inventor, records a plain-language reason, and sends
+   that inventor the original Wish and its trusted Playtest allowance.
+
+The two-stage search matters as the community grows: short Taste descriptions
+make thousands of inventors cheap to retrieve, while full Taste—not a shallow
+keyword match—decides the finalists. `inventor.json` contains operational facts
+such as the entry point and capabilities; it is not a second creative profile.
+
+`TASTE.md` is the physical-product counterpart to a focused `SKILL.md`. Its
+frontmatter exposes a short `name` and discriminating `description` for cheap
+selection. Its Markdown body is the full creative constitution, loaded only
+for finalists and then used by the chosen inventor throughout the run. It
+contains judgment, boundaries, and rejection criteria—not duplicated runtime,
+CAD, or shipping infrastructure.
+
+The Manager itself is ordinary, tested Workshop runtime code, not a skill. A
+skill may help a developer author an inventor later; routing production Wishes
+must remain an explicit, auditable application boundary.
+
+The Manager is not a sixth creation job. It routes a Wish before the five-job
+pipeline begins.
 
 ## The five jobs
 
-| Job | What the Workshop must accomplish |
+These are the complete public vocabulary of creation:
+
+| Job | What it accomplishes |
 |---|---|
-| **Wish** | Preserve what the person asked for and bind it to the elf's exact `TASTE.md`. |
-| **Make** | Invent the experience, write rules when needed, and create beautiful STEP-first printable parts. |
-| **Playtest** | Test the entire product and send useful feedback back to Make until the pinned bar passes. |
-| **Docs** | Create a truthful private product page with beautiful exact-product images, copy, rules, and instructions. |
-| **Deliver** | Print, QA, pack, and hand the exact approved product to USPS, UPS, or FedEx. |
+| **Wish** | Preserve exactly what the person asked for and bind it to the selected inventor's taste. |
+| **Make** | Invent the experience and create beautiful, printable, STEP-first parts. |
+| **Playtest** | Test the whole product, return useful feedback to Make, and repeat until the evidence bar passes or the allowance ends. |
+| **Instructions** | Build the truthful product page and the paper that belongs in the box: a rulebook for a game, or instructions for another toy. |
+| **Deliver** | Print, physically check, pack, and hand the approved product to a carrier. |
 
-Playtest is intentionally broad. It covers executable AI-player simulation,
-rules, fun and flow predictions, exploits, balance, CAD, fit, motion,
-printability, safety, independent human use, and the exact physical prototype.
-Different evidence remains different: AI players cannot prove that humans had
-fun, a render cannot prove that parts fit, and a shipping label cannot prove a
-carrier received the box.
+Playtest covers whatever the product needs: rules, fun, flow, exploits,
+balance, motion, fit, mechanics, scientific accuracy, printability, safety,
+independent human use, and the exact physical prototype. Evidence does not
+substitute across boundaries. A simulation cannot prove people had fun; a
+render cannot prove parts fit; a label cannot prove a carrier received a box.
 
-## How Alice is built on the Workshop
+For **games that don't exist yet**, Instructions and Deliver stay locked until both of
+these hard gates pass:
 
-Alice is the concrete example; every other elf uses the same dependency
-direction.
+- at least **1,000 executable, seeded AI-player simulations** exercise the
+  rules, termination, balance, strategies, and exploits; and
+- independent humans play the **exact printed prototype** and ask to play it
+  again.
 
-```text
-inventors/alice/
-  TASTE.md                       what Alice loves and rejects
-  profile.py                     Alice's Workshop connection
-  custom Make + Playtest         Alice's tabletop-game craft
-          |
-          | imports
-          v
-+--------------------------------------------------------------------+
-|                         AUTONOMOUS WORKSHOP                         |
-|                                                                    |
-|  Wish -> Make <---------------------> Playtest -> Docs -> Deliver   |
-|           |        structured feedback       |                      |
-|           |                                   |                      |
-|           +-- locked CAD skills               +-- exact evidence     |
-|           +-- immutable product bytes         +-- bounded repairs    |
-|                                                                    |
-|  durable state · budgets · leases · receipts · safe integrations   |
-+--------------------------------------------------------------------+
+No narrated game, render, internal reviewer, or simulation can replace the
+second gate.
 
-Workshop never imports Alice. Alice imports Workshop.
-```
+## Three ways to build an inventor
 
-Taste makes Alice recognizable. Workshop makes her work repeatable,
-content-addressed, evidence-bound, and safe to connect to printers,
-product pages, and carriers.
+Start with the smallest extension level that captures what is truly special.
 
-## Three ways to build an elf
-
-Most developers should begin with the smallest level that expresses what is
-special about their inventor.
-
-| Level | Inventor authors | Workshop supplies |
+| Level | Inventor supplies | Workshop supplies |
 |---|---|---|
-| **Taste only** | `TASTE.md` | Make, Playtest and its improvement loop, Docs, Deliver, state, artifacts, and integrations |
-| **Custom Make** | `TASTE.md` + Make hook | Shared Playtest and improvement loop, Docs, Deliver, state, artifacts, and integrations |
-| **Custom Playtest** | `TASTE.md` + Make hook + Playtest hook | The loop, Docs, Deliver, state, artifacts, and integrations |
+| **Taste only** (`taste-only`) | `TASTE.md` and a thin profile | Make, Playtest and its feedback loop, Instructions, Deliver, state, artifacts, and integrations |
+| **Custom Make** (`custom-make`) | `TASTE.md` and a Make hook | Shared Playtest and feedback loop, Instructions, Deliver, state, artifacts, and integrations |
+| **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, Make hook, and Playtest hook | The bounded loop, Instructions, Deliver, state, artifacts, and integrations |
 
-A custom Playtest requires a custom Make. Docs and Deliver remain shared so
-every product page and shipment stays attached to the exact approved bytes.
+A custom Playtest requires a custom Make. Instructions and Deliver remain shared so a
+product page, print, and shipment always refer to the exact approved bytes.
 
-The playtest allowance is chosen per Wish:
+## Playtest depth belongs to the Wish
+
+The trusted checkout or quote service sets a maximum improvement allowance for
+each Wish:
 
 ```python
-result = workshop.run(wish, playtest_rounds=2)   # small tier
-result = workshop.run(wish, playtest_rounds=10)  # deeper tier
+quick = workshop.run(wish, playtest_rounds=2)
+deep = workshop.run(wish, playtest_rounds=10)
 ```
 
-The trusted checkout or quote service translates payment into that allowance;
-free-form Wish text cannot authorize spend. The number is a maximum number of
-Make–Playtest improvement rounds, not permission to weaken the bar. A design
-that still fails when its allowance is exhausted stops instead of reaching
-Docs or Deliver.
+Free-form Wish text cannot authorize money or compute. Passing early ends the
+loop early; using every round without passing stops the product before Instructions or
+Deliver. A larger allowance buys more attempts to improve, never a weaker bar.
 
-## The four elves
+## Build another inventor
 
-The names are internal. Customers make Wishes to the Workshop, not to an elf.
-
-| Elf | Plaything lane | Level | What is uniquely theirs |
-|---|---|---|---|
-| **Alice** | Tabletop games | Custom Playtest | Hidden-information game invention, executable rules, adversarial simulation, and tabletop evidence |
-| **Bob** | Desk toys | Custom Make | Mechanisms, motion, tactile rhythm, and playful versions of useful objects |
-| **Eve** | Tiny models and characters | Taste only | Expressive silhouettes, tiny worlds, character, and collectibility |
-| **Ivy** | Puzzles and keepsakes | Taste only | Secrets, reveals, personal meaning, and repeatable puzzle moments |
-
-Bob's earlier board-game laboratory is preserved as migration material. His
-canonical role is now desk toys, and his reusable budgeting, parallel
-exploration, and reward ideas belong in Workshop so every elf can benefit.
-
-## Repository shape
-
-The repository itself is the Workshop. Shared code lives at the root; elf code
-lives under `inventors/`.
-
-```text
-autonomous-workshop/
-  inventors/
-    alice/
-    bob/
-    eve/
-    ivy/
-    ...                         pinned team experiments remain references
-
-  src/inventor_workshop/        the shared five-job runner and contracts
-  skills/                       locked CAD and STEP-first making knowledge
-  schemas/                      portable artifact and evidence contracts
-  docs/                         architecture and elf-building guides
-  tests/                        Workshop invariants and product rehearsals
-  tools/                        repository, provenance, lock, and secret checks
-```
-
-Internally, the Workshop uses a few literal implementation types:
-
-```text
-Artifact   exact immutable product identity
-Runtime    state, leases, budgets, retries, and durable outside effects
-Adapter    one model, CAD, renderer, printer, shop, or carrier boundary
-Receipt    verifiable evidence returned by that boundary
-```
-
-They are machinery, not extra jobs. Older `Pack`, `Send`, `Door`, `Stamp`,
-`Clockwork`, and `Inspect` spellings remain readable only while existing Alice
-and Bob code migrates.
-
-## Build a new elf
-
-Generated elves require Python 3.11 or newer.
+Generated inventor profiles require Python 3.11 or newer.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -169,32 +166,59 @@ python -m pip install -e .
 
 workshop new ada \
   --name Ada \
-  --niche "pocket word games" \
-  --lane table-game \
-  --level taste-only \
+  --niche "hand-cranked creatures" \
+  --lane moving-machines \
+  --level custom-make \
   --root .
 ```
 
-Start by making `inventors/ada/TASTE.md` unmistakably Ada's. The generated
-profile uses the same `Workshop` class as Alice, Bob, Eve, and Ivy. With no real
-model/CAD worker configured, it reports exactly what it is waiting for; it does
-not pass a placeholder off as a printable product.
+Other valid lanes are `classics-made-yours`, `invented-games`,
+`holdable-science`, and `little-worlds`. Make the generated `TASTE.md`
+unmistakable, then connect only the custom hooks the inventor genuinely needs.
 
-See [Build an elf](docs/BUILD_AN_INVENTOR.md) and
+```bash
+python inventors/ada/profile.py run first-wish \
+  "I wish my bicycle became a hand-cranked climbing creature" \
+  --playtest-rounds 4
+```
+
+Without a real model, CAD worker, evidence source, printer, or carrier
+configured, a run says exactly what it is waiting for. It never presents a
+placeholder as a finished product.
+
+See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
+
+## Repository shape
+
+Shared Workshop code lives at the root; only inventor-specific taste and hooks
+live under `inventors/`.
+
+- `inventors/` — five built-in showcases plus any new inventor profiles
+- `src/inventor_workshop/` — routing, five-job contracts, and shared runner
+- `skills/` — locked CAD and STEP-first making knowledge
+- `schemas/` — portable artifact and evidence contracts
+- `docs/` — architecture and inventor-building guides
+- `tests/` — Workshop invariants and product rehearsals
+- `tools/` — provenance, lock, repository, and secret checks
 
 ## What the Workshop refuses to fake
 
 - Missing, stale, malformed, timed-out, or unsupported evidence is not a pass.
 - Playtest evidence follows exact product bytes across every repair.
-- A changed rule or part invalidates only the evidence that depends on it, but
-  no stale receipt can approve the new revision.
-- Generated media is not product proof unless it depicts the exact approved
-  geometry; concept art is labeled as concept art.
-- External effects are recorded before execution and ambiguous outcomes wait
-  for reconciliation instead of blind retry.
-- “Perfect” means the pinned acceptance policy passed within bounded time,
-  attempts, and budget. The elf may kill a weak idea instead of lowering the bar.
+- Changed rules or parts invalidate the evidence that depends on them.
+- Generated media is product proof only when it depicts the exact approved
+  geometry; concept art stays labeled as concept art.
+- Ambiguous outside effects wait for reconciliation instead of blind retry.
+- “Perfect” means the pinned policy passed within bounded time, attempts, and
+  budget. An inventor may kill a weak idea instead of lowering the bar.
+
+## Later, without changing the five jobs
+
+An always-on scheduler may feed Wishes into the Manager. Products may arrive as
+kits to assemble, or belong to named and numbered collectible series. Those are
+optional operating and product modes—not new jobs and not requirements for the
+first Workshop.
 
 ## Verify the Workshop
 
@@ -213,10 +237,9 @@ git diff --check
 Read next:
 
 - [Workshop architecture](docs/ARCHITECTURE.md)
-- [Build an elf](docs/BUILD_AN_INVENTOR.md)
+- [Build an inventor](docs/BUILD_AN_INVENTOR.md)
 - [Current adoption](docs/ADOPTION.md)
 - [Migration guide](docs/MIGRATION.md)
-- [Lessons from the inventor ecosystem](docs/ECOSYSTEM.md)
 - [Contributing](CONTRIBUTING.md)
 
 Never commit credentials, runtime databases, private keys, generated backups,

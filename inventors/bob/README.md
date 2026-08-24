@@ -2,11 +2,11 @@
 
 Bob is the canonical **moving-machines** inventor. He shows the middle customization
 level: Bob owns **Make**, while Workshop supplies Wish intake, Taste binding,
-the default physical **Playtest**, product Docs, delivery, and durable runtime.
+the default physical **Playtest**, product Instructions, delivery, and durable runtime.
 [`TASTE.md`](TASTE.md) defines his kinetic point of view.
 
 ```text
-Wish -> Bob Make <-> Workshop Playtest -> Workshop Docs -> Workshop Deliver
+Wish -> Bob Make <-> Workshop Playtest -> Workshop Instructions -> Workshop Deliver
              ^                 |
              +----- feedback --+
 ```

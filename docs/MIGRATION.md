@@ -5,7 +5,7 @@ playthings for grown-ups. Every new profile uses one of five product categories
 and the same five jobs:
 
 ```text
-Wish -> Make <-> Playtest -> Docs -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver
              feedback
 ```
 
@@ -18,16 +18,23 @@ readiness is recorded in [ADOPTION.md](ADOPTION.md).
 - The product scope is classics made yours, games that do not exist yet,
   machines that move, science you can hold, and little worlds.
 - `Playtest` is the canonical name for testing and improving an exact Make.
-- Docs and Deliver are explicit shared jobs after the Make–Playtest loop.
+- Instructions and Deliver are explicit shared jobs after the Make–Playtest loop.
 - Inventors choose Taste-only, custom-Make, or custom-Playtest adoption.
+- Intake is one Wish at a time through a Taste-based Workshop Manager; a
+  continuously running scheduler is not an inventor requirement.
 - `playtest_rounds` can be selected per Wish by a trusted boundary.
 - `Workshop`, `WorkshopTools`, typed job contexts/results, five category
-  blueprints, AI-player leagues, truthful Docs, and exact Deliver contracts are
+  blueprints, AI-player leagues, truthful Instructions, and exact Deliver contracts are
   the canonical 0.5 surface.
 
 The distribution remains `inventor-workshop`, the import remains
 `inventor_workshop`, the CLI remains `workshop`, and mutable per-profile state
 remains under `.workshop/`.
+
+The manifest field named `autonomy` remains compatibility metadata about human
+checkpointing inside one assignment. It is not an uptime guarantee and must
+not be interpreted as a requirement for a profile-owned queue, daemon, or
+24/7 process.
 
 ## Repository and manifest continuity
 
@@ -42,19 +49,30 @@ docs/                   architecture and operating guidance
 tests/                  shared invariant tests
 ```
 
-Schema-v4 inventor manifests still require `checks` and do not enumerate
-shared implementation features. Every profile in this repository already
-belongs to Workshop, so repeating an internal feature inventory in each
-identity would couple inventors to implementation details.
+Schema v5 is the required authoring format for new inventor manifests. It keeps
+only operational fields: `schema_version`, `id`, `status`, `entrypoint`,
+`capabilities`, `checks`, and `source`. Creative identity and routing prose now
+live only in `TASTE.md` frontmatter and body. Every profile in this repository
+already belongs to Workshop, so repeating a name, niche, summary, autonomy
+claim, or shared feature inventory in `inventor.json` would create a second,
+drifting creative identity.
 
 Historical manifests remain readable according to their declared version:
 
-| Manifest schema | Historical feature field |
-|---|---|
-| v1 | `core_features` |
-| v2 | `foundation_features` |
-| v3 | `workshop_features` |
-| v4 | none |
+| Manifest schema | Read/write role | Creative identity |
+|---|---|---|
+| v1 | read-only compatibility | manifest prose + `core_features` |
+| v2 | read-only compatibility | manifest prose + `foundation_features` |
+| v3 | read-only compatibility | manifest prose + `workshop_features` |
+| v4 | read-only compatibility | manifest `name`, `niche`, and `summary` |
+| v5 | current contribution format | `TASTE.md` only |
+
+When migrating a v1-v4 inventor, move its discriminating name and description
+to strict `TASTE.md` frontmatter, keep its full creative constitution in the
+Markdown body, remove creative prose and legacy feature fields from
+`inventor.json`, and set `schema_version` to `5`. Do not rewrite old manifests
+in persisted receipts; the reader retains v1-v4 compatibility for those exact
+historical records.
 
 The old package-name import shims remain read-only compatibility routes to the
 same implementation. They must not own separate state or behavior.
@@ -101,12 +119,52 @@ only through a versioned migration with rollback and golden replay fixtures.
 
 Likewise, older serialization and outside-effect type names remain aliases for
 existing imports and state. New inventors should treat artifact serialization,
-idempotent provider calls, and receipts as implementation inside Make, Docs, or
+idempotent provider calls, and receipts as implementation inside Make, Instructions, or
 Deliver—not as extra public jobs.
 
 `schemas/playtest-result.schema.json` is the canonical 0.5 schema. The existing
 `schemas/inspection-result.schema.json` describes the same persisted field
 shape for compatibility.
+
+## Migrate intake to one-shot assignment
+
+Older experiments may discover work themselves, own a queue, or remain alive
+between products. Do not copy those operational assumptions into a canonical
+inventor. V1 intake has one request-scoped boundary:
+
+```text
+one Wish -> Workshop Manager -> one chosen Taste -> one assignment
+                                                     |
+                                                     v
+                       Wish -> Make <-> Playtest -> Instructions -> Deliver
+                                    feedback
+```
+
+For each Wish, the Manager searches an open catalog built from the short
+`name` and `description` in every `TASTE.md`, records a bounded shortlist, and
+loads the complete exact Taste only for those finalists. A semantic judge
+returns one explained assessment per finalist and the Manager selects the best
+accepted fit deterministically. The assignment binds the untouched Wish,
+catalog and retrieval receipts, finalist Taste hashes, complete ranking,
+selected entry point, and trusted Playtest-round allowance. A stale relevant
+catalog entry, finalist Taste, or selected manifest invalidates dispatch.
+
+Migrate an old intake loop by separating these responsibilities:
+
+1. Keep parsing and validation at the trusted Wish boundary.
+2. Move creative-fit selection into catalog retrieval followed by exact-Taste
+   finalist judgment; do not put every Taste body in one prompt.
+3. Record the retrieval receipt, complete finalist ranking, and explanation,
+   not just the winner.
+4. Dispatch the content-bound assignment exactly once.
+5. Let the selected profile enter the shared five-job workflow without
+   rediscovering or rerouting the Wish.
+
+If no Taste fits, return a truthful wait for clarification or a new inventor.
+Do not weaken an existing Taste, use keyword routing, or choose the least-bad
+inventor. A future scheduler may wrap this one-Wish API and invoke it repeatedly,
+but that adapter remains outside inventor folders and does not become a sixth
+Workshop job.
 
 ## Migrate the workflow
 
@@ -117,7 +175,7 @@ delivery:
 ```text
 0.4:  Wish + Taste -> Make <-> legacy review
 
-0.5:  Wish -> Make <-> Playtest -> Docs -> Deliver
+0.5:  Wish -> Make <-> Playtest -> Instructions -> Deliver
               feedback
 ```
 
@@ -133,10 +191,10 @@ For a mature state machine:
    `PlaytestContext -> Playtested`.
 3. Convert failed findings into structured `Feedback` for a new immutable Make
    round.
-4. Require a passed Playtest for the exact artifact before creating Docs.
-5. Bind every Docs claim and image to that artifact and its evidence.
+4. Require a passed Playtest for the exact artifact before creating Instructions.
+5. Bind every Instructions claim and image to that artifact and its evidence.
 6. Bind production, QA, packing, and carrier receipts to the exact product and
-   Docs hashes before returning Delivered.
+   Instructions hashes before returning Delivered.
 
 Do not run an old and new lifecycle as co-authorities. A thin profile may wait
 at a typed seam while the legacy worker continues separately; that is safer
@@ -146,32 +204,34 @@ than dual-writing or guessing a conversion.
 
 | Level | Profile owns | Workshop owns |
 |---|---|---|
-| Taste only | `TASTE.md` | Make, Playtest, loop, Docs, Deliver, runtime |
-| Custom Make | Taste and `MakeContext -> Made` | Playtest, loop, Docs, Deliver, runtime |
-| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | loop, Docs, Deliver, runtime |
+| Taste only | `TASTE.md` | Make, Playtest, loop, Instructions, Deliver, runtime |
+| Custom Make | Taste and `MakeContext -> Made` | Playtest, loop, Instructions, Deliver, runtime |
+| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | loop, Instructions, Deliver, runtime |
 
 A custom Playtest requires a custom Make. Keep stronger niche checks, but return
 their observations through the shared result and evidence contracts.
 
-The five canonical profiles cover the five categories exactly once; they are
-not five completed live inventors:
+The five bundled showcase profiles currently demonstrate the five categories;
+they are examples, not a closed catalog or five completed live inventors:
 
-- Alice owns `classics-made-yours` at the Taste-only level. Her Blindcap
+- Alice demonstrates `classics-made-yours` at the Taste-only level. Her Blindcap
   laboratory is provenance that taught Workshop, not her active profile or a
-  second invented-game elf. Shared Make and Playtest must wait when their real
+  second invented-game inventor. Shared Make and Playtest must wait when their real
   capabilities are absent.
-- Leo is the clean Workshop-native `invented-games` elf with custom Make and
+- Leo is the clean Workshop-native `invented-games` inventor with custom Make and
   custom Playtest. His unfinished typed adapters and mandatory independent
   human-table replay gate wait honestly rather than inheriting a second legacy
   state machine.
-- Bob owns `moving-machines` and still waits for a typed custom Make; his
+- Bob demonstrates `moving-machines` and still waits for a typed custom Make; his
   preserved board-game laboratory is not that adapter.
 - Ivy (`holdable-science`) and Eve (`little-worlds`) are Taste-only profiles and
   wait for configured shared tools.
 
-Remove text2cad, text2game, and vibe-ideas from inventor discovery. Their
-lessons may remain as cited research provenance in Docs, but they are not elves,
-profiles, manifests, or extra product categories.
+Remove the retired early team experiments from inventor discovery. Their useful
+techniques may be reimplemented behind shared Workshop contracts. New local or
+community inventors are welcome after they satisfy the same Taste, operational
+manifest, entrypoint, and evidence contracts; multiple profiles may serve the
+same category.
 
 ## Add the per-Wish Playtest allowance
 
@@ -196,7 +256,7 @@ Migration rules:
 3. Keep it constant for that run and expose it to custom hooks.
 4. Stop if it is exhausted while Playtest still fails.
 5. Never translate fewer rounds into fewer required checks, weaker thresholds,
-   synthetic evidence, or permission to continue to Docs.
+   synthetic evidence, or permission to continue to Instructions.
 
 More rounds buy more repair opportunities. All service tiers face the same
 acceptance policy.
@@ -208,7 +268,7 @@ Keep these identities distinct:
 - the logical product artifact-tree hash;
 - the sealed Playtest-evidence artifact hash;
 - the exact serialized payload hash used at a process or network boundary;
-- the Docs artifact hash;
+- the Instructions artifact hash;
 - authenticated production and carrier receipt identities.
 
 Equal logical files can have different transferred bytes, and evidence files
@@ -221,8 +281,8 @@ On every migration seam, test:
 - evidence for another product revision;
 - missing or hash-mismatched evidence references;
 - a failed required result with no actionable feedback;
-- Docs generated from failed or stale Playtest evidence;
-- product or Docs bytes changed before Deliver;
+- Instructions generated from failed or stale Playtest evidence;
+- product or Instructions bytes changed before Deliver;
 - timeout, redirect, malformed response, or uncertain external readback.
 
 All fail closed.
@@ -254,14 +314,18 @@ and never merge authorities by modification time.
 1. Characterize current Wishes, transitions, artifacts, evidence, budgets,
    effects, failures, and reconciliation with golden fixtures.
 2. Establish one root `TASTE.md` and exact binding.
-3. Select one canonical product category and the smallest customization level.
-4. Add the canonical profile and let unfinished seams return `WaitingFor`.
-5. Adopt immutable `Made` identity without weakening local invariants.
-6. Adopt artifact-bound `Playtested` evidence and actionable feedback.
-7. Add trusted per-Wish `playtest_rounds` without changing gates.
-8. Move lifecycle, leases, and budgets only after parity tests pass.
-9. Adopt shared Docs, then exact production and Deliver receipts.
-10. Simplify operational names only after every entry point uses one authority.
+3. Add explicit best-fit, not-for, and hard-boundary guidance so the Manager
+   can compare this Taste with the other four complete Tastes.
+4. Select one canonical product category and the smallest customization level.
+5. Replace profile-owned polling with one content-bound assignment entry point;
+   keep any needed scheduler as a separate application adapter.
+6. Add the Workshop-native profile and let unfinished seams return `WaitingFor`.
+7. Adopt immutable `Made` identity without weakening local invariants.
+8. Adopt artifact-bound `Playtested` evidence and actionable feedback.
+9. Add trusted per-Wish `playtest_rounds` without changing gates.
+10. Move lifecycle, leases, and budgets only after parity tests pass.
+11. Adopt shared Instructions, then exact production and Deliver receipts.
+12. Simplify operational names only after every entry point uses one authority.
 
 Blindcap provenance and Bob's preserved laboratory should retain every stronger
 native invariant until Workshop proves equivalent behavior. Alice's active

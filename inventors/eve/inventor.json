@@ -1,10 +1,6 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "id": "eve",
-  "name": "Eve",
-  "niche": "Personalized printable little worlds that make your dog, rig, or homelab epic",
-  "summary": "A taste-only little-worlds profile that delegates Make, Playtest, Docs, delivery, and runtime to Workshop.",
-  "autonomy": "human-checkpointed",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
   "capabilities": ["wish", "little-worlds", "personalization", "taste-only", "default-make", "default-playtest"],

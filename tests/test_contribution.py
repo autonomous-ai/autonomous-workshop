@@ -17,7 +17,14 @@ def _inventor(root: Path, *, check=None) -> Path:
     folder = root / "sample"
     (folder / "tests").mkdir(parents=True)
     (folder / "README.md").write_text("# Sample\n", encoding="utf-8")
-    (folder / "TASTE.md").write_text("# Taste\nSpecific and useful.\n", encoding="utf-8")
+    (folder / "TASTE.md").write_text(
+        "---\n"
+        "name: Sample\n"
+        "description: Makes specific physical playthings for test Wishes.\n"
+        "---\n"
+        "# Taste\nSpecific and useful.\n",
+        encoding="utf-8",
+    )
     (folder / "run.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (folder / "tests/test_smoke.py").write_text(
         "import unittest\n\n"
@@ -27,12 +34,8 @@ def _inventor(root: Path, *, check=None) -> Path:
         encoding="utf-8",
     )
     document = {
-        "schema_version": 4,
+        "schema_version": 5,
         "id": "sample",
-        "name": "Sample",
-        "niche": "test products",
-        "summary": "A test inventor.",
-        "autonomy": "autonomous",
         "status": "experimental",
         "entrypoint": ["python3", "run.py"],
         "capabilities": ["testing"],
@@ -85,14 +88,27 @@ class ContributionTest(unittest.TestCase):
             path = folder / "inventor.json"
             document = json.loads(path.read_text(encoding="utf-8"))
             document["schema_version"] = 1
+            document["name"] = "Sample"
+            document["niche"] = "test products"
+            document["summary"] = "A test inventor."
+            document["autonomy"] = "reference"
             document["core_features"] = ["taste.content-addressed"]
             document.pop("checks")
             path.write_text(json.dumps(document), encoding="utf-8")
             manifest = load_manifest(path)
             self.assertEqual(manifest.workshop_features, ("taste.content-addressed",))
             self.assertTrue(
-                any("schema_version 4" in item for item in validate_contribution(manifest))
+                any("schema_version 5" in item for item in validate_contribution(manifest))
             )
+
+    def test_contribution_rejects_a_missing_taste_discovery_header(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = _inventor(Path(temporary))
+            (folder / "TASTE.md").write_text(
+                "# Taste\nNo discovery metadata.\n", encoding="utf-8"
+            )
+            problems = validate_contribution(load_manifest(folder / "inventor.json"))
+            self.assertTrue(any("discovery header" in item for item in problems))
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
     def test_symlinked_contribution_target_is_rejected(self):

@@ -1,16 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/v4.json",
+  "$id": "https://autonomous.ai/schemas/inventor/v5.json",
   "title": "Autonomous inventor manifest",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "id",
-    "name",
-    "niche",
-    "summary",
-    "autonomy",
     "status",
     "entrypoint",
     "capabilities",
@@ -19,7 +15,7 @@
   "oneOf": [
     {
       "properties": {"schema_version": {"const": 1}},
-      "required": ["core_features"],
+      "required": ["name", "niche", "summary", "autonomy", "core_features"],
       "not": {
         "anyOf": [
           {"required": ["workshop_features"]},
@@ -30,7 +26,9 @@
     },
     {
       "properties": {"schema_version": {"const": 2}},
-      "required": ["foundation_features", "checks"],
+      "required": [
+        "name", "niche", "summary", "autonomy", "foundation_features", "checks"
+      ],
       "not": {
         "anyOf": [
           {"required": ["core_features"]},
@@ -60,7 +58,9 @@
           }
         }
       },
-      "required": ["workshop_features", "checks"],
+      "required": [
+        "name", "niche", "summary", "autonomy", "workshop_features", "checks"
+      ],
       "not": {
         "anyOf": [
           {"required": ["core_features"]},
@@ -70,9 +70,24 @@
     },
     {
       "properties": {"schema_version": {"const": 4}},
+      "required": ["name", "niche", "summary", "autonomy", "checks"],
+      "not": {
+        "anyOf": [
+          {"required": ["core_features"]},
+          {"required": ["foundation_features"]},
+          {"required": ["workshop_features"]}
+        ]
+      }
+    },
+    {
+      "properties": {"schema_version": {"const": 5}},
       "required": ["checks"],
       "not": {
         "anyOf": [
+          {"required": ["name"]},
+          {"required": ["niche"]},
+          {"required": ["summary"]},
+          {"required": ["autonomy"]},
           {"required": ["core_features"]},
           {"required": ["foundation_features"]},
           {"required": ["workshop_features"]}
@@ -81,7 +96,7 @@
     }
   ],
   "properties": {
-    "schema_version": {"enum": [1, 2, 3, 4]},
+    "schema_version": {"enum": [1, 2, 3, 4, 5]},
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
     "name": {
       "type": "string", "minLength": 1, "maxLength": 200,

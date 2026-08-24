@@ -37,7 +37,7 @@ class RegistryTest(unittest.TestCase):
             with self.assertRaisesRegex(ManifestError, "schema_version"):
                 load_manifest(path)
 
-    def test_repo_has_five_valid_inventors(self):
+    def test_bundled_showcase_inventors_are_valid(self):
         root = Path(__file__).resolve().parents[1]
         manifests = discover_inventors(root)
         self.assertEqual(
@@ -49,6 +49,40 @@ class RegistryTest(unittest.TestCase):
             [item.inventor_id for item in discover_inventors(root / "inventors")],
             [item.inventor_id for item in manifests],
         )
+        self.assertTrue(all(item.schema_version == 5 for item in manifests))
+
+    def test_registry_accepts_an_open_collection_with_more_inventors(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            for index in range(8):
+                inventor_id = "inventor-%d" % index
+                folder = collection / inventor_id
+                folder.mkdir()
+                (folder / "TASTE.md").write_text(
+                    "---\nname: Inventor %d\n"
+                    "description: Makes a distinct kind of Wish-shaped plaything.\n"
+                    "---\n# Taste\nA recognizable point of view.\n" % index,
+                    encoding="utf-8",
+                )
+                (folder / "profile.py").write_text("# profile\n", encoding="utf-8")
+                (folder / "inventor.json").write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 5,
+                            "id": inventor_id,
+                            "status": "experimental",
+                            "entrypoint": ["python3", "profile.py"],
+                            "capabilities": ["wish", "taste-only"],
+                            "checks": [],
+                            "source": {"kind": "local"},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+            manifests = discover_inventors(collection)
+            self.assertEqual(len(manifests), 8)
+            self.assertEqual(validate_entrypoints(manifests), [])
 
     def test_registry_fails_closed_for_an_empty_collection(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -170,10 +204,6 @@ class RegistryTest(unittest.TestCase):
             {
                 "schema_version",
                 "id",
-                "name",
-                "niche",
-                "summary",
-                "autonomy",
                 "status",
                 "entrypoint",
                 "capabilities",
@@ -186,10 +216,12 @@ class RegistryTest(unittest.TestCase):
             )
             for branch in schema["oneOf"]
         }
-        self.assertEqual(versions[1], {"core_features"})
-        self.assertEqual(versions[2], {"foundation_features", "checks"})
-        self.assertEqual(versions[3], {"workshop_features", "checks"})
-        self.assertEqual(versions[4], {"checks"})
+        legacy = {"name", "niche", "summary", "autonomy"}
+        self.assertEqual(versions[1], legacy | {"core_features"})
+        self.assertEqual(versions[2], legacy | {"foundation_features", "checks"})
+        self.assertEqual(versions[3], legacy | {"workshop_features", "checks"})
+        self.assertEqual(versions[4], legacy | {"checks"})
+        self.assertEqual(versions[5], {"checks"})
         for field in ("name", "niche", "summary"):
             pattern = schema["properties"][field]["pattern"]
             self.assertFalse(re.fullmatch(pattern, "   "))
@@ -299,6 +331,52 @@ class RegistryTest(unittest.TestCase):
             path.write_text(json.dumps(legacy_inventory), encoding="utf-8")
             with self.assertRaisesRegex(ManifestError, "no feature inventory"):
                 load_manifest(path)
+
+            no_checks = dict(document)
+            del no_checks["checks"]
+            path.write_text(json.dumps(no_checks), encoding="utf-8")
+            with self.assertRaisesRegex(ManifestError, "checks is required"):
+                load_manifest(path)
+
+    def test_schema_v5_is_operational_only(self):
+        document = {
+            "schema_version": 5,
+            "id": "sample",
+            "status": "experimental",
+            "entrypoint": ["python3", "sample.py"],
+            "capabilities": ["testing"],
+            "checks": [["python3", "-m", "unittest"]],
+            "source": {"kind": "local"},
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / "sample"
+            folder.mkdir()
+            path = folder / "inventor.json"
+            path.write_text(json.dumps(document), encoding="utf-8")
+            manifest = load_manifest(path)
+            self.assertEqual(manifest.to_dict(), document)
+            self.assertIsNone(manifest.name)
+            self.assertIsNone(manifest.niche)
+            self.assertIsNone(manifest.summary)
+            self.assertIsNone(manifest.autonomy)
+            self.assertEqual(manifest.workshop_features, ())
+
+            for forbidden, value in (
+                ("name", "Sample"),
+                ("niche", "test products"),
+                ("summary", "A test inventor."),
+                ("autonomy", "autonomous"),
+                ("core_features", []),
+                ("foundation_features", []),
+                ("workshop_features", []),
+            ):
+                with self.subTest(forbidden=forbidden):
+                    path.write_text(
+                        json.dumps(dict(document, **{forbidden: value})),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaisesRegex(ManifestError, "schema_version 5"):
+                        load_manifest(path)
 
             no_checks = dict(document)
             del no_checks["checks"]

@@ -1,10 +1,6 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "id": "alice",
-  "name": "Alice",
-  "niche": "Known tabletop classics made into unmistakably personal physical sets",
-  "summary": "A taste-only classics-made-yours profile judged as a customized object while preserving known rules.",
-  "autonomy": "human-checkpointed",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
   "capabilities": ["wish", "classics-made-yours", "personalization", "known-rules", "taste-only", "default-make", "default-playtest"],

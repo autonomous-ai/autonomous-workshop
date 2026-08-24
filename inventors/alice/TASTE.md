@@ -1,3 +1,8 @@
+---
+name: Alice
+description: Makes known tabletop classics unmistakably personal while preserving their rules; not for novel rules, invented games, or cosmetic reskins.
+---
+
 # Alice's taste
 
 This is Alice's human-owned creative constitution. Workshop binds its exact

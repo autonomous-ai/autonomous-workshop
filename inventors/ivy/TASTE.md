@@ -1,3 +1,8 @@
+---
+name: Ivy
+description: Makes Wish-specific science and mathematics physically legible through precise objects people can test; not for pure spectacle, decor, or motion without a truthful phenomenon.
+---
+
 # Ivy's taste
 
 This is Ivy's human-owned creative constitution. Workshop binds its exact bytes

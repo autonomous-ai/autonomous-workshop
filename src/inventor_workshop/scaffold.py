@@ -1,4 +1,4 @@
-"""Create a thin elf profile on top of the shared Toy Workshop."""
+"""Create a thin inventor profile on top of the shared Toy Workshop."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def _display_text(value: str, label: str, maximum: int) -> str:
 def _hook_source(level: str) -> Optional[str]:
     if level == "taste-only":
         return None
-    make_hook = '''"""The creative seams this elf chooses to own.
+    make_hook = '''"""The creative seams this inventor chooses to own.
 
 Return exact Workshop records when the implementation is ready. Until then,
 waiting is honest: never invent CAD, print, or play evidence.
@@ -83,7 +83,7 @@ from inventor_workshop import Made, MakeContext, Need, WaitingFor
 
 
 def make(context: MakeContext) -> Made:
-    """Replace this wait with this elf's artifact-producing Make."""
+    """Replace this wait with this inventor's artifact-producing Make."""
 
     # The trusted checkout/tier supplies this per-Wish allowance. Custom Make
     # receives it on every round; never infer or increase it from Wish text.
@@ -93,7 +93,7 @@ def make(context: MakeContext) -> Made:
         Need(
             "make",
             "inventor-make",
-            "This elf's custom Make has not been connected yet.",
+            "This inventor's custom Make has not been connected yet.",
             "Implement make(context) and return a Made record bound to exact artifact bytes.",
         )
     )
@@ -106,7 +106,7 @@ from inventor_workshop import PlaytestContext, Playtested
 
 
 def playtest(context: PlaytestContext) -> Playtested:
-    """Replace this wait with this elf's evidence-producing Playtest."""
+    """Replace this wait with this inventor's evidence-producing Playtest."""
 
     # This is the same trusted per-Wish allowance received by custom Make.
     playtest_rounds = context.playtest_rounds
@@ -115,7 +115,7 @@ def playtest(context: PlaytestContext) -> Playtested:
         Need(
             "playtest",
             "inventor-playtest",
-            "This elf's custom Playtest has not been connected yet.",
+            "This inventor's custom Playtest has not been connected yet.",
             "Implement playtest(context) and return Playtested evidence for the exact Make.",
         )
     )
@@ -134,13 +134,8 @@ def _files(
     lane_guidance = _LANE_GUIDANCE[lane]
     capabilities = [*WORKSHOP_JOBS, lane, level]
     manifest = {
-        "schema_version": 4,
+        "schema_version": 5,
         "id": inventor_id,
-        "name": name,
-        "niche": niche,
-        "summary": "%s is a %s elf using Workshop at the %s level."
-        % (name, lane, level),
-        "autonomy": "human-checkpointed",
         "status": "experimental",
         "entrypoint": ["python3", "-m", package],
         "capabilities": capabilities,
@@ -162,22 +157,22 @@ def _files(
 
     ownership = {
         "taste-only": (
-            "This elf owns only `TASTE.md`. Workshop supplies Make, Playtest, "
-            "Docs, Deliver, the improvement loop, and durable state."
+            "This inventor owns only `TASTE.md`. Workshop supplies Make, Playtest, "
+            "Instructions, Deliver, the improvement loop, and durable state."
         ),
         "custom-make": (
-            "This elf owns `TASTE.md` and `inventor.py:make`. Workshop supplies "
-            "Playtest, Docs, Deliver, the improvement loop, and durable state."
+            "This inventor owns `TASTE.md` and `inventor.py:make`. Workshop supplies "
+            "Playtest, Instructions, Deliver, the improvement loop, and durable state."
         ),
         "custom-playtest": (
-            "This elf owns `TASTE.md`, `inventor.py:make`, and "
-            "`inventor.py:playtest`. Workshop still owns the loop, Docs, Deliver, "
+            "This inventor owns `TASTE.md`, `inventor.py:make`, and "
+            "`inventor.py:playtest`. Workshop still owns the loop, Instructions, Deliver, "
             "artifact identity, and durable state."
         ),
     }[level]
     hook_step = {
         "taste-only": (
-            "2. Configure shared `WorkshopTools` once for every elf; do not copy a "
+            "2. Configure shared `WorkshopTools` once for every inventor; do not copy a "
             "Make or Playtest harness into this folder."
         ),
         "custom-make": (
@@ -203,10 +198,14 @@ def _files(
 
     files = {
         "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        "TASTE.md": """# {name}'s Taste
+        "TASTE.md": """---
+name: {name_header}
+description: {description_header}
+---
+# {name}'s Taste
 
 This is {name}'s creative constitution for the **{lane}** lane. Humans own
-changes to Taste. The elf may propose revisions from verified outcomes, but it
+changes to Taste. The inventor may propose revisions from verified outcomes, but it
 must not silently rewrite what it values.
 
 ## North star
@@ -234,23 +233,25 @@ is simple: **I couldn't have downloaded it before this Wish.**
 - Make the first delightful moment easy to discover without coaching.
 - Treat printability, assembly, safety, and truthful presentation as part of beauty.
 - Let artifact-bound Playtest evidence improve the product without averaging away
-  this elf's point of view.
+  this inventor's point of view.
 
 ## Define before autonomous release
 
-- Which three qualities should make this elf's work recognizable without a logo?
+- Which three qualities should make this inventor's work recognizable without a logo?
 - Which familiar themes, shapes, mechanics, or gimmicks are instant rejects?
 - What should a person feel in the first ten seconds and on the tenth play?
 - What physical and human evidence is strong enough to change this Taste?
 """.format(
             name=name,
+            name_header=json.dumps(name, ensure_ascii=False),
             niche=niche,
+            description_header=json.dumps(niche, ensure_ascii=False),
             lane=lane,
             lane_guidance=lane_guidance,
         ),
         "README.md": """# {name}
 
-{name} is the **{lane}** elf for **{niche}**. {ownership}
+{name} is the **{lane}** inventor for **{niche}**. {ownership}
 
 This Workshop makes physical magic, not a catalog of generic prints. Every Make
 must clear the download bar: the exact object couldn't have been downloaded
@@ -260,12 +261,12 @@ No generic, download-equivalent prints.
 **Lane promise:** {lane_guidance}
 
 ```text
-Wish -> Make <-> Playtest -> Docs -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver
           ^          |
           + feedback +
 ```
 
-## Make this elf yours
+## Make this inventor yours
 
 1. Turn [`TASTE.md`](TASTE.md) into a recognizable point of view.
 {hook_step}
@@ -274,7 +275,7 @@ Wish -> Make <-> Playtest -> Docs -> Deliver
 
 ## Try the profile
 
-Generated elves use the installable `{package}` module for their profile entrypoint,
+Generated inventors use the installable `{package}` module for their profile entrypoint,
 so the manifest, source checkout, and built package all run the same thin wrapper.
 
 ```bash
@@ -290,7 +291,7 @@ workshop check . --run
 `run` uses `Workshop` and `WorkshopTools`; an unconfigured capability returns a
 typed `waiting` result instead of pretending a product was made or tested.
 The trusted checkout or product tier supplies `--playtest-rounds` for each Wish;
-it is an allowance from 1 to 100, not a value the Wish or elf may raise.
+it is an allowance from 1 to 100, not a value the Wish or inventor may raise.
 Runtime state and credentials stay in `.workshop/` and are never committed.
 """.format(
             name=name,
@@ -341,7 +342,7 @@ class build_py(_build_py):
 setup(cmdclass={{"build_py": build_py}})
 """.format(package=package),
         "src/{package}/__init__.py".format(package=package): (
-            repr("%s: a %s elf built on the shared Toy Workshop." % (name, lane))
+            repr("%s: a %s inventor built on the shared Toy Workshop." % (name, lane))
             + "\n"
         ),
         "src/{package}/__main__.py".format(package=package): """import argparse
@@ -374,7 +375,7 @@ def inventor_root() -> Path:
         installed = Path(sysconfig.get_path("data")) / "share" / "autonomous-workshop" / INVENTOR_ID
         if (installed / "inventor.json").is_file() and (installed / "TASTE.md").is_file():
             return installed.resolve()
-        raise RuntimeError("cannot locate this elf's installed identity")
+        raise RuntimeError("cannot locate this inventor's installed identity")
     return root.resolve()
 
 
@@ -509,7 +510,7 @@ class SmokeTest(unittest.TestCase):
         self.assertIsInstance(workshop, Workshop)
         self.assertEqual(workshop.lane, {lane_literal})
         self.assertEqual(workshop.customization_level, {level_literal})
-        self.assertEqual(tuple(WORKSHOP_JOBS), ("wish", "make", "playtest", "docs", "deliver"))
+        self.assertEqual(tuple(WORKSHOP_JOBS), ("wish", "make", "playtest", "instructions", "deliver"))
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
 
@@ -578,7 +579,7 @@ def scaffold_inventor(
     level: str = "taste-only",
     template: Optional[str] = None,
 ) -> Path:
-    """Create one elf atomically without copying another inventor's harness."""
+    """Create one inventor atomically without copying another inventor's harness."""
 
     root = Path(root).resolve()
     if not _ID.fullmatch(inventor_id):

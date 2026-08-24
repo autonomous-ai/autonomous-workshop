@@ -3,11 +3,11 @@
 Leo is the canonical **invented-games** inventor. He demonstrates Workshop's
 maximum customization level: Leo owns game-specific **Make** and **Playtest**;
 Workshop owns the Wish boundary, Taste binding, durable run, artifact identity,
-product Docs, and delivery effects. Known classics belong to Alice; Leo creates
+product Instructions, and delivery effects. Known classics belong to Alice; Leo creates
 rules and physical play that did not exist before the Wish.
 
 ```text
-Wish + Leo's Taste -> Leo Make <-> Leo Playtest -> Workshop Docs -> Deliver
+Wish + Leo's Taste -> Leo Make <-> Leo Playtest -> Workshop Instructions -> Deliver
 ```
 
 ## What Leo owns

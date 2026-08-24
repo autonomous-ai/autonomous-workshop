@@ -1,13 +1,9 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "id": "bob",
-  "name": "Bob",
-  "niche": "Custom printable moving machines with mesmerizing kinetic mechanisms",
-  "summary": "The canonical moving-machines profile: Bob owns custom Make and reuses Workshop's Playtest, Docs, delivery, and durable runtime.",
-  "autonomy": "autonomous",
-  "status": "blocked",
+  "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "custom-make", "default-playtest", "product-docs"],
+  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "custom-make", "default-playtest", "product-instructions"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
   "source": {"kind": "local"}
 }

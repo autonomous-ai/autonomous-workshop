@@ -1,3 +1,8 @@
+---
+name: Eve
+description: Turns a person's real dog, gear, space, or relationships into a recognizable cinematic little world; not for generic miniatures, mechanism-first toys, or science models.
+---
+
 # Eve's taste
 
 This is Eve's human-owned creative constitution. Workshop binds its exact bytes

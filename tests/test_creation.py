@@ -75,7 +75,14 @@ class TasteMutatingAgent(FakeAgent):
 
     def run(self, role, request, budget_micros):
         result = super().run(role, request, budget_micros)
-        self.taste_path.write_text("# Changed taste\n", encoding="utf-8")
+        self.taste_path.write_text(
+            "---\n"
+            "name: Ada\n"
+            "description: Makes tactile, legible games with surprising table presence.\n"
+            "---\n\n"
+            "# Changed taste\n",
+            encoding="utf-8",
+        )
         return result
 
 
@@ -244,7 +251,17 @@ class SeparateEvidenceEvaluator:
 
 
 class ForgeTest(unittest.TestCase):
-    def inventor(self, temporary, taste_bytes=b"# Ada's taste\nTactile and legible.\n"):
+    def inventor(
+        self,
+        temporary,
+        taste_bytes=(
+            b"---\n"
+            b"name: Ada\n"
+            b"description: Makes tactile, legible games with surprising table presence.\n"
+            b"---\n\n"
+            b"# Ada's taste\nTactile and legible.\n"
+        ),
+    ):
         root = Path(temporary) / "ada"
         root.mkdir()
         (root / "TASTE.md").write_bytes(taste_bytes)
@@ -252,7 +269,13 @@ class ForgeTest(unittest.TestCase):
 
     def test_taste_bound_concept_to_verified_artifact_flow(self):
         with tempfile.TemporaryDirectory() as temporary:
-            taste_bytes = b"# Ada's taste\r\nTactile, legible, and surprising.\r\n"
+            taste_bytes = (
+                b"---\r\n"
+                b"name: Ada\r\n"
+                b"description: Makes tactile, legible games with surprising table presence.\r\n"
+                b"---\r\n\r\n"
+                b"# Ada's taste\r\nTactile, legible, and surprising.\r\n"
+            )
             inventor = self.inventor(temporary, taste_bytes)
             agent = FakeAgent()
             cad = FakeCad()

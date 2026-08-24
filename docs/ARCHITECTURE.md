@@ -2,11 +2,12 @@
 
 Autonomous Workshop is a Santa-style workshop for **playthings for grown-ups
 (14+)**. People make a Wish, wait, and receive a box. Inside the Workshop,
-inventors work like elves: each brings a distinct Taste while sharing the same
+inventors each bring a distinct Taste while sharing the same
 reliable machinery.
 
 The first version is intentionally narrow. It makes joy, surprise, and play—not
-plain utility.
+plain utility. It is also request-driven: one Wish starts one assignment. An
+inventor does not need to poll a queue or run continuously.
 
 ## What the Workshop makes
 
@@ -47,7 +48,7 @@ They are not Workshop jobs and are not V1 promises.
 The complete Workshop vocabulary is:
 
 ```text
-Wish -> Make <-> Playtest -> Docs -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver
              feedback
 ```
 
@@ -56,14 +57,87 @@ Wish -> Make <-> Playtest -> Docs -> Deliver
   printable product files.
 - **Playtest** tests that exact Make from every relevant angle. A failed check
   returns actionable feedback to Make, producing a new immutable round.
-- **Docs** creates a truthful private product page, instructions, and beautiful
-  images for the approved Make.
+- **Instructions** creates a truthful private product page, exact-product images,
+  and the paper that belongs in the box—a rulebook for a game or instructions
+  for another toy.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
 `Taste` guides the jobs; it is not a sixth job. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
 tasks inside the five jobs, not extra lifecycle concepts.
+
+## The Workshop Manager
+
+Customers do not have to know which inventor to choose. The Workshop Manager
+discovers an open catalog that may contain thousands of inventors and assigns
+one Wish to the best fit once.
+
+```text
+                            one Wish
+                               |
+                               v
+             TASTE.md names + short descriptions
+                               |
+                               v
+                    +----------------------+
+                    |   WORKSHOP MANAGER   |
+                    | semantic shortlist   |
+                    | full finalist Tastes |
+                    | chooses + explains   |
+                    +----------+-----------+
+                               |
+                         one assignment
+                               |
+                               v
+                         chosen inventor
+                               |
+                               v
+             Wish -> Make <-> Playtest -> Instructions -> Deliver
+                          feedback
+```
+
+This checkout begins with five showcase inventors:
+
+| Inventor | Taste lane |
+|---|---|
+| Alice | classics made yours (`classics-made-yours`) |
+| Leo | games that do not exist yet (`invented-games`) |
+| Bob | machines that move (`moving-machines`) |
+| Ivy | science you can hold (`holdable-science`) |
+| Eve | little worlds (`little-worlds`) |
+
+The catalog is open: other people may add many inventors in the same category
+or introduce narrower niches. Like a skill, each `TASTE.md` exposes only its
+name and a short, discriminating description during discovery. A semantic
+retriever compares those descriptions with the complete Wish and records a
+bounded shortlist. Only then does the Manager load each finalist's complete
+`TASTE.md` body. `inventor.json` is operational: it tells Workshop how to run
+the inventor, not when to choose it.
+
+Routing is semantic, not a keyword switch. A judge assesses every shortlisted
+Taste under one rubric, records acceptance, score, explanation, and hard
+tensions, then applies a deterministic ordering. If that bounded comparison is
+not enough, the Manager returns a truthful need; the caller may widen retrieval
+and submit a new, separately recorded shortlist. The Manager never invents
+certainty or silently changes the candidate set. The assignment binds the
+untouched Wish, catalog snapshot, retrieval and judge provenance, finalist
+Taste hashes, complete ranking, selected entry point, and trusted
+Playtest-round allowance. Relevant catalog or Taste changes make that
+assignment stale.
+
+If retrieval or full-Taste judgment is unavailable, the Manager waits
+truthfully. If no finalist genuinely fits, it waits for clarification, a wider
+shortlist, or a new inventor instead of forcing the Wish into the least-wrong
+category.
+
+The Manager is typed Workshop engine code, not a skill, a sixth Workshop job,
+or a creative supervisor once work begins. Making it a skill would leave the
+host to select the selector and would hide routing behind prompt behavior. Its
+assignment enters the same five-job contract as every other Wish. A future
+continuous service may repeatedly call this one-Wish interface, but scheduling,
+polling, and 24/7 operation stay outside an inventor profile and outside the V1
+Workshop promise.
 
 ## Alice on the shared Workshop
 
@@ -80,7 +154,7 @@ the machinery beneath her is shared by every inventor.
                              v
 +-------------------- SHARED WORKSHOP ----------------------+
 |                                                            |
-|  [Wish] -> [Make] -> [Playtest] --pass--> [Docs]          |
+|  [Wish] -> [Make] -> [Playtest] --pass--> [Instructions]          |
 |              ^            |                    |            |
 |              +--feedback--+                    v            |
 |                                             [Deliver]       |
@@ -95,15 +169,15 @@ the machinery beneath her is shared by every inventor.
 
 Dependency remains one-way: Alice imports Workshop; Workshop never imports
 Alice. She demonstrates the Taste-only level: shared Workshop owns Make,
-Playtest, the improvement loop, Docs, Deliver, and runtime.
+Playtest, the improvement loop, Instructions, Deliver, and runtime.
 
-Alice owns `classics-made-yours`. Her earlier Blindcap work remains
-provenance that taught Workshop how to make and Playtest games; it does not make
-her a second active `invented-games` elf. Leo owns that category as the clean
-Workshop-native profile.
+Alice is the bundled `classics-made-yours` example. Her earlier Blindcap work
+remains provenance that taught Workshop how to make and Playtest games; Leo is
+the bundled `invented-games` example. Neither profile owns a category: future
+inventors may enter either lane with a different Taste.
 
-Inventor identities are backstage. Customers Wish through the Workshop and
-receive the Workshop's box; they do not need to select or understand an elf.
+Inventor identities are backstage. Customers Wish through the Manager and
+receive the Workshop's box; they do not need to select or understand an inventor.
 
 ## Three customization levels
 
@@ -111,13 +185,13 @@ The same boundary supports three levels of authorship:
 
 | Level | Inventor supplies | Workshop supplies |
 |---|---|---|
-| **Taste only** | `TASTE.md` | Make, Playtest, the improvement loop, Docs, Deliver, and runtime |
-| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Playtest, the improvement loop, Docs, Deliver, and runtime |
-| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | the improvement loop, Docs, Deliver, and runtime |
+| **Taste only** | `TASTE.md` | Make, Playtest, the improvement loop, Instructions, Deliver, and runtime |
+| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Playtest, the improvement loop, Instructions, Deliver, and runtime |
+| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | the improvement loop, Instructions, Deliver, and runtime |
 
 A custom Playtest requires a custom Make. This keeps the maximum level honest:
 an inventor that changes how evidence is interpreted must also own the product
-contract being tested. Docs and Deliver remain shared so every inventor gets
+contract being tested. Instructions and Deliver remain shared so every inventor gets
 the same truth and exact-artifact guarantees.
 
 The shared defaults are capabilities configured for the Workshop as a whole,
@@ -139,7 +213,7 @@ Wish + Taste + ToyBlueprint
       PlaytestContext  ->  Playtested
                             | evidence + Feedback
                             v
-          DocsContext  ->  ProductDocs
+          InstructionsContext  ->  ProductInstructions
                             | exact page manifest
                             v
        DeliverContext  ->  Delivered
@@ -149,12 +223,12 @@ Wish + Taste + ToyBlueprint
 ```
 
 `Made` binds product metadata to an immutable artifact tree. `Playtested` binds
-every result and evidence file to that artifact hash. `ProductDocs` binds the
+every result and evidence file to that artifact hash. `ProductInstructions` binds the
 page and media to both its own manifest and the product hash. `Delivered` binds
-production and carrier receipts to the exact product and Docs hashes.
+production and carrier receipts to the exact product and Instructions hashes.
 
 Changing product bytes after Make, evidence after Playtest, or page bytes after
-Docs invalidates the next boundary. No later job is allowed to bless stale
+Instructions invalidates the next boundary. No later job is allowed to bless stale
 work.
 
 ## The Playtest improvement loop
@@ -189,7 +263,7 @@ table and leave those players wanting another play. AI leagues find rule bugs,
 loops, exploits, and balance risks; 1,000 simulated games still cannot replace
 that human release gate.
 
-The allowance is selected per Wish, not baked into an elf:
+The allowance is selected per Wish, not baked into an inventor:
 
 ```python
 workshop.run(wish, playtest_rounds=2)   # a small service tier
@@ -230,10 +304,10 @@ Examples of truthful boundaries:
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
 pass. An inventor's own confidence is not independent evidence.
 
-## Docs is part of the proof chain
+## Instructions is part of the proof chain
 
-Docs begins only after Playtest passes for the exact Make. The shared default
-creates a private page with five fixed image roles—hero, play, detail, parts,
+Instructions begins only after Playtest passes for the exact Make. The shared default
+creates the in-box instructions plus a private page with five fixed image roles—hero, play, detail, parts,
 and box—and a claim-to-evidence map.
 
 Images must depict the product actually approved. Concept art can guide Make,
@@ -244,7 +318,7 @@ remains a prototype; limited human observations remain limited.
 ## Deliver is an exact-product boundary
 
 Deliver does not mean “a label was created.” It requires evidence for printing,
-QA, packing, and carrier handoff, bound to the approved product and Docs hashes.
+QA, packing, and carrier handoff, bound to the approved product and Instructions hashes.
 The supported first-version carriers are USPS, UPS, and FedEx.
 
 External effects use durable intent, stable idempotency, scoped credentials,
@@ -256,20 +330,21 @@ receipt.
 
 ```text
 inventors/<id>/
-  TASTE.md              human-owned creative constitution
-  inventor.json         identity, category, entry point, and checks
+  TASTE.md              selection header + human-owned creative constitution
+  inventor.json         operational id, status, entry point, and checks
   README.md             niche, operation, evidence, and known limits
   profile.py or src/    thin Workshop connection and optional hooks
   tests/                inventor-specific checks
 
 src/inventor_workshop/
+  manager.py            one-Wish, Taste-bound inventor assignment
   toys.py               five categories and their shared task blueprint
   workshop.py           five-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
   make.py               Wish and shared making boundary
   gameplay.py           reproducible AI-player games and leagues
   playtest.py           exact artifact-bound evidence
-  docs.py               truthful product-page contract
+  instructions.py       truthful product-page and box-paper contract
   deliver.py            production and carrier contract
   artifacts.py          immutable product and evidence identity
   runtime.py            state, leases, budgets, and durable effects
@@ -294,3 +369,8 @@ logic.
 Older persisted runs and imports remain readable through compatibility aliases.
 Those aliases are migration details, not alternate jobs or concepts for new
 inventors.
+
+A scheduler belongs in a future application adapter only when an operator
+actually needs continuous intake. It may create repeated one-shot assignments;
+it must not become a sixth job, hide inside `TASTE.md`, or make every inventor
+carry queue and daemon infrastructure.

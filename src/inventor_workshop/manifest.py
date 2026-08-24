@@ -25,9 +25,9 @@ _FIELDS = frozenset(
 _SOURCE_KINDS = frozenset(("local", "upstream-snapshot"))
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
-# Schema-v3 compatibility inventory. Schema v4 treats every inventor as part
-# of the Workshop and no longer makes internal implementation pieces part of
-# an inventor's identity.
+# Schema-v3 compatibility inventory. Schemas v4 and v5 treat every inventor as
+# part of the Workshop and no longer make internal implementation pieces part
+# of an inventor's identity.
 WORKSHOP_FEATURES = frozenset(
     (
         "clockwork.state",
@@ -87,10 +87,14 @@ def _commands(value: Any, label: str, allow_empty: bool = False) -> Sequence[Seq
 class InventorManifest:
     schema_version: int
     inventor_id: str
-    name: str
-    niche: str
-    summary: str
-    autonomy: str
+    # Schema versions 1-4 kept routing prose and autonomy policy in the
+    # operational manifest. Schema v5 moves discovery name/description into
+    # TASTE.md frontmatter and is request-scoped, so these are compatibility
+    # values only.
+    name: Optional[str]
+    niche: Optional[str]
+    summary: Optional[str]
+    autonomy: Optional[str]
     status: str
     entrypoint: Sequence[str]
     capabilities: Sequence[str]
@@ -103,8 +107,8 @@ class InventorManifest:
     def core_features(self) -> Sequence[str]:
         """Compatibility view for schema-v1 callers.
 
-        Schema v4 returns an empty sequence because it has no feature
-        inventory. Keeping this alias lets older integrations read all four
+        Schemas v4 and v5 return an empty sequence because they have no feature
+        inventory. Keeping this alias lets older integrations read all five
         schema generations while they migrate.
         """
 
@@ -122,8 +126,8 @@ class InventorManifest:
         if unknown:
             raise ManifestError("%s: unknown fields %s" % (path, sorted(unknown)))
         schema_version = raw.get("schema_version")
-        if type(schema_version) is not int or schema_version not in (1, 2, 3, 4):
-            raise ManifestError("%s: schema_version must be 1, 2, 3, or 4" % path)
+        if type(schema_version) is not int or schema_version not in (1, 2, 3, 4, 5):
+            raise ManifestError("%s: schema_version must be 1, 2, 3, 4, or 5" % path)
         inventor_id = raw.get("id")
         if not isinstance(inventor_id, str) or not _ID.fullmatch(inventor_id):
             raise ManifestError("%s: id must match %s" % (path, _ID.pattern))
@@ -132,24 +136,43 @@ class InventorManifest:
                 "%s: id %r must match containing folder %r"
                 % (path, inventor_id, path.parent.name)
             )
-        values: Dict[str, str] = {}
-        limits = {"name": 200, "niche": 500, "summary": 2_000}
-        for key in ("name", "niche", "summary"):
-            value = raw.get(key)
-            if (
-                not isinstance(value, str)
-                or not value.strip()
-                or len(value) > limits[key]
-                or any(ord(character) < 32 or ord(character) == 127 for character in value)
-            ):
+        values: Dict[str, Optional[str]] = {
+            "name": None,
+            "niche": None,
+            "summary": None,
+        }
+        autonomy: Optional[str] = None
+        legacy_identity_fields = {"name", "niche", "summary", "autonomy"}
+        if schema_version == 5:
+            conflicts = sorted(legacy_identity_fields.intersection(raw))
+            if conflicts:
                 raise ManifestError(
-                    "%s: %s must be one control-free string of at most %d characters"
-                    % (path, key, limits[key])
+                    "%s: schema_version 5 keeps identity and routing prose in "
+                    "TASTE.md; remove %s" % (path, conflicts)
                 )
-            values[key] = value.strip()
-        autonomy = raw.get("autonomy")
-        if autonomy not in _AUTONOMY:
-            raise ManifestError("%s: autonomy must be one of %s" % (path, sorted(_AUTONOMY)))
+        else:
+            limits = {"name": 200, "niche": 500, "summary": 2_000}
+            for key in ("name", "niche", "summary"):
+                value = raw.get(key)
+                if (
+                    not isinstance(value, str)
+                    or not value.strip()
+                    or len(value) > limits[key]
+                    or any(
+                        ord(character) < 32 or ord(character) == 127
+                        for character in value
+                    )
+                ):
+                    raise ManifestError(
+                        "%s: %s must be one control-free string of at most %d characters"
+                        % (path, key, limits[key])
+                    )
+                values[key] = value.strip()
+            autonomy = raw.get("autonomy")
+            if autonomy not in _AUTONOMY:
+                raise ManifestError(
+                    "%s: autonomy must be one of %s" % (path, sorted(_AUTONOMY))
+                )
         status = raw.get("status")
         if status not in _STATUS:
             raise ManifestError("%s: status must be one of %s" % (path, sorted(_STATUS)))
@@ -158,12 +181,12 @@ class InventorManifest:
             "foundation_features",
             "workshop_features",
         }
-        if schema_version == 4:
+        if schema_version in (4, 5):
             conflicts = sorted(feature_fields.intersection(raw))
             if conflicts:
                 raise ManifestError(
-                    "%s: schema_version 4 has no feature inventory; remove %s"
-                    % (path, conflicts)
+                    "%s: schema_version %s has no feature inventory; remove %s"
+                    % (path, schema_version, conflicts)
                 )
             features: Sequence[str] = ()
         else:
@@ -181,13 +204,15 @@ class InventorManifest:
                     % (path, schema_version, feature_field, conflicts)
                 )
             features = _strings(raw.get(feature_field, []), feature_field, True)
-        if schema_version in (2, 3, 4) and "checks" not in raw:
+        if schema_version in (2, 3, 4, 5) and "checks" not in raw:
             raise ManifestError(
                 "%s: checks is required for schema_version %s"
                 % (path, schema_version)
             )
         if schema_version == 1 and "checks" in raw:
-            raise ManifestError("%s: checks requires schema_version 2, 3, or 4" % path)
+            raise ManifestError(
+                "%s: checks requires schema_version 2, 3, 4, or 5" % path
+            )
         if "source" not in raw:
             raise ManifestError("%s: source is required" % path)
         source = raw.get("source")
@@ -270,15 +295,20 @@ class InventorManifest:
         document = {
             "schema_version": self.schema_version,
             "id": self.inventor_id,
-            "name": self.name,
-            "niche": self.niche,
-            "summary": self.summary,
-            "autonomy": self.autonomy,
             "status": self.status,
             "entrypoint": list(self.entrypoint),
             "capabilities": list(self.capabilities),
             "source": dict(self.source),
         }
+        if self.schema_version <= 4:
+            document.update(
+                {
+                    "name": self.name,
+                    "niche": self.niche,
+                    "summary": self.summary,
+                    "autonomy": self.autonomy,
+                }
+            )
         if self.schema_version == 1:
             document["core_features"] = list(self.workshop_features)
         elif self.schema_version == 2:
@@ -287,7 +317,7 @@ class InventorManifest:
         elif self.schema_version == 3:
             document["workshop_features"] = list(self.workshop_features)
             document["checks"] = [list(command) for command in self.checks]
-        else:
+        elif self.schema_version in (4, 5):
             document["checks"] = [list(command) for command in self.checks]
         return document
 

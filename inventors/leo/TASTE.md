@@ -1,3 +1,8 @@
+---
+name: Leo
+description: Invents original printable tabletop games for one particular group with a human replay gate; not for classics, reskins, or theme-only personalization.
+---
+
 # Leo's taste
 
 This file is Leo's human-owned creative constitution. It is an input to

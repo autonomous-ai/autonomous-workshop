@@ -10,6 +10,7 @@ from typing import List, Sequence
 
 from .errors import ManifestError
 from .manifest import InventorManifest, discover_inventors, load_manifest, validate_entrypoints
+from .taste import load_taste_header
 
 
 def _regular_file(path: Path) -> bool:
@@ -28,9 +29,9 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
     root = manifest.path.parent
     if manifest.source.get("kind") != "local":
         return problems
-    if manifest.schema_version != 4:
+    if manifest.schema_version != 5:
         problems.append(
-            "%s: local inventors must use manifest schema_version 4"
+            "%s: local inventors must use operational manifest schema_version 5"
             % manifest.inventor_id
         )
     for filename in ("README.md", "TASTE.md"):
@@ -39,6 +40,14 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
                 "%s: local inventor requires a regular %s"
                 % (manifest.inventor_id, filename)
             )
+    if _regular_file(root / "TASTE.md"):
+        try:
+            load_taste_header(root)
+        except ManifestError as exc:
+            problems.append("%s: invalid TASTE.md discovery header: %s" % (
+                manifest.inventor_id,
+                exc,
+            ))
     tests = root / "tests"
     if tests.is_symlink() or not tests.is_dir():
         problems.append(

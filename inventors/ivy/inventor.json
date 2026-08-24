@@ -1,10 +1,6 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "id": "ivy",
-  "name": "Ivy",
-  "niche": "Printable science and mathematics you can hold, move, and understand",
-  "summary": "A taste-only holdable-science profile for orreries, pendulums, and mathematical objects built by Workshop.",
-  "autonomy": "human-checkpointed",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
   "capabilities": ["wish", "holdable-science", "scientific-models", "taste-only", "default-make", "default-playtest"],

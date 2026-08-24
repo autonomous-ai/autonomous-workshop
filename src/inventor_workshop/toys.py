@@ -1,7 +1,7 @@
 """The opinionated first Workshop: Wish-shaped playthings for grown-ups.
 
-The five lanes are crafts, not extra pipeline stages. Every elf still works the
-same five jobs: Wish, Make, Playtest, Docs, and Deliver.
+The five lanes are crafts, not extra pipeline stages. Every inventor still works the
+same five jobs: Wish, Make, Playtest, Instructions, and Deliver.
 """
 
 from __future__ import annotations
@@ -16,7 +16,13 @@ from .make import Wish
 from .taste import Taste
 
 
-WORKSHOP_JOBS: Tuple[str, ...] = ("wish", "make", "playtest", "docs", "deliver")
+WORKSHOP_JOBS: Tuple[str, ...] = (
+    "wish",
+    "make",
+    "playtest",
+    "instructions",
+    "deliver",
+)
 PLAYTHING_LANES: Tuple[str, ...] = (
     "classics-made-yours",
     "invented-games",
@@ -40,7 +46,9 @@ class ToyTask:
 
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
-            raise ContractError("toy task job must be Wish, Make, Playtest, Docs, or Deliver")
+            raise ContractError(
+                "toy task job must be Wish, Make, Playtest, Instructions, or Deliver"
+            )
         for label, value in (
             ("key", self.key),
             ("purpose", self.purpose),
@@ -239,19 +247,19 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         external=True,
     ),
     ToyTask(
-        "docs.page",
-        "docs",
-        "Explain the plaything with beautiful truthful images, copy, rules, and instructions.",
-        "Private page draft and readback bound to the approved artifact.",
-        "product-docs",
+        "instructions.create",
+        "instructions",
+        "Explain the plaything with box-ready instructions, beautiful truthful images, copy, and rules.",
+        "Box insert or rulebook plus private page draft bound to the approved artifact.",
+        "product-instructions",
         external=True,
     ),
     ToyTask(
-        "docs.truth",
-        "docs",
+        "instructions.truth",
+        "instructions",
         "Reject claims, images, or specifications unsupported by Playtest evidence.",
         "Claim-to-evidence map and exact page-history hash.",
-        "docs-review",
+        "instructions-review",
     ),
     ToyTask(
         "deliver.make",
@@ -274,7 +282,7 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
 
 @dataclass(frozen=True)
 class ToyBlueprint:
-    """The shared recipe an elf gets before writing custom code."""
+    """The shared recipe an inventor gets before writing custom code."""
 
     lane: str
     tasks: Sequence[ToyTask]

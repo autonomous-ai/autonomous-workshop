@@ -51,7 +51,7 @@ from .integrations import Adapter
 from .inspection import Inspection
 from .playtest import Playtest
 from .deliver import DefaultDeliver
-from .docs import DefaultDocs, REQUIRED_PRODUCT_IMAGES
+from .instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
 from .gameplay import (
     ExecutableGame,
     GameTrace,
@@ -65,16 +65,42 @@ from .gameplay import (
 from .jobs import (
     DeliverContext,
     Delivered,
-    DocsContext,
+    InstructionsContext,
     Feedback,
     Made,
     MakeContext,
     Need,
     PlaytestContext,
     Playtested,
-    ProductDocs,
+    ProductInstructions,
     WaitingFor,
     WorkshopRun,
+)
+from .manager import (
+    CatalogPage,
+    FinalistContext,
+    InventorAssignment,
+    InventorCard,
+    InventorCatalog,
+    InventorFinalist,
+    InventorRetriever,
+    InventorRetrieverRequired,
+    NoInventorFit,
+    RoutingContext,
+    RoutingDecision,
+    Shortlist,
+    TasteFit,
+    TasteJudge,
+    TasteJudgeRequired,
+    WorkshopManager,
+    create_assignment,
+    create_shortlist,
+    dispatch_assignment,
+    discover_inventor_catalog,
+    load_finalists,
+    retrieve_shortlist,
+    select_inventor,
+    shortlist_all,
 )
 from .toys import (
     PLAYTHING_LANES,
@@ -84,7 +110,7 @@ from .toys import (
     ToyTask,
     playful_make_request,
 )
-from .workshop import CUSTOMIZATION_LEVELS, Workshop, WorkshopTools
+from .workshop import CUSTOMIZATION_LEVELS, InstructionsJob, Workshop, WorkshopTools
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
@@ -139,7 +165,14 @@ from .launch import DEFAULT_PORTAL_API, Launchpad, Portal, inspect_publish_packe
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import SkillFingerprint, discover_skills, fingerprint_skill_tree
 from .store import InventorStore
-from .taste import Taste, TasteProfile, load_taste, load_taste_profile
+from .taste import (
+    Taste,
+    TasteHeader,
+    TasteProfile,
+    load_taste,
+    load_taste_header,
+    load_taste_profile,
+)
 
 __all__ = [
     # Toy Workshop 0.5 canonical surface.
@@ -150,17 +183,26 @@ __all__ = [
     "ArtifactPlan",
     "CadBuildResult",
     "CadReleaseBundle",
+    "CatalogPage",
     "CUSTOMIZATION_LEVELS",
     "DefaultDeliver",
-    "DefaultDocs",
+    "DefaultInstructions",
     "DeliverContext",
     "Delivered",
-    "DocsContext",
+    "InstructionsContext",
+    "InstructionsJob",
     "EffectError",
     "ExecutableGame",
     "Feedback",
+    "FinalistContext",
     "GameTrace",
     "InventorManifest",
+    "InventorAssignment",
+    "InventorCard",
+    "InventorCatalog",
+    "InventorFinalist",
+    "InventorRetriever",
+    "InventorRetrieverRequired",
     "KernelBodyObservation",
     "LeagueConfig",
     "LeagueReport",
@@ -170,6 +212,7 @@ __all__ = [
     "MakeContext",
     "MakerMark",
     "Need",
+    "NoInventorFit",
     "PLAYTHING_LANES",
     "PlayerPolicy",
     "Playtest",
@@ -177,17 +220,25 @@ __all__ = [
     "PlaytestPolicy",
     "PlaytestResult",
     "Playtested",
-    "ProductDocs",
+    "ProductInstructions",
     "REQUIRED_PRODUCT_IMAGES",
     "RandomPlayer",
     "Receipt",
     "ReceiptError",
     "Runtime",
+    "RoutingContext",
+    "RoutingDecision",
+    "Shortlist",
     "SkillFingerprint",
     "StlInspectionLimits",
     "StlPathInspectionError",
     "StlTopologyReceipt",
     "Taste",
+    "TasteHeader",
+    "TasteFit",
+    "TasteJudge",
+    "TasteJudgeRequired",
+    "WorkshopManager",
     "TOY_TASKS",
     "ToyBlueprint",
     "ToyTask",
@@ -202,6 +253,10 @@ __all__ = [
     "WorkflowSpec",
     "WorkshopError",
     "bundle_artifact",
+    "create_assignment",
+    "create_shortlist",
+    "dispatch_assignment",
+    "discover_inventor_catalog",
     "discover_inventors",
     "discover_schemas",
     "discover_skills",
@@ -211,13 +266,18 @@ __all__ = [
     "inspect_stl_path",
     "inspect_stl_topology",
     "load_manifest",
+    "load_finalists",
     "load_taste",
+    "load_taste_header",
     "plan_artifact",
     "playful_make_request",
     "resolve_schemas_root",
+    "retrieve_shortlist",
     "run_game",
     "run_league",
     "seal_artifact",
+    "select_inventor",
+    "shortlist_all",
     # Compatibility surface for Workshop 0.3 and older callers.
     "AgentPort",
     "AmbiguousSendError",

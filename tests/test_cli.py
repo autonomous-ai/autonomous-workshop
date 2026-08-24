@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -95,6 +96,45 @@ class CliTest(unittest.TestCase):
             hook = collection / "deduction-games/src/deduction_games/inventor.py"
             self.assertIn("def make(", hook.read_text(encoding="utf-8"))
             self.assertNotIn("def playtest(", hook.read_text(encoding="utf-8"))
+
+    def test_inventors_lists_taste_identity_not_legacy_manifest_prose(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            with redirect_stdout(StringIO()):
+                result = main(
+                    (
+                        "new",
+                        "science-toys",
+                        "--name",
+                        "Ada",
+                        "--niche",
+                        "personal orbit models",
+                        "--lane",
+                        "holdable-science",
+                        "--root",
+                        str(collection),
+                    )
+                )
+            self.assertEqual(result, 0)
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(("inventors", "--root", str(collection), "--json"))
+            self.assertEqual(result, 0)
+            records = json.loads(output.getvalue())
+            self.assertEqual(len(records), 1)
+            self.assertEqual(records[0]["id"], "science-toys")
+            self.assertEqual(records[0]["name"], "Ada")
+            self.assertEqual(records[0]["status"], "experimental")
+            self.assertIn("personal orbit models", records[0]["description"])
+            manifest = json.loads(
+                (collection / "science-toys/inventor.json").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("name", manifest)
+            self.assertNotIn("niche", manifest)
+            self.assertNotIn("summary", manifest)
+            self.assertNotIn("autonomy", manifest)
 
     def test_new_help_is_lane_and_level_not_legacy_template(self):
         command = parser()

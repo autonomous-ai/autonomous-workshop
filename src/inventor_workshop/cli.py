@@ -17,6 +17,7 @@ from .pack import pack_artifact, plan_pack, seal_artifact
 from .scaffold import scaffold_inventor
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
+from .taste import load_taste_header
 from .toys import PLAYTHING_LANES
 from .workshop import CUSTOMIZATION_LEVELS
 
@@ -24,13 +25,24 @@ from .workshop import CUSTOMIZATION_LEVELS
 def _registry(args: argparse.Namespace) -> int:
     manifests = discover_inventors(args.root)
     problems = validate_entrypoints(manifests) if args.check_entrypoints else []
+    records = []
+    for manifest in manifests:
+        header = load_taste_header(manifest.path.parent)
+        records.append(
+            {
+                "id": manifest.inventor_id,
+                "status": manifest.status,
+                "name": header.name,
+                "description": header.description,
+            }
+        )
     if args.json:
-        print(json.dumps([item.to_dict() for item in manifests], indent=2, sort_keys=True))
+        print(json.dumps(records, indent=2, sort_keys=True))
     else:
-        for item in manifests:
+        for item in records:
             print(
                 "%-12s %-18s %-20s %s"
-                % (item.inventor_id, item.status, item.autonomy, item.niche)
+                % (item["id"], item["status"], item["name"], item["description"])
             )
         print("%d inventor manifests valid" % len(manifests))
     for problem in problems:
@@ -217,13 +229,13 @@ def parser() -> argparse.ArgumentParser:
     new.add_argument(
         "--lane",
         choices=PLAYTHING_LANES,
-        help="kind of plaything this elf makes",
+        help="kind of plaything this inventor makes",
     )
     new.add_argument(
         "--level",
         choices=CUSTOMIZATION_LEVELS,
         default="taste-only",
-        help="how much Make and Playtest code this elf owns (default: taste-only)",
+        help="how much Make and Playtest code this inventor owns (default: taste-only)",
     )
     new.add_argument(
         "--template",

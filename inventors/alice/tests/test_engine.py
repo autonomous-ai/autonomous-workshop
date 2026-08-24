@@ -54,7 +54,14 @@ class TasteMutatingProvider(CapturingAgentProvider):
 
     def run(self, request):
         response = super().run(request)
-        self.taste_path.write_text("# Mutated taste\n", encoding="utf-8")
+        self.taste_path.write_text(
+            "---\n"
+            "name: Alice\n"
+            "description: Invents tactile tabletop classics with strong table presence.\n"
+            "---\n\n"
+            "# Mutated taste\n",
+            encoding="utf-8",
+        )
         return response
 
 
@@ -560,7 +567,14 @@ class EngineTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             taste_root = Path(temporary)
             taste_path = taste_root / "TASTE.md"
-            taste_path.write_text("# Stable taste\n", encoding="utf-8")
+            taste_path.write_text(
+                "---\n"
+                "name: Alice\n"
+                "description: Invents tactile tabletop classics with strong table presence.\n"
+                "---\n\n"
+                "# Stable taste\n",
+                encoding="utf-8",
+            )
             taste = load_taste(taste_root)
             task = self.store.enqueue_task(
                 "opportunity.frame",

@@ -1,7 +1,7 @@
 """The five-job Toy Workshop and its three inventor customization levels.
 
 An inventor supplies Taste and may replace Make, or Make and Playtest. The
-Workshop always owns the loop, exact artifact identity, Docs, Deliver, and
+Workshop always owns the loop, exact artifact identity, Instructions, Deliver, and
 truthful waiting for capabilities or real-world evidence that are not present.
 """
 
@@ -12,18 +12,18 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
 from .deliver import DefaultDeliver
-from .docs import DefaultDocs
+from .instructions import DefaultInstructions
 from .errors import ContractError
 from .jobs import (
     DeliverContext,
     Delivered,
-    DocsContext,
+    InstructionsContext,
     Made,
     MakeContext,
     Need,
     PlaytestContext,
     Playtested,
-    ProductDocs,
+    ProductInstructions,
     WaitingFor,
     WorkshopRun,
 )
@@ -35,7 +35,7 @@ from .toys import ToyBlueprint, playful_make_request
 
 MakeJob = Callable[[MakeContext], Made]
 PlaytestJob = Callable[[PlaytestContext], Playtested]
-DocsJob = Callable[[DocsContext], ProductDocs]
+InstructionsJob = Callable[[InstructionsContext], ProductInstructions]
 DeliverJob = Callable[[DeliverContext], Delivered]
 
 CUSTOMIZATION_LEVELS = ("taste-only", "custom-make", "custom-playtest")
@@ -56,7 +56,7 @@ def _inside(path: Path, root: Path, label: str) -> None:
 def _playtest_policy_needs(
     blueprint: ToyBlueprint, playtested: Playtested
 ) -> tuple[Need, ...]:
-    """Return evidence the lane still needs before Docs may begin.
+    """Return evidence the lane still needs before Instructions may begin.
 
     A custom Playtest can decide how to obtain evidence, but it cannot silently
     narrow the Workshop policy. Result IDs are the blueprint capability names.
@@ -136,18 +136,18 @@ def _playtest_policy_needs(
 
 @dataclass(frozen=True)
 class WorkshopTools:
-    """Shared capabilities installed once for every elf in one Workshop."""
+    """Shared capabilities installed once for every inventor in one Workshop."""
 
     make: Optional[MakeJob] = None
     playtest: Optional[PlaytestJob] = None
-    docs: Optional[DocsJob] = None
+    instructions: Optional[InstructionsJob] = None
     deliver: Optional[DeliverJob] = None
 
     def __post_init__(self) -> None:
         for value, label in (
             (self.make, "Workshop Make"),
             (self.playtest, "Workshop Playtest"),
-            (self.docs, "Workshop Docs"),
+            (self.instructions, "Workshop Instructions"),
             (self.deliver, "Workshop Deliver"),
         ):
             _callable_or_none(value, label)
@@ -181,9 +181,9 @@ def _missing_playtest(context: PlaytestContext) -> Playtested:
 
 
 class Workshop:
-    """Run one elf through Wish -> Make <-> Playtest -> Docs -> Deliver.
+    """Run one inventor through Wish -> Make <-> Playtest -> Instructions -> Deliver.
 
-    With neither override, the elf authors only ``TASTE.md``. A Make override
+    With neither override, the inventor authors only ``TASTE.md``. A Make override
     creates the middle level. Make plus Playtest creates the maximum level.
     """
 
@@ -229,7 +229,9 @@ class Workshop:
         self.playtest_job: PlaytestJob = (
             playtest or selected_tools.playtest or _missing_playtest
         )
-        self.docs_job: DocsJob = selected_tools.docs or DefaultDocs()
+        self.instructions_job: InstructionsJob = (
+            selected_tools.instructions or DefaultInstructions()
+        )
         self.deliver_job: DeliverJob = selected_tools.deliver or DefaultDeliver()
         self.runtime_root = selected_runtime
         self.max_rounds = max_rounds
@@ -267,8 +269,8 @@ class Workshop:
         legal = {
             "wish": ("make",),
             "make": ("make", "playtest"),
-            "playtest": ("playtest", "make", "docs"),
-            "docs": ("docs", "deliver"),
+            "playtest": ("playtest", "make", "instructions"),
+            "instructions": ("instructions", "deliver"),
             "deliver": ("deliver",),
         }
         if to_job not in legal.get(source, ()):
@@ -294,7 +296,7 @@ class Workshop:
         playtest_rounds: int,
         *,
         artifact_sha256: Optional[str] = None,
-        docs_sha256: Optional[str] = None,
+        instructions_sha256: Optional[str] = None,
     ) -> WorkshopRun:
         if any(need.job != job for need in waiting.needs):
             raise ContractError("waiting capability belongs to a different Workshop job")
@@ -316,7 +318,7 @@ class Workshop:
             job,
             round_number,
             artifact_sha256,
-            docs_sha256,
+            instructions_sha256,
             waiting.needs,
             playtest_rounds=playtest_rounds,
         )
@@ -455,7 +457,7 @@ class Workshop:
                     self._advance(
                         runtime,
                         wish.product_id,
-                        "docs",
+                        "instructions",
                         artifact_sha256=made.artifact_sha256,
                         payload={
                             "status": "working",
@@ -512,34 +514,45 @@ class Workshop:
 
             if made is None or playtested is None or not playtested.passed:
                 raise ContractError("Workshop ended without an approved Make")
-            docs_workspace = (run_root / "docs").absolute()
-            docs_context = DocsContext(
+            instructions_workspace = (run_root / "instructions").absolute()
+            instructions_context = InstructionsContext(
                 wish,
                 self.taste,
                 self.blueprint,
                 made,
                 playtested,
-                docs_workspace,
+                instructions_workspace,
             )
             try:
-                product_docs = self.docs_job(docs_context)
+                product_instructions = self.instructions_job(instructions_context)
             except WaitingFor as waiting:
                 return self._wait(
                     runtime,
                     wish,
-                    "docs",
+                    "instructions",
                     round_number,
                     waiting,
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                 )
-            if not isinstance(product_docs, ProductDocs):
-                raise ContractError("Docs must return ProductDocs")
-            _inside(product_docs.root, docs_workspace, "Docs result")
-            product_docs.assert_current()
-            if product_docs.product_artifact_sha256 != made.artifact_sha256:
-                raise ContractError("Docs describe different product bytes")
+            if not isinstance(product_instructions, ProductInstructions):
+                raise ContractError(
+                    "Instructions must return ProductInstructions"
+                )
+            _inside(
+                product_instructions.root,
+                instructions_workspace,
+                "Instructions result",
+            )
+            product_instructions.assert_current()
+            if (
+                product_instructions.product_artifact_sha256
+                != made.artifact_sha256
+            ):
+                raise ContractError(
+                    "Instructions describe different product bytes"
+                )
             self._advance(
                 runtime,
                 wish.product_id,
@@ -548,11 +561,13 @@ class Workshop:
                 payload={
                     "status": "working",
                     "round": round_number,
-                    "docs_sha256": product_docs.docs_sha256,
+                    "instructions_sha256": (
+                        product_instructions.instructions_sha256
+                    ),
                 },
                 lease_token=lease,
             )
-            deliver_context = DeliverContext(wish, made, product_docs)
+            deliver_context = DeliverContext(wish, made, product_instructions)
             try:
                 delivered = self.deliver_job(deliver_context)
             except WaitingFor as waiting:
@@ -565,7 +580,9 @@ class Workshop:
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
-                    docs_sha256=product_docs.docs_sha256,
+                    instructions_sha256=(
+                        product_instructions.instructions_sha256
+                    ),
                 )
             if not isinstance(delivered, Delivered):
                 raise ContractError("Deliver must return Delivered")
@@ -578,7 +595,9 @@ class Workshop:
                 payload={
                     "status": "delivered",
                     "round": round_number,
-                    "docs_sha256": product_docs.docs_sha256,
+                    "instructions_sha256": (
+                        product_instructions.instructions_sha256
+                    ),
                     "delivery": delivered.to_dict(),
                 },
                 lease_token=lease,
@@ -589,7 +608,7 @@ class Workshop:
                 "deliver",
                 round_number,
                 made.artifact_sha256,
-                product_docs.docs_sha256,
+                product_instructions.instructions_sha256,
                 delivery=delivered,
                 playtest_rounds=selected_rounds,
             )
@@ -612,7 +631,7 @@ from .offline import (  # noqa: E402,F401
 __all__ = [
     "CUSTOMIZATION_LEVELS",
     "DeliverJob",
-    "DocsJob",
+    "InstructionsJob",
     "MakeJob",
     "PlaytestJob",
     "Workshop",

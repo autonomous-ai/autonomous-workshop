@@ -6,16 +6,19 @@ from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
-from inventor_workshop.docs import DefaultDocs, REQUIRED_PRODUCT_IMAGES
+from inventor_workshop.instructions import (
+    DefaultInstructions,
+    REQUIRED_PRODUCT_IMAGES,
+)
 from inventor_workshop.errors import ArtifactError, ContractError
 from inventor_workshop.jobs import (
     DeliverContext,
     Delivered,
-    DocsContext,
+    InstructionsContext,
     Made,
     Need,
     Playtested,
-    ProductDocs,
+    ProductInstructions,
     WaitingFor,
 )
 from inventor_workshop.make import Wish
@@ -35,7 +38,12 @@ class WorkshopJobFixture(unittest.TestCase):
         inventor = self.root / "inventor"
         inventor.mkdir()
         (inventor / "TASTE.md").write_text(
-            "# Alice\n\nSmall games with one surprising decision.\n",
+            "---\n"
+            "name: Alice\n"
+            "description: Small games with one surprising decision.\n"
+            "---\n"
+            "# Alice\n\n"
+            "Small games with one surprising decision.\n",
             encoding="utf-8",
         )
         self.taste = load_taste(inventor)
@@ -99,8 +107,10 @@ class WorkshopJobFixture(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary.cleanup()
 
-    def docs_context(self, name: str = "docs") -> DocsContext:
-        return DocsContext(
+    def instructions_context(
+        self, name: str = "instructions"
+    ) -> InstructionsContext:
+        return InstructionsContext(
             self.wish,
             self.taste,
             self.blueprint,
@@ -110,7 +120,7 @@ class WorkshopJobFixture(unittest.TestCase):
         )
 
     @staticmethod
-    def media_maker(context: DocsContext):
+    def media_maker(context: InstructionsContext):
         images = context.workspace / "images"
         images.mkdir(parents=True)
         paths = {}
@@ -120,8 +130,12 @@ class WorkshopJobFixture(unittest.TestCase):
             paths[role] = path.relative_to(context.workspace).as_posix()
         return paths
 
-    def generated_docs(self, name: str = "docs") -> ProductDocs:
-        return DefaultDocs(self.media_maker)(self.docs_context(name))
+    def generated_instructions(
+        self, name: str = "instructions"
+    ) -> ProductInstructions:
+        return DefaultInstructions(self.media_maker)(
+            self.instructions_context(name)
+        )
 
     def delivery_evidence(self):
         return {
@@ -131,10 +145,12 @@ class WorkshopJobFixture(unittest.TestCase):
             "carrier_receipt": {"acceptance_scan": "scan-1", "passed": True},
         }
 
-    def delivered(self, docs: ProductDocs, **changes) -> Delivered:
+    def delivered(
+        self, instructions: ProductInstructions, **changes
+    ) -> Delivered:
         values = {
             "product_artifact_sha256": self.made.artifact_sha256,
-            "docs_sha256": docs.docs_sha256,
+            "instructions_sha256": instructions.instructions_sha256,
             "carrier": "USPS",
             "service": "Priority Mail",
             "tracking_id": "9400100000000000000000",
@@ -180,7 +196,7 @@ class JobBindingTest(WorkshopJobFixture):
         with self.assertRaisesRegex(ContractError, "different artifact bytes"):
             self.playtested.assert_artifact("0" * 64)
 
-    def test_docs_reject_failed_playtest(self):
+    def test_instructions_reject_failed_playtest(self):
         original = self.playtested.evidence.results[0]
         failed = PlaytestResult.create(
             original.playtest_id,
@@ -201,16 +217,16 @@ class JobBindingTest(WorkshopJobFixture):
             )
         )
         with self.assertRaisesRegex(ContractError, "before Playtest passes"):
-            DocsContext(
+            InstructionsContext(
                 self.wish,
                 self.taste,
                 self.blueprint,
                 self.made,
                 playtested,
-                self.root / "failed-docs",
+                self.root / "failed-instructions",
             )
 
-    def test_docs_reject_playtest_for_different_product(self):
+    def test_instructions_reject_playtest_for_different_product(self):
         other_root = self.root / "other-product"
         other_root.mkdir()
         (other_root / "toy.step").write_text("different bytes\n", encoding="utf-8")
@@ -223,46 +239,52 @@ class JobBindingTest(WorkshopJobFixture):
             },
         )
         with self.assertRaisesRegex(ContractError, "different artifact bytes"):
-            DocsContext(
+            InstructionsContext(
                 self.wish,
                 self.taste,
                 self.blueprint,
                 other,
                 self.playtested,
-                self.root / "detached-docs",
+                self.root / "detached-instructions",
             )
 
 
-class DocsJobTest(WorkshopJobFixture):
-    def test_docs_wait_truthfully_when_no_media_provider_exists(self):
-        context = self.docs_context("waiting-docs")
+class InstructionsJobTest(WorkshopJobFixture):
+    def test_instructions_wait_truthfully_when_no_media_provider_exists(self):
+        context = self.instructions_context("waiting-instructions")
         with self.assertRaises(WaitingFor) as raised:
-            DefaultDocs()(context)
+            DefaultInstructions()(context)
         self.assertEqual(len(raised.exception.needs), 1)
         need = raised.exception.needs[0]
         self.assertIsInstance(need, Need)
-        self.assertEqual((need.job, need.capability), ("docs", "product-images"))
+        self.assertEqual(
+            (need.job, need.capability), ("instructions", "product-images")
+        )
         self.assertFalse(context.workspace.exists())
 
-    def test_docs_require_every_fixed_image_role(self):
+    def test_instructions_require_every_fixed_image_role(self):
         def incomplete(context):
             media = self.media_maker(context)
             del media["box"]
             return media
 
         with self.assertRaisesRegex(ContractError, "box"):
-            DefaultDocs(incomplete)(self.docs_context("incomplete-docs"))
+            DefaultInstructions(incomplete)(
+                self.instructions_context("incomplete-instructions")
+            )
 
-    def test_docs_reject_one_file_claimed_as_every_fixed_view(self):
+    def test_instructions_reject_one_file_claimed_as_every_fixed_view(self):
         def repeated(context):
             path = context.workspace / "one.png"
             path.write_bytes(b"not five distinct views")
             return {role: "one.png" for role in REQUIRED_PRODUCT_IMAGES}
 
         with self.assertRaisesRegex(ContractError, "distinct"):
-            DefaultDocs(repeated)(self.docs_context("repeated-docs"))
+            DefaultInstructions(repeated)(
+                self.instructions_context("repeated-instructions")
+            )
 
-    def test_docs_reject_media_outside_workspace(self):
+    def test_instructions_reject_media_outside_workspace(self):
         outside = self.root / "outside.png"
         outside.write_bytes(b"outside")
 
@@ -272,12 +294,19 @@ class DocsJobTest(WorkshopJobFixture):
             return media
 
         with self.assertRaisesRegex(ContractError, "stay inside"):
-            DefaultDocs(escaped)(self.docs_context("escaped-docs"))
+            DefaultInstructions(escaped)(
+                self.instructions_context("escaped-instructions")
+            )
 
-    def test_docs_page_is_private_and_preserves_claim_provenance(self):
-        docs = self.generated_docs("complete-docs")
-        page = json.loads((docs.root / docs.page_path).read_text(encoding="utf-8"))
+    def test_instructions_output_is_box_ready_and_page_preserves_provenance(self):
+        instructions = self.generated_instructions("complete-instructions")
+        page = json.loads(
+            (instructions.root / "product.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(page["status"], "private")
+        self.assertEqual(page["instructions_kind"], "rulebook")
+        self.assertEqual(page["how_to_play"], "Choose, commit, and reveal.")
+        self.assertNotIn("how_to_use", page)
         self.assertEqual(set(page["images"]), set(REQUIRED_PRODUCT_IMAGES))
         self.assertEqual(page["product_artifact_sha256"], self.made.artifact_sha256)
         claim = page["claims"]["gameplay-league"]
@@ -287,16 +316,59 @@ class DocsJobTest(WorkshopJobFixture):
         self.assertEqual(claim["evidence_sha256"], result.evidence_sha256)
         self.assertIn("simulated", claim["claims"][0])
         self.assertNotIn("human", claim["claims"][0].casefold())
-        self.assertEqual(docs.claims, page["claims"])
+        self.assertEqual(instructions.claims, page["claims"])
+        self.assertEqual(instructions.instructions_path, "INSTRUCTIONS.md")
+        insert = (instructions.root / instructions.instructions_path).read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## How to play", insert)
+        self.assertIn("## What's in the box", insert)
+        self.assertIn("## Care and safety", insert)
+        self.assertFalse((instructions.root / "README.md").exists())
 
-    def test_docs_detect_changed_bytes_after_generation(self):
-        docs = self.generated_docs("tampered-docs")
-        (docs.root / "README.md").write_text("changed after approval\n", encoding="utf-8")
+    def test_non_game_output_uses_instructions_and_how_to_use(self):
+        moving_made = Made.from_root(
+            self.product_root,
+            {
+                **self.made.product,
+                "lane": "moving-machines",
+                "instructions": "Turn the crank clockwise and watch the rhythm.",
+            },
+        )
+        context = InstructionsContext(
+            self.wish,
+            self.taste,
+            ToyBlueprint.for_lane("moving-machines"),
+            moving_made,
+            self.playtested,
+            self.root / "moving-machine-instructions",
+        )
+        instructions = DefaultInstructions(self.media_maker)(context)
+        page = json.loads(
+            (instructions.root / "product.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(page["instructions_kind"], "instructions")
+        self.assertEqual(
+            page["how_to_use"],
+            "Turn the crank clockwise and watch the rhythm.",
+        )
+        self.assertNotIn("how_to_play", page)
+        insert = (instructions.root / "INSTRUCTIONS.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("## How to use", insert)
+        self.assertNotIn("## How to play", insert)
+
+    def test_instructions_detect_changed_bytes_after_generation(self):
+        instructions = self.generated_instructions("tampered-instructions")
+        (instructions.root / "INSTRUCTIONS.md").write_text(
+            "changed after approval\n", encoding="utf-8"
+        )
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
-            docs.assert_current()
+            instructions.assert_current()
 
-    def test_docs_detect_product_tampering_before_calling_media_provider(self):
-        context = self.docs_context("product-tamper-docs")
+    def test_instructions_detect_product_tampering_before_calling_media_provider(self):
+        context = self.instructions_context("product-tamper-instructions")
         (self.product_root / "rules.md").write_text("changed\n", encoding="utf-8")
         calls = []
 
@@ -305,14 +377,14 @@ class DocsJobTest(WorkshopJobFixture):
             return self.media_maker(observed)
 
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
-            DefaultDocs(media)(context)
+            DefaultInstructions(media)(context)
         self.assertEqual(calls, [])
 
 
 class DeliverJobTest(WorkshopJobFixture):
     def test_deliver_waits_truthfully_without_real_fulfiller(self):
-        docs = self.generated_docs("waiting-delivery-docs")
-        context = DeliverContext(self.wish, self.made, docs)
+        instructions = self.generated_instructions("waiting-delivery-instructions")
+        context = DeliverContext(self.wish, self.made, instructions)
         with self.assertRaises(WaitingFor) as raised:
             DefaultDeliver()(context)
         need = raised.exception.needs[0]
@@ -321,48 +393,62 @@ class DeliverJobTest(WorkshopJobFixture):
         )
 
     def test_delivery_requires_supported_carrier_and_all_receipts(self):
-        docs = self.generated_docs("receipt-docs")
+        instructions = self.generated_instructions("receipt-instructions")
         with self.assertRaisesRegex(ContractError, "USPS, UPS, or FedEx"):
-            self.delivered(docs, carrier="DHL")
+            self.delivered(instructions, carrier="DHL")
         evidence = self.delivery_evidence()
         del evidence["qa_receipt"]
         with self.assertRaisesRegex(ContractError, "qa_receipt"):
-            self.delivered(docs, evidence=evidence)
+            self.delivered(instructions, evidence=evidence)
         evidence = self.delivery_evidence()
         evidence["packing_receipt"] = {}
         with self.assertRaisesRegex(ContractError, "packing_receipt"):
-            self.delivered(docs, evidence=evidence)
+            self.delivered(instructions, evidence=evidence)
         with self.assertRaisesRegex(ContractError, "handed-off or delivered"):
-            self.delivered(docs, status="label-created")
+            self.delivered(instructions, status="label-created")
 
-    def test_deliver_rejects_receipt_for_other_product_or_docs(self):
-        docs = self.generated_docs("hash-docs")
-        context = DeliverContext(self.wish, self.made, docs)
-        wrong_product = self.delivered(docs, product_artifact_sha256="0" * 64)
-        with self.assertRaisesRegex(ContractError, "different product or Docs bytes"):
+    def test_deliver_rejects_receipt_for_other_product_or_instructions(self):
+        instructions = self.generated_instructions("hash-instructions")
+        context = DeliverContext(self.wish, self.made, instructions)
+        wrong_product = self.delivered(
+            instructions, product_artifact_sha256="0" * 64
+        )
+        with self.assertRaisesRegex(
+            ContractError, "different product or Instructions bytes"
+        ):
             DefaultDeliver(lambda ignored: wrong_product)(context)
-        wrong_docs = self.delivered(docs, docs_sha256="1" * 64)
-        with self.assertRaisesRegex(ContractError, "different product or Docs bytes"):
-            DefaultDeliver(lambda ignored: wrong_docs)(context)
+        wrong_instructions = self.delivered(
+            instructions, instructions_sha256="1" * 64
+        )
+        with self.assertRaisesRegex(
+            ContractError, "different product or Instructions bytes"
+        ):
+            DefaultDeliver(lambda ignored: wrong_instructions)(context)
 
     def test_deliver_accepts_receipts_for_exact_approved_bytes(self):
-        docs = self.generated_docs("exact-docs")
-        context = DeliverContext(self.wish, self.made, docs)
-        receipt = self.delivered(docs)
+        instructions = self.generated_instructions("exact-instructions")
+        context = DeliverContext(self.wish, self.made, instructions)
+        receipt = self.delivered(instructions)
         result = DefaultDeliver(lambda observed: receipt)(context)
         self.assertIs(result, receipt)
         self.assertEqual(result.product_artifact_sha256, self.made.artifact_sha256)
-        self.assertEqual(result.docs_sha256, docs.docs_sha256)
+        self.assertEqual(
+            result.instructions_sha256, instructions.instructions_sha256
+        )
 
-    def test_deliver_detects_docs_tampering_before_calling_fulfiller(self):
-        docs = self.generated_docs("delivery-tamper-docs")
-        context = DeliverContext(self.wish, self.made, docs)
-        (docs.root / "product.json").write_text("{}\n", encoding="utf-8")
+    def test_deliver_detects_instructions_tampering_before_calling_fulfiller(self):
+        instructions = self.generated_instructions(
+            "delivery-tamper-instructions"
+        )
+        context = DeliverContext(self.wish, self.made, instructions)
+        (instructions.root / "product.json").write_text(
+            "{}\n", encoding="utf-8"
+        )
         calls = []
 
         def fulfiller(observed):
             calls.append(observed)
-            return self.delivered(docs)
+            return self.delivered(instructions)
 
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
             DefaultDeliver(fulfiller)(context)

@@ -108,7 +108,7 @@ class Feedback:
     finding: str
     change: str
     evidence_refs: Sequence[str] = field(default_factory=tuple)
-    invalidates: Sequence[str] = ("playtest", "docs", "deliver")
+    invalidates: Sequence[str] = ("playtest", "instructions", "deliver")
 
     def __post_init__(self) -> None:
         _text(self.code, "feedback code", 200)
@@ -278,7 +278,7 @@ class Playtested:
 
 
 @dataclass(frozen=True)
-class DocsContext:
+class InstructionsContext:
     wish: Wish
     taste: Taste
     blueprint: ToyBlueprint
@@ -288,48 +288,70 @@ class DocsContext:
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
-            raise ContractError("DocsContext requires a Wish and Taste")
+            raise ContractError("InstructionsContext requires a Wish and Taste")
         if not isinstance(self.blueprint, ToyBlueprint):
-            raise ContractError("DocsContext requires a ToyBlueprint")
+            raise ContractError("InstructionsContext requires a ToyBlueprint")
         if not isinstance(self.made, Made) or not isinstance(self.playtested, Playtested):
-            raise ContractError("DocsContext requires Made and Playtested results")
+            raise ContractError(
+                "InstructionsContext requires Made and Playtested results"
+            )
         if self.made.product["lane"] != self.blueprint.lane:
-            raise ContractError("DocsContext product belongs to a different lane")
+            raise ContractError(
+                "InstructionsContext product belongs to a different lane"
+            )
         if not self.playtested.passed:
-            raise ContractError("Docs cannot begin before Playtest passes")
+            raise ContractError("Instructions cannot begin before Playtest passes")
         root = Path(self.workspace)
         if not root.is_absolute():
-            raise ContractError("DocsContext workspace must be absolute")
+            raise ContractError("InstructionsContext workspace must be absolute")
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
     def assert_current(self) -> None:
-        """Recheck that Docs still describes the exact Playtested Make."""
+        """Recheck that Instructions still describes the exact Playtested Make."""
 
         self.made.assert_current()
         self.playtested.assert_artifact(self.made.artifact_sha256)
 
 
 @dataclass(frozen=True)
-class ProductDocs:
+class ProductInstructions:
     root: Path
     manifest: ArtifactManifest
     product_artifact_sha256: str
-    page_path: str
+    instructions_path: str
     claims: Mapping[str, Any]
 
     def __post_init__(self) -> None:
         root = Path(self.root)
         if not root.is_absolute() or root.is_symlink() or not root.is_dir():
-            raise ContractError("ProductDocs root must be an absolute regular directory")
+            raise ContractError(
+                "ProductInstructions root must be an absolute regular directory"
+            )
         if not isinstance(self.manifest, ArtifactManifest):
-            raise ContractError("ProductDocs requires an ArtifactManifest")
-        require_sha256(self.product_artifact_sha256, "ProductDocs product artifact sha256")
-        _text(self.page_path, "ProductDocs page_path", 1_000)
-        page = Path(self.page_path)
-        if page.is_absolute() or ".." in page.parts or not (root / page).is_file():
-            raise ContractError("ProductDocs page_path must name an in-root file")
-        claims = _mapping(self.claims, "ProductDocs claims", nonempty=True)
+            raise ContractError("ProductInstructions requires an ArtifactManifest")
+        require_sha256(
+            self.product_artifact_sha256,
+            "ProductInstructions product artifact sha256",
+        )
+        _text(
+            self.instructions_path,
+            "ProductInstructions instructions_path",
+            1_000,
+        )
+        instructions = Path(self.instructions_path)
+        if (
+            instructions.is_absolute()
+            or ".." in instructions.parts
+            or instructions.as_posix() != "INSTRUCTIONS.md"
+            or not (root / instructions).is_file()
+        ):
+            raise ContractError(
+                "ProductInstructions instructions_path must be INSTRUCTIONS.md"
+            )
+        if not (root / "product.json").is_file():
+            raise ContractError("ProductInstructions requires an in-root product.json")
+        claims = _mapping(self.claims, "ProductInstructions claims", nonempty=True)
         _fresh_manifest(root, self.manifest)
         object.__setattr__(self, "root", root.resolve(strict=True))
         object.__setattr__(self, "claims", claims)
@@ -339,24 +361,24 @@ class ProductDocs:
         cls,
         root: Path,
         product_artifact_sha256: str,
-        page_path: str,
+        instructions_path: str,
         claims: Mapping[str, Any],
-    ) -> "ProductDocs":
+    ) -> "ProductInstructions":
         resolved = Path(root).resolve(strict=True)
         return cls(
             resolved,
             build_artifact_manifest(resolved, created_at="content-addressed"),
             product_artifact_sha256,
-            page_path,
+            instructions_path,
             claims,
         )
 
     @property
-    def docs_sha256(self) -> str:
+    def instructions_sha256(self) -> str:
         return self.manifest.artifact_sha256
 
     def assert_current(self) -> None:
-        """Refuse to use page bytes changed after Docs completed."""
+        """Refuse to use output bytes changed after Instructions completed."""
 
         _fresh_manifest(self.root, self.manifest)
 
@@ -365,30 +387,34 @@ class ProductDocs:
 class DeliverContext:
     wish: Wish
     made: Made
-    docs: ProductDocs
+    instructions: ProductInstructions
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish):
             raise ContractError("DeliverContext requires a Wish")
-        if not isinstance(self.made, Made) or not isinstance(self.docs, ProductDocs):
-            raise ContractError("DeliverContext requires Made and ProductDocs results")
-        if self.docs.product_artifact_sha256 != self.made.artifact_sha256:
-            raise ContractError("Deliver Docs describe different artifact bytes")
+        if not isinstance(self.made, Made) or not isinstance(
+            self.instructions, ProductInstructions
+        ):
+            raise ContractError(
+                "DeliverContext requires Made and ProductInstructions results"
+            )
+        if self.instructions.product_artifact_sha256 != self.made.artifact_sha256:
+            raise ContractError("Deliver Instructions describe different artifact bytes")
         self.assert_current()
 
     def assert_current(self) -> None:
         """Recheck both exact inputs at every external Deliver boundary."""
 
         self.made.assert_current()
-        self.docs.assert_current()
+        self.instructions.assert_current()
 
 
 @dataclass(frozen=True)
 class Delivered:
-    """Carrier evidence for the exact approved product and Docs."""
+    """Carrier evidence for the exact approved product and Instructions."""
 
     product_artifact_sha256: str
-    docs_sha256: str
+    instructions_sha256: str
     carrier: str
     service: str
     tracking_id: str
@@ -398,7 +424,9 @@ class Delivered:
 
     def __post_init__(self) -> None:
         require_sha256(self.product_artifact_sha256, "Delivered product artifact sha256")
-        require_sha256(self.docs_sha256, "Delivered docs sha256")
+        require_sha256(
+            self.instructions_sha256, "Delivered instructions sha256"
+        )
         if self.carrier not in _CARRIERS:
             raise ContractError("Delivered carrier must be USPS, UPS, or FedEx")
         _text(self.service, "Delivered service", 200)
@@ -430,15 +458,18 @@ class Delivered:
         context.assert_current()
         if (
             self.product_artifact_sha256 != context.made.artifact_sha256
-            or self.docs_sha256 != context.docs.docs_sha256
+            or self.instructions_sha256
+            != context.instructions.instructions_sha256
         ):
-            raise ContractError("Delivered receipt identifies different product or Docs bytes")
+            raise ContractError(
+                "Delivered receipt identifies different product or Instructions bytes"
+            )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "schema_version": 1,
             "product_artifact_sha256": self.product_artifact_sha256,
-            "docs_sha256": self.docs_sha256,
+            "instructions_sha256": self.instructions_sha256,
             "carrier": self.carrier,
             "service": self.service,
             "tracking_id": self.tracking_id,
@@ -455,7 +486,7 @@ class WorkshopRun:
     job: str
     round: int
     artifact_sha256: Optional[str] = None
-    docs_sha256: Optional[str] = None
+    instructions_sha256: Optional[str] = None
     needs: Sequence[Need] = field(default_factory=tuple)
     delivery: Optional[Delivered] = None
     playtest_rounds: int = 1
@@ -478,8 +509,10 @@ class WorkshopRun:
             )
         if self.artifact_sha256 is not None:
             require_sha256(self.artifact_sha256, "WorkshopRun artifact sha256")
-        if self.docs_sha256 is not None:
-            require_sha256(self.docs_sha256, "WorkshopRun docs sha256")
+        if self.instructions_sha256 is not None:
+            require_sha256(
+                self.instructions_sha256, "WorkshopRun instructions sha256"
+            )
         needs = tuple(self.needs)
         if not all(isinstance(item, Need) for item in needs):
             raise ContractError("WorkshopRun needs must use Need records")
@@ -493,7 +526,7 @@ class WorkshopRun:
             "round": self.round,
             "playtest_rounds": self.playtest_rounds,
             "artifact_sha256": self.artifact_sha256,
-            "docs_sha256": self.docs_sha256,
+            "instructions_sha256": self.instructions_sha256,
             "needs": [item.to_dict() for item in self.needs],
             "delivery": self.delivery.to_dict() if self.delivery is not None else None,
         }
@@ -502,14 +535,14 @@ class WorkshopRun:
 __all__ = [
     "DeliverContext",
     "Delivered",
-    "DocsContext",
+    "InstructionsContext",
     "Feedback",
     "Made",
     "MakeContext",
     "Need",
     "PlaytestContext",
     "Playtested",
-    "ProductDocs",
+    "ProductInstructions",
     "WaitingFor",
     "WorkshopRun",
 ]

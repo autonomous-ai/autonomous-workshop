@@ -16,7 +16,8 @@ from inventor_workshop.toys import (
 class ToyBlueprintTest(unittest.TestCase):
     def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
-            WORKSHOP_JOBS, ("wish", "make", "playtest", "docs", "deliver")
+            WORKSHOP_JOBS,
+            ("wish", "make", "playtest", "instructions", "deliver"),
         )
         self.assertEqual(
             PLAYTHING_LANES,
@@ -65,7 +66,12 @@ class ToyBlueprintTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             inventor = Path(temporary)
             (inventor / "TASTE.md").write_text(
-                "# Ada\n\nWarm creatures with one surprising motion.\n",
+                "---\n"
+                "name: Ada\n"
+                "description: Warm creatures with one surprising motion.\n"
+                "---\n"
+                "# Ada\n\n"
+                "Warm creatures with one surprising motion.\n",
                 encoding="utf-8",
             )
             taste = load_taste(inventor)

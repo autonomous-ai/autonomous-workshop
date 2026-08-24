@@ -10,6 +10,7 @@ from pathlib import Path
 from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.manifest import load_manifest
 from inventor_workshop.scaffold import scaffold_inventor
+from inventor_workshop.taste import load_taste_header
 from inventor_workshop.toys import PLAYTHING_LANES, WORKSHOP_JOBS
 
 
@@ -38,7 +39,7 @@ class ScaffoldTest(unittest.TestCase):
                 destination = scaffold_inventor(
                     root,
                     "lane-%d" % index,
-                    "Elf %d" % index,
+                    "Inventor %d" % index,
                     "Wish-shaped physical magic",
                     lane=lane,
                 )
@@ -65,12 +66,12 @@ class ScaffoldTest(unittest.TestCase):
                     scaffold_inventor(
                         root,
                         "old-lane-%d" % index,
-                        "Old Elf",
+                        "Old Inventor",
                         "old category",
                         lane=lane,
                     )
 
-    def test_taste_only_elf_is_thin_discoverable_and_truthful(self):
+    def test_taste_only_inventor_is_thin_discoverable_and_truthful(self):
         with tempfile.TemporaryDirectory() as temporary:
             destination = scaffold_inventor(
                 Path(temporary),
@@ -82,7 +83,19 @@ class ScaffoldTest(unittest.TestCase):
             )
             manifest = load_manifest(destination / "inventor.json")
             self.assertEqual(manifest.inventor_id, "word-games")
-            self.assertEqual(manifest.schema_version, 4)
+            self.assertEqual(manifest.schema_version, 5)
+            self.assertEqual(
+                set(manifest.to_dict()),
+                {
+                    "schema_version",
+                    "id",
+                    "status",
+                    "entrypoint",
+                    "capabilities",
+                    "checks",
+                    "source",
+                },
+            )
             self.assertEqual(manifest.workshop_features, ())
             self.assertEqual(
                 tuple(manifest.capabilities),
@@ -104,7 +117,9 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn("I couldn't have downloaded it before this Wish", taste)
             self.assertIn("Cool beats cute", taste)
             readme = (destination / "README.md").read_text(encoding="utf-8")
-            self.assertIn("Wish -> Make <-> Playtest -> Docs -> Deliver", readme)
+            self.assertIn(
+                "Wish -> Make <-> Playtest -> Instructions -> Deliver", readme
+            )
             self.assertIn("owns only `TASTE.md`", readme)
             self.assertIn("trusted checkout or product tier", readme)
             self.assertIn("No generic, download-equivalent prints", readme)
@@ -231,7 +246,7 @@ class ScaffoldTest(unittest.TestCase):
                     destination = scaffold_inventor(
                         Path(temporary),
                         inventor_id,
-                        "Elf %d" % index,
+                        "Inventor %d" % index,
                         "small desk surprises",
                         lane="moving-machines",
                         level=level,
@@ -352,14 +367,16 @@ class ScaffoldTest(unittest.TestCase):
             destination = scaffold_inventor(
                 Path(temporary),
                 "quote-toys",
-                'Ada "The Elf"',
+                'Ada "The Inventor"',
                 'tiny "word" toys with \\ paths',
                 lane="little-worlds",
             )
             for source in sorted(destination.rglob("*.py")):
                 compile(source.read_text(encoding="utf-8"), str(source), "exec")
             manifest = load_manifest(destination / "inventor.json")
-            self.assertEqual(manifest.name, 'Ada "The Elf"')
+            header = load_taste_header(destination)
+            self.assertEqual(header.name, 'Ada "The Inventor"')
+            self.assertIn('tiny "word" toys with \\ paths', header.description)
             self.assertIn('tiny "word" toys', (destination / "TASTE.md").read_text())
 
             environment = self.environment(destination)

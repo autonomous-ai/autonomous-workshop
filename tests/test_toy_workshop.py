@@ -5,7 +5,10 @@ from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
-from inventor_workshop.docs import DefaultDocs, REQUIRED_PRODUCT_IMAGES
+from inventor_workshop.instructions import (
+    DefaultInstructions,
+    REQUIRED_PRODUCT_IMAGES,
+)
 from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import Delivered, Feedback, Made, Playtested
 from inventor_workshop.make import Wish
@@ -22,10 +25,15 @@ class ToyWorkshopTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name).resolve()
-        self.inventor = self.root / "elf"
+        self.inventor = self.root / "inventor"
         self.inventor.mkdir()
         (self.inventor / "TASTE.md").write_text(
-            "# Taste\n\nSmall playthings with one surprising interaction.\n",
+            "---\n"
+            "name: Test Inventor\n"
+            "description: Small playthings with one surprising interaction.\n"
+            "---\n"
+            "# Taste\n\n"
+            "Small playthings with one surprising interaction.\n",
             encoding="utf-8",
         )
         self.runtime = self.root / "runtime"
@@ -155,7 +163,7 @@ class ToyWorkshopTest(unittest.TestCase):
     def fulfiller(context):
         return Delivered(
             context.made.artifact_sha256,
-            context.docs.docs_sha256,
+            context.instructions.instructions_sha256,
             "USPS",
             "Priority Mail",
             "9400100000000000000000",
@@ -173,11 +181,11 @@ class ToyWorkshopTest(unittest.TestCase):
         return WorkshopTools(
             make=self.make_job,
             playtest=playtest or self.playtest_job,
-            docs=DefaultDocs(self.media_maker),
+            instructions=DefaultInstructions(self.media_maker),
             deliver=DefaultDeliver(self.fulfiller),
         )
 
-    def test_taste_only_elf_runs_shared_feedback_loop_to_deliver(self):
+    def test_taste_only_inventor_runs_shared_feedback_loop_to_deliver(self):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
@@ -194,7 +202,16 @@ class ToyWorkshopTest(unittest.TestCase):
         transitions = [event["to_stage"] for event in state.events("rhythm-top")]
         self.assertEqual(
             transitions,
-            ["wish", "make", "playtest", "make", "playtest", "docs", "deliver", "deliver"],
+            [
+                "wish",
+                "make",
+                "playtest",
+                "make",
+                "playtest",
+                "instructions",
+                "deliver",
+                "deliver",
+            ],
         )
 
     def test_three_levels_are_explicit_and_playtest_requires_make(self):
@@ -209,7 +226,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "moving-machines",
             tools=WorkshopTools(
                 playtest=self.passing_playtest,
-                docs=DefaultDocs(self.media_maker),
+                instructions=DefaultInstructions(self.media_maker),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -219,7 +236,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
-                docs=DefaultDocs(self.media_maker),
+                instructions=DefaultInstructions(self.media_maker),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -287,7 +304,7 @@ class ToyWorkshopTest(unittest.TestCase):
             (held.status, held.job, held.round, held.playtest_rounds),
             ("stopped", "playtest", 1, 1),
         )
-        self.assertIsNone(held.docs_sha256)
+        self.assertIsNone(held.instructions_sha256)
         self.assertIsNone(held.delivery)
 
         with self.assertRaisesRegex(ContractError, "from 1 to 100"):

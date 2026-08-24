@@ -95,8 +95,8 @@ def main() -> int:
         ):
             raise ValueError("unsupported snapshot lock contract")
         snapshots = lock.get("snapshots")
-        if not isinstance(snapshots, dict) or not snapshots:
-            raise ValueError("snapshot lock has no entries")
+        if not isinstance(snapshots, dict):
+            raise ValueError("snapshot locks must be an object")
         manifests = {}
         for manifest_path in sorted(INVENTORS_ROOT.glob("*/inventor.json")):
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

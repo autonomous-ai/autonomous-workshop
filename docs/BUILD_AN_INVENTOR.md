@@ -1,18 +1,20 @@
 # Build an inventor
 
-An inventor is an elf in the Autonomous Workshop: a durable creative identity
+An inventor is a durable creative identity in the Autonomous Workshop
 for one kind of plaything. The inventor supplies recognizable Taste and, only
 when needed, custom Make or Playtest craft. Workshop supplies the product
 journey:
 
 ```text
-Wish -> Make <-> Playtest -> Docs -> Deliver
+Wish -> Make <-> Playtest -> Instructions -> Deliver
              feedback
 ```
 
 This guide is for the first Workshop, which makes playthings for grown-ups
 (14+). It is not a generic framework for organizers, replacement parts, or
-other plain utility products.
+other plain utility products. An inventor is request-driven: it receives one
+Wish assignment, does that work, and returns. Running a daemon, watching a
+queue, or staying alive 24/7 is not part of the inventor contract.
 
 ## 1. Choose one plaything category
 
@@ -47,11 +49,43 @@ AI simulations cannot pass that gate.
 Kits and numbered series are possible later variants of a successful design.
 They are not jobs and are not promises of the V1 Workshop.
 
-This repository keeps exactly one canonical elf per category: Alice for
-classics, Leo for invented games, Bob for moving machines, Ivy for holdable
-science, and Eve for little worlds. A new experiment should not enter
-`inventors/` as a sixth elf or duplicate a category; develop it separately and
-propose an explicit replacement or category change.
+This checkout starts with five showcase inventors: Alice for classics, Leo for
+invented games, Bob for moving machines, Ivy for holdable science, and Eve for
+little worlds. They demonstrate the five categories and three extension
+levels; they are not a closed roster. Anyone may add an inventor, and many
+inventors may serve the same category with different niches and Taste.
+
+### How the Workshop Manager chooses
+
+The Workshop Manager is the Workshop's front door. For one untouched Wish, it
+discovers the compact `name` and `description` header in every `TASTE.md`. A
+semantic retriever records a bounded shortlist; the Manager then loads the
+complete, exact Taste body only for those finalists and asks a semantic judge
+to assess each one. It creates one assignment bound to the Wish, catalog
+snapshot, retrieval receipt, finalist Taste hashes and ranking, selected entry
+point, and trusted Playtest-round allowance.
+
+This is not category routing by keyword. “A moving solar system for my desk,”
+for example, may have real tensions between motion and science inventors. The
+retriever must preserve those plausible alternatives, and the judge must read
+their Tastes in full and explain the choice. A tie is resolved deterministically.
+If every finalist rejects the Wish, the Manager waits for clarification, wider
+retrieval, or a genuinely new Taste instead of forcing a bad match.
+
+The Manager is not a sixth job. Once assigned, the Wish still follows only:
+
+```text
+Wish -> Make <-> Playtest -> Instructions -> Deliver
+             feedback
+```
+
+A future always-on intake service can call the same one-Wish Manager repeatedly.
+That optional scheduler belongs outside inventor folders; it does not change
+the profile contract or the Workshop vocabulary.
+
+The Manager is Workshop runtime code, not a skill. `TASTE.md` borrows a skill's
+progressive-disclosure design; the routing service remains explicit and tested
+so application code, not an implicit host prompt, owns the assignment.
 
 ## 2. Choose the smallest customization level
 
@@ -63,14 +97,14 @@ Start with the least code that can express the inventor:
 | `custom-make` | `TASTE.md` plus `MakeContext -> Made` | Workshop Playtest |
 | `custom-playtest` | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Workshop still owns the feedback loop |
 
-Workshop owns Docs, Deliver, artifact identity, evidence binding, runtime, and
+Workshop owns Instructions, Deliver, artifact identity, evidence binding, runtime, and
 truthful waiting at every level. Custom Playtest is available only with custom
 Make.
 
 Do not add a hook merely to rename phases or wrap a shared call. Add one when
 the inventor has real niche logic that Taste and shared tools cannot express.
 
-Alice, the `classics-made-yours` elf, illustrates the boundary:
+Alice, the `classics-made-yours` inventor, illustrates the boundary:
 
 ```text
 +----------------------- ALICE -----------------------+
@@ -80,15 +114,15 @@ Alice, the `classics-made-yours` elf, illustrates the boundary:
                            |
                            v
 +-------------------- SHARED WORKSHOP ----------------+
-| Wish -> Make <-> Playtest -> Docs -> Deliver        |
+| Wish -> Make <-> Playtest -> Instructions -> Deliver        |
 |        artifacts + feedback + evidence + runtime    |
 +-----------------------------------------------------+
 ```
 
 A new inventor follows this dependency shape and chooses the smallest level its
 category needs; it does not copy Alice's state machine or private history.
-Alice's earlier Blindcap work is Workshop provenance, while Leo is the single
-active `invented-games` elf with custom Make and Playtest.
+Alice's earlier Blindcap work is Workshop provenance, while Leo is the bundled
+`invented-games` example with custom Make and Playtest.
 
 ## 3. Create a thin folder
 
@@ -118,17 +152,15 @@ The README must answer:
 6. Which evidence classes can pass Playtest?
 7. What is missing, synthetic, experimental, or blocked today?
 
-Use a schema-v4 `inventor.json`. Its capabilities should state the category and
-real custom behavior, not list every shared internal module:
+Use a schema-v5 `inventor.json`. It contains only operational facts. Creative
+identity and routing prose belong in `TASTE.md`, so they cannot disagree across
+two files. Capabilities should state the category and real custom behavior, not
+list every shared internal module:
 
 ```json
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "id": "your-id",
-  "name": "Your inventor name",
-  "niche": "One precise plaything niche",
-  "summary": "What this inventor makes differently.",
-  "autonomy": "human-checkpointed",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
   "capabilities": ["wish", "moving-machines", "taste-only"],
@@ -137,13 +169,37 @@ real custom behavior, not list every shared internal module:
 }
 ```
 
+Older manifest schemas remain readable during migration, but new inventors do
+not declare an `autonomy` mode. Every profile receives one assignment and may
+truthfully wait for people or tools when the work requires them.
+
 ## 4. Write Taste before code
 
-`TASTE.md` is the human-owned creative constitution. It should make two
-inventors given the same Wish choose recognizably different products.
+`TASTE.md` is the human-owned creative constitution. For physical products it
+uses the same progressive-disclosure shape as a focused `SKILL.md`: a small
+selection header followed by the full instructions. It tells the Manager which
+craft this inventor is right for, which work it should refuse, and what good
+output looks like. It should make two inventors given the same Wish choose
+recognizably different products.
+
+Start every Taste with bounded YAML frontmatter:
+
+```yaml
+---
+name: Ada
+description: Choose Ada for Wish-shaped hand-cranked creatures and expressive mechanisms; not static models, known games, or scientific teaching objects.
+---
+```
+
+The catalog indexes only that name and description. Write the description like
+a selection boundary: say what should choose this inventor and the closest
+work it should not absorb. The Manager loads the Markdown body only when the
+inventor reaches the finalist shortlist.
 
 Define:
 
+- a short routing description: **best for**, **not for**, and hard boundaries;
+- the chosen Workshop category and the kinds of ambiguous Wishes it should win;
 - the exact grown-up audience and play context;
 - three recognizable qualities;
 - familiar forms, themes, mechanics, and shortcuts to reject;
@@ -157,6 +213,13 @@ it may not silently edit or activate one to excuse a weak result.
 
 Taste is direction, not evidence. “This feels fun to me” in `TASTE.md` cannot
 pass a human playtest or physical test.
+
+Keep routing guidance inside the same Taste rather than adding a second prompt
+or manager-only description. The Manager compares each finalist's complete,
+exact file, and Workshop binds that same hash to Make and Playtest. If a
+finalist Taste changes after routing, the assignment is stale and must be made
+again; it may not silently change who the Wish was assigned to midway through
+a run.
 
 ## 5. Connect the profile to Workshop
 
@@ -190,12 +253,17 @@ def build_workshop(shared_tools: WorkshopTools) -> Workshop:
 ```
 
 `WorkshopTools` is configured once by the Workshop operator. It contains the
-shared Make, Playtest, Docs, and Deliver implementations. A profile must not
+shared Make, Playtest, Instructions, and Deliver implementations. A profile must not
 embed shared credentials or quietly fall back to a developer's personal
 account.
 
 Before running, `Workshop.preview(wish)` can show the exact Wish-, Taste-, and
 category-bound Make brief without starting work.
+
+The application dispatches the Manager's typed assignment to the selected
+profile once. A profile should not rediscover the roster, reroute the Wish,
+poll for more work, or create its own scheduler. Reassignment is an explicit
+new Manager decision with a new assignment identity.
 
 ## 6. Customize Make only when necessary
 
@@ -294,7 +362,7 @@ result = workshop.run(wish, playtest_rounds=2)
 The checkout or quote service may offer larger allowances for higher-priced
 tiers. Do not read a self-reported dollar amount from `wish.objective` and turn
 it into spend authority. If the product still fails when the allowance is
-exhausted, it stops before Docs and Deliver; it does not receive a cheaper
+exhausted, it stops before Instructions and Deliver; it does not receive a cheaper
 quality bar.
 
 ## 8. Use the right evidence class
@@ -330,11 +398,13 @@ printable geometry, slicing, an exact physical prototype, and independent human
 use. If that evidence does not exist yet, the product waits; simulation or a
 self-review cannot fill the gap.
 
-## 9. Let shared Docs tell only the truth
+## 9. Let shared Instructions tell only the truth
 
-Docs starts only after the exact Make passes Playtest. The shared page contract
-requires distinct hero, play, detail, parts, and box images plus a
-claim-to-evidence map.
+Instructions starts only after the exact Make passes Playtest. It produces the
+truthful product page and the paper that belongs in the box: a rulebook for a
+game, or instructions for another toy. Both stay bound to the same approved
+product. The shared contract requires distinct hero, play, detail, parts, and
+box images plus a claim-to-evidence map.
 
 The media provider must render or photograph the approved artifact. Concept art
 may appear only when clearly labeled as concept art; it cannot stand in for a
@@ -349,12 +419,12 @@ inventing facts:
 - keep the page private until its exact product and page hashes are approved
   for Deliver.
 
-An inventor does not implement its own publication path. Improve shared Docs
+An inventor does not implement its own publication path. Improve shared Instructions
 when every inventor needs the change.
 
 ## 10. Let shared Deliver ship the exact approval
 
-Deliver binds four kinds of evidence to the approved product and Docs:
+Deliver binds four kinds of evidence to the approved product and Instructions:
 
 - print receipt;
 - QA receipt;
@@ -373,8 +443,11 @@ evidence bundles, runtime event payloads, or source.
 
 At minimum, an inventor's tests should prove:
 
+- its complete Taste gives the Manager clear positive and negative routing
+  guidance;
 - the root `TASTE.md` is loaded and its exact bytes are bound;
 - its profile selects one valid category and the intended customization level;
+- changing Taste after assignment makes the assignment stale;
 - changing Taste or product bytes during a run fails closed;
 - Made files stay inside the fresh round workspace;
 - a failed Playtest returns actionable feedback to the next Make round;
@@ -382,8 +455,8 @@ At minimum, an inventor's tests should prove:
   real pass;
 - AI simulation cannot be presented as human-fun evidence;
 - slicer output cannot be presented as a successful physical print;
-- Docs claims and images remain bound to the approved product;
-- changed Docs bytes cannot enter Deliver;
+- Instructions claims and images remain bound to the approved product;
+- changed Instructions bytes cannot enter Deliver;
 - missing production or carrier capability produces `WaitingFor`;
 - a label, timeout, or malformed provider response cannot become delivery;
 - credentials and mutable runtime state are absent from artifacts and source.

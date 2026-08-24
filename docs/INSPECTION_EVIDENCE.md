@@ -44,6 +44,28 @@ Changing the product after Make, changing an evidence file after Playtest, or
 attaching evidence from another revision invalidates the boundary. Re-running
 Make creates a new immutable round and requires new Playtest evidence.
 
+## Routing provenance is not product evidence
+
+Before Make, the Workshop Manager searches the catalog's compact Taste
+descriptions, records a shortlist, compares one exact Wish with each finalist's
+exact `TASTE.md`, and creates one assignment. That assignment binds the catalog
+snapshot, retrieval receipt, complete finalist ranking and Taste hashes, chosen
+inventor, entry point, and trusted Playtest-round allowance. It proves which
+request-scoped decision was made and why; changing relevant catalog metadata,
+a finalist Taste, or the selected manifest invalidates dispatch.
+
+A routing decision does **not** prove that the product matches Taste, works,
+prints, delights anyone, or deserves release. The semantic fit score is an
+independent-model prediction only when its evaluator provenance supports that
+claim. It cannot substitute for artifact-bound CAD, slicer, physical,
+simulation, or human evidence, and Instructions must not present “the Manager chose
+this inventor” as product approval.
+
+The assignment is one-shot. Reassignment creates a new routing record; it does
+not bless artifacts or Playtest evidence produced under the old Taste. A future
+continuous-intake adapter may create many independent assignments, but uptime
+and scheduling add no evidence class and do not weaken any Playtest gate.
+
 ## Normal Workbench path
 
 Seal the Playtest workspace independently, then pass that manifest to the
@@ -78,7 +100,7 @@ an independent gate.
 
 ## Evidence class limits
 
-The evidence class determines what Docs may claim:
+The evidence class determines what Instructions may claim:
 
 | Evidence class | Supports | Cannot establish |
 |---|---|---|
@@ -136,19 +158,19 @@ before Make and passes the same value into every custom context.
 It never changes the evidence policy. A smaller allowance does not remove
 physical tests, human gates, or required result IDs; a larger allowance does
 not turn simulation into human evidence. If the allowance ends while a required
-result still fails, the run stops before Docs and Deliver.
+result still fails, the run stops before Instructions and Deliver.
 
 The number of AI games, reviewers, or physical trials inside one Playtest round
 is a separate trusted budget.
 
-## Docs and Deliver remain bound
+## Instructions and Deliver remain bound
 
-Docs begins only after Playtest passes for the exact product hash. Each public
+Instructions begins only after Playtest passes for the exact product hash. Each public
 claim points back to a result's evidence class, path, hash, evaluator, and
 version. Copy may be delightful, but it may not upgrade simulation to fun,
 slicing to a physical print, or concept art to product proof.
 
-Deliver rechecks both the product and Docs manifests. Production, QA, packing,
+Deliver rechecks both the product and Instructions manifests. Production, QA, packing,
 and USPS/UPS/FedEx receipts must identify those approved bytes. A carrier label
 alone is not handoff or delivery.
 

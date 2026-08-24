@@ -2,11 +2,11 @@
 
 Alice is the canonical **classics-made-yours** inventor. She is a **taste-only**
 profile: Alice owns [`TASTE.md`](TASTE.md) and her identity; Workshop supplies
-Make, Playtest, product Docs, delivery, artifact handling, and durable runtime.
+Make, Playtest, product Instructions, delivery, artifact handling, and durable runtime.
 She starts with known rules and makes the physical classic unmistakably personal.
 
 ```text
-Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Docs -> Deliver
+Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
 ```
 
 Alice is evaluated as a customized-object maker: recognition, piece and board
