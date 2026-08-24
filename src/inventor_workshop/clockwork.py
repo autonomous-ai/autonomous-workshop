@@ -1,4 +1,4 @@
-"""The Make -> Inspect -> done workflow and Clockwork compatibility API."""
+"""The Make -> Playtest -> done workflow and Clockwork compatibility API."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ from typing import Any, Dict, Mapping, Optional
 
 from .cad import CadReleaseBundle
 from .errors import ContractError, StampError, TransitionError
-from .inspection import Inspection
 from .lifecycle import GatePolicy, Pipeline, PipelineSpec, _default_gate_policy
 from .models import Stamp
 from .pack import PackedArtifact
+from .playtest import Playtest
 from .runtime import Runtime
 
 
@@ -18,28 +18,29 @@ from .runtime import Runtime
 Clockwork = Runtime
 
 
-InspectionPolicy = GatePolicy
+PlaytestPolicy = GatePolicy
+InspectionPolicy = PlaytestPolicy
 
 
 class WorkflowSpec(PipelineSpec):
     """Canonical small graph; inventors may supply a stricter workflow."""
 
     @classmethod
-    def _direct(cls, profile: str, inspection_ids: tuple[str, ...]) -> "WorkflowSpec":
-        stages = ("make", "inspect", "done")
+    def _direct(cls, profile: str, playtest_ids: tuple[str, ...]) -> "WorkflowSpec":
+        stages = ("make", "playtest", "done")
         edges = {
-            "make": ("inspect",),
-            "inspect": ("make", "done"),
+            "make": ("playtest",),
+            "playtest": ("make", "done"),
             "done": (),
         }
         return cls(
             initial_stage="make",
             stages=stages,
             edges=edges,
-            required_gates={"inspect": inspection_ids},
+            required_gates={"playtest": playtest_ids},
             gate_policies={
                 name: _default_gate_policy(profile, name)
-                for name in inspection_ids
+                for name in playtest_ids
             },
         )
 
@@ -63,7 +64,7 @@ class WorkflowSpec(PipelineSpec):
 
 
 class Workflow(Pipeline):
-    """Canonical lifecycle that accepts artifact-bound Inspection evidence."""
+    """Canonical lifecycle that accepts artifact-bound Playtest feedback."""
 
     def advance(
         self,
@@ -72,7 +73,8 @@ class Workflow(Pipeline):
         to_stage: str,
         expected_revision: int,
         *,
-        inspection: Optional[Inspection] = None,
+        playtest: Optional[Playtest] = None,
+        inspection: Optional[Playtest] = None,
         packed: Optional[PackedArtifact] = None,
         artifact_sha256: Optional[str] = None,
         cad_release: Optional[CadReleaseBundle] = None,
@@ -83,46 +85,58 @@ class Workflow(Pipeline):
         lease_token: Optional[str] = None,
         note: str = "",
     ) -> Dict[str, Any]:
+        if playtest is None:
+            playtest = inspection
+        elif inspection is not None and playtest != inspection:
+            raise TransitionError(
+                "Workflow received conflicting playtest and inspection evidence"
+            )
         product = clockwork.get_product(product_id)
         required = self._required.get(to_stage, set())
-        if required and not isinstance(inspection, Inspection):
+        if required and not isinstance(playtest, Playtest):
+            evidence_name = "Inspection" if to_stage == "inspect" else "Playtest"
             raise TransitionError(
-                "canonical Workflow transitions with checks require an Inspection"
+                "canonical Workflow transitions with checks require a %s"
+                % evidence_name
             )
         inspection_evidence_sha256 = None
-        if inspection is not None:
-            inspection.assert_valid()
-            inspection.require(required)
-            inspection_evidence_sha256 = inspection.evidence_artifact_sha256
+        if playtest is not None:
+            playtest.assert_valid()
+            playtest.require(required)
+            inspection_evidence_sha256 = playtest.evidence_artifact_sha256
             if cad_release is None:
-                cad_release = inspection.cad_release
+                cad_release = playtest.cad_release
             elif (
-                inspection.cad_release is not None
-                and cad_release != inspection.cad_release
+                playtest.cad_release is not None
+                and cad_release != playtest.cad_release
             ):
                 raise TransitionError(
-                    "CAD release differs from the artifact-bound Inspection"
+                    "CAD release differs from the artifact-bound Playtest"
                 )
-            selected = artifact_sha256 or inspection.artifact_sha256
-            if selected != inspection.artifact_sha256:
+            selected = artifact_sha256 or playtest.artifact_sha256
+            if selected != playtest.artifact_sha256:
                 raise TransitionError(
-                    "Inspection belongs to different artifact bytes"
+                    "Playtest belongs to different artifact bytes"
                 )
             artifact_sha256 = selected
-            results = inspection.results
+            results = playtest.results
         else:
             results = ()
-        # Inspection can supply the artifact identity when the caller omits
+        # Playtest can supply the artifact identity when the caller omits
         # ``artifact_sha256``. Derive that effective identity before applying
-        # the post-Inspect immutability fence; otherwise an Inspection for B
-        # could silently replace the product's already accepted artifact A.
+        # the post-Playtest immutability fence; otherwise feedback for B could
+        # silently replace the product's already accepted artifact A.
         if (
-            product["stage"] in ("inspect", "pack", "done")
+            product["stage"] in ("playtest", "inspect", "pack", "done")
             and artifact_sha256 is not None
             and artifact_sha256 != product.get("artifact_sha256")
         ):
+            completed_stage = (
+                "Inspect" if product["stage"] == "inspect" else "Playtest"
+            )
             raise TransitionError(
-                "artifact bytes cannot change after Inspect; return to Make"
+                "artifact bytes cannot change after %s; return to Make"
+                % completed_stage
             )
         event_pack_sha256 = pack_sha256
         if to_stage == "pack":

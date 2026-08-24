@@ -12,8 +12,8 @@ from .artifacts import ArtifactManifest, build_artifact_manifest
 from .cad import CadReleaseBundle
 from .errors import ArtifactError, ContractError
 from .doors import CadDoor, CadInspectionDoor, InspectionDoor, ModelDoor
-from .inspection import Inspection
-from .models import InspectionResult, require_json_mapping, require_sha256
+from .models import PlaytestResult, require_json_mapping, require_sha256
+from .playtest import Playtest
 from .taste import Taste, load_taste
 
 
@@ -174,7 +174,7 @@ class MakeResult:
     cad_build: CadBuildResult
     artifact_manifest: ArtifactManifest
     cad_release: Optional[CadReleaseBundle]
-    inspections: Sequence[InspectionResult]
+    inspections: Sequence[PlaytestResult]
 
     def __init__(
         self,
@@ -238,7 +238,7 @@ class MakeResult:
         return self.wish
 
     @property
-    def gates(self) -> Sequence[InspectionResult]:
+    def gates(self) -> Sequence[PlaytestResult]:
         """Compatibility spelling used by Workshop 0.2 and older."""
 
         return self.inspections
@@ -298,7 +298,7 @@ class MakeResult:
                         )
 
         if not all(
-            isinstance(inspection, InspectionResult)
+            isinstance(inspection, PlaytestResult)
             for inspection in self.inspections
         ):
             raise ContractError("make result requires typed inspections")
@@ -343,7 +343,7 @@ class MakeResult:
 
 
 class Workbench:
-    """Make one Wish, then inspect its exact artifact bytes explicitly."""
+    """Make one Wish, then playtest its exact artifact bytes explicitly."""
 
     def __init__(
         self,
@@ -365,13 +365,19 @@ class Workbench:
         self.cad = cad
         self.verifier = verifier
         if evaluator is None:
-            self._inspect = None
+            self._playtest = None
+        elif callable(getattr(evaluator, "playtest", None)):
+            self._playtest = evaluator.playtest
         elif callable(getattr(evaluator, "inspect", None)):
-            self._inspect = evaluator.inspect
+            self._playtest = evaluator.inspect
         elif callable(getattr(evaluator, "evaluate", None)):
-            self._inspect = evaluator.evaluate
+            self._playtest = evaluator.evaluate
         else:
-            raise ContractError("inspector adapter must implement inspect()")
+            raise ContractError(
+                "playtest adapter must implement playtest(), inspect(), or evaluate()"
+            )
+        self._inspect = self._playtest  # compatibility attribute
+        self.playtester = evaluator
         self.inspector = evaluator
         self.evaluator = evaluator  # compatibility attribute
         self.concept_role = concept_role
@@ -437,34 +443,34 @@ class Workbench:
             inspections=(),
         )
 
-    def inspect(
+    def playtest(
         self,
         made: MakeResult,
         *,
         evidence_manifest: Optional[ArtifactManifest] = None,
-    ) -> Inspection:
-        """Run the configured inspector against one completed MakeResult.
+    ) -> Playtest:
+        """Playtest one completed MakeResult and return improvement feedback.
 
-        ``evidence_manifest`` may name a separately sealed inspection root.
+        ``evidence_manifest`` may name a separately sealed playtest root.
         Omitting it preserves the original contract where evidence lives in
         the product artifact itself.
         """
 
         if not isinstance(made, MakeResult):
-            raise ContractError("Workbench.inspect requires a MakeResult")
+            raise ContractError("Workbench.playtest requires a MakeResult")
         made.assert_valid()
         if evidence_manifest is not None:
             if not isinstance(evidence_manifest, ArtifactManifest):
                 raise ContractError(
-                    "Workbench.inspect evidence_manifest must be an ArtifactManifest"
+                    "Workbench.playtest evidence_manifest must be an ArtifactManifest"
                 )
             evidence_manifest.assert_valid()
         if made.inspections:
             raise ContractError(
-                "Workbench.inspect requires an uninspected MakeResult"
+                "Workbench.playtest requires a MakeResult without prior playtests"
             )
-        if self._inspect is None:
-            raise ContractError("Workbench has no InspectionDoor")
+        if self._playtest is None:
+            raise ContractError("Workbench has no playtest adapter")
         artifact_root = made.cad_build.artifact_root
         before = build_artifact_manifest(
             artifact_root, created_at="content-addressed"
@@ -475,9 +481,9 @@ class Workbench:
             artifact_root, made.artifact_manifest.artifact_sha256
         )
         if not isinstance(cad_release, CadReleaseBundle):
-            raise ContractError("CAD Inspection Door must return CadReleaseBundle")
+            raise ContractError("CAD verifier must return CadReleaseBundle")
         cad_release.assert_artifact(made.artifact_manifest.artifact_sha256)
-        raw_results = self._inspect(
+        raw_results = self._playtest(
             artifact_root, made.artifact_manifest.artifact_sha256
         )
         if (
@@ -485,16 +491,16 @@ class Workbench:
             or not isinstance(raw_results, Sequence)
         ):
             raise ContractError(
-                "inspector must return a sequence of InspectionResult objects"
+                "playtester must return a sequence of PlaytestResult objects"
             )
-        results: Tuple[InspectionResult, ...] = tuple(raw_results)
+        results: Tuple[PlaytestResult, ...] = tuple(raw_results)
         after = build_artifact_manifest(
             artifact_root, created_at="content-addressed"
         )
         if after.to_dict() != made.artifact_manifest.to_dict():
-            raise ArtifactError("artifact changed during Inspect")
+            raise ArtifactError("artifact changed during Playtest")
         made.taste.assert_current()
-        return Inspection(
+        return Playtest(
             made.artifact_manifest,
             results,
             cad_release,
@@ -508,10 +514,10 @@ class Workbench:
         workspace: Path,
         budget_micros: int,
     ) -> MakeResult:
-        """Compatibility path that combines canonical Make and Inspect."""
+        """Compatibility path that combines canonical Make and Playtest."""
 
         made = self.make(brief, inventor_root, workspace, budget_micros)
-        inspection = self.inspect(made)
+        playtest = self.playtest(made)
         return MakeResult(
             schema_version=made.schema_version,
             wish=made.wish,
@@ -520,9 +526,13 @@ class Workbench:
             concept_sha256=made.concept_sha256,
             cad_build=made.cad_build,
             artifact_manifest=made.artifact_manifest,
-            cad_release=inspection.cad_release,
-            inspections=inspection.results,
+            cad_release=playtest.cad_release,
+            inspections=playtest.results,
         )
+
+    # Workshop 0.3 spelling. A true method alias keeps overrides and identity
+    # checks predictable while new inventors use ``playtest``.
+    inspect = playtest
 
     @staticmethod
     def _prepare_workspace(workspace: Path) -> Path:

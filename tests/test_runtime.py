@@ -18,9 +18,11 @@ class RuntimeTest(unittest.TestCase):
 
     def test_small_default_workflow_and_clockwork_alias(self):
         spec = WorkflowSpec.custom()
-        self.assertEqual(tuple(spec.stages), ("make", "inspect", "done"))
-        self.assertEqual(Workflow(spec).legal_targets("make"), ("inspect",))
-        self.assertEqual(Workflow(spec).legal_targets("inspect"), ("done", "make"))
+        self.assertEqual(tuple(spec.stages), ("make", "playtest", "done"))
+        self.assertEqual(Workflow(spec).legal_targets("make"), ("playtest",))
+        self.assertEqual(
+            Workflow(spec).legal_targets("playtest"), ("done", "make")
+        )
         self.assertIs(Clockwork, Runtime)
 
     def test_runtime_records_before_adapter_and_returns_receipt(self):

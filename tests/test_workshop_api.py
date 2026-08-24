@@ -17,6 +17,9 @@ from inventor_workshop import (
     InspectionResult,
     ModelDoor,
     PackedArtifact,
+    Playtest,
+    PlaytestPolicy,
+    PlaytestResult,
     SendResult,
     Sender,
     ShopDoor,
@@ -67,7 +70,12 @@ class WorkshopApiTest(unittest.TestCase):
         self.assertEqual(inventor_workshop.__version__, "0.4.0")
         self.assertEqual(Wish.__name__, "Wish")
         self.assertEqual(Workbench.__name__, "Workbench")
-        self.assertEqual(InspectionResult.__name__, "InspectionResult")
+        self.assertEqual(Playtest.__name__, "Playtest")
+        self.assertEqual(PlaytestResult.__name__, "PlaytestResult")
+        self.assertIs(Inspection, Playtest)
+        self.assertIs(InspectionResult, PlaytestResult)
+        self.assertIs(InspectionPolicy, PlaytestPolicy)
+        self.assertIs(Workbench.inspect, Workbench.playtest)
         self.assertEqual(Stamp.__name__, "Receipt")
         self.assertEqual(ModelDoor.__name__, "ModelDoor")
         self.assertEqual(CadDoor.__name__, "CadDoor")
@@ -78,8 +86,11 @@ class WorkshopApiTest(unittest.TestCase):
 
         spec = WorkflowSpec.board_game()
         self.assertEqual(spec.initial_stage, "make")
-        self.assertEqual(tuple(spec.stages), ("make", "inspect", "done"))
-        self.assertEqual(Workflow(spec).legal_targets("inspect"), ("done", "make"))
+        self.assertEqual(tuple(spec.stages), ("make", "playtest", "done"))
+        self.assertEqual(Workflow(spec).legal_targets("make"), ("playtest",))
+        self.assertEqual(
+            Workflow(spec).legal_targets("playtest"), ("done", "make")
+        )
 
     def test_inspection_rejects_detached_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -102,7 +113,7 @@ class WorkshopApiTest(unittest.TestCase):
             with self.assertRaisesRegex(ContractError, "absent or hash-mismatched"):
                 Inspection(manifest, (detached,))
 
-    def test_canonical_workflow_requires_an_inspection_bundle(self):
+    def test_canonical_workflow_requires_a_playtest_bundle(self):
         with tempfile.TemporaryDirectory() as temporary:
             artifact = Path(temporary) / "artifact"
             artifact.mkdir()
@@ -125,14 +136,14 @@ class WorkshopApiTest(unittest.TestCase):
                 "wish-1",
                 artifact_sha256=manifest.artifact_sha256,
             )
-            with self.assertRaisesRegex(TransitionError, "require an Inspection"):
+            with self.assertRaisesRegex(TransitionError, "require a Playtest"):
                 workflow.advance(clockwork, "wish-1", "inspected", 0)
             product = workflow.advance(
                 clockwork,
                 "wish-1",
                 "inspected",
                 0,
-                inspection=Inspection(manifest, (result,)),
+                playtest=Playtest(manifest, (result,)),
             )
             self.assertEqual(product["stage"], "inspected")
 

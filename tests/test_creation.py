@@ -289,7 +289,7 @@ class ForgeTest(unittest.TestCase):
             )
             self.assertEqual(result.to_dict()["taste"]["sha256"], taste_sha256)
 
-    def test_canonical_make_and_inspect_are_distinct_stages(self):
+    def test_canonical_make_and_playtest_are_distinct_stages(self):
         with tempfile.TemporaryDirectory() as temporary:
             inventor = self.inventor(temporary)
             evaluator = FakeEvaluator()
@@ -309,16 +309,16 @@ class ForgeTest(unittest.TestCase):
             self.assertIsNone(made.cad_release)
             self.assertEqual(made.inspections, ())
             self.assertEqual(made.to_dict()["inspections"], [])
-            inspection = workbench.inspect(made)
+            playtest = workbench.playtest(made)
             self.assertEqual(evaluator.calls, 1)
             self.assertEqual(
                 verifier.artifact_sha256,
                 made.artifact_manifest.artifact_sha256,
             )
-            self.assertIsNotNone(inspection.cad_release)
-            self.assertEqual(inspection.results[0].inspection_id, "rules-lint")
+            self.assertIsNotNone(playtest.cad_release)
+            self.assertEqual(playtest.results[0].inspection_id, "rules-lint")
             self.assertEqual(
-                inspection.artifact_sha256,
+                playtest.artifact_sha256,
                 made.artifact_manifest.artifact_sha256,
             )
 
@@ -502,7 +502,7 @@ class ForgeTest(unittest.TestCase):
             )
             spec = WorkflowSpec.board_game()
             results = []
-            for inspection_id in spec.required_gates["inspect"]:
+            for inspection_id in spec.required_gates["playtest"]:
                 policy = spec.gate_policies[inspection_id]
                 evidence_ref = (
                     "evidence/cad.json"
@@ -540,14 +540,14 @@ class ForgeTest(unittest.TestCase):
                 artifact_sha256=made.artifact_manifest.artifact_sha256,
             )
 
-            inspected = workflow.advance(
+            playtested = workflow.advance(
                 clockwork,
                 made.wish.product_id,
-                "inspect",
+                "playtest",
                 0,
-                inspection=inspection,
+                playtest=inspection,
             )
-            self.assertEqual(inspected["stage"], "inspect")
+            self.assertEqual(playtested["stage"], "playtest")
             completed = workflow.advance(
                 clockwork,
                 made.wish.product_id,

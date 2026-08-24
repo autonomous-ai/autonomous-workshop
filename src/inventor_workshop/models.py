@@ -137,8 +137,13 @@ def require_json_mapping(
 
 
 @dataclass(frozen=True)
-class InspectionResult:
-    """A deterministic or external verdict bound to exact artifact bytes."""
+class PlaytestResult:
+    """One reproducible playtest verdict bound to exact artifact bytes.
+
+    Workshop 0.3 persisted this contract with ``inspection_*`` field names.
+    Those names intentionally remain stable on disk; ``playtest_id`` is the
+    friendlier code-facing spelling for new inventors.
+    """
 
     inspection_id: str
     passed: bool
@@ -154,6 +159,12 @@ class InspectionResult:
     @property
     def gate_id(self) -> str:
         """Compatibility spelling used by Workshop 0.2 and older."""
+
+        return self.inspection_id
+
+    @property
+    def playtest_id(self) -> str:
+        """Canonical spelling for the persisted ``inspection_id`` field."""
 
         return self.inspection_id
 
@@ -193,7 +204,7 @@ class InspectionResult:
         config_sha256: str,
         evidence_ref: str,
         evidence_sha256: str,
-    ) -> "InspectionResult":
+    ) -> "PlaytestResult":
         return cls(
             inspection_id,
             passed,
@@ -643,7 +654,9 @@ class SendResult:
         return {"intent_id": self.intent_id, "stamp": self.stamp.to_dict()}
 
 
-# Compatibility names for code written before Workshop 0.3.
-GateResult = InspectionResult
+# Compatibility names for code written before Workshop 0.4.  These are true
+# aliases so evidence created through either vocabulary is the same contract.
+InspectionResult = PlaytestResult
+GateResult = PlaytestResult
 PublicationReceipt = Receipt
 PublicationOutcome = SendResult

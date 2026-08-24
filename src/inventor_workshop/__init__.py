@@ -1,6 +1,6 @@
 """The shared Workshop for autonomous inventors.
 
-The public model is deliberately small: Wish and Taste guide a Make/Inspect
+The public model is deliberately small: Wish and Taste guide a Make/Playtest
 loop. Artifact, Runtime, Adapter, and Receipt are literal implementation types,
 not extra invention stages.
 """
@@ -21,7 +21,13 @@ from .cad import (
     inspect_stl_path,
     inspect_stl_topology,
 )
-from .clockwork import Clockwork, InspectionPolicy, Workflow, WorkflowSpec
+from .clockwork import (
+    Clockwork,
+    InspectionPolicy,
+    PlaytestPolicy,
+    Workflow,
+    WorkflowSpec,
+)
 from .make import (
     CadBuildResult,
     CreationBrief,
@@ -43,6 +49,7 @@ from .doors import (
 )
 from .integrations import Adapter
 from .inspection import Inspection
+from .playtest import Playtest
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
@@ -63,6 +70,7 @@ from .maker_mark import MAKER_MARK_MODES, MakerMark
 from .models import (
     GateResult,
     InspectionResult,
+    PlaytestResult,
     PublicationOutcome,
     PublicationReceipt,
     Receipt,
@@ -108,14 +116,14 @@ __all__ = [
     "CadBuildResult",
     "CadReleaseBundle",
     "EffectError",
-    "Inspection",
-    "InspectionPolicy",
-    "InspectionResult",
     "InventorManifest",
     "KernelBodyObservation",
     "MAKER_MARK_MODES",
     "MakeResult",
     "MakerMark",
+    "Playtest",
+    "PlaytestPolicy",
+    "PlaytestResult",
     "Receipt",
     "ReceiptError",
     "Runtime",
@@ -162,7 +170,10 @@ __all__ = [
     "GatePolicy",
     "GateResult",
     "HttpResponse",
+    "Inspection",
     "InspectionDoor",
+    "InspectionPolicy",
+    "InspectionResult",
     "InventorStore",
     "LaunchPort",
     "Launchpad",
