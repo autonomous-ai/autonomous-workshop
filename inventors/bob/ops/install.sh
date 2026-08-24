@@ -30,7 +30,7 @@ if [ -n "${BOB_FOUNDATION_SRC:-}" ] && [ -n "${BOB_CORE_SRC:-}" ] && \
     echo "REFUSING to install: legacy BOB_FOUNDATION_SRC and BOB_CORE_SRC disagree." >&2
     exit 1
 fi
-WORKSHOP_SRC="${BOB_WORKSHOP_SRC:-${BOB_FOUNDATION_SRC:-${BOB_CORE_SRC:-$REPO/../../workshop/src}}}"
+WORKSHOP_SRC="${BOB_WORKSHOP_SRC:-${BOB_FOUNDATION_SRC:-${BOB_CORE_SRC:-$REPO/../../src}}}"
 
 # --- Refusal guards (catch broken deploys before launchd loops on them) -----
 if [ ! -f "$REPO/bob.py" ]; then
@@ -51,7 +51,7 @@ if ! (cd "$REPO" && BOB_WORKSHOP_SRC="$WORKSHOP_SRC" /usr/bin/python3 -c \
     'from harness.workshop_runtime import require_workshop; require_workshop()') >/dev/null 2>&1; then
     echo "REFUSING to install: inventor_workshop is unavailable at $WORKSHOP_SRC." >&2
     echo "Bob's Pack and Sender contracts require Inventor Workshop." >&2
-    echo "Fix: deploy workshop at the monorepo root, or set BOB_WORKSHOP_SRC to workshop/src." >&2
+    echo "Fix: deploy the repository-root src package, or set BOB_WORKSHOP_SRC explicitly." >&2
     exit 1
 fi
 if [ ! -f "$RENDERER" ]; then

@@ -21,11 +21,11 @@ external evidence.
 ## Current activation status
 
 The checked-in repository is **not operational yet**. No launchd service has
-been installed and Alice has not created a real Shop Door draft. It contains no
+been installed and Alice has not created a real storefront draft. It contains no
 production token, external evidence command, or operational
 order/print/QA/ship adapter; its dedicated Codex home is not authenticated; the
 connected text2game adapter is disabled and its external CAD/slicer/calibration
-prerequisites have not been staged; and the current Shop Door deployment does not
+prerequisites have not been staged; and the current storefront deployment does not
 advertise the three atomic public-write contracts required by Alice.
 `alice doctor` therefore refuses `draft` while its invention, evidence, CAD,
 printing, rich-draft, or authenticated readback dependencies are absent. The
@@ -34,7 +34,7 @@ The Vibe adapter makes zero public POSTs unless
 revision/packet, SKU/price/currency, and rich-page bindings can all be proved.
 
 The current activation target is `draft`: automatically create the complete
-private Shop Door product page and stop. Dee reviews it and uses the existing
+private storefront product page and stop. Dee reviews it and uses the existing
 one-click publish control. The checked-in default keeps
 `auto_publish_when_eligible=false`; do not change that value as part of draft
 activation.
@@ -43,7 +43,7 @@ Going from reviewed drafts to automatic public release later requires three
 separate operator actions:
 
 1. authenticate Alice's dedicated model seat and configure every real evidence
-   and Shop Door adapter;
+   and storefront adapter;
 2. deploy a backend publish contract that advertises
    `packet_hash_bound_publish`, `sku_currency_bound_publish`, and
    `rich_page_bound_publish`; atomically rejects a stale history/project or an
@@ -113,7 +113,7 @@ their diagnostics.
 The supported local deployment is one launchd worker plus an independent
 watchdog. Each tick runs in a fresh bounded process group. The service writes a
 private heartbeat, pins the complete committed Alice source tree, the tracked
-`workshop/src/inventor_workshop` package from the same repository, the resolved config,
+`src/inventor_workshop` package from the same repository, the resolved config,
 and the release policy, and refuses a dirty Alice or Workshop checkout or a
 changed runtime identity. Both Alice and Workshop are copied into one owner-only
 execution snapshot; isolated children import from that snapshot rather than
@@ -128,7 +128,7 @@ Create an absolute, owner-only environment file and an absolute draft config,
 then run the installer from a clean committed checkout:
 
 ```bash
-python -m pip install -e ./workshop -e ./inventors/alice
+python -m pip install -e . -e ./inventors/alice
 ```
 
 The installer requires that Alice's virtual environment contain the declared
@@ -326,7 +326,7 @@ does not install them:
    config fields, not ambient environment variables. Keep
    `adapters.text2game.allowed_environment` to the process basics and intentional
    non-secret dials such as `BED_X`/`BED_Y`, with their values in the owner-only
-   service environment file. Publisher, MongoDB, GCS, Shop Door, Google
+   service environment file. Publisher, MongoDB, GCS, storefront, Google
    credential, legacy backend, admin, Telegram, dynamic-loader, and Git-injection
    variables are rejected at this boundary. Text2game's `.env` and other
    credential-like files are never copied from the source checkout.
@@ -343,7 +343,7 @@ deterministic `consistency.py` over Alice's staged design before phase 1, so an
 incompatible accepted game fails without spending a model call.
 
 Passing these checks enables CAD/DFM work; it is not a print receipt, deployment
-record, or Shop Door draft. Prototype/production, market, human-playtest, and
+record, or storefront draft. Prototype/production, market, human-playtest, and
 private-draft adapters must still pass their own readiness and evidence gates.
 
 The existing board-game rich-page draft adapter and Vibe public adapter are
@@ -453,7 +453,7 @@ alice --config /secure/path/alice-live.json doctor
 
 The default endpoint is
 `https://panda-social-api.autonomous.ai/api/v1`, the shared origin used by the
-current Vibe and public Shop Door routes. Never put the token in `live.json`.
+current Vibe and public storefront routes. Never put the token in `live.json`.
 
 An absent adapter is not evidence. Simulation cannot impersonate a blind human
 table, a render cannot impersonate a print, and a model cannot impersonate an
@@ -473,7 +473,7 @@ order or shipment.
 4. Alice authenticates back to the private design, verifies `status=draft`, the
    exact design/history/project/artifact hashes, and the complete rules, use
    case, story, specs, and covers.
-5. Alice stops. Dee reviews that Shop Door draft and clicks the existing publish
+5. Alice stops. Dee reviews that storefront draft and clicks the existing publish
    control. No Alice public POST is enabled in this mode.
 
 ## Future automatic publication runbook
@@ -497,7 +497,7 @@ current checkout can publish.
    receipt after a write is `ambiguous`; never retry it. Read
    remote state and reconcile the original operation.
 6. The existing deployed observer may enrich the product page. Alice polls
-   the anonymous Shop Door design record and verifies its listing, exact price,
+   the anonymous storefront design record and verifies its listing, exact price,
    visuals, story, use case, print specifications, and assembly data.
 7. Only a complete page receipt advances `publish_ready -> page_ready ->
    published`.
@@ -539,7 +539,7 @@ authenticated `print_fulfillment` diagnostic must advertise all of
 from those primitive contracts; neither configured commands nor a self-asserted
 composite capability is sufficient. Every fulfillment intent supplies the
 complete hash-verified manufacturing slice, and print/QA/shipment receipts must
-echo it exactly. Each first-send and reconciliation request carries the durable
+echo it exactly. Each first effect and reconciliation request carries the durable
 `effect_operation_key`, `task_input_sha256`, and an explicit `reconcile_only`
 value.
 

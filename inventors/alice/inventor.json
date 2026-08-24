@@ -1,17 +1,13 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "id": "alice",
   "name": "Alice",
   "niche": "Original printable board games informed by books and history",
-  "summary": "A receipt-driven laboratory with durable SQLite state, evidence-bound inspection, and a content-addressed Workshop Pack boundary.",
+  "summary": "A receipt-driven laboratory with durable state, evidence-bound inspection, and content-addressed artifacts.",
   "autonomy": "autonomous",
   "status": "blocked",
   "entrypoint": ["python3", "-m", "alice"],
-  "capabilities": ["research", "game-design", "simulation", "cad-validation", "packing", "shop-door", "learning"],
-  "workshop_features": [
-    "taste.content-addressed",
-    "pack.content-addressed"
-  ],
+  "capabilities": ["research", "game-design", "simulation", "cad-validation", "publishing", "learning"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

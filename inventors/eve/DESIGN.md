@@ -2,8 +2,8 @@
 
 Eve is an autonomous, 24/7 multi-agent system that invents **3D-printable**
 board games that have never existed before, carries each one through rules,
-print, and fun checks until it is *actually good*, then Packs and Sends a draft
-through the Shop Door to the Autonomous site. The moment it sells, we print and ship it — the chess
+print, and fun checks until it is *actually good*, then uses the Workshop runtime
+and storefront adapter to create a draft on the Autonomous site. The moment it sells, we print and ship it — the chess
 sets already sold (two of them; the SF set is one) are the early proof of
 that loop, and they are the bar Eve is aiming at.
 
@@ -75,7 +75,7 @@ loop's output changes what another loop is held to.
      ┌───────────────────────────────────────────────────────────────────┐
      │ LOOP C — per-game invention pipeline (one game at a time)          │
      │ invent ▶ rules ▶ playtest + COGS feedback ▶ repair                │
-     │                  MAKE ▶ INSPECT ▶ PACK ▶ SEND                     │
+     │                       MAKE ◀▶ INSPECT                             │
      └───────────────────────────────────────────────────────────────────┘
      (B and D also feed the SAME improvement path: every repeated loss or
       repeated book/arch lesson graduates into Eve's own policy.)
@@ -157,10 +157,10 @@ One game at a time, advanced one stage per meta-loop step. Stages:
 7. **Playtest + fun gate** — the load-bearing measurement. **FUN = a player
    asks to play again**, first against real LLM-players, ultimately against
    humans in the org's `PLAYTEST.md` protocol (≥3 groups). No fun-pass, no
-   Send — this is where Eve refuses to ship a "tuned" but un-fun game.
-8. **Pack + Send** — a game that passed every check goes through the Shop Door
-   to the
-   site/storefront as a **draft** (one-click human review flips it live); with its
+   release — this is where Eve refuses to ship a "tuned" but un-fun game.
+8. **Artifact + storefront effect** — a game that passed every check becomes a
+   content-addressed artifact, then the runtime invokes the storefront adapter
+   to create a **draft** (one-click human review flips it live), with its
    rules, renders, and measured COGS; a sale starts
    print-and-ship. The 3D-printable body (fits the real bed, watertight,
    cheap COGS) is a gate, not a hope: the printed game *is* the product.
@@ -186,7 +186,7 @@ over its lifetime, not faster at shipping slop.
 The org's own failure modes are exactly the RL failure modes:
 
 - a reward that only counts *shipped* games rewards flooding cheap slop →
-  reward Send of inspected quality only, and hold the bar fixed;
+  reward release of inspected quality only, and hold the bar fixed;
 - a reward that can be inflated by the agent writing its own score →
   the ledger is *written by code*, never by a model, and audited;
 - rewarding progress forever → an agent that loops forever polishing →
@@ -209,7 +209,7 @@ configuration.
 | `fun_pass` | real/per-protocol playtest shows FUN | +4.0 | **highest** — load-bearing |
 | `print_pass` | deterministic build gate green | +1.5 | stage reward |
 | `cogs_ok` | measured COGS within budget | +1.5 · (budget/measured cap) | shaped, money-aware |
-| `ship` | Packed and Sent after all checks (terminal) | +10.0 | terminal |
+| `ship` | inspected artifact released after all checks (terminal) | +10.0 | terminal |
 | `repair_fail` | a repair round exhausted budget | −0.5 | per incident |
 | `rework` | a rules rework round | −0.3 | per incident |
 | `dead_game` | killed with a stated reason | −2.0 | terminal, cheap kill |
@@ -263,7 +263,7 @@ The org's hard-won rules, applied to Eve:
   will tune to it. Build/integrity gates are code.
 - **Blind panels.** Lenses that rate a game are independent and cannot see
   each other's verdicts, so one agent can't be talked into another's opinion.
-- **Grade the outcome, not the transcript.** Send requires external fun
+- **Grade the outcome, not the transcript.** Release requires external fun
   evidence; "we thought it was fun" is not a measurement.
 - **Multiple trials.** Playtest runs many scripted and player-table games, not
   one anecdote.
@@ -291,8 +291,8 @@ eve/
     arch.py            Loop B: multi-agent architecture study
     books.py           Loop D: great-books study (bibliophile)
     improve.py         self-improvement session (loss-directed, tiered)
-    workshop_bridge.py exact artifact identity, Pack, Clockwork, Sender
-    send.py             stage a shipped game and send a Shop Door draft
+    workshop_bridge.py exact artifact identity and durable runtime bridge
+    send.py             compatibility-named storefront draft flow
     launch.py           compatibility aliases only
     journal.py         append-only event narration
     config.py          .env / defaults loading
@@ -308,6 +308,6 @@ eve/
 
 The loops deliberately reuse the org's two proven repos where they already
 edge forward: CAD build is a client of the `cadcode` skill (vibe-ideas), the
-fun protocol is the org's `PLAYTEST.md`, and Sender reaches the current
-Vibe storefront through a Shop Door. Eve does not reimplement those; it orchestrates and
-improves around them.
+fun protocol is the org's `PLAYTEST.md`, and the Workshop adapter reaches the
+current Vibe storefront. The compatibility API is still named `Sender`; Eve does
+not reimplement those systems, but orchestrates and improves around them.

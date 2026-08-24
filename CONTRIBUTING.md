@@ -4,7 +4,7 @@ This repository is a shared blueprint for autonomous inventors. The normal
 contribution is one new folder under `inventors/` whose developer-defined taste
 and workflow reuse Workshop instead of rebuilding infrastructure.
 
-Start with [Build an inventor](workshop/docs/BUILD_AN_INVENTOR.md). For a new
+Start with [Build an inventor](docs/BUILD_AN_INVENTOR.md). For a new
 inventor, the expected path is scaffold, customize, prove it offline, and open a
 pull request.
 
@@ -18,7 +18,7 @@ cd autonomous-workshop
 git switch -c inventor/ada-deduction-games
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e workshop
+python -m pip install -e .
 ```
 
 Use `fix/`, `docs/`, or `workshop/` as the branch prefix when that describes
@@ -48,7 +48,7 @@ The pull request must include:
 - a README explaining the thesis, workflow, commands, evidence bar, external
   dependencies, current limitations, and live-readiness status;
 - complete inventor-owned code, prompts, roles, generators, evaluators, and
-  Door composition needed for the claimed behavior;
+  integration composition needed for the claimed behavior;
 - deterministic tests and an offline smoke path that need no credentials,
   network, paid provider, CAD service, or printer;
 - no runtime databases, transcripts, credentials, generated backups, or private
@@ -70,37 +70,30 @@ Inventor-owned code answers:
 
 Workshop-owned code answers:
 
-- How does Clockwork persist identity, state, leases, retries, budgets, and effects?
+- How does the runtime persist identity, state, leases, retries, budgets, and effects?
 - How are making skills and CAD/print evidence invoked and versioned?
 - How are artifacts and evidence bound to exact bytes?
-- How are exact bytes Packed, Sent, and reconciled by Stamp?
-- How are shared Doors tested without exposing credentials?
+- How are outside effects recorded, executed, and reconciled by receipt?
+- How are shared adapters tested without exposing credentials?
 
-Put reusable infrastructure in `workshop/`, not in the new inventor. Put
+Put reusable infrastructure in the repository's shared root, not in the new inventor. Put
 taste, creative policy, and niche-specific workflow in the inventor, not in
-Workshop. If a Door is generally useful, propose it as a shared Workshop
+Workshop. If an adapter is generally useful, propose it as a shared Workshop
 integration and keep provider-specific transport out of inventor domain logic.
 
 ## Public names
 
-The developer-facing vocabulary is:
+The developer-facing vocabulary has four concepts:
 
-- `workshop` for the CLI;
-- `inventor_workshop` for the Python package;
-- `workshop_features` for the schema-v3 manifest’s shared-capability declaration;
 - **Wish** for preserved intent;
-- **Taste** for the inventor’s creative constitution;
-- **Make** for generation/CAD/print work;
-- **Inspect** for exact-artifact validation and evidence;
-- **Pack** for reproducible transport bytes;
-- **Send** for a durable outside effect;
-- **Door** for a qualified external-service boundary;
-- **Stamp** for evidence returned through a Door;
-- **Clockwork** for state, workflow, leases, budgets, and retries.
+- **Taste** for the inventor's creative constitution;
+- **Make** for creation and revision;
+- **Inspect** for exact-artifact checks and feedback.
 
-Migration rules for historical package, manifest, and durable-data names live in
-[MIGRATION.md](workshop/docs/MIGRATION.md). New contributions use the public
-vocabulary above throughout code, manifests, tests, and prose.
+Use `workshop` for the CLI and `inventor_workshop` for the Python package.
+Artifact, runtime, adapter, and receipt are literal internal implementation
+names, not more lifecycle stages. Migration rules for historical API, manifest,
+and durable-data names live in [MIGRATION.md](docs/MIGRATION.md).
 
 Use these naming roles consistently:
 
@@ -129,7 +122,7 @@ From the new inventor folder, install both editable packages and run its
 documented commands:
 
 ```bash
-python -m pip install -e ../../workshop -e .
+python -m pip install -e ../.. -e .
 deduction_games doctor
 deduction_games make first-product
 deduction_games status
@@ -140,20 +133,20 @@ The generated offline Make proves the complete Taste → Make → Inspect path w
 deterministic workshop fakes, binds its artifact identity, and records local
 state. It is necessary but not sufficient for production readiness. Add tests
 for each claimed capability, including Taste binding, deterministic agent fakes,
-Make/Inspect failures, artifact identity, bounded repair, and Sender
+Make/Inspect failures, artifact identity, bounded repair, and outside-effect
 ambiguity where those capabilities apply. A mock outcome must be visibly
 identified as a mock and cannot establish live readiness.
 
 Run the repository checks from the root:
 
 ```bash
-python -m unittest discover -s workshop/tests -p 'test_*.py' -v
+PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
 workshop skills list
 workshop inventors --root inventors --check-entrypoints
 workshop check inventors/deduction-games --run
-python workshop/tools/verify_skill_locks.py
-python workshop/tools/verify_snapshot_locks.py
-python workshop/tools/scan_secrets.py
+python tools/verify_skill_locks.py
+python tools/verify_snapshot_locks.py
+python tools/scan_secrets.py
 git diff --check
 ```
 
@@ -164,18 +157,18 @@ interpolation.
 
 ## Change Workshop safely
 
-A Workshop pull request needs contract tests in `workshop/tests/` and must
+A Workshop pull request needs contract tests in `tests/` and must
 preserve the dependency direction: inventors import Workshop; Workshop
 never imports an inventor.
 
-Changes to Clockwork, budgets, artifact identity, Make or Inspect
-floors, or Send effects need tests for success, malformed input,
+Changes to the runtime, budgets, artifact identity, Make or Inspect
+floors, or outside effects need tests for success, malformed input,
 unknown outcomes, retry/recovery, and compatibility with already persisted
 data. An inventor may strengthen a gate but must not create a bypass around a
 shared floor.
 
 Keep the Python runtime usable without credentials or paid providers. Heavy CAD
-dependencies and provider SDKs belong behind optional Make or Door
+dependencies and provider SDKs belong behind optional Make or adapter
 boundaries, with deterministic fakes for CI.
 
 ## Security, provenance, and generated files
@@ -183,7 +176,7 @@ boundaries, with deterministic fakes for CI.
 - Never commit `.env` files, bearer tokens, API keys, cookies, private keys,
   runtime databases, transcripts, or source backups.
 - Use injected credentials and distinct least-privilege inventor identities;
-  never borrow a human or shared bearer for an unattended Sender effect.
+  never borrow a human or shared bearer for an unattended outside effect.
 - Record the source URL, exact commit, import date, exclusions, patches, and
   license status for imported code or skills.
 - Do not modify an upstream snapshot silently. Update its `UPSTREAM.md` and
@@ -203,7 +196,7 @@ Reviewers will check that:
 
 1. capability claims match executable code and tests;
 2. the root taste contract influences the workflow;
-3. shared Make, Inspect, Pack, Send, Clockwork, and Door infrastructure was reused
+3. shared Make, Inspect, artifact, runtime, and integration infrastructure was reused
    rather than copied;
 4. failure and ambiguity stop safely;
 5. current adoption is not described as completed target architecture;

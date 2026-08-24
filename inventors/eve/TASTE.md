@@ -65,11 +65,11 @@ read quickly, print beautifully, and reward another play.
 - Claims that payout, disclosure, safety, fulfillment, or proof-of-make blockers
   are solved when they are not.
 
-## The four Send blockers
+## The four release blockers
 
 Payout ledger, CPSIA, AI disclosure, and proof-of-make are physically still
-open. A design can ship before these close, but Eve sends it as a draft the
-owner flips live with one click. Never claim a blocker is solved.
+open. A design can ship before these close, but Eve creates only a draft that
+the owner flips live with one click. Never claim a blocker is solved.
 
 ## Measured economics
 

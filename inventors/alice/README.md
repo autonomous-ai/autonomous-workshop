@@ -12,15 +12,14 @@ Alice follows the same short promise as every inventor in the Workshop:
 
 ```text
 CUSTOMER          WISH --------------- WAIT ------------- RECEIVE
-                                          |
-ALICE              Taste + workflow + Alice's higher inspection bar
-                                           |
-WORKSHOP            MAKE -> INSPECT -> PACK -> SEND
+                    |                                      ^
+ALICE               +--> TASTE guides MAKE <-> INSPECT ----+
+                              |
+WORKSHOP                artifact + runtime + adapters + receipts
 ```
 
-`BOX` means the physical thing the customer receives. It is not a ZIP file or
-a database state. Today Alice implements the guarded backstage work; direct
-Wish intake and automatic delivery remain future Doors.
+Today Alice implements the guarded backstage work; direct Wish intake and
+automatic delivery remain future integrations.
 
 The target is **one genuinely good game per week**. Alice may work every day;
 she does not publish on a clock. A game ships only when independent blind human
@@ -32,20 +31,21 @@ all pass the pinned policy.
 - Crash-safe SQLite task leases, retries, candidates, evaluations, experiences,
   publications, and a hash-chained append-only event ledger.
 - A bounded role organization with interacting book, history, invention,
-  simulation, human, physical, market, send, learning, and meta loops.
+  simulation, human, physical, market, publication, learning, and meta loops.
 - A concrete locked-down Codex app-server provider with isolated credentials,
   strict structured output, process-group deadlines, and deterministic fixture
   mode for tests.
 - Hard publication gates plus an evidence-weighted multi-objective quality
   score that same-model grading cannot unlock.
-- A Workshop Pack boundary: Alice's `pack.product` task passes the exact
-  inspected production manifest to
-  `pack_artifact()`, records `_workshop_pack`, and calls `inspect_pack()` again
-  immediately before any Shop Door send. Alice's existing production-manifest
-  hash remains authoritative and must equal the packed `product.json` entry.
+- A Workshop artifact boundary: the historically named `pack.product` task
+  passes the exact inspected production manifest to `pack_artifact()`, records
+  `_workshop_pack`, and calls `inspect_pack()` again immediately before any
+  storefront write. Those API and state names remain for compatibility; the
+  architecture has no separate archive stage. Alice's existing production-manifest
+  hash remains authoritative and must equal the archived `product.json` entry.
   Older `publish.*` task rows remain replayable but are never newly scheduled.
 - The always-on service folds the explicit, clean
-  `workshop/src/inventor_workshop` checkout into Alice's runtime identity and sealed
+  `src/inventor_workshop` checkout into Alice's runtime identity and sealed
   execution snapshot. Every worker identity check hashes that mutable checkout,
   while a scheduled child can only import the owner-only Workshop bytes that were
   verified and sealed for its installed identity. Sealed processes use
@@ -55,7 +55,7 @@ all pass the pinned policy.
   verified held-out outcomes. Alice cannot edit or activate her own gates.
 - Strict command-adapter contracts for corpus, playtest, human, CAD, market,
   order, print, and outcome systems, plus built-in adapters for the existing
-  board-game Shop Door operator and Vibe public flip. They are disabled and
+  board-game storefront operator and Vibe public flip. They are disabled and
   uncredentialed by default.
 - A connected text2game CAD/DFM runtime and deterministic Vibe exporter. It
   requires clean text2game and text2cad checkouts at exact Git commits plus
@@ -71,7 +71,7 @@ all pass the pinned policy.
   bounded, no-follow regular-file reader before binding receipts to exact bytes.
 - Dry-run, draft, and live effect modes with immutable inputs and durable
   operation keys. The first operational milestone is `draft`: Alice creates the
-  complete private Shop Door product page, then stops for Dee's one-click review
+  complete private storefront product page, then stops for Dee's one-click review
   and public flip. Automatic public release is a separate, disabled `live`
   capability. Alice reuses the existing Vibe page pipeline; it does not recreate
   its visuals, copy, or video work.
@@ -85,7 +85,7 @@ all pass the pinned policy.
 
 The Workshop runtime and offline safety suite are implemented, but this checkout is
 not a live inventor or a completed deployment. No service has been installed
-and no real Shop Door draft has been created by Alice. The connected text2game
+and no real storefront draft has been created by Alice. The connected text2game
 adapter is disabled by default and still needs an authenticated dedicated Codex
 home, its exact external CAD/slicer toolchain, a measured printer calibration,
 and the other real evidence boundaries. The default fixture cannot invent or
@@ -98,9 +98,9 @@ manual Vibe/CAD handoff while the unattended runtime remained disabled, so it
 is evidence of the product workflow rather than evidence that the 24/7 service
 is activated.
 
-`auto_publish_when_eligible` is false by default: a verified **private** Shop Door
+`auto_publish_when_eligible` is false by default: a verified **private** storefront
 draft is the current release boundary, and Dee publishes it manually after
-review. Future automatic public publishing remains fail-closed until the Shop Door
+review. Future automatic public publishing remains fail-closed until the storefront
 advertises and enforces atomic revision/packet, SKU/price/currency, and
 rich-page contracts described in
 [INTEGRATIONS.md](INTEGRATIONS.md). `alice doctor` accepts an effectful mode only
@@ -113,7 +113,7 @@ read-only diagnostic; having a command in config is not readiness.
 cd inventors/alice
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e ../../workshop -e .
+python -m pip install -e ../.. -e .
 python -m unittest discover -s tests -v
 alice init
 alice status
@@ -130,7 +130,7 @@ contracts; it does not describe a currently operational deployment.
 
 1. [ARCHITECTURE.md](ARCHITECTURE.md) — system, loops, roles, and invariants.
 2. [EVALUATION.md](EVALUATION.md) — publication gates, reward, and learning.
-3. [INTEGRATIONS.md](INTEGRATIONS.md) — Workshop, Shop Door, CAD, and simulation.
+3. [INTEGRATIONS.md](INTEGRATIONS.md) — Workshop, storefront, CAD, and simulation.
 4. [RESEARCH.md](RESEARCH.md) — source review and rejected designs.
 5. [OPERATIONS.md](OPERATIONS.md) — running the service safely.
 
@@ -151,7 +151,7 @@ unlock a release or train Alice's learner; it only says the category has an
 early willingness-to-pay signal.
 
 An improvement to a published game always appends a version to the same exact
-Shop Door design ID and slug. Alice must block if that revision-only operation is
+storefront design ID and slug. Alice must block if that revision-only operation is
 unavailable; she may never fall back to a first import or create a duplicate
-listing. Every Alice-authored Shop Door description ends with the exact suffix
+listing. Every Alice-authored storefront description ends with the exact suffix
 `By Alice.`.

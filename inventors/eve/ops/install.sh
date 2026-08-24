@@ -29,7 +29,7 @@ if [ -n "$WORKSHOP_SRC_CURRENT" ] && [ -n "$WORKSHOP_SRC_LEGACY" ] && \
     fi
     WORKSHOP_SRC_CURRENT="$WORKSHOP_SRC_CURRENT_REAL"
 fi
-WORKSHOP_SRC="${WORKSHOP_SRC_CURRENT:-${WORKSHOP_SRC_LEGACY:-$REPO/../../workshop/src}}"
+WORKSHOP_SRC="${WORKSHOP_SRC_CURRENT:-${WORKSHOP_SRC_LEGACY:-$REPO/../../src}}"
 
 # --- Refusal guards (catch broken deploys before launchd loops on them) -----
 if [ ! -f "$REPO/bin/eve" ]; then
@@ -48,13 +48,13 @@ case "$WORKSHOP_SRC" in
 esac
 if [ ! -d "$WORKSHOP_SRC" ]; then
     echo "REFUSING to install: Workshop source directory is missing: $WORKSHOP_SRC" >&2
-    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
+    echo "Fix: deploy the repository-root src package, or set EVE_WORKSHOP_SRC explicitly." >&2
     exit 1
 fi
 WORKSHOP_SRC="$(cd "$WORKSHOP_SRC" && pwd -P)"
 if [ ! -f "$WORKSHOP_SRC/inventor_workshop/__init__.py" ]; then
     echo "REFUSING to install: inventor_workshop is unavailable at $WORKSHOP_SRC." >&2
-    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
+    echo "Fix: deploy the repository-root src package, or set EVE_WORKSHOP_SRC explicitly." >&2
     exit 1
 fi
 if ! (
@@ -64,7 +64,7 @@ if ! (
 ) >/dev/null 2>&1; then
     echo "REFUSING to install: Eve cannot import the exact Workshop at $WORKSHOP_SRC." >&2
     echo "Every scheduled drive must reach this checkout's artifact boundary." >&2
-    echo "Fix: deploy repository-root workshop, or set EVE_WORKSHOP_SRC=/absolute/path/to/workshop/src." >&2
+    echo "Fix: deploy the repository-root src package, or set EVE_WORKSHOP_SRC explicitly." >&2
     exit 1
 fi
 if [ ! -f "$RENDERER" ]; then

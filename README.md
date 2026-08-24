@@ -1,91 +1,103 @@
 # Autonomous Workshop
 
-Build autonomous AI inventors without rebuilding the machinery around them.
+Build autonomous AI inventors without rebuilding everything around them.
 
-An inventor owns its **Taste** and its creative workflow. The shared
-**Workshop** handles durable work, 3D-making skills, inspection, exact artifact
-packing, and safe connections to outside services.
+An inventor owns its **Taste** and the way it turns a **Wish** into something
+real. Autonomous Workshop supplies the reliable making machinery: durable
+state, reusable skills, exact artifacts, inspection evidence, and safe
+connections to outside services.
 
-The customer experience stays this simple:
+The experience for the person making the Wish stays simple:
 
 ```text
-WISH  ------------------------- WAIT ---------------------->  RECEIVE
+WISH  ------------------------ WAIT ------------------------>  RECEIVE
+                                |
                          the Workshop works
 ```
 
-`Wait` is not an engine stage; it is simply the person's experience while the
-Workshop works. `Receive` is the handoff, and the **Box** is the physical thing
-that arrives. The machinery below is for inventor developers and operators,
-not customer-facing status theater.
+`Wait` and `Receive` are ordinary customer language, not engine stages.
 
-## The blueprint: Alice
+## How Alice is built
 
-A new inventor changes the Alice layer. It reuses everything underneath.
+Alice is one inventor. A new inventor replaces Alice's layer while reusing the
+Workshop underneath it.
 
 ```text
-                         ALICE
-              +---------------------------+
-              | TASTE.md                  |  what Alice loves and rejects
-WISH -------->| workflow + prompts        |  how Alice invents
-              | niche-specific inspection |  Alice's higher bar
-              +-------------+-------------+
-                            |
-                            v
-     +------------------------------------------------------+
-     |                    WORKSHOP                          |
-     |                                                      |
-     |  MAKE --------> INSPECT --------> PACK --------> SEND |
-     |    |               |                |             |   |
-     | Workbench       evidence         exact bytes     Door  |
-     | + 3D skills     tied to bytes                    Stamp |
-     |                                                      |
-     |  CLOCKWORK: state · workflow · leases · budgets      |
-     |             retries · effect fencing                 |
-     +------------------------------------------------------+
-                            |
-                            v
-                         RECEIVE
-                        (the Box)
+                             ALICE
+                 +---------------------------+
+                 | TASTE.md                  |
+WISH ----------->| prompts + creative choices|
+                 | niche-specific inspection |
+                 +-------------+-------------+
+                               |
+                               v
+                 +---------------------------+
+                 |         WORKSHOP          |
+                 |                           |
+                 |      MAKE <-> INSPECT     |
+                 |        ^         |        |
+                 |        + feedback+        |
+                 |                           |
+                 | skills · artifacts        |
+                 | runtime · integrations    |
+                 +-------------+-------------+
+                               |
+                               v
+                            RECEIVE
 ```
 
-Alice decides **what should exist** and **what good feels like**. Workshop
-guarantees **how the work runs, how exact bytes are inspected, and how an
-outside effect is proven**. Workshop never imports Alice.
+Alice decides what should exist and what good feels like. The Workshop makes
+the work repeatable, inspectable, recoverable, and safe to hand off. The
+Workshop never imports Alice.
 
-Today Alice, Bob, and Eve retain some mature inventor-local machinery while
-using Workshop at real boundaries. The exact adoption—not an aspirational
-claim—is recorded in [the adoption map](workshop/docs/ADOPTION.md).
+## Four words
 
-## The Workshop language
-
-The vocabulary is intentionally small.
-
-| Word | Exact meaning |
+| Word | Meaning |
 |---|---|
-| **Wish** | The request, preserved as the inventor received it |
-| **Taste** | The inventor's human-owned creative constitution in `TASTE.md` |
-| **Make** | Turn a Wish into manufacturable artifact bytes with `Workbench.make()` |
-| **Inspect** | Check beauty, safety, printability, and readiness against those exact bytes |
-| **Pack** | Seal exact artifact bytes into one reproducible `PackedArtifact` |
-| **Send** | Move a Pack through a qualified outside Door with a durable outbox |
-| **Door** | A typed boundary to a model, CAD tool, printer, shop, or delivery service |
-| **Stamp** | Durable evidence of what actually crossed a Door |
-| **Clockwork** | State, workflow, leases, budgets, retries, and effect fencing |
-| **Box** | The physical outcome received by the customer |
+| **Wish** | What someone wants, preserved as the inventor received it |
+| **Taste** | The inventor's creative judgment, written in `TASTE.md` |
+| **Make** | Create or revise the product |
+| **Inspect** | Test the exact result and return useful feedback to Make |
 
-A shop is one optional Door. An inventor can fulfill one Wish directly without
-ever putting the result on a storefront.
+That is the complete public Workshop vocabulary. Packaging bytes, recording
+state, calling providers, and retaining receipts are implementation details;
+they are not extra stages an inventor author has to learn.
+
+## Repository shape
+
+The repository *is* the Workshop, so its shared code lives at the root.
+Inventor-owned code lives under `inventors/`.
+
+```text
+autonomous-workshop/
+  inventors/
+    alice/                   one autonomous inventor
+    bob/
+    eve/
+    <new-inventor>/          Taste, workflow, code, docs, and tests
+
+  src/inventor_workshop/     shared Python package
+  skills/                    reusable making skills
+  schemas/                   portable data contracts
+  docs/                      architecture and build guides
+  tests/                     shared contract tests
+  tools/                     repository checks
+  pyproject.toml
+```
+
+The pinned upstream inventors are reference snapshots. Their provenance and
+integration status are recorded in [inventors/README.md](inventors/README.md).
 
 ## Build an inventor
 
-New generated inventors require Python 3.11 or newer.
+Generated inventors require Python 3.11 or newer.
 
 ```bash
 git clone https://github.com/<your-user>/autonomous-workshop.git
 cd autonomous-workshop
 python3.11 -m venv .venv
 . .venv/bin/activate
-python -m pip install -e workshop
+python -m pip install -e .
 
 workshop new deduction-games \
   --name Ada \
@@ -94,26 +106,26 @@ workshop new deduction-games \
   --root inventors
 ```
 
-The scaffold creates one self-contained folder:
+The scaffold creates a self-contained inventor:
 
 ```text
 inventors/deduction-games/
   TASTE.md                 recognizable preferences and explicit rejects
   README.md                thesis, operation, limits, and commands
-  inventor.json            identity and genuinely used Workshop features
+  inventor.json            identity and entry point
   src/deduction_games/     inventor-owned workflow and code
-  tests/                   offline checks and failure-path tests
+  tests/                   offline and failure-path checks
 ```
 
 Edit `TASTE.md` and `src/deduction_games/workflow.py` first. Keep prompts,
 model choices, niche judgment, and stronger niche inspections with the
-inventor. Reuse Workshop rather than copying another inventor's runtime.
+inventor. Reuse Workshop for everything common.
 
 Then prove the starter without credentials:
 
 ```bash
 cd inventors/deduction-games
-python -m pip install -e ../../workshop -e .
+python -m pip install -e ../.. -e .
 deduction_games doctor
 deduction_games make first-product
 deduction_games status
@@ -121,84 +133,70 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 cd ../..
 ```
 
-`doctor` and `status` are read-only. The offline `make` is deterministic and
-records exact Taste, Inspection, and artifact identities. It proves wiring,
-not production CAD, physical safety, print quality, or live fulfillment.
+The offline `make` is deterministic and records exact Taste, Inspection, and
+artifact identities. It proves the wiring; it does not claim production CAD,
+physical safety, print quality, or live fulfillment.
 
-Before opening a pull request:
+## What the Workshop guarantees
+
+- Taste belongs to the inventor. Agents may propose changes; they do not
+  silently rewrite `TASTE.md`.
+- Unknown is not pass. Missing, stale, malformed, timed-out, or unsupported
+  evidence sends the result back to Make or holds it for review.
+- Inspection follows the bytes. Evidence identifies the exact artifact that
+  was inspected.
+- External outcomes outrank self-scores. Real prints, use, returns, and
+  independent review beat generator confidence.
+- Outside effects are recorded before they happen, use stable idempotency, and
+  keep ambiguous outcomes for reconciliation.
+- No viable product is a valid outcome. An inventor never lowers its bar just
+  to preserve sunk work.
+
+Internally, those guarantees are implemented with three plain subsystems:
+
+```text
+Artifact   immutable product identity and exact transferable bytes
+Runtime    state, leases, budgets, retries, and durable outside effects
+Adapter    a provider boundary that returns a verifiable receipt
+```
+
+These are implementation names, not additional steps in the invention loop.
+Older `Pack`, `Send`, `Door`, `Stamp`, and `Clockwork` APIs remain readable
+during migration, but new inventor code should not build its mental model
+around them.
+
+## Verify the repository
 
 ```bash
-python -m unittest discover -s workshop/tests -p 'test_*.py' -v
+PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
 workshop skills list
 workshop schemas list
 workshop inventors --root inventors --check-entrypoints
-workshop check inventors/deduction-games --run
-python workshop/tools/verify_skill_locks.py
-python workshop/tools/verify_snapshot_locks.py
-python workshop/tools/scan_secrets.py
+workshop check inventors --run
+python tools/verify_skill_locks.py
+python tools/verify_snapshot_locks.py
+python tools/scan_secrets.py
 git diff --check
 ```
 
-Read [the complete build guide](workshop/docs/BUILD_AN_INVENTOR.md) and
-[CONTRIBUTING.md](CONTRIBUTING.md) before sending the PR.
+Public package names remain stable:
 
-## Two main folders
-
-```text
-inventors/
-  alice/                   one autonomous inventor
-  <new-inventor>/          Taste, workflow, code, docs, and tests
-
-workshop/
-  src/inventor_workshop/   shared Python package
-  skills/                  versioned CAD and product-making skills
-  schemas/                 inventor and Stamp contracts
-  docs/                    architecture, build, adoption, and migration guides
-  tests/                   credential-free shared contract tests
-```
-
-The repository also carries pinned upstream inventors as reference snapshots.
-Their provenance and current integration status are documented in
-[inventors/README.md](inventors/README.md).
-
-## Public contract
-
-- Distribution: `inventor-workshop`
+- distribution: `inventor-workshop`
 - Python package: `inventor_workshop`
 - CLI: `workshop`
-- Inventor manifest: schema v3 with reviewed `workshop_features`
-- Runtime directory for a clean inventor: `.workshop/`
-- Durable state: `.workshop/clockwork.sqlite3`
+- per-inventor runtime directory: `.workshop/`
 
-Former `inventor_foundation` and `inventor_core` imports remain direct
-compatibility shims to the same implementation. New code must not emit their
-old names or create a second state authority. See
-[the migration guide](workshop/docs/MIGRATION.md).
-
-## Rules that every inventor inherits
-
-1. **Taste belongs to the inventor.** Agents may propose a change; they do not
-   silently rewrite `TASTE.md`.
-2. **Unknown is not pass.** Missing, stale, malformed, timed-out, or unsupported
-   evidence holds the work.
-3. **Inspection follows the bytes.** Every result names the exact product
-   artifact and its report must be present in a sealed evidence manifest.
-   Evidence may be retained separately so the customer's Pack stays
-   product-only, but both identities remain bound in Clockwork.
-4. **External outcomes outrank self-scores.** Real use, prints, returns, and
-   independent review beat generator confidence.
-5. **Remote effects need Stamps.** A local flag or HTTP success alone proves
-   neither ownership nor the requested outside state.
-6. **No viable product is a valid outcome.** Never lower an inspection floor to
-   preserve sunk work.
+Former `inventor_foundation` and `inventor_core` imports are compatibility
+shims to the same implementation. They do not own separate state or behavior.
 
 ## Read next
 
-- [Build an inventor](workshop/docs/BUILD_AN_INVENTOR.md)
-- [Workshop architecture](workshop/docs/ARCHITECTURE.md)
-- [Current adoption](workshop/docs/ADOPTION.md)
-- [Migration from Core and Foundation](workshop/docs/MIGRATION.md)
-- [Lessons from the inventor ecosystem](workshop/docs/ECOSYSTEM.md)
+- [Build an inventor](docs/BUILD_AN_INVENTOR.md)
+- [Workshop architecture](docs/ARCHITECTURE.md)
+- [Current adoption](docs/ADOPTION.md)
+- [Migration guide](docs/MIGRATION.md)
+- [Lessons from the inventor ecosystem](docs/ECOSYSTEM.md)
+- [Contributing](CONTRIBUTING.md)
 
 Never commit credentials, runtime databases, private keys, generated backups,
 or third-party source without documented provenance and permission.

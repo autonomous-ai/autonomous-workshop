@@ -2,7 +2,7 @@
 
 > **Monorepo snapshot.** This folder contains the inventor code imported from
 > `nohope88/text2cad` at commit `0cb635e`. It is retained as a reference
-> implementation while its infrastructure is migrated behind `../../workshop`.
+> implementation while its infrastructure is migrated behind the shared repository root.
 > Backups were excluded, including a tracked environment backup with
 > live-looking credentials; rotate those upstream credentials before any run.
 > See [UPSTREAM.md](UPSTREAM.md) for provenance, licensing, exclusions, and

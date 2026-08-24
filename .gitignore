@@ -31,8 +31,8 @@ __pycache__/
 .pytest_cache/
 .coverage
 .venv*/
-/workshop/build/
-/workshop/dist/
+/build/
+/dist/
 
 # macOS
 .DS_Store

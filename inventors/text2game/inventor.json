@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "id": "text2game",
   "name": "text2game",
   "niche": "End-to-end FDM-printed board-game creation",
@@ -8,7 +8,6 @@
   "status": "experimental",
   "entrypoint": ["python3", "text2game"],
   "capabilities": ["trend-discovery", "game-design", "consistency", "cad", "slicing", "media", "launching", "learning"],
-  "workshop_features": [],
   "checks": [],
   "source": {
     "kind": "upstream-snapshot",

@@ -55,7 +55,7 @@ POLICY_HASH = "c" * 64
 BASE_TIME = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
 IDENTITY = RuntimeIdentity(SOURCE_SHA, CONFIG_SHA, POLICY_HASH, "draft")
 ALICE_ROOT = Path(__file__).resolve().parents[1]
-WORKSHOP_SOURCE_ROOT = ALICE_ROOT.parents[1] / "workshop" / "src"
+WORKSHOP_SOURCE_ROOT = ALICE_ROOT.parents[1] / "src"
 
 
 WATCHDOG_PATH = Path(__file__).resolve().parents[1] / "ops" / "watchdog.py"
@@ -438,7 +438,7 @@ class IdentityTests(unittest.TestCase):
         workshop_package = workshop_source / "inventor_workshop"
         workshop_package.mkdir(parents=True)
         (workshop_package / "__init__.py").write_text(
-            '__version__ = "0.3.0"\n', encoding="utf-8"
+            '__version__ = "0.4.0"\n', encoding="utf-8"
         )
         workshop_module = workshop_package / "artifacts.py"
         workshop_module.write_text("WORKSHOP_PIN = 1\n", encoding="utf-8")
@@ -1291,7 +1291,7 @@ class LaunchdArtifactTests(unittest.TestCase):
         self.assertIn("trap 'rollback 143' TERM", install)
         self.assertIn("prior jobs were restored", install)
         self.assertIn("runtime state was retained", install)
-        self.assertIn("inventor-workshop 0.3.0", install)
+        self.assertIn("inventor-workshop 0.4.0", install)
         self.assertIn("--workshop-source-root", install)
         self.assertIn("import ast, importlib.metadata", install)
         self.assertIn("__version__", install)

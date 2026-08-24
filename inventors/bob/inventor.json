@@ -1,22 +1,13 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "id": "bob",
   "name": "Bob",
   "niche": "Autonomous 3D-printable board-game invention",
-  "summary": "A budgeted multi-agent loop from literature and novelty research through executable playtests, CAD, inspection, Workshop Pack, and safe Send.",
+  "summary": "A budgeted multi-agent loop from literature and novelty research through executable playtests, CAD, inspection, and safe delivery.",
   "autonomy": "autonomous",
   "status": "experimental",
   "entrypoint": ["python3", "bob.py", "tick"],
-  "capabilities": ["research", "game-design", "simulation", "table-play", "cad", "send", "learning"],
-  "workshop_features": [
-    "clockwork.state",
-    "make.skills.cad",
-    "make.skills.step-parts",
-    "pack.content-addressed",
-    "taste.content-addressed",
-    "send.outbox",
-    "doors.shop"
-  ],
+  "capabilities": ["research", "game-design", "simulation", "table-play", "cad", "delivery", "learning"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
   "source": {"kind": "local"}
 }

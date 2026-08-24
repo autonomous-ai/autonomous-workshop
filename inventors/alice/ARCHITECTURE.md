@@ -12,14 +12,16 @@ Throughput is a diagnostic, never the reward.
 The customer contract stays deliberately smaller than Alice's machinery:
 
 ```text
-WISH --------------- WAIT ------------- RECEIVE
-                        |
-           MAKE -> INSPECT -> PACK -> SEND
+WISH ------------------ WAIT ------------------ RECEIVE
+  |                                                ^
+  +----------> TASTE guides MAKE <-> INSPECT ------+
+                         |
+                 artifact + runtime + adapters + receipts
 ```
 
 Taste guides Make. Alice owns her niche-specific Make and Inspect work;
-Workshop supplies the content-addressed Pack. A future delivery Door turns a
-paid Wish into the physical Box.
+Workshop supplies content-addressed artifacts, a durable runtime, adapters, and
+receipts. Future fulfillment connects an accepted Wish to physical delivery.
 
 ## The system
 
@@ -42,9 +44,9 @@ flowchart TD
   V --> P2["Exact-history prototype + production run"]
   P2 --> M["Safety, IP, market, economics"]
   M --> G{"Pinned draft policy"}
-  G -->|pass| DRAFT["Complete private Shop Door draft"]
+  G -->|pass| DRAFT["Complete private storefront draft"]
   DRAFT --> REVIEW["Dee one-click review and public flip"]
-  REVIEW --> F["Public Shop Door product"]
+  REVIEW --> F["Public storefront product"]
   F --> W["Existing rich product-page observer"]
   G -->|repair| L["Learning policy"]
   G -->|kill| A["Archive with evidence"]
@@ -108,7 +110,7 @@ Alice is an orchestrator-worker system with bounded, adversarial specialization:
 | Falsification | novelty adversary, exploit hunter, safety/IP | Their job is to kill weak claims, not help the pitch |
 | Play | optimizer, social, explorer, playtest director, human researcher | Different player incentives expose different failures |
 | Make | industrial designer, CAD builder, DFM verifier | Digital plausibility must become a printable object |
-| Send | merchant, packer, sender | Economics, Pack identity, and Door effects are distinct from invention |
+| Delivery | merchant, release operator, fulfillment operator | Economics, artifact identity, and external effects are distinct from invention |
 | Improve | meta-scientist | Harness experiments run in shadow mode |
 
 Multi-agent work is used only for independent search, proposals, personas, and
@@ -183,14 +185,15 @@ adapter print and review that exact design/history. A render is not a print.
 Production validation requires a receipt tied to the same artifact hashes,
 project hash, design id, history id, and project URL.
 
-### 7. Market, Pack, and Send loop
+### 7. Market and release loop
 
 The merchant checks the exact offer and economics; safety/IP reviews the exact
-production packet. The policy engine makes the eligibility decision. The
-packer hashes rules, assets, CAD, BOM, evidence, price, and disclosures into
-one immutable Pack. The sender can move only that inspected Pack through the
-Shop Door. In the current product boundary, `draft` Alice creates and
-verifies the complete private Shop Door page, then stops. Dee reviews that exact
+production packet. The policy engine makes the eligibility decision. Artifact
+handling hashes rules, assets, CAD, BOM, evidence, price, and disclosures into
+one immutable, content-addressed artifact. The runtime permits a storefront
+adapter to move only those inspected bytes and records the resulting receipt.
+In the current product boundary, `draft` Alice creates and verifies the complete
+private storefront page, then stops. Dee reviews that exact
 draft and uses the existing one-click public control. Alice never regenerates
 the product after the print gate.
 
@@ -201,12 +204,12 @@ reusing the exact private draft design/history that was hash-checked, printed,
 and reviewed. One atomic write must compare that exact history/project and
 complete rich page, apply the reviewed SKU, price, and USD currency, and echo
 the packet and policy hashes. The deployed downstream observer may enrich the
-public Shop Door page further. Alice does not recreate either the draft page
+public storefront page further. Alice does not recreate either the draft page
 builder or that downstream merchandising system.
 
 Alice persists the operation before each remote write, never retries an
 ambiguous create/publish response, and reconciles by reading the design back.
-For the later automatic path, Alice polls the anonymous Shop Door design record
+For the later automatic path, Alice polls the anonymous storefront design record
 until the page contract is complete and the exact price is visible. Only then
 does the candidate reach `page_ready`; a final receipt-bound transition marks it
 `published`. Until that path is explicitly activated, every game has Dee's

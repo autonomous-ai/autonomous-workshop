@@ -2,7 +2,7 @@
 
 Alice's architecture is derived from current long-running-agent practice,
 agent evaluation research, general game systems, automated playtesting, and the
-existing Autonomous Vibe/Shop Door and legacy publication-backend work.
+existing Autonomous Vibe storefront and legacy publication-backend work.
 
 ## Long-running and multi-agent systems
 
@@ -74,7 +74,7 @@ does not collect full copyrighted text.
 
 ## Existing Autonomous implementations
 
-The implementation review covers the live Vibe/Shop Door services, the frozen
+The implementation review covers the live Vibe storefront services, the frozen
 Vibe desktop, Leonardo's durable inventor, and the three team experiments:
 `peterat617/text-to-3d`, `reinSPQR/vibe-ideas`, and `nohope88/text2cad`.
 Concrete contracts and keep/replace decisions live in
@@ -91,7 +91,7 @@ Concrete contracts and keep/replace decisions live in
 | Contextual bandit/evolutionary repair | End-to-end deep RL today | Too few, delayed, changing rewards |
 | Multi-agent only for independent work | Agent for every step | Cost and coordination exceed value |
 | Real print and receipt | Render/CAD screenshot | The product is physical |
-| Shop Door adapter behind policy | Repo-coupled ad-hoc publishing | Sending must be idempotent and auditable |
+| Storefront adapter behind policy | Repo-coupled ad-hoc publishing | External effects must be idempotent and auditable |
 | Learn ludemes/metadata with provenance | Copy every rulebook | Copyright, source quality, and scale |
 
 ## What remains uncertain

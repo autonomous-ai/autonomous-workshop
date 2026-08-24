@@ -1,17 +1,18 @@
-# Workshop, Shop Door, CAD, and simulation integrations
+# Workshop, storefront, CAD, and simulation integrations
 
 This map separates current production contracts from useful experiments. Alice
 must not revive a retired path simply because its code is convenient.
 
 Names containing `panda` below are immutable upstream repository identifiers,
-not Alice or Workshop vocabulary. Developer-facing code calls the active
-storefront boundary the **Shop Door**.
+not Alice or Workshop vocabulary. The active commerce boundary is a storefront
+adapter. The implementation class `ShopDoorAdapter` retains its historical name
+for compatibility.
 
 ## Repository authority
 
 | State | Repository | Alice decision |
 |---|---|---|
-| Hot | `autonomous-ai/panda-social-backend` | Shop Door API, import, slicing, send, and order authority |
+| Hot | `autonomous-ai/panda-social-backend` | Storefront API, import, slicing, publication, and order authority |
 | Hot | `autonomous-ai/panda-social-cc-agent` | Production CAD gate, artifact identity, worker/CDN patterns |
 | Hot | `autonomous-ai/ecm-website` | Canonical `/factory` customer experience |
 | Warm | `autonomous-ai/panda-mobile` | Consumer client, not an inventor contract |
@@ -36,7 +37,7 @@ Alice accepted game and exact rules
   -> text2game's separated rules, CAD, repair, gate, render, and slice stages
   -> deterministic, hash-preserving export into a Vibe board-game workspace
   -> vibe-ideas board-game/tools/publish.py <slug>
-  -> authenticated, complete private Shop Door draft
+  -> authenticated, complete private storefront draft
   -> Dee reviews and clicks publish
 ```
 
@@ -96,24 +97,25 @@ viewer work finishes, and has no operation-key reconciliation or immutable
 rich-page readback. Its useful invention and CAD work remains reusable; its
 publisher is not the production boundary.
 
-## Existing rich-page draft and future Shop Door send
+## Existing rich-page draft and future publication
 
-The `pack.product` task uses Workshop's canonical Pack boundary. It packs
-Alice's exact inspected production manifest
-as `product.json`, requires that entry's SHA-256 to equal Alice's already-reviewed
+The historically named `pack.product` task uses Workshop's canonical artifact
+boundary. It archives Alice's exact inspected production manifest as
+`product.json`, requires that entry's SHA-256 to equal Alice's already-reviewed
 `production_packet_hash`, and emits `_workshop_pack` with the content-addressed
-artifact and archive identities. The Shop Door adapter calls `inspect_pack()`
-and compares the complete binding before it creates a durable send intent or
-crosses the Door. This adds a shared,
-reconstructable packaging contract without replacing Alice's stricter release
-policy, evidence ledger, or effect state machine.
+artifact and archive identities. The storefront adapter calls the compatibility
+API `inspect_pack()` and compares the complete binding before the runtime creates
+a durable effect intent. This adds a shared, reconstructable artifact contract
+without replacing Alice's stricter release policy, evidence ledger, or effect
+state machine.
 
 For durable compatibility, Alice can still read and dispatch already-stored
 `publish.packet`, `publish.invoke_pipeline`, and `publish.verify_page` rows.
-New work is always `pack.product`, `send.to_shop`, and `send.verify_shop`.
+New work is always `pack.product`, `send.to_shop`, and `send.verify_shop`; these
+persisted task names remain compatibility identifiers, not Workshop stages.
 
 For the always-on worker, the Workshop package is also part of Alice's
-service identity. Installation passes the explicit `workshop/src` checkout to the
+service identity. Installation passes the explicit repository `src` checkout to the
 sealed worker: identity checks continue to hash that mutable checkout, while
 all Alice and `inventor_workshop` imports used for execution resolve from the
 owner-only release snapshot. The bootstrap disables Python site initialization
@@ -127,13 +129,13 @@ generator, video generator, or product-page renderer:
 ```text
 verified production workspace + slug
   -> vibe-ideas board-game/tools/publish.py <slug>
-  -> private Shop Door draft with rules, use case, story, specs, and covers
+  -> private storefront draft with rules, use case, story, specs, and covers
   -> authenticated readback + remote artifact hashes for that exact history
   -> prototype print + production validation of that draft history
   -> Dee's one-click review and public flip of the same history (current)
   -> capability-gated automatic Vibe public flip (future `live` mode)
   -> deployed page observer/enrichment, if produced
-  -> anonymous Shop Door readback -> Alice public-page verification
+  -> anonymous storefront readback -> Alice public-page verification
 ```
 
 The existing draft operator is the supported local entry point. It calls the
@@ -149,7 +151,7 @@ merchandising. The San Francisco chess set and Arrows Across the River are the
 reference pages.
 
 Alice persists a caller operation key and immutable packet hash before the
-first write. Current Shop Door writes are not server-idempotent, so a timeout
+first write. Current storefront writes are not server-idempotent, so a timeout
 or disconnect after a create, message, edit, or publish is terminally
 `ambiguous`: the worker does not retry. An operator or a dedicated reconciler
 must read remote state and attach the original remote id before work resumes.
@@ -165,7 +167,8 @@ no category and the San Francisco set has historically shown the wrong one.
 Alice should provide the intended category upstream and keep the warning open
 for merchandising/SEO cleanup.
 
-`alice.page_builder.ShopDoorAdapter` owns the private-draft handoff. The old
+`alice.page_builder.ShopDoorAdapter` owns the private-draft handoff; its class
+name is retained for compatibility. The old
 `PageBuilderAdapter` import remains a compatibility alias only. It is
 available only in `draft` or `live`. Its reviewed configuration pins the exact
 clean Vibe Git commit, interpreter bytes, `publish.py`, its local import closure
@@ -205,10 +208,10 @@ adopted automatically. The CDN fetch is intentionally anonymous and accepts
 only a configured credential-free HTTPS host with redirects disabled.
 
 This first-import path is never a revision fallback. A known game is durably
-bound to its exact Shop Door design ID and canonical slug; any later improvement
+bound to its exact storefront design ID and canonical slug; any later improvement
 must append a history to that record or stop. Blindcap is currently public, and
 the deployed version-import route immediately publishes a replacement history,
-so its improvements remain local until the Shop Door advertises an atomic staged-
+so its improvements remain local until the storefront advertises an atomic staged-
 version capability that preserves the old public history for review. A 404,
 identity mismatch, collision-suffixed slug, or missing capability must never
 cause Alice to create another design. All Alice-authored descriptions must end
@@ -270,12 +273,12 @@ Repeated slice POST resets/requeues the job and is prohibited.
 ### Current risk envelope and desirable backend hardening
 
 The import endpoint does not honor an idempotency key. A timeout after commit
-can create a duplicate if retried. Alice therefore claims one durable sender
+can create a duplicate if retried. Alice therefore claims one durable runtime effect
 before launching the existing import operator; a second worker stops, and any
 post-launch uncertainty is terminally ambiguous.
 
 Public publishing is currently **blocked**, not merely degraded. The checked
-Shop Door deployment does not advertise all three public-write capabilities
+storefront deployment does not advertise all three public-write capabilities
 Alice requires: `packet_hash_bound_publish`, `sku_currency_bound_publish`, and
 `rich_page_bound_publish`. The write boundary must atomically compare the
 caller's expected history and project plus the complete rich-page precondition,
@@ -425,7 +428,7 @@ specification, complete BOM paths and quantities, and packing instructions. The
 print, authenticated QA, and shipment receipts must echo that exact recipe and
 its hashes in addition to the intent, packet, SKU, and quantity. Repeated polls
 of the same order resolve to the same print and shipment tasks. Payment and
-address data remain behind the Shop Door. Detailed slicer, machine, lot, cost, failure,
+address data remain behind the storefront adapter. Detailed slicer, machine, lot, cost, failure,
 support, and return measurements arrive through the separate outcomes contract
 rather than being inferred from shipment success.
 
@@ -438,7 +441,7 @@ diagnostics prove the primitives on both sides: `delivery` must advertise
 ignored. Draft and live physical effects separately require CAD
 `idempotent_cad_by_operation_key`/`reconcile_cad_by_operation_key` and print
 prototype/production idempotency plus reconciliation capabilities. Every first
-send and reconciliation payload is bound by `effect_operation_key`,
+effect and reconciliation payload is bound by `effect_operation_key`,
 `task_input_sha256`, and `reconcile_only`.
 
 ## Repository pieces deliberately excluded

@@ -3,7 +3,7 @@
 Bob is a board-game inventor built on the shared Workshop. The design
 separates the tiny customer promise from the machinery that fulfills it.
 
-## One story outside, four verbs backstage
+## One customer story, four Workshop concepts
 
 ```text
 CUSTOMER
@@ -17,19 +17,17 @@ BOB, BACKSTAGE                                                  |
       TASTE + Bob's workflow                                      |
                  |                                                |
                  v                                                |
-      MAKE -> INSPECT -> PACK -> SEND ----------------------------+
-        |        |         |       |
-        |        |         |       +-- Sender -> ShopDoor -> Stamp
-        |        |         +---------- pack_artifact / inspect_pack
-        |        +-------------------- board-game inspectors
-        +----------------------------- rules, play engine, CAD
+             MAKE <-> INSPECT ------------------------------------+
+               |         |
+               |         +-- board-game inspectors
+               +------------ rules, play engine, CAD
 
-      Clockwork: durable products, intents, leases, and effect fencing
+      Internal: artifact + runtime + adapter + receipt
 ```
 
-The Shop Door branch is optional. It is Bob's current external destination,
-not the customer's whole experience. `BOX` is the physical delivery that
-fulfillment eventually produces.
+The storefront adapter is optional. It is Bob's current external destination,
+not the customer's whole experience; fulfillment eventually produces the
+physical delivery.
 
 ## The Workshop boundary
 
@@ -39,10 +37,10 @@ Bob owns                                  Workshop owns
 TASTE.md                                  Taste loading + content binding
 idea search and game rules       ----->   common Wish/Make vocabulary
 simulation and table play                 reusable skill catalog
-CAD generation and game gates    ----->   canonical artifact packing
-frozen reward function                    PackedArtifact + inspect_pack
-queue policy                     ----->   Clockwork durable state/outbox
-Shop Door metadata               ----->   Sender + ShopDoor + typed Stamp
+CAD generation and game gates    ----->   canonical artifact handling
+frozen reward function                    shared inspection primitives
+queue policy                     ----->   durable runtime and effect outbox
+storefront metadata              ----->   adapter + typed receipt
 ```
 
 Bob intentionally does not claim the Workshop's generic
@@ -53,7 +51,8 @@ manifest advertises only the shared features Bob actually uses.
 The general Workshop Make surface is `Wish -> Workbench.make() -> MakeResult`.
 Bob's older board-game loop currently owns its specialized Make orchestration,
 so it does not claim `workbench.make` either. This distinction keeps the
-manifest honest while Bob still shares Taste, Pack, Clockwork, and Send.
+manifest honest while Bob still shares Taste, artifact handling, and runtime
+infrastructure.
 
 At the effect boundary the authority chain is:
 
@@ -61,27 +60,29 @@ At the effect boundary the authority chain is:
 exact product bytes
       |
       v
-pack_artifact(...) -> PackedArtifact
-      |                 artifact_sha256 + pack_sha256
+artifact: `pack_artifact(...)` -> `PackedArtifact`
+      |       artifact_sha256 + pack_sha256
       v
-inspect_pack(...)
+inspection: `inspect_pack(...)`
       |
       v
-Clockwork records intent BEFORE HTTP
+runtime records intent BEFORE HTTP
       |
       v
-Sender -> ShopDoor
+storefront adapter (`ShopDoor`)
       |
       v
-Stamp is validated against owner + artifact + history + listing
+receipt (`Stamp`) binds owner + artifact + history + listing
       |
       v
-Bob may update send.json and his queue
+Bob may update `send.json` and his queue
 ```
 
 No JSON projection, HTTP status alone, stdout, remote design id, or human
-assertion can skip that chain. A timeout or 5xx leaves the Clockwork intent
-unknown and blocks a duplicate send until it can be reconciled.
+assertion can skip that chain. A timeout or 5xx leaves the runtime intent
+unknown and blocks a duplicate effect until it can be reconciled. `PackedArtifact`,
+`Clockwork`, `ShopDoor`, and `Stamp` are compatibility API names, not additional
+Workshop concepts.
 
 ## Bob's Make and Inspection work
 
@@ -101,8 +102,11 @@ They map onto the Workshop story as follows:
 |---|---|---|
 | `MAKE` | `sparked` through `built` | select a direction, write rules, create a real engine, play it, form a parts brief, build CAD |
 | `INSPECT` | `rules_gated`, `simulated`, `tabled`, `build_gated`, `reviewed` | reject unclear, degenerate, dull, derivative, unsafe, or unprintable games |
-| `PACK` | after `reviewed` | build and inspect one canonical content-addressed artifact |
-| `SEND` | `published`, optionally `live` | send a private draft; optionally make it public through the Shop Door |
+
+After `reviewed`, Bob builds one content-addressed artifact. The runtime may
+then invoke the storefront adapter to create a private draft or, when explicitly
+authorized, make it public. Those are implementation actions rather than more
+Workshop verbs.
 
 The old `sparked` value is only Bob's persisted idea-selection state. It is not
 an additional customer step or a shared Workshop API.
@@ -129,8 +133,9 @@ been played:
 7. **Reward Inspection (`reviewed`)** — isolated judges produce evidence for
    the frozen reward function. Stale verdicts fail by artifact SHA-256. Missing
    evidence fails closed.
-8. **Pack and Send** — `harness.send` validates the page kit, produces the
-   Workshop pack, and either records a rehearsal or invokes `Sender`.
+8. **Artifact and storefront effect** — `harness.send` validates the page kit,
+   produces the canonical artifact, and either records a rehearsal or invokes
+   the compatibility API `Sender`.
 
 The frozen reward specification is in `docs/REWARD.md`. Its hard gates cover
 completeness, simulation integrity, degeneracy, novelty evidence, safety, and
@@ -162,16 +167,18 @@ No loop needs direct agent-to-agent messaging. Files are the message bus:
 - `games/<slug>/` holds the exact artifacts for one game.
 - `state/QUEUE.json` decides what moves next and owns leases.
 - `state/REWARD_LEDGER.jsonl` records spend and evidence.
-- `state/inventor-workshop.sqlite3` is Clockwork's effect ledger.
+- `state/inventor-workshop.sqlite3` is the runtime effect ledger; the filename is
+  retained for compatibility.
 - `games/<slug>/send.json` is an operator projection, never authority by itself.
-- `games/<slug>/pack/` contains the current Workshop pack and rehearsal report.
+- `games/<slug>/pack/` contains the current artifact archive and rehearsal
+  report; the directory name is a persisted compatibility interface.
 
 One launchd tick advances one step and exits. The order is integrity audit,
 daily spend, lease, closest-to-finish game, study fallback, then weekly
 architecture fallback. Quota exhaustion is a state with a retry time, not an
 exception loop. A separate watchdog alarms when the heartbeat is stale.
 
-## Send modes
+## External-effect modes
 
 The scheduler accepts one autonomous route:
 
@@ -179,32 +186,33 @@ The scheduler accepts one autonomous route:
 BOB_SEND_VIA=workshop
 ```
 
-`BOB_SEND_DRY_RUN=1` is the default. It still performs `PACK`, writes
+`BOB_SEND_DRY_RUN=1` is the default. It still builds the artifact, writes
 `pack/manifest.json`, and writes a `send.json` rehearsal with
 `send_authority: none`; it creates no remote listing.
 
-With `BOB_SEND_DRY_RUN=0`, `Sender` sends a private draft. Public sending is a
+With `BOB_SEND_DRY_RUN=0`, the compatibility API `Sender` creates a private
+draft. Public publication is a
 separate, explicitly priced action (`bob send <slug> --price-cents ...` or
 `BOB_SHOP_PUBLIC=1` for the scheduled loop). An ambiguous public action is
 reconciled by readback and never blindly repeated.
 
 `BOB_SEND_VIA=box` is not an autonomous mode. The historical text2game server
-called a "box" is unrelated to the customer's physical `BOX`; it exists only
-behind manual `bob export`. It cannot write send authority or advance Bob.
+name `box` exists only behind manual `bob export`. It cannot write effect
+authority or advance Bob.
 
 ## Compatibility edge
 
 New Bob code emits Workshop names. A narrow adapter can read older deployments:
 
-- Foundation/Core source and Clockwork file names
+- legacy `Foundation`/`Core` source and `Clockwork` file names
 - Portal/Panda credentials and endpoint settings
 - publish-prefixed environment settings
 - `launch.json`, `published.json`, `launch_payload/`, and `publish_payload/`
 - the old `harness.publish` module and `bob publish` command
 
 Every fallback is conflict-checked. Multiple independent sources or state files
-are split authority and stop the send. Compatibility names never authorize a
-manual box observation as a completed effect.
+are split authority and stop the effect. Compatibility names never authorize a
+manual `box` observation as a completed effect.
 
 ## Self-improvement authority
 
@@ -214,4 +222,4 @@ root `TASTE.md`, the owner-evidence archive, baselines, state, or the integrity
 auditor. Repeated prose lessons must graduate into deterministic checks.
 
 This keeps Bob's creativity flexible while the evaluator, Taste, artifact
-identity, budgets, and send authority remain difficult to game.
+identity, budgets, and effect authority remain difficult to game.

@@ -1,7 +1,7 @@
 """Bob's narrow adapter to the repository-wide :mod:`inventor_workshop`.
 
 Bob remains runnable from ``inventors/bob/`` without installing a wheel: the
-adapter prefers an installed package, then resolves ``../../workshop/src``
+adapter prefers an installed package, then resolves the repository-root ``../../src``
 from this file.
 Send operations call :func:`require_workshop` and fail closed when neither
 is available.  Keeping that bootstrap here prevents every Bob module from
@@ -80,7 +80,7 @@ def _symbol(module: Any, canonical: str, *legacy: str) -> Any:
 
 
 def _repository_source() -> Path:
-    return Path(__file__).resolve().parents[3] / "workshop" / "src"
+    return Path(__file__).resolve().parents[3] / "src"
 
 
 def _module_paths(module: Any) -> Tuple[Path, ...]:

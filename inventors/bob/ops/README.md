@@ -5,9 +5,9 @@ every 30 minutes; the other runs an independent watchdog. `launchd` is the
 operating-system name, not Workshop vocabulary.
 
 ```text
-launchd tick -> audit -> budget -> lease -> one MAKE/INSPECT/PACK/SEND step
-                                                       |
-watchdog <---------------- state/DAYBOOK.json heartbeat+
+launchd tick -> audit -> budget -> lease -> one MAKE/INSPECT step
+                                                  |
+watchdog <----------- state/DAYBOOK.json heartbeat+
 ```
 
 ## Files
@@ -34,19 +34,19 @@ Telegram alerts use `BOB_TELEGRAM_TOKEN` and `BOB_TELEGRAM_CHAT` from Bob's
 `.env`. Without them the watchdog still records warnings in
 `state/logs/watchdog.log`.
 
-Bob normally lives under `inventors/bob/` with the shared `workshop/` at the
-repository root. The adapter finds `../../workshop/src` automatically. A
+Bob normally lives under `inventors/bob/` with the shared Workshop at the
+repository root. The adapter finds `../../src` automatically. A
 different deployment may set:
 
 ```text
-BOB_WORKSHOP_SRC=/absolute/path/to/workshop/src
+BOB_WORKSHOP_SRC=/absolute/path/to/autonomous-workshop/src
 ```
 
 `ops/install.sh` validates and persists that source for scheduled ticks.
 Legacy `BOB_FOUNDATION_SRC` and `BOB_CORE_SRC` are compatibility reads only;
 different simultaneous values are refused.
 
-## Workshop send configuration
+## Runtime and storefront configuration
 
 Production configuration should use the canonical names:
 
@@ -59,28 +59,34 @@ BOB_SHOP_ALLOWED_ORIGINS=https://panda-social-api.autonomous.ai
 BOB_SHOP_OWNER_ID=<Bob owner id>
 ```
 
-The provider hostname is historical; Bob's canonical adapter is `ShopDoor`.
+The provider hostname is historical; Bob's storefront adapter class retains the
+compatibility name `ShopDoor`.
 The default scheduled action sends a private draft. `BOB_SHOP_PUBLIC=1` also
 requests the explicitly priced public action after Inspection passes.
 
 Runtime files are:
 
 ```text
-state/shop-auth.json                  Shop Door credentials, mode 0600
-state/inventor-workshop.sqlite3       Clockwork products and durable intents
-games/<slug>/pack/                    canonical PackedArtifact + rehearsal
+state/shop-auth.json                  storefront credentials, mode 0600
+state/inventor-workshop.sqlite3       runtime products and durable intents
+games/<slug>/pack/                    canonical artifact + rehearsal
 games/<slug>/send.json                operator projection
 ```
 
-Older `portal-auth.json`, `panda-auth.json`, Foundation/Core SQLite files,
-`launch.json`, `published.json`, and old payload directories continue in place
+The `pack/` and `send.json` paths, plus the `PackedArtifact` type and
+`Clockwork` database API, are persisted compatibility names rather than
+Workshop concepts.
+
+Older `portal-auth.json`, `panda-auth.json`, `inventor-foundation.sqlite3`,
+`inventor-core.sqlite3`, `launch.json`, `published.json`, and old payload
+directories continue in place
 only when they are the single authority. If more than one candidate exists,
 Bob stops and asks the operator to resolve it.
 
 The old text2game server variables support only an explicit manual
 `bob export`. Scheduled ticks never export, SSH, or turn that server's output
-into a Shop Door Stamp. That historical server's nickname, "box," is unrelated
-to the physical Box in the customer story `WISH -> WAIT -> RECEIVE`.
+into a receipt. Its historical server name, `box`, survives only at this
+compatibility edge.
 
 ## Why these intervals
 

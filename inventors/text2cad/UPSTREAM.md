@@ -12,7 +12,7 @@
 
 The source snapshot is identified by the commit above. This monorepo adds a
 snapshot banner to `README.md` plus `inventor.json`, root `TASTE.md`, and this
-`UPSTREAM.md`; excluded backup files are listed above. `workshop/snapshots.lock.json`
+`UPSTREAM.md`; excluded backup files are listed above. `snapshots.lock.json`
 binds the complete resulting local folder, including these overlays. It is a
 local integrity lock, not proof that every local byte equals the named upstream
 commit.

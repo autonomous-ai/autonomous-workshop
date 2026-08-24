@@ -5,7 +5,7 @@ contains that inventor's complete code, `inventor.json`, `TASTE.md`, operating g
 creative thesis, and niche-specific adapters. `TASTE.md` is the inventor's
 human-owned creative constitution: agents read it, outcomes may motivate a
 proposed revision, and self-improvement code cannot rewrite it. Inventors may depend on
-[`../workshop`](../workshop/README.md); Workshop never imports an
+the shared [Workshop root](../README.md); Workshop never imports an
 inventor.
 
 | Inventor | Focus | Status |
@@ -20,13 +20,15 @@ inventor.
 Create the next inventor from the repository root:
 
 ```bash
-python3 -m pip install -e workshop
+python3 -m pip install -e .
 workshop new deduction-games \
   --name Ada \
   --niche "two-player printable deduction games" \
   --root inventors
 ```
 
-The command writes `inventors/deduction-games/`. Reuse Workshop's Clockwork,
-Make, Inspect, Pack, Send, and Door machinery; keep the new inventor's
-Taste, prompts, generators, evaluators, and reward hypothesis in its own folder.
+The command writes `inventors/deduction-games/`. Give the inventor a Wish
+boundary, its own Taste, and niche-specific Make and Inspect work. Reuse the
+Workshop's artifact handling, durable runtime, and adapters instead of creating
+new branded stages for those implementation details. Keep prompts, generators,
+evaluators, and the reward hypothesis in the inventor folder.

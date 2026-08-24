@@ -7,7 +7,7 @@ WATCHDOG_LABEL="ai.autonomous.alice.watchdog"
 SCRIPT_DIR="${0:A:h}"
 ALICE_DIR="${SCRIPT_DIR:h}"
 REPO_ROOT="${ALICE_DIR:h:h}"
-WORKSHOP_SOURCE_ROOT="$REPO_ROOT/workshop/src"
+WORKSHOP_SOURCE_ROOT="$REPO_ROOT/src"
 PYTHON="$ALICE_DIR/.venv/bin/python"
 WATCHDOG_PYTHON="/usr/bin/python3"
 CONFIG=""
@@ -92,11 +92,11 @@ if ! "$PYTHON" -c 'import pathlib, sys, alice.service; expected = pathlib.Path(s
   print -u2 -- "venv must use this Alice checkout (install it editable first)"
   exit 64
 fi
-if ! "$PYTHON" -c 'import ast, importlib.metadata, pathlib, sys; expected = "0.3.0"; installed = importlib.metadata.version("inventor-workshop"); tree = ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")); declared = [node.value.value for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)]; raise SystemExit(0 if installed == expected and declared == [expected] else 1)' "$WORKSHOP_SOURCE_ROOT/inventor_workshop/__init__.py"; then
-  print -u2 -- "venv must contain inventor-workshop 0.3.0 (install ../../workshop first)"
+if ! "$PYTHON" -c 'import ast, importlib.metadata, pathlib, sys; expected = "0.4.0"; installed = importlib.metadata.version("inventor-workshop"); tree = ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")); declared = [node.value.value for node in tree.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)]; raise SystemExit(0 if installed == expected and declared == [expected] else 1)' "$WORKSHOP_SOURCE_ROOT/inventor_workshop/__init__.py"; then
+  print -u2 -- "venv must contain inventor-workshop 0.4.0 (install the repository root first)"
   exit 64
 fi
-if [[ -n "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all -- inventors/alice workshop/src/inventor_workshop workshop/pyproject.toml)" ]]; then
+if [[ -n "$(git -C "$REPO_ROOT" status --porcelain=v1 --untracked-files=all -- inventors/alice src/inventor_workshop pyproject.toml)" ]]; then
   print -u2 -- "refusing to install from a dirty Alice or Workshop subtree"
   exit 65
 fi

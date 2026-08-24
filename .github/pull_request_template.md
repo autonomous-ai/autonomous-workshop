@@ -6,11 +6,9 @@
 
 - [ ] New inventor
 - [ ] Existing inventor
-- [ ] Workshop Make or making skills
+- [ ] Workshop Make, skills, or artifacts
 - [ ] Workshop Inspect or evidence
-- [ ] Workshop Pack or Send
-- [ ] Workshop Clockwork
-- [ ] Workshop Door
+- [ ] Workshop runtime or integration
 - [ ] Documentation or repository tooling
 
 ## Inventor contract
@@ -32,17 +30,13 @@
 
 - Make:
 - Inspect:
-- Pack:
-- Send:
-- Clockwork:
-- Doors:
+- Shared artifacts/runtime/integrations:
 
 - [ ] Shared infrastructure was reused instead of copied into the inventor.
 - [ ] The dependency remains one-way: inventor imports Workshop; Workshop
       does not import the inventor.
-- [ ] New code and prose use `workshop`, `inventor_workshop`, schema-v3
-      `workshop_features`, Wish, Taste, Make, Inspect, Pack, Send, qualified
-      Doors, Stamps, and Clockwork.
+- [ ] New public code and prose teach only Wish, Taste, Make, and Inspect;
+      internal names are literal artifact, runtime, adapter, and receipt terms.
 
 ## Current versus target behavior
 
@@ -65,7 +59,7 @@ Still target or held:
 ```
 
 - [ ] The offline path needs no network, credentials, paid provider, CAD
-      service, printer, or live Send effect.
+      service, printer, or live outside effect.
 - [ ] Fakes and fixtures are clearly distinguished from live readiness.
 - [ ] Failure, ambiguity, repair exhaustion, and “no viable product” outcomes
       fail closed where applicable.
@@ -73,14 +67,14 @@ Still target or held:
 ## Verification
 
 - [ ] New/changed inventor tests
-- [ ] `python -m unittest discover -s workshop/tests -p 'test_*.py' -v`
+- [ ] `PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v`
 - [ ] `workshop skills list`
 - [ ] `workshop schemas list`
 - [ ] `workshop inventors --root inventors --check-entrypoints`
 - [ ] `workshop check inventors/your-inventor --run`
-- [ ] `python workshop/tools/verify_skill_locks.py`
-- [ ] `python workshop/tools/verify_snapshot_locks.py`
-- [ ] `python workshop/tools/scan_secrets.py`
+- [ ] `python tools/verify_skill_locks.py`
+- [ ] `python tools/verify_snapshot_locks.py`
+- [ ] `python tools/scan_secrets.py`
 - [ ] `git diff --check`
 
 Additional commands and results:
@@ -97,8 +91,8 @@ Additional commands and results:
       exclusions, patches, and license status.
 - [ ] Existing durable state, artifact identity, receipts, and snapshot locks
       remain readable or have a tested versioned migration.
-- [ ] Every external effect is planned before execution, fenced, and
-      Stamp-bound; Shop sends begin as private drafts.
+- [ ] Every external effect is planned before execution, fenced, and bound to
+      a verified receipt; catalog publication begins as a private draft.
 
 ## Reviewer notes
 

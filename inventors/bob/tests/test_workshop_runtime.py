@@ -14,7 +14,7 @@ class TestRepositoryWorkshopSource(unittest.TestCase):
         repository_root = Path(__file__).resolve().parents[3]
         self.assertEqual(
             workshop_runtime._repository_source(),
-            repository_root / "workshop" / "src",
+            repository_root / "src",
         )
 
     def test_bob_skill_links_resolve_to_the_shared_workshop(self):
@@ -25,7 +25,7 @@ class TestRepositoryWorkshopSource(unittest.TestCase):
             self.assertTrue(link.is_symlink(), name)
             self.assertEqual(
                 link.resolve(strict=True),
-                (repository_root / "workshop" / "skills" / name).resolve(strict=True),
+                (repository_root / "skills" / name).resolve(strict=True),
             )
             self.assertTrue((link / "SKILL.md").is_file(), name)
 
