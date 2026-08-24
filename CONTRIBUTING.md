@@ -27,7 +27,7 @@ Workshop contract.
 
 ## Add an inventor
 
-Create a clean package rather than copying Alice, Bob, Eve, or an imported
+Create a clean package rather than copying Alice, Bob, or an imported
 snapshot:
 
 ```bash

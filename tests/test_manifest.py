@@ -37,12 +37,12 @@ class RegistryTest(unittest.TestCase):
             with self.assertRaisesRegex(ManifestError, "schema_version"):
                 load_manifest(path)
 
-    def test_repo_has_six_valid_inventors(self):
+    def test_repo_has_five_valid_inventors(self):
         root = Path(__file__).resolve().parents[1]
         manifests = discover_inventors(root)
         self.assertEqual(
             [item.inventor_id for item in manifests],
-            ["alice", "bob", "eve", "text2cad", "text2game", "vibe-ideas"],
+            ["alice", "bob", "text2cad", "text2game", "vibe-ideas"],
         )
         self.assertEqual(validate_entrypoints(manifests), [])
         self.assertEqual(

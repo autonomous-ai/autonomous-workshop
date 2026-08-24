@@ -12,7 +12,6 @@ inventor.
 |---|---|---|
 | [Alice](alice/) | books-and-history-informed printable board games | autonomous, blocked on authenticated production adapters |
 | [Bob](bob/) | budgeted multi-agent printable board-game invention | experimental |
-| [Eve](eve/) | printable board games with a great-books loop | experimental |
 | [text2cad](text2cad/) | trend-driven printable mechanisms and products | reference snapshot |
 | [text2game](text2game/) | end-to-end FDM board-game creation | human-checkpointed |
 | [vibe-ideas](vibe-ideas/) | deep playtest and CAD workflow | reference snapshot |

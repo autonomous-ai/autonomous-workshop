@@ -177,8 +177,8 @@ When resolving old paths:
 7. Simplify operational names only after all entry points use one authority.
 
 Alice should keep any stronger native invariant until Workshop proves
-equivalent behavior. Bob and Eve can move narrower boundaries sooner, but must
-not dual-write lifecycle or effect authority.
+equivalent behavior. Bob can move narrower boundaries sooner, but must not
+dual-write lifecycle or effect authority.
 
 ## Verification
 

@@ -73,7 +73,6 @@ autonomous-workshop/
   inventors/
     alice/                   one autonomous inventor
     bob/
-    eve/
     <new-inventor>/          Taste, workflow, code, docs, and tests
 
   src/inventor_workshop/     shared Python package

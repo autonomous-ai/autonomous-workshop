@@ -27,7 +27,7 @@ def _inventor(root: Path, *, check=None) -> Path:
         encoding="utf-8",
     )
     document = {
-        "schema_version": 3,
+        "schema_version": 4,
         "id": "sample",
         "name": "Sample",
         "niche": "test products",
@@ -36,7 +36,6 @@ def _inventor(root: Path, *, check=None) -> Path:
         "status": "experimental",
         "entrypoint": ["python3", "run.py"],
         "capabilities": ["testing"],
-        "workshop_features": ["taste.content-addressed"],
         "checks": check
         or [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
         "source": {"kind": "local"},
@@ -86,13 +85,13 @@ class ContributionTest(unittest.TestCase):
             path = folder / "inventor.json"
             document = json.loads(path.read_text(encoding="utf-8"))
             document["schema_version"] = 1
-            document["core_features"] = document.pop("workshop_features")
+            document["core_features"] = ["taste.content-addressed"]
             document.pop("checks")
             path.write_text(json.dumps(document), encoding="utf-8")
             manifest = load_manifest(path)
             self.assertEqual(manifest.workshop_features, ("taste.content-addressed",))
             self.assertTrue(
-                any("schema_version 3" in item for item in validate_contribution(manifest))
+                any("schema_version 4" in item for item in validate_contribution(manifest))
             )
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")

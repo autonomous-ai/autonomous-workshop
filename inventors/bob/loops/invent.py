@@ -1180,8 +1180,8 @@ def _handle_built(step):
     # 79 files, 24 STLs, discarded because the AGENT died (2026-08-23).
     # The deterministic gate is the judge of a build, never the agent's
     # exit code, so a crash falls through to the same file check as success.
-    # Ceiling raised to 90 min (Eve's EVE_BUILDER_MAX_MINUTES lesson, same
-    # night, same wound) and overridable for big assemblies.
+    # Ceiling raised to 90 min after an observed large-assembly timeout and
+    # remains overridable for big assemblies.
     builder_minutes = int(os.environ.get("BOB_BUILDER_MAX_MINUTES", "90"))
     killed_note = ""
     try:

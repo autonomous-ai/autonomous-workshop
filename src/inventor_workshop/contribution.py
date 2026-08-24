@@ -28,9 +28,9 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
     root = manifest.path.parent
     if manifest.source.get("kind") != "local":
         return problems
-    if manifest.schema_version != 3:
+    if manifest.schema_version != 4:
         problems.append(
-            "%s: local inventors must use manifest schema_version 3"
+            "%s: local inventors must use manifest schema_version 4"
             % manifest.inventor_id
         )
     for filename in ("README.md", "TASTE.md"):

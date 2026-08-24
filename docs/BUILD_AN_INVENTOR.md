@@ -24,9 +24,8 @@ workshop new deduction-games \
 ```
 
 Choose `board-game`, `physical-product`, or `custom`. A template provides a
-tested starting loop, not a claim of domain readiness. Do not copy Alice, Bob,
-or Eve as a shortcut; their mature state and failure history are specific to
-them.
+tested starting loop, not a claim of domain readiness. Do not copy Alice or
+Bob as a shortcut; their mature state and failure history are specific to them.
 
 ## 2. Make the folder understandable
 
