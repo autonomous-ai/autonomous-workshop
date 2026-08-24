@@ -1,10 +1,13 @@
 # Owner evidence archive (legacy `knowledge/TASTE.md`)
 
 Every line is a HUMAN rejection or ruling, verbatim where possible. This file
-is protected source evidence, not Bob's runtime creative authority and not an
-extra prompt fragment. The immediate repository-root [`TASTE.md`](../TASTE.md)
-is the sole constitution loaded and content-addressed into Bob's Make requests.
-Only a human appends evidence here; `improve` may never touch either file.
+is protected source evidence for the noncanonical board-game laboratory, not
+Bob's current creative authority and not an extra prompt fragment. The current
+root [`TASTE.md`](../TASTE.md) belongs to Bob's moving-machines profile. The old
+board-game constitution is preserved separately in
+[`TASTE.board-games.md`](../TASTE.board-games.md); no code redirects itself to
+that file. Only a human appends evidence here; `improve` may never touch these
+documents.
 
 Inherited from prior inventor runs (vibe-ideas, org playtest program):
 

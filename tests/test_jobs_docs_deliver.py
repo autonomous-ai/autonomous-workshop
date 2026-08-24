@@ -40,7 +40,7 @@ class WorkshopJobFixture(unittest.TestCase):
         )
         self.taste = load_taste(inventor)
         self.wish = Wish.create("pocket-duel", "A surprising pocket duel")
-        self.blueprint = ToyBlueprint.for_lane("table-game")
+        self.blueprint = ToyBlueprint.for_lane("classics-made-yours")
 
         self.product_root = self.root / "product"
         self.product_root.mkdir()
@@ -55,7 +55,7 @@ class WorkshopJobFixture(unittest.TestCase):
             {
                 "title": "Pocket Duel",
                 "summary": "A tiny bluffing game with a satisfying reveal.",
-                "lane": "table-game",
+                "lane": "classics-made-yours",
                 "instructions": "Choose, commit, and reveal.",
                 "components": ["board", "six caps"],
                 "limitations": ["AI simulation is not human delight evidence."],
@@ -158,14 +158,14 @@ class JobBindingTest(WorkshopJobFixture):
         product = {
             "title": "Mutable Toy",
             "summary": "The input object must not remain live.",
-            "lane": "table-game",
+            "lane": "classics-made-yours",
             "components": [{"name": "cap"}],
         }
         made = Made.from_root(self.product_root, product)
         product["components"][0]["name"] = "changed"
         self.assertEqual(made.product["components"][0]["name"], "cap")
 
-    def test_made_rejects_products_outside_the_four_plaything_lanes(self):
+    def test_made_rejects_products_outside_the_five_plaything_lanes(self):
         with self.assertRaisesRegex(ContractError, "plaything lane"):
             Made.from_root(
                 self.product_root,
@@ -216,7 +216,11 @@ class JobBindingTest(WorkshopJobFixture):
         (other_root / "toy.step").write_text("different bytes\n", encoding="utf-8")
         other = Made.from_root(
             other_root,
-            {"title": "Other", "summary": "Other toy", "lane": "table-game"},
+            {
+                "title": "Other",
+                "summary": "Other toy",
+                "lane": "classics-made-yours",
+            },
         )
         with self.assertRaisesRegex(ContractError, "different artifact bytes"):
             DocsContext(

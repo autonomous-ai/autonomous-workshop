@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/inspection-result-v1.json",
-  "title": "Artifact-bound InspectionResult (compatibility)",
-  "description": "Compatibility spelling for persisted Workshop results. New prose and code use PlaytestResult; the serialized field shape remains stable.",
+  "$id": "https://autonomous.ai/schemas/inventor/playtest-result-v1.json",
+  "title": "Artifact-bound PlaytestResult",
+  "description": "Canonical Workshop 0.5 Playtest result. The persisted inspection_id spelling is retained for replay compatibility and is exposed as playtest_id by the code API.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -11,7 +11,11 @@
     "evidence_sha256", "observed_at"
   ],
   "properties": {
-    "inspection_id": {"type": "string", "minLength": 1},
+    "inspection_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Persisted spelling of the code-facing playtest_id."
+    },
     "passed": {"type": "boolean"},
     "artifact_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "evidence": {"type": "object", "minProperties": 1},

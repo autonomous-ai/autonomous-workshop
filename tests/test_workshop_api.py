@@ -264,6 +264,7 @@ class WorkshopApiTest(unittest.TestCase):
             list(schemas),
             [
                 "inventor.schema.json",
+                "playtest-result.schema.json",
                 "inspection-result.schema.json",
                 "maker-mark.schema.json",
                 "receipt.schema.json",
@@ -279,10 +280,14 @@ class WorkshopApiTest(unittest.TestCase):
         inspection_schema = json.loads(
             schemas["inspection-result.schema.json"].read_text(encoding="utf-8")
         )
+        playtest_schema = json.loads(
+            schemas["playtest-result.schema.json"].read_text(encoding="utf-8")
+        )
         maker_mark_schema = json.loads(
             schemas["maker-mark.schema.json"].read_text(encoding="utf-8")
         )
         self.assertEqual(maker_mark_schema["properties"]["schema_version"]["const"], 1)
+        self.assertEqual(playtest_schema["title"], "Artifact-bound PlaytestResult")
         self.assertEqual(
             maker_mark_schema["properties"]["mode"]["enum"],
             ["live", "fixture", "offline", "replay"],

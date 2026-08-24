@@ -1,195 +1,285 @@
-# Migration to Workshop 0.4
+# Migration to Workshop 0.5
 
-Workshop 0.4 makes the repository and language match the product: the
-repository itself is Autonomous Workshop, inventor code lives under
-`inventors/`, and the public loop has only Wish, Taste, Make, and Inspect.
-
-Migration is incremental. Preserve characterized behavior and persisted
-effects while moving one tested boundary at a time. Current native adoption is
-recorded in [ADOPTION.md](ADOPTION.md).
-
-## Repository layout
-
-The former nested `workshop/` contents now live at the repository root:
-
-| Before 0.4 | 0.4 |
-|---|---|
-| `workshop/src/` | `src/` |
-| `workshop/skills/` | `skills/` |
-| `workshop/schemas/` | `schemas/` |
-| `workshop/docs/` | `docs/` |
-| `workshop/tests/` | `tests/` |
-| `workshop/tools/` | `tools/` |
-| `pip install -e workshop` | `pip install -e .` |
-| from an inventor: `pip install -e ../../workshop` | `pip install -e ../..` |
-
-Distribution, import, and CLI names do not change:
-
-- distribution `inventor-workshop`;
-- Python package `inventor_workshop`;
-- CLI `workshop`;
-- per-inventor runtime directory `.workshop/`.
-
-The local runtime folder keeps its name because it distinguishes generated
-state from inventor source; it is unrelated to the removed repository nesting.
-
-## Name and schema history
-
-| Version | Distribution / import | Manifest feature field |
-|---|---|---|
-| 0.1 | `autonomous-inventor-core` / `inventor_core` | `core_features` |
-| 0.2 | `inventor-foundation` / `inventor_foundation` | `foundation_features` |
-| 0.3 | `inventor-workshop` / `inventor_workshop` | `workshop_features` |
-| 0.4 | `inventor-workshop` / `inventor_workshop` | none |
-
-Schema v4 requires `checks` but has no Workshop feature inventory. Every
-inventor in this repository already shares the Workshop; listing implementation
-pieces in each inventor's identity created noise and coupled manifests to
-internal names.
-
-Readers remain compatible with exactly one historical feature field for the
-declared schema:
-
-- schema v1: `core_features`;
-- schema v2: `foundation_features` plus `checks`;
-- schema v3: reviewed `workshop_features` plus `checks`;
-- schema v4: `checks`, with no feature field.
-
-`inventor_foundation` and `inventor_core` remain direct import shims. They do
-not own separate behavior or state.
-
-## Public vocabulary
-
-New inventor-facing code and documentation teach only:
+Workshop 0.5 turns the repository into one opinionated Toy Workshop for
+playthings for grown-ups. Every new profile uses one of five product categories
+and the same five jobs:
 
 ```text
-Wish + Taste -> Make <-> Inspect
+Wish -> Make <-> Playtest -> Docs -> Deliver
+             feedback
 ```
 
-The six short-lived Workshop 0.3 metaphors become literal implementation
-names:
+Migration is incremental. Preserve characterized behavior and persisted
+effects while moving one exact, tested boundary at a time. Current profile
+readiness is recorded in [ADOPTION.md](ADOPTION.md).
 
-| Workshop 0.3 | Workshop 0.4 treatment |
+## What changed in 0.5
+
+- The product scope is classics made yours, games that do not exist yet,
+  machines that move, science you can hold, and little worlds.
+- `Playtest` is the canonical name for testing and improving an exact Make.
+- Docs and Deliver are explicit shared jobs after the Make–Playtest loop.
+- Inventors choose Taste-only, custom-Make, or custom-Playtest adoption.
+- `playtest_rounds` can be selected per Wish by a trusted boundary.
+- `Workshop`, `WorkshopTools`, typed job contexts/results, five category
+  blueprints, AI-player leagues, truthful Docs, and exact Deliver contracts are
+  the canonical 0.5 surface.
+
+The distribution remains `inventor-workshop`, the import remains
+`inventor_workshop`, the CLI remains `workshop`, and mutable per-profile state
+remains under `.workshop/`.
+
+## Repository and manifest continuity
+
+The repository-root layout introduced in 0.4 remains canonical:
+
+```text
+inventors/              thin profiles and inventor-owned work
+src/inventor_workshop/  shared Workshop implementation
+skills/                 locked making knowledge
+schemas/                portable data contracts
+docs/                   architecture and operating guidance
+tests/                  shared invariant tests
+```
+
+Schema-v4 inventor manifests still require `checks` and do not enumerate
+shared implementation features. Every profile in this repository already
+belongs to Workshop, so repeating an internal feature inventory in each
+identity would couple inventors to implementation details.
+
+Historical manifests remain readable according to their declared version:
+
+| Manifest schema | Historical feature field |
 |---|---|
-| `PackedArtifact` | `Artifact`; exact serialized bytes remain available |
-| `PackPlan` | `ArtifactPlan` |
-| `pack_artifact()` | `bundle_artifact()` |
-| `inspect_pack()` | `inspect_artifact()` |
-| `Sender` | `Runtime` outside-effect operation |
-| `Clockwork` | `Runtime` |
-| qualified `*Door` | ordinary provider adapter |
-| `Stamp` | `Receipt` |
-| `Box` | no technical concept; say product or delivery |
+| v1 | `core_features` |
+| v2 | `foundation_features` |
+| v3 | `workshop_features` |
+| v4 | none |
 
-All names in the left column remain compatibility aliases for at least this
-migration cycle. Existing inventor commands such as `send`, task names such as
-`pack.product`, environment variables, and persisted filenames are not silently
-renamed; treat them as characterized operational interfaces and migrate them
-separately when useful.
+The old package-name import shims remain read-only compatibility routes to the
+same implementation. They must not own separate state or behavior.
 
-Historical names before 0.3 remain readable too:
+The product taxonomy is a semantic migration, not merely label replacement:
 
-| Older name | Current meaning |
+| Earlier compatibility ID | Canonical 0.5 category |
 |---|---|
-| `TasteProfile`, `load_taste_profile()` | `Taste`, `load_taste()` |
-| `CreationBrief` | `Wish` |
-| `Forge.create()` | `Workbench.make()`, then `Workbench.inspect()` |
-| `CreationResult` | `MakeResult` |
-| `GateResult`, `GatePolicy` | `InspectionResult`, `InspectionPolicy` |
-| `Pipeline`, `PipelineSpec` | `Workflow`, `WorkflowSpec` |
-| `InventorStore` | `Runtime` |
-| `build_artifact_manifest()` | `seal_artifact()` |
-| `build_publish_packet()` | `bundle_artifact()` |
-| `Launchpad` | `Runtime` outside-effect operation |
-| `Portal` | provider adapter |
-| `PublicationReceipt` | `Receipt` |
+| `table-game` | split by intent: `classics-made-yours` or `invented-games` |
+| `desk-toy` | `moving-machines` |
+| `model-character` | `holdable-science` for the canonical science profile; reassess other old models rather than relabeling blindly |
+| `puzzle-keepsake` | `little-worlds` when the Wish materially personalizes the world; reassess generic puzzles |
 
-## Workflow migration
+Do not rewrite old artifact metadata in place. New Wishes use the canonical
+category; existing artifacts retain the category under which they were made.
 
-New default workflows contain Make and Inspect only. Inspect returns either a
-successful result or useful feedback to another Make attempt. Artifact
-serialization and outside effects are operations around that loop, not stages
-every inventor must traverse.
+All canonical categories enforce the product bar: the result could not have
+been downloaded before the Wish; cool, clever, or striking beats merely cute
+or twee; and personalization plus design intelligence beats a generic print.
+Kits and numbered series are later variants, not jobs or current V1 promises.
 
-Custom and persisted 0.3 workflows that contain `pack` and `send` remain
-readable. Do not rewrite their event history. New workflows should avoid those
-stages unless they are truly domain-specific names rather than Workshop
-plumbing.
+Classics use known rules and are judged as exact custom editions and physical
+objects. Invented games must reach an independent human table that wants
+another play. Even 1,000 clean AI simulations cannot pass that release gate.
 
-## Artifact compatibility
+## Migrate vocabulary without rewriting history
 
-Keep two hashes distinct:
+New prose, profiles, and code use `Playtest`, `PlaytestResult`,
+`PlaytestPolicy`, and `Workbench.playtest()`. The previous code-facing names
+remain aliases so mature inventors can migrate safely.
 
-- the logical artifact-tree hash;
-- the exact serialized payload hash.
+Some serialized records deliberately retain their historical field names,
+including:
 
-Persisted `pack_sha256` fields remain readable and writable where changing the
-storage contract would create risk. Canonical code can read the same value as
-`payload_sha256`. Do not merge these hashes: equal logical files can still have
-different transferred bytes.
+- `inspection_id` for a `PlaytestResult` identifier;
+- `required_inspection_ids` in older transition payloads;
+- `inspection_evidence_sha256` for the sealed Playtest-evidence artifact;
+- existing database stages, tables, commands, environment variables, and
+  filenames already used by deployed workers.
 
-Existing `pack/` directories and ZIP files remain valid. New prose calls them
-serialized artifacts or payloads.
+Do not bulk-rewrite those values in place. Read them through compatibility,
+write the canonical 0.5 concept at new boundaries, and rename persisted state
+only through a versioned migration with rollback and golden replay fixtures.
 
-## Runtime and effect compatibility
+Likewise, older serialization and outside-effect type names remain aliases for
+existing imports and state. New inventors should treat artifact serialization,
+idempotent provider calls, and receipts as implementation inside Make, Docs, or
+Deliver—not as extra public jobs.
 
-Keep durable database names and fields—including `send_intents`, `door_name`,
-`stamp_json`, and `pack_sha256`—in place. Renaming a table for vocabulary alone
-adds migration risk without improving the architecture.
+`schemas/playtest-result.schema.json` is the canonical 0.5 schema. The existing
+`schemas/inspection-result.schema.json` describes the same persisted field
+shape for compatibility.
 
-For every outside effect:
+## Migrate the workflow
 
-1. reuse one stable intent/idempotency identity;
-2. record the exact request before execution;
-3. use a separate attempt fence;
-4. bind the receipt to the request, logical artifact, and exact payload;
-5. hold timeouts, redirects, malformed success bodies, unexpected statuses,
-   and uncertain readbacks for reconciliation.
+The old small workflow ended after Make and its review step. The 0.5 product
+journey continues through truthful product documentation and physical
+delivery:
 
-Never dual-write two effect authorities. Inventor-local JSON may remain a
-readable projection, but only the runtime ledger can authorize retry.
+```text
+0.4:  Wish + Taste -> Make <-> legacy review
 
-Canonical metadata still reads persisted `_workshop_*`, `_foundation_*`, and
-`_core_*` keys. If more than one generation is present, values must agree or
-the operation fails closed.
+0.5:  Wish -> Make <-> Playtest -> Docs -> Deliver
+              feedback
+```
 
-## State paths
+Taste guides every choice but is not a job. Research, ideation, rules, CAD,
+simulation, repair, slicing, human trials, rendering, printing, QA, packing,
+and carrier calls are tasks within the five jobs.
 
-A clean inventor uses an inventor-documented database under `.workshop/`.
-Existing `.workshop/clockwork.sqlite3` files continue in place. A new name may
-be used only for a fresh inventor or through an explicit tested migration.
+For a mature state machine:
 
-When resolving old paths:
+1. Map its invention output to `MakeContext -> Made` and seal the exact product
+   tree.
+2. Map every required evaluator and evidence file to
+   `PlaytestContext -> Playtested`.
+3. Convert failed findings into structured `Feedback` for a new immutable Make
+   round.
+4. Require a passed Playtest for the exact artifact before creating Docs.
+5. Bind every Docs claim and image to that artifact and its evidence.
+6. Bind production, QA, packing, and carrier receipts to the exact product and
+   Docs hashes before returning Delivered.
 
-1. prefer an explicitly configured canonical path;
-2. otherwise continue exactly one existing database in place;
-3. refuse multiple independent candidates;
-4. never merge authorities by modification time.
+Do not run an old and new lifecycle as co-authorities. A thin profile may wait
+at a typed seam while the legacy worker continues separately; that is safer
+than dual-writing or guessing a conversion.
+
+## Adopt at the smallest level
+
+| Level | Profile owns | Workshop owns |
+|---|---|---|
+| Taste only | `TASTE.md` | Make, Playtest, loop, Docs, Deliver, runtime |
+| Custom Make | Taste and `MakeContext -> Made` | Playtest, loop, Docs, Deliver, runtime |
+| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | loop, Docs, Deliver, runtime |
+
+A custom Playtest requires a custom Make. Keep stronger niche checks, but return
+their observations through the shared result and evidence contracts.
+
+The five canonical profiles cover the five categories exactly once; they are
+not five completed live inventors:
+
+- Alice owns `classics-made-yours` at the Taste-only level. Her Blindcap
+  laboratory is provenance that taught Workshop, not her active profile or a
+  second invented-game elf. Shared Make and Playtest must wait when their real
+  capabilities are absent.
+- Leo is the clean Workshop-native `invented-games` elf with custom Make and
+  custom Playtest. His unfinished typed adapters and mandatory independent
+  human-table replay gate wait honestly rather than inheriting a second legacy
+  state machine.
+- Bob owns `moving-machines` and still waits for a typed custom Make; his
+  preserved board-game laboratory is not that adapter.
+- Ivy (`holdable-science`) and Eve (`little-worlds`) are Taste-only profiles and
+  wait for configured shared tools.
+
+Remove text2cad, text2game, and vibe-ideas from inventor discovery. Their
+lessons may remain as cited research provenance in Docs, but they are not elves,
+profiles, manifests, or extra product categories.
+
+## Add the per-Wish Playtest allowance
+
+Existing profiles may keep a constructor default for compatibility. New
+service code should choose the allowance at the trusted Wish boundary:
+
+```python
+run = workshop.run(wish, playtest_rounds=4)
+```
+
+The value must be an integer from 1 through 100 and is recorded with the Wish,
+returned in `WorkshopRun`, and passed into each Make and Playtest context. It
+limits the number of Make–Playtest improvement rounds. It does not limit the
+number of seeded games or evaluators inside one Playtest round unless a separate
+trusted budget says so.
+
+Migration rules:
+
+1. Obtain the allowance from a trusted checkout, quote, operator policy, or
+   fixed default—not free-form Wish text.
+2. Persist it before the first Make.
+3. Keep it constant for that run and expose it to custom hooks.
+4. Stop if it is exhausted while Playtest still fails.
+5. Never translate fewer rounds into fewer required checks, weaker thresholds,
+   synthetic evidence, or permission to continue to Docs.
+
+More rounds buy more repair opportunities. All service tiers face the same
+acceptance policy.
+
+## Preserve exact product and evidence identities
+
+Keep these identities distinct:
+
+- the logical product artifact-tree hash;
+- the sealed Playtest-evidence artifact hash;
+- the exact serialized payload hash used at a process or network boundary;
+- the Docs artifact hash;
+- authenticated production and carrier receipt identities.
+
+Equal logical files can have different transferred bytes, and evidence files
+must not silently enter the customer product. Persisted payload fields may keep
+their old names; their meaning must not change.
+
+On every migration seam, test:
+
+- changed Taste or product bytes after Make;
+- evidence for another product revision;
+- missing or hash-mismatched evidence references;
+- a failed required result with no actionable feedback;
+- Docs generated from failed or stale Playtest evidence;
+- product or Docs bytes changed before Deliver;
+- timeout, redirect, malformed response, or uncertain external readback.
+
+All fail closed.
+
+## Preserve one outside-effect authority
+
+Existing databases and effect ledgers may retain historical table and field
+names. Renaming vocabulary is not worth risking duplicate production,
+publication, or shipment.
+
+For every external effect:
+
+1. record the exact request and stable idempotency identity before execution;
+2. use a separate attempt fence;
+3. bind the result to the request and exact artifact identities;
+4. validate an authenticated receipt;
+5. hold ambiguous outcomes for reconciliation instead of blind retry.
+
+Inventor-local JSON may remain a readable projection, but only one durable
+ledger may authorize the effect. Never infer success from HTTP status, a local
+Boolean, a model-authored message, or a generated carrier label.
+
+When resolving existing state paths, prefer an explicit configured path,
+continue exactly one existing database in place, refuse multiple candidates,
+and never merge authorities by modification time.
 
 ## Recommended order for a mature inventor
 
-1. Characterize current transitions, artifacts, failures, and reconciliation.
+1. Characterize current Wishes, transitions, artifacts, evidence, budgets,
+   effects, failures, and reconciliation with golden fixtures.
 2. Establish one root `TASTE.md` and exact binding.
-3. Adopt immutable Workshop artifact identity and serialization.
-4. Make the Workshop runtime the only outside-effect authority.
-5. Bind every Inspection and evidence file to exact artifact bytes.
-6. Move lifecycle, leases, and budgets only after golden fixtures prove parity.
-7. Simplify operational names only after all entry points use one authority.
+3. Select one canonical product category and the smallest customization level.
+4. Add the canonical profile and let unfinished seams return `WaitingFor`.
+5. Adopt immutable `Made` identity without weakening local invariants.
+6. Adopt artifact-bound `Playtested` evidence and actionable feedback.
+7. Add trusted per-Wish `playtest_rounds` without changing gates.
+8. Move lifecycle, leases, and budgets only after parity tests pass.
+9. Adopt shared Docs, then exact production and Deliver receipts.
+10. Simplify operational names only after every entry point uses one authority.
 
-Alice should keep any stronger native invariant until Workshop proves
-equivalent behavior. Bob can move narrower boundaries sooner, but must not
-dual-write lifecycle or effect authority.
+Blindcap provenance and Bob's preserved laboratory should retain every stronger
+native invariant until Workshop proves equivalent behavior. Alice's active
+classics profile, Eve, and Ivy stay thin; improve shared tools instead of
+growing duplicate infrastructure in their folders. Leo and Bob keep only their
+category-specific custom seams.
 
 ## Verification
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
-workshop check inventors --run
-python tools/verify_skill_locks.py
-python tools/verify_snapshot_locks.py
-python tools/scan_secrets.py
+PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py' -v
+workshop inventors --root inventors --check-entrypoints
+python3 tools/verify_skill_locks.py
+python3 tools/verify_snapshot_locks.py
+python3 tools/scan_secrets.py
+git diff --check
 ```
 
-Test canonical and compatibility imports, old state fixtures, conflicting
-authority rejection, installed wheels, and ambiguous outside effects before
-deleting any legacy name.
+Test canonical and compatibility imports, persisted-state fixtures, conflicting
+authority rejection, installed artifacts, allowance tampering, and ambiguous
+outside effects before deleting any compatibility route.

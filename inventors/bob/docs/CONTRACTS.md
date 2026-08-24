@@ -1,5 +1,9 @@
 # Bob — module contracts (build against this, exactly)
 
+> **Legacy board-game contract.** The canonical moving-machines profile is
+> `../profile.py`. These contracts preserve the old harness for migration and
+> do not implement its `MakeContext -> Made` seam.
+
 This file is the single source of truth for module boundaries, file ownership,
 schemas, and CLI verbs. A builder implements ONLY the files it owns. Shared
 integration (`bob.py`) is written by the integrator, not by builders.

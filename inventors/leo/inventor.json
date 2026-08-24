@@ -1,0 +1,13 @@
+{
+  "schema_version": 4,
+  "id": "leo",
+  "name": "Leo",
+  "niche": "Original custom printable games invented for one particular table",
+  "summary": "The canonical invented-games profile: Leo owns custom Make and Playtest, including an independent human replay gate.",
+  "autonomy": "autonomous",
+  "status": "blocked",
+  "entrypoint": ["python3", "profile.py"],
+  "capabilities": ["wish", "invented-games", "personalization", "custom-make", "custom-playtest", "human-replay-gate", "cad", "product-docs", "learning"],
+  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
+  "source": {"kind": "local"}
+}

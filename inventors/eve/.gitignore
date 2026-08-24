@@ -1,0 +1,3 @@
+.workshop/
+__pycache__/
+*.py[cod]

@@ -10,20 +10,37 @@ plain utility.
 
 ## What the Workshop makes
 
-Every product belongs to one of four lanes:
+Every product belongs to one of five categories:
 
-- **Tabletop games** (`table-game`) — games, sets, dice play, and compact social
-  experiences.
-- **Desk toys** (`desk-toy`) — mechanisms, fidgets, tiny machines, and playful
-  versions of useful objects.
-- **Tiny models and characters** (`model-character`) — original vehicles,
-  creatures, companions, and little worlds.
-- **Puzzles and playful keepsakes** (`puzzle-keepsake`) — secret boxes,
-  personalized discoveries, and objects with play hidden inside.
+- **Classics made yours** (`classics-made-yours`) — known games and puzzles
+  remade as exceptional, personal physical editions. The rules are already
+  known; the product is judged as an object and a custom edition, not as a new
+  game design.
+- **Games that don't exist yet** (`invented-games`) — new rules, mysteries,
+  strategy, competition, and tactile problems to solve. Release requires an
+  independent human table that wants another play; even 1,000 simulations are
+  not release evidence for fun.
+- **Machines that move** (`moving-machines`) — mechanisms, kinetic desk toys,
+  tiny machines, and objects with a satisfying motion.
+- **Science you can hold** (`holdable-science`) — tangible phenomena, geometry,
+  nature, space, waves, forces, and experiments made graspable through play.
+- **Little worlds** (`little-worlds`) — personalized miniature places,
+  characters, stories, memories, and relationships shaped around one person.
 
-A useful Wish still enters the Workshop, but Make gives it a soul. A cable
-holder might become a creature that swallows cables; it must not remain a plain
-bracket with decoration added afterward.
+Every category faces the same bar:
+
+1. **It could not have been downloaded before the Wish.** The person's words,
+   context, or relationships must materially change the rules, geometry, or
+   experience. Adding a nameplate to a generic model does not qualify.
+2. **Cool beats cute or twee.** The result should feel clever, striking,
+   surprising, or deeply satisfying. Cuteness may support the idea; it cannot
+   be the whole idea.
+3. **Personalization and design intelligence beat generic prints.** Make must
+   interpret the Wish and solve a design problem, not retrieve a familiar STL
+   and decorate it.
+
+Kits and numbered series may become later ways to extend a successful product.
+They are not Workshop jobs and are not V1 promises.
 
 ## The five jobs
 
@@ -56,8 +73,8 @@ the machinery beneath her is shared by every inventor.
 ```text
 +-------------------------- ALICE --------------------------+
 |  TASTE.md: recognizable judgment                         |
-|  optional Make hook: game invention                      |
-|  optional Playtest hook: tabletop expertise              |
+|  category: classics-made-yours                           |
+|  no custom Make or Playtest code                         |
 +----------------------------+------------------------------+
                              | configures typed hooks
                              v
@@ -77,8 +94,13 @@ the machinery beneath her is shared by every inventor.
 ```
 
 Dependency remains one-way: Alice imports Workshop; Workshop never imports
-Alice. Alice can become more specialized without forking artifact identity,
-the improvement loop, Docs, delivery, or durable runtime.
+Alice. She demonstrates the Taste-only level: shared Workshop owns Make,
+Playtest, the improvement loop, Docs, Deliver, and runtime.
+
+Alice owns `classics-made-yours`. Her earlier Blindcap work remains
+provenance that taught Workshop how to make and Playtest games; it does not make
+her a second active `invented-games` elf. Leo owns that category as the clean
+Workshop-native profile.
 
 Inventor identities are backstage. Customers Wish through the Workshop and
 receive the Workshop's box; they do not need to select or understand an elf.
@@ -160,6 +182,13 @@ make a later version look like the version originally tested.
 The loop is bounded. Reaching the round limit stops truthfully instead of
 lowering the bar.
 
+Category policy stays explicit. A classic is tested as an exact custom edition:
+rules fidelity, object quality, legibility, setup, handling, printing, and the
+Wish-specific design. An invented game must also reach an independent human
+table and leave those players wanting another play. AI leagues find rule bugs,
+loops, exploits, and balance risks; 1,000 simulated games still cannot replace
+that human release gate.
+
 The allowance is selected per Wish, not baked into an elf:
 
 ```python
@@ -228,13 +257,13 @@ receipt.
 ```text
 inventors/<id>/
   TASTE.md              human-owned creative constitution
-  inventor.json         identity, lane capability, entry point, and checks
+  inventor.json         identity, category, entry point, and checks
   README.md             niche, operation, evidence, and known limits
   profile.py or src/    thin Workshop connection and optional hooks
   tests/                inventor-specific checks
 
 src/inventor_workshop/
-  toys.py               four lanes and their shared task blueprint
+  toys.py               five categories and their shared task blueprint
   workshop.py           five-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
   make.py               Wish and shared making boundary

@@ -1,30 +1,57 @@
 # Alice
 
-Alice is an autonomous inventor for original **3D-printable** board games. She runs as
-a restartable multi-agent service, not one endless chat. Every research claim,
-design change, playtest, print, decision, and publication is an immutable event.
-
-[`TASTE.md`](TASTE.md) defines Alice's creative choices and explicit rejects.
-Alice loads it through Workshop, places its exact content and SHA-256 in every
-creative agent request, and rejects a result if Taste changes during the call.
-
-Alice follows the same short promise as every inventor in the Workshop:
+Alice is the canonical **classics-made-yours** inventor. She is a **taste-only**
+profile: Alice owns [`TASTE.md`](TASTE.md) and her identity; Workshop supplies
+Make, Playtest, product Docs, delivery, artifact handling, and durable runtime.
+She starts with known rules and makes the physical classic unmistakably personal.
 
 ```text
-CUSTOMER          WISH --------------- WAIT ------------- RECEIVE
-                    |                                      ^
-ALICE               +--> TASTE guides MAKE <-> INSPECT ----+
-                              |
-WORKSHOP                artifact + runtime + adapters + receipts
+Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Docs -> Deliver
 ```
 
-Today Alice implements the guarded backstage work; direct Wish intake and
-automatic delivery remain future integrations.
+Alice is evaluated as a customized-object maker: recognition, piece and board
+legibility, handling, print quality, setup, and storage. She does not claim to
+have invented or rebalanced the underlying game. Original rules and gameplay
+belong in Leo's `invented-games` lane.
 
-The target is **one genuinely good game per week**. Alice may work every day;
-she does not publish on a clock. A game ships only when independent blind human
-playtests, physical production evidence, safety/IP review, and unit economics
-all pass the pinned policy.
+The public creation language stays deliberately small:
+
+```text
+Wish -> Make <-> Playtest
+```
+
+Research, simulation, CAD checks, human trials, product-page assembly, and
+shipping are important work, but they are not extra public stages. The new
+`python3 profile.py` entrypoint is the Workshop-facing profile. The
+historical `alice` command remains available for operating and migrating the
+custom laboratory; it is not a second Workshop.
+
+```bash
+python3 -m pip install -e ../..
+python3 profile.py profile
+python3 profile.py wish house-set "I wish our family had its own chess set"
+python3 profile.py preview house-set "I wish our family had its own chess set"
+python3 profile.py run house-set "I wish our family had its own chess set" --playtest-rounds 4
+```
+
+The optional `--playtest-rounds` allowance is checked from 1–100 and recorded
+with the run, never inferred from Wish text. Missing CAD, physical test, media,
+production, and carrier capabilities remain typed waits rather than fabricated
+evidence.
+
+## Preserved Alice laboratory (historical provenance)
+
+The existing package below is preserved because it produced the repository's
+most complete prior game, **Blindcap: Duel**, and its durable research,
+simulation, CAD, human-test, publication, and learning boundaries informed the
+shared Workshop. It remains a restartable multi-agent game laboratory whose
+events are immutable.
+
+It is not the implementation behind Alice's new taste-only profile and it must
+not receive new classics Wishes. Leo owns the canonical invented-games profile;
+future migration should extract proven capabilities into Workshop or adapt them
+behind Leo's typed Make and Playtest contracts without calling this legacy loop
+implicitly.
 
 ## What is implemented
 

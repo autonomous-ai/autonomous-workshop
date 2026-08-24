@@ -56,29 +56,56 @@ class ToyWorkshopTest(unittest.TestCase):
         )
 
     @staticmethod
-    def playtest_job(context):
-        evidence = context.workspace / "simulation.json"
-        evidence.parent.mkdir(parents=True)
-        passed = context.round >= 2
-        evidence.write_text(
-            '{"passed":%s}\n' % str(passed).lower(), encoding="utf-8"
-        )
+    def _playtest(context, *, passed, valid_invented=False):
+        context.workspace.mkdir(parents=True)
+        results = []
+        for capability in context.blueprint.required_capabilities("playtest"):
+            evidence_path = context.workspace / (capability + ".json")
+            evidence_path.write_text(
+                '{"capability":"%s","passed":%s}\n'
+                % (capability, str(passed).lower()),
+                encoding="utf-8",
+            )
+            evidence = {
+                "evidence_class": "deterministic-fixture",
+                "claims": ["Synthetic contract evidence for %s." % capability],
+            }
+            if valid_invented and capability == "game-simulation":
+                evidence = {
+                    "evidence_class": "ai-simulation",
+                    "completed_games": 1_000,
+                    "executable": True,
+                    "player_styles": [
+                        "optimizing",
+                        "social",
+                        "exploratory",
+                        "adversarial",
+                    ],
+                }
+            elif valid_invented and capability == "human-replay":
+                evidence = {
+                    "evidence_class": "human-playtest",
+                    "participant_count": 2,
+                    "independent": True,
+                    "exact_physical_prototype": True,
+                    "inventor_coaching": False,
+                    "asked_to_play_again": True,
+                }
+            results.append(
+                PlaytestResult.create(
+                    capability,
+                    passed,
+                    context.made.artifact_sha256,
+                    evidence,
+                    "workshop-contract-fixture",
+                    "1.0.0",
+                    CONFIG_SHA256,
+                    evidence_path.name,
+                    hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+                )
+            )
         evidence_manifest = build_artifact_manifest(
             context.workspace, created_at="content-addressed"
-        )
-        result = PlaytestResult.create(
-            "mechanism-cycle",
-            passed,
-            context.made.artifact_sha256,
-            {
-                "evidence_class": "deterministic-fixture",
-                "claims": ["The fixture mechanism completed its bounded cycle."],
-            },
-            "workshop-test-mechanism",
-            "1.0.0",
-            CONFIG_SHA256,
-            "simulation.json",
-            hashlib.sha256(evidence.read_bytes()).hexdigest(),
         )
         feedback = ()
         if not passed:
@@ -95,41 +122,23 @@ class ToyWorkshopTest(unittest.TestCase):
         return Playtested(
             Playtest(
                 context.made.artifact_manifest,
-                (result,),
+                tuple(results),
                 evidence_manifest=evidence_manifest,
             ),
             feedback,
         )
 
-    @staticmethod
-    def passing_playtest(context):
-        evidence = context.workspace / "simulation.json"
-        evidence.parent.mkdir(parents=True)
-        evidence.write_text('{"passed":true}\n', encoding="utf-8")
-        manifest = build_artifact_manifest(
-            context.workspace, created_at="content-addressed"
-        )
-        result = PlaytestResult.create(
-            "mechanism-cycle",
-            True,
-            context.made.artifact_sha256,
-            {
-                "evidence_class": "deterministic-fixture",
-                "claims": ["The fixture mechanism completed its bounded cycle."],
-            },
-            "workshop-test-mechanism",
-            "1.0.0",
-            CONFIG_SHA256,
-            "simulation.json",
-            hashlib.sha256(evidence.read_bytes()).hexdigest(),
-        )
-        return Playtested(
-            Playtest(
-                context.made.artifact_manifest,
-                (result,),
-                evidence_manifest=manifest,
-            )
-        )
+    @classmethod
+    def playtest_job(cls, context):
+        return cls._playtest(context, passed=context.round >= 2)
+
+    @classmethod
+    def passing_playtest(cls, context):
+        return cls._playtest(context, passed=True)
+
+    @classmethod
+    def passing_invented_playtest(cls, context):
+        return cls._playtest(context, passed=True, valid_invented=True)
 
     @staticmethod
     def media_maker(context):
@@ -171,7 +180,7 @@ class ToyWorkshopTest(unittest.TestCase):
     def test_taste_only_elf_runs_shared_feedback_loop_to_deliver(self):
         workshop = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=self.complete_tools(),
             runtime_root=self.runtime,
         )
@@ -191,13 +200,13 @@ class ToyWorkshopTest(unittest.TestCase):
     def test_three_levels_are_explicit_and_playtest_requires_make(self):
         taste_only = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=self.complete_tools(self.passing_playtest),
             runtime_root=self.root / "taste-runtime",
         )
         custom_make = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=WorkshopTools(
                 playtest=self.passing_playtest,
                 docs=DefaultDocs(self.media_maker),
@@ -208,7 +217,7 @@ class ToyWorkshopTest(unittest.TestCase):
         )
         custom_playtest = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=WorkshopTools(
                 docs=DefaultDocs(self.media_maker),
                 deliver=DefaultDeliver(self.fulfiller),
@@ -228,7 +237,7 @@ class ToyWorkshopTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "requires custom Make"):
             Workshop(
                 self.inventor,
-                "desk-toy",
+                "moving-machines",
                 playtest=self.passing_playtest,
                 runtime_root=self.root / "invalid-runtime",
             )
@@ -236,7 +245,7 @@ class ToyWorkshopTest(unittest.TestCase):
     def test_missing_shared_make_waits_without_fabricating_a_product(self):
         workshop = Workshop(
             self.inventor,
-            "model-character",
+            "little-worlds",
             runtime_root=self.runtime,
         )
         result = workshop.run(
@@ -254,7 +263,7 @@ class ToyWorkshopTest(unittest.TestCase):
     def test_each_wish_can_buy_a_different_bounded_round_allowance(self):
         two_rounds = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=self.complete_tools(),
             runtime_root=self.root / "two-round-runtime",
         )
@@ -266,7 +275,7 @@ class ToyWorkshopTest(unittest.TestCase):
 
         one_round = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             tools=self.complete_tools(),
             runtime_root=self.root / "one-round-runtime",
         )
@@ -284,7 +293,7 @@ class ToyWorkshopTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "from 1 to 100"):
             Workshop(
                 self.inventor,
-                "desk-toy",
+                "moving-machines",
                 tools=self.complete_tools(),
                 runtime_root=self.root / "invalid-round-runtime",
             ).run(
@@ -292,16 +301,75 @@ class ToyWorkshopTest(unittest.TestCase):
                 playtest_rounds=0,
             )
 
+    def test_custom_playtest_cannot_silently_narrow_the_lane_policy(self):
+        def incomplete_playtest(context):
+            complete = self.passing_playtest(context)
+            first = complete.evidence.results[:1]
+            return Playtested(
+                Playtest(
+                    context.made.artifact_manifest,
+                    first,
+                    evidence_manifest=complete.evidence.evidence_manifest,
+                )
+            )
+
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            make=self.make_job,
+            playtest=incomplete_playtest,
+            runtime_root=self.root / "incomplete-policy-runtime",
+        )
+        result = workshop.run(
+            Wish.create("narrow-policy", "A machine with one precise movement"),
+            playtest_rounds=2,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in result.needs},
+            set(workshop.blueprint.required_capabilities("playtest"))
+            - {workshop.blueprint.required_capabilities("playtest")[0]},
+        )
+
+    def test_invented_game_requires_meaningful_simulation_and_human_replay(self):
+        invalid = Workshop(
+            self.inventor,
+            "invented-games",
+            make=self.make_job,
+            playtest=self.passing_playtest,
+            runtime_root=self.root / "invalid-invented-runtime",
+        ).run(
+            Wish.create("new-game-no-proof", "Invent a game for our table"),
+            playtest_rounds=2,
+        )
+        self.assertEqual((invalid.status, invalid.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in invalid.needs},
+            {"game-simulation", "human-replay"},
+        )
+
+        valid = Workshop(
+            self.inventor,
+            "invented-games",
+            tools=self.complete_tools(self.passing_invented_playtest),
+            runtime_root=self.root / "valid-invented-runtime",
+        ).run(
+            Wish.create("new-game-with-proof", "Invent a game for our table"),
+            playtest_rounds=1,
+        )
+        self.assertEqual((valid.status, valid.job, valid.round), ("delivered", "deliver", 1))
+
     def test_preview_preserves_wish_taste_and_playful_rule(self):
         workshop = Workshop(
             self.inventor,
-            "desk-toy",
+            "moving-machines",
             runtime_root=self.runtime,
         )
-        preview = workshop.preview(Wish.create("cable-whale", "A cable holder"))
-        self.assertEqual(preview["blueprint"]["lane"], "desk-toy")
+        preview = workshop.preview(Wish.create("kinetic-cable", "A cable holder"))
+        self.assertEqual(preview["blueprint"]["lane"], "moving-machines")
         self.assertEqual(preview["taste"]["sha256"], workshop.taste.sha256)
-        self.assertIn("playful version", preview["brief"]["utility_rule"])
+        self.assertIn("merely useful", preview["brief"]["utility_rule"])
+        self.assertIn("Cool beats cute", preview["brief"]["tone"])
 
 
 if __name__ == "__main__":

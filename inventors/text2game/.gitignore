@@ -1,7 +1,0 @@
-out/
-logs/
-.env
-__pycache__/
-.current_slug
-gcode/
-priorart/bgg_ranks.csv

@@ -1,8 +1,7 @@
-"""Create a Workshop-connected inventor without copying another harness."""
+"""Create a thin elf profile on top of the shared Toy Workshop."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 import keyword
 import os
@@ -10,18 +9,48 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 from .errors import ContractError, StateConflict
+from .toys import PLAYTHING_LANES, WORKSHOP_JOBS
+from .workshop import CUSTOMIZATION_LEVELS
+
 
 _ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
 _RESERVED_PACKAGES = frozenset(
     ("inventor_core", "inventor_foundation", "inventor_workshop", "test", "tests")
 )
-_TEMPLATES = {
-    "board-game": "game-design",
-    "physical-product": "product-design",
-    "custom": "domain-design",
+
+# Accepted only for old automation. New callers choose an explicit toy lane.
+_LEGACY_TEMPLATES = {
+    "board-game": "invented-games",
+    "physical-product": "moving-machines",
+    "custom": "little-worlds",
+}
+
+_LANE_GUIDANCE = {
+    "classics-made-yours": (
+        "Begin with a public-domain or properly licensed classic whose rules are "
+        "already known. The invention is the Wish-shaped physical set—its pieces, "
+        "board, materials, story, and personal details—not unnecessary rules churn."
+    ),
+    "invented-games": (
+        "Invented games are experimental rules craft. Make the rules complete and "
+        "executable, but never treat AI simulation as proof of fun: the exact rules "
+        "and printed prototype require human table replay before Playtest may pass."
+    ),
+    "moving-machines": (
+        "Make motion the magic: one legible mechanism should invite a hand, reward "
+        "repetition, and feel better in the exact printed object than in a render."
+    ),
+    "holdable-science": (
+        "Turn a real mathematical or scientific phenomenon into something a person "
+        "can hold, manipulate, and understand through physical cause and effect."
+    ),
+    "little-worlds": (
+        "Build a specific character, scene, vehicle, or tiny world whose geometry "
+        "carries the person's Wish instead of resembling a generic collectible."
+    ),
 }
 
 
@@ -41,28 +70,80 @@ def _display_text(value: str, label: str, maximum: int) -> str:
     return normalized
 
 
+def _hook_source(level: str) -> Optional[str]:
+    if level == "taste-only":
+        return None
+    make_hook = '''"""The creative seams this elf chooses to own.
+
+Return exact Workshop records when the implementation is ready. Until then,
+waiting is honest: never invent CAD, print, or play evidence.
+"""
+
+from inventor_workshop import Made, MakeContext, Need, WaitingFor
+
+
+def make(context: MakeContext) -> Made:
+    """Replace this wait with this elf's artifact-producing Make."""
+
+    # The trusted checkout/tier supplies this per-Wish allowance. Custom Make
+    # receives it on every round; never infer or increase it from Wish text.
+    playtest_rounds = context.playtest_rounds
+    del playtest_rounds
+    raise WaitingFor(
+        Need(
+            "make",
+            "inventor-make",
+            "This elf's custom Make has not been connected yet.",
+            "Implement make(context) and return a Made record bound to exact artifact bytes.",
+        )
+    )
+'''
+    if level == "custom-make":
+        return make_hook
+    return make_hook + '''
+
+from inventor_workshop import PlaytestContext, Playtested
+
+
+def playtest(context: PlaytestContext) -> Playtested:
+    """Replace this wait with this elf's evidence-producing Playtest."""
+
+    # This is the same trusted per-Wish allowance received by custom Make.
+    playtest_rounds = context.playtest_rounds
+    del playtest_rounds
+    raise WaitingFor(
+        Need(
+            "playtest",
+            "inventor-playtest",
+            "This elf's custom Playtest has not been connected yet.",
+            "Implement playtest(context) and return Playtested evidence for the exact Make.",
+        )
+    )
+'''
+
+
 def _files(
-    inventor_id: str, name: str, niche: str, template: str
+    inventor_id: str,
+    name: str,
+    niche: str,
+    lane: str,
+    level: str,
 ) -> Dict[str, str]:
     package = inventor_id.replace("-", "_")
-    capability = _TEMPLATES[template]
-    objective_literal = repr(
-        "Invent %s guided by %s's TASTE.md." % (niche, name)
-    )
-    template_literal = repr(template)
-    offline_inspection_config_literal = repr(
-        hashlib.sha256(b"workshop-offline-workshop-v1").hexdigest()
-    )
+    env = inventor_id.upper().replace("-", "_")
+    lane_guidance = _LANE_GUIDANCE[lane]
+    capabilities = [*WORKSHOP_JOBS, lane, level]
     manifest = {
         "schema_version": 4,
         "id": inventor_id,
         "name": name,
         "niche": niche,
-        "summary": "An autonomous inventor for %s." % niche,
+        "summary": "%s is a %s elf using Workshop at the %s level."
+        % (name, lane, level),
         "autonomy": "human-checkpointed",
         "status": "experimental",
         "entrypoint": ["python3", "-m", package],
-        "capabilities": [capability, "offline-make"],
+        "capabilities": capabilities,
         "checks": [
             [
                 "python3",
@@ -78,72 +159,148 @@ def _files(
         ],
         "source": {"kind": "local"},
     }
-    return {
-        "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        "TASTE.md": """# {name}'s taste
 
-This file is {name}'s creative constitution. Humans own changes to it; agents
-may propose revisions from verified outcomes but may not edit it autonomously.
+    ownership = {
+        "taste-only": (
+            "This elf owns only `TASTE.md`. Workshop supplies Make, Playtest, "
+            "Docs, Deliver, the improvement loop, and durable state."
+        ),
+        "custom-make": (
+            "This elf owns `TASTE.md` and `inventor.py:make`. Workshop supplies "
+            "Playtest, Docs, Deliver, the improvement loop, and durable state."
+        ),
+        "custom-playtest": (
+            "This elf owns `TASTE.md`, `inventor.py:make`, and "
+            "`inventor.py:playtest`. Workshop still owns the loop, Docs, Deliver, "
+            "artifact identity, and durable state."
+        ),
+    }[level]
+    hook_step = {
+        "taste-only": (
+            "2. Configure shared `WorkshopTools` once for every elf; do not copy a "
+            "Make or Playtest harness into this folder."
+        ),
+        "custom-make": (
+            "2. Implement the typed `make(context)` seam in `src/%s/inventor.py`."
+            % package
+        ),
+        "custom-playtest": (
+            "2. Implement the typed `make(context)` and `playtest(context)` seams "
+            "in `src/%s/inventor.py`." % package
+        ),
+    }[level]
+
+    custom_import = {
+        "taste-only": "CUSTOM_MAKE = None\nCUSTOM_PLAYTEST = None",
+        "custom-make": (
+            "from .inventor import make as CUSTOM_MAKE\n\nCUSTOM_PLAYTEST = None"
+        ),
+        "custom-playtest": (
+            "from .inventor import make as CUSTOM_MAKE\n"
+            "from .inventor import playtest as CUSTOM_PLAYTEST"
+        ),
+    }[level]
+
+    files = {
+        "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        "TASTE.md": """# {name}'s Taste
+
+This is {name}'s creative constitution for the **{lane}** lane. Humans own
+changes to Taste. The elf may propose revisions from verified outcomes, but it
+must not silently rewrite what it values.
 
 ## North star
 
-Create {niche} that people understand, value, and choose to experience again.
+Create {niche} for grown-ups (14+) that invite play, surprise, and return
+visits. Nothing may be merely useful: a useful Wish receives the playful version.
 
-## Starting defaults
+## The download bar
 
-- Prefer a clear, ownable idea over a bundle of familiar features.
-- Make function and interaction carry the identity; ornament cannot rescue a
-  generic product.
-- Favor evidence from real use, production, and external outcomes over a
-  generator's or evaluator's confidence.
-- Kill a weak candidate rather than lower a gate because work was already spent.
+The finished object must answer: **why couldn't someone have downloaded this
+before this Wish?** The Wish must materially shape its geometry, mechanism,
+rules, secret, or little world. Reject generic figurines, stock-like trinkets,
+and any print that is effectively the same download for everyone. The standard
+is simple: **I couldn't have downloaded it before this Wish.**
+
+## Lane promise
+
+{lane_guidance}
+
+## Starting preferences
+
+- Cool beats cute. Charm is welcome only when the idea is specific and surprising.
+- Give every object one clear signature interaction, character, or secret.
+- Prefer a recognizable silhouette and satisfying physical behavior over ornament.
+- Make the first delightful moment easy to discover without coaching.
+- Treat printability, assembly, safety, and truthful presentation as part of beauty.
+- Let artifact-bound Playtest evidence improve the product without averaging away
+  this elf's point of view.
 
 ## Define before autonomous release
 
-- Who is this inventor specifically for?
-- What three qualities should make its work recognizable without a logo?
-- Which familiar defaults, themes, forms, or mechanics are instant rejects?
-- What is the one signature interaction or product moment to optimize for?
-- What observed behavior counts as delight, and what evidence can change this
-  taste?
-""".format(name=name, niche=niche),
+- Which three qualities should make this elf's work recognizable without a logo?
+- Which familiar themes, shapes, mechanics, or gimmicks are instant rejects?
+- What should a person feel in the first ten seconds and on the tenth play?
+- What physical and human evidence is strong enough to change this Taste?
+""".format(
+            name=name,
+            niche=niche,
+            lane=lane,
+            lane_guidance=lane_guidance,
+        ),
         "README.md": """# {name}
 
-{name} is an experimental inventor for **{niche}** built in Autonomous
-Workshop from one Wish, a distinct Taste, and a Make/Inspect loop.
+{name} is the **{lane}** elf for **{niche}**. {ownership}
 
-Read [`TASTE.md`](TASTE.md) before proposing a product. It defines this
-inventor's creative constitution and remains human-owned.
+This Workshop makes physical magic, not a catalog of generic prints. Every Make
+must clear the download bar: the exact object couldn't have been downloaded
+before this Wish. Cool beats cute, and Wish-shaped substance beats decoration.
+No generic, download-equivalent prints.
 
-## Make this inventor yours
+**Lane promise:** {lane_guidance}
 
-1. Finish `TASTE.md` with recognizable preferences and explicit rejects.
-2. Edit `src/{package}/workflow.py`: this is the inventor-owned loop between
-   Make and Inspect.
-3. Connect the real model, CAD, and evaluation tools this inventor needs.
-4. Tune Taste and the Make/Inspect loop using artifact-bound evidence.
+```text
+Wish -> Make <-> Playtest -> Docs -> Deliver
+          ^          |
+          + feedback +
+```
 
-## Run locally
+## Make this elf yours
+
+1. Turn [`TASTE.md`](TASTE.md) into a recognizable point of view.
+{hook_step}
+3. Keep missing model, CAD, physical, human, media, production, and carrier
+   capabilities as explicit waits. Never turn a preview into production proof.
+
+## Try the profile
+
+Generated elves use the installable `{package}` module for their profile entrypoint,
+so the manifest, source checkout, and built package all run the same thin wrapper.
 
 ```bash
 python3 -m pip install -e ../.. -e .
-{package} doctor
-{package} make first-product
-{package} status
+{package} profile
+{package} wish first-toy "I wish for a small surprise on my desk"
+{package} preview first-toy "I wish for a small surprise on my desk"
+{package} run --playtest-rounds 4 first-toy "I wish for a small surprise on my desk"
 workshop check . --run
 ```
 
-`make` is deterministic, credential-free, and deliberately not production CAD.
-It calls `Workbench.make()` and `Workbench.inspect()` separately, writes
-`make.json` and `inspection.json`, and records the artifact-bound Inspection in
-the local `.workshop/` runtime. Runtime state and credentials are never committed.
-
-## Before autonomous or public operation
-
-Keep every Inspection bound to exact artifact bytes. Add real slicer, form,
-safety, and physical evidence. Configure budgets and scoped credentials before
-allowing autonomous external effects.
-""".format(name=name, niche=niche, package=package, template=template),
+`preview` is read-only and shows the exact Wish-, Taste-, and lane-bound brief.
+`run` uses `Workshop` and `WorkshopTools`; an unconfigured capability returns a
+typed `waiting` result instead of pretending a product was made or tested.
+The trusted checkout or product tier supplies `--playtest-rounds` for each Wish;
+it is an allowance from 1 to 100, not a value the Wish or elf may raise.
+Runtime state and credentials stay in `.workshop/` and are never committed.
+""".format(
+            name=name,
+            niche=niche,
+            lane=lane,
+            ownership=ownership,
+            hook_step=hook_step,
+            lane_guidance=lane_guidance,
+            package=package,
+        ),
         ".gitignore": ".workshop/\n__pycache__/\n*.py[cod]\n",
         "pyproject.toml": """[build-system]
 requires = ["setuptools>=61"]
@@ -152,8 +309,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "inventor-{inventor_id}"
 version = "0.1.0"
-requires-python = ">=3.11"
-dependencies = ["inventor-workshop>=0.3,<0.4"]
+requires-python = ">=3.9"
+dependencies = ["inventor-workshop>=0.5,<0.6"]
 
 [project.scripts]
 {package} = "{package}.__main__:main"
@@ -161,7 +318,7 @@ dependencies = ["inventor-workshop>=0.3,<0.4"]
 [tool.setuptools.packages.find]
 where = ["src"]
 """.format(inventor_id=inventor_id, package=package),
-        "MANIFEST.in": "include inventor.json TASTE.md setup.py\n",
+        "MANIFEST.in": "include inventor.json TASTE.md\n",
         "setup.py": """from pathlib import Path
 import shutil
 
@@ -184,60 +341,27 @@ class build_py(_build_py):
 setup(cmdclass={{"build_py": build_py}})
 """.format(package=package),
         "src/{package}/__init__.py".format(package=package): (
-            repr("%s: inventor-specific Taste and workflow on Workshop." % name)
+            repr("%s: a %s elf built on the shared Toy Workshop." % (name, lane))
             + "\n"
         ),
-        "src/{package}/workflow.py".format(package=package): """from inventor_workshop import InspectionPolicy, Wish, Workflow, WorkflowSpec
-
-
-WORKFLOW = Workflow(
-    WorkflowSpec(
-        initial_stage="make",
-        stages=("make", "inspect"),
-        edges={{
-            "make": ("inspect",),
-            "inspect": ("make",),
-        }},
-        required_gates={{"inspect": ("workshop-starter",)}},
-        gate_policies={{
-            "workshop-starter": InspectionPolicy(
-                "workshop-starter",
-                "workshop-offline-workshop",
-                "1.0.0",
-                {offline_inspection_config_literal},
-            )
-        }},
-    )
-)
-
-
-def wish(product_id):
-    # This function is inventor-owned. Encode the inputs that give this
-    # inventor a recognizable point of view.
-    return Wish.create(
-        product_id,
-        {objective_literal},
-        constraints={{"template": {template_literal}}},
-    )
-""".format(
-            objective_literal=objective_literal,
-            offline_inspection_config_literal=offline_inspection_config_literal,
-            template_literal=template_literal,
-        ),
         "src/{package}/__main__.py".format(package=package): """import argparse
-import hashlib
 import json
 import os
 import sysconfig
-from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
-from inventor_workshop import Clockwork, MakerMark, discover_skills, load_taste
-from inventor_workshop.offline import offline_workbench
-from .workflow import WORKFLOW, wish
+from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop, WorkshopTools
+
+{custom_import}
 
 
-def inventor_root():
+INVENTOR_ID = {inventor_id_literal}
+LANE = {lane_literal}
+DECLARED_LEVEL = {level_literal}
+
+
+def inventor_root() -> Path:
     package_file = Path(__file__).resolve()
     packaged = package_file.parent / "_identity"
     if (packaged / "inventor.json").is_file() and (packaged / "TASTE.md").is_file():
@@ -247,14 +371,14 @@ def inventor_root():
         None,
     )
     if root is None:
-        installed = Path(sysconfig.get_path("data")) / "share" / "inventor-{inventor_id}"
+        installed = Path(sysconfig.get_path("data")) / "share" / "autonomous-workshop" / INVENTOR_ID
         if (installed / "inventor.json").is_file() and (installed / "TASTE.md").is_file():
             return installed.resolve()
-        raise RuntimeError("cannot locate this inventor's installed identity")
+        raise RuntimeError("cannot locate this elf's installed identity")
     return root.resolve()
 
 
-def runtime_root():
+def default_runtime_root() -> Path:
     configured = os.environ.get("{env}_RUNTIME")
     if configured:
         root = Path(configured).expanduser()
@@ -264,200 +388,184 @@ def runtime_root():
     identity = inventor_root()
     if (identity / "pyproject.toml").is_file():
         return identity / ".workshop"
-    return Path.home() / ".local" / "share" / "autonomous-inventors" / "{inventor_id}"
+    return Path.home() / ".local" / "share" / "autonomous-workshop" / INVENTOR_ID
 
 
-def database_path():
-    return runtime_root() / "clockwork.sqlite3"
+def create_wish(product_id: str, objective: str) -> Wish:
+    return Wish.create(
+        product_id,
+        objective,
+        constraints={{"lane": LANE, "audience": "grown-ups-14-plus"}},
+        context={{"inventor_id": INVENTOR_ID}},
+    )
 
 
-def doctor():
-    taste = load_taste(inventor_root())
-    skills = discover_skills()
-    print("taste %s %d-bytes" % (taste.sha256, taste.byte_count))
-    print("skills " + ", ".join(skill.name for skill in skills))
-    print("workshop ready (offline; no credentials required; no state changed)")
-
-
-def make(product_id):
-    started_at = datetime.now(timezone.utc).isoformat()
-    clockwork = Clockwork(database_path())
-    try:
-        clockwork.get_product(product_id)
-    except KeyError:
-        pass
-    else:
-        raise ValueError("product already exists: %s" % product_id)
-    run_root = runtime_root() / "runs" / product_id
-    workbench = offline_workbench()
-    made = workbench.make(
-        wish(product_id),
+def build_workshop(
+    *,
+    tools: Optional[WorkshopTools] = None,
+    runtime_root: Optional[Path] = None,
+    max_rounds: int = 4,
+) -> Workshop:
+    return Workshop(
         inventor_root(),
-        run_root,
-        budget_micros=1,
+        LANE,
+        tools=tools if tools is not None else WorkshopTools(),
+        make=CUSTOM_MAKE,
+        playtest=CUSTOM_PLAYTEST,
+        runtime_root=runtime_root if runtime_root is not None else default_runtime_root(),
+        max_rounds=max_rounds,
     )
-    inspection = workbench.inspect(made)
-    wish_sha256 = hashlib.sha256(
-        json.dumps(
-            made.wish.to_dict(),
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-    ).hexdigest()
-    mark = MakerMark(
-        schema_version=1,
-        inventor_id="{inventor_id}",
-        run_id="offline-" + made.artifact_manifest.artifact_sha256[:24],
-        mode="offline",
-        tool="workshop-offline-muse",
-        tool_version="0.4.0",
-        authenticated=False,
-        taste_sha256=made.taste.sha256,
-        artifact_sha256=made.artifact_manifest.artifact_sha256,
-        input_sha256={{"wish": wish_sha256}},
-        agent_calls=1,
-        actual_cost_micros=0,
-        synthetic_cost_micros=0,
-        started_at=started_at,
-        completed_at=datetime.now(timezone.utc).isoformat(),
-        limitations=(
-            "Deterministic offline starter; no authenticated live model was used.",
-            "Not production CAD and no physical print or human test was performed.",
-        ),
-    )
-    mark.assert_artifact(made.artifact_manifest.artifact_sha256)
-    product = WORKFLOW.register(
-        clockwork,
-        product_id,
-        metadata={{
-            "offline_make": True,
-            "taste_sha256": made.taste.sha256,
-            "concept_sha256": made.concept_sha256,
-        }},
-        artifact_sha256=made.artifact_manifest.artifact_sha256,
-    )
-    WORKFLOW.advance(
-        clockwork,
-        product_id,
-        "inspect",
-        product["revision"],
-        inspection=inspection,
-    )
-    (run_root / "make.json").write_text(
-        json.dumps(made.to_dict(), indent=2, sort_keys=True) + "\\n",
-        encoding="utf-8",
-    )
-    (run_root / "inspection.json").write_text(
-        json.dumps(inspection.to_dict(), indent=2, sort_keys=True) + "\\n",
-        encoding="utf-8",
-    )
-    (run_root / "maker-mark.json").write_text(
-        mark.to_json() + "\\n",
-        encoding="utf-8",
-    )
-    print("made and inspected %s -> %s" % (product_id, inspection.artifact_sha256))
 
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(prog="{package}")
-    parser.add_argument("command", choices=("init", "make", "doctor", "status"))
+def describe():
+    workshop = build_workshop()
+    return {{
+        "schema_version": 1,
+        "inventor_id": INVENTOR_ID,
+        "lane": workshop.lane,
+        "customization_level": workshop.customization_level,
+        "jobs": list(WORKSHOP_JOBS),
+        "taste_sha256": workshop.taste.sha256,
+        "blueprint_sha256": workshop.blueprint.sha256,
+        "production_ready": False,
+        "default_behavior": "preview is read-only; run waits for every missing capability",
+    }}
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="profile",
+        choices=("profile", "wish", "preview", "run"),
+    )
     parser.add_argument("product_id", nargs="?")
+    parser.add_argument("objective", nargs="?")
+    parser.add_argument(
+        "--playtest-rounds",
+        type=int,
+        choices=range(1, 101),
+        metavar="N",
+        help="trusted per-Wish Playtest allowance (1-100; run only)",
+    )
     args = parser.parse_args(argv)
-    if args.command == "doctor":
-        doctor()
-        return 0
-    if args.command == "make":
-        if not args.product_id:
-            parser.error("make requires product_id")
-        make(args.product_id)
-        return 0
-    if args.command == "status" and not database_path().is_file():
-        print("no Clockwork state yet: %s" % database_path())
-        return 0
-    clockwork = Clockwork(database_path())
-    if args.command == "init":
-        print(database_path())
-        return 0
-    products = clockwork.list_products()
-    print("state database: %s" % database_path())
-    for product in products:
-        print("%s %s@%s %s" % (
-            product["id"],
-            product["stage"],
-            product["revision"],
-            product.get("artifact_sha256") or "unbound",
-        ))
+    if args.command == "profile":
+        if args.playtest_rounds is not None:
+            parser.error("--playtest-rounds belongs to run, not profile")
+        result = describe()
+    else:
+        if not args.product_id or not args.objective:
+            parser.error("%s requires product_id and a quoted Wish" % args.command)
+        wish = create_wish(args.product_id, args.objective)
+        if args.command == "wish":
+            if args.playtest_rounds is not None:
+                parser.error("--playtest-rounds belongs to run, not the Wish")
+            result = wish.to_dict()
+        else:
+            workshop = build_workshop()
+            if args.command == "preview":
+                if args.playtest_rounds is not None:
+                    parser.error("--playtest-rounds belongs to run, not preview")
+                result = workshop.preview(wish)
+            else:
+                result = workshop.run(
+                    wish, playtest_rounds=args.playtest_rounds
+                ).to_dict()
+    print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
 """.format(
-            env=inventor_id.upper().replace("-", "_"),
-            inventor_id=inventor_id,
-            package=package,
+            custom_import=custom_import,
+            env=env,
+            inventor_id_literal=repr(inventor_id),
+            lane_literal=repr(lane),
+            level_literal=repr(level),
         ),
         "tests/test_smoke.py": """import json
 import os
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest import mock
 
-from inventor_workshop import load_taste
-from {package}.__main__ import database_path, main
-from {package}.workflow import WORKFLOW
+from inventor_workshop import WORKSHOP_JOBS, Workshop, WorkshopTools, load_taste
+from {package}.__main__ import (
+    build_workshop,
+    create_wish,
+    default_runtime_root,
+    main,
+)
 
 
 class SmokeTest(unittest.TestCase):
-    def test_workflow_exposes_direct_workshop_route(self):
-        self.assertEqual(WORKFLOW.legal_targets("make"), ("inspect",))
-        self.assertEqual(WORKFLOW.legal_targets("inspect"), ("make",))
-
-    def test_root_taste_is_the_runtime_source(self):
+    def test_profile_is_a_thin_workshop_configuration(self):
+        workshop = build_workshop(tools=WorkshopTools())
+        self.assertIsInstance(workshop, Workshop)
+        self.assertEqual(workshop.lane, {lane_literal})
+        self.assertEqual(workshop.customization_level, {level_literal})
+        self.assertEqual(tuple(WORKSHOP_JOBS), ("wish", "make", "playtest", "docs", "deliver"))
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
 
-    def test_offline_make_binds_taste_and_artifact(self):
+    def test_preview_is_read_only_and_run_waits_truthfully(self):
         with tempfile.TemporaryDirectory() as temporary:
-            with mock.patch.dict(os.environ, {{"{env}_RUNTIME": temporary}}):
-                self.assertEqual(main(("make", "made-product")), 0)
-                self.assertTrue(database_path().is_file())
-                run = Path(temporary) / "runs/made-product"
-                made = json.loads((run / "make.json").read_text(encoding="utf-8"))
-                inspected = json.loads(
-                    (run / "inspection.json").read_text(encoding="utf-8")
-                )
-                maker_mark = json.loads(
-                    (run / "maker-mark.json").read_text(encoding="utf-8")
-                )
-                self.assertEqual(
-                    made["artifact_manifest"]["artifact_sha256"],
-                    inspected["artifact_sha256"],
-                )
-                self.assertEqual(
-                    [item["inspection_id"] for item in inspected["results"]],
-                    ["workshop-starter"],
-                )
-                self.assertIsNotNone(inspected["cad_release_sha256"])
-                self.assertEqual(
-                    maker_mark["artifact_sha256"],
-                    made["artifact_manifest"]["artifact_sha256"],
-                )
-                self.assertEqual(maker_mark["mode"], "offline")
-
-    def test_doctor_is_read_only(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            runtime = Path(temporary) / "not-created"
+            runtime = Path(temporary) / "workshop"
             with mock.patch.dict(os.environ, {{"{env}_RUNTIME": str(runtime)}}):
-                self.assertEqual(main(("doctor",)), 0)
+                output = StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(
+                        main(("preview", "first-toy", "I wish for a tiny surprise")),
+                        0,
+                    )
+                preview = json.loads(output.getvalue())
+                self.assertEqual(preview["blueprint"]["lane"], {lane_literal})
                 self.assertFalse(runtime.exists())
+
+                output = StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(
+                        main((
+                            "run",
+                            "--playtest-rounds",
+                            "2",
+                            "waiting-toy",
+                            "I wish for a tiny surprise",
+                        )),
+                        0,
+                    )
+                result = json.loads(output.getvalue())
+                self.assertEqual(result["status"], "waiting")
+                self.assertEqual(result["job"], "make")
+                self.assertEqual(result["playtest_rounds"], 2)
+                self.assertIsNone(result["artifact_sha256"])
+                self.assertTrue(result["needs"])
+                self.assertTrue((default_runtime_root() / "workshop.sqlite3").is_file())
+
+    def test_wish_keeps_the_persons_words_and_lane(self):
+        wish = create_wish("joy", "I wish my cable holder could make me laugh")
+        self.assertEqual(wish.objective, "I wish my cable holder could make me laugh")
+        self.assertEqual(wish.constraints["lane"], {lane_literal})
 
 
 if __name__ == "__main__":
     unittest.main()
-""".format(package=package, env=inventor_id.upper().replace("-", "_")),
+""".format(
+            env=env,
+            lane_literal=repr(lane),
+            level_literal=repr(level),
+            package=package,
+        ),
     }
+    hook = _hook_source(level)
+    if hook is not None:
+        files["src/{package}/inventor.py".format(package=package)] = hook
+    return files
 
 
 def scaffold_inventor(
@@ -466,8 +574,12 @@ def scaffold_inventor(
     name: str,
     niche: str,
     *,
-    template: str = "physical-product",
+    lane: Optional[str] = None,
+    level: str = "taste-only",
+    template: Optional[str] = None,
 ) -> Path:
+    """Create one elf atomically without copying another inventor's harness."""
+
     root = Path(root).resolve()
     if not _ID.fullmatch(inventor_id):
         raise ContractError("inventor id must match %s" % _ID.pattern)
@@ -476,10 +588,25 @@ def scaffold_inventor(
         raise ContractError("inventor id maps to a reserved Python package name")
     name = _display_text(name, "name", 200)
     niche = _display_text(niche, "niche", 500)
-    if template not in _TEMPLATES:
+    if template is not None:
+        if template not in _LEGACY_TEMPLATES:
+            raise ContractError(
+                "legacy inventor template must be one of %s"
+                % sorted(_LEGACY_TEMPLATES)
+            )
+        legacy_lane = _LEGACY_TEMPLATES[template]
+        if lane is not None and lane != legacy_lane:
+            raise ContractError("--lane conflicts with legacy --template")
+        lane = legacy_lane
+    if lane not in PLAYTHING_LANES:
         raise ContractError(
-            "inventor template must be one of %s" % sorted(_TEMPLATES)
+            "inventor lane must be one of %s" % ", ".join(PLAYTHING_LANES)
         )
+    if level not in CUSTOMIZATION_LEVELS:
+        raise ContractError(
+            "inventor level must be one of %s" % ", ".join(CUSTOMIZATION_LEVELS)
+        )
+
     root.mkdir(parents=True, exist_ok=True)
     destination = root / inventor_id
     if destination.exists():
@@ -487,7 +614,7 @@ def scaffold_inventor(
     temporary = Path(tempfile.mkdtemp(prefix=".%s." % inventor_id, dir=str(root)))
     try:
         for relative, content in _files(
-            inventor_id, name, niche, template
+            inventor_id, name, niche, lane, level
         ).items():
             target = temporary / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -497,3 +624,6 @@ def scaffold_inventor(
         if temporary.exists():
             shutil.rmtree(str(temporary))
     return destination
+
+
+__all__ = ["scaffold_inventor"]

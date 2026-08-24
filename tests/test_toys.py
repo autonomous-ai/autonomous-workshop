@@ -14,17 +14,18 @@ from inventor_workshop.toys import (
 
 
 class ToyBlueprintTest(unittest.TestCase):
-    def test_first_workshop_has_exactly_five_jobs_and_four_plaything_lanes(self):
+    def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS, ("wish", "make", "playtest", "docs", "deliver")
         )
         self.assertEqual(
             PLAYTHING_LANES,
             (
-                "table-game",
-                "desk-toy",
-                "model-character",
-                "puzzle-keepsake",
+                "classics-made-yours",
+                "invented-games",
+                "moving-machines",
+                "holdable-science",
+                "little-worlds",
             ),
         )
         for lane in PLAYTHING_LANES:
@@ -33,15 +34,32 @@ class ToyBlueprintTest(unittest.TestCase):
             self.assertEqual(len(blueprint.sha256), 64)
             self.assertEqual(blueprint.to_dict()["audience"], "grown-ups-14-plus")
 
-    def test_table_games_receive_rules_and_ai_playtest_work(self):
-        table = ToyBlueprint.for_lane("table-game")
-        desk = ToyBlueprint.for_lane("desk-toy")
-        self.assertIn("make.rules", {task.key for task in table.tasks})
-        self.assertIn("playtest.game", {task.key for task in table.tasks})
-        self.assertNotIn("make.rules", {task.key for task in desk.tasks})
-        self.assertNotIn("playtest.game", {task.key for task in desk.tasks})
-        self.assertIn("playtest.mechanics", {task.key for task in desk.tasks})
-        self.assertIn("playtest.print", {task.key for task in desk.tasks})
+    def test_each_craft_receives_its_distinct_make_and_playtest_work(self):
+        classics = ToyBlueprint.for_lane("classics-made-yours")
+        games = ToyBlueprint.for_lane("invented-games")
+        machines = ToyBlueprint.for_lane("moving-machines")
+        science = ToyBlueprint.for_lane("holdable-science")
+        worlds = ToyBlueprint.for_lane("little-worlds")
+
+        self.assertIn("make.classic", {task.key for task in classics.tasks})
+        self.assertIn("playtest.classic", {task.key for task in classics.tasks})
+        self.assertNotIn("make.rules", {task.key for task in classics.tasks})
+
+        game_keys = {task.key for task in games.tasks}
+        self.assertIn("make.rules", game_keys)
+        self.assertIn("playtest.game", game_keys)
+        self.assertIn("playtest.human-table", game_keys)
+        self.assertNotIn("playtest.people", game_keys)
+        self.assertTrue(
+            next(task for task in games.tasks if task.key == "playtest.human-table").external
+        )
+
+        self.assertIn("make.motion", {task.key for task in machines.tasks})
+        self.assertIn("playtest.motion", {task.key for task in machines.tasks})
+        self.assertIn("make.science", {task.key for task in science.tasks})
+        self.assertIn("playtest.science", {task.key for task in science.tasks})
+        self.assertIn("make.world", {task.key for task in worlds.tasks})
+        self.assertIn("playtest.likeness", {task.key for task in worlds.tasks})
 
     def test_default_make_request_turns_utility_into_play(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -53,11 +71,13 @@ class ToyBlueprintTest(unittest.TestCase):
             taste = load_taste(inventor)
             wish = Wish.create("whale-cable-holder", "I wish my cables stayed tidy")
             request = playful_make_request(
-                wish, taste, ToyBlueprint.for_lane("desk-toy")
+                wish, taste, ToyBlueprint.for_lane("moving-machines")
             )
             self.assertEqual(request["wish"]["objective"], wish.objective)
             self.assertEqual(request["taste"]["sha256"], taste.sha256)
             self.assertIn("Nothing may be merely useful", request["brief"]["utility_rule"])
+            self.assertIn("interchangeable", request["brief"]["download_bar"])
+            self.assertIn("Cool beats cute", request["brief"]["tone"])
             self.assertIn("STEP", request["brief"]["deliverables"])
 
     def test_unknown_product_lane_fails_closed(self):

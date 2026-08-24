@@ -17,6 +17,8 @@ from .pack import pack_artifact, plan_pack, seal_artifact
 from .scaffold import scaffold_inventor
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
+from .toys import PLAYTHING_LANES
+from .workshop import CUSTOMIZATION_LEVELS
 
 
 def _registry(args: argparse.Namespace) -> int:
@@ -99,6 +101,8 @@ def _new_inventor(args: argparse.Namespace) -> int:
         args.inventor_id,
         args.name,
         args.niche,
+        lane=args.lane,
+        level=args.level,
         template=args.template,
     )
     print(str(destination))
@@ -211,10 +215,20 @@ def parser() -> argparse.ArgumentParser:
     new.add_argument("--name", required=True)
     new.add_argument("--niche", required=True)
     new.add_argument(
+        "--lane",
+        choices=PLAYTHING_LANES,
+        help="kind of plaything this elf makes",
+    )
+    new.add_argument(
+        "--level",
+        choices=CUSTOMIZATION_LEVELS,
+        default="taste-only",
+        help="how much Make and Playtest code this elf owns (default: taste-only)",
+    )
+    new.add_argument(
         "--template",
         choices=("board-game", "physical-product", "custom"),
-        default="physical-product",
-        help="starting lifecycle and domain vocabulary",
+        help=argparse.SUPPRESS,
     )
     new.add_argument("--root", type=Path, default=root)
     new.set_defaults(handler=_new_inventor)

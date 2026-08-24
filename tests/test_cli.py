@@ -55,12 +55,19 @@ class CliTest(unittest.TestCase):
                         "Ada",
                         "--niche",
                         "printable word games",
+                        "--lane",
+                        "invented-games",
+                        "--level",
+                        "taste-only",
                         "--root",
                         str(root),
                     )
                 )
             self.assertEqual(result, 0)
             self.assertTrue((root / "inventors/word-games/inventor.json").is_file())
+            self.assertFalse(
+                (root / "inventors/word-games/src/word_games/inventor.py").exists()
+            )
 
     def test_new_accepts_the_inventor_collection_as_root(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -75,12 +82,92 @@ class CliTest(unittest.TestCase):
                         "Ada",
                         "--niche",
                         "printable deduction games",
+                        "--lane",
+                        "invented-games",
+                        "--level",
+                        "custom-make",
                         "--root",
                         str(collection),
                     )
                 )
             self.assertEqual(result, 0)
             self.assertTrue((collection / "deduction-games/inventor.json").is_file())
+            hook = collection / "deduction-games/src/deduction_games/inventor.py"
+            self.assertIn("def make(", hook.read_text(encoding="utf-8"))
+            self.assertNotIn("def playtest(", hook.read_text(encoding="utf-8"))
+
+    def test_new_help_is_lane_and_level_not_legacy_template(self):
+        command = parser()
+        subcommands = next(
+            action for action in command._actions if hasattr(action, "choices") and action.choices
+        )
+        help_text = subcommands.choices["new"].format_help()
+        self.assertIn("--lane", help_text)
+        self.assertIn("classics-made-yours", help_text)
+        self.assertIn("invented-games", help_text)
+        self.assertIn("moving-machines", help_text)
+        self.assertIn("holdable-science", help_text)
+        self.assertIn("little-worlds", help_text)
+        for old_lane in (
+            "games-puzzles",
+            "table-game",
+            "desk-toy",
+            "model-character",
+            "puzzle-keepsake",
+        ):
+            self.assertNotIn(old_lane, help_text)
+        self.assertIn("--level", help_text)
+        self.assertIn("taste-only", help_text)
+        self.assertIn("custom-make", help_text)
+        self.assertIn("custom-playtest", help_text)
+        self.assertNotIn("--template", help_text)
+        self.assertNotIn("physical-product", help_text)
+
+    def test_hidden_legacy_template_maps_to_invented_games(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            with redirect_stdout(StringIO()):
+                result = main(
+                    (
+                        "new",
+                        "legacy-games",
+                        "--name",
+                        "Ada",
+                        "--niche",
+                        "printable games",
+                        "--template",
+                        "board-game",
+                        "--root",
+                        str(collection),
+                    )
+                )
+            self.assertEqual(result, 0)
+            manifest = (collection / "legacy-games/inventor.json").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('"invented-games"', manifest)
+
+    def test_new_requires_a_toy_lane(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            error = StringIO()
+            with redirect_stderr(error):
+                result = main(
+                    (
+                        "new",
+                        "missing-lane",
+                        "--name",
+                        "Ada",
+                        "--niche",
+                        "printable games",
+                        "--root",
+                        str(collection),
+                    )
+                )
+            self.assertEqual(result, 2)
+            self.assertIn("inventor lane must be one of", error.getvalue())
 
     def test_skills_command_exposes_canonical_workshop_tools(self):
         skills_root = Path(__file__).resolve().parents[1] / "skills"

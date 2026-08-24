@@ -14,20 +14,44 @@ This guide is for the first Workshop, which makes playthings for grown-ups
 (14+). It is not a generic framework for organizers, replacement parts, or
 other plain utility products.
 
-## 1. Choose one plaything lane
+## 1. Choose one plaything category
 
-Every inventor starts in exactly one lane:
+Every inventor starts in exactly one category:
 
-| Lane ID | Focus |
+| Category ID | Focus |
 |---|---|
-| `table-game` | tabletop games and compact social play |
-| `desk-toy` | mechanisms, fidgets, tiny machines, and playful utility |
-| `model-character` | original tiny models, characters, vehicles, and worlds |
-| `puzzle-keepsake` | puzzles, secret containers, and keepsakes with play inside |
+| `classics-made-yours` | known games and puzzles remade as exceptional custom physical editions |
+| `invented-games` | new rules, mysteries, strategy, and tactile games that must earn another human play |
+| `moving-machines` | mechanisms, kinetic toys, and tiny machines with satisfying motion |
+| `holdable-science` | tangible phenomena, geometry, nature, space, waves, and forces |
+| `little-worlds` | personalized miniature places, characters, stories, and memories |
 
-Choose the lane that should shape almost every Wish. If a Wish sounds useful,
-define how this inventor turns it into a playful interaction instead of merely
-decorating a utility object.
+Then apply the category bar before writing code:
+
+- **The product could not have been downloaded before the Wish.** The Wish must
+  materially change its rules, geometry, interaction, or meaning. A generic
+  model with a name added is still generic.
+- **Cool beats cute or twee.** Aim for clever, striking, surprising, or deeply
+  satisfying. Cute may be an ingredient, never the entire idea.
+- **Personalization and design intelligence beat generic prints.** The inventor
+  must interpret the person and solve a real design problem.
+
+For `classics-made-yours`, do not pretend to invent known rules. Judge the
+custom edition as an object: fidelity, personalization, beauty, legibility,
+handling, setup, print quality, and the way the Wish changes the edition.
+
+For `invented-games`, simulations are necessary but never sufficient. Release
+requires an independent human table that wants another play. Even 1,000 clean
+AI simulations cannot pass that gate.
+
+Kits and numbered series are possible later variants of a successful design.
+They are not jobs and are not promises of the V1 Workshop.
+
+This repository keeps exactly one canonical elf per category: Alice for
+classics, Leo for invented games, Bob for moving machines, Ivy for holdable
+science, and Eve for little worlds. A new experiment should not enter
+`inventors/` as a sixth elf or duplicate a category; develop it separately and
+propose an explicit replacement or category change.
 
 ## 2. Choose the smallest customization level
 
@@ -46,12 +70,12 @@ Make.
 Do not add a hook merely to rename phases or wrap a shared call. Add one when
 the inventor has real niche logic that Taste and shared tools cannot express.
 
-Alice illustrates the boundary:
+Alice, the `classics-made-yours` elf, illustrates the boundary:
 
 ```text
 +----------------------- ALICE -----------------------+
 | TASTE.md                                             |
-| optional custom Make and custom Playtest hooks      |
+| classics-made-yours; no custom job hooks            |
 +--------------------------+--------------------------+
                            |
                            v
@@ -61,8 +85,10 @@ Alice illustrates the boundary:
 +-----------------------------------------------------+
 ```
 
-A new inventor follows this shape; it does not copy Alice's state machine or
-private history.
+A new inventor follows this dependency shape and chooses the smallest level its
+category needs; it does not copy Alice's state machine or private history.
+Alice's earlier Blindcap work is Workshop provenance, while Leo is the single
+active `invented-games` elf with custom Make and Playtest.
 
 ## 3. Create a thin folder
 
@@ -79,12 +105,12 @@ inventors/your-id/
 ```
 
 Only `TASTE.md` is creative code at the taste-only level. `profile.py` should
-select a lane, create typed Wishes, and construct `Workshop`; it should not
+select a category, create typed Wishes, and construct `Workshop`; it should not
 reimplement the loop.
 
 The README must answer:
 
-1. Which lane and audience does this inventor serve?
+1. Which category and audience does this inventor serve?
 2. What makes its output recognizable without a logo?
 3. How does it turn useful Wishes into play?
 4. Which customization level does it use, and why?
@@ -92,7 +118,7 @@ The README must answer:
 6. Which evidence classes can pass Playtest?
 7. What is missing, synthetic, experimental, or blocked today?
 
-Use a schema-v4 `inventor.json`. Its capabilities should state the lane and
+Use a schema-v4 `inventor.json`. Its capabilities should state the category and
 real custom behavior, not list every shared internal module:
 
 ```json
@@ -105,7 +131,7 @@ real custom behavior, not list every shared internal module:
   "autonomy": "human-checkpointed",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "desk-toy", "taste-only"],
+  "capabilities": ["wish", "moving-machines", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }
@@ -143,21 +169,21 @@ from inventor_workshop import Wish, Workshop, WorkshopTools
 
 
 INVENTOR_ROOT = Path(__file__).resolve().parent
-LANE = "desk-toy"  # choose exactly one of the four lane IDs
+CATEGORY = "moving-machines"  # choose one of the five category IDs
 
 
 def create_wish(product_id: str, objective: str) -> Wish:
     return Wish.create(
         product_id,
         objective,
-        constraints={"lane": LANE, "audience": "grown-ups-14-plus"},
+        constraints={"category": CATEGORY, "audience": "grown-ups-14-plus"},
     )
 
 
 def build_workshop(shared_tools: WorkshopTools) -> Workshop:
     return Workshop(
         INVENTOR_ROOT,
-        LANE,
+        CATEGORY,
         tools=shared_tools,
         runtime_root=(INVENTOR_ROOT / ".workshop").resolve(),
     )
@@ -169,7 +195,7 @@ embed shared credentials or quietly fall back to a developer's personal
 account.
 
 Before running, `Workshop.preview(wish)` can show the exact Wish-, Taste-, and
-lane-bound Make brief without starting work.
+category-bound Make brief without starting work.
 
 ## 6. Customize Make only when necessary
 
@@ -190,9 +216,9 @@ Return `Made`, containing:
 
 - a fresh in-workspace product root;
 - a content-addressed artifact manifest;
-- bounded product metadata with `title`, `summary`, and the selected `lane`;
+- bounded product metadata with `title`, `summary`, and the selected `category`;
 - the actual rules, source, STEP, per-part meshes, assembly information, and
-  other files required by that lane.
+  other files required by that category.
 
 The shared locked CAD and STEP-parts skills are a making recipe, not proof. Pin
 the skill and tool versions actually invoked. A renderer output is not a STEP
@@ -211,7 +237,7 @@ Install a custom Make while retaining shared Playtest:
 ```python
 workshop = Workshop(
     INVENTOR_ROOT,
-    LANE,
+    CATEGORY,
     tools=shared_tools,
     make=make,
     runtime_root=(INVENTOR_ROOT / ".workshop").resolve(),
@@ -248,7 +274,7 @@ Install both custom hooks for the maximum level:
 ```python
 workshop = Workshop(
     INVENTOR_ROOT,
-    LANE,
+    CATEGORY,
     tools=shared_tools,
     make=make,
     playtest=playtest,
@@ -289,13 +315,17 @@ evidence observed:
 - **Human playtest:** independent participants, protocol, observed behavior,
   confusion, and feedback. Report the sample; do not generalize beyond it.
 
-For tabletop games, AI players must execute the rules rather than let one model
+For invented games, AI players must execute the rules rather than let one model
 narrate an imagined session. Rotate seats and policies, retain seeded traces,
 and check termination, dead states, illegal actions, dominant strategies,
-pacing, and exploits. These are useful predictions; actual fun still needs
-people.
+pacing, and exploits. These are useful predictions, not release evidence for
+fun. The exact game must reach an independent human table, and those people
+must want another play; 1,000 simulations do not substitute for that gate.
 
-For every lane, the V1 release Playtest also covers delight intent, mechanics,
+For classics made yours, verify the known rules and evaluate the exact custom
+edition as an object. Do not market familiar gameplay as a new invention.
+
+For every category, the V1 release Playtest also covers delight intent, mechanics,
 printable geometry, slicing, an exact physical prototype, and independent human
 use. If that evidence does not exist yet, the product waits; simulation or a
 self-review cannot fill the gap.
@@ -344,7 +374,7 @@ evidence bundles, runtime event payloads, or source.
 At minimum, an inventor's tests should prove:
 
 - the root `TASTE.md` is loaded and its exact bytes are bound;
-- its profile selects one valid lane and the intended customization level;
+- its profile selects one valid category and the intended customization level;
 - changing Taste or product bytes during a run fails closed;
 - Made files stay inside the fresh round workspace;
 - a failed Playtest returns actionable feedback to the next Make round;

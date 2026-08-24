@@ -1,9 +1,7 @@
-"""The opinionated first Workshop: playthings for grown-ups.
+"""The opinionated first Workshop: Wish-shaped playthings for grown-ups.
 
-This module is deliberately product-specific.  Autonomous Workshop is not a
-generic physical-product framework in its first version.  It makes table games,
-desk toys, tiny models or characters, and puzzles or keepsakes with play in
-them.  A useful Wish is interpreted as the playful version of that object.
+The five lanes are crafts, not extra pipeline stages. Every elf still works the
+same five jobs: Wish, Make, Playtest, Docs, and Deliver.
 """
 
 from __future__ import annotations
@@ -20,16 +18,17 @@ from .taste import Taste
 
 WORKSHOP_JOBS: Tuple[str, ...] = ("wish", "make", "playtest", "docs", "deliver")
 PLAYTHING_LANES: Tuple[str, ...] = (
-    "table-game",
-    "desk-toy",
-    "model-character",
-    "puzzle-keepsake",
+    "classics-made-yours",
+    "invented-games",
+    "moving-machines",
+    "holdable-science",
+    "little-worlds",
 )
 
 
 @dataclass(frozen=True)
 class ToyTask:
-    """One backstage task owned by one of the five Workshop jobs."""
+    """One backstage responsibility owned by a public Workshop job."""
 
     key: str
     job: str
@@ -67,40 +66,78 @@ class ToyTask:
         }
 
 
-# Alice supplies the ordering and evidence discipline.  Peter's pinned CAD
-# skills supply the STEP-first Make recipe.  Richter's text2game/text2cad work
-# supplies the executable-game, multi-lens, fit, slice, repair, and postmortem
-# lessons.  The source projects remain pinned references; these task contracts
-# are a small clean Workshop vocabulary rather than copied pipelines.
+# Alice's completed game work supplies the job ordering and evidence discipline.
+# Peter's pinned CAD skills supply the STEP-first Make recipe. Team prototypes
+# supplied lessons about simulation, fit, slicing, repair, and postmortems. Those
+# lessons live here now; research repos are not pretend Workshop inventors.
 TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "wish.scope",
         "wish",
-        "Preserve the person's words and turn utility into a playful interpretation.",
+        "Preserve the person's words and choose the craft that can answer them uniquely.",
         "Exact Wish and Taste hashes plus the chosen plaything lane.",
         "wish-intake",
     ),
     ToyTask(
         "make.discover",
         "make",
-        "Research prior art, safety boundaries, cultural context, and the opportunity.",
+        "Research prior art, safety boundaries, context, and the opportunity.",
         "Cited research and three genuinely different directions.",
         "research",
     ),
     ToyTask(
         "make.choose",
         "make",
-        "Choose one direction with a signature moment, character, or mechanism.",
-        "A decision record bound to the rejected alternatives and Taste.",
+        "Choose one direction with a signature decision, mechanism, or reveal.",
+        "A decision record bound to rejected alternatives and Taste.",
         "invention",
+    ),
+    ToyTask(
+        "make.unique",
+        "make",
+        "Make the Wish structural; do not decorate an interchangeable download.",
+        "A trace from Wish details to rules, geometry, mechanism, or composition.",
+        "wish-shaped-design",
+    ),
+    ToyTask(
+        "make.classic",
+        "make",
+        "Preserve the known game's rules while inventing its physical edition for this Wish.",
+        "Known-rule reference and a complete mapping from roles and information to parts.",
+        "classic-edition-design",
+        ("classics-made-yours",),
     ),
     ToyTask(
         "make.rules",
         "make",
-        "Write complete executable rules and an AI-player model.",
-        "Rules, setup, legal actions, end condition, scoring, ties, and simulator source.",
+        "Write complete executable rules and AI-player models for a game that did not exist.",
+        "Setup, legal actions, end condition, scoring, ties, and simulator source.",
         "game-design",
-        ("table-game",),
+        ("invented-games",),
+    ),
+    ToyTask(
+        "make.motion",
+        "make",
+        "Design a mechanism whose motion is the delightful idea, not an afterthought.",
+        "Kinematic model, tolerances, load assumptions, and failure modes.",
+        "kinetic-design",
+        ("moving-machines",),
+    ),
+    ToyTask(
+        "make.science",
+        "make",
+        "Turn a scientific or mathematical relationship into something hands can understand.",
+        "Source model, stated simplifications, scale choices, and learning interaction.",
+        "science-design",
+        ("holdable-science",),
+    ),
+    ToyTask(
+        "make.world",
+        "make",
+        "Make the recipient's real subject into a coherent tiny world rather than a generic miniature.",
+        "Consented references and a feature-to-form personalization map.",
+        "world-design",
+        ("little-worlds",),
     ),
     ToyTask(
         "make.cad",
@@ -112,29 +149,70 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "playtest.intent",
         "playtest",
-        "Check that the result is a plaything with soul rather than plain utility.",
-        "Independent delight and Taste-alignment verdicts.",
+        "Test the download bar and the tone: unmistakably Wish-shaped, cool, and never twee.",
+        "Independent Taste, distinctiveness, and delight verdicts.",
         "independent-review",
+    ),
+    ToyTask(
+        "playtest.classic",
+        "playtest",
+        "Verify that customization never corrupts the classic game's known rules or readability.",
+        "Rule-conformance and role-legibility results for the exact edition.",
+        "classic-rules-test",
+        ("classics-made-yours",),
     ),
     ToyTask(
         "playtest.game",
         "playtest",
-        "Have seeded optimizing, social, exploratory, and adversarial AI players test it.",
-        "Reproducible traces covering rules, termination, balance, exploits, fun, and flow.",
+        "Run at least 1,000 seeded plays with optimizing, social, exploratory, and adversarial agents.",
+        "Executable traces covering rules, termination, balance, exploits, choices, and flow.",
         "game-simulation",
-        ("table-game",),
+        ("invented-games",),
+    ),
+    ToyTask(
+        "playtest.human-table",
+        "playtest",
+        "Let independent humans play the exact invented game and observe whether they ask to play again.",
+        "Authenticated blind-table record and an explicit replay-request observation.",
+        "human-replay",
+        ("invented-games",),
+        external=True,
+    ),
+    ToyTask(
+        "playtest.motion",
+        "playtest",
+        "Cycle the exact mechanism across tolerances, orientations, wear, and misuse.",
+        "Measured cycle, interference, wear, stall, and failure evidence.",
+        "motion-test",
+        ("moving-machines",),
+    ),
+    ToyTask(
+        "playtest.science",
+        "playtest",
+        "Check scientific truth, honest simplification, and whether handling reveals the idea.",
+        "Source-bound accuracy checks and independent comprehension observations.",
+        "science-test",
+        ("holdable-science",),
+    ),
+    ToyTask(
+        "playtest.likeness",
+        "playtest",
+        "Check that the tiny world is recognizable, specific, coherent, and consent-safe.",
+        "Reference-bound likeness and personalization review.",
+        "world-test",
+        ("little-worlds",),
     ),
     ToyTask(
         "playtest.mechanics",
         "playtest",
-        "Test every physical interaction, fit, motion, assembly path, and failure mode.",
+        "Test physical interactions, fit, assembly paths, loads, and failure modes.",
         "Measured B-rep, interference, fit, motion, and assembly evidence.",
         "mechanical-test",
     ),
     ToyTask(
         "playtest.print",
         "playtest",
-        "Test topology, orientation, plate packing, slicing, material, time, and supports.",
+        "Test topology, orientation, packing, slicing, material, time, and supports.",
         "Strict mesh and exact slicer-profile receipts for every expected part.",
         "print-test",
     ),
@@ -144,12 +222,18 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "Let independent grown-ups use the exact prototype without inventor coaching.",
         "Authenticated blind-use records, delight signals, confusion, and requested changes.",
         "human-playtest",
+        (
+            "classics-made-yours",
+            "moving-machines",
+            "holdable-science",
+            "little-worlds",
+        ),
         external=True,
     ),
     ToyTask(
         "playtest.prototype",
         "playtest",
-        "Print and test the exact physical prototype that later work will describe and ship.",
+        "Print and test the exact physical revision that later work will describe and ship.",
         "Printer, material, calibration, artifact, QA, safety, and physical-test receipts.",
         "physical-prototype",
         external=True,
@@ -165,8 +249,8 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
     ToyTask(
         "docs.truth",
         "docs",
-        "Reject claims, images, or specifications not supported by Playtest evidence.",
-        "Claim-to-evidence map and exact page history hash.",
+        "Reject claims, images, or specifications unsupported by Playtest evidence.",
+        "Claim-to-evidence map and exact page-history hash.",
         "docs-review",
     ),
     ToyTask(
@@ -190,7 +274,7 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
 
 @dataclass(frozen=True)
 class ToyBlueprint:
-    """The shared recipe an elf gets before it writes any custom code."""
+    """The shared recipe an elf gets before writing custom code."""
 
     lane: str
     tasks: Sequence[ToyTask]
@@ -242,7 +326,7 @@ class ToyBlueprint:
 def playful_make_request(
     wish: Wish, taste: Taste, blueprint: ToyBlueprint
 ) -> Mapping[str, Any]:
-    """Bind the V1 product focus into every default Make request."""
+    """Bind the V1 product promise into every default Make request."""
 
     if not isinstance(wish, Wish) or not isinstance(taste, Taste):
         raise ContractError("playful Make requires a typed Wish and Taste")
@@ -254,16 +338,27 @@ def playful_make_request(
         "taste": taste.to_binding(),
         "blueprint": blueprint.to_dict(),
         "brief": {
-            "workshop": "Santa's workshop for playthings",
+            "workshop": "Santa's workshop for Wish-shaped playthings",
             "audience": "grown-ups, 14 and up",
-            "promise": "Make a plaything that creates joy, surprise, or a delightful interaction.",
+            "promise": "Make a cool plaything whose rules or form exist because of this Wish.",
+            "download_bar": (
+                "The result cannot be interchangeable with a model that existed for download "
+                "before this Wish. Personalization must change rules, geometry, mechanism, "
+                "scientific framing, or composition."
+            ),
+            "tone": "Cool beats cute. Never twee, generic, or decoration-only.",
             "utility_rule": (
-                "If the Wish sounds useful, make the playful version. Nothing may be merely useful."
+                "If the Wish sounds useful, make the playable or wondrous version. "
+                "Nothing may be merely useful."
             ),
             "product_lanes": list(PLAYTHING_LANES),
+            "invented_game_release_rule": (
+                "Simulation may reject an invented game but may not release it. "
+                "Independent humans must play the exact prototype and ask to play again."
+            ),
             "deliverables": (
                 "build spec, parametric source, STEP, printable parts, assembly, "
-                "fixed-view renders, rules or interaction instructions, and an unresolved-claims list"
+                "fixed-view renders, rules or interaction instructions, and unresolved claims"
             ),
         },
     }

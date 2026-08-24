@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -6,41 +7,111 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.manifest import load_manifest
-from inventor_workshop.errors import ContractError
 from inventor_workshop.scaffold import scaffold_inventor
+from inventor_workshop.toys import PLAYTHING_LANES, WORKSHOP_JOBS
 
 
 class ScaffoldTest(unittest.TestCase):
-    def test_new_inventor_is_immediately_discoverable(self):
+    @staticmethod
+    def environment(destination: Path):
+        core_src = Path(__file__).resolve().parents[1] / "src"
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.pathsep.join(
+            (str(core_src), str(destination / "src"))
+        )
+        return environment
+
+    def test_scaffold_has_exactly_five_physical_magic_lanes(self):
+        expected = (
+            "classics-made-yours",
+            "invented-games",
+            "moving-machines",
+            "holdable-science",
+            "little-worlds",
+        )
+        self.assertEqual(tuple(PLAYTHING_LANES), expected)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for index, lane in enumerate(expected):
+                destination = scaffold_inventor(
+                    root,
+                    "lane-%d" % index,
+                    "Elf %d" % index,
+                    "Wish-shaped physical magic",
+                    lane=lane,
+                )
+                manifest = load_manifest(destination / "inventor.json")
+                self.assertIn(lane, manifest.capabilities)
+                taste = (destination / "TASTE.md").read_text(encoding="utf-8")
+                if lane == "classics-made-yours":
+                    self.assertIn("rules are already known", taste)
+                    self.assertIn("Wish-shaped physical set", taste)
+                if lane == "invented-games":
+                    self.assertIn("experimental rules craft", taste)
+                    self.assertIn("human table replay", taste)
+                    self.assertIn("exact rules and printed prototype", taste)
+            for index, lane in enumerate(
+                (
+                    "games-puzzles",
+                    "table-game",
+                    "desk-toy",
+                    "model-character",
+                    "puzzle-keepsake",
+                )
+            ):
+                with self.subTest(old_lane=lane), self.assertRaises(ContractError):
+                    scaffold_inventor(
+                        root,
+                        "old-lane-%d" % index,
+                        "Old Elf",
+                        "old category",
+                        lane=lane,
+                    )
+
+    def test_taste_only_elf_is_thin_discoverable_and_truthful(self):
         with tempfile.TemporaryDirectory() as temporary:
             destination = scaffold_inventor(
-                Path(temporary), "word-games", "Ada", "printable word games"
+                Path(temporary),
+                "word-games",
+                "Ada",
+                "printable word games",
+                lane="invented-games",
+                level="taste-only",
             )
             manifest = load_manifest(destination / "inventor.json")
             self.assertEqual(manifest.inventor_id, "word-games")
             self.assertEqual(manifest.schema_version, 4)
             self.assertEqual(manifest.workshop_features, ())
-            self.assertTrue((destination / "src/word_games/workflow.py").exists())
+            self.assertEqual(
+                tuple(manifest.capabilities),
+                (*WORKSHOP_JOBS, "invented-games", "taste-only"),
+            )
+
+            package = destination / "src/word_games"
+            self.assertTrue((package / "__main__.py").is_file())
+            self.assertFalse((package / "inventor.py").exists())
+            self.assertFalse((package / "workflow.py").exists())
+            entrypoint = (package / "__main__.py").read_text(encoding="utf-8")
+            self.assertIn("Workshop", entrypoint)
+            self.assertIn("WorkshopTools", entrypoint)
+
             taste = (destination / "TASTE.md").read_text(encoding="utf-8")
             self.assertIn("creative constitution", taste)
             self.assertIn("printable word games", taste)
-            self.assertIn("pip install -e ../.. -e .", (destination / "README.md").read_text())
-            self.assertIn(
-                'requires-python = ">=3.11"',
-                (destination / "pyproject.toml").read_text(encoding="utf-8"),
-            )
-            self.assertTrue((destination / "setup.py").is_file())
-            self.assertNotIn(
-                "data-files",
-                (destination / "pyproject.toml").read_text(encoding="utf-8"),
-            )
+            self.assertIn("Nothing may be merely useful", taste)
+            self.assertIn("I couldn't have downloaded it before this Wish", taste)
+            self.assertIn("Cool beats cute", taste)
+            readme = (destination / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Wish -> Make <-> Playtest -> Docs -> Deliver", readme)
+            self.assertIn("owns only `TASTE.md`", readme)
+            self.assertIn("trusted checkout or product tier", readme)
+            self.assertIn("No generic, download-equivalent prints", readme)
+            self.assertNotIn("Make/Inspect", readme)
+            self.assertIn('requires-python = ">=3.9"', (destination / "pyproject.toml").read_text())
 
-            core_src = Path(__file__).resolve().parents[1] / "src"
-            env = dict(os.environ)
-            env["PYTHONPATH"] = os.pathsep.join(
-                (str(core_src), str(destination / "src"))
-            )
+            environment = self.environment(destination)
             observed = []
             for name in ("one", "two"):
                 cwd = Path(temporary) / name
@@ -49,55 +120,85 @@ class ScaffoldTest(unittest.TestCase):
                     [
                         sys.executable,
                         "-c",
-                        "from word_games.__main__ import database_path; print(database_path())",
+                        (
+                            "from word_games.__main__ import default_runtime_root; "
+                            "print(default_runtime_root())"
+                        ),
                     ],
                     cwd=str(cwd),
-                    env=env,
+                    env=environment,
                     check=True,
                     stdout=subprocess.PIPE,
                     text=True,
                 )
                 observed.append(result.stdout.strip())
             self.assertEqual(observed[0], observed[1])
-            self.assertEqual(
-                Path(observed[0]), destination / ".workshop" / "clockwork.sqlite3"
-            )
-            runtime = destination / ".workshop"
-            doctor = subprocess.run(
-                [sys.executable, "-m", "word_games", "doctor"],
+            self.assertEqual(Path(observed[0]), destination / ".workshop")
+
+            profile = subprocess.run(
+                [sys.executable, "-m", "word_games", "profile"],
                 cwd=str(Path(temporary) / "one"),
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            self.assertIn("no state changed", doctor.stdout)
-            self.assertFalse(runtime.exists())
-            made = subprocess.run(
-                [sys.executable, "-m", "word_games", "make", "first-product"],
+            profile_data = json.loads(profile.stdout)
+            self.assertEqual(profile_data["customization_level"], "taste-only")
+            self.assertFalse(profile_data["production_ready"])
+            self.assertFalse((destination / ".workshop").exists())
+
+            preview = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "word_games",
+                    "preview",
+                    "first-product",
+                    "I wish for a tiny game of words",
+                ],
                 cwd=str(Path(temporary) / "one"),
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            self.assertIn("made and inspected first-product -> ", made.stdout)
-            maker_mark = runtime / "runs/first-product/maker-mark.json"
-            self.assertTrue(maker_mark.is_file())
-            self.assertIn(
-                '"artifact_sha256"',
-                maker_mark.read_text(encoding="utf-8"),
+            preview_data = json.loads(preview.stdout)
+            self.assertEqual(preview_data["blueprint"]["lane"], "invented-games")
+            human_table = next(
+                task
+                for task in preview_data["blueprint"]["tasks"]
+                if task["key"] == "playtest.human-table"
             )
-            status = subprocess.run(
-                [sys.executable, "-m", "word_games", "status"],
+            self.assertEqual(human_table["capability"], "human-replay")
+            self.assertTrue(human_table["external"])
+            self.assertFalse((destination / ".workshop").exists())
+
+            run = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "word_games",
+                    "run",
+                    "--playtest-rounds",
+                    "3",
+                    "first-product",
+                    "I wish for a tiny game of words",
+                ],
                 cwd=str(Path(temporary) / "two"),
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            self.assertIn("first-product inspect@1 ", status.stdout)
-            self.assertNotIn("unbound", status.stdout)
+            waiting = json.loads(run.stdout)
+            self.assertEqual(waiting["status"], "waiting")
+            self.assertEqual(waiting["job"], "make")
+            self.assertEqual(waiting["playtest_rounds"], 3)
+            self.assertIsNone(waiting["artifact_sha256"])
+            self.assertEqual(waiting["needs"][0]["capability"], "model-and-cad-maker")
+            self.assertTrue((destination / ".workshop/workshop.sqlite3").is_file())
+
             subprocess.run(
                 [
                     sys.executable,
@@ -110,67 +211,184 @@ class ScaffoldTest(unittest.TestCase):
                     "test_*.py",
                 ],
                 cwd=str(destination),
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
 
-    def test_scaffold_rejects_invalid_package_names_and_control_text(self):
+    def test_three_levels_generate_only_the_declared_creative_seams(self):
+        cases = (
+            ("taste-only", False, False),
+            ("custom-make", True, False),
+            ("custom-playtest", True, True),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            for index, (level, has_make, has_playtest) in enumerate(cases):
+                inventor_id = "level-%d" % index
+                with self.subTest(level=level):
+                    destination = scaffold_inventor(
+                        Path(temporary),
+                        inventor_id,
+                        "Elf %d" % index,
+                        "small desk surprises",
+                        lane="moving-machines",
+                        level=level,
+                    )
+                    hook = destination / "src" / inventor_id.replace("-", "_") / "inventor.py"
+                    self.assertEqual(hook.exists(), has_make)
+                    if hook.exists():
+                        source = hook.read_text(encoding="utf-8")
+                        self.assertIn("def make(", source)
+                        self.assertEqual("def playtest(" in source, has_playtest)
+                        self.assertIn("WaitingFor", source)
+                        self.assertIn("context.playtest_rounds", source)
+                    for source in sorted(destination.rglob("*.py")):
+                        compile(source.read_text(encoding="utf-8"), str(source), "exec")
+
+                    package = inventor_id.replace("-", "_")
+                    environment = self.environment(destination)
+                    observed = subprocess.run(
+                        [sys.executable, "-m", package, "profile"],
+                        cwd=str(destination),
+                        env=environment,
+                        check=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    )
+                    self.assertEqual(
+                        json.loads(observed.stdout)["customization_level"], level
+                    )
+                    run = subprocess.run(
+                        [
+                            sys.executable,
+                            "-m",
+                            package,
+                            "run",
+                            "waiting-product",
+                            "I wish for a playful desk companion",
+                        ],
+                        cwd=str(destination),
+                        env=environment,
+                        check=True,
+                        stdout=subprocess.PIPE,
+                        text=True,
+                    )
+                    need = json.loads(run.stdout)["needs"][0]["capability"]
+                    self.assertEqual(
+                        need,
+                        "model-and-cad-maker" if level == "taste-only" else "inventor-make",
+                    )
+
+    def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             for inventor_id in ("class", "inventor-workshop", "tests"):
-                with self.subTest(inventor_id=inventor_id), self.assertRaises(
-                    ContractError
-                ):
-                    scaffold_inventor(root, inventor_id, "Ada", "word games")
+                with self.subTest(inventor_id=inventor_id), self.assertRaises(ContractError):
+                    scaffold_inventor(
+                        root,
+                        inventor_id,
+                        "Ada",
+                        "word games",
+                        lane="invented-games",
+                    )
             with self.assertRaises(ContractError):
-                scaffold_inventor(root, "safe-id", "Ada\nInjected", "word games")
+                scaffold_inventor(
+                    root,
+                    "safe-id",
+                    "Ada\nInjected",
+                    "word games",
+                    lane="invented-games",
+                )
+            with self.assertRaisesRegex(ContractError, "lane"):
+                scaffold_inventor(root, "no-lane", "Ada", "word games")
+            with self.assertRaisesRegex(ContractError, "lane"):
+                scaffold_inventor(
+                    root, "bad-lane", "Ada", "word games", lane="organizer"
+                )
+            with self.assertRaisesRegex(ContractError, "level"):
+                scaffold_inventor(
+                    root,
+                    "bad-level",
+                    "Ada",
+                    "word games",
+                    lane="invented-games",
+                    level="everything",
+                )
+            with self.assertRaisesRegex(ContractError, "conflicts"):
+                scaffold_inventor(
+                    root,
+                    "conflict",
+                    "Ada",
+                    "word games",
+                    lane="moving-machines",
+                    template="board-game",
+                )
+            destination = scaffold_inventor(
+                root, "existing", "Ada", "word games", lane="invented-games"
+            )
+            self.assertTrue(destination.is_dir())
+            with self.assertRaises(StateConflict):
+                scaffold_inventor(
+                    root, "existing", "Ada", "word games", lane="invented-games"
+                )
 
-    def test_scaffold_quotes_display_name_in_generated_python(self):
+    def test_legacy_template_maps_to_a_toy_lane_without_entering_help_surface(self):
         with tempfile.TemporaryDirectory() as temporary:
             destination = scaffold_inventor(
                 Path(temporary),
-                "quote-games",
-                'Ada "The Inventor"',
-                'printable "word" games with \\ paths',
+                "legacy-game",
+                "Ada",
+                "word games",
+                template="board-game",
+            )
+            manifest = load_manifest(destination / "inventor.json")
+            self.assertIn("invented-games", manifest.capabilities)
+            self.assertIn("taste-only", manifest.capabilities)
+
+    def test_scaffold_quotes_display_text_and_person_wish_stays_exact(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = scaffold_inventor(
+                Path(temporary),
+                "quote-toys",
+                'Ada "The Elf"',
+                'tiny "word" toys with \\ paths',
+                lane="little-worlds",
             )
             for source in sorted(destination.rglob("*.py")):
                 compile(source.read_text(encoding="utf-8"), str(source), "exec")
-            core_src = Path(__file__).resolve().parents[1] / "src"
-            env = dict(os.environ)
-            env["PYTHONPATH"] = os.pathsep.join(
-                (str(core_src), str(destination / "src"))
-            )
+            manifest = load_manifest(destination / "inventor.json")
+            self.assertEqual(manifest.name, 'Ada "The Elf"')
+            self.assertIn('tiny "word" toys', (destination / "TASTE.md").read_text())
+
+            environment = self.environment(destination)
             observed = subprocess.run(
                 [
                     sys.executable,
                     "-c",
                     (
-                        "from quote_games.workflow import wish; "
-                        "print(wish('quoted').objective)"
+                        "from quote_toys.__main__ import create_wish; "
+                        "print(create_wish('quoted', 'My exact wish').objective)"
                     ),
                 ],
                 cwd=temporary,
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 text=True,
             )
-            self.assertEqual(
-                observed.stdout.strip(),
-                (
-                    'Invent printable "word" games with \\ paths guided by '
-                    'Ada "The Inventor"\'s TASTE.md.'
-                ),
-            )
+            self.assertEqual(observed.stdout.strip(), "My exact wish")
 
     def test_generated_identity_resolves_from_target_like_package_data(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             destination = scaffold_inventor(
-                root / "source", "target-games", "Ada", "word games"
+                root / "source",
+                "target-games",
+                "Ada",
+                "word games",
+                lane="invented-games",
             )
             target = root / "target"
             package = target / "target_games"
@@ -182,8 +400,8 @@ class ScaffoldTest(unittest.TestCase):
             away = root / "away"
             away.mkdir()
             core_src = Path(__file__).resolve().parents[1] / "src"
-            env = dict(os.environ)
-            env["PYTHONPATH"] = os.pathsep.join((str(target), str(core_src)))
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = os.pathsep.join((str(target), str(core_src)))
             observed = subprocess.run(
                 [
                     sys.executable,
@@ -191,7 +409,7 @@ class ScaffoldTest(unittest.TestCase):
                     "from target_games.__main__ import inventor_root; print(inventor_root())",
                 ],
                 cwd=away,
-                env=env,
+                env=environment,
                 check=True,
                 stdout=subprocess.PIPE,
                 text=True,

@@ -1,12 +1,46 @@
 # Bob
 
-Bob invents beautiful, 3D-printable board games. He studies game history,
-develops new physical mechanisms, plays each design thousands of times, and
-keeps only the games that survive deterministic checks and adversarial review.
-[`TASTE.md`](TASTE.md) is his creative constitution.
+Bob is the canonical **moving-machines** inventor. He shows the middle customization
+level: Bob owns **Make**, while Workshop supplies Wish intake, Taste binding,
+the default physical **Playtest**, product Docs, delivery, and durable runtime.
+[`TASTE.md`](TASTE.md) defines his kinetic point of view.
 
-Bob is one inventor built on the repository-wide Workshop. The
-customer promise stays deliberately short:
+```text
+Wish -> Bob Make <-> Workshop Playtest -> Workshop Docs -> Workshop Deliver
+             ^                 |
+             +----- feedback --+
+```
+
+The custom moving-machine Make is an explicit integration seam and is not implemented
+yet. `python3 profile.py` is the canonical Workshop-facing entrypoint;
+it must fail closed rather than route a kinetic Wish into unrelated code.
+
+```bash
+python3 -m pip install -e ../..
+python3 profile.py profile
+python3 profile.py preview first-machine "I wish my rally car became a hand-cranked climbing machine"
+python3 profile.py run first-machine "I wish my rally car became a hand-cranked climbing machine" --playtest-rounds 4
+```
+
+`run` currently returns a typed `waiting` result at Bob's owned Make seam. The
+remaining migration is exactly one `MakeContext -> Made` moving-machine callback.
+Once installed, the callback feeds the shared physical Playtest; `bob.py` is
+never used as a fallback.
+`--playtest-rounds` is a checked 1–100 allowance recorded with the Wish; it is
+not inferred from free-form prompt text.
+
+## Preserved board-game laboratory (noncanonical)
+
+Bob's original board-game harness is preserved in `bob.py`, `harness/`,
+`loops/`, and `games/` because its budgeting, research, simulation, effect, and
+learning work remains useful migration material. It is **not** Bob's moving-machine
+Make implementation and the Workshop profile never calls it implicitly. Its
+original creative constitution is preserved in
+[`TASTE.board-games.md`](TASTE.board-games.md).
+
+That laboratory studies game history, develops physical mechanisms, plays each
+design thousands of times, and keeps only games that survive deterministic
+checks and adversarial review. Its historical customer diagram was:
 
 ```text
 WISH  --------------------------  WAIT  ----------------------  RECEIVE
@@ -16,14 +50,14 @@ WISH  --------------------------  WAIT  ----------------------  RECEIVE
                  artifact + runtime + adapter + receipt
 ```
 
-Bob's current storefront adapter can create a draft. Manufacturing and delivery
+The legacy storefront adapter can create a draft. Manufacturing and delivery
 are the next part of the customer path, not something this code pretends is
 complete.
 
-## How Bob uses the Workshop
+## How the legacy board-game laboratory uses Workshop
 
 ```text
-Wish + TASTE.md
+Wish + historical board-game Taste
       |
       v
 MAKE  Bob explores rules, mechanics, play engines, and printable geometry
@@ -75,7 +109,8 @@ runs the weekly architecture loop. Files under `corpus/`, `state/`, and
 
 | Path | What it contains |
 |---|---|
-| `TASTE.md` | Bob's sole runtime creative constitution |
+| `TASTE.md` | Bob's canonical moving-machine creative constitution |
+| `TASTE.board-games.md` | preserved Taste for the noncanonical board-game laboratory |
 | `ARCHITECTURE.md` | the design, gates, loops, and Workshop mapping |
 | `docs/REWARD.md` | the frozen board-game reward specification |
 | `docs/CONTRACTS.md` | Bob's module and state contracts |
@@ -85,7 +120,10 @@ runs the weekly architecture loop. Files under `corpus/`, `state/`, and
 | `state/` | durable queue, effect ledger, credentials, and heartbeat |
 | `ops/` | launchd install, uninstall, and watchdog |
 
-## Run Bob
+## Run the preserved board-game laboratory
+
+These commands exercise legacy migration material. They do not run Bob's
+canonical moving-machines profile and must not receive a new kinetic Wish.
 
 ```bash
 cd inventors/bob
@@ -96,7 +134,7 @@ python3 bob.py status
 ops/install.sh
 ```
 
-The autonomous route is Workshop-only and defaults to an offline rehearsal:
+The historical board-game route defaults to an offline rehearsal:
 
 ```bash
 BOB_SEND_DRY_RUN=1 python3 bob.py tick

@@ -53,6 +53,87 @@ def _inside(path: Path, root: Path, label: str) -> None:
         raise ContractError("%s must stay inside its Workshop workspace" % label) from exc
 
 
+def _playtest_policy_needs(
+    blueprint: ToyBlueprint, playtested: Playtested
+) -> tuple[Need, ...]:
+    """Return evidence the lane still needs before Docs may begin.
+
+    A custom Playtest can decide how to obtain evidence, but it cannot silently
+    narrow the Workshop policy. Result IDs are the blueprint capability names.
+    The invented-game release gate additionally validates the meaning of its
+    two highest-risk results instead of accepting a conveniently named pass.
+    """
+
+    by_id = {result.playtest_id: result for result in playtested.evidence.results}
+    needs = [
+        Need(
+            "playtest",
+            capability,
+            "The custom Playtest did not return this required lane result.",
+            "Return an artifact-bound PlaytestResult whose ID is %r, or wait for the real capability."
+            % capability,
+        )
+        for capability in blueprint.required_capabilities("playtest")
+        if capability not in by_id
+    ]
+
+    if blueprint.lane != "invented-games":
+        return tuple(needs)
+
+    simulation = by_id.get("game-simulation")
+    if simulation is not None and simulation.passed:
+        evidence = simulation.evidence
+        styles = evidence.get("player_styles", ())
+        required_styles = {"optimizing", "social", "exploratory", "adversarial"}
+        simulation_is_real = (
+            evidence.get("evidence_class") == "ai-simulation"
+            and type(evidence.get("completed_games")) is int
+            and evidence["completed_games"] >= 1_000
+            and evidence.get("executable") is True
+            and isinstance(styles, (list, tuple))
+            and all(isinstance(style, str) for style in styles)
+            and required_styles <= set(styles)
+        )
+        if not simulation_is_real:
+            needs.append(
+                Need(
+                    "playtest",
+                    "game-simulation",
+                    "An invented game needs executable evidence from at least 1,000 seeded games across all four player styles.",
+                    "Return game-simulation evidence_class=ai-simulation, executable=true, completed_games>=1000, and optimizing/social/exploratory/adversarial player_styles.",
+                )
+            )
+
+    human = by_id.get("human-replay")
+    if human is not None and human.passed:
+        evidence = human.evidence
+        human_replay_is_real = (
+            evidence.get("evidence_class") == "human-playtest"
+            and type(evidence.get("participant_count")) is int
+            and evidence["participant_count"] >= 2
+            and evidence.get("independent") is True
+            and evidence.get("exact_physical_prototype") is True
+            and evidence.get("inventor_coaching") is False
+            and evidence.get("asked_to_play_again") is True
+        )
+        if not human_replay_is_real:
+            needs.append(
+                Need(
+                    "playtest",
+                    "human-replay",
+                    "Simulation cannot establish fun or observed replay demand for an invented game.",
+                    "Record an independent table of at least two humans playing the exact physical prototype without inventor coaching and asking to play again.",
+                )
+            )
+
+    # Keep one actionable request per capability even when a malformed result
+    # and a missing-result check converge on the same policy requirement.
+    unique = {}
+    for need in needs:
+        unique.setdefault(need.capability, need)
+    return tuple(unique.values())
+
+
 @dataclass(frozen=True)
 class WorkshopTools:
     """Shared capabilities installed once for every elf in one Workshop."""
@@ -359,6 +440,18 @@ class Workshop:
                 playtested.assert_artifact(made.artifact_sha256)
                 made.assert_current()
                 if playtested.passed:
+                    policy_needs = _playtest_policy_needs(self.blueprint, playtested)
+                    if policy_needs:
+                        return self._wait(
+                            runtime,
+                            wish,
+                            "playtest",
+                            round_number,
+                            WaitingFor(*policy_needs),
+                            lease,
+                            selected_rounds,
+                            artifact_sha256=made.artifact_sha256,
+                        )
                     self._advance(
                         runtime,
                         wish.product_id,

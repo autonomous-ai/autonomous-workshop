@@ -1,1 +1,0 @@
-.venv/bin/python board-game/tools/dashboard.py --serve --open
