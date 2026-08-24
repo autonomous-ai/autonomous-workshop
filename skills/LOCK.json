@@ -3,8 +3,8 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "b05730f091555d448ed3517427cc0ee7bd94b4c9a372036941ae3bfb9b9e373c",
-      "source_commit": "f18aebe4698d92ffccf07d94e2d624b08d30e667",
+      "sha256": "82c37ed036ac3b111e6dd37e35f6b18f7bc8fa41b4a6a87b6066b52272d64464",
+      "source_commit": "54804a8da4b462ab055c522d46c1a3f099bc21e2",
       "source_url": "https://github.com/peterat617/text-to-3d"
     },
     "product-to-cad": {

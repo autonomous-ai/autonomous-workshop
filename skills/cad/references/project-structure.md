@@ -196,6 +196,9 @@ Two consequences:
   so bad numbers fail loudly. Do not rebuild all shapes in a local audit merely
   to repeat solid/body/volume checks already owned by `check_fit`, `validate`,
   and `check_mesh`.
+- **Say when an STL is repaired.** `scripts/repair_mesh` writes a mesh the
+  generator does not produce, so a project shipping one has to name it in the
+  README beside the `check_mesh` result. Nothing else compares the two.
 - **Record the provenance** of each dimension — `[observed]`, `[inferred]`,
   `[assumed]` — in a comment next to it, and cross-reference the spec section.
 

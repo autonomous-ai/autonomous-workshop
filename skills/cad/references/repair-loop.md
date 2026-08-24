@@ -160,6 +160,69 @@ Fix:
 - apply the smallest source correction from the list in `positioning.md` (Source-level positioning corrections)
 - regenerate the assembly from the Python source and rerun the failed check
 
+### Mesh defects the generator produced
+
+`check_mesh` fails on three things that no source-level check sees, because they
+appear only in the tessellation. Repair the source; `scripts/repair_mesh` exists
+to unblock a print, not to close the loop -- the next `export` writes the broken
+mesh again, and nothing downstream compares the two.
+
+**A feature whose pitch equals its own size.** A 3x3 grid of 28 mm pockets on a
+28 mm pitch leaves each pocket's corner touching its neighbour's at exactly one
+point. The solid is valid, `validate` and `interfere` both pass, and the mesh
+comes out with an edge four faces share -- two cones of material joined at a
+line no slicer can walk across. Cutting the pockets in one combined operation
+does not help; the tools do not overlap, so the result is the same.
+
+```python
+POCKET = PITCH - 0.1        # not PITCH
+```
+
+The same arithmetic reaches this by accident whenever a size and a spacing are
+derived from one parameter without a gap term. Give the gap a name.
+
+**A union of solids that only touch.** Two operands meeting on a coplanar face,
+or at an edge, return two solids rather than one -- `references/organic-lofts.md`
+covers the lofted form of this, where a segment starting at the previous
+segment's last station starts *outside* it. In the mesh it shows up as open
+edges along the seam, or as a second shell. Overlap the operands, and assert
+what you expected:
+
+```python
+assert len(shape.solids()) == 1
+```
+
+`--nudge`-sized translations are not the fix. A 0.01 mm shift makes the boolean
+intersect, but leaves a 0.01 mm feature in the geometry; overlap by something
+the model can afford (roughly 1 mm for a through-cut, a whole station for a
+loft) and let the union absorb it.
+
+**Slivers, and the holes dropping them opens.** Tessellation emits triangles
+with no altitude. They carry no geometry, so `check_mesh` drops them before
+counting -- but a sliver stitching a T-junction was load-bearing, and dropping
+it opens the three edges it held. That is why the gate reports the boundary
+count both ways: if the two differ, the hole is the drop, and the fix is the
+mesh tolerance rather than the shape.
+
+```bash
+python skills/cad/scripts/export <entry>.step.py --stl --mesh-tolerance 0.01
+```
+
+**To unblock a print in the meantime:**
+
+```bash
+python skills/cad/scripts/repair_mesh part_<role>.stl -o part_<role>.fixed.stl
+python skills/cad/scripts/check_mesh part_<role>.fixed.stl --bed 220x220x250
+```
+
+It drops slivers, triangulates every planar hole rim (including a figure-8 rim,
+which a fan or ear-clip fill cannot close), and splits each non-manifold vertex
+into one vertex per umbrella, moved 2 microns into its own material -- without
+the move the split is welded straight back together when the STL is read, since
+STL carries coordinates and no indices. A rim that lies in no plane is left open
+and reported. Record the command and the residual next to the other checks, and
+say in the README that the shipped STL is repaired rather than generated.
+
 ## Diff after repair
 
 Use `diff` when the fix might have affected unrelated geometry:

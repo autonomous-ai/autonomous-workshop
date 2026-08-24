@@ -3,9 +3,12 @@
 ## `cad` and `step-parts`
 
 - Canonical snapshot: `peterat617/text-to-3d` at
-  `f18aebe4698d92ffccf07d94e2d624b08d30e667` (2026-08-21).
+  `54804a8da4b462ab055c522d46c1a3f099bc21e2` (2026-08-24).
 - Migrated from Bob on 2026-08-23 after a byte-for-byte comparison showed Bob
   already carried the complete current upstream versions.
+- Updated `cad` on 2026-08-24 to pull print-cost measurement, hollowing, and
+  mesh-repair additions (`f18aebe..54804a8`); `step-parts` was unchanged in
+  that range.
 - Included license: MIT, copyright 2026 Thompson Labs LLC. See each skill's
   `LICENSE` and the embedded cadgen license.
 - Update by importing and reviewing a new pinned upstream tree, running CAD

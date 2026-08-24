@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+"""Wall thickness and dead interior volume, measured off the exported STL.
+
+The other gates ask whether a part is sound and whether it can be assembled.
+This one asks what it costs to print, which is the question every other check
+leaves open: a wall the nozzle cannot lay down, and a solid core no one will
+ever see, both pass `validate`, `interfere`, `check_fit` and `check_mesh`.
+
+Three findings, from one voxel sampling of the closed surface:
+
+    thin       surface area whose wall is under `--min-wall`. This FAILS: below
+               two extrusion widths the slicer drops the wall or prints a gap.
+    thick      the thickness distribution over the surface, so a section that
+               is solid for no reason is visible as a number rather than a
+               suspicion.
+    hollowable material further than `--wall` from any surface -- what a shell
+               at that wall thickness would remove, and what that is worth once
+               the slicer's own infill is accounted for.
+
+Thickness is measured by marching inward along each sample's own normal until
+the ray leaves the material, so it is wall thickness in the direction the wall
+is actually crossed -- not distance to the medial axis, which halves it, and not
+a bounding measure. It is quantised to half the grid pitch, which is printed.
+
+The mesh must be closed: inside and outside are meaningless otherwise, so a
+non-watertight STL is refused rather than measured. Run `check_mesh` first.
+
+The fix belongs in the generator. `references/print-optimisation.md` carries it,
+and `scripts/cadprint.py` derives both halves so a wall is a derivation rather
+than a number typed twice.
+
+    python skills/cad/scripts/check_thickness part_x.stl --nozzle 0.4
+    python skills/cad/scripts/check_thickness part_x.stl --report measure/thickness.md
+
+Exit 0 when no surface is under the minimum wall, 1 when any is, 2 on bad usage.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from meshlib import (  # noqa: E402
+    load_stl, sliver_metrics, summarize, voxel_pitch, voxelize, weld,
+)
+
+PLA_DENSITY = 1.24      # g/cm3
+INFILL = 0.15           # what a slicer would have put in the space anyway
+MAX_SAMPLES = 400_000
+
+
+def surface_samples(verts, faces, pitch, cap=MAX_SAMPLES):
+    """Points spread over the surface by area, with each face's inward normal.
+
+    One sample per face would weight a 0.01 mm2 sliver the same as a 400 mm2
+    wall, and every area fraction reported below would be a fraction of triangle
+    count wearing an area's name. Samples are laid down per unit area instead,
+    so "2% of the surface" means 2% of the surface.
+    """
+    tri = verts[faces]
+    area, _height, _longest = sliver_metrics(verts, faces)
+    normals = np.cross(tri[:, 1] - tri[:, 0], tri[:, 2] - tri[:, 0])
+    lengths = np.linalg.norm(normals, axis=1, keepdims=True)
+    live = (area > 0) & (lengths[:, 0] > 0)
+    tri, area, normals = tri[live], area[live], normals[live] / lengths[live]
+
+    want = np.maximum(np.ceil(area / (pitch * pitch)), 1).astype(np.int64)
+    if want.sum() > cap:
+        want = np.maximum((want * (cap / want.sum())).astype(np.int64), 1)
+    index = np.repeat(np.arange(len(tri)), want)
+
+    rng = np.random.default_rng(0)          # deterministic: this is a gate
+    r1, r2 = rng.random(len(index)), rng.random(len(index))
+    root = np.sqrt(r1)
+    bary = np.stack([1 - root, root * (1 - r2), root * r2], axis=1)
+    points = np.einsum("nij,ni->nj", tri[index], bary)
+    return points, -normals[index], np.repeat(area / want, want)
+
+
+def march(inside, origin, pitch, points, directions, limit):
+    """Distance each ray travels inside the material before it leaves.
+
+    Rays are started a step in and required to be inside before an exit counts,
+    because a sample sits exactly on the surface where the grid cannot say which
+    side it is on -- reading that first cell as air would report every wall as
+    one step thick.
+    """
+    shape = np.array(inside.shape)
+    entered = np.zeros(len(points), dtype=bool)
+    done = np.zeros(len(points), dtype=bool)
+    entry = np.zeros(len(points))
+    travel = np.zeros(len(points))
+    step = pitch * 0.5
+    distance = np.zeros(len(points))
+
+    for _ in range(int(limit / step) + 2):
+        distance = np.where(done, distance, distance + step)
+        cell = np.rint((points + directions * distance[:, None] - origin) / pitch)
+        cell = cell.astype(np.int64)
+        within = np.all((cell >= 0) & (cell < shape), axis=1)
+        solid = np.zeros(len(points), dtype=bool)
+        live = np.flatnonzero(within & ~done)
+        solid[live] = inside[cell[live, 0], cell[live, 1], cell[live, 2]]
+        arriving = solid & ~entered
+        entry[arriving] = distance[arriving]
+        leaving = entered & ~solid & ~done
+        travel[leaving] = distance[leaving] - entry[leaving]
+        done |= leaving
+        entered |= solid
+        if done.all():
+            break
+    travel[~done] = np.inf                  # never left within the limit
+    return travel, entered
+
+
+def _slab(x0, y0, z0, x1, y1, z1, flip=False):
+    """A closed axis-aligned box as triangle soup, outward-wound."""
+    q = [
+        [(x0,y0,z1),(x1,y0,z1),(x1,y1,z1)], [(x0,y0,z1),(x1,y1,z1),(x0,y1,z1)],
+        [(x0,y0,z0),(x1,y1,z0),(x1,y0,z0)], [(x0,y0,z0),(x0,y1,z0),(x1,y1,z0)],
+        [(x0,y0,z0),(x1,y0,z0),(x1,y0,z1)], [(x0,y0,z0),(x1,y0,z1),(x0,y0,z1)],
+        [(x0,y1,z0),(x0,y1,z1),(x1,y1,z1)], [(x0,y1,z0),(x1,y1,z1),(x1,y1,z0)],
+        [(x0,y0,z0),(x0,y0,z1),(x0,y1,z1)], [(x0,y0,z0),(x0,y1,z1),(x0,y1,z0)],
+        [(x1,y0,z0),(x1,y1,z0),(x1,y1,z1)], [(x1,y0,z0),(x1,y1,z1),(x1,y0,z1)],
+    ]
+    tris = [[list(v) for v in t] for t in q]
+    return [t[::-1] for t in tris] if flip else tris
+
+
+def _measure(tris, min_wall, wall, pitch):
+    from scipy.ndimage import distance_transform_edt
+    verts, faces = weld(np.array(tris, dtype=float))
+    inside, origin = voxelize(verts, faces, pitch)
+    points, directions, weights = surface_samples(verts, faces, pitch)
+    span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
+    thickness, entered = march(inside, origin, pitch, points, directions, span)
+    good = entered & np.isfinite(thickness)
+    reach = distance_transform_edt(inside, sampling=pitch)
+    return {
+        "median": float(np.median(thickness[good])),
+        "thin_share": float(weights[good][thickness[good] < min_wall - pitch / 2].sum()
+                            / weights[good].sum()),
+        "hollow": float((reach > wall + pitch / 2).sum()) * pitch ** 3,
+        "solid": float(inside.sum()) * pitch ** 3,
+    }
+
+
+def _self_check():
+    """Three shapes whose answers are known in closed form."""
+    # A solid cube: thickness is its side, and a 1.2 mm shell would leave an
+    # inner cube of side 20 - 2 x 1.2.
+    got = _measure(_slab(0, 0, 0, 20, 20, 20), 0.8, 1.2, 0.2)
+    assert abs(got["median"] - 20.0) < 0.2, got
+    assert got["thin_share"] == 0.0, got
+    assert abs(got["hollow"] - (20 - 2 * 1.2) ** 3) / (20 - 2 * 1.2) ** 3 < 0.02, got
+
+    # The same cube hollowed to a 2 mm wall, written as an outer shell with a
+    # reversed inner one. Nothing is left to hollow, and the wall reads exact
+    # because it is axis-aligned. Parity fill reports this one inside out.
+    shell = _slab(0, 0, 0, 20, 20, 20) + _slab(2, 2, 2, 18, 18, 18, flip=True)
+    got = _measure(shell, 0.8, 1.2, 0.2)
+    assert abs(got["median"] - 2.0) < 0.11, got
+    assert abs(got["solid"] - (20 ** 3 - 16 ** 3)) / (20 ** 3 - 16 ** 3) < 0.02, got
+    assert got["hollow"] < 1.0, got
+
+    # A 0.5 mm sheet: every large face is under a 0.8 mm minimum wall.
+    got = _measure(_slab(0, 0, 0, 20, 20, 0.5), 0.8, 1.2, 0.1)
+    assert got["thin_share"] > 0.9, got
+    assert abs(got["median"] - 0.5) < 0.06, got
+
+    print("check_thickness self-check: ok")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("stl", nargs="?", help="omit with --self-check")
+    ap.add_argument("--nozzle", type=float, default=0.4, help="mm; sets the defaults below")
+    ap.add_argument("--min-wall", type=float, default=None,
+                    help="mm; below this a wall is not printable (default 2 x nozzle)")
+    ap.add_argument("--wall", type=float, default=None,
+                    help="mm; the shell thickness to cost a hollow at (default 3 x nozzle)")
+    ap.add_argument("--voxel", type=float, default=None,
+                    help="mm; grid pitch (default min-wall / 6, coarsened to fit memory)")
+    ap.add_argument("--infill", type=float, default=INFILL,
+                    help="fraction the slicer would have put in the removed space")
+    ap.add_argument("--density", type=float, default=PLA_DENSITY, help="g/cm3")
+    ap.add_argument("--report", help="write a markdown record to this path")
+    ap.add_argument("--self-check", action="store_true",
+                    help="measure three shapes whose answers are known, and stop")
+    args = ap.parse_args()
+
+    if args.self_check:
+        _self_check()
+        return 0
+    if not args.stl:
+        ap.error("an STL is required unless --self-check is given")
+
+    min_wall = args.min_wall if args.min_wall is not None else 2 * args.nozzle
+    wall = args.wall if args.wall is not None else 3 * args.nozzle
+
+    verts, faces = weld(load_stl(args.stl))
+    state = summarize(verts, faces)
+    if state["boundary"]:
+        sys.exit(f"{args.stl}: {state['boundary']} open edges -- inside and outside are "
+                 "undefined on an open surface. Run check_mesh, then repair_mesh.")
+
+    target = args.voxel if args.voxel else min_wall / 6
+    pitch = voxel_pitch(verts, target)
+    try:
+        inside, origin = voxelize(verts, faces, pitch)
+    except MemoryError as exc:
+        sys.exit(f"{args.stl}: {exc}. Pass a coarser --voxel.")
+    cells = int(inside.sum())
+    solid_volume = cells * pitch ** 3
+
+    points, directions, weights = surface_samples(verts, faces, pitch)
+    span = float(np.linalg.norm(verts.max(axis=0) - verts.min(axis=0)))
+    thickness, entered = march(inside, origin, pitch, points, directions, span)
+    good = entered & np.isfinite(thickness)
+    thickness, weights, points = thickness[good], weights[good], points[good]
+    total_area = float(weights.sum())
+
+    from scipy.ndimage import distance_transform_edt, label
+    # The transform measures to the *centre* of the nearest outside cell, which
+    # sits about half a pitch beyond the surface, so a bare `reach > wall`
+    # insets by less than the wall and over-reports the void. Measured against
+    # the closed-form answer on a 20 mm cube at a 1.2 mm wall: +14.3% at a
+    # 0.4 mm pitch, +7.0% at 0.2, +3.4% at 0.1 -- and exact at all three once
+    # the threshold carries the half pitch.
+    reach = distance_transform_edt(inside, sampling=pitch)
+    tagged, found = label(reach > wall + pitch / 2)
+    sizes = np.bincount(tagged.reshape(-1))[1:] * pitch ** 3 if found else np.zeros(0)
+    # A pocket smaller than a cube of the wall itself is not somewhere a shell
+    # can go, and cannot be drained. Counting them turns rounding into findings.
+    worth = sizes >= wall ** 3
+    hollow_volume = float(sizes[worth].sum())
+    pockets = int(worth.sum())
+    trivial = int(found - pockets)
+
+    checks = []
+    def check(status, name, detail):
+        checks.append((status, name, detail))
+
+    # A reading is quantised to one march step, and on a wall that does not line
+    # up with the grid it lands one step low -- measured on a 1.20 mm shell:
+    # 1.10 at a 0.2 mm pitch, 1.15 at 0.1, converging from below. An
+    # axis-aligned wall reads exact at every pitch, so the bias is the
+    # instrument, not the geometry. Fail on what is below the limit by more
+    # than the instrument can explain, and say so in the label.
+    step = pitch / 2
+    thin = thickness < min_wall - step
+    thin_area = float(weights[thin].sum())
+    marginal = int(((thickness >= min_wall - step) & (thickness < min_wall)).sum())
+    worst = ""
+    if thin.any():
+        at = points[np.argmin(thickness)]
+        worst = (f"; thinnest {thickness.min():.2f} mm at "
+                 f"({at[0]:.1f}, {at[1]:.1f}, {at[2]:.1f})")
+    check("FAIL" if thin.any() else "PASS",
+          f"wall >= {min_wall:.2f} mm (+/-{step:.2f})",
+          f"{100 * thin_area / total_area:.1f}% of surface below "
+          f"({int(thin.sum())} of {len(thickness)} samples){worst}"
+          + (f"; {marginal} more within measurement error of the limit" if marginal else ""))
+
+    percentiles = np.percentile(thickness, [50, 95]) if len(thickness) else [0, 0]
+    check("PASS", "thickness distribution",
+          f"median {percentiles[0]:.2f} mm, p95 {percentiles[1]:.2f} mm, "
+          f"max {thickness.max():.2f} mm" if len(thickness) else "no samples")
+
+    share = 100 * hollow_volume / solid_volume if solid_volume else 0.0
+    net = hollow_volume * args.infill
+    check("PASS" if hollow_volume <= 0 else "WARN", f"hollowable at {wall:.2f} mm wall",
+          f"{hollow_volume / 1000:.2f} of {solid_volume / 1000:.2f} cm3 ({share:.0f}%) "
+          f"in {pockets} pocket(s)"
+          + (f", {trivial} too small to shell" if trivial else ""))
+    check("PASS", "filament that would save",
+          f"{net / 1000:.2f} cm3, {net / 1000 * args.density:.1f} g at {100 * args.infill:.0f}% "
+          "infill -- the slicer already leaves most of that space empty")
+
+    head = (f"{args.stl}: {solid_volume / 1000:.2f} cm3 solid, grid {pitch:.3f} mm "
+            f"({inside.shape[0]}x{inside.shape[1]}x{inside.shape[2]}), "
+            f"{len(thickness)} surface samples, thickness resolved to {pitch / 2:.3f} mm")
+    print(head)
+    failed = False
+    for status, name, detail in checks:
+        print(f"  {status}  {name:30s} {detail}")
+        failed |= status == "FAIL"
+    print("RESULT:", "WALL BELOW MINIMUM" if failed else "printable at this wall")
+
+    if args.report:
+        out = Path(args.report)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        rows = "\n".join(f"| {n} | {s} | {d} |" for s, n, d in checks)
+        out.write_text(
+            f"# Thickness and hollow\n\n`{' '.join(sys.argv[1:])}`\n\n{head}\n\n"
+            f"| check | status | detail |\n|---|---|---|\n{rows}\n\n"
+            "Measured on the exported STL. The fix belongs in the generator --\n"
+            "see `references/print-optimisation.md` and `scripts/cadprint.py`.\n",
+            encoding="utf-8")
+        print(f"  wrote {out}")
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
