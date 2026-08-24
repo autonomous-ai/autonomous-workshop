@@ -1,0 +1,21 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "config_sha256": "da72ad7d16521ada3281b35e7cb27c6eb9da997b676c228cda003136b7b75340",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "5.0.0",
+  "evidence": {
+    "board_and_orientation_percent": 100,
+    "evidence_class": "ai-simulation",
+    "feedback_codes": [],
+    "independent_ai_player_sessions": 2,
+    "manhattan_identity": "leading spontaneous NYC association in 2/2 sessions; not exclusive and no landmark claim",
+    "rank_recognition_percent": 100,
+    "result_file_sha256": "1f5e4cc5e9297c89f8b612bad78eccbbb29834b9a250310aaaa59c1e30fd07cf",
+    "side_recognition_percent": 100
+  },
+  "evidence_ref": "results/agent-playtest.json",
+  "evidence_sha256": "1f5e4cc5e9297c89f8b612bad78eccbbb29834b9a250310aaaa59c1e30fd07cf",
+  "inspection_id": "agent-playtest",
+  "observed_at": "2026-08-24T12:30:00+00:00",
+  "passed": true
+}

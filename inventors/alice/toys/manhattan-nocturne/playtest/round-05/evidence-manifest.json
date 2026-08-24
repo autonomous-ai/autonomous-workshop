@@ -1,0 +1,74 @@
+{
+  "artifact_sha256": "d3d37be5d0069205a78602096ad48b78a5768b74ca9f2ff24ab69e9abbfc3703",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 3613,
+      "executable": false,
+      "path": "results/agent-playtest.json",
+      "sha256": "1f5e4cc5e9297c89f8b612bad78eccbbb29834b9a250310aaaa59c1e30fd07cf"
+    },
+    {
+      "bytes": 2317,
+      "executable": false,
+      "path": "results/classic-rules-test.json",
+      "sha256": "0ef1e1bcb61251525424f52bc52a4bc6b771d0d2d0070755754e1bb8d1e73548"
+    },
+    {
+      "bytes": 2160,
+      "executable": false,
+      "path": "results/mechanical-test.json",
+      "sha256": "dc17afcef03123066c3cae1d4a40f69d0cca406efae4a3d4335755cfb99f7216"
+    },
+    {
+      "bytes": 2521,
+      "executable": false,
+      "path": "results/print-test.json",
+      "sha256": "7ca1a843cd98a4247937c134342300b107c698e1cf6b58125dff27493cfaf58a"
+    },
+    {
+      "bytes": 1671,
+      "executable": false,
+      "path": "sources/artifact-binding.json",
+      "sha256": "7e15518cabe16b06a649578fd16dc4f25a1268de13a20d2756946cb12c2ab10f"
+    },
+    {
+      "bytes": 3971,
+      "executable": false,
+      "path": "sources/blind-player-audit.json",
+      "sha256": "6c54b1a468d09acaac44c98f8892bf960f9b06af6610ec84d278e93434b98c7b"
+    },
+    {
+      "bytes": 1631,
+      "executable": false,
+      "path": "sources/classic-rules-audit.json",
+      "sha256": "464e0d04a0064f1d744e215da67e0e5cfec7d02a64b7bafb76bfbc0362f27a6d"
+    },
+    {
+      "bytes": 1956,
+      "executable": false,
+      "path": "sources/finish-plan-audit.json",
+      "sha256": "46c67dec8ace00a846c9b548a7e60e966de265b98547ca48eebcc5c590563972"
+    },
+    {
+      "bytes": 2346,
+      "executable": false,
+      "path": "sources/mechanical-audit.json",
+      "sha256": "54049031821b76789028a79b94c98606b2c848fc79ba5e2041f9b00dce837a07"
+    },
+    {
+      "bytes": 6040,
+      "executable": false,
+      "path": "sources/renderer-provenance.json",
+      "sha256": "3254c9e3c83146078f8175eac0dd769b60cd72948c807ac68bb62bb5ce43a479"
+    },
+    {
+      "bytes": 2466,
+      "executable": false,
+      "path": "sources/slicer-audit.json",
+      "sha256": "4a82f5ff1d6d936e407aacfb89189cd5c07df7910257767cba4c10762df74e51"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 30692
+}
