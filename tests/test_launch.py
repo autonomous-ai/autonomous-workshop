@@ -58,6 +58,56 @@ class LaunchTest(unittest.TestCase):
             hashlib.sha256(self.packet.read_bytes()).hexdigest(),
         )
 
+    def test_import_rejects_undiscoverable_sealed_artifact_before_network(self):
+        product = Path(self.temp.name) / "undiscoverable"
+        product.mkdir()
+        (product / "toy.step").write_text("exact sealed geometry\n", encoding="utf-8")
+        packet = Path(self.temp.name) / "undiscoverable.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "undiscoverable", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+        coordinator = Launchpad(
+            self.store, Portal("token", transport=transport), "owner"
+        )
+
+        with self.assertRaisesRegex(
+            ContractError, "valid root project.json.*defining gen_step"
+        ):
+            coordinator.import_draft(
+                "undiscoverable", packet, {"title": "Undiscoverable"}
+            )
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("undiscoverable"))
+
+    def test_import_rejects_nested_generator_that_would_drop_artifact_files(self):
+        product = Path(self.temp.name) / "narrowed"
+        (product / "nested").mkdir(parents=True)
+        (product / "project.json").write_text('{"id":"narrowed"}\n', encoding="utf-8")
+        (product / "keep.step").write_text("must stay in exact artifact\n", encoding="utf-8")
+        (product / "nested" / "generate.py").write_text(
+            "def gen_step():\n    return None\n", encoding="utf-8"
+        )
+        packet = Path(self.temp.name) / "narrowed.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "narrowed", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+        coordinator = Launchpad(
+            self.store, Portal("token", transport=transport), "owner"
+        )
+
+        with self.assertRaisesRegex(ContractError, "narrow.*nested generator"):
+            coordinator.import_draft("narrowed", packet, {"title": "Narrowed"})
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("narrowed"))
+
     @staticmethod
     def design(status="draft", price_cents=4000):
         design = {

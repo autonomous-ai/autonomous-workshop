@@ -158,19 +158,20 @@ all three extension levels, and different Playtest allowances.
 
 | Inventor | Toy | Extension | Playtest allowance | Truthful result |
 |---|---|---|---:|---|
-| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 rounds | Instructions: site access needed |
-| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 rounds | Instructions: site access needed |
-| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 rounds | Instructions: site access needed |
-| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 rounds | Instructions: site access needed |
-| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 rounds | Instructions: site access needed |
+| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 rounds | Instructions: authenticated draft needed |
+| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 rounds | Instructions: authenticated draft needed |
+| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 rounds | Instructions: authenticated draft needed |
+| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
+| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
 
 Every bundle contains an exact-geometry render, CAD source, STEP and STL
 files, content-addressed manifests, complete AI Playtest evidence, the in-box
 guide, five exact-product page images, and the Workshop run receipt. All five
 pass Playtest. Their page bundles are sealed; these checked-in runs wait in
-Instructions because no Workshop site credential is present in the build
-environment. Printing and shipping happen later in Deliver. Customer experience
-is collected afterward as Reviews.
+Instructions because no Workshop site credential is present to create and
+authenticate their private drafts. Printing and shipping happen later in
+Deliver. Afterward, an owner may review a draft and make it public outside the
+five-job pipeline. Customer experience is collected after delivery as Reviews.
 
 ## The five jobs
 
@@ -181,7 +182,7 @@ Every toy goes through the same five steps:
 | **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
 | **Make** | Invent the thing and draw the parts so they can really be printed. |
 | **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
-| **Instructions** | Write the honest product page and the paper that goes in the box, publish the page on our site, and verify that the exact approved toy is live. |
+| **Instructions** | Write the honest product page and the paper that goes in the box, save and enrich the page as a private Factory draft, and authenticate that exact draft. |
 | **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
 
 Playtest is entirely simulated by AI agents. They play complete games, adopt
@@ -217,10 +218,13 @@ Start with the least you need.
 | **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, its own Make, and its own Playtest | The loop around them, Instructions, Deliver, storage, files, and connections |
 
 Its own Playtest requires its own Make. Instructions and Deliver are always
-shared. Instructions is also the publishing step: it creates the page and
-in-box guide, puts the page on the site, and records an authenticated live-page
-receipt before Deliver can begin. That keeps the page, print, and box tied to
-the exact thing that passed.
+shared. Instructions creates the page and in-box guide, preserves the terminal
+`By <Inventor>.` product byline, puts the page in Factory as a private draft,
+and records authenticated draft readback before Deliver can begin. It does not
+make the page public or require an active listing. An owner reviews the draft
+and may make it public later, outside the five-job pipeline. That keeps the
+page, print, and box tied to the exact thing that passed without confusing
+draft creation with release.
 
 A custom Make is one function. `workshop create inventor … --level custom-make`
 writes it for you, already wired up and waiting:

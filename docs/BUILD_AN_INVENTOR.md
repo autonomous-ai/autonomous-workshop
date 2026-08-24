@@ -446,8 +446,12 @@ product. The shared contract requires distinct hero, play, detail, parts, and
 box images plus a claim-to-evidence map.
 
 Creating files locally is only the first half of Instructions. The same shared
-job publishes the page on the site and requires authenticated readback for the
-exact approved product, sealed page, guide, and media before Deliver can begin.
+job creates and enriches the page in Factory as a private draft and requires
+authenticated owner readback for the exact approved product, sealed page,
+guide, media, and terminal `By <Inventor>.` byline before Deliver can begin.
+Instructions does not make the page public and does not require an active
+listing. An owner reviews the draft and may make it public later through a
+separate action outside the five-job pipeline.
 
 If a run waits here, resume the exact sealed work instead of starting over:
 
@@ -470,11 +474,12 @@ inventing facts:
 - say “sliced under the named profile,” not “guaranteed to print”;
 - do not borrow customer Reviews from an earlier delivery as proof for this
   toy's Playtest;
-- never claim the page is live from a local flag; only the site's authenticated
-  receipt can complete Instructions.
+- never claim a local page is a remote draft; only authenticated owner readback
+  of the private Factory draft can complete Instructions.
 
-An inventor does not implement its own publication path. Improve shared Instructions
-when every inventor needs the change.
+An inventor does not implement its own Factory draft path. Improve shared
+Instructions when every inventor needs the change. The later owner-controlled
+public transition is not an inventor hook or a sixth Workshop job.
 
 ## 10. Let shared Deliver ship the exact approval
 
@@ -520,6 +525,8 @@ At minimum, an inventor's tests should prove:
 - production and hands-on QA cannot be presented as Playtest;
 - customer Reviews cannot rewrite the Playtest evidence for a shipped toy;
 - Instructions claims and images remain bound to the approved product;
+- Instructions completes only with authenticated readback of the exact private
+  draft, without requiring public visibility or an active listing;
 - changed Instructions bytes cannot enter Deliver;
 - missing production or carrier capability produces `WaitingFor`;
 - a label, timeout, or malformed provider response cannot become delivery;

@@ -63,8 +63,9 @@ after delivery: customer Reviews -> a future revision of this toy
   print-and-play session.
 - **Instructions** creates the truthful product page, exact-product images, and
   paper that belongs in the box—a rulebook for a game or instructions for
-  another toy. It publishes that page on the site and verifies the live page
-  before the job passes.
+  another toy. It preserves the terminal `By <Inventor>.` byline, creates and
+  enriches a private Factory draft, and authenticates that exact draft before the
+  job passes. It does not make the page public or require an active listing.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
@@ -75,6 +76,11 @@ customer **Reviews** may improve a future revision of the same toy and inform
 future Wishes and Makes. Reviews is a public, post-delivery feedback stream,
 not a sixth inventor job, custom inventor hook, or release gate for the order
 already shipped.
+
+The owner-facing transition from private draft to public page is deliberately
+outside those five jobs. An owner reviews the finished draft and decides when
+to make it public; that decision does not delay Instructions or Deliver and
+does not introduce a sixth job.
 
 ## The Workshop Manager
 
@@ -228,7 +234,7 @@ Wish + Taste + ToyBlueprint
                             | evidence + Feedback
                             v
           InstructionsContext  ->  ProductInstructions
-                            | exact page manifest
+                            | exact page manifest + authenticated private draft
                             v
        DeliverContext  ->  Delivered
                             | production + carrier receipts
@@ -329,9 +335,15 @@ pass. An inventor's own confidence is not independent evidence.
 Instructions begins only after Playtest passes for the exact Make. The shared
 default creates the in-box instructions plus a page with five fixed image
 roles—hero, play, detail, parts, and box—and a claim-to-evidence map. It then
-publishes that page on the site. A local page is not a completed Instructions
-job: the result must include authenticated readback proving that the current
-approved product is public and has an active listing.
+creates and enriches that page in Factory as a private draft. A local page is
+not a completed Instructions job: the result must include authenticated owner
+readback proving that the exact approved product, sealed page, guide, media,
+and terminal `By <Inventor>.` byline are present in that private draft.
+
+Instructions stops there and advances to Deliver. It neither makes the page
+public nor requires an active listing. An owner may review the draft and make
+it public later through a separate, explicit action outside the five-job
+pipeline.
 
 Before any site effect, Workshop seals both the approved Make/Playtest
 checkpoint and the complete Instructions tree. If credentials disappear or a

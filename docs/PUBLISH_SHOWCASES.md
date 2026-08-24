@@ -1,9 +1,17 @@
-# Publish the sealed showcase toys
+# Create the sealed showcase drafts
 
-`tools/publish_showcase_products.py` publishes the checked-in toy bundles. It
-does not run Make, Playtest, CAD generation, or the game simulator. It verifies
-the exact artifact, AI Playtest evidence, and Instructions seals, then sends
-those bytes through the shared Instructions publisher.
+`tools/publish_showcase_products.py` creates enriched **private Factory drafts** from
+the five checked-in toy bundles. This is the shared Workshop Instructions step:
+it imports the exact Make artifact, uploads the five sealed views, writes the
+product-page copy, and finishes only after an authenticated readback proves the
+canonical design is still a private draft.
+
+The tool never calls Factory's `/publish` endpoint. Making a reviewed draft
+public is an explicit owner action outside the Workshop pipeline.
+
+The tool does not run Make, Playtest, CAD generation, or the game simulator. It
+verifies the exact artifact, AI Playtest evidence, and Instructions seals before
+any remote effect.
 
 Provide both credentials through the process environment or a secret manager:
 
@@ -12,39 +20,45 @@ Provide both credentials through the process environment or a secret manager:
 
 Do not put either value in this repository, a command-line argument, or a log.
 
-Publish Alice first:
+Create Alice's draft first:
 
 ```bash
-python3 tools/publish_showcase_products.py --only alice --verify-live
+python3 tools/publish_showcase_products.py --only alice --verify-draft
 ```
 
-`--only` also accepts a toy slug and may be repeated. After checking Alice,
-publish all five by omitting it:
+`--only` also accepts a toy slug and may be repeated. After reviewing Alice's
+result, create all five drafts by omitting it:
 
 ```bash
-python3 tools/publish_showcase_products.py --verify-live
+python3 tools/publish_showcase_products.py --verify-draft
 ```
+
+Every imported description ends with the inventor attribution already sealed
+in the bundle, such as `By Alice.` or `By Bob.`
 
 Before the first import, the tool makes an authenticated lookup for the exact
 canonical slug. Only a `404` permits import; an existing slug or an uncertain
 response stops without creating a collision-suffixed duplicate. A successful
 receipt must return that exact slug.
 
-Each toy keeps its durable publication outbox here:
+Each toy keeps its durable Instructions outbox here:
 
 ```text
 .runtime/showcase-publication/<toy-slug>/workshop.sqlite3
 ```
 
 `.runtime/` is ignored by Git. Keep this state between retries: completed
-imports, image uploads, page copy, and publication are replayed from the ledger
-instead of being sent twice. If an effect has an uncertain outcome, the tool
-stops rather than guessing or duplicating it.
+imports, image uploads, page copy, and draft readback are replayed from the
+ledger instead of being sent twice. If an effect has an uncertain outcome, the
+tool stops rather than guessing or duplicating it.
 
-The shared publisher always requires an authenticated public readback before it
-records the canonical customer page
-(`https://www.autonomous.ai/factory/product/<slug>`) in `workshop-run.json` and
-the toy README and moves the checked-in run to its truthful Deliver wait.
-`--verify-live` adds one more fresh authenticated GET after a successful publish
-or durable replay. The backend's immutable project CDN URL remains separate
-from the customer page.
+An authenticated exact draft readback completes Instructions and moves the
+checked-in Workshop run to its truthful Deliver wait. `workshop-run.json`
+records the draft receipt and canonical owner-visible page URL while keeping
+`site_page_live` false. The toy README says that the draft still awaits owner
+review and the explicit public flip. `--verify-draft` adds one more fresh
+authenticated GET after a successful draft or durable replay.
+
+The backend's immutable project CDN URL remains separate from the canonical
+product page (`https://www.autonomous.ai/factory/product/<slug>`). That page may
+require the owner session until the draft is made public.

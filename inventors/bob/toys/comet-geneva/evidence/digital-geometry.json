@@ -1,7 +1,7 @@
 {
   "all_parts_step_reimported": true,
   "all_parts_watertight": true,
-  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+  "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
   "check": "digital-geometry",
   "claim_scope": "OpenCascade/mesh simulation; physical QA belongs to Deliver",
   "part_count": 4,

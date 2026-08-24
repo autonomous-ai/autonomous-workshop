@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.errors import AmbiguousPublishError, ContractError, StateConflict
+from inventor_workshop.errors import AmbiguousPublishError, ContractError
 from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
 from inventor_workshop.shop import (
@@ -51,6 +51,11 @@ class SuccessfulShopTransport:
             "published_history_id": "history-1" if status == "public" else None,
             "status": status,
             "project_url": "https://cdn.autonomous.ai/projects/history-1/",
+            "origin": "import",
+            "tags": ["toy", "classics-made-yours"],
+            "category": {"slug": "tabletop"},
+            "author": {"id": "owner-1"},
+            "thumbnail_urls": ["https://cdn.example/cover.png"],
         }
         if status == "public":
             value["attachments"] = [
@@ -90,7 +95,7 @@ class SuccessfulShopTransport:
         if method == "POST" and url.endswith("/publish"):
             return HttpResponse(200, {}, json.dumps(self.design("public")).encode())
         if method == "GET" and "/designs/" in url:
-            return HttpResponse(200, {}, json.dumps(self.design("public")).encode())
+            return HttpResponse(200, {}, json.dumps(self.design("draft")).encode())
         raise AssertionError("unexpected Shop request %s %s" % (method, url))
 
 
@@ -143,6 +148,10 @@ class InstructionsSiteTest(unittest.TestCase):
         self.root = Path(self.temporary.name).resolve()
         product = self.root / "product"
         product.mkdir()
+        (product / "project.json").write_text(
+            '{"id":"verified-toy","name":"Verified Toy"}\n',
+            encoding="utf-8",
+        )
         (product / "toy.step").write_text("exact product bytes\n", encoding="utf-8")
         self.made = Made.from_root(
             product,
@@ -194,7 +203,7 @@ class InstructionsSiteTest(unittest.TestCase):
             self.instructions, created_at="content-addressed"
         )
 
-    def test_shared_instructions_writer_publishes_all_five_images_under_workshop_lease(self):
+    def test_shared_instructions_writer_creates_enriched_private_draft_under_workshop_lease(self):
         lease = self.store.acquire_lease("verified-toy", "toy-workshop")
         context = InstructionsSiteContext(self.made, "verified-toy", lease)
         transport = SuccessfulShopTransport(context, self.media)
@@ -208,8 +217,9 @@ class InstructionsSiteTest(unittest.TestCase):
         finally:
             self.store.release_lease("verified-toy", lease)
 
-        self.assertTrue(receipt.is_verified_public)
-        self.assertEqual(receipt.listing_currency, "USD")
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertFalse(receipt.is_verified_public)
+        self.assertIsNone(receipt.listing_currency)
         self.assertEqual(
             receipt.details["instructions_sha256"],
             self.manifest.artifact_sha256,
@@ -221,10 +231,18 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha)
         self.assertEqual(set(receipt.details["media_sha256"]), set(self.media))
         self.assertEqual(
-            [call[0] for call in transport.calls],
-            ["POST", "POST", "POST", "POST", "POST", "POST", "POST", "GET"],
+            receipt.details["cover_sha256"],
+            hashlib.sha256(self.media["hero"]).hexdigest(),
         )
+        self.assertEqual(receipt.details["cover_url"], "https://cdn.example/cover.png")
+        self.assertEqual(
+            [call[0] for call in transport.calls],
+            ["POST", "POST", "POST", "POST", "POST", "POST", "GET"],
+        )
+        self.assertFalse(any(call[1].endswith("/publish") for call in transport.calls))
         import_body = transport.calls[0][3]
+        self.assertIn(b'name="thumbnails"; filename="hero.png"', import_body)
+        self.assertIn(self.media["hero"], import_body)
         self.assertIn(b'name="category"\r\n\r\ntabletop\r\n', import_body)
         category_part = import_body.split(b'name="category"', 1)[1].split(
             b"\r\n--", 1
@@ -235,6 +253,11 @@ class InstructionsSiteTest(unittest.TestCase):
                 "SELECT state FROM shop_effects ORDER BY created_at, effect_key"
             ).fetchall()
         self.assertEqual([row[0] for row in states], ["succeeded"] * 5)
+        intent = self.store.latest_publish_intent("verified-toy")
+        self.assertEqual(
+            intent["request"]["_workshop_cover_sha256"],
+            hashlib.sha256(self.media["hero"]).hexdigest(),
+        )
 
     def test_workshop_lanes_map_to_the_shops_public_taxonomy(self):
         self.assertEqual(_shop_category_for_lane("classics-made-yours"), "tabletop")
@@ -276,26 +299,23 @@ class InstructionsSiteTest(unittest.TestCase):
             writer(context, self.instructions, self.manifest)
         self.assertEqual(len(successful.calls), calls_after_unknown)
 
-    def test_completed_page_replays_only_under_the_exact_price_policy(self):
+    def test_completed_draft_replays_without_http_and_rejects_price_policy(self):
         context = InstructionsSiteContext(self.made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
         door = ShopDoor("token", transport=transport)
-        writer = ShopInstructionsWriter(
-            self.store, door, "owner-1", price_cents=4200
-        )
+        writer = ShopInstructionsWriter(self.store, door, "owner-1")
         first = writer(context, self.instructions, self.manifest)
-        calls_after_live = len(transport.calls)
+        calls_after_draft = len(transport.calls)
 
         replay = writer(context, self.instructions, self.manifest)
         self.assertEqual(replay.to_dict(), first.to_dict())
-        self.assertEqual(len(transport.calls), calls_after_live)
+        self.assertEqual(len(transport.calls), calls_after_draft)
 
-        changed = ShopInstructionsWriter(
-            self.store, door, "owner-1", price_cents=5000
-        )
-        with self.assertRaises(StateConflict):
-            changed(context, self.instructions, self.manifest)
-        self.assertEqual(len(transport.calls), calls_after_live)
+        with self.assertRaisesRegex(ContractError, "separate owner-controlled"):
+            ShopInstructionsWriter(
+                self.store, door, "owner-1", price_cents=5000
+            )
+        self.assertEqual(len(transport.calls), calls_after_draft)
 
     def test_optional_curated_copy_is_written_and_verified_in_final_readback(self):
         page_path = self.instructions / "product.json"
@@ -331,7 +351,7 @@ class InstructionsSiteTest(unittest.TestCase):
             self.store, ShopDoor("token", transport=transport), "owner-1"
         )(context, self.instructions, manifest)
 
-        self.assertTrue(receipt.is_verified_public)
+        self.assertTrue(receipt.is_verified_draft)
         self.assertEqual(transport.use_case["image"], transport.urls["hero"])
         self.assertEqual(
             transport.story_blocks[0]["pair_images"],
@@ -340,7 +360,7 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertNotIn("pair_images", transport.story_blocks[1])
         self.assertEqual(
             [call[0] for call in transport.calls],
-            ["POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "POST", "GET"],
+            ["POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "GET"],
         )
 
 

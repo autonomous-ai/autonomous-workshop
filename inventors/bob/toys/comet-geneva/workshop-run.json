@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+  "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -8,14 +8,15 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
+    "site_draft_verified": false,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
   "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
-  "evidence_sha256": "f42a349eeff630ad4e98bdfab8e44ef868dff22fa1152d1f2eb89b374444fba9",
-  "instructions_sha256": "0f3b2c7693cad6246bdc5ea2072fbfcade5ae3c51e5a9fa8294b70fe5b1aa937",
+  "evidence_sha256": "9c873d14dad20ff359b9869d0662ae2335438642f6caa8cc84acfd6010bd143a",
+  "instructions_sha256": "03372d82a1f6a38001d6972183d996b4e9617350bc260a364335df0daa0f8fa9",
   "inventor": {
     "extension_level": "custom-make",
     "id": "bob",
@@ -24,14 +25,14 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "d4471e03c0a266876e3381839de70e80e8043072b14cdd5a5624164aeb0fa0f1",
+    "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
     "needs": [
       {
         "capability": "site-page",
-        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions publish and verify the page.",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
         "job": "instructions",
         "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
@@ -45,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "7261180e9d723e69493cf6b75a1400bbd538a012dfddf5ba8d219a02dc429896",
+    "builder_sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },

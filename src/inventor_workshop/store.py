@@ -1724,6 +1724,176 @@ class InventorStore:
             receipt=receipt,
         )
 
+    def mark_instructions_draft_ready(
+        self,
+        intent_id: str,
+        receipt: PublicationReceipt,
+        lease_token: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Bind a fully enriched private Shop draft to sealed Instructions.
+
+        The import transition records the remote design before any page media
+        or curated copy is written.  Instructions completes only after those
+        durable child effects have succeeded and authenticated readback has
+        produced ``receipt``.  This method enriches the existing draft receipt
+        without changing the intent's terminal ``succeeded`` state; making the
+        draft public remains a separate, explicit effect.
+        """
+
+        intent = self.get_publish_intent(intent_id)
+        self._assert_draft_receipt(intent, receipt)
+        if not receipt.is_verified_draft:
+            raise ReceiptError(
+                "Instructions completion requires authenticated private draft readback"
+            )
+        request = intent.get("request")
+        if not isinstance(request, Mapping):
+            raise ReceiptError("Instructions draft request is missing")
+        instructions_sha256 = request.get("_workshop_instructions_sha256")
+        playtest_sha256 = request.get("_workshop_playtest_evidence_sha256")
+        require_sha256(instructions_sha256, "Instructions draft sha256")
+        require_sha256(playtest_sha256, "Instructions Playtest evidence sha256")
+        details = receipt.details
+        required_details = {
+            "cover_sha256",
+            "cover_url",
+            "instructions_sha256",
+            "playtest_evidence_sha256",
+            "page_url",
+            "media_sha256",
+            "page_content_sha256",
+        }
+        if not required_details <= set(details):
+            raise ReceiptError("Instructions draft receipt proof is incomplete")
+        if details.get("instructions_sha256") != instructions_sha256:
+            raise ReceiptError("Instructions draft receipt describes different Instructions bytes")
+        if details.get("playtest_evidence_sha256") != playtest_sha256:
+            raise ReceiptError("Instructions draft receipt describes different Playtest evidence")
+        cover_sha256 = request.get("_workshop_cover_sha256")
+        require_sha256(cover_sha256, "Instructions draft cover sha256")
+        if details.get("cover_sha256") != cover_sha256:
+            raise ReceiptError("Instructions draft receipt describes different cover bytes")
+        require_sha256(details.get("page_content_sha256"), "Instructions page content sha256")
+        for url_name in ("page_url", "cover_url"):
+            url = details.get(url_name)
+            try:
+                parsed_url = urllib.parse.urlsplit(url)
+            except (TypeError, ValueError) as exc:
+                raise ReceiptError(
+                    "Instructions draft %s must be absolute HTTPS" % url_name
+                ) from exc
+            if (
+                not isinstance(url, str)
+                or parsed_url.scheme != "https"
+                or not parsed_url.hostname
+                or parsed_url.username is not None
+                or parsed_url.password is not None
+                or parsed_url.query
+                or parsed_url.fragment
+            ):
+                raise ReceiptError(
+                    "Instructions draft %s must be absolute HTTPS" % url_name
+                )
+        media = details.get("media_sha256")
+        if not isinstance(media, Mapping) or not media:
+            raise ReceiptError("Instructions draft media proof must be a non-empty object")
+        for role, digest in media.items():
+            _required_text(role, "Instructions media role")
+            require_sha256(digest, "Instructions media sha256")
+
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM publish_intents WHERE id=?", (intent_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError("unknown publish intent %r" % intent_id)
+            self._assert_lease_fence(
+                connection, row["product_id"], lease_token, utc_now()
+            )
+            if row["state"] != "succeeded":
+                raise StateConflict(
+                    "Instructions page effects require an authenticated private draft"
+                )
+            persisted = PublicationReceipt.from_dict(_object(row["receipt_json"]))
+            self._assert_draft_receipt(self._row(row), persisted)
+            import_response = _object(row["response_json"])
+            imported_covers = (
+                import_response.get("thumbnail_urls")
+                if isinstance(import_response, Mapping)
+                else None
+            )
+            if (
+                not isinstance(imported_covers, list)
+                or not imported_covers
+                or imported_covers[0] != details.get("cover_url")
+            ):
+                raise ReceiptError(
+                    "Instructions draft cover does not match authenticated import readback"
+                )
+            identity_fields = (
+                "packet_sha256",
+                "artifact_sha256",
+                "design_id",
+                "slug",
+                "owner_id",
+                "root_id",
+                "current_history_id",
+                "project_url",
+            )
+            if any(
+                getattr(persisted, field) != getattr(receipt, field)
+                for field in identity_fields
+            ):
+                raise ReceiptError(
+                    "Instructions readback does not identify the imported draft history"
+                )
+            already_bound = persisted.details.get("instructions_sha256")
+            if already_bound is not None:
+                if persisted.to_dict() != receipt.to_dict():
+                    raise StateConflict(
+                        "completed Instructions draft receipt changed during replay"
+                    )
+                return self._row(row)
+
+            effects = connection.execute(
+                """SELECT kind, effect_key, state, request_json
+                   FROM shop_effects WHERE publish_intent_id=?""",
+                (intent_id,),
+            ).fetchall()
+            media_effects = {
+                effect["effect_key"]: effect for effect in effects
+                if effect["kind"] == "media-upload"
+            }
+            if set(media_effects) != set(media):
+                raise ReceiptError(
+                    "Instructions draft media proof does not match durable uploads"
+                )
+            for role, effect in media_effects.items():
+                effect_request = _object(effect["request_json"])
+                if (
+                    effect["state"] != "succeeded"
+                    or not isinstance(effect_request, Mapping)
+                    or effect_request.get("instructions_sha256") != instructions_sha256
+                    or effect_request.get("sha256") != media[role]
+                ):
+                    raise ReceiptError(
+                        "Instructions draft media upload is not durably proven"
+                    )
+            if media.get("hero") != cover_sha256:
+                raise ReceiptError(
+                    "Instructions draft cover is not the sealed hero image"
+                )
+            if any(effect["state"] != "succeeded" for effect in effects):
+                raise ReceiptError(
+                    "Instructions draft still has an incomplete Shop page effect"
+                )
+            connection.execute(
+                """UPDATE publish_intents SET receipt_json=?, updated_at=?
+                   WHERE id=?""",
+                (_json(receipt.to_dict()), utc_now(), intent_id),
+            )
+        return self.get_publish_intent(intent_id)
+
     def mark_publish_live(
         self, intent_id: str, effect_token: str, receipt: PublicationReceipt
     ) -> Dict[str, Any]:

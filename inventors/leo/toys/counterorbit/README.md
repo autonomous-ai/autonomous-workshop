@@ -11,7 +11,7 @@ Place one of five signal stones, rotate the shared orbit, and try to hold a thre
 - Extension level: `custom-playtest`
 - Configured Playtest rounds: `10`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `62dd0a939dae69e4f5855547d1def7611e58486455fbd4681fe7389f3eb1b677`
+- Exact artifact: `c6f44cf73d743ca61bec3ad3a2c539c3ac8b3af1eff8a6bc748a27b7abb2a92e`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account.

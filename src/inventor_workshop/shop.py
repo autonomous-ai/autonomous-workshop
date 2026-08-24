@@ -12,6 +12,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from pathlib import PurePosixPath
@@ -56,6 +57,10 @@ SHOP_LISTING_STRING_LIMITS = {
 WORKSHOP_SHOP_LISTING_FIELDS = frozenset(
     (
         "_workshop_artifact_sha256",
+        "_workshop_cover_bytes",
+        "_workshop_cover_content_type",
+        "_workshop_cover_filename",
+        "_workshop_cover_sha256",
         "_workshop_instructions_sha256",
         "_workshop_playtest_evidence_sha256",
         "_workshop_owner_id",
@@ -84,6 +89,8 @@ SHOP_CATEGORY_BY_LANE = {
 }
 SHOP_CONTENT_IMAGE_URL_LIMIT = 2_048
 SHOP_CONTENT_VIDEO_SUFFIXES = (".mp4", ".webm", ".mov", ".m4v", ".avi")
+SHOP_IMPORT_THUMBNAIL_MAX_BYTES = 5 * 1024 * 1024
+SHOP_IMPORT_THUMBNAIL_TYPES = frozenset(("image/jpeg", "image/png", "image/webp"))
 
 
 def _canonical_sha256(value: Any) -> str:
@@ -98,6 +105,78 @@ def _canonical_sha256(value: Any) -> str:
     except (TypeError, ValueError) as exc:
         raise ContractError("Shop request must contain finite JSON values") from exc
     return hashlib.sha256(payload).hexdigest()
+
+
+def _assert_shop_importable_pack(content: bytes) -> None:
+    """Mirror the Shop's shallow design discovery before bearer-bound HTTP.
+
+    Workshop Packs contain the Made artifact at archive root.  The deployed
+    importer recognizes that root only when it has a usable ``project.json`` or
+    a top-level Python source containing ``def gen_step``.  Checking the exact
+    sealed Pack prevents an avoidable rejected import and, critically, never
+    patches un-Playtested bytes into the archive after Make.
+    """
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(content)) as archive:
+            names = set(archive.namelist())
+            top_level_generator = False
+            for name in sorted(names):
+                if not name.casefold().endswith(".py"):
+                    continue
+                if b"def gen_step" not in archive.read(name):
+                    continue
+                if "/" in name:
+                    raise ContractError(
+                        "Shop import would narrow this artifact to nested generator %s"
+                        % name
+                    )
+                top_level_generator = True
+            if "project.json" in names:
+                try:
+                    project = json.loads(
+                        archive.read("project.json").decode("utf-8")
+                    )
+                except (UnicodeDecodeError, ValueError):
+                    project = None
+                if isinstance(project, Mapping):
+                    return
+            if top_level_generator:
+                return
+    except (KeyError, OSError, UnicodeDecodeError, ValueError, zipfile.BadZipFile) as exc:
+        raise ContractError("Shop importability check could not read the sealed Pack") from exc
+    raise ContractError(
+        "Shop import requires a valid root project.json or a top-level *.py "
+        "defining gen_step in the sealed Made artifact"
+    )
+
+
+def _normalize_import_thumbnail(value: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ContractError("Shop import thumbnail must be an object")
+    filename = _validate_upload_filename(value.get("filename"))
+    content = value.get("content")
+    content_type = value.get("content_type")
+    if (
+        type(content) is not bytes
+        or not content
+        or len(content) > SHOP_IMPORT_THUMBNAIL_MAX_BYTES
+    ):
+        raise ContractError("Shop import thumbnail must be 1 byte..5 MB")
+    if content_type not in SHOP_IMPORT_THUMBNAIL_TYPES:
+        raise ContractError("Shop import thumbnail must be PNG, JPEG, or WebP")
+    digest = hashlib.sha256(content).hexdigest()
+    expected_digest = value.get("sha256")
+    if expected_digest is not None and expected_digest != digest:
+        raise ContractError("Shop import thumbnail sha256 does not match its bytes")
+    return {
+        "filename": filename,
+        "content": content,
+        "content_type": content_type,
+        "sha256": digest,
+    }
 
 
 def _https_url(value: Any, label: str) -> str:
@@ -537,16 +616,30 @@ class ShopDoor:
             self.timeout_seconds,
         )
 
-    def import_design(self, packet: Path, metadata: Mapping[str, Any]) -> HttpResponse:
+    def import_design(
+        self,
+        packet: Path,
+        metadata: Mapping[str, Any],
+        *,
+        thumbnail: Optional[Mapping[str, Any]] = None,
+    ) -> HttpResponse:
         packet = Path(packet)
         content = _load_pack(packet)[0]
-        return self.import_design_bytes(packet.name, content, metadata)
+        return self.import_design_bytes(
+            packet.name, content, metadata, thumbnail=thumbnail
+        )
 
     def import_design_bytes(
-        self, filename: str, content: bytes, metadata: Mapping[str, Any]
+        self,
+        filename: str,
+        content: bytes,
+        metadata: Mapping[str, Any],
+        *,
+        thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
         filename = _validate_upload_filename(filename)
         content = _validate_pack_bytes(content)[0]
+        normalized_thumbnail = _normalize_import_thumbnail(thumbnail)
         metadata = _normalize_shop_listing(
             metadata, allow_workshop_fields=True
         )
@@ -563,9 +656,17 @@ class ShopDoor:
             # from a present empty field (the exact requested empty set).
             fields.append(("tags", ""))
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
-        body, multipart_type = _multipart(
-            fields, (("file", filename, content_type, content),)
-        )
+        files = [("file", filename, content_type, content)]
+        if normalized_thumbnail is not None:
+            files.append(
+                (
+                    "thumbnails",
+                    normalized_thumbnail["filename"],
+                    normalized_thumbnail["content_type"],
+                    normalized_thumbnail["content"],
+                )
+            )
+        body, multipart_type = _multipart(fields, files)
         return self._request("POST", "/designs/import", body, multipart_type)
 
     def get_design(self, slug: str) -> HttpResponse:
@@ -701,12 +802,15 @@ class _ShopSender:
         inventor_name: Optional[str] = None,
         instructions_sha256: Optional[str] = None,
         playtest_evidence_sha256: Optional[str] = None,
+        thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> PublicationOutcome:
         packet = Path(packet)
         metadata = _normalize_shop_listing(
             metadata, inventor_name=inventor_name
         )
         packet_bytes, packet_sha, artifact_sha = _load_pack(packet)
+        _assert_shop_importable_pack(packet_bytes)
+        normalized_thumbnail = _normalize_import_thumbnail(thumbnail)
         _validate_upload_filename(packet.name)
         product = self.store.get_product(product_id)
         if not product.get("artifact_sha256"):
@@ -726,6 +830,15 @@ class _ShopSender:
         if playtest_evidence_sha256 is not None:
             request["_workshop_playtest_evidence_sha256"] = require_sha256(
                 playtest_evidence_sha256, "Playtest evidence sha256"
+            )
+        if normalized_thumbnail is not None:
+            request.update(
+                {
+                    "_workshop_cover_filename": normalized_thumbnail["filename"],
+                    "_workshop_cover_content_type": normalized_thumbnail["content_type"],
+                    "_workshop_cover_bytes": len(normalized_thumbnail["content"]),
+                    "_workshop_cover_sha256": normalized_thumbnail["sha256"],
+                }
             )
         intent = self.store.prepare_publish(
             product_id,
@@ -747,7 +860,10 @@ class _ShopSender:
         effect_token = intent["effect_token"]
         try:
             response = self.client.import_design_bytes(
-                packet.name, packet_bytes, intent["request"]
+                packet.name,
+                packet_bytes,
+                intent["request"],
+                thumbnail=normalized_thumbnail,
             )
         except Exception as exc:
             self.store.mark_publish_unknown(
@@ -1055,8 +1171,10 @@ class ShopInstructionsWriter:
     ``DefaultInstructions`` seals the box paper and product-page document, then
     calls this object as ``writer(context, root, manifest)``.  This adapter
     imports the exact Made artifact as a private draft, uploads the five sealed
-    views, applies optional curated page sections, makes the page public, and
-    returns authenticated readback bound to both Made and Instructions bytes.
+    views, applies optional curated page sections, and returns authenticated
+    private-draft readback bound to both Made and Instructions bytes.  It never
+    makes the page public: that customer-visible transition belongs to a later,
+    explicit owner action.
     """
 
     def __init__(
@@ -1067,18 +1185,14 @@ class ShopInstructionsWriter:
         *,
         price_cents: Optional[int] = None,
     ) -> None:
-        if price_cents is not None and (
-            not isinstance(price_cents, int)
-            or isinstance(price_cents, bool)
-            or not 100 <= price_cents <= 1_000_000
-        ):
+        if price_cents is not None:
             raise ContractError(
-                "Instructions price_cents must be in the Shop's 100..1000000 range"
+                "Shop Instructions creates a private draft; price_cents belongs "
+                "to the separate owner-controlled public transition"
             )
         self.store = store
         self.client = client
         self.owner_id = owner_id
-        self.price_cents = price_cents
         self._sender = _ShopSender(store, client, owner_id)
 
     @staticmethod
@@ -1410,33 +1524,120 @@ class ShopInstructionsWriter:
         self._reconcile_content_effect(unknown, slug, kind, content)
 
     @staticmethod
-    def _assert_final_receipt(
+    def _assert_instructions_draft_receipt(
         receipt: PublicationReceipt,
         artifact_sha256: str,
         instructions_sha256: str,
     ) -> None:
         receipt.assert_artifact(artifact_sha256)
-        if not receipt.is_verified_public:
-            raise ReceiptError("Instructions require authenticated public Shop readback")
+        if not receipt.is_verified_draft:
+            raise ReceiptError("Instructions require authenticated private Shop draft readback")
         _https_url(receipt.details.get("page_url"), "Shop product page URL")
+        _https_url(receipt.details.get("cover_url"), "Shop draft cover URL")
         if receipt.details.get("instructions_sha256") != instructions_sha256:
             raise ReceiptError("Shop receipt is not bound to the sealed Instructions bytes")
+        require_sha256(receipt.details.get("cover_sha256"), "Shop draft cover sha256")
 
-    def _assert_completed_configuration(self, intent_id: str) -> None:
-        """Refuse to present an old live receipt as success for a new price policy."""
+    def _readback_draft(
+        self,
+        intent_id: str,
+        imported: PublicationReceipt,
+        proof: Mapping[str, Any],
+        lease_token: Optional[str],
+    ) -> PublicationReceipt:
+        """Prove the enriched page still identifies the exact imported draft."""
 
-        intent = self.store.get_publish_intent(intent_id)
-        live_request = intent.get("live_request")
-        if not isinstance(live_request, Mapping):
-            raise ReceiptError("completed Instructions page lacks its durable Shop request")
-        listing = live_request.get("listing")
-        persisted_price = (
-            listing.get("price_cents") if isinstance(listing, Mapping) else None
-        )
-        if persisted_price != self.price_cents:
-            raise StateConflict(
-                "Instructions price policy changed under an already-live page"
+        try:
+            response = self.client.get_design(imported.slug)
+        except Exception as exc:
+            raise AmbiguousPublishError(
+                "authenticated Instructions draft readback failed"
+            ) from exc
+        if response.status != 200:
+            raise AmbiguousPublishError(
+                "authenticated Instructions draft readback returned HTTP %s"
+                % response.status
             )
+        try:
+            design = _json_body(response)
+            receipt = PublicationReceipt.from_design(
+                _design_with_normalized_currency(design),
+                imported.packet_sha256,
+                imported.artifact_sha256,
+            )
+            receipt.assert_owner(self.owner_id)
+            if not receipt.is_verified_draft:
+                raise ReceiptError("Shop readback no longer identifies a private draft")
+            identity_fields = (
+                "design_id",
+                "slug",
+                "owner_id",
+                "root_id",
+                "current_history_id",
+                "project_url",
+            )
+            if any(
+                getattr(receipt, field) != getattr(imported, field)
+                for field in identity_fields
+            ):
+                raise ReceiptError(
+                    "Shop readback does not identify the imported draft history"
+                )
+            intent = self.store.get_publish_intent(intent_id)
+            request = intent.get("request")
+            import_response = intent.get("response")
+            imported_covers = (
+                import_response.get("thumbnail_urls")
+                if isinstance(import_response, Mapping)
+                else None
+            )
+            observed_covers = design.get("thumbnail_urls")
+            category = design.get("category")
+            author = design.get("author")
+            if (
+                not isinstance(request, Mapping)
+                or design.get("title") != request.get("title")
+                or design.get("description") != request.get("description")
+                or design.get("origin") != "import"
+                or design.get("tags") != request.get("tags")
+                or not isinstance(category, Mapping)
+                or category.get("slug") != request.get("category")
+                or not isinstance(imported_covers, list)
+                or not imported_covers
+                or observed_covers != imported_covers
+                or imported_covers[0] != proof.get("cover_url")
+                or (
+                    isinstance(author, Mapping)
+                    and author.get("id") is not None
+                    and author.get("id") != self.owner_id
+                )
+            ):
+                raise ReceiptError(
+                    "Shop draft readback does not preserve the sealed Instructions import"
+                )
+            for page_effect in self.store.shop_effects_for_publish_intent(intent_id):
+                if page_effect.get("kind") not in ("use-case", "story-blocks"):
+                    continue
+                effect_request = page_effect.get("request")
+                if (
+                    page_effect.get("state") != "succeeded"
+                    or not isinstance(effect_request, Mapping)
+                    or not self._content_matches(
+                        page_effect["kind"], design, effect_request.get("content")
+                    )
+                ):
+                    raise ReceiptError(
+                        "Shop draft readback does not contain the sealed Instructions copy"
+                    )
+            receipt = _receipt_with_details(receipt, proof)
+            persisted = self.store.mark_instructions_draft_ready(
+                intent_id, receipt, lease_token
+            )
+            return PublicationReceipt.from_dict(persisted["receipt"])
+        except (ContractError, PublishError, ReceiptError, StateConflict) as exc:
+            raise AmbiguousPublishError(
+                "authenticated Shop readback did not prove the exact Instructions draft"
+            ) from exc
 
     def __call__(
         self,
@@ -1501,14 +1702,18 @@ class ShopInstructionsWriter:
                 inventor_name=inventor_name,
                 instructions_sha256=instructions_sha256,
                 playtest_evidence_sha256=playtest_sha256,
+                thumbnail=media["hero"],
                 lease_token=lease_token,
             )
-        if outcome.receipt.status == "public":
-            self._assert_completed_configuration(outcome.intent_id)
-            self._assert_final_receipt(
+        if outcome.receipt.details.get("instructions_sha256") is not None:
+            self._assert_instructions_draft_receipt(
                 outcome.receipt, artifact_sha256, instructions_sha256
             )
             return outcome.receipt
+        if outcome.receipt.status != "draft":
+            raise StateConflict(
+                "Shop Instructions cannot reuse an intent already made public"
+            )
         uploaded_urls: Dict[str, str] = {}
         for role in SHOP_INSTRUCTIONS_IMAGES:
             uploaded_urls[role] = self._upload_media(
@@ -1540,30 +1745,37 @@ class ShopInstructionsWriter:
                 assert_current,
                 lease_token,
             )
-        attachments = [
-            {"kind": "image", "url": uploaded_urls[role]}
-            for role in SHOP_INSTRUCTIONS_IMAGES
-        ]
-        public_request: Dict[str, Any] = {"attachments": attachments}
-        if self.price_cents is not None:
-            public_request["listing"] = {"price_cents": self.price_cents}
+        persisted_intent = self.store.get_publish_intent(outcome.intent_id)
+        import_response = persisted_intent.get("response")
+        cover_urls = (
+            import_response.get("thumbnail_urls")
+            if isinstance(import_response, Mapping)
+            else None
+        )
+        if not isinstance(cover_urls, list) or not cover_urls:
+            raise AmbiguousPublishError(
+                "Shop import did not prove the sealed hero became the draft cover"
+            )
+        cover_url = _https_url(cover_urls[0], "Shop draft cover URL")
         proof = {
             "instructions_sha256": instructions_sha256,
             "playtest_evidence_sha256": playtest_sha256,
             "page_url": _shop_product_page_url(outcome.receipt.slug),
+            "cover_sha256": media["hero"]["sha256"],
+            "cover_url": cover_url,
             "media_sha256": {
                 role: media[role]["sha256"] for role in SHOP_INSTRUCTIONS_IMAGES
             },
             "page_content_sha256": _canonical_sha256(page),
-            "listing_request_sha256": _canonical_sha256(public_request),
         }
         assert_current()
-        receipt = self._sender.publish_live(
+        receipt = self._readback_draft(
             outcome.intent_id,
-            self.price_cents,
+            outcome.receipt,
+            proof,
             lease_token,
-            attachments=attachments,
-            proof=proof,
         )
-        self._assert_final_receipt(receipt, artifact_sha256, instructions_sha256)
+        self._assert_instructions_draft_receipt(
+            receipt, artifact_sha256, instructions_sha256
+        )
         return receipt

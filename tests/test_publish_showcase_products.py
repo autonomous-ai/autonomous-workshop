@@ -53,10 +53,12 @@ class ShowcaseShopTransport:
         self.first_get_status = first_get_status
         self.calls = []
         self.exists = False
-        self.public = False
         self.title = None
         self.description = None
-        self.attachments = []
+        self.tags = []
+        self.category = None
+        self.cover_url = "https://cdn.example/showcase/cover.png"
+        self.imported_thumbnail = None
         self.use_case = None
         self.story_blocks = []
         self.upload_index = 0
@@ -68,8 +70,7 @@ class ShowcaseShopTransport:
         self.imported_pack = None
 
     def design(self):
-        status = "public" if self.public else "draft"
-        value = {
+        return {
             "id": "design-showcase-1",
             "slug": self.slug,
             "title": self.title,
@@ -77,23 +78,17 @@ class ShowcaseShopTransport:
             "owner_id": self.owner_id,
             "root_id": "design-showcase-1",
             "current_history_id": "history-showcase-1",
-            "published_history_id": (
-                "history-showcase-1" if self.public else None
-            ),
-            "status": status,
+            "published_history_id": None,
+            "status": "draft",
             "project_url": "https://cdn.autonomous.ai/projects/history-showcase-1/",
+            "origin": "import",
+            "tags": list(self.tags),
+            "category": {"slug": self.category},
+            "author": {"id": self.owner_id},
+            "thumbnail_urls": [self.cover_url],
             "use_case": self.use_case,
             "story_blocks": self.story_blocks,
         }
-        if self.public:
-            value["attachments"] = list(self.attachments)
-            value["listing"] = {
-                "active": True,
-                "price_cents": 3500,
-                "currency": "usd",
-                "sku": "SHOWCASE-001",
-            }
-        return value
 
     def __call__(self, method, url, headers, body, timeout):
         self.calls.append((method, url, headers, body, timeout))
@@ -115,10 +110,13 @@ class ShowcaseShopTransport:
             fields = {
                 name: values[0]["content"].decode("utf-8")
                 for name, values in parts.items()
-                if name != "file"
+                if name not in ("file", "thumbnails", "tags")
             }
             self.title = fields["title"]
             self.description = fields["description"]
+            self.tags = [item["content"].decode("utf-8") for item in parts["tags"]]
+            self.category = fields["category"]
+            self.imported_thumbnail = parts["thumbnails"][0]["content"]
             self.exists = True
             return HttpResponse(201, {}, json.dumps(self.design()).encode())
         if method == "POST" and url.endswith("/uploads"):
@@ -147,10 +145,7 @@ class ShowcaseShopTransport:
             self.story_blocks = json.loads(body.decode("utf-8"))["story_blocks"]
             return HttpResponse(200, {}, json.dumps(self.design()).encode())
         if method == "POST" and url.endswith("/publish"):
-            request = json.loads(body.decode("utf-8")) if body else {}
-            self.attachments = request["attachments"]
-            self.public = True
-            return HttpResponse(200, {}, json.dumps(self.design()).encode())
+            raise AssertionError("Instructions must leave the Shop design private")
         raise AssertionError("unexpected Shop request %s %s" % (method, url))
 
 
@@ -177,7 +172,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.state_root = self.root / "state"
         self.spec = publisher.showcase.SPECS[0]
 
-    def test_exact_checked_in_bundle_publishes_once_and_durably_replays(self):
+    def test_exact_checked_in_bundle_drafts_once_and_durably_replays(self):
         before = _sealed_bytes(self.bundle)
         expected_pack_path = self.root / "expected.zip"
         build_pack(self.bundle / "artifact", expected_pack_path)
@@ -210,12 +205,19 @@ class PublishShowcaseProductsTest(unittest.TestCase):
                 transport=transport,
             )
 
-        self.assertEqual(first["status"], "published")
+        self.assertEqual(first["status"], "draft-created")
         self.assertEqual(transport.imported_pack, expected_pack)
+        hero = self.bundle / "instructions" / "images" / "hero.png"
+        self.assertEqual(transport.imported_thumbnail, hero.read_bytes())
         self.assertTrue(transport.description.endswith("By Alice."))
         self.assertEqual(_sealed_bytes(self.bundle), before)
         with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
+            self.assertIn("project.json", archive.namelist())
             self.assertIn("product.json", archive.namelist())
+            self.assertEqual(
+                json.loads(archive.read("project.json")),
+                {"id": "five-job-checkers", "name": "Five-Job Checkers"},
+            )
             self.assertEqual(
                 json.loads(archive.read("product.json"))["inventor"]["name"],
                 "Alice",
@@ -223,7 +225,10 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         methods_after_first = [call[0] for call in transport.calls]
         self.assertEqual(
             methods_after_first,
-            ["GET", "POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "POST", "GET"],
+            ["GET", "POST", "POST", "POST", "POST", "POST", "POST", "PATCH", "PUT", "GET"],
+        )
+        self.assertFalse(
+            any(url.endswith("/publish") for _, url, _, _, _ in transport.calls)
         )
         count_after_first = len(transport.calls)
 
@@ -246,11 +251,11 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             repo_root=self.repo,
             state_root=self.state_root,
             transport=transport,
-            verify_live=True,
+            verify_draft=True,
         )
         self.assertEqual(len(transport.calls), count_after_first + 1)
         self.assertEqual(
-            verified["live_verification"]["status"], "verified-live"
+            verified["draft_verification"]["status"], "verified-draft"
         )
         run = json.loads((self.bundle / "workshop-run.json").read_text())
         customer_page = (
@@ -258,6 +263,10 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         )
         self.assertEqual(run["run"]["job"], "deliver")
         self.assertEqual(run["run"]["page_url"], customer_page)
+        self.assertTrue(run["assertions"]["site_draft_verified"])
+        self.assertFalse(run["assertions"]["site_page_live"])
+        self.assertEqual(run["site_receipt"]["status"], "draft")
+        self.assertIsNone(run["site_receipt"]["published_history_id"])
         self.assertEqual(
             run["site_receipt"]["details"]["page_url"], customer_page
         )
@@ -277,7 +286,9 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertTrue(database.is_file())
         store = InventorStore(database)
         self.assertEqual(len(store.events(self.spec.slug)), 1)
-        self.assertEqual(store.latest_publish_intent(self.spec.slug)["state"], "live")
+        self.assertEqual(
+            store.latest_publish_intent(self.spec.slug)["state"], "succeeded"
+        )
         self.assertEqual(
             len(store.shop_effects_for_publish_intent(
                 store.latest_publish_intent(self.spec.slug)["id"]
@@ -308,6 +319,20 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             [item.spec.inventor_id for item in sealed],
             ["alice", "bob", "eve", "ivy", "leo"],
         )
+        for item in sealed:
+            suffix = "By %s." % item.spec.inventor_name
+            self.assertTrue(
+                item.page["summary"].endswith(suffix),
+                "%s draft summary lost inventor attribution" % item.spec.slug,
+            )
+            product = json.loads(
+                (item.bundle / "artifact" / "product.json").read_text()
+            )
+            self.assertTrue(product["description"].endswith(suffix))
+            self.assertEqual(
+                json.loads((item.bundle / "artifact" / "project.json").read_text()),
+                {"id": item.spec.slug, "name": item.spec.title},
+            )
 
     def test_changed_checked_in_bytes_fail_before_state_or_network(self):
         instructions = self.bundle / "instructions" / "INSTRUCTIONS.md"

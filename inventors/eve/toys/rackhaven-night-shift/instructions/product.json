@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "3c34b6d0c818e6ede7d27f5da8983ebdabaa0be069e73ec91b4f1c86f04992ea",
+      "evidence_sha256": "ff00333fa857469f2b4043893ccdf5905e13efc7d3354338ef09f13f580d525c",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "f8717e7bb0f5d4c555a6aead393a2f8630f4351d417193814981d7586ac0176f",
+      "evidence_sha256": "8de8f8516734735c3ec12f44ca49d52dfeed072ee8ed0748ea8720f6ef082995",
       "passed": true
     },
     "print-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "1b086f9836dbbe894c00a41d00029706d85c094be5dc62eaf738419956de0afa",
+      "evidence_sha256": "fb59753bb5d30a2e9b52db0abd6bd3e06761fba1f44493c2ef14e71c3603443d",
       "passed": true
     },
     "world-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "world-test.json",
-      "evidence_sha256": "c0e474117962333593321aaad060f7960e87d4f3f97d2ee63bea7287a1c81a6f",
+      "evidence_sha256": "99b55d9f2a4794644f7717e56cf51e0c4f724b47f0a61f096e2f9cc5aa10d718",
       "passed": true
     }
   },
@@ -60,8 +60,8 @@
     "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
     "Fine details and handling durability are checked on the produced object during Deliver."
   ],
-  "playtest_evidence_artifact_sha256": "34aef1e8a0b89761d3a53382e6958133b32d5e93aebe88f36e19433ff120ab55",
-  "product_artifact_sha256": "a8fe2b195ce7629b16097a1e7696f6bf9d387c51543d5cd9d59494d5d9bbe8f0",
+  "playtest_evidence_artifact_sha256": "917bf5cc658af8f6e81495c1e85b2e78c5328711f3d9c1380381cb756086dc80",
+  "product_artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
   "schema_version": 1,
   "status": "ready",
   "story_blocks": [

@@ -1107,6 +1107,13 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         raise RuntimeError("Make artifact workspace must be fresh")
     artifact.mkdir(parents=True)
     _write_json(artifact / "wish.json", context.wish.to_dict())
+    # The Factory importer requires a project marker at the artifact root.
+    # This file is part of the Made and Playtested bytes; Instructions must not
+    # inject a different transport-only wrapper later.
+    _write_json(
+        artifact / "project.json",
+        {"id": context.wish.product_id, "name": spec.title},
+    )
     attributed_description = attribute_product_description(
         spec.description, spec.inventor_name
     )
@@ -1514,7 +1521,7 @@ def _waiting_site_writer(context, sealed_root, sealed_manifest):
             "instructions",
             "site-page",
             "The page and in-box guide are sealed, but this run has no authenticated Workshop site account.",
-            "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions publish and verify the page.",
+            "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
         )
     )
 
@@ -1543,13 +1550,13 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
     )
     page_url = run.get("page_url")
     page_line = (
-        "- Live product page: %s" % page_url
+        "- Verified private product draft: %s (owner sign-in required)" % page_url
         if page_url
         else "- Product page: sealed locally; waiting for the Workshop site account"
     )
     stop_explanation = (
-        "AI Playtest passed and shared Instructions published the product page. "
-        "The run is now waiting for production and shipping in Deliver."
+        "AI Playtest passed and shared Instructions created, enriched, and verified the private product draft. "
+        "The owner controls the later public flip; the Workshop is now waiting for production and shipping in Deliver."
         if run["job"] == "deliver"
         else "AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account."
     )
@@ -1684,12 +1691,12 @@ def _build_one(spec: ProductSpec, *, force: bool = False) -> Mapping[str, Any]:
             run.instructions_sha256 is not None
             and run.instructions_sha256 != instructions_manifest.artifact_sha256
         ):
-            raise RuntimeError("live Instructions hash differs from copied page bytes")
+            raise RuntimeError("verified Instructions hash differs from copied page bytes")
         publish_intent = InventorStore(
             temp_root / "runtime" / "workshop.sqlite3"
         ).latest_publish_intent(spec.slug)
         site_receipt = None
-        if publish_intent is not None and publish_intent.get("state") == "live":
+        if publish_intent is not None and publish_intent.get("state") == "succeeded":
             site_receipt = publish_intent.get("receipt")
         receipt = {
             "schema_version": 1,
@@ -1722,7 +1729,8 @@ def _build_one(spec: ProductSpec, *, force: bool = False) -> Mapping[str, Any]:
                 "typed_evidence_contract_validated": True,
                 "ai_playtest_passed": True,
                 "instructions_created": True,
-                "site_page_live": run.job == "deliver",
+                "site_draft_verified": run.job == "deliver",
+                "site_page_live": False,
                 "physical_prototype": False,
                 "customer_reviews": False,
                 "delivered": False,
@@ -1783,6 +1791,7 @@ def _manifest_from_dict(root: Path, record: Mapping[str, Any]):
 
 def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     product = json.loads((bundle / "artifact" / "product.json").read_text(encoding="utf-8"))
+    project = json.loads((bundle / "artifact" / "project.json").read_text(encoding="utf-8"))
     receipt = json.loads((bundle / "workshop-run.json").read_text(encoding="utf-8"))
     stored_artifact = json.loads((bundle / "artifact-manifest.json").read_text(encoding="utf-8"))
     stored_evidence = json.loads((bundle / "evidence-manifest.json").read_text(encoding="utf-8"))
@@ -1791,6 +1800,8 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     )
     if product["inventor"] != {"id": spec.inventor_id, "name": spec.inventor_name}:
         raise RuntimeError("product inventor metadata mismatch")
+    if project != {"id": spec.slug, "name": spec.title}:
+        raise RuntimeError("Factory project marker does not identify this exact showcase")
     if not product["description"].endswith("By %s." % spec.inventor_name):
         raise RuntimeError("description attribution is not its exact ending")
     if product["physical_prototype"] or product["reviews_status"] != "begins-after-delivery":
@@ -1835,14 +1846,21 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
         raise RuntimeError("Instructions page does not contain all five image roles")
     if receipt["run"]["job"] == "deliver":
         if not receipt["site_receipt"] or not receipt["run"].get("page_url"):
-            raise RuntimeError("Deliver wait must preserve the verified live page")
+            raise RuntimeError("Deliver wait must preserve the verified private draft")
+        if (
+            receipt["site_receipt"].get("status") != "draft"
+            or receipt["site_receipt"].get("published_history_id") is not None
+            or receipt["assertions"].get("site_draft_verified") is not True
+            or receipt["assertions"].get("site_page_live") is not False
+        ):
+            raise RuntimeError("Deliver wait must not claim the Instructions draft is public")
         if (
             receipt["site_receipt"].get("details", {}).get("instructions_sha256")
             != current_instructions.artifact_sha256
         ):
             raise RuntimeError("site receipt points at different Instructions bytes")
     elif receipt["site_receipt"] is not None or receipt["run"].get("page_url") is not None:
-        raise RuntimeError("Instructions wait must not claim a live site page")
+        raise RuntimeError("Instructions wait must not claim a verified site draft")
     build = json.loads((bundle / "artifact" / "cad" / "digital-build.json").read_text())
     current_product_cad = _validate_cad_pair(
         bundle / "artifact" / "cad" / "product.step",

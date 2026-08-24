@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
+  "artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -18,7 +18,7 @@
       "bytes": 5115,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "ba7108724238c9e06d7ce600b481938eaae45d4afba84d5b4aca5a04efb8d40e"
+      "sha256": "37ee270572c013fca42caf1d9e872486fab02a4957dc88713e9619b82379973b"
     },
     {
       "bytes": 999,
@@ -30,7 +30,7 @@
       "bytes": 651762,
       "executable": false,
       "path": "cad/parts/board.step",
-      "sha256": "c57cc16cddba1d1b70e6480e92c4b8d4c86593d13fa2c9632a57cbcffd241880"
+      "sha256": "b96616e39b3c141e1baa8736d0caa0a41187a4763dc5f1a4d4b44eda9934dee0"
     },
     {
       "bytes": 48484,
@@ -42,7 +42,7 @@
       "bytes": 36945,
       "executable": false,
       "path": "cad/parts/five-ring-piece.step",
-      "sha256": "8109c0557828653bcf220146b2cdf0ac4293d4960df22d2b98ca549c27869101"
+      "sha256": "92a44ac794ee68b7fc70104f146a0430e2d5c659bc07789bad18d1b5e7b7c519"
     },
     {
       "bytes": 150084,
@@ -54,7 +54,7 @@
       "bytes": 91893,
       "executable": false,
       "path": "cad/parts/five-spoke-piece.step",
-      "sha256": "6cbdd0c97d8eeebc916c32ddc454986d59ac2a8426bd85d93385eac753f24512"
+      "sha256": "0aef8a410fef8a4cf9171f10a7a7cbb771628e1d6ee732066d7dd7e63c373cda"
     },
     {
       "bytes": 28084,
@@ -66,7 +66,7 @@
       "bytes": 2274206,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "476a2211cd38567685c012ff05cbd495d5f852fd4e3e38309378948b6ce752ce"
+      "sha256": "183a261f566c0e07c80dedb2ed2332a6b7a69ce7169f322cb0d2ceb20f2053dc"
     },
     {
       "bytes": 2184484,
@@ -87,6 +87,12 @@
       "sha256": "b22a372f5eb9142a222e87836aa404114d048b5f30cc1015af49860e5e6d53b7"
     },
     {
+      "bytes": 63,
+      "executable": false,
+      "path": "project.json",
+      "sha256": "36dd5cfb9487bfa6bfd62a3899d55c1349c3217fc2684a1e439cf0e3f3228f4d"
+    },
+    {
       "bytes": 362,
       "executable": false,
       "path": "wish.json",
@@ -94,5 +100,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 5602705
+  "total_bytes": 5602768
 }

@@ -141,15 +141,14 @@ class WorkshopJobFixture(unittest.TestCase):
             owner_id="owner-alice",
             root_id="design-pocket-duel",
             current_history_id="history-1",
-            published_history_id="history-1",
-            status="public",
-            project_url="https://www.autonomous.ai/factory/product/pocket-duel",
+            published_history_id=None,
+            status="draft",
+            project_url="https://cdn.autonomous.ai/projects/history-1/",
             observed_at="2026-08-23T12:00:00+00:00",
-            listing_active=True,
-            listing_price_cents=3500,
-            listing_currency="USD",
-            listing_sku="PD-001",
-            details={"instructions_sha256": sealed_manifest.artifact_sha256},
+            details={
+                "instructions_sha256": sealed_manifest.artifact_sha256,
+                "page_url": "https://www.autonomous.ai/factory/product/pocket-duel",
+            },
         )
 
     def generated_instructions(
@@ -299,15 +298,10 @@ class InstructionsJobTest(WorkshopJobFixture):
             del sealed_root
             receipt = self.site_writer(context, None, sealed_manifest)
             value = receipt.to_dict()
-            value["status"] = "draft"
-            value["published_history_id"] = None
-            value["listing_active"] = None
-            value["listing_price_cents"] = None
-            value["listing_currency"] = None
-            value["listing_sku"] = None
+            value["current_history_id"] = None
             return Receipt.from_dict(value)
 
-        with self.assertRaisesRegex(ContractError, "authenticated public"):
+        with self.assertRaisesRegex(ContractError, "authenticated private draft"):
             DefaultInstructions(self.media_maker, unverified)(
                 self.instructions_context("unverified-site-instructions")
             )
@@ -316,7 +310,10 @@ class InstructionsJobTest(WorkshopJobFixture):
             del sealed_root
             receipt = self.site_writer(context, None, sealed_manifest)
             value = receipt.to_dict()
-            value["details"] = {"instructions_sha256": "0" * 64}
+            value["details"] = {
+                **value["details"],
+                "instructions_sha256": "0" * 64,
+            }
             return Receipt.from_dict(value)
 
         with self.assertRaisesRegex(ContractError, "different page"):
@@ -334,6 +331,28 @@ class InstructionsJobTest(WorkshopJobFixture):
             DefaultInstructions(incomplete, self.site_writer)(
                 self.instructions_context("incomplete-instructions")
             )
+
+    def test_verified_public_receipt_remains_compatible_for_custom_writers(self):
+        def public_writer(context, sealed_root, sealed_manifest):
+            receipt = self.site_writer(context, sealed_root, sealed_manifest)
+            value = receipt.to_dict()
+            value.update(
+                {
+                    "status": "public",
+                    "published_history_id": value["current_history_id"],
+                    "listing_active": True,
+                    "listing_price_cents": 3500,
+                    "listing_currency": "USD",
+                    "listing_sku": "PD-001",
+                }
+            )
+            return Receipt.from_dict(value)
+
+        instructions = DefaultInstructions(self.media_maker, public_writer)(
+            self.instructions_context("legacy-public-instructions")
+        )
+        self.assertTrue(instructions.is_public)
+        self.assertTrue(instructions.site_receipt.is_verified_public)
 
     def test_instructions_reject_one_file_claimed_as_every_fixed_view(self):
         def repeated(context):
@@ -384,7 +403,8 @@ class InstructionsJobTest(WorkshopJobFixture):
         self.assertNotIn("human", claim["claims"][0].casefold())
         self.assertEqual(instructions.claims, page["claims"])
         self.assertEqual(instructions.instructions_path, "INSTRUCTIONS.md")
-        self.assertTrue(instructions.site_receipt.is_verified_public)
+        self.assertTrue(instructions.site_receipt.is_verified_draft)
+        self.assertFalse(instructions.is_public)
         self.assertEqual(
             instructions.page_url,
             "https://www.autonomous.ai/factory/product/pocket-duel",

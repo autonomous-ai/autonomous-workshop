@@ -83,7 +83,7 @@ Alice, Eve, and Ivy demonstrate the smallest adoption level: the inventor owns
 `TASTE.md`; Workshop owns Make, Playtest, the improvement loop, Instructions, Deliver,
 artifact identity, and runtime. “Taste only” means the profile is wired to
 shared capabilities—not that those external capabilities are bundled,
-credentialed, or proven live in this checkout.
+credentialed, or authenticated in this checkout.
 
 ## What is shared today
 
@@ -100,10 +100,10 @@ All five profiles use the same 0.5 contracts for:
 - the shared Instructions and Deliver boundaries;
 - durable state, leases, and a recorded per-Wish Playtest allowance.
 
-The platform operator still has to install real shared tools. A complete live
+The platform operator still has to install real shared tools. A complete
 path needs, as applicable, authenticated model and CAD workers, executable AI
 players, independent model reviewers, and a pinned slicer profile for Playtest,
-plus a product renderer and site-publishing integration for Instructions.
+plus a product renderer and private site-draft integration for Instructions.
 Deliver then needs a printer profile, exact production, hands-on QA, packing,
 and USPS/UPS/FedEx integration. Reviews begins only after customers receive
 those deliveries.

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Publish the five checked-in showcase bundles without rebuilding their bytes.
+"""Create five enriched private Shop drafts from the checked-in showcase bundles.
 
 Each toy gets an ignored, persistent outbox at
 ``.runtime/showcase-publication/<slug>/workshop.sqlite3``.  A retry therefore
 resumes the exact recorded Shop effects instead of importing or uploading a
-second copy.  Make and Playtest are deliberately absent from this tool.
+second copy.  Instructions ends at an authenticated private-draft readback;
+this tool never flips a draft public.  Make and Playtest are deliberately
+absent from this tool.
 """
 
 from __future__ import annotations
@@ -50,7 +52,6 @@ from inventor_workshop.shop import (
     ShopDoor,
     ShopInstructionsWriter,
     Transport,
-    _design_with_normalized_currency,
     urllib_transport,
 )
 from inventor_workshop.store import InventorStore
@@ -224,6 +225,7 @@ def _load_sealed_showcase(
     ).resolve(strict=True)
 
     run_receipt = _read_object(bundle / "workshop-run.json", "Workshop run")
+    project = _read_object(bundle / "artifact" / "project.json", "Factory project")
     product = _read_object(bundle / "artifact" / "product.json", "product")
     page = _read_object(bundle / "instructions" / "product.json", "product page")
     artifact_manifest = _typed_manifest(
@@ -265,9 +267,9 @@ def _load_sealed_showcase(
         raise ContractError("checked-in Workshop receipt no longer binds this sealed bundle")
     if run.get("job") == "instructions":
         if run_receipt.get("site_receipt") is not None or run.get("page_url") is not None:
-            raise ContractError("Instructions wait must not claim a live product page")
+            raise ContractError("Instructions wait must not claim a verified site draft")
     elif not isinstance(run_receipt.get("site_receipt"), Mapping) or not run.get("page_url"):
-        raise ContractError("Deliver wait must preserve its verified product page")
+        raise ContractError("Deliver wait must preserve its verified private draft")
 
     profile = _load_profile(repo_root, spec.inventor_id)
     profile_record = getattr(profile, "PROFILE", None)
@@ -302,6 +304,8 @@ def _load_sealed_showcase(
     ):
         raise ContractError("Taste, blueprint, or inventor binding changed")
 
+    if project != {"id": spec.slug, "name": spec.title}:
+        raise ContractError("Factory project marker does not identify this showcase")
     if product.get("wish") != wish.to_dict():
         raise ContractError("product bytes contain a different Wish")
     if (
@@ -534,15 +538,22 @@ class _CanonicalSlugDoor(ShopDoor):
         super().__init__(token, transport=transport)
 
     def import_design_bytes(
-        self, filename: str, content: bytes, metadata: Mapping[str, Any]
+        self,
+        filename: str,
+        content: bytes,
+        metadata: Mapping[str, Any],
+        *,
+        thumbnail: Optional[Mapping[str, Any]] = None,
     ) -> HttpResponse:
-        response = super().import_design_bytes(filename, content, metadata)
+        response = super().import_design_bytes(
+            filename, content, metadata, thumbnail=thumbnail
+        )
         if response.status == 201:
             design = _response_object(response, "Shop import")
             if design.get("slug") != self.expected_slug:
                 raise ReceiptError(
                     "Shop import did not preserve the canonical showcase slug; "
-                    "the draft outcome is ambiguous and must not be published"
+                    "the draft outcome is ambiguous and must not be enriched"
                 )
         return response
 
@@ -618,15 +629,25 @@ def _collision_preflight(door: ShopDoor, slug: str) -> None:
     )
 
 
-def _assert_public_receipt(
+def _assert_draft_receipt(
     receipt: PublicationReceipt, sealed: SealedShowcase, owner_id: str
 ) -> str:
     if not isinstance(receipt, PublicationReceipt):
-        raise ReceiptError("Shop writer did not return a typed publication Receipt")
+        raise ReceiptError("Shop writer did not return a typed draft Receipt")
     receipt.assert_owner(owner_id)
     receipt.assert_artifact(sealed.artifact_manifest.artifact_sha256)
-    if not receipt.is_verified_public:
-        raise ReceiptError("Shop receipt does not prove a current public USD listing")
+    if not receipt.is_verified_draft:
+        raise ReceiptError("Instructions require an authenticated private draft readback")
+    if not all(
+        isinstance(value, str) and value.strip()
+        for value in (
+            receipt.design_id,
+            receipt.root_id,
+            receipt.current_history_id,
+            receipt.project_url,
+        )
+    ):
+        raise ReceiptError("Shop draft readback is missing its exact design identity")
     if receipt.slug != sealed.spec.slug:
         raise ReceiptError("Shop receipt does not preserve the canonical showcase slug")
     page_url = _customer_page_url(sealed.spec.slug)
@@ -639,6 +660,13 @@ def _assert_public_receipt(
         != sealed.evidence_manifest.artifact_sha256
     ):
         raise ReceiptError("Shop receipt is not bound to exact Instructions and Playtest bytes")
+    hero_path = sealed.bundle / "instructions" / sealed.page["images"]["hero"]
+    if (
+        receipt.details.get("cover_sha256") != _sha256_file(hero_path)
+        or not isinstance(receipt.details.get("cover_url"), str)
+        or not receipt.details["cover_url"].startswith("https://")
+    ):
+        raise ReceiptError("Shop receipt is not bound to the sealed hero cover")
     return page_url
 
 
@@ -657,6 +685,57 @@ def _atomic_write(path: Path, content: bytes) -> None:
             pass
 
 
+def _draft_bundle_readme(sealed: SealedShowcase, run: Mapping[str, Any]) -> bytes:
+    needs = "\n".join(
+        "- `%s` — %s" % (item["capability"], item["reason"])
+        for item in run["needs"]
+    )
+    return f"""\
+# {sealed.spec.title}
+
+![Exact-geometry render of {sealed.spec.title}](artifact/images/hero.png)
+
+{sealed.spec.description}
+
+## Workshop result
+
+- Inventor profile: [{sealed.spec.inventor_name}](../../README.md)
+- Lane: `{sealed.spec.lane}`
+- Extension level: `{sealed.spec.extension_level}`
+- Configured Playtest rounds: `{sealed.spec.playtest_rounds}`
+- Actual stop: **Deliver / waiting**, round 1
+- Exact artifact: `{run['artifact_sha256']}`
+- Private product draft: {run['page_url']} (owner sign-in required)
+
+AI Playtest passed. Shared Instructions imported the exact Make artifact, uploaded
+the five sealed views, wrote the page and in-box guide, and verified the enriched
+private draft through an authenticated Shop readback. The owner can review and
+make that draft public; the Workshop's next job is production and shipping in
+Deliver.
+
+## Still needed
+
+{needs}
+
+## Inspect it
+
+- [`artifact/product.json`](artifact/product.json) — product metadata and honest claims
+- [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
+- [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
+- [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
+- [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
+- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
+- [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
+
+The private draft is not a public listing. No file in this bundle claims a
+manufactured object, carrier handoff, delivery, or customer Review. Those facts
+belong to Deliver and Reviews.
+""".encode("utf-8")
+
+
 def _mark_waiting_at_deliver(
     sealed: SealedShowcase, receipt: PublicationReceipt, page_url: str
 ) -> None:
@@ -668,7 +747,7 @@ def _mark_waiting_at_deliver(
     run = record.get("run")
     assertions = record.get("assertions")
     if not isinstance(run, MutableMapping) or not isinstance(assertions, MutableMapping):
-        raise ContractError("Workshop run cannot record its verified public page")
+        raise ContractError("Workshop run cannot record its verified private draft")
     run.update(
         {
             "status": "waiting",
@@ -687,18 +766,19 @@ def _mark_waiting_at_deliver(
         }
     )
     record["site_receipt"] = receipt.to_dict()
-    assertions["site_page_live"] = True
+    assertions["site_draft_verified"] = True
+    assertions["site_page_live"] = False
     assertions["physical_prototype"] = False
     assertions["customer_reviews"] = False
     assertions["delivered"] = False
     run_bytes = (
         json.dumps(record, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
     ).encode("utf-8")
-    readme_bytes = showcase._bundle_readme(sealed.spec, run).encode("utf-8")
+    readme_bytes = _draft_bundle_readme(sealed, run)
     try:
         _atomic_write(run_path, run_bytes)
         _atomic_write(readme_path, readme_bytes)
-        persisted = _read_object(run_path, "published Workshop run")
+        persisted = _read_object(run_path, "drafted Workshop run")
         persisted_run = persisted.get("run")
         persisted_receipt = persisted.get("site_receipt")
         if (
@@ -710,14 +790,14 @@ def _mark_waiting_at_deliver(
             or persisted_run.get("page_url") != page_url
             or not isinstance(persisted_receipt, Mapping)
         ):
-            raise ContractError("published Workshop run did not preserve Deliver state")
-        _assert_public_receipt(
+            raise ContractError("drafted Workshop run did not preserve Deliver state")
+        _assert_draft_receipt(
             PublicationReceipt.from_dict(persisted_receipt),
             sealed,
             receipt.owner_id,
         )
         if readme_path.read_bytes() != readme_bytes:
-            raise ContractError("published showcase README did not preserve verified page state")
+            raise ContractError("showcase README did not preserve verified draft state")
         _assert_sealed_inputs_current(sealed)
     except Exception:
         _atomic_write(run_path, old_run)
@@ -725,61 +805,58 @@ def _mark_waiting_at_deliver(
         raise
 
 
-def _verify_live(
+def _verify_draft(
     sealed: SealedShowcase,
     store: InventorStore,
     door: ShopDoor,
     owner_id: str,
 ) -> Mapping[str, Any]:
     intent = store.latest_publish_intent(sealed.spec.slug)
-    if intent is None or intent.get("state") != "live":
-        raise StateConflict("showcase has no durable live publication to verify")
+    if intent is None or intent.get("state") != "succeeded":
+        raise StateConflict("showcase has no durable Instructions draft to verify")
     persisted = PublicationReceipt.from_dict(intent.get("receipt"))
-    page_url = _assert_public_receipt(persisted, sealed, owner_id)
+    page_url = _assert_draft_receipt(persisted, sealed, owner_id)
     response = door.get_design(sealed.spec.slug)
     if response.status != 200:
-        raise PublishError("fresh Shop readback returned HTTP %s" % response.status)
-    design = _response_object(response, "fresh Shop readback")
+        raise PublishError("fresh Shop draft readback returned HTTP %s" % response.status)
+    design = _response_object(response, "fresh Shop draft readback")
     fresh = PublicationReceipt.from_design(
-        _design_with_normalized_currency(design),
+        design,
         intent["packet_sha256"],
         sealed.artifact_manifest.artifact_sha256,
     )
     fresh.assert_owner(owner_id)
     fresh.assert_artifact(sealed.artifact_manifest.artifact_sha256)
-    if not fresh.is_verified_public or fresh.slug != sealed.spec.slug:
-        raise ReceiptError("fresh Shop readback does not prove the canonical public page")
+    if (
+        fresh.status != "draft"
+        or fresh.published_history_id is not None
+        or fresh.slug != sealed.spec.slug
+    ):
+        raise ReceiptError("fresh Shop readback does not prove the canonical private draft")
     for field in (
         "design_id",
         "slug",
         "owner_id",
         "root_id",
         "current_history_id",
-        "published_history_id",
         "project_url",
-        "listing_active",
-        "listing_price_cents",
-        "listing_currency",
-        "listing_sku",
     ):
         if getattr(fresh, field) != getattr(persisted, field):
             raise ReceiptError("fresh Shop readback changed %s" % field)
     request = intent.get("request")
-    live_request = intent.get("live_request")
-    if not isinstance(request, Mapping) or not isinstance(live_request, Mapping):
-        raise ReceiptError("durable Shop publication request is malformed")
-    if design.get("title") != request.get("title") or design.get("description") != request.get("description"):
+    if not isinstance(request, Mapping) or intent.get("live_request") is not None:
+        raise ReceiptError("durable Shop draft request is malformed")
+    category = design.get("category")
+    if (
+        design.get("title") != request.get("title")
+        or design.get("description") != request.get("description")
+        or design.get("origin") != "import"
+        or design.get("tags") != request.get("tags")
+        or not isinstance(category, Mapping)
+        or category.get("slug") != request.get("category")
+        or design.get("thumbnail_urls") != [persisted.details.get("cover_url")]
+    ):
         raise ReceiptError("fresh Shop readback changed sealed title or attribution")
-    observed_attachments = design.get("attachments")
-    if not isinstance(observed_attachments, list):
-        raise ReceiptError("fresh Shop readback attachments are malformed")
-    projected = [
-        {"kind": item.get("kind"), "url": item.get("url")}
-        for item in observed_attachments
-        if isinstance(item, Mapping)
-    ]
-    if len(projected) != len(observed_attachments) or projected != live_request.get("attachments"):
-        raise ReceiptError("fresh Shop readback changed exact Instructions media")
     for effect in store.shop_effects_for_publish_intent(intent["id"]):
         if effect.get("kind") not in ("use-case", "story-blocks"):
             continue
@@ -792,32 +869,23 @@ def _verify_live(
             )
         ):
             raise ReceiptError("fresh Shop readback changed sealed Instructions copy")
-    proof = live_request.get("proof")
-    if not isinstance(proof, Mapping):
-        raise ReceiptError("durable Shop publication lacks exact local proof")
     media_hashes = {
         role: _sha256_file(sealed.bundle / "instructions" / relative)
         for role, relative in sealed.page["images"].items()
     }
-    public_request: MutableMapping[str, Any] = {
-        "attachments": live_request.get("attachments")
-    }
-    if live_request.get("listing") is not None:
-        public_request["listing"] = live_request["listing"]
     expected_proof = {
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
         "playtest_evidence_sha256": sealed.evidence_manifest.artifact_sha256,
         "page_url": page_url,
+        "cover_sha256": media_hashes["hero"],
+        "cover_url": persisted.details.get("cover_url"),
         "media_sha256": media_hashes,
         "page_content_sha256": _sha256_bytes(_canonical(sealed.page)),
-        "listing_request_sha256": _sha256_bytes(_canonical(public_request)),
     }
-    if proof != expected_proof or any(
-        persisted.details.get(key) != value for key, value in expected_proof.items()
-    ):
-        raise ReceiptError("durable Shop receipt proof no longer matches checked-in bytes")
+    if any(persisted.details.get(key) != value for key, value in expected_proof.items()):
+        raise ReceiptError("durable Shop draft proof no longer matches checked-in bytes")
     return {
-        "status": "verified-live",
+        "status": "verified-draft",
         "slug": sealed.spec.slug,
         "page_url": page_url,
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
@@ -834,7 +902,7 @@ def publish_one(
     repo_root: Path = REPO_ROOT,
     state_root: Optional[Path] = None,
     transport: Transport = urllib_transport,
-    verify_live: bool = False,
+    verify_draft: bool = False,
 ) -> Mapping[str, Any]:
     if not isinstance(token, str) or not token.strip() or "\r" in token or "\n" in token:
         raise ContractError("WORKSHOP_SHOP_TOKEN is required")
@@ -864,13 +932,15 @@ def publish_one(
             (sealed.bundle / "instructions").resolve(strict=True),
             sealed.instructions_manifest,
         )
-        page_url = _assert_public_receipt(receipt, sealed, owner_id)
+        page_url = _assert_draft_receipt(receipt, sealed, owner_id)
         # Recheck all three exact seals after the network work. If anything
         # changed in flight, retain the durable receipt but do not edit the repo.
         # This does not execute CAD generation, AI players, or the simulator.
         _assert_sealed_inputs_current(sealed)
         _mark_waiting_at_deliver(sealed, receipt, page_url)
-        live_record = _verify_live(sealed, store, door, owner_id) if verify_live else None
+        draft_record = (
+            _verify_draft(sealed, store, door, owner_id) if verify_draft else None
+        )
     finally:
         store.release_lease(spec.slug, lease)
     result: MutableMapping[str, Any] = {
@@ -878,8 +948,9 @@ def publish_one(
         "slug": spec.slug,
         "status": (
             "replayed"
-            if previous_intent is not None and previous_intent.get("state") == "live"
-            else "published"
+            if previous_intent is not None
+            and previous_intent.get("state") == "succeeded"
+            else "draft-created"
         ),
         "page_url": page_url,
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
@@ -887,8 +958,8 @@ def publish_one(
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
         "state": str(state_directory / "workshop.sqlite3"),
     }
-    if live_record is not None:
-        result["live_verification"] = live_record
+    if draft_record is not None:
+        result["draft_verification"] = draft_record
     return result
 
 
@@ -911,9 +982,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         help="inventor id or product slug (repeatable; defaults to all five)",
     )
     parser.add_argument(
-        "--verify-live",
+        "--verify-draft",
         action="store_true",
-        help="perform one additional authenticated fresh GET after publish/replay",
+        help="perform one additional authenticated fresh GET after draft/replay",
     )
     args = parser.parse_args(argv)
     token, owner_id = _credentials(os.environ)
@@ -923,13 +994,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             spec,
             token=token,
             owner_id=owner_id,
-            verify_live=args.verify_live,
+            verify_draft=args.verify_draft,
         )
         records.append(record)
         print("%s %s %s" % (record["status"], spec.inventor_name, record["page_url"]), flush=True)
     print(
         json.dumps(
-            {"schema_version": 1, "publications": records},
+            {"schema_version": 1, "drafts": records},
             indent=2,
             sort_keys=True,
         )

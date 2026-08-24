@@ -33,7 +33,7 @@ class ShowcaseToyTest(unittest.TestCase):
                 self.assertFalse((inventor_root / "games").exists())
                 self.assertFalse((inventor_root / "products").exists())
 
-    def test_records_credit_the_inventor_pass_ai_playtest_and_wait_at_instructions(self):
+    def test_records_credit_inventor_and_preserve_truthful_instructions_state(self):
         for inventor_id, (inventor_name, slug) in SHOWCASE_TOYS.items():
             with self.subTest(inventor_id=inventor_id):
                 toy = self.toy_root(inventor_id, slug)
@@ -58,24 +58,44 @@ class ShowcaseToyTest(unittest.TestCase):
                 self.assertEqual(receipt["inventor"]["id"], inventor_id)
                 self.assertEqual(receipt["inventor"]["name"], inventor_name)
                 self.assertEqual(receipt["run"]["status"], "waiting")
-                self.assertEqual(receipt["run"]["job"], "instructions")
+                self.assertIn(receipt["run"]["job"], ("instructions", "deliver"))
                 self.assertEqual(
                     receipt["run"]["artifact_sha256"],
                     receipt["artifact_sha256"],
                 )
-                self.assertIsNone(receipt["run"]["instructions_sha256"])
                 self.assertIsNone(receipt["run"]["delivery"])
                 waiting_for = {
                     need["capability"] for need in receipt["run"]["needs"]
                 }
-                self.assertEqual(waiting_for, {"site-page"})
                 self.assertTrue(receipt["assertions"]["ai_playtest_passed"])
                 self.assertTrue(receipt["assertions"]["instructions_created"])
                 self.assertFalse(receipt["assertions"]["site_page_live"])
                 self.assertFalse(receipt["assertions"]["customer_reviews"])
+                if receipt["run"]["job"] == "instructions":
+                    self.assertIsNone(receipt["run"]["instructions_sha256"])
+                    self.assertEqual(waiting_for, {"site-page"})
+                    self.assertFalse(receipt["assertions"]["site_draft_verified"])
+                    self.assertIsNone(receipt["site_receipt"])
+                    self.assertIsNone(receipt["run"]["page_url"])
+                else:
+                    self.assertEqual(
+                        receipt["run"]["instructions_sha256"],
+                        receipt["instructions_sha256"],
+                    )
+                    self.assertEqual(waiting_for, {"production-and-shipping"})
+                    self.assertTrue(receipt["assertions"]["site_draft_verified"])
+                    self.assertEqual(receipt["site_receipt"]["status"], "draft")
+                    self.assertIsNone(
+                        receipt["site_receipt"]["published_history_id"]
+                    )
+                    self.assertEqual(
+                        receipt["site_receipt"]["details"]["page_url"],
+                        receipt["run"]["page_url"],
+                    )
 
     def test_manifests_bind_every_checked_in_artifact_and_evidence_file(self):
         required_artifacts = {
+            "project.json",
             "product.json",
             "cad/design.json",
             "cad/model.py",

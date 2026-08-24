@@ -1,4 +1,4 @@
-"""Box-ready Instructions and a verified live page for an approved product."""
+"""Box-ready Instructions and a verified private draft for an approved product."""
 
 from __future__ import annotations
 
@@ -197,7 +197,7 @@ def evidence_claims(context: InstructionsContext) -> Dict[str, Any]:
 
 
 class DefaultInstructions:
-    """Build the box insert and publish its product page as one Instructions job.
+    """Build the box insert and save its product page as one Shop draft.
 
     The optional ``media_maker`` writes fixed-view product images into the given
     Instructions workspace and returns relative paths keyed by
@@ -206,9 +206,9 @@ class DefaultInstructions:
     render/image providers centrally.
 
     ``site_writer`` receives the unchanged context, the sealed Instructions root,
-    and its content-addressed manifest.  It must publish that page and media, then
-    return an authenticated :class:`~inventor_workshop.models.Receipt` from a
-    public-site readback.  The Receipt details must include
+    and its content-addressed manifest.  It must create and enrich a private page
+    draft, then return an authenticated :class:`~inventor_workshop.models.Receipt`
+    from owner readback.  The Receipt details must include
     ``instructions_sha256`` equal to the supplied manifest's artifact hash.  This
     single binding covers product.json, INSTRUCTIONS.md, every fixed-view image,
     and the Playtest evidence identity recorded in product.json.
@@ -246,9 +246,9 @@ class DefaultInstructions:
                     "instructions",
                     "site-page",
                     "Instructions includes the product page, and it is not complete "
-                    "until that page is proven live on the site.",
+                    "until its private draft is proven in the Shop.",
                     "Configure the shared Instructions site writer with authenticated "
-                    "readback; do not treat local files or an HTTP success as proof.",
+                    "draft readback; do not treat local files or an HTTP success as proof.",
                 )
             )
         if needs:
@@ -302,8 +302,8 @@ class DefaultInstructions:
         )
         page = {
             "schema_version": 1,
-            # This is desired content state, not evidence that the remote page is
-            # live.  The authenticated site Receipt below is the sole proof.
+            # This is desired content state, not evidence that the remote draft
+            # exists.  The authenticated site Receipt below is the sole proof.
             "status": "ready",
             "title": title,
             "summary": summary,
@@ -488,8 +488,8 @@ class DefaultInstructions:
                 Need(
                     "instructions",
                     "site-page",
-                    "The site rejected this exact Instructions page before a verified live result was recorded.",
-                    "Correct the site account, copy, media, or listing input and resume this same Instructions job.",
+                    "The site rejected this exact Instructions page before a verified private draft was recorded.",
+                    "Correct the site account, copy, media, or draft input and resume this same Instructions job.",
                 )
             ) from exc
         context.assert_current()

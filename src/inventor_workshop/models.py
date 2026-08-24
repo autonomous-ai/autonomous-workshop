@@ -514,6 +514,35 @@ class Receipt:
             raise ReceiptError("Receipt record contains unknown fields") from exc
 
     @property
+    def is_verified_draft(self) -> bool:
+        """Whether authenticated Shop readback proves one private draft.
+
+        A draft is deliberately weaker than :attr:`is_verified_public`: it has
+        no active listing and makes no claim that a customer can see the page.
+        It is nevertheless a real remote result, not a local ``status`` flag,
+        because the Shop adapter must identify the owner, design, immutable
+        history, canonical slug, and uploaded project directory.
+        """
+
+        return (
+            self.door == "shop"
+            and self.status == "draft"
+            and self.published_history_id is None
+            and self.listing_active is not True
+            and all(
+                isinstance(value, str) and bool(value.strip())
+                for value in (
+                    self.design_id,
+                    self.slug,
+                    self.owner_id,
+                    self.root_id,
+                    self.current_history_id,
+                    self.project_url,
+                )
+            )
+        )
+
+    @property
     def is_verified_public(self) -> bool:
         return (
             self.status == "public"

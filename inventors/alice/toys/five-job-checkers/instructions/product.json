@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "0e469eae0cf9d381cd42f1b341362485c3a745c9c1ba90f859e4e1f5c3404ec9",
+      "evidence_sha256": "6b8d03050b7d5c9a3dadbdf71cf8ace41500ce1bebebe7c3d7ed24cf7a768621",
       "passed": true
     },
     "classic-rules-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "classic-rules-test.json",
-      "evidence_sha256": "4ec3ed38d51ad0c6b160d82353f6a7ea9d35a8dd2d5e19552bc49d093ca828f7",
+      "evidence_sha256": "8fc0d7d348f93d9d6700c5ac5cf2204c4cbed1663d0212d4fae7d1b7dee4d582",
       "passed": true
     },
     "mechanical-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "0c9401d76dc644655d220ec1e62ff3cac4e9a5fd71ef922a646e4f95bcdca429",
+      "evidence_sha256": "ce7a2b28db181713830cbca165fac88682928c7a41d0a44bf1a9231a868855fb",
       "passed": true
     },
     "print-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "8b9c92b5d47a90ac4bbf9690eccce28fe28a1439bbb0cbbfb5526cefade79f34",
+      "evidence_sha256": "91f1e03de50ab9156fb3ee53e41f5d083424d311bea56661e7bc62c9f3597614",
       "passed": true
     }
   },
@@ -60,8 +60,8 @@
     "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
     "The exact physical set is produced and checked during Deliver, not Playtest."
   ],
-  "playtest_evidence_artifact_sha256": "3c6551c449e8e5e146674c3665de69d7340ab5c73b7e8682b6780e71ffe66486",
-  "product_artifact_sha256": "2040c7cbe1764a17cc2b46f4428396ff49271aed922d8884ac47f6dd9b8f5f4e",
+  "playtest_evidence_artifact_sha256": "cf755b891fd53ae8f6c2bc1c4534d730587d4830f174df4ce0e8558058fc11d7",
+  "product_artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
   "schema_version": 1,
   "status": "ready",
   "story_blocks": [

@@ -327,11 +327,13 @@ class InstructionsContext:
 
 @dataclass(frozen=True)
 class ProductInstructions:
-    """One sealed box insert and site page, proven live for the exact Make.
+    """One sealed box insert and authenticated site draft for the exact Make.
 
     Instructions is not complete merely because local copy and images exist.  The
     site receipt binds the complete Instructions tree (page, paper, and media) to
-    an authenticated public readback for the exact product artifact.
+    an authenticated private draft for the exact product artifact.  A verified
+    public receipt remains accepted for older/custom writers, but public
+    visibility is not part of the shared Instructions job.
     """
 
     root: Path
@@ -453,21 +455,25 @@ class ProductInstructions:
         object.__setattr__(self, "claims", claims)
 
     def _assert_site_receipt(self) -> None:
-        """Require a public readback bound to both Make and Instructions bytes."""
+        """Require remote draft/public readback bound to Make and Instructions."""
 
         if not isinstance(self.site_receipt, Receipt):
             raise ContractError("ProductInstructions requires a site Receipt")
         self.site_receipt.assert_artifact(self.product_artifact_sha256)
-        if not self.site_receipt.is_verified_public:
+        if not (
+            self.site_receipt.is_verified_draft
+            or self.site_receipt.is_verified_public
+        ):
             raise ContractError(
-                "ProductInstructions requires an authenticated public site Receipt"
+                "ProductInstructions requires an authenticated private draft "
+                "or verified public site Receipt"
             )
         page_url = self._site_page_url()
         try:
             parsed_page_url = urllib.parse.urlsplit(page_url or "")
         except ValueError as exc:
             raise ContractError(
-                "ProductInstructions site Receipt requires a valid public page URL"
+                "ProductInstructions site Receipt requires a valid canonical page URL"
             ) from exc
         if (
             parsed_page_url.scheme != "https"
@@ -476,7 +482,7 @@ class ProductInstructions:
             or parsed_page_url.password is not None
         ):
             raise ContractError(
-                "ProductInstructions site Receipt requires an HTTPS public page URL"
+                "ProductInstructions site Receipt requires an HTTPS canonical page URL"
             )
         if (
             self.site_receipt.details.get("instructions_sha256")
@@ -536,9 +542,15 @@ class ProductInstructions:
 
     @property
     def page_url(self) -> str:
-        """The authenticated public product-page URL created by Instructions."""
+        """Canonical product route; a draft receipt does not claim it is public."""
 
         return self._site_page_url()
+
+    @property
+    def is_public(self) -> bool:
+        """Whether the optional later owner transition has verified public proof."""
+
+        return self.site_receipt.is_verified_public
 
     @property
     def publication_receipt(self) -> Receipt:
