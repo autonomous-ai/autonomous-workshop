@@ -29,11 +29,24 @@ import trimesh
 
 
 RENDERER_ID = "manhattan-nocturne-software-cad-preview"
-RENDERER_VERSION = 2
+RENDERER_VERSION = 3
 
 ROLE_ORDER = ("pawn", "rook", "knight", "bishop", "queen", "king")
 SIDE_ORDER = ("stone", "steel")
 NEUTRAL_REVIEW_RGBA = (142, 145, 149, 255)
+
+# Round 3 cameras are deliberately literal rather than derived from node
+# centroids.  Regenerating the same product with a denser tessellation must not
+# move the review camera by even a fraction of a degree.
+CAMERA_TOP = (0.0, 0.0, 1.0)
+CAMERA_HERO_STONE = (-0.397782030, 0.723453833, 0.564255268)
+CAMERA_HERO_STEEL = (0.397782030, -0.723453833, 0.564255268)
+CAMERA_RANK_FRONT = (0.0, -0.995037190, 0.099503719)
+CAMERA_RANK_REAR = (0.0, 0.995037190, 0.099503719)
+CAMERA_SIDE_FRONT = (0.383086684, -0.912111153, 0.145937784)
+CAMERA_SIDE_REAR = (-0.383086684, 0.912111153, 0.145937784)
+CAMERA_ENGINEERING = (0.400616808, -0.616333551, 0.677966906)
+CAMERA_SOUTH_BORDER = (0.0, -0.906307787, 0.422618262)
 
 FALLBACK_COLORS: Mapping[str, tuple[int, int, int, int]] = {
     "board": (27, 32, 40, 255),
@@ -58,36 +71,109 @@ class ViewRecipe:
     lighting_mode: str = "studio"
     evidence_class: str = "exact-cad-preview"
     product_beauty_render: bool = True
+    acceptance_eligible: bool = True
+    diagnostic: bool = False
+    acceptance_dimensions: tuple[str, ...] = ()
+    framing_mode: str = "scene"
+    framing_value_mm: float | None = None
 
 
 VIEW_RECIPES: Mapping[str, ViewRecipe] = {
     "hero-stone": ViewRecipe(
         key="hero-stone",
         filename="01-hero-stone.png",
-        semantic_side="stone",
-        fallback_direction_cad=(1.0, -1.2, 0.85),
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_HERO_STONE,
+        acceptance_dimensions=("board-parity", "manhattan-identity"),
     ),
     "hero-steel": ViewRecipe(
         key="hero-steel",
         filename="02-hero-steel.png",
-        semantic_side="steel",
-        fallback_direction_cad=(-1.0, 1.2, 0.85),
-    ),
-    "top-inventory": ViewRecipe(
-        key="top-inventory",
-        filename="03-top-inventory.png",
         semantic_side=None,
-        fallback_direction_cad=(0.0, 0.0, 1.0),
+        fallback_direction_cad=CAMERA_HERO_STEEL,
+        acceptance_dimensions=("board-parity", "manhattan-identity"),
+    ),
+    "board-top-raw": ViewRecipe(
+        key="board-top-raw",
+        filename="03a-board-top-raw.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_TOP,
+        margin_fraction=0.045,
+        shadow=False,
+        scene_mode="board-only",
+        evidence_class="exact-cad-board-acceptance",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity",),
+    ),
+    "board-top-depth-diagnostic": ViewRecipe(
+        key="board-top-depth-diagnostic",
+        filename="03b-board-top-depth-diagnostic.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_TOP,
         margin_fraction=0.045,
         shadow=False,
         depth_edges=True,
+        scene_mode="board-only",
+        evidence_class="exact-cad-depth-diagnostic",
         product_beauty_render=False,
+        acceptance_eligible=False,
+        diagnostic=True,
     ),
-    "rank-lineup": ViewRecipe(
-        key="rank-lineup",
-        filename="04-rank-lineup.png",
+    "board-oblique-stone-raw": ViewRecipe(
+        key="board-oblique-stone-raw",
+        filename="03c-board-oblique-stone-raw.png",
         semantic_side=None,
-        fallback_direction_cad=(0.0, -1.0, 0.10),
+        fallback_direction_cad=CAMERA_HERO_STONE,
+        margin_fraction=0.055,
+        shadow=True,
+        scene_mode="board-only",
+        evidence_class="exact-cad-board-acceptance",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity",),
+    ),
+    "board-oblique-steel-raw": ViewRecipe(
+        key="board-oblique-steel-raw",
+        filename="03d-board-oblique-steel-raw.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_HERO_STEEL,
+        margin_fraction=0.055,
+        shadow=True,
+        scene_mode="board-only",
+        evidence_class="exact-cad-board-acceptance",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity",),
+    ),
+    "south-border-street-plan-raw": ViewRecipe(
+        key="south-border-street-plan-raw",
+        filename="03e-south-border-street-plan-raw.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_SOUTH_BORDER,
+        margin_fraction=0.065,
+        shadow=True,
+        scene_mode="board-only",
+        evidence_class="exact-cad-board-acceptance",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity", "manhattan-identity"),
+        framing_mode="south-border",
+        framing_value_mm=48.0,
+    ),
+    "top-inventory-raw": ViewRecipe(
+        key="top-inventory-raw",
+        filename="03f-top-inventory-raw.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_TOP,
+        margin_fraction=0.045,
+        shadow=False,
+        scene_mode="full",
+        evidence_class="exact-cad-inventory-acceptance",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity", "role-legibility", "side-coding"),
+    ),
+    "rank-lineup-front": ViewRecipe(
+        key="rank-lineup-front",
+        filename="04a-rank-lineup-front-neutral.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_RANK_FRONT,
         margin_fraction=0.045,
         shadow=True,
         scene_mode="rank-lineup",
@@ -95,39 +181,129 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
+        acceptance_dimensions=("role-legibility", "side-coding"),
     ),
-    "side-detail": ViewRecipe(
-        key="side-detail",
-        filename="05-side-detail.png",
+    "rank-lineup-rear": ViewRecipe(
+        key="rank-lineup-rear",
+        filename="04b-rank-lineup-rear-neutral.png",
         semantic_side=None,
-        fallback_direction_cad=(0.42, -1.0, 0.16),
-        margin_fraction=0.055,
+        fallback_direction_cad=CAMERA_RANK_REAR,
+        margin_fraction=0.045,
         shadow=True,
-        scene_mode="side-detail",
+        scene_mode="rank-lineup",
         material_mode="neutral-review",
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
+        acceptance_dimensions=("role-legibility", "side-coding"),
     ),
-    "board-inventory-engineering": ViewRecipe(
-        key="board-inventory-engineering",
-        filename="06-board-inventory-engineering.png",
+    "rank-lineup-top": ViewRecipe(
+        key="rank-lineup-top",
+        filename="04c-rank-lineup-top-neutral.png",
         semantic_side=None,
-        fallback_direction_cad=(0.65, -1.0, 1.10),
+        fallback_direction_cad=CAMERA_TOP,
+        margin_fraction=0.045,
+        shadow=False,
+        scene_mode="rank-lineup",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("role-legibility", "side-coding"),
+    ),
+    "side-code-pairs-front": ViewRecipe(
+        key="side-code-pairs-front",
+        filename="05a-side-code-pairs-front-neutral.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_SIDE_FRONT,
+        margin_fraction=0.055,
+        shadow=True,
+        scene_mode="side-code-pairs",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("side-coding", "role-legibility"),
+    ),
+    "side-code-pairs-rear": ViewRecipe(
+        key="side-code-pairs-rear",
+        filename="05b-side-code-pairs-rear-neutral.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_SIDE_REAR,
+        margin_fraction=0.055,
+        shadow=True,
+        scene_mode="side-code-pairs",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("side-coding", "role-legibility"),
+    ),
+    "side-code-upper-body": ViewRecipe(
+        key="side-code-upper-body",
+        filename="05c-side-code-upper-body-neutral.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_RANK_FRONT,
+        margin_fraction=0.045,
+        shadow=False,
+        scene_mode="side-code-pairs",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("side-coding",),
+        framing_mode="upper-body",
+        framing_value_mm=17.0,
+    ),
+    "manhattan-identity-neutral": ViewRecipe(
+        key="manhattan-identity-neutral",
+        filename="06a-manhattan-identity-neutral.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_ENGINEERING,
+        margin_fraction=0.045,
+        shadow=True,
+        scene_mode="board-inventory-engineering",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("manhattan-identity", "side-coding", "role-legibility"),
+    ),
+    "board-inventory-engineering-raw": ViewRecipe(
+        key="board-inventory-engineering-raw",
+        filename="06b-board-inventory-engineering-raw.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_ENGINEERING,
+        margin_fraction=0.045,
+        shadow=True,
+        scene_mode="board-inventory-engineering",
+        material_mode="glb",
+        lighting_mode="studio",
+        evidence_class="exact-cad-engineering-view",
+        product_beauty_render=False,
+        acceptance_dimensions=("board-parity", "manhattan-identity"),
+    ),
+    "board-inventory-depth-diagnostic": ViewRecipe(
+        key="board-inventory-depth-diagnostic",
+        filename="06c-board-inventory-depth-diagnostic.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_ENGINEERING,
         margin_fraction=0.045,
         shadow=True,
         depth_edges=True,
         scene_mode="board-inventory-engineering",
         material_mode="glb",
         lighting_mode="studio",
-        evidence_class="exact-cad-engineering-view",
+        evidence_class="exact-cad-depth-diagnostic",
         product_beauty_render=False,
+        acceptance_eligible=False,
+        diagnostic=True,
     ),
-    "neutral-start-recognition": ViewRecipe(
-        key="neutral-start-recognition",
-        filename="07-neutral-start-recognition.png",
-        semantic_side="stone",
-        fallback_direction_cad=(1.0, -1.2, 0.85),
+    "neutral-start-stone": ViewRecipe(
+        key="neutral-start-stone",
+        filename="07a-neutral-start-stone.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_HERO_STONE,
         margin_fraction=0.075,
         shadow=True,
         scene_mode="full",
@@ -135,8 +311,48 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
+        acceptance_dimensions=("manhattan-identity", "side-coding", "role-legibility"),
+    ),
+    "neutral-start-steel": ViewRecipe(
+        key="neutral-start-steel",
+        filename="07b-neutral-start-steel.png",
+        semantic_side=None,
+        fallback_direction_cad=CAMERA_HERO_STEEL,
+        margin_fraction=0.075,
+        shadow=True,
+        scene_mode="full",
+        material_mode="neutral-review",
+        lighting_mode="symmetric-review",
+        evidence_class="exact-cad-recognition-input",
+        product_beauty_render=False,
+        acceptance_dimensions=("manhattan-identity", "side-coding", "role-legibility"),
     ),
 }
+
+
+ROUND_3_REQUIRED_VIEWS = frozenset(
+    {
+        "hero-stone",
+        "hero-steel",
+        "board-top-raw",
+        "board-top-depth-diagnostic",
+        "board-oblique-stone-raw",
+        "board-oblique-steel-raw",
+        "south-border-street-plan-raw",
+        "top-inventory-raw",
+        "rank-lineup-front",
+        "rank-lineup-rear",
+        "rank-lineup-top",
+        "side-code-pairs-front",
+        "side-code-pairs-rear",
+        "side-code-upper-body",
+        "manhattan-identity-neutral",
+        "board-inventory-engineering-raw",
+        "board-inventory-depth-diagnostic",
+        "neutral-start-stone",
+        "neutral-start-steel",
+    }
+)
 
 
 @dataclass
@@ -510,6 +726,18 @@ def _prepare_view_scene(
             _transformed_node(node, np.eye(4, dtype=np.float64))
             for node in source_nodes
         ]
+    elif recipe.scene_mode == "board-only":
+        board = _board_node(source_nodes)
+        nodes = [_transformed_node(board, np.eye(4, dtype=np.float64))]
+        layout.append(
+            {
+                "source_label": board.label,
+                "purpose": "unmodified board-only review",
+                "target_base_center_cad_mm": np.round(
+                    board.center * np.array((1.0, 1.0, 0.0)), 6
+                ).tolist(),
+            }
+        )
     elif recipe.scene_mode == "rank-lineup":
         entries = [
             (side, role, _representative(source_nodes, side, role))
@@ -517,17 +745,16 @@ def _prepare_view_scene(
             for side in SIDE_ORDER
         ]
         nodes, layout = _line_layout(entries)
-    elif recipe.scene_mode == "side-detail":
-        detail_roles = ("bishop", "queen")
+    elif recipe.scene_mode == "side-code-pairs":
         entries = [
             (side, role, _representative(source_nodes, side, role))
-            for role in detail_roles
+            for role in ROLE_ORDER
             for side in SIDE_ORDER
         ]
         nodes, layout = _line_layout(
             entries,
-            within_pair_gap=9.0,
-            between_pair_gap=24.0,
+            within_pair_gap=8.0,
+            between_pair_gap=17.0,
         )
     elif recipe.scene_mode == "board-inventory-engineering":
         board = _place_on_review_floor(_board_node(source_nodes), -145.0, 0.0)
@@ -590,6 +817,8 @@ def _prepare_view_scene(
         "review_layout": layout,
         "material_mode": recipe.material_mode,
         "material_override": material_override,
+        "framing_mode": recipe.framing_mode,
+        "framing_value_mm": recipe.framing_value_mm,
         "source_material_summary": source_material_summary,
         "geometry_policy": (
             "exact source triangles with deterministic rigid review transforms; "
@@ -675,6 +904,89 @@ def _camera_basis(direction: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     right = _normalize(np.cross(view, world_up))
     up = _normalize(np.cross(right, view))
     return right, up
+
+
+def _bounds_corners(bounds: np.ndarray) -> np.ndarray:
+    low, high = np.asarray(bounds, dtype=np.float64)
+    return np.asarray(
+        [
+            (x, y, z)
+            for x in (low[0], high[0])
+            for y in (low[1], high[1])
+            for z in (low[2], high[2])
+        ],
+        dtype=np.float64,
+    )
+
+
+def _framing_bounds(
+    nodes: Sequence[SceneNode],
+    projected_by_node: Sequence[tuple[SceneNode, np.ndarray, np.ndarray]],
+    recipe: ViewRecipe,
+    right: np.ndarray,
+    up: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, Mapping[str, object]]:
+    """Resolve deterministic viewport bounds without changing product geometry."""
+
+    if recipe.framing_mode == "scene":
+        combined = np.vstack([projected for _, projected, _ in projected_by_node])
+        low = combined.min(axis=0)
+        high = combined.max(axis=0)
+        framing: Mapping[str, object] = {
+            "mode": "scene",
+            "product_geometry_changed": False,
+        }
+    elif recipe.framing_mode == "upper-body":
+        cutoff = float(recipe.framing_value_mm or 0.0)
+        selected: list[np.ndarray] = []
+        selected_vertices = 0
+        for node, projected, _ in projected_by_node:
+            keep = node.vertices_cad_mm[:, 2] >= cutoff
+            if bool(np.any(keep)):
+                selected.append(projected[keep])
+                selected_vertices += int(np.count_nonzero(keep))
+        if not selected:
+            raise ValueError(
+                f"upper-body framing found no vertices at or above z={cutoff} mm"
+            )
+        combined = np.vstack(selected)
+        low = combined.min(axis=0)
+        high = combined.max(axis=0)
+        framing = {
+            "mode": "upper-body-viewport-crop",
+            "minimum_framed_cad_z_mm": cutoff,
+            "selected_frame_vertices": selected_vertices,
+            "product_geometry_changed": False,
+            "note": (
+                "The source triangles are rendered unchanged; only viewport "
+                "bounds are derived from vertices above the stated height."
+            ),
+        }
+    elif recipe.framing_mode == "south-border":
+        depth = float(recipe.framing_value_mm or 0.0)
+        scene_bounds = _scene_bounds(nodes)
+        if depth <= 0.0 or depth >= float(scene_bounds[1, 1] - scene_bounds[0, 1]):
+            raise ValueError("south-border framing depth must be inside the board span")
+        region_bounds = scene_bounds.copy()
+        region_bounds[1, 1] = region_bounds[0, 1] + depth
+        corners = _bounds_corners(region_bounds)
+        projected = np.column_stack((corners @ right, corners @ up))
+        low = projected.min(axis=0)
+        high = projected.max(axis=0)
+        framing = {
+            "mode": "south-border-viewport-crop",
+            "region_bounds_cad_mm": np.round(region_bounds, 6).tolist(),
+            "border_depth_cad_mm": depth,
+            "product_geometry_changed": False,
+            "note": "The complete exact board is rendered; the viewport frames its south edge.",
+        }
+    else:
+        raise ValueError(f"unknown framing mode {recipe.framing_mode!r}")
+
+    span = high - low
+    if np.any(~np.isfinite(span)) or np.any(span <= 1e-9):
+        raise ValueError(f"invalid projected framing span for {recipe.key!r}")
+    return low, high, framing
 
 
 def _srgb_to_linear(values: np.ndarray) -> np.ndarray:
@@ -837,9 +1149,9 @@ def _apply_depth_edge_lighting(
     """Add a restrained raking-light cue at exact z-buffer discontinuities.
 
     A top camera otherwise gives two horizontal board faces identical lighting,
-    hiding the board's real 0.35 mm square recesses. This operation neither
-    changes geometry nor assigns checker colors: it brightens the higher side
-    and darkens the lower side of a measured depth step.
+    hiding a real square recess. This operation neither changes geometry nor
+    assigns checker colors: it brightens the higher side and darkens the lower
+    side of a measured depth step. Diagnostic views only may enable it.
     """
 
     bright = np.zeros(object_mask.shape, dtype=bool)
@@ -896,17 +1208,19 @@ def render_view(
     internal_height = height * supersample
 
     projected_by_node: list[tuple[SceneNode, np.ndarray, np.ndarray]] = []
-    all_projected: list[np.ndarray] = []
     for node in nodes:
         vertices = node.vertices_cad_mm
         projected = np.column_stack((vertices @ right, vertices @ up))
         depths = vertices @ camera_direction
         projected_by_node.append((node, projected, depths))
-        all_projected.append(projected)
 
-    combined = np.vstack(all_projected)
-    low = combined.min(axis=0)
-    high = combined.max(axis=0)
+    low, high, framing = _framing_bounds(
+        nodes,
+        projected_by_node,
+        recipe,
+        right,
+        up,
+    )
     span = np.maximum(high - low, 1e-9)
     margin_x = internal_width * recipe.margin_fraction
     margin_y = internal_height * recipe.margin_fraction
@@ -988,6 +1302,7 @@ def render_view(
         "shadow": recipe.shadow,
         "lighting_mode": recipe.lighting_mode,
         "material_mode": recipe.material_mode,
+        "framing": framing,
         "depth_edge_emphasis": {
             "enabled": recipe.depth_edges,
             "threshold_mm": depth_edge_threshold_mm,
@@ -1021,30 +1336,84 @@ def _canonical_sha256(payload: object) -> str:
 
 
 def _node_receipt(node: SceneNode) -> Mapping[str, object]:
+    source_transform = np.round(node.source_transform_glb, 9).tolist()
+    review_transform = np.round(node.review_transform_cad, 9).tolist()
+    source_bounds = np.round(node.source_bounds_cad_mm, 6).tolist()
+    review_bounds = np.round(node.bounds, 6).tolist()
+    display_material = {
+        "colors": _color_summary(node),
+        "source": node.color_source,
+        "encoding": node.color_encoding,
+    }
+    source_material = {
+        "colors": _color_summary_values(node.source_face_rgba),
+        "source": node.source_color_source,
+        "encoding": node.source_color_encoding,
+    }
     payload: dict[str, object] = {
         "label": node.label,
         "geometry": node.geometry_name,
-        "source_transform_glb": np.round(node.source_transform_glb, 9).tolist(),
-        "review_transform_cad": np.round(node.review_transform_cad, 9).tolist(),
-        "source_bounds_cad_mm": np.round(node.source_bounds_cad_mm, 6).tolist(),
-        "bounds_cad_mm": np.round(node.bounds, 6).tolist(),
+        "source_transform_glb": source_transform,
+        "review_transform_cad": review_transform,
+        "source_bounds_cad_mm": source_bounds,
+        "bounds_cad_mm": review_bounds,
         "vertices": int(len(node.vertices_cad_mm)),
         "triangles": int(len(node.faces)),
-        "display_material": {
-            "colors": _color_summary(node),
-            "source": node.color_source,
-            "encoding": node.color_encoding,
-        },
-        "source_glb_material": {
-            "colors": _color_summary_values(node.source_face_rgba),
-            "source": node.source_color_source,
-            "encoding": node.source_color_encoding,
-        },
+        "display_material": display_material,
+        "source_glb_material": source_material,
         "roughness": round(float(node.roughness), 6),
         "metallic": round(float(node.metallic), 6),
+        "integrity": {
+            "label_sha256": _canonical_sha256({"label": node.label}),
+            "geometry_label_sha256": _canonical_sha256(
+                {"geometry": node.geometry_name}
+            ),
+            "source_transform_sha256": _canonical_sha256(source_transform),
+            "review_transform_sha256": _canonical_sha256(review_transform),
+            "source_bounds_sha256": _canonical_sha256(source_bounds),
+            "review_bounds_sha256": _canonical_sha256(review_bounds),
+            "source_material_sha256": _canonical_sha256(source_material),
+            "display_material_sha256": _canonical_sha256(display_material),
+        },
     }
     payload["record_sha256"] = _canonical_sha256(payload)
     return payload
+
+
+def _scene_integrity(node_receipts: Sequence[Mapping[str, object]]) -> Mapping[str, str]:
+    return {
+        "labels_sha256": _canonical_sha256(
+            [receipt["label"] for receipt in node_receipts]
+        ),
+        "transforms_sha256": _canonical_sha256(
+            [
+                {
+                    "source": receipt["source_transform_glb"],
+                    "review": receipt["review_transform_cad"],
+                }
+                for receipt in node_receipts
+            ]
+        ),
+        "materials_sha256": _canonical_sha256(
+            [
+                {
+                    "source": receipt["source_glb_material"],
+                    "display": receipt["display_material"],
+                }
+                for receipt in node_receipts
+            ]
+        ),
+        "bounds_sha256": _canonical_sha256(
+            [
+                {
+                    "source": receipt["source_bounds_cad_mm"],
+                    "review": receipt["bounds_cad_mm"],
+                }
+                for receipt in node_receipts
+            ]
+        ),
+        "node_records_sha256": _canonical_sha256(node_receipts),
+    }
 
 
 def _write_json(path: Path, payload: Mapping[str, object]) -> None:
@@ -1063,6 +1432,7 @@ def render_product(
     supersample: int,
     unit_scale_to_mm: float,
 ) -> Mapping[str, object]:
+    validate_view_recipes()
     source_nodes = load_native_glb(input_path, unit_scale_to_mm=unit_scale_to_mm)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1073,8 +1443,16 @@ def render_product(
 
     for key in view_keys:
         recipe = VIEW_RECIPES[key]
+        run_acceptance_eligible = bool(
+            recipe.acceptance_eligible
+            and width == 1600
+            and height == 900
+            and supersample == 2
+            and math.isclose(unit_scale_to_mm, 1000.0, rel_tol=0.0, abs_tol=1e-9)
+        )
         nodes, scene_derivation = _prepare_view_scene(source_nodes, recipe)
         node_receipts = [_node_receipt(node) for node in nodes]
+        scene_integrity = _scene_integrity(node_receipts)
         output_path = output_dir / recipe.filename
         image, render_stats, warnings = render_view(
             nodes,
@@ -1087,9 +1465,25 @@ def render_product(
 
         receipt_path = output_path.with_suffix(".render.json")
         receipt: Mapping[str, object] = {
-            "schema": "workshop.cad-preview-render.v2",
+            "schema": "workshop.cad-preview-render.v3",
             "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
             "view": key,
+            "view_contract": {
+                "camera_policy": "frozen-literal-direction",
+                "recipe_acceptance_eligible": recipe.acceptance_eligible,
+                "run_acceptance_eligible": run_acceptance_eligible,
+                "acceptance_output_contract": {
+                    "output_pixels": [1600, 900],
+                    "supersample": 2,
+                    "unit_scale_to_mm": 1000.0,
+                },
+                "diagnostic": recipe.diagnostic,
+                "acceptance_dimensions": list(recipe.acceptance_dimensions),
+                "synthetic_depth_edges": recipe.depth_edges,
+                "native_material_required": recipe.material_mode == "glb",
+                "neutral_material_evidence": recipe.material_mode
+                == "neutral-review",
+            },
             "input": {
                 "path": _portable_path(input_path, receipt_path),
                 "sha256": input_hash,
@@ -1111,7 +1505,7 @@ def render_product(
             "render": render_stats,
             "scene_derivation": scene_derivation,
             "scene_nodes": node_receipts,
-            "scene_nodes_sha256": _canonical_sha256(node_receipts),
+            "scene_integrity": scene_integrity,
             "warnings": warnings,
             "evidence_class": recipe.evidence_class,
             "concept_art": False,
@@ -1129,13 +1523,18 @@ def render_product(
                 "receipt_sha256": _sha256(receipt_path),
                 "evidence_class": recipe.evidence_class,
                 "product_beauty_render": recipe.product_beauty_render,
+                "recipe_acceptance_eligible": recipe.acceptance_eligible,
+                "run_acceptance_eligible": run_acceptance_eligible,
+                "diagnostic": recipe.diagnostic,
+                "acceptance_dimensions": list(recipe.acceptance_dimensions),
+                "scene_integrity": scene_integrity,
                 "warnings": warnings,
             }
         )
 
     manifest_path = output_dir / "render-manifest.json"
     manifest: Mapping[str, object] = {
-        "schema": "workshop.cad-preview-render-manifest.v2",
+        "schema": "workshop.cad-preview-render-manifest.v3",
         "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
         "input": {
             "path": _portable_path(input_path, manifest_path),
@@ -1145,9 +1544,90 @@ def render_product(
         "views": results,
         "concept_art": False,
         "physical_print": False,
+        "printability_proof": False,
     }
     _write_json(manifest_path, manifest)
     return manifest
+
+
+def validate_view_recipes() -> Mapping[str, object]:
+    """Fail fast on any recipe change that weakens the Round 3 proof contract."""
+
+    errors: list[str] = []
+    actual_keys = frozenset(VIEW_RECIPES)
+    missing = sorted(ROUND_3_REQUIRED_VIEWS - actual_keys)
+    unexpected = sorted(actual_keys - ROUND_3_REQUIRED_VIEWS)
+    if missing:
+        errors.append(f"missing required views: {', '.join(missing)}")
+    if unexpected:
+        errors.append(f"unexpected default views: {', '.join(unexpected)}")
+
+    filenames = [recipe.filename for recipe in VIEW_RECIPES.values()]
+    if len(filenames) != len(set(filenames)):
+        errors.append("view filenames must be unique")
+
+    allowed_dimensions = {
+        "board-parity",
+        "manhattan-identity",
+        "role-legibility",
+        "side-coding",
+    }
+    for key, recipe in VIEW_RECIPES.items():
+        if key != recipe.key:
+            errors.append(f"mapping key {key!r} does not match recipe key {recipe.key!r}")
+        try:
+            direction = _normalize(recipe.fallback_direction_cad)
+            if not bool(np.all(np.isfinite(direction))):
+                errors.append(f"{key}: camera direction is not finite")
+        except ValueError as exc:
+            errors.append(f"{key}: invalid camera direction: {exc}")
+        if recipe.semantic_side is not None:
+            errors.append(f"{key}: Round 3 camera must be frozen, not semantic")
+        if recipe.projection != "orthographic":
+            errors.append(f"{key}: Round 3 proof must use orthographic projection")
+        if recipe.depth_edges and recipe.acceptance_eligible:
+            errors.append(f"{key}: synthetic depth edges cannot be acceptance-eligible")
+        if recipe.depth_edges and recipe.product_beauty_render:
+            errors.append(f"{key}: synthetic depth edges cannot be a beauty render")
+        if recipe.depth_edges and not recipe.diagnostic:
+            errors.append(f"{key}: a depth-edge view must be explicitly diagnostic")
+        if recipe.diagnostic and "diagnostic" not in key:
+            errors.append(f"{key}: diagnostic key must say diagnostic")
+        if recipe.diagnostic and "diagnostic" not in recipe.filename:
+            errors.append(f"{key}: diagnostic filename must say diagnostic")
+        if recipe.diagnostic and recipe.acceptance_dimensions:
+            errors.append(f"{key}: diagnostics cannot claim acceptance dimensions")
+        unknown_dimensions = set(recipe.acceptance_dimensions) - allowed_dimensions
+        if unknown_dimensions:
+            errors.append(
+                f"{key}: unknown acceptance dimensions {sorted(unknown_dimensions)!r}"
+            )
+        if recipe.framing_mode == "scene" and recipe.framing_value_mm is not None:
+            errors.append(f"{key}: scene framing cannot carry a framing value")
+        if recipe.framing_mode in {"upper-body", "south-border"}:
+            if recipe.framing_value_mm is None or recipe.framing_value_mm <= 0.0:
+                errors.append(f"{key}: crop framing requires a positive millimetre value")
+        elif recipe.framing_mode != "scene":
+            errors.append(f"{key}: unknown framing mode {recipe.framing_mode!r}")
+
+    if errors:
+        raise ValueError("Round 3 render recipe self-check failed:\n- " + "\n- ".join(errors))
+
+    return {
+        "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
+        "required_views": len(ROUND_3_REQUIRED_VIEWS),
+        "view_keys_sha256": _canonical_sha256(sorted(VIEW_RECIPES)),
+        "filenames_sha256": _canonical_sha256(sorted(filenames)),
+        "acceptance_views": sum(
+            1 for recipe in VIEW_RECIPES.values() if recipe.acceptance_eligible
+        ),
+        "diagnostic_views": sum(
+            1 for recipe in VIEW_RECIPES.values() if recipe.diagnostic
+        ),
+        "all_cameras_frozen": True,
+        "synthetic_depth_edges_excluded_from_acceptance": True,
+        "status": "ok",
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1157,8 +1637,8 @@ def build_parser() -> argparse.ArgumentParser:
             "cadgen native GLB. These images are not physical-print evidence."
         )
     )
-    parser.add_argument("--input", required=True, type=Path, help="Colored native GLB")
-    parser.add_argument("--out", required=True, type=Path, help="Output directory")
+    parser.add_argument("--input", type=Path, help="Colored native GLB")
+    parser.add_argument("--out", type=Path, help="Output directory")
     parser.add_argument("--width", type=int, default=1600)
     parser.add_argument("--height", type=int, default=900)
     parser.add_argument("--supersample", type=int, default=2, choices=(1, 2, 3))
@@ -1175,16 +1655,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=tuple(VIEW_RECIPES),
         help="Views to render; defaults to all frozen views",
     )
+    parser.add_argument(
+        "--self-check",
+        action="store_true",
+        help="Validate the frozen Round 3 recipe contract without loading or rendering a GLB",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    try:
+        self_check = validate_view_recipes()
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.self_check:
+        print(json.dumps(self_check, indent=2, sort_keys=True))
+        return 0
     if args.width < 64 or args.height < 64:
         parser.error("--width and --height must each be at least 64 pixels")
     if not math.isfinite(args.unit_scale_to_mm) or args.unit_scale_to_mm <= 0.0:
         parser.error("--unit-scale-to-mm must be a positive finite number")
+
+    if args.input is None or args.out is None:
+        parser.error("--input and --out are required unless --self-check is used")
 
     input_path = args.input.expanduser().resolve()
     output_dir = args.out.expanduser().resolve()
