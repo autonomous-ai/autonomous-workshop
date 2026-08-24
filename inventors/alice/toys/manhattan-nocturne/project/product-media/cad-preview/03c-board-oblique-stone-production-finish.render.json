@@ -1,6 +1,6 @@
 {
   "concept_art": false,
-  "evidence_class": "exact-cad-board-acceptance",
+  "evidence_class": "exact-cad-production-finish-acceptance",
   "input": {
     "format": "native-glb",
     "native_axes": "Y-up",
@@ -12,27 +12,28 @@
   },
   "output": {
     "format": "png",
-    "path": "03e-south-border-street-plan-raw.png",
-    "sha256": "15c0a7f38c992f3640ddd5d6b0721d79b0192b171bb9c5892c05b70b89ae71af"
+    "path": "03c-board-oblique-stone-production-finish.png",
+    "sha256": "1634d51b4c75c552960274f8346296702c235469e76e671643827f0f683c0ca0"
   },
+  "physical_finish_execution_verified": false,
   "physical_print": false,
   "printability_proof": false,
   "product_beauty_render": false,
   "render": {
     "camera": {
       "direction_cad": [
-        0.0,
-        -0.906307787,
-        0.422618262
+        -0.39778203,
+        0.723453833,
+        0.564255268
       ],
       "framed_projected_bounds_cad_mm": [
         [
-          -122.000001,
-          -51.559429
+          -165.686426,
+          -93.489439
         ],
         [
-          122.000001,
-          -23.116982
+          165.686426,
+          100.259362
         ]
       ],
       "projection": "orthographic",
@@ -41,14 +42,14 @@
         "semantic_side": null
       },
       "right_cad": [
-        -1.0,
-        0.0,
-        0.0
+        0.876276039,
+        0.481809406,
+        -0.0
       ],
       "up_cad": [
-        0.0,
-        0.422618262,
-        0.906307787
+        0.271863496,
+        -0.494443371,
+        0.825600383
       ]
     },
     "culled_triangles": 0,
@@ -63,29 +64,15 @@
       "policy": "none"
     },
     "framing": {
-      "border_depth_cad_mm": 48.0,
-      "mode": "south-border-viewport-crop",
-      "note": "The complete exact board is rendered; the viewport frames its south edge.",
-      "product_geometry_changed": false,
-      "region_bounds_cad_mm": [
-        [
-          -122.000001,
-          -122.000001,
-          0.0
-        ],
-        [
-          122.000001,
-          -74.000001,
-          9.0
-        ]
-      ]
+      "mode": "scene",
+      "product_geometry_changed": false
     },
     "internal_pixels": [
       3200,
       1800
     ],
     "lighting_mode": "symmetric-review",
-    "material_mode": "glb",
+    "material_mode": "production-finish",
     "output_pixels": [
       1600,
       900
@@ -108,19 +95,70 @@
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 3
+    "version": 4
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
+    "sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
-    "framing_mode": "south-border",
-    "framing_value_mm": 48.0,
+    "display_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 668,
+            "rgba": [
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
+      }
+    },
+    "framing_mode": "scene",
+    "framing_value_mm": null,
     "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
-    "material_mode": "glb",
-    "material_override": null,
+    "material_mode": "production-finish",
+    "material_override": {
+      "applies_to": "display colors on the exact board triangles only",
+      "board_triangles": 988,
+      "boundary_cad_z_mm": 8.2,
+      "classification": "midnight when triangle max Z <= 8.20; warm brass when triangle has Z > 8.20 and no vertex below 8.20; fail on a straddling triangle",
+      "geometry_changed": false,
+      "midnight_faces": 668,
+      "midnight_rgba_srgb": [
+        18,
+        22,
+        31,
+        255
+      ],
+      "mode": "round-5-production-finish",
+      "one_physical_board": true,
+      "physical_execution_verified": false,
+      "production_intent": "midnight base through Z8.20 with warm brass/gold light-square pads above Z8.20",
+      "production_route": "one height-based material change above Z8.20, or a post-print finish applied only to the raised pad region",
+      "warm_brass_faces": 320,
+      "warm_brass_rgba_srgb": [
+        190,
+        143,
+        64,
+        255
+      ]
+    },
     "mode": "board-only",
     "review_layout": [
       {
@@ -159,8 +197,8 @@
   "scene_integrity": {
     "bounds_sha256": "ba5d02a7645ede8e1c2a5a4d8d0b1f09279619e6dc4c04a9f99e0097a3a20cb9",
     "labels_sha256": "849ee7625a81b272c3a3747767346ed0693cd9d99976158e9f14e5dc558552a4",
-    "materials_sha256": "39a402f0bc6fa30bd6b0dd82e55ae6f1ab4fa9192d60fdd4f7cd1991b7192407",
-    "node_records_sha256": "c6f5ccc9f683f18cc037a584da6b73447f3f2266789dbc010d357912bbbf16d5",
+    "materials_sha256": "d10f16c32c0667f4e7121c5428d5dfba426868af6467648b61cbda7814145979",
+    "node_records_sha256": "1faf4ec043b58ac633df87e687617d7321c77efd30bfbcd0ba17bcc185d3a4c9",
     "transforms_sha256": "4a7e9b836bf7801869aded7504b7a80e8dcfd40bc3ee7dd99301cb1a3ce3f5b7"
   },
   "scene_nodes": [
@@ -180,21 +218,30 @@
       "display_material": {
         "colors": [
           {
-            "faces": 988,
+            "faces": 668,
             "rgba": [
-              3,
-              3,
-              4,
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
       },
       "geometry": "board",
       "integrity": {
-        "display_material_sha256": "40f2f5b40a0eeb7d7e7ed708599ce5294479a4e96f524ed53cb34eaa49466a55",
+        "display_material_sha256": "250d6c1b5a098dea006ac92f0a118811cc1f11fe32e723fbd363394b1dc722fc",
         "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
         "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
         "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
@@ -205,7 +252,7 @@
       },
       "label": "board",
       "metallic": 0.0,
-      "record_sha256": "b19549601b5aea7bf916aed8803997f17ce24a31e5ad76afbc43e0ce65c49711",
+      "record_sha256": "8038e9cff1947570e0a9dc718abfc03a68d4270a949f0433b198d1a6b7d0187c",
       "review_transform_cad": [
         [
           1.0,
@@ -232,7 +279,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.58,
       "source_bounds_cad_mm": [
         [
           -122.000001,
@@ -290,12 +337,11 @@
       "vertices": 1488
     }
   ],
-  "schema": "workshop.cad-preview-render.v3",
-  "view": "south-border-street-plan-raw",
+  "schema": "workshop.cad-preview-render.v4",
+  "view": "board-oblique-stone-production-finish",
   "view_contract": {
     "acceptance_dimensions": [
-      "board-parity",
-      "manhattan-identity"
+      "board-parity"
     ],
     "acceptance_output_contract": {
       "output_pixels": [
@@ -307,8 +353,10 @@
     },
     "camera_policy": "frozen-literal-direction",
     "diagnostic": false,
-    "native_material_required": true,
+    "native_material_required": false,
     "neutral_material_evidence": false,
+    "production_finish_display": true,
+    "production_finish_physical_execution_verified": false,
     "recipe_acceptance_eligible": true,
     "run_acceptance_eligible": true,
     "synthetic_depth_edges": false

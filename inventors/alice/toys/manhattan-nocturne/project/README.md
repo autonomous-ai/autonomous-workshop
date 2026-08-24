@@ -13,6 +13,8 @@ structural fins and two tactile channels between three broad base rails.
 - `part_board.step.py` — one seamless 244 mm board, printable at Z=0.
 - `part_<side>_<role>.step.py` — twelve unique printable piece variants at Z=0.
 - `manhattan_nocturne_spec.md` — intent, manufacturing boundary, and evidence gates.
+- `validation/finish-plan.json` — required midnight/brass material boundary.
+- `validation/check_finish.py` — read-only proof that only the 32 light pads continue above Z8.20.
 
 The combined assembly has 33 labeled occurrences: one board and 32 pieces.
 The board is 244 × 244 × 9.0 mm. Piece heights are 44.0–74.35 mm and all bases
@@ -53,3 +55,8 @@ The checked-in final digital gate also runs `check_mesh` and
 `check_thickness --nozzle 0.4` on all thirteen fine-mesh STL exports. See
 `validation/slicer-receipt.json` and `validation/thickness-reports/`. These are
 digital manufacturing checks, not proof of a successful physical print.
+
+The required board finish is likewise a digital manufacturing contract, not a
+photograph or physical receipt. It can be executed as one BOARD-only material
+change after the completed Z8.20 layer or as a masked top finish; Deliver must
+verify the chosen process, color, adhesion, registration, and wear.

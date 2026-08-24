@@ -15,6 +15,7 @@
     "path": "06b-board-inventory-engineering-raw.png",
     "sha256": "4cdc09b6b3ae740dcc7278ca414de2b51bb24a3a98f440f51048bbe5567efd37"
   },
+  "physical_finish_execution_verified": false,
   "physical_print": false,
   "printability_proof": false,
   "product_beauty_render": false,
@@ -94,14 +95,211 @@
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 3
+    "version": 4
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
+    "sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
+    "display_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 988,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_bishop_c8": {
+        "colors": [
+          {
+            "faces": 2312,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_king_e8": {
+        "colors": [
+          {
+            "faces": 2592,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_knight_b8": {
+        "colors": [
+          {
+            "faces": 3044,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_pawn_a7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_queen_d8": {
+        "colors": [
+          {
+            "faces": 2228,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "steel_rook_a8": {
+        "colors": [
+          {
+            "faces": 2182,
+            "rgba": [
+              13,
+              20,
+              27,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_bishop_c1": {
+        "colors": [
+          {
+            "faces": 4326,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_king_e1": {
+        "colors": [
+          {
+            "faces": 4622,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_knight_b1": {
+        "colors": [
+          {
+            "faces": 5176,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_pawn_a2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_queen_d1": {
+        "colors": [
+          {
+            "faces": 4338,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "stone_rook_a1": {
+        "colors": [
+          {
+            "faces": 4296,
+            "rgba": [
+              122,
+              100,
+              67,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      }
+    },
     "framing_mode": "scene",
     "framing_value_mm": null,
     "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
@@ -2088,13 +2286,10 @@
       "vertices": 2718
     }
   ],
-  "schema": "workshop.cad-preview-render.v3",
+  "schema": "workshop.cad-preview-render.v4",
   "view": "board-inventory-engineering-raw",
   "view_contract": {
-    "acceptance_dimensions": [
-      "board-parity",
-      "manhattan-identity"
-    ],
+    "acceptance_dimensions": [],
     "acceptance_output_contract": {
       "output_pixels": [
         1600,
@@ -2107,8 +2302,10 @@
     "diagnostic": false,
     "native_material_required": true,
     "neutral_material_evidence": false,
-    "recipe_acceptance_eligible": true,
-    "run_acceptance_eligible": true,
+    "production_finish_display": false,
+    "production_finish_physical_execution_verified": false,
+    "recipe_acceptance_eligible": false,
+    "run_acceptance_eligible": false,
     "synthetic_depth_edges": false
   },
   "warnings": []

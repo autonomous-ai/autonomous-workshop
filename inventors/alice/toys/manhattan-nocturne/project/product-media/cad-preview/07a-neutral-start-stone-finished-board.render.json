@@ -1,6 +1,6 @@
 {
   "concept_art": false,
-  "evidence_class": "exact-cad-inventory-acceptance",
+  "evidence_class": "exact-cad-recognition-input",
   "input": {
     "format": "native-glb",
     "native_axes": "Y-up",
@@ -12,27 +12,28 @@
   },
   "output": {
     "format": "png",
-    "path": "03f-top-inventory-raw.png",
-    "sha256": "da49f6b8cb7a7bf46f10a91da0c583be7d078a2a6fe9f50a4379e2e390462016"
+    "path": "07a-neutral-start-stone-finished-board.png",
+    "sha256": "13d5ebbe3f74cef0dabf0b24c3d1b6d2ba91df99757070e5554a713260201416"
   },
+  "physical_finish_execution_verified": false,
   "physical_print": false,
   "printability_proof": false,
   "product_beauty_render": false,
   "render": {
     "camera": {
       "direction_cad": [
-        0.0,
-        0.0,
-        1.0
+        -0.39778203,
+        0.723453833,
+        0.564255268
       ],
       "framed_projected_bounds_cad_mm": [
         [
-          -122.000001,
-          -122.000001
+          -165.686426,
+          -93.489439
         ],
         [
-          122.000001,
-          122.000001
+          165.686426,
+          136.781864
         ]
       ],
       "projection": "orthographic",
@@ -41,14 +42,14 @@
         "semantic_side": null
       },
       "right_cad": [
-        1.0,
-        0.0,
-        0.0
+        0.876276039,
+        0.481809406,
+        -0.0
       ],
       "up_cad": [
-        0.0,
-        1.0,
-        0.0
+        0.271863496,
+        -0.494443371,
+        0.825600383
       ]
     },
     "culled_triangles": 0,
@@ -71,7 +72,7 @@
       1800
     ],
     "lighting_mode": "symmetric-review",
-    "material_mode": "glb",
+    "material_mode": "neutral-pieces-production-board",
     "output_pixels": [
       1600,
       900
@@ -89,24 +90,565 @@
         83.349999
       ]
     ],
-    "shadow": false,
+    "shadow": true,
     "supersample": 2
   },
   "renderer": {
     "id": "manhattan-nocturne-software-cad-preview",
-    "version": 3
+    "version": 4
   },
   "renderer_source": {
     "path": "../../render_product.py",
-    "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
+    "sha256": "c22f367d4f93d89cfa0f883832e97ebc615b747cba3cbd1d6444fd2e3a27309b"
   },
   "scene_derivation": {
     "display_crop_below_local_z_mm": null,
+    "display_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 668,
+            "rgba": [
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
+      },
+      "steel_bishop_c8": {
+        "colors": [
+          {
+            "faces": 2312,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_bishop_f8": {
+        "colors": [
+          {
+            "faces": 2312,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_king_e8": {
+        "colors": [
+          {
+            "faces": 2592,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_knight_b8": {
+        "colors": [
+          {
+            "faces": 3044,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_knight_g8": {
+        "colors": [
+          {
+            "faces": 3044,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_a7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_b7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_c7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_d7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_e7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_f7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_g7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_pawn_h7": {
+        "colors": [
+          {
+            "faces": 2976,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_queen_d8": {
+        "colors": [
+          {
+            "faces": 2228,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_rook_a8": {
+        "colors": [
+          {
+            "faces": 2182,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "steel_rook_h8": {
+        "colors": [
+          {
+            "faces": 2182,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_bishop_c1": {
+        "colors": [
+          {
+            "faces": 4326,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_bishop_f1": {
+        "colors": [
+          {
+            "faces": 4326,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_king_e1": {
+        "colors": [
+          {
+            "faces": 4622,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_knight_b1": {
+        "colors": [
+          {
+            "faces": 5176,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_knight_g1": {
+        "colors": [
+          {
+            "faces": 5176,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_a2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_b2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_c2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_d2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_e2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_f2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_g2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_pawn_h2": {
+        "colors": [
+          {
+            "faces": 5816,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_queen_d1": {
+        "colors": [
+          {
+            "faces": 4338,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_rook_a1": {
+        "colors": [
+          {
+            "faces": 4296,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      },
+      "stone_rook_h1": {
+        "colors": [
+          {
+            "faces": 4296,
+            "rgba": [
+              142,
+              145,
+              149,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
+      }
+    },
     "framing_mode": "scene",
     "framing_value_mm": null,
     "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
-    "material_mode": "glb",
-    "material_override": null,
+    "material_mode": "neutral-pieces-production-board",
+    "material_override": {
+      "applies_to": "display colors on the exact board triangles only",
+      "board_triangles": 988,
+      "boundary_cad_z_mm": 8.2,
+      "classification": "midnight when triangle max Z <= 8.20; warm brass when triangle has Z > 8.20 and no vertex below 8.20; fail on a straddling triangle",
+      "geometry_changed": false,
+      "midnight_faces": 668,
+      "midnight_rgba_srgb": [
+        18,
+        22,
+        31,
+        255
+      ],
+      "mode": "round-5-production-finish",
+      "one_physical_board": true,
+      "physical_execution_verified": false,
+      "piece_display_override": {
+        "applies_to": "display only on pieces; source GLB materials remain in each node receipt",
+        "mode": "neutral-recognition-review",
+        "rgba_srgb": [
+          142,
+          145,
+          149,
+          255
+        ]
+      },
+      "production_intent": "midnight base through Z8.20 with warm brass/gold light-square pads above Z8.20",
+      "production_route": "one height-based material change above Z8.20, or a post-print finish applied only to the raised pad region",
+      "warm_brass_faces": 320,
+      "warm_brass_rgba_srgb": [
+        190,
+        143,
+        64,
+        255
+      ]
+    },
     "mode": "full",
     "review_layout": [],
     "selected_node_count": 33,
@@ -647,8 +1189,8 @@
   "scene_integrity": {
     "bounds_sha256": "74445b22868484b61e9242bce977520ee10a0619783bf4937b7944875d23775e",
     "labels_sha256": "a86a3f7bd84a2ba8e44fa1f4efa04c836525bbd09dcd00e53194cf21b5a7200a",
-    "materials_sha256": "f8fe32d00c3bc6d31ea3d8a74c92d0ff6741b578dbc1f745a9a651e5c64865cc",
-    "node_records_sha256": "0423223bd21f81f5b851e45c49b30756fe3db4a9636dfa00efeb537b29aecd4d",
+    "materials_sha256": "31b8a177f1a2d2cc67803f4c48a3f362a38b9144549c947cb000c9d775a28d0d",
+    "node_records_sha256": "7f1b434eab37ec27911f21fc30a4e032b43f7cf056c5a21c76e7bc32b7317c34",
     "transforms_sha256": "80bf49f608d1ba1e2eca06e6485af9217226845bca6c3507f744b03de271df92"
   },
   "scene_nodes": [
@@ -668,21 +1210,30 @@
       "display_material": {
         "colors": [
           {
-            "faces": 988,
+            "faces": 668,
             "rgba": [
-              3,
-              3,
-              4,
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
       },
       "geometry": "board",
       "integrity": {
-        "display_material_sha256": "40f2f5b40a0eeb7d7e7ed708599ce5294479a4e96f524ed53cb34eaa49466a55",
+        "display_material_sha256": "250d6c1b5a098dea006ac92f0a118811cc1f11fe32e723fbd363394b1dc722fc",
         "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
         "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
         "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
@@ -693,7 +1244,7 @@
       },
       "label": "board",
       "metallic": 0.0,
-      "record_sha256": "b19549601b5aea7bf916aed8803997f17ce24a31e5ad76afbc43e0ce65c49711",
+      "record_sha256": "8038e9cff1947570e0a9dc718abfc03a68d4270a949f0433b198d1a6b7d0187c",
       "review_transform_cad": [
         [
           1.0,
@@ -720,7 +1271,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.58,
       "source_bounds_cad_mm": [
         [
           -122.000001,
@@ -795,19 +1346,19 @@
           {
             "faces": 2312,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_bishop_f8",
       "integrity": {
-        "display_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
+        "display_material_sha256": "f206354a8e86b5400e5c10cdd3b4638458466ab8e8c63f5e867e23c5607630e9",
         "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
         "label_sha256": "436100650824a2b9a3e80e0340e42d9795524350ae833971b4df18858f11995d",
         "review_bounds_sha256": "d83f7dc7d6cf562a3e4010dd1bc0014f00f0a8b5b2877f349ec9b0d84d6cfba5",
@@ -818,7 +1369,7 @@
       },
       "label": "steel_bishop_c8",
       "metallic": 0.0,
-      "record_sha256": "526eee1113140758b5ad72220335b97a82d6f0662fe567af5242933d39e02bc5",
+      "record_sha256": "91ba8bff1921e257afef8bf069d673625aa5c005b1b382e2b0ca6992c8008fa4",
       "review_transform_cad": [
         [
           1.0,
@@ -845,7 +1396,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -920,19 +1471,19 @@
           {
             "faces": 2312,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_bishop_f8",
       "integrity": {
-        "display_material_sha256": "4d72a8bf3ac2f1ac17eccab0cd63a9ed185c25f5c987674390106d1d766435fe",
+        "display_material_sha256": "f206354a8e86b5400e5c10cdd3b4638458466ab8e8c63f5e867e23c5607630e9",
         "geometry_label_sha256": "9da716c362a0c4666089764173efcba6c20eaa347ba4c3cb6fad5ddd499326ff",
         "label_sha256": "a86550facba2985a21c4faa02ab73f677215c16147e634c65f9f94abfcf897c4",
         "review_bounds_sha256": "b31957faf616785e19f063e242b040549a76ab2e99ef6f181968d93683ad288e",
@@ -943,7 +1494,7 @@
       },
       "label": "steel_bishop_f8",
       "metallic": 0.0,
-      "record_sha256": "045d6e1638b97d8f4ffb3e2f65c8c767799eceb76715169bc223999f58e10ea0",
+      "record_sha256": "434c733b588959a2ea760efa703960c8d1093549b4b59f0f7af6f144797082b1",
       "review_transform_cad": [
         [
           1.0,
@@ -970,7 +1521,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -1045,19 +1596,19 @@
           {
             "faces": 2592,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_king_e8",
       "integrity": {
-        "display_material_sha256": "50875e644af7266fab348da9f34770750b2d154f72b895fb18391f613e88574d",
+        "display_material_sha256": "b570468ae01f163efd97305ffd7addbfd578a3c6b8ef6f09ac3a95fc8ab709d6",
         "geometry_label_sha256": "a84504fd6b5db8f6703952284705160faa434c22db40662e7757f7c691524c71",
         "label_sha256": "21149f215e6fe6cd7da541766b206b5e023dd60d968496c113a3366bbe33a478",
         "review_bounds_sha256": "93e9b4210ee92b0ab6fa73d2bf356bdc62f16a6ca4025455602e4b29e886e16c",
@@ -1068,7 +1619,7 @@
       },
       "label": "steel_king_e8",
       "metallic": 0.0,
-      "record_sha256": "7b221575a3cf48ffb415e04afec7989857919a07342d21da36a39ce7d7d62d6c",
+      "record_sha256": "efb4fa825854997757c2b8a4bfb4c36ff040ab245bdcb94e5782f670c7f3e8da",
       "review_transform_cad": [
         [
           1.0,
@@ -1095,7 +1646,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -1170,19 +1721,19 @@
           {
             "faces": 3044,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_knight_g8",
       "integrity": {
-        "display_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
+        "display_material_sha256": "4924c661d7ac83fcb4466c7eb44c0f78a2bc9b8a2c013a3ef7777ac52bc91951",
         "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
         "label_sha256": "7e21bf1216d81c6553ece2ffe424f1b75ed478ea3484f22164ca120849b13199",
         "review_bounds_sha256": "939f991f3c0f2a1eb7e9da3a686bdd1b38a441301790d5af7f531e41bba0f892",
@@ -1193,7 +1744,7 @@
       },
       "label": "steel_knight_b8",
       "metallic": 0.0,
-      "record_sha256": "7bd17c322dcd3ea718d0ffdf047c0f87eeb27db1d1ab0991be5952ee1349455d",
+      "record_sha256": "5970e9a3001b89449f148a4212be57c3fa512fefc3eb7174fb45b7b18cfe873a",
       "review_transform_cad": [
         [
           1.0,
@@ -1220,7 +1771,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -1295,19 +1846,19 @@
           {
             "faces": 3044,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_knight_g8",
       "integrity": {
-        "display_material_sha256": "ff3e0dc6bb47f0451fd51868d662465f604a0b334af1ca7aec6d601e927775b7",
+        "display_material_sha256": "4924c661d7ac83fcb4466c7eb44c0f78a2bc9b8a2c013a3ef7777ac52bc91951",
         "geometry_label_sha256": "9581a8a22ae25da920829b0adb30158ad645d3b41b737c995135b2893f43aa46",
         "label_sha256": "9bbb3aed4910acf3d462dbad9d3fb8f59ab3984315af1eda47fd4648dde1ecb8",
         "review_bounds_sha256": "0d32cfb54c8fb383d70a04fee0879e47cc437dd850e72caa3966bfc5f615543a",
@@ -1318,7 +1869,7 @@
       },
       "label": "steel_knight_g8",
       "metallic": 0.0,
-      "record_sha256": "99d5edc14a537f683aa8edcdb0cac2e976611a8a78a40c4575b22bae59cf804c",
+      "record_sha256": "74d9e7878a44b43a35af663270a2be59af894c069017de2089d81bc06def6ce6",
       "review_transform_cad": [
         [
           1.0,
@@ -1345,7 +1896,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -1420,19 +1971,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "05cc1359529c061837d3cadaacea109fbef6045f3de9fae95b9604b7e7c4da78",
         "review_bounds_sha256": "1ba712b80f461212f1ed24275fbd72a767d02a858d580025b8db83cca871bdf2",
@@ -1443,7 +1994,7 @@
       },
       "label": "steel_pawn_a7",
       "metallic": 0.0,
-      "record_sha256": "ab24510a12044d51364edaf04f6217f9131b21c4d70d2b408601d0b1a7d8cd80",
+      "record_sha256": "9b16a28ce61e9672e94f67f11ec8bbc9adbaedb080781cab5f82c2ed6fa3da08",
       "review_transform_cad": [
         [
           1.0,
@@ -1470,7 +2021,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -1545,19 +2096,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "ecbbbc806cb148f43bf99deee7be4730dca23874623a50246567343a3a8501c6",
         "review_bounds_sha256": "dc170252d62ff7e15e0752827c012086a3b09df26cd89708cd9626167c4fb9d1",
@@ -1568,7 +2119,7 @@
       },
       "label": "steel_pawn_b7",
       "metallic": 0.0,
-      "record_sha256": "5b99a95d6509537060918dcb569f99f2dc5009164606f358fc48230cfeac8317",
+      "record_sha256": "8d6a9b606c1e937bde50bf566d863d3cc13d39d78f23f8466336a6d80514017e",
       "review_transform_cad": [
         [
           1.0,
@@ -1595,7 +2146,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -1670,19 +2221,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "865a1ba5732990e7c42d0e084930ad00e88ee20710ae17c14a7889f23272c896",
         "review_bounds_sha256": "418d93b55f4685c674c9d27f76a09b607a6f3ff2b1b2ed8e97aa30662c8f0381",
@@ -1693,7 +2244,7 @@
       },
       "label": "steel_pawn_c7",
       "metallic": 0.0,
-      "record_sha256": "6427a681496017c33fa0d425d1343c4140e639b6fad34aee351c24e42d92684a",
+      "record_sha256": "144906ced3687a3378e2f08d6b11970760955956252422544f3b6da8e593d248",
       "review_transform_cad": [
         [
           1.0,
@@ -1720,7 +2271,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -1795,19 +2346,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "c2c89dddc6ab6bfa1dc16241995a2543fbb4fcf9d57d8966c343465ff6899af4",
         "review_bounds_sha256": "132dfee3e05eb77c7aa0022a3ece97873e52ea83352c6f5267b6e7e30aa12636",
@@ -1818,7 +2369,7 @@
       },
       "label": "steel_pawn_d7",
       "metallic": 0.0,
-      "record_sha256": "cac9f2e0a8201756064dd41a3eb02ef27330d84907ce2cd1e0b9dda5900b1049",
+      "record_sha256": "c9cf0cd98016e95da30c3ee6caebcc54a06a8eb5f5d8e9828a87590ce46f9d88",
       "review_transform_cad": [
         [
           1.0,
@@ -1845,7 +2396,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -1920,19 +2471,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "ff0eb1e9c76ecbb96e75f56af1a31ec1f0183f94eae3893b7e7404ed8a98cf64",
         "review_bounds_sha256": "985ade7a49876f581e4dc1cb6699f5fd007048a887519150cc68df54f6515ca3",
@@ -1943,7 +2494,7 @@
       },
       "label": "steel_pawn_e7",
       "metallic": 0.0,
-      "record_sha256": "2cee70b7c11a45834a81822f11b3ed26adb0bb2d0e60a7c7ebeb0fe86bcc7acc",
+      "record_sha256": "c837f6ecba7b3c6464812ad2175531bab4cd1e497f6469b61807d6b074dfcd27",
       "review_transform_cad": [
         [
           1.0,
@@ -1970,7 +2521,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -2045,19 +2596,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "1310eaea4287ff9bef05aeb9df1bbf76c75b300219c0e2b3a6d51eac9de168e0",
         "review_bounds_sha256": "51a4bafa037ff3a2afc83bba99c2ed3da92fb63404f517c2b8d5e333e33c0431",
@@ -2068,7 +2619,7 @@
       },
       "label": "steel_pawn_f7",
       "metallic": 0.0,
-      "record_sha256": "16809a37ba4dc433461d298b3a59acfd77c7ab999291f36a1097a7476c71581f",
+      "record_sha256": "40cb8df88c2af636c1e2fe2178b0288ff999689940de800653795f635397efec",
       "review_transform_cad": [
         [
           1.0,
@@ -2095,7 +2646,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -2170,19 +2721,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "6fa32a38c1bb9dc1a604a6f682f453b74bf185f2e73cb40aeabc8339a3226e55",
         "review_bounds_sha256": "56075b46e07f79ce01e901b2ddb6e5251cef37c3ac9e62358353c78058fa3e80",
@@ -2193,7 +2744,7 @@
       },
       "label": "steel_pawn_g7",
       "metallic": 0.0,
-      "record_sha256": "1af9426fbb3c531c9593eb0f6d103e3ed48dda76e2dbcca9912239ff1fa7166c",
+      "record_sha256": "57b4a56b7b8d90e6c441ca04b21a1b4739ae0c8aa1c899425c2477d659372e58",
       "review_transform_cad": [
         [
           1.0,
@@ -2220,7 +2771,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -2295,19 +2846,19 @@
           {
             "faces": 2976,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_pawn_h7",
       "integrity": {
-        "display_material_sha256": "3babd0f8611e7c53698d213cbf6ce3c01132623409023720ff8cef7f5d1b197a",
+        "display_material_sha256": "9b80170a7ec0b00724c86af95aa7ce8bed6f4bd1565ddcadc1439fca5befb1f0",
         "geometry_label_sha256": "7faeb6f705154b1bf6b79aea9b541f57142767bffcdfe16ee48388ae144f74d8",
         "label_sha256": "feeab1b8fce5351e8780c96008c1026b0602b03e4614cd6794749b95cac8e593",
         "review_bounds_sha256": "1ad941d1c52024a2398c391168187feee25fd3dc532e23d094ad2c4373d7e666",
@@ -2318,7 +2869,7 @@
       },
       "label": "steel_pawn_h7",
       "metallic": 0.0,
-      "record_sha256": "3fea51b3ca6f5c7f4ee4686ea43f698f5414131c8c1ab36d6f1d86abffb01cc2",
+      "record_sha256": "d02474a07f6f7750358f2a17fd9194efd229a7bf997f6d0c102bc6cb45281a96",
       "review_transform_cad": [
         [
           1.0,
@@ -2345,7 +2896,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -2420,19 +2971,19 @@
           {
             "faces": 2228,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_queen_d8",
       "integrity": {
-        "display_material_sha256": "cbf879170b43c7b75fec1150e2ce5e0f878a3fb5c42a664e6dd2ddc4b2036444",
+        "display_material_sha256": "2b8d0821b4f12cbb6a3ff394b8106bc2df91e5d494ae9bbdd5f350e52b889d53",
         "geometry_label_sha256": "80f16f60a7558dc6167c37c6513f7692ceeedbd003d394cc5122d3d41c5e3926",
         "label_sha256": "3b9bde5d6ece016692b547f7c4309c7b935efdfb6671795c7a1ec4f7cbccc8b2",
         "review_bounds_sha256": "1aabd38fb15464161ffc6cbda62ef71545e8640bc672935f5088d521536869cd",
@@ -2443,7 +2994,7 @@
       },
       "label": "steel_queen_d8",
       "metallic": 0.0,
-      "record_sha256": "dc51446e7ca8db7f9b0eaeb7fb4767590da01f5961d1b79480f5a9afcb815781",
+      "record_sha256": "c25ed31037624f54002d3ac215735f0cc8290d8ce442cb4138535fa700c41435",
       "review_transform_cad": [
         [
           1.0,
@@ -2470,7 +3021,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -2545,19 +3096,19 @@
           {
             "faces": 2182,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_rook_h8",
       "integrity": {
-        "display_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
+        "display_material_sha256": "ea9535d03f308883d5be7952e10f8e943fa2351ed313b01fd81483658c587cb4",
         "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
         "label_sha256": "241f812adee2ab44cd1e50ec2bb9dd76b11015735857e0105255b74fbe8e45dd",
         "review_bounds_sha256": "919bbc1b5a46f3d1f253a54f1844fa3ec4b2128449227c30ad6babbfb9ea8287",
@@ -2568,7 +3119,7 @@
       },
       "label": "steel_rook_a8",
       "metallic": 0.0,
-      "record_sha256": "82d87135573f4dad3c543786b33eac486ce11f5cb8bcaf852903521c2a621c4f",
+      "record_sha256": "c3777402f1ad9bd51916a1ca0538fefb3cfe93763cada4d70da73e6b6123dd46",
       "review_transform_cad": [
         [
           1.0,
@@ -2595,7 +3146,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -2670,19 +3221,19 @@
           {
             "faces": 2182,
             "rgba": [
-              13,
-              20,
-              27,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "steel_rook_h8",
       "integrity": {
-        "display_material_sha256": "d08a7a8efae129df78d365624fd4d57b598436474798f417d5e1d6d907c47899",
+        "display_material_sha256": "ea9535d03f308883d5be7952e10f8e943fa2351ed313b01fd81483658c587cb4",
         "geometry_label_sha256": "53a44f9b8512f26ed5fc448f919031a59d42b2d5f28a821517166707f8293735",
         "label_sha256": "bd22ba8b5cf1309994b17bf18b8ed2cc2e2326bb6305ae4996fa2656aeb53d1a",
         "review_bounds_sha256": "2f42c17ecc3e55e7be4827ea6468ed6f52ec62e116f0664135e3c602bfc28fb2",
@@ -2693,7 +3244,7 @@
       },
       "label": "steel_rook_h8",
       "metallic": 0.0,
-      "record_sha256": "ae175d1fb40b8919ace5eb3a700e0242090416bc2596bbdb658836dc1e70d966",
+      "record_sha256": "2058dcf579fffef8b35404cfd427df696e2cfafda1409c02d4667085fe222a8a",
       "review_transform_cad": [
         [
           1.0,
@@ -2720,7 +3271,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -2795,19 +3346,19 @@
           {
             "faces": 4326,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_bishop_f1",
       "integrity": {
-        "display_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
+        "display_material_sha256": "de16ffaf619eaa9f164844b37dec31a43504f0af0db34eb22da2f1127d7fbd3f",
         "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
         "label_sha256": "889ad85f56962ccebadd03f4b55552667619364d9a0b0fba61b765c0fc48a5ba",
         "review_bounds_sha256": "380f1eec1c28f227ff6e27143b954e611c2ed4122dec1820d4b0da633cd82ca6",
@@ -2818,7 +3369,7 @@
       },
       "label": "stone_bishop_c1",
       "metallic": 0.0,
-      "record_sha256": "e585db03f9323494544332d0b5b2f4cbfa302b62394cd2440672f96f99dd8030",
+      "record_sha256": "a5d56a670f16d578d13bf580d1682d0c1d71f736fbd70e47386cc4c031e2874c",
       "review_transform_cad": [
         [
           1.0,
@@ -2845,7 +3396,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -2920,19 +3471,19 @@
           {
             "faces": 4326,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_bishop_f1",
       "integrity": {
-        "display_material_sha256": "4a4061680cb2402438ac550151ea1f473f811325532841821b6b273463c93ae0",
+        "display_material_sha256": "de16ffaf619eaa9f164844b37dec31a43504f0af0db34eb22da2f1127d7fbd3f",
         "geometry_label_sha256": "c996d38cfec874577b42299542987700487796e84b5cf8c19eec449e9266bc71",
         "label_sha256": "69f683b6bf20f76f5160383842bfedae72cdeec2eb157e15f026eb48b1f4ea5e",
         "review_bounds_sha256": "5c085e2a1707448d4a5e5c684d9be6c5c5c14b133c8c3571926ae7e48ddb9269",
@@ -2943,7 +3494,7 @@
       },
       "label": "stone_bishop_f1",
       "metallic": 0.0,
-      "record_sha256": "c8ca500fbab2ffd8ef365bac0e3421b473556edfc98b61ecfa9cdb02b852fae0",
+      "record_sha256": "dfd6c0221679591d29f2775a7d8d1ded924b6142d17fa5a29c85a4adf48d453d",
       "review_transform_cad": [
         [
           1.0,
@@ -2970,7 +3521,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -3045,19 +3596,19 @@
           {
             "faces": 4622,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_king_e1",
       "integrity": {
-        "display_material_sha256": "e32463a7877b17a7d85f8652c2da8c72355926ce6950de1ffb14297f94073d16",
+        "display_material_sha256": "6755b953bb61af1ffd9ac8683fd4af26345f55b0cb151965f4cd0c2b830d9990",
         "geometry_label_sha256": "d0b5908b2eec1275bf3b11c7593d4cfab4b7527c9f5e4b9648b27b670c9acaa7",
         "label_sha256": "4c58018139a8c0af62cb8f7d708cf4b8e3e3229d541b47f12676505897e85100",
         "review_bounds_sha256": "58ef10d481b9ce1d839f3f14c4c1a35d8881c07731f94c5c8202a35690f0e5c5",
@@ -3068,7 +3619,7 @@
       },
       "label": "stone_king_e1",
       "metallic": 0.0,
-      "record_sha256": "74bea8a8abe887a7569d6ed0bde85d32565bfce44f6a1e08d1aeac3c4d690387",
+      "record_sha256": "7491a1918383003ed2f9290877bef729767e7b8a86ff0089e90f926489a231ee",
       "review_transform_cad": [
         [
           1.0,
@@ -3095,7 +3646,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -3170,19 +3721,19 @@
           {
             "faces": 5176,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_knight_g1",
       "integrity": {
-        "display_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
+        "display_material_sha256": "302d3acc50d13131114c224ab103cdca0a8a027c1a3de2a9d79d0b89682a422e",
         "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
         "label_sha256": "e769e7e3cd34316309f05c0db67e59354edb53a17517d829226a3211b9dd8f6b",
         "review_bounds_sha256": "79af27f4dee98ab231ac7f5c6a839210d5e5d73253ecd22ef052995b865bd685",
@@ -3193,7 +3744,7 @@
       },
       "label": "stone_knight_b1",
       "metallic": 0.0,
-      "record_sha256": "4e0c530ef5079037b6664318437545fd06d276732b2a6e45e22459aa0da0a11b",
+      "record_sha256": "a853112de09f415bc7d0de46ab5f6a6caa0b068c655e3f6afcb15f8bec16270c",
       "review_transform_cad": [
         [
           1.0,
@@ -3220,7 +3771,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -3295,19 +3846,19 @@
           {
             "faces": 5176,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_knight_g1",
       "integrity": {
-        "display_material_sha256": "481c697145b39a52f1f2fae6a8d43f325dface423013be0db5ae5f04f08fc9d4",
+        "display_material_sha256": "302d3acc50d13131114c224ab103cdca0a8a027c1a3de2a9d79d0b89682a422e",
         "geometry_label_sha256": "e0752720ff895da05f4e702c980c3abfa11ed780aee7cdc2d1f02759e6efee2b",
         "label_sha256": "953c9e508b04a474743092ea9db49320df5f3b90a4eeff78edf3abef6961fb2f",
         "review_bounds_sha256": "332ae2eb1aacc65bda6dcc716628c5e4fa2f774e222559d0d3705b85fc2c1715",
@@ -3318,7 +3869,7 @@
       },
       "label": "stone_knight_g1",
       "metallic": 0.0,
-      "record_sha256": "11b024de36b9ac568543e37e5d59c8bc9e003ecc50e27cb76d62d99c510ba7ca",
+      "record_sha256": "26e72625291c4e176cfac832ed667877c9e317086db511ccdab281e6fac945bf",
       "review_transform_cad": [
         [
           1.0,
@@ -3345,7 +3896,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -3420,19 +3971,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "c5e05022b60fc09a71aa39d05b277dcce4d19bf3158ca256e727c8a40e4b3850",
         "review_bounds_sha256": "7785638906892dfd1e9d47823cec8b9693aae47fb8ee3a472bc197d06b88a9dc",
@@ -3443,7 +3994,7 @@
       },
       "label": "stone_pawn_a2",
       "metallic": 0.0,
-      "record_sha256": "244313a7efdaf5e0623f839b93578652d677527192dab085051e379293650439",
+      "record_sha256": "eeb817fcb6b6b43e61635ece574c326f9c068ec95251674e8c29ff51b351b4df",
       "review_transform_cad": [
         [
           1.0,
@@ -3470,7 +4021,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -3545,19 +4096,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "57ebc543e5df5a4724f8d8c88d4272a3d54c8f7408b8f98162c70627a4d9119d",
         "review_bounds_sha256": "4105b3f57aed114731cbdceb0e9d0af705c3965623511e481016a770dae9f31b",
@@ -3568,7 +4119,7 @@
       },
       "label": "stone_pawn_b2",
       "metallic": 0.0,
-      "record_sha256": "13ca3c423ee1f3cb744291d966e31a3cee0a444c529caeb4616d9e3eb6af8a98",
+      "record_sha256": "e8a432f129e21a14f5970b6cc04632e465be0e22c52bcea88fe9daeb6103f2db",
       "review_transform_cad": [
         [
           1.0,
@@ -3595,7 +4146,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -82.478662,
@@ -3670,19 +4221,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "4cfccf303cfabf28111b000b76cabf1d58f465f195c764439b2aba494617cfce",
         "review_bounds_sha256": "1e7e5d691fbc48957c5ee491d76bf7522d98bc34039fbe2b09e1fc14eb7f1718",
@@ -3693,7 +4244,7 @@
       },
       "label": "stone_pawn_c2",
       "metallic": 0.0,
-      "record_sha256": "5171cbe23152a6c4c73a93bcab31a511c3742893f515922d6d1420663c97e11a",
+      "record_sha256": "af9632cd97c5f7c3a4d9308519e14d6628149aa9dc47099bfdb58f214f2d2b1e",
       "review_transform_cad": [
         [
           1.0,
@@ -3720,7 +4271,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -53.978662,
@@ -3795,19 +4346,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "03008195ed433d814e3e5f94804e3aa0caeb09931ffd7726f2a051a882fc92e4",
         "review_bounds_sha256": "382829094cfde80fbe1baadff9182a534bbd1e61303fc5b5199ada6bf3f8ddb2",
@@ -3818,7 +4369,7 @@
       },
       "label": "stone_pawn_d2",
       "metallic": 0.0,
-      "record_sha256": "56804098cf2ee0589bae53f416755a9f571b7dcfd25798bf73ccd81c93d64138",
+      "record_sha256": "b6b398a73aced8c69c807fb6275102693e735cb0b45232de70f8b1cf0bde05fc",
       "review_transform_cad": [
         [
           1.0,
@@ -3845,7 +4396,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -3920,19 +4471,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "63bb455299f1f001a3b49a06de62798ee26f19b7813051b35c3407f129055c8d",
         "review_bounds_sha256": "740f84aec99cab3a0aee17d0d8ac9e860b001a5afc26475cc6f97f226ad469e3",
@@ -3943,7 +4494,7 @@
       },
       "label": "stone_pawn_e2",
       "metallic": 0.0,
-      "record_sha256": "87200268ed61a583b072d1dec6066f8f977887eb45e0eb0dc5fdaab3f43f8f8e",
+      "record_sha256": "d319924be84ef6229082170c23b150ea7d867e3e1f9546bcff9c54d86a313545",
       "review_transform_cad": [
         [
           1.0,
@@ -3970,7 +4521,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           3.021338,
@@ -4045,19 +4596,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "28ebb4bf6fed0bfbc3d8755c2c64bf27470988905fe10e3aa659eae970a97f48",
         "review_bounds_sha256": "2a2481b7d0d5f30398604197f6ac32ee3d0557c1dc369565f06c4a4a45c5484c",
@@ -4068,7 +4619,7 @@
       },
       "label": "stone_pawn_f2",
       "metallic": 0.0,
-      "record_sha256": "82a904bd89266b30d6255a6c2a558f343acdfd6f8f78c758153ff58bd9b3d2ad",
+      "record_sha256": "6e5f7340427b8b4fcabdb97a5180af2c61ccff1652bcbde78b388c81e85ea844",
       "review_transform_cad": [
         [
           1.0,
@@ -4095,7 +4646,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           31.521338,
@@ -4170,19 +4721,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "136c0de5b3ec76ca34fe939854db449d83864cdd0587365e63a604e5a4f8ab27",
         "review_bounds_sha256": "0d0e59e78df9f1bdc4cc1a90f56654b66f60d144a126b486e7c4d11c8f560ef5",
@@ -4193,7 +4744,7 @@
       },
       "label": "stone_pawn_g2",
       "metallic": 0.0,
-      "record_sha256": "e48e00fd9a09e847fe30cb3615a3ff4e1e2e80f758c268071035a04960e36ac9",
+      "record_sha256": "bd61d403020b474fe100fdbe111383edad8d35ee1b35d5ef13a5392bb6ef385c",
       "review_transform_cad": [
         [
           1.0,
@@ -4220,7 +4771,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           60.021338,
@@ -4295,19 +4846,19 @@
           {
             "faces": 5816,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_pawn_h2",
       "integrity": {
-        "display_material_sha256": "9ef666aab2189f5ff1f72d3ede9e06ae5fda57b0ae4f4a5250568b334a5f41a4",
+        "display_material_sha256": "345ba609011923d9d437d4651efbf4c13fd1b2337036d450e05d96aa98e5147e",
         "geometry_label_sha256": "571651b85903786695954c91ce54ee0cf932cbbf44f1a4be79bd0fed6b8dac13",
         "label_sha256": "f16220788755099bdc89b6faa1bdb359e907dd642a1dc93a167420115cf3f458",
         "review_bounds_sha256": "8f3ac68ec15950fbe814f0366dd76743597a510aa40ae47920bf9d70967c6df9",
@@ -4318,7 +4869,7 @@
       },
       "label": "stone_pawn_h2",
       "metallic": 0.0,
-      "record_sha256": "19b2caf68bc858d7cf4eecd54d0818c5d49e3c607edb836e070eef10335bbcf7",
+      "record_sha256": "a4303f25b875f31b6934c1576822ca951c7950cf6bb8b6f9e1a71acb11a44b66",
       "review_transform_cad": [
         [
           1.0,
@@ -4345,7 +4896,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -4420,19 +4971,19 @@
           {
             "faces": 4338,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_queen_d1",
       "integrity": {
-        "display_material_sha256": "3bc1ad429b8ec8bf1919cf65d72dbea64b987e3513b86c553d2022cf4a14406f",
+        "display_material_sha256": "9f8162ff8e5e9a25ce5ddf85944b0f4eb60e015aba400ffa46b97ab745d8acf2",
         "geometry_label_sha256": "a94027db870099bf6d9f9f4574b39fb7bb8fa5e6582a0e2142394c2ea1e076b9",
         "label_sha256": "62fb4b55ad9285a054b96f43ebd2d5901305ad33c8eb7c773117a348e1bd97ae",
         "review_bounds_sha256": "c6d9dbd9700ff5eb7430da70c74fc7855703a940170a20b30fccb10f1b9bc1ae",
@@ -4443,7 +4994,7 @@
       },
       "label": "stone_queen_d1",
       "metallic": 0.0,
-      "record_sha256": "fc420b96cd22f0a9d90d65bd122691e033b9bca13e5aa53fa669ad588ccf23ac",
+      "record_sha256": "7e3f6b2a0d49ab196cfd19d38f9f1311df0c4aaab7a2c8aad34f8f399725121f",
       "review_transform_cad": [
         [
           1.0,
@@ -4470,7 +5021,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -25.478662,
@@ -4545,19 +5096,19 @@
           {
             "faces": 4296,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_rook_h1",
       "integrity": {
-        "display_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
+        "display_material_sha256": "9de8540c219a3b62e4bb7be476a3338f466c5d39f017b34dad047fd17611bf66",
         "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
         "label_sha256": "616e985614fc1c5a12fc8bf3a6c9c04a578afc6f0170ee51f508effda533bc00",
         "review_bounds_sha256": "cc1d40b8d7650faefd7bbe107baf797973a0ea567a2663397e097ddc32327536",
@@ -4568,7 +5119,7 @@
       },
       "label": "stone_rook_a1",
       "metallic": 0.0,
-      "record_sha256": "b3ce6ead3afa0602dbf4eff019a509c993071ca08b5db398605c77d4c3fc6c2e",
+      "record_sha256": "584f843a342b45e95150cfd4b7bdb75c0f3cd6383b3879a4d50696f414a02297",
       "review_transform_cad": [
         [
           1.0,
@@ -4595,7 +5146,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           -110.978662,
@@ -4670,19 +5221,19 @@
           {
             "faces": 4296,
             "rgba": [
-              122,
-              100,
-              67,
+              142,
+              145,
+              149,
               255
             ]
           }
         ],
-        "encoding": "linear-rgb-factor-u8",
-        "source": "glb-material-base-color"
+        "encoding": "srgb-u8",
+        "source": "neutral-recognition-review-override"
       },
       "geometry": "stone_rook_h1",
       "integrity": {
-        "display_material_sha256": "426478b90580bda29f07b55d1c4615152e8ace5be5ea43280f0964663f76ffba",
+        "display_material_sha256": "9de8540c219a3b62e4bb7be476a3338f466c5d39f017b34dad047fd17611bf66",
         "geometry_label_sha256": "fe9f69b079156598b4fbbb2c8068dbbc8b82a2bd416f7f1d00ec57dcd380faa8",
         "label_sha256": "28037e8674da47ab9d8f2b9596e30d761c6edd3d7ac058face1acc5b6c89fc2c",
         "review_bounds_sha256": "a588a1957fdc6bb058c8945e3c64fde05afbe19c0c7568601870d52c39215750",
@@ -4693,7 +5244,7 @@
       },
       "label": "stone_rook_h1",
       "metallic": 0.0,
-      "record_sha256": "8f803d7e2c3f05c35b2e4ebd53ba6edc050dd1091d0ff844fa7ba0ae1d6d3917",
+      "record_sha256": "41737f1073a03395a0d2aa098129007bf7e8caa092bf70491c82bd6eca7567dd",
       "review_transform_cad": [
         [
           1.0,
@@ -4720,7 +5271,7 @@
           1.0
         ]
       ],
-      "roughness": 0.55,
+      "roughness": 0.72,
       "source_bounds_cad_mm": [
         [
           88.521338,
@@ -4778,13 +5329,13 @@
       "vertices": 3343
     }
   ],
-  "schema": "workshop.cad-preview-render.v3",
-  "view": "top-inventory-raw",
+  "schema": "workshop.cad-preview-render.v4",
+  "view": "neutral-start-stone",
   "view_contract": {
     "acceptance_dimensions": [
-      "board-parity",
-      "role-legibility",
-      "side-coding"
+      "manhattan-identity",
+      "side-coding",
+      "role-legibility"
     ],
     "acceptance_output_contract": {
       "output_pixels": [
@@ -4796,8 +5347,10 @@
     },
     "camera_policy": "frozen-literal-direction",
     "diagnostic": false,
-    "native_material_required": true,
-    "neutral_material_evidence": false,
+    "native_material_required": false,
+    "neutral_material_evidence": true,
+    "production_finish_display": true,
+    "production_finish_physical_execution_verified": false,
     "recipe_acceptance_eligible": true,
     "run_acceptance_eligible": true,
     "synthetic_depth_edges": false

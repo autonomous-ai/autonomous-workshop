@@ -29,8 +29,9 @@ Status: **HELD — digital prototype in Make. Deliver requires physical evidence
   into the same base, so the board remains one printed solid.
 - Material/color breaks: the continuous base is midnight through Z8.20; only
   the 32 isolated light pads above that exact plane receive a warm brass/gold
-  contrast. Stone and Steel remain visually and tactually distinct. Geometry
-  must still pass in neutral grayscale.
+  contrast. Stone and Steel remain visually distinct in neutral grayscale;
+  board parity is judged with the required production finish while one-material
+  raw views remain available as engineering evidence.
 - Forbidden shortcuts: see `../art-direction/ART-DIRECTION.md`.
 - Frozen canonical target: `../art-direction/directions-v1.png`; mood only. Its
   SHA-256 is sealed during the first Make receipt.

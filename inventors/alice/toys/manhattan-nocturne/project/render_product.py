@@ -9,6 +9,11 @@ The native GLB written by the Workshop CAD tools is Y-up and metre-scaled.
 This script restores the authored CAD coordinate convention (XY bed plane,
 +Z up, millimetres), applies every occurrence transform, keeps node labels and
 material colours, and writes a receipt beside every PNG.
+
+Round 5 production-finish views apply an explicit display material schedule to
+the unchanged board triangles: midnight through CAD Z8.20 and warm brass above
+it. Receipts retain the native GLB material, the exact classification rule, and
+the fact that physical execution of that finish has not been verified.
 """
 
 from __future__ import annotations
@@ -29,13 +34,16 @@ import trimesh
 
 
 RENDERER_ID = "manhattan-nocturne-software-cad-preview"
-RENDERER_VERSION = 3
+RENDERER_VERSION = 4
 
 ROLE_ORDER = ("pawn", "rook", "knight", "bishop", "queen", "king")
 SIDE_ORDER = ("stone", "steel")
 NEUTRAL_REVIEW_RGBA = (142, 145, 149, 255)
+BOARD_FINISH_BOUNDARY_Z_MM = 8.20
+MIDNIGHT_FINISH_RGBA = (18, 22, 31, 255)
+WARM_BRASS_FINISH_RGBA = (190, 143, 64, 255)
 
-# Round 3 cameras are deliberately literal rather than derived from node
+# Round 5 cameras are deliberately literal rather than derived from node
 # centroids.  Regenerating the same product with a denser tessellation must not
 # move the review camera by even a fraction of a degree.
 CAMERA_TOP = (0.0, 0.0, 1.0)
@@ -85,6 +93,8 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         filename="01-hero-stone.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STONE,
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-preview",
         acceptance_dimensions=("board-parity", "manhattan-identity"),
     ),
     "hero-steel": ViewRecipe(
@@ -92,18 +102,21 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         filename="02-hero-steel.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STEEL,
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-preview",
         acceptance_dimensions=("board-parity", "manhattan-identity"),
     ),
-    "board-top-raw": ViewRecipe(
-        key="board-top-raw",
-        filename="03a-board-top-raw.png",
+    "board-top-production-finish": ViewRecipe(
+        key="board-top-production-finish",
+        filename="03a-board-top-production-finish.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_TOP,
         margin_fraction=0.045,
         shadow=False,
         scene_mode="board-only",
         lighting_mode="symmetric-review",
-        evidence_class="exact-cad-board-acceptance",
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-acceptance",
         product_beauty_render=False,
         acceptance_dimensions=("board-parity",),
     ),
@@ -121,57 +134,61 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         acceptance_eligible=False,
         diagnostic=True,
     ),
-    "board-oblique-stone-raw": ViewRecipe(
-        key="board-oblique-stone-raw",
-        filename="03c-board-oblique-stone-raw.png",
+    "board-oblique-stone-production-finish": ViewRecipe(
+        key="board-oblique-stone-production-finish",
+        filename="03c-board-oblique-stone-production-finish.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STONE,
         margin_fraction=0.055,
         shadow=True,
         scene_mode="board-only",
         lighting_mode="symmetric-review",
-        evidence_class="exact-cad-board-acceptance",
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-acceptance",
         product_beauty_render=False,
         acceptance_dimensions=("board-parity",),
     ),
-    "board-oblique-steel-raw": ViewRecipe(
-        key="board-oblique-steel-raw",
-        filename="03d-board-oblique-steel-raw.png",
+    "board-oblique-steel-production-finish": ViewRecipe(
+        key="board-oblique-steel-production-finish",
+        filename="03d-board-oblique-steel-production-finish.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STEEL,
         margin_fraction=0.055,
         shadow=True,
         scene_mode="board-only",
         lighting_mode="symmetric-review",
-        evidence_class="exact-cad-board-acceptance",
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-acceptance",
         product_beauty_render=False,
         acceptance_dimensions=("board-parity",),
     ),
-    "south-border-street-plan-raw": ViewRecipe(
-        key="south-border-street-plan-raw",
-        filename="03e-south-border-street-plan-raw.png",
+    "south-border-production-finish": ViewRecipe(
+        key="south-border-production-finish",
+        filename="03e-south-border-production-finish.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_SOUTH_BORDER,
         margin_fraction=0.065,
         shadow=True,
         scene_mode="board-only",
         lighting_mode="symmetric-review",
-        evidence_class="exact-cad-board-acceptance",
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-acceptance",
         product_beauty_render=False,
         acceptance_dimensions=("board-parity", "manhattan-identity"),
         framing_mode="south-border",
         framing_value_mm=48.0,
     ),
-    "top-inventory-raw": ViewRecipe(
-        key="top-inventory-raw",
-        filename="03f-top-inventory-raw.png",
+    "top-inventory-production-finish": ViewRecipe(
+        key="top-inventory-production-finish",
+        filename="03f-top-inventory-production-finish.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_TOP,
         margin_fraction=0.045,
         shadow=False,
         scene_mode="full",
         lighting_mode="symmetric-review",
-        evidence_class="exact-cad-inventory-acceptance",
+        material_mode="production-finish",
+        evidence_class="exact-cad-production-finish-acceptance",
         product_beauty_render=False,
         acceptance_dimensions=("board-parity", "role-legibility", "side-coding"),
     ),
@@ -264,13 +281,13 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
     ),
     "manhattan-identity-neutral": ViewRecipe(
         key="manhattan-identity-neutral",
-        filename="06a-manhattan-identity-neutral.png",
+        filename="06a-manhattan-identity-finished-board-neutral-pieces.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_ENGINEERING,
         margin_fraction=0.045,
         shadow=True,
         scene_mode="board-inventory-engineering",
-        material_mode="neutral-review",
+        material_mode="neutral-pieces-production-board",
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
@@ -288,7 +305,7 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-engineering-view",
         product_beauty_render=False,
-        acceptance_dimensions=("board-parity", "manhattan-identity"),
+        acceptance_eligible=False,
     ),
     "board-inventory-depth-diagnostic": ViewRecipe(
         key="board-inventory-depth-diagnostic",
@@ -308,13 +325,13 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
     ),
     "neutral-start-stone": ViewRecipe(
         key="neutral-start-stone",
-        filename="07a-neutral-start-stone.png",
+        filename="07a-neutral-start-stone-finished-board.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STONE,
         margin_fraction=0.075,
         shadow=True,
         scene_mode="full",
-        material_mode="neutral-review",
+        material_mode="neutral-pieces-production-board",
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
@@ -322,13 +339,13 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
     ),
     "neutral-start-steel": ViewRecipe(
         key="neutral-start-steel",
-        filename="07b-neutral-start-steel.png",
+        filename="07b-neutral-start-steel-finished-board.png",
         semantic_side=None,
         fallback_direction_cad=CAMERA_HERO_STEEL,
         margin_fraction=0.075,
         shadow=True,
         scene_mode="full",
-        material_mode="neutral-review",
+        material_mode="neutral-pieces-production-board",
         lighting_mode="symmetric-review",
         evidence_class="exact-cad-recognition-input",
         product_beauty_render=False,
@@ -337,16 +354,16 @@ VIEW_RECIPES: Mapping[str, ViewRecipe] = {
 }
 
 
-ROUND_3_REQUIRED_VIEWS = frozenset(
+ROUND_5_REQUIRED_VIEWS = frozenset(
     {
         "hero-stone",
         "hero-steel",
-        "board-top-raw",
+        "board-top-production-finish",
         "board-top-depth-diagnostic",
-        "board-oblique-stone-raw",
-        "board-oblique-steel-raw",
-        "south-border-street-plan-raw",
-        "top-inventory-raw",
+        "board-oblique-stone-production-finish",
+        "board-oblique-steel-production-finish",
+        "south-border-production-finish",
+        "top-inventory-production-finish",
         "rank-lineup-front",
         "rank-lineup-rear",
         "rank-lineup-top",
@@ -722,6 +739,89 @@ def _neutral_material(node: SceneNode) -> SceneNode:
     return result
 
 
+def _production_finish_material(node: SceneNode) -> SceneNode:
+    """Apply the required Round 5 board finish without changing triangles.
+
+    The classification is intentionally stricter than a centroid test. A face
+    becomes brass only when it has geometry above Z8.20 and no vertex below
+    the boundary. Any triangle that actually straddles the boundary would make
+    a face-only material schedule dishonest, so rendering fails instead.
+    """
+
+    result = _transformed_node(node, np.eye(4, dtype=np.float64))
+    if result.label.casefold() != "board":
+        return result
+
+    tolerance_mm = 1e-6
+    triangle_z = result.vertices_cad_mm[result.faces, 2]
+    minimum_z = triangle_z.min(axis=1)
+    maximum_z = triangle_z.max(axis=1)
+    straddles = (minimum_z < BOARD_FINISH_BOUNDARY_Z_MM - tolerance_mm) & (
+        maximum_z > BOARD_FINISH_BOUNDARY_Z_MM + tolerance_mm
+    )
+    if bool(np.any(straddles)):
+        raise ValueError(
+            "board has triangles crossing the Z8.20 finish boundary; "
+            "a display-only face material assignment would be dishonest"
+        )
+
+    brass = maximum_z > BOARD_FINISH_BOUNDARY_Z_MM + tolerance_mm
+    if not bool(np.any(brass)) or bool(np.all(brass)):
+        raise ValueError("board finish boundary did not classify both finish regions")
+
+    midnight = np.asarray(MIDNIGHT_FINISH_RGBA, dtype=np.uint8)
+    warm_brass = np.asarray(WARM_BRASS_FINISH_RGBA, dtype=np.uint8)
+    result.face_rgba = np.repeat(midnight[None, :], len(result.faces), axis=0)
+    result.face_rgba[brass] = warm_brass
+    result.color_source = "round-5-z8.20-production-finish-display-override"
+    result.color_encoding = "srgb-u8"
+    # These are restrained preview values, not a claim about a measured finish.
+    result.roughness = 0.58
+    result.metallic = 0.0
+    return result
+
+
+def _production_finish_override(nodes: Sequence[SceneNode]) -> Mapping[str, object]:
+    boards = [node for node in nodes if node.label.casefold() == "board"]
+    if len(boards) != 1:
+        raise ValueError(
+            f"production-finish view requires exactly one board, found {len(boards)}"
+        )
+    board = boards[0]
+    colors = board.face_rgba
+    midnight = np.asarray(MIDNIGHT_FINISH_RGBA, dtype=np.uint8)
+    warm_brass = np.asarray(WARM_BRASS_FINISH_RGBA, dtype=np.uint8)
+    midnight_faces = int(np.count_nonzero(np.all(colors == midnight, axis=1)))
+    brass_faces = int(np.count_nonzero(np.all(colors == warm_brass, axis=1)))
+    if midnight_faces + brass_faces != len(board.faces):
+        raise ValueError("production-finish board contains an undeclared display color")
+    return {
+        "mode": "round-5-production-finish",
+        "applies_to": "display colors on the exact board triangles only",
+        "boundary_cad_z_mm": BOARD_FINISH_BOUNDARY_Z_MM,
+        "classification": (
+            "midnight when triangle max Z <= 8.20; warm brass when triangle "
+            "has Z > 8.20 and no vertex below 8.20; fail on a straddling triangle"
+        ),
+        "midnight_rgba_srgb": list(MIDNIGHT_FINISH_RGBA),
+        "warm_brass_rgba_srgb": list(WARM_BRASS_FINISH_RGBA),
+        "midnight_faces": midnight_faces,
+        "warm_brass_faces": brass_faces,
+        "board_triangles": int(len(board.faces)),
+        "geometry_changed": False,
+        "one_physical_board": True,
+        "production_intent": (
+            "midnight base through Z8.20 with warm brass/gold light-square "
+            "pads above Z8.20"
+        ),
+        "production_route": (
+            "one height-based material change above Z8.20, or a post-print "
+            "finish applied only to the raised pad region"
+        ),
+        "physical_execution_verified": False,
+    }
+
+
 def _prepare_view_scene(
     source_nodes: Sequence[SceneNode],
     recipe: ViewRecipe,
@@ -811,6 +911,25 @@ def _prepare_view_scene(
             "rgba_srgb": list(NEUTRAL_REVIEW_RGBA),
             "applies_to": "display only; source GLB materials remain in each node receipt",
         }
+    elif recipe.material_mode == "production-finish":
+        nodes = [_production_finish_material(node) for node in nodes]
+        material_override = _production_finish_override(nodes)
+    elif recipe.material_mode == "neutral-pieces-production-board":
+        nodes = [
+            _production_finish_material(node)
+            if node.label.casefold() == "board"
+            else _neutral_material(node)
+            for node in nodes
+        ]
+        production_override = dict(_production_finish_override(nodes))
+        production_override["piece_display_override"] = {
+            "mode": "neutral-recognition-review",
+            "rgba_srgb": list(NEUTRAL_REVIEW_RGBA),
+            "applies_to": (
+                "display only on pieces; source GLB materials remain in each node receipt"
+            ),
+        }
+        material_override = production_override
     elif recipe.material_mode == "glb":
         material_override = None
     else:
@@ -828,6 +947,14 @@ def _prepare_view_scene(
         "framing_value_mm": recipe.framing_value_mm,
         "display_crop_below_local_z_mm": recipe.display_crop_below_local_z_mm,
         "source_material_summary": source_material_summary,
+        "display_material_summary": {
+            node.label: {
+                "source": node.color_source,
+                "encoding": node.color_encoding,
+                "colors": _color_summary(node),
+            }
+            for node in nodes
+        },
         "geometry_policy": (
             "exact source triangles with deterministic rigid review transforms; "
             "no generated or altered product geometry"
@@ -1494,7 +1621,7 @@ def render_product(
 
         receipt_path = output_path.with_suffix(".render.json")
         receipt: Mapping[str, object] = {
-            "schema": "workshop.cad-preview-render.v3",
+            "schema": "workshop.cad-preview-render.v4",
             "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
             "view": key,
             "view_contract": {
@@ -1511,7 +1638,10 @@ def render_product(
                 "synthetic_depth_edges": recipe.depth_edges,
                 "native_material_required": recipe.material_mode == "glb",
                 "neutral_material_evidence": recipe.material_mode
-                == "neutral-review",
+                in {"neutral-review", "neutral-pieces-production-board"},
+                "production_finish_display": recipe.material_mode
+                in {"production-finish", "neutral-pieces-production-board"},
+                "production_finish_physical_execution_verified": False,
             },
             "input": {
                 "path": _portable_path(input_path, receipt_path),
@@ -1541,6 +1671,7 @@ def render_product(
             "product_beauty_render": recipe.product_beauty_render,
             "physical_print": False,
             "printability_proof": False,
+            "physical_finish_execution_verified": False,
         }
         _write_json(receipt_path, receipt)
         results.append(
@@ -1556,6 +1687,8 @@ def render_product(
                 "run_acceptance_eligible": run_acceptance_eligible,
                 "diagnostic": recipe.diagnostic,
                 "acceptance_dimensions": list(recipe.acceptance_dimensions),
+                "production_finish_display": recipe.material_mode
+                in {"production-finish", "neutral-pieces-production-board"},
                 "scene_integrity": scene_integrity,
                 "warnings": warnings,
             }
@@ -1563,7 +1696,7 @@ def render_product(
 
     manifest_path = output_dir / "render-manifest.json"
     manifest: Mapping[str, object] = {
-        "schema": "workshop.cad-preview-render-manifest.v3",
+        "schema": "workshop.cad-preview-render-manifest.v4",
         "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
         "input": {
             "path": _portable_path(input_path, manifest_path),
@@ -1574,18 +1707,26 @@ def render_product(
         "concept_art": False,
         "physical_print": False,
         "printability_proof": False,
+        "production_finish": {
+            "boundary_cad_z_mm": BOARD_FINISH_BOUNDARY_Z_MM,
+            "midnight_rgba_srgb": list(MIDNIGHT_FINISH_RGBA),
+            "warm_brass_rgba_srgb": list(WARM_BRASS_FINISH_RGBA),
+            "one_physical_board": True,
+            "geometry_changed": False,
+            "physical_execution_verified": False,
+        },
     }
     _write_json(manifest_path, manifest)
     return manifest
 
 
 def validate_view_recipes() -> Mapping[str, object]:
-    """Fail fast on any recipe change that weakens the Round 3 proof contract."""
+    """Fail fast on any recipe change that weakens the Round 5 proof contract."""
 
     errors: list[str] = []
     actual_keys = frozenset(VIEW_RECIPES)
-    missing = sorted(ROUND_3_REQUIRED_VIEWS - actual_keys)
-    unexpected = sorted(actual_keys - ROUND_3_REQUIRED_VIEWS)
+    missing = sorted(ROUND_5_REQUIRED_VIEWS - actual_keys)
+    unexpected = sorted(actual_keys - ROUND_5_REQUIRED_VIEWS)
     if missing:
         errors.append(f"missing required views: {', '.join(missing)}")
     if unexpected:
@@ -1601,6 +1742,13 @@ def validate_view_recipes() -> Mapping[str, object]:
         "role-legibility",
         "side-coding",
     }
+    allowed_material_modes = {
+        "glb",
+        "neutral-review",
+        "production-finish",
+        "neutral-pieces-production-board",
+    }
+    finish_modes = {"production-finish", "neutral-pieces-production-board"}
     for key, recipe in VIEW_RECIPES.items():
         if key != recipe.key:
             errors.append(f"mapping key {key!r} does not match recipe key {recipe.key!r}")
@@ -1611,9 +1759,11 @@ def validate_view_recipes() -> Mapping[str, object]:
         except ValueError as exc:
             errors.append(f"{key}: invalid camera direction: {exc}")
         if recipe.semantic_side is not None:
-            errors.append(f"{key}: Round 3 camera must be frozen, not semantic")
+            errors.append(f"{key}: Round 5 camera must be frozen, not semantic")
         if recipe.projection != "orthographic":
-            errors.append(f"{key}: Round 3 proof must use orthographic projection")
+            errors.append(f"{key}: Round 5 proof must use orthographic projection")
+        if recipe.material_mode not in allowed_material_modes:
+            errors.append(f"{key}: unknown material mode {recipe.material_mode!r}")
         if recipe.depth_edges and recipe.acceptance_eligible:
             errors.append(f"{key}: synthetic depth edges cannot be acceptance-eligible")
         if recipe.depth_edges and recipe.product_beauty_render:
@@ -1626,6 +1776,23 @@ def validate_view_recipes() -> Mapping[str, object]:
             errors.append(f"{key}: diagnostic filename must say diagnostic")
         if recipe.diagnostic and recipe.acceptance_dimensions:
             errors.append(f"{key}: diagnostics cannot claim acceptance dimensions")
+        if recipe.diagnostic and recipe.material_mode != "glb":
+            errors.append(f"{key}: diagnostics must retain the native one-material GLB")
+        if recipe.product_beauty_render and recipe.material_mode not in finish_modes:
+            errors.append(f"{key}: Round 5 beauty views must show production finish")
+        if (
+            recipe.acceptance_eligible
+            and "board-parity" in recipe.acceptance_dimensions
+            and recipe.material_mode not in finish_modes
+        ):
+            errors.append(
+                f"{key}: board-parity acceptance must show the required production finish"
+            )
+        if key == "board-inventory-engineering-raw":
+            if recipe.material_mode != "glb" or recipe.acceptance_eligible:
+                errors.append(
+                    f"{key}: raw engineering must stay native-material and ineligible"
+                )
         unknown_dimensions = set(recipe.acceptance_dimensions) - allowed_dimensions
         if unknown_dimensions:
             errors.append(
@@ -1647,11 +1814,11 @@ def validate_view_recipes() -> Mapping[str, object]:
                 errors.append(f"{key}: a cropped recognition panel cannot be beauty art")
 
     if errors:
-        raise ValueError("Round 3 render recipe self-check failed:\n- " + "\n- ".join(errors))
+        raise ValueError("Round 5 render recipe self-check failed:\n- " + "\n- ".join(errors))
 
     return {
         "renderer": {"id": RENDERER_ID, "version": RENDERER_VERSION},
-        "required_views": len(ROUND_3_REQUIRED_VIEWS),
+        "required_views": len(ROUND_5_REQUIRED_VIEWS),
         "view_keys_sha256": _canonical_sha256(sorted(VIEW_RECIPES)),
         "filenames_sha256": _canonical_sha256(sorted(filenames)),
         "acceptance_views": sum(
@@ -1662,6 +1829,9 @@ def validate_view_recipes() -> Mapping[str, object]:
         ),
         "all_cameras_frozen": True,
         "synthetic_depth_edges_excluded_from_acceptance": True,
+        "production_finish_boundary_cad_z_mm": BOARD_FINISH_BOUNDARY_Z_MM,
+        "production_finish_geometry_changed": False,
+        "production_finish_physical_execution_verified": False,
         "status": "ok",
     }
 
@@ -1694,7 +1864,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--self-check",
         action="store_true",
-        help="Validate the frozen Round 3 recipe contract without loading or rendering a GLB",
+        help="Validate the frozen Round 5 recipe contract without loading or rendering a GLB",
     )
     return parser
 
