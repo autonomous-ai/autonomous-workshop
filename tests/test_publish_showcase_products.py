@@ -217,7 +217,8 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
             self.assertIn("project.json", archive.namelist())
             self.assertIn("product.json", archive.namelist())
-            self.assertIn("assembled.stl", archive.namelist())
+            self.assertIn("five-job-checkers.stl", archive.namelist())
+            self.assertNotIn("assembled.stl", archive.namelist())
             self.assertIn("workshop-product-facts.json", archive.namelist())
             self.assertNotIn("images/hero.png", archive.namelist())
             self.assertEqual(
@@ -225,7 +226,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
             )
             self.assertEqual(
-                archive.read("assembled.stl"),
+                archive.read("five-job-checkers.stl"),
                 archive.read("cad/product.stl"),
             )
             self.assertEqual(
@@ -237,10 +238,12 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             facts = json.loads(facts_payload)
             self.assertEqual(facts["product"], product)
             self.assertEqual(facts["wish"], product["wish"])
-            self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+            self.assertEqual(
+                facts["primary_model"]["path"], "five-job-checkers.stl"
+            )
             self.assertEqual(
                 facts["primary_model"]["sha256"],
-                hashlib.sha256(archive.read("assembled.stl")).hexdigest(),
+                hashlib.sha256(archive.read("five-job-checkers.stl")).hexdigest(),
             )
             self.assertEqual(facts["product"]["components"], [
                 "one checkers board",
@@ -330,7 +333,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         )
         self.assertEqual(
             run["site_receipt"]["details"]["primary_model_path"],
-            "assembled.stl",
+            "five-job-checkers.stl",
         )
         self.assertIsNone(run["site_receipt"]["published_history_id"])
         self.assertEqual(
@@ -448,7 +451,9 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         finally:
             store.release_lease(self.spec.slug, lease)
         self.assertTrue(receipt.is_verified_draft)
-        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertEqual(
+            receipt.details["primary_model_path"], "five-job-checkers.stl"
+        )
 
     def test_all_five_checked_in_bundles_reconstruct_without_running_jobs(self):
         with mock.patch.object(

@@ -22,6 +22,7 @@ from inventor_workshop.shop import (
     _assert_shop_importable_pack,
     _build_model_handoff_pack,
     _factory_story_prompt,
+    _factory_transport_primary,
     _sealed_factory_primary,
     _shop_category_for_lane,
 )
@@ -388,6 +389,94 @@ class InstructionsSiteTest(unittest.TestCase):
             self.assertEqual(facts["primary_model"]["kind"], "mesh")
             self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
 
+    def test_single_print_mesh_keeps_assembled_name_when_only_review_stl_exists(self):
+        review_mesh = self.made.artifact_root / "review" / "reference.stl"
+        review_mesh.write_text(
+            "solid review-only\nendsolid review-only\n", encoding="utf-8"
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+
+        self.assertEqual(
+            _factory_transport_primary(context, sealed_primary), sealed_primary
+        )
+
+    def test_multipart_assembled_mesh_is_slug_named_only_in_factory_transport(self):
+        parts = self.made.artifact_root / "verified-toy_parts"
+        parts.mkdir()
+        printable = parts / "body.stl"
+        printable.write_text(
+            "solid printable-body\nendsolid printable-body\n", encoding="utf-8"
+        )
+        generator = self.made.artifact_root / "main.py"
+        generator.write_text(
+            "def gen_step():\n    raise RuntimeError('sealed mesh must win')\n",
+            encoding="utf-8",
+        )
+        nested_source = self.made.artifact_root / "source"
+        nested_source.mkdir()
+        nested_generator = nested_source / "model.py"
+        nested_generator.write_text(
+            "def gen_step():\n    return 'auditable source only'\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        transported_primary = _factory_transport_primary(context, sealed_primary)
+        self.assertEqual(sealed_primary["path"], "assembled.stl")
+        self.assertEqual(transported_primary["path"], "verified-toy.stl")
+        self.assertEqual(transported_primary["sha256"], sealed_primary["sha256"])
+
+        page_path = self.instructions / "product.json"
+        page = json.loads(page_path.read_text(encoding="utf-8"))
+        page["product_artifact_sha256"] = made.artifact_sha256
+        page_path.write_text(
+            json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        instructions_manifest = build_artifact_manifest(
+            self.instructions, created_at="content-addressed"
+        )
+        store = InventorStore(self.root / "multipart-mesh.sqlite3")
+        store.register_product(
+            "verified-toy", "instructions", artifact_sha256=made.artifact_sha256
+        )
+        lease = store.acquire_lease("verified-toy", "multipart-mesh-test")
+        context = InstructionsSiteContext(made, "verified-toy", lease)
+        transport = SuccessfulShopTransport(context, self.media)
+        try:
+            receipt = ShopInstructionsWriter(
+                store, ShopDoor("token", transport=transport), "owner-1"
+            )(context, self.instructions, instructions_manifest)
+        finally:
+            store.release_lease("verified-toy", lease)
+
+        self.assertEqual(receipt.details["primary_model_path"], "verified-toy.stl")
+        self.assertEqual(
+            receipt.details["primary_model_sha256"], sealed_primary["sha256"]
+        )
+        multipart = _multipart_parts(transport.calls[0][2], transport.calls[0][3])
+        with zipfile.ZipFile(io.BytesIO(multipart["file"][0])) as archive:
+            names = archive.namelist()
+            self.assertNotIn("assembled.stl", names)
+            self.assertEqual(names.count("verified-toy.stl"), 1)
+            self.assertIn("verified-toy_parts/body.stl", names)
+            self.assertNotIn("main.py", names)
+            self.assertIn("source/model.py", names)
+            self.assertEqual(archive.read("source/model.py"), nested_generator.read_bytes())
+            self.assertEqual(
+                archive.read("verified-toy.stl"),
+                (made.artifact_root / "assembled.stl").read_bytes(),
+            )
+            self.assertEqual(
+                archive.read("verified-toy_parts/body.stl"), printable.read_bytes()
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["primary_model"], transported_primary)
+        self.assertTrue((made.artifact_root / "assembled.stl").is_file())
+        self.assertFalse((made.artifact_root / "verified-toy.stl").exists())
+
     def test_generator_only_artifact_remains_importable_and_keeps_generator(self):
         product_root = self.root / "generator-only"
         product_root.mkdir()
@@ -483,6 +572,58 @@ class InstructionsSiteTest(unittest.TestCase):
         with zipfile.ZipFile(packet) as archive:
             self.assertIn("slug-mesh-toy.stl", archive.namelist())
             self.assertNotIn("main.py", archive.namelist())
+
+    def test_existing_exact_slug_mesh_avoids_duplicate_multipart_primary(self):
+        product_root = self.root / "existing-slug-mesh"
+        product_root.mkdir()
+        product = {
+            "title": "Existing Slug Mesh Toy",
+            "summary": "One exact assembly and one print part.",
+            "description": "One exact assembly and one print part. By Alice.",
+            "lane": "moving-machines",
+        }
+        (product_root / "project.json").write_text(
+            '{"id":"existing-slug-toy","name":"Existing Slug Toy"}\n',
+            encoding="utf-8",
+        )
+        (product_root / "product.json").write_text(
+            json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        mesh_bytes = b"solid exact-assembly\nendsolid exact-assembly\n"
+        (product_root / "assembled.stl").write_bytes(mesh_bytes)
+        (product_root / "existing-slug-toy.stl").write_bytes(mesh_bytes)
+        parts = product_root / "existing-slug-toy_parts"
+        parts.mkdir()
+        (parts / "part.stl").write_bytes(
+            b"solid print-part\nendsolid print-part\n"
+        )
+        made = Made.from_root(product_root, product)
+        context = InstructionsSiteContext(made, "existing-slug-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        primary = _factory_transport_primary(context, sealed_primary)
+        self.assertEqual(sealed_primary["path"], "assembled.stl")
+        self.assertEqual(primary["path"], "existing-slug-toy.stl")
+
+        packet = self.root / "existing-slug-mesh.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+        _build_model_handoff_pack(
+            made.artifact_root,
+            made.artifact_manifest,
+            packet,
+            facts,
+            primary,
+            sealed_primary_model=sealed_primary,
+        )
+        with zipfile.ZipFile(packet) as archive:
+            names = archive.namelist()
+            self.assertNotIn("assembled.stl", names)
+            self.assertEqual(names.count("existing-slug-toy.stl"), 1)
+            self.assertEqual(archive.read("existing-slug-toy.stl"), mesh_bytes)
+            self.assertIn("existing-slug-toy_parts/part.stl", names)
 
     def test_factory_story_prompt_is_bounded_without_losing_attribution(self):
         product = dict(self.made.product)

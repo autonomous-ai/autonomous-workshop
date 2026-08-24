@@ -156,29 +156,16 @@ def _assert_shop_importable_pack(content: bytes) -> None:
     Workshop Packs contain the Made artifact at archive root.  The deployed
     importer recognizes that root only when it has a top-level Python source
     containing ``def gen_step``, or a usable ``project.json`` plus a root
-    primary model named ``assembled.stl`` (preferred by Factory) or
-    ``<project-id>.stl``. Checking the exact sealed Pack prevents both rejected
-    imports and accidental selection of a small nested part. Critically, this
-    guard never patches un-Playtested bytes into the archive after Make.
+    primary model named ``assembled.stl`` or ``<project-id>.stl``. Checking the
+    exact sealed Pack prevents both rejected imports and accidental selection
+    of a small nested part. Critically, this guard never patches un-Playtested
+    geometry into the archive after Make; the transport may only give exact
+    sealed bytes the slug name Factory reserves for a non-production visual.
     """
 
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             names = set(archive.namelist())
-            top_level_generator = False
-            for name in sorted(names):
-                if not name.casefold().endswith(".py"):
-                    continue
-                if b"def gen_step" not in archive.read(name):
-                    continue
-                if "/" in name:
-                    raise ContractError(
-                        "Shop import would narrow this artifact to nested generator %s"
-                        % name
-                    )
-                top_level_generator = True
-            if top_level_generator:
-                return
             if "project.json" in names:
                 try:
                     project = json.loads(
@@ -197,11 +184,25 @@ def _assert_shop_importable_pack(content: bytes) -> None:
                         )
                     ):
                         return
+            top_level_generator = False
+            for name in sorted(names):
+                if not name.casefold().endswith(".py"):
+                    continue
+                if b"def gen_step" not in archive.read(name):
+                    continue
+                if "/" in name:
+                    raise ContractError(
+                        "Shop import would narrow this artifact to nested generator %s"
+                        % name
+                    )
+                top_level_generator = True
+            if top_level_generator:
+                return
     except (KeyError, OSError, UnicodeDecodeError, ValueError, zipfile.BadZipFile) as exc:
         raise ContractError("Shop importability check could not read the sealed Pack") from exc
     raise ContractError(
         "Shop import requires a top-level *.py defining gen_step, or a valid "
-        "root project.json with root assembled.stl (preferred) or <slug>.stl "
+        "root project.json with root assembled.stl or <slug>.stl "
         "in the sealed Made artifact"
     )
 
@@ -371,7 +372,7 @@ def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
     if assembled.is_file() and canonical.is_file():
         if assembled.read_bytes() != canonical.read_bytes():
             raise ContractError(
-                "root assembled.stl and <slug>.stl diverge; Factory would prefer assembled.stl"
+                "root assembled.stl and <slug>.stl diverge; one exact primary mesh is required"
             )
     if candidates:
         selected = assembled if assembled.is_file() else canonical
@@ -404,6 +405,84 @@ def _sealed_factory_primary(context: Any) -> Mapping[str, str]:
         "project-marker Made artifact requires root assembled.stl or <slug>.stl, "
         "or one top-level generator defining gen_step"
     )
+
+
+def _factory_transport_primary(
+    context: Any, sealed_primary: Mapping[str, str]
+) -> Mapping[str, str]:
+    """Name a multipart assembly as Factory's non-production visual.
+
+    Factory treats a root ``assembled.stl`` as a printable part when other STL
+    print files are present. Its established project convention excludes a
+    root ``<product-id>.stl`` visual from that manufacturing inventory. Made
+    remains immutable: this function changes only the name recorded in the
+    transport facts, and :func:`_build_model_handoff_pack` copies the exact
+    sealed bytes under that name.
+
+    A lone ``assembled.stl`` remains printable and keeps its original name.
+    Generator-only and already slug-named artifacts are unchanged.
+    """
+
+    if (
+        not isinstance(sealed_primary, Mapping)
+        or sealed_primary.get("kind") not in ("mesh", "generator")
+        or not isinstance(sealed_primary.get("path"), str)
+    ):
+        raise ContractError("sealed Factory primary model is malformed")
+    sealed_sha256 = require_sha256(
+        sealed_primary.get("sha256"), "sealed Factory primary model sha256"
+    )
+    selected = {
+        "kind": sealed_primary["kind"],
+        "path": sealed_primary["path"],
+        "sha256": sealed_sha256,
+    }
+    if selected["kind"] != "mesh" or selected["path"] != "assembled.stl":
+        return selected
+
+    context.made.assert_current()
+    manifest = context.made.artifact_manifest
+    if not isinstance(manifest, ArtifactManifest):
+        raise ContractError("Factory transport requires a sealed Made manifest")
+    excluded = set(_model_handoff_excludes(manifest))
+
+    def is_excluded(path: str) -> bool:
+        parts = PurePosixPath(path).parts
+        return any(
+            "/".join(parts[:position]) in excluded
+            for position in range(1, len(parts))
+        )
+
+    other_stls = [
+        entry
+        for entry in manifest.entries
+        if entry.path != "assembled.stl"
+        and PurePosixPath(entry.path).suffix.casefold() == ".stl"
+        and not is_excluded(entry.path)
+    ]
+    if not other_stls:
+        return selected
+
+    product_id = context.wish.product_id
+    if (
+        not isinstance(product_id, str)
+        or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", product_id)
+    ):
+        raise ContractError("Factory transport requires a safe Wish product_id")
+    transported_path = product_id + ".stl"
+    existing = next(
+        (entry for entry in manifest.entries if entry.path == transported_path),
+        None,
+    )
+    if existing is not None and existing.sha256 != sealed_sha256:
+        raise ContractError(
+            "existing root <slug>.stl differs from sealed assembled.stl"
+        )
+    return {
+        "kind": "mesh",
+        "path": transported_path,
+        "sha256": sealed_sha256,
+    }
 
 
 def _model_handoff_excludes(manifest: ArtifactManifest) -> Tuple[str, ...]:
@@ -480,13 +559,17 @@ def _build_model_handoff_pack(
     destination: Path,
     facts: Mapping[str, Any],
     primary_model: Mapping[str, str],
+    *,
+    sealed_primary_model: Optional[Mapping[str, str]] = None,
 ) -> Mapping[str, Any]:
     """Build a canonical transport Pack without local page/inspection media.
 
     If the sealed primary is a mesh, top-level ``gen_step`` sources are
-    deliberately omitted from this transport-only subset. The complete source
-    remains in Made, but Factory cannot accidentally execute it instead of
-    ingesting the exact mesh that Playtest approved.
+    deliberately omitted from this transport-only subset. For multipart Made
+    artifacts, exact ``assembled.stl`` bytes may be transported as
+    ``<product-id>.stl`` so Factory does not manufacture the visual assembly in
+    addition to every print part. The complete source and original name remain
+    in Made.
     """
 
     root = Path(root).resolve(strict=True)
@@ -513,8 +596,24 @@ def _build_model_handoff_pack(
     primary_sha256 = require_sha256(
         primary_model.get("sha256"), "Factory primary model sha256"
     )
-    primary_entry = next(
-        (entry for entry in manifest.entries if entry.path == primary_path.as_posix()),
+    sealed_primary_model = sealed_primary_model or primary_model
+    if (
+        not isinstance(sealed_primary_model, Mapping)
+        or sealed_primary_model.get("kind") not in ("mesh", "generator")
+        or not isinstance(sealed_primary_model.get("path"), str)
+    ):
+        raise ContractError("sealed Factory primary model facts are malformed")
+    sealed_primary_path = PurePosixPath(sealed_primary_model["path"])
+    sealed_primary_sha256 = require_sha256(
+        sealed_primary_model.get("sha256"),
+        "sealed Factory primary model sha256",
+    )
+    sealed_primary_entry = next(
+        (
+            entry
+            for entry in manifest.entries
+            if entry.path == sealed_primary_path.as_posix()
+        ),
         None,
     )
     expected_suffix = ".stl" if primary_model["kind"] == "mesh" else ".py"
@@ -522,17 +621,56 @@ def _build_model_handoff_pack(
         len(primary_path.parts) != 1
         or primary_path.name != primary_model["path"]
         or primary_path.suffix.casefold() != expected_suffix
-        or primary_entry is None
-        or primary_entry.sha256 != primary_sha256
+        or sealed_primary_model["kind"] != primary_model["kind"]
+        or len(sealed_primary_path.parts) != 1
+        or sealed_primary_path.name != sealed_primary_model["path"]
+        or sealed_primary_path.suffix.casefold() != expected_suffix
+        or sealed_primary_entry is None
+        or sealed_primary_entry.sha256 != sealed_primary_sha256
+        or sealed_primary_sha256 != primary_sha256
         or facts.get("primary_model") != dict(primary_model)
     ):
         raise ContractError("Factory model handoff primary facts are malformed")
+
     excluded = set(_model_handoff_excludes(manifest))
-    omit_top_level_generators = primary_model["kind"] == "mesh"
 
     def excluded_entry(path: str) -> bool:
         parts = PurePosixPath(path).parts
-        return any("/".join(parts[:position]) in excluded for position in range(1, len(parts)))
+        return any(
+            "/".join(parts[:position]) in excluded
+            for position in range(1, len(parts))
+        )
+
+    rename_primary = primary_path != sealed_primary_path
+    existing_transport_entry = next(
+        (entry for entry in manifest.entries if entry.path == primary_path.as_posix()),
+        None,
+    )
+    if rename_primary:
+        try:
+            project = json.loads((root / "project.json").read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError) as exc:
+            raise ContractError("Factory transport project.json is malformed") from exc
+        other_stls = [
+            entry
+            for entry in manifest.entries
+            if entry.path != sealed_primary_path.as_posix()
+            and PurePosixPath(entry.path).suffix.casefold() == ".stl"
+            and not excluded_entry(entry.path)
+        ]
+        if (
+            primary_model["kind"] != "mesh"
+            or sealed_primary_path.as_posix() != "assembled.stl"
+            or not isinstance(project, Mapping)
+            or primary_path.as_posix() != str(project.get("id")) + ".stl"
+            or not other_stls
+            or (
+                existing_transport_entry is not None
+                and existing_transport_entry.sha256 != primary_sha256
+            )
+        ):
+            raise ContractError("Factory primary transport rename is not sealed-safe")
+    omit_top_level_generators = primary_model["kind"] == "mesh"
 
     with tempfile.TemporaryDirectory(prefix="workshop-model-handoff-") as directory:
         staging = Path(directory)
@@ -553,10 +691,24 @@ def _build_model_handoff_pack(
                 and b"def gen_step" in content
             ):
                 continue
+            if rename_primary and entry.path == sealed_primary_path.as_posix():
+                continue
             target = staging.joinpath(*PurePosixPath(entry.path).parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
             target.chmod(0o755 if entry.executable else 0o644)
+        if rename_primary and existing_transport_entry is None:
+            transported = staging.joinpath(*primary_path.parts)
+            transported.parent.mkdir(parents=True, exist_ok=True)
+            source = root.joinpath(*sealed_primary_path.parts)
+            transported.write_bytes(source.read_bytes())
+            transported.chmod(0o755 if sealed_primary_entry.executable else 0o644)
+        transported = staging.joinpath(*primary_path.parts)
+        if (
+            not transported.is_file()
+            or hashlib.sha256(transported.read_bytes()).hexdigest() != primary_sha256
+        ):
+            raise ContractError("Factory transported primary mesh changed")
         facts_path = staging / "workshop-product-facts.json"
         if facts_path.exists():
             raise ContractError("Made artifact reserves workshop-product-facts.json")
@@ -1726,7 +1878,8 @@ class ShopInstructionsWriter:
                 "Made product facts cannot contain creator-owned Factory output: %s"
                 % sorted(forbidden_product_fields)
             )
-        primary_model = _sealed_factory_primary(context)
+        sealed_primary_model = _sealed_factory_primary(context)
+        primary_model = _factory_transport_primary(context, sealed_primary_model)
         product_facts = {
             "schema_version": 2,
             "kind": "workshop.product-facts",
@@ -1755,6 +1908,7 @@ class ShopInstructionsWriter:
                 packet,
                 product_facts,
                 primary_model,
+                sealed_primary_model=sealed_primary_model,
             )
             assert_current()
             outcome = self._sender.import_draft(

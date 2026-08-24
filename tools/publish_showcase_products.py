@@ -679,8 +679,11 @@ def _assert_draft_receipt(
         receipt.details.get("product_facts_sha256"),
         "Factory product facts sha256",
     )
-    if receipt.details.get("primary_model_path") != "assembled.stl":
-        raise ReceiptError("Factory receipt did not select root assembled.stl")
+    expected_primary_path = sealed.spec.slug + ".stl"
+    if receipt.details.get("primary_model_path") != expected_primary_path:
+        raise ReceiptError(
+            "Factory receipt did not select the slug-named assembly visual"
+        )
     if receipt.details.get("primary_model_sha256") != _sha256_file(
         sealed.bundle / "artifact" / "assembled.stl"
     ):
@@ -896,7 +899,7 @@ def _verify_draft(
         "server_cover_urls": persisted.details.get("server_cover_urls"),
         "handoff_artifact_sha256": handoff_sha256,
         "product_facts_sha256": product_facts_sha256,
-        "primary_model_path": "assembled.stl",
+        "primary_model_path": sealed.spec.slug + ".stl",
         "primary_model_sha256": _sha256_file(
             sealed.bundle / "artifact" / "assembled.stl"
         ),

@@ -389,9 +389,11 @@ class PublishSealedProductTest(unittest.TestCase):
                 {"id": "five-job-checkers", "name": "Five-Job Checkers"},
             )
             self.assertNotIn("images/hero.png", names)
-            self.assertIn("assembled.stl", names)
+            self.assertIn("five-job-checkers.stl", names)
+            self.assertNotIn("assembled.stl", names)
             self.assertEqual(
-                archive.read("assembled.stl"), archive.read("cad/product.stl")
+                archive.read("five-job-checkers.stl"),
+                archive.read("cad/product.stl"),
             )
             self.assertIn("workshop-product-facts.json", names)
             self.assertEqual(
