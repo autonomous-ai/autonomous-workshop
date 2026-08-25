@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "67077b16496a76646d4cedb26a295538783e83ee6343c86e6357abd0156708f4",
+  "artifact_sha256": "3465a6abecdb23b53bb542ffd9ba8e5671f0de3fae7ed03e77c82df21cfa584c",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -7,6 +7,18 @@
       "executable": false,
       "path": "README.md",
       "sha256": "dc0d8c996f167903b628f2339a34338d3b9221df71e28a7d0eaa6b09c80a017e"
+    },
+    {
+      "bytes": 575320,
+      "executable": false,
+      "path": "assembled.step",
+      "sha256": "9d12fb742838f0fc5af47b403b5615ec0ca3980dc5e030d83bb857ae9103fcb9"
+    },
+    {
+      "bytes": 1230,
+      "executable": false,
+      "path": "assembled.step.json",
+      "sha256": "9e9b0fd43fe97820f13c7274204d36f058f8b9362cd5df0c81d30e99f1b0125e"
     },
     {
       "bytes": 868484,
@@ -21,10 +33,10 @@
       "sha256": "5caedb51a5a02fcfd2de21396f13187c39436c50f11739e266624ae8d7697a97"
     },
     {
-      "bytes": 6066,
+      "bytes": 6552,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "c8713fe228406a1f32cc199f19bd91102b4147a072b57376d5d6ebbfc0a9727b"
+      "sha256": "66646caaf0f228ac6496da4e15ba3ef289da5563c5f7388abc6854c1518aed13"
     },
     {
       "bytes": 999,
@@ -36,7 +48,7 @@
       "bytes": 56471,
       "executable": false,
       "path": "cad/parts/counter-orbit.step",
-      "sha256": "062f24f11eb828af40638b7c8e24e845440ee7625e8af8fc06bada749603d2e1"
+      "sha256": "718c9bc88184b1853cacbf9daa2aa8b2be5e67f7760d6d6059d0f94bf600f3f3"
     },
     {
       "bytes": 302484,
@@ -48,7 +60,7 @@
       "bytes": 36435,
       "executable": false,
       "path": "cad/parts/five-job-core.step",
-      "sha256": "746a705cf3dc893968de0a4ac802521fefb1ae623052af436c3dbd3cb4ba587d"
+      "sha256": "b865b8be989543ce367d0e2420b6c9b34c14dedcefff41b4bf2baa1a4e8600c3"
     },
     {
       "bytes": 176084,
@@ -60,7 +72,7 @@
       "bytes": 13231,
       "executable": false,
       "path": "cad/parts/ring-signal.step",
-      "sha256": "d751b36ff1cfb0ca2ca6819a3f93867fd61f9e1eed0de14dc00ecadbffe305bf"
+      "sha256": "f70c7fdb8b83b21460e27e8237770783206223aac5c817f4865406866f42ffb3"
     },
     {
       "bytes": 50084,
@@ -72,7 +84,7 @@
       "bytes": 91688,
       "executable": false,
       "path": "cad/parts/spoke-signal.step",
-      "sha256": "98cba6d039923659e099da2a038ac02876eecc520bd334c323d0d94da84c8cbe"
+      "sha256": "72136c8477da1a10da8972c826f8a290ba68e588b38c2b6ee581d7a4987e46c9"
     },
     {
       "bytes": 28084,
@@ -84,7 +96,7 @@
       "bytes": 629119,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "62a8f211fbf2195d139428775e12053dd5d856bead5023c1e291e04515c8a868"
+      "sha256": "b6b15219f8550933fe3b7f861f0de1ba3d787db1fb0c52b1633c41021913a6a8"
     },
     {
       "bytes": 868484,
@@ -111,10 +123,10 @@
       "sha256": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2"
     },
     {
-      "bytes": 4999,
+      "bytes": 6235,
       "executable": false,
       "path": "product.json",
-      "sha256": "bf229c8035bdabbba314838c40e4fc28c5a617697b1652f7396231778c724135"
+      "sha256": "af61b116192ca1345e44e830fc711eb70b352892c7662e90d7ac4f0216057511"
     },
     {
       "bytes": 53,
@@ -130,5 +142,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 3256657
+  "total_bytes": 3834929
 }

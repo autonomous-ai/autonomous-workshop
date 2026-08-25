@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "de1ac792c970ff8df85f579b4ebe435f43fbeeb12659694a586c3cea5f25f5df",
+  "artifact_sha256": "639ec3256b19a6485ae71c1efd7398b26b3dc654562ff95ffa58f3ebc2a5fbdd",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -15,8 +15,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "3b74057c2d747be170b6e0febbe4223a1fda0ddd1f2d4c1d6f7b3630f8e9a108",
-  "evidence_sha256": "fa8093aa0292c3f168451e6b54e8431cbbcea8fb8d623579267edff43b6b48ea",
-  "instructions_sha256": "ca48f1139b9fa95747b2e401260753df20295c02085e1309a8d79abe65d6e4ad",
+  "evidence_sha256": "744b059769aac8f15e6afd22e122f20ecf39548a9f4c5592d93b2bad0da61475",
+  "instructions_sha256": "5be971b8a5f1a81b30a3244c065df6766e1ab6993a792cebcbbb0abd184600fd",
   "inventor": {
     "extension_level": "taste-only",
     "id": "alice",
@@ -25,7 +25,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "de1ac792c970ff8df85f579b4ebe435f43fbeeb12659694a586c3cea5f25f5df",
+    "artifact_sha256": "639ec3256b19a6485ae71c1efd7398b26b3dc654562ff95ffa58f3ebc2a5fbdd",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -46,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08",
+    "builder_sha256": "67528adb48c3bb16dd913059deab59f2d5cd1de81d411db02dbfc7f0a8bc6585",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },

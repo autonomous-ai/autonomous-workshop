@@ -98,6 +98,8 @@ class ShowcaseToyTest(unittest.TestCase):
             "project.json",
             "product.json",
             "assembled.stl",
+            "assembled.step",
+            "assembled.step.json",
             "cad/design.json",
             "cad/model.py",
             "cad/product.step",

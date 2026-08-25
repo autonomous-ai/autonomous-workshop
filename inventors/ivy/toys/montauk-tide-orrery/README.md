@@ -11,7 +11,7 @@ Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the fou
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `57a7b031522488c8e8552a9f1d5110138a451939b064c906808020d12e3ab077`
+- Exact artifact: `f38de1240ab4a3c96c88d4e67cb128d13555c456590916333c151a1482c44245`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

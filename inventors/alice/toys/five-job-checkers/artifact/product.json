@@ -60,6 +60,7 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
+  "factory_brief": "A late-night design review, cast as a game you already know. This is ordinary English checkers translated into the Workshop's architecture, not a new ruleset and not a decorative checker pattern. Preserve the exact 132 mm board, unmistakable 8\u00d78 grid, twelve five-ring pieces, twelve five-spoke pieces, and five raised edge thresholds. The two armies must remain different by touch and silhouette. Palette: Midnight black #12151D with warm brass-like gold #D6A449; architectural, restrained, high contrast. Film in this order: Full three-quarter hero with all 24 pieces and all five threshold bars visible. Then prove the 8\u00d78 grid from true overhead; compare ring and spoke pieces in macro; skim the five thresholds from a low edge; move from the exact opening position into a credible midgame; finish on a clean board-plus-24-piece inventory. Use dark after-hours studio light with warm brass highlights, never an ivory wash. Do not randomize the opening setup, invent labels, add components, alter the known rules, or call digital checks a physical print or a human playtest.",
   "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "inventor": {
     "id": "alice",

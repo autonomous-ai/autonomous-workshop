@@ -21,6 +21,7 @@ from inventor_workshop.shop import (
     ShopInstructionsWriter,
     _assert_shop_importable_pack,
     _build_model_handoff_pack,
+    _factory_page_readiness,
     _factory_story_prompt,
     _factory_transport_primary,
     _sealed_factory_primary,
@@ -637,6 +638,74 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertLessEqual(len(prompt), FACTORY_STORY_PROMPT_LIMIT)
         self.assertTrue(prompt.endswith("By Alice."))
         self.assertIn("_workshop_truncated", prompt)
+
+    def test_factory_story_prompt_prefers_reviewed_cinematic_brief(self):
+        product = dict(self.made.product)
+        product["factory_brief"] = (
+            "The shadow knows first. Film the three exact brass rings turning "
+            "under hard moonlight, then reveal the five-point star."
+        )
+        made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        page = json.loads((self.instructions / "product.json").read_text())
+
+        prompt = _factory_story_prompt(context, page)
+
+        self.assertIn("Creative and film brief", prompt)
+        self.assertIn("The shadow knows first", prompt)
+        self.assertIn("cinematic intro video", prompt)
+        self.assertIn("never leave a declared media slot blank", prompt)
+        self.assertNotIn('"setting":"a midnight observatory"', prompt)
+
+    def test_factory_page_readiness_requires_video_use_case_and_each_block_image(self):
+        design = {
+            "title": "Verified Toy",
+            "description": "An exact toy page. By Alice.",
+            "thumbnail_urls": ["https://cdn.example/hero.png"],
+            "use_case": None,
+            "story_blocks": [
+                {"lead": "One", "hero_image": "https://cdn.example/one.png"},
+                {"lead": "Two"},
+            ],
+        }
+
+        readiness = _factory_page_readiness(design)
+
+        self.assertIs(readiness["ready"], False)
+        self.assertEqual(
+            readiness["issues"],
+            [
+                "use-case-missing",
+                "story-block-1-media-missing",
+                "intro-video-missing",
+            ],
+        )
+
+    def test_factory_page_readiness_accepts_complete_progressive_media(self):
+        design = {
+            "title": "Verified Toy",
+            "description": "An exact toy page. By Alice.",
+            "thumbnail_urls": [
+                "https://cdn.example/intro-video.mp4",
+                "https://cdn.example/hero.png",
+            ],
+            "use_case": {
+                "image": "https://cdn.example/use-case.png",
+            },
+            "story_blocks": [
+                {"hero_image": "https://cdn.example/block-0.png"},
+                {"pair_images": ["https://cdn.example/block-1-a.png"]},
+            ],
+        }
+
+        readiness = _factory_page_readiness(design)
+
+        self.assertIs(readiness["ready"], True)
+        self.assertEqual(readiness["issues"], [])
+        self.assertEqual(
+            readiness["video_urls"], ["https://cdn.example/intro-video.mp4"]
+        )
+        self.assertEqual(readiness["story_block_count"], 2)
 
     def test_unsealed_product_story_mutation_fails_before_http(self):
         product = dict(self.made.product)

@@ -291,13 +291,27 @@ def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
         )
         if value not in (None, "", [], {})
     }
-    # Caps sum well below the 50k API maximum. Story and art direction are
-    # intentionally early and receive the largest structured allocations.
+    # A reviewed cinematic brief lets an inventor say what the object means
+    # without pre-authoring Factory's page.  When it is present it replaces
+    # the more mechanical Story + Art direction JSON in the prompt; the full
+    # exact records still travel in workshop-product-facts.json.
+    factory_brief = product.get("factory_brief")
+    if factory_brief not in (None, "") and not isinstance(factory_brief, str):
+        raise ContractError("Factory story brief must be text")
+    creative_facts = (
+        (("Creative and film brief", factory_brief, 7_500),)
+        if isinstance(factory_brief, str) and factory_brief.strip()
+        else (
+            ("Story", product.get("story"), 7_000),
+            ("Art direction", product.get("art_direction"), 7_000),
+        )
+    )
+    # Caps sum well below the 50k API maximum. The concise creative brief is
+    # intentionally early; exact dimensions, rules, and limitations follow.
     facts = (
         ("Wish", context.wish.objective, 3_000),
         ("Product title", product.get("title"), 400),
-        ("Story", product.get("story"), 7_000),
-        ("Art direction", product.get("art_direction"), 7_000),
+        *creative_facts,
         ("Product lane", product.get("lane"), 150),
         ("Product summary", product.get("summary"), 2_500),
         ("Product description", product.get("description"), 5_000),
@@ -310,9 +324,19 @@ def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
     sections = [
         "FACTORY STORY INPUT — verified facts, not pre-authored page copy.",
         (
-            "Generate the customer-facing story, images, and video from the exact "
-            "primary model and these facts. Do not treat AI Playtest as a physical "
-            "print, delivery, customer review, or human endorsement."
+            "Tell a specific physical story, not a generic 3D-print story. The exact "
+            "assembled primary model is the geometry authority: preserve its "
+            "silhouette, topology, moving relationships, grid or station counts, "
+            "component identities, and repeated-piece counts. Setting, camera, "
+            "lighting, and material treatment may change; product geometry may not."
+        ),
+        (
+            "Generate the complete customer page: a cinematic intro video, a hero, "
+            "an illustrated use case, and every story block with at least one real "
+            "image. Follow the brief's must-show sequence in order and never leave a "
+            "declared media slot blank. Keep the copy vivid and accurate. Do not "
+            "treat AI Playtest as a physical print, delivery, customer review, human "
+            "endorsement, proof of fun, or proof of balance."
         ),
     ]
     for label, value, limit in facts:
@@ -788,6 +812,88 @@ def _factory_enrichment_readback(design: Mapping[str, Any]) -> Mapping[str, Any]
         "attachments": attachments,
         "has_use_case": use_case is not None,
         "story_block_count": len(story_blocks or []),
+    }
+
+
+def _factory_page_readiness(design: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Report whether Factory finished every customer-facing media surface.
+
+    Import and publication are asynchronous.  A healthy cover alone must not
+    be mistaken for a finished page: the progressive worker can leave a raw
+    assembly fallback selected, omit the intro film, or create story copy with
+    an empty media slot.  This gate is metadata-only and side-effect free; a
+    caller doing final QA must additionally fetch the returned URLs and prove
+    that they contain valid, nonblank media.
+    """
+
+    enrichment = _factory_enrichment_readback(design)
+    issues = []
+    image_urls = []
+    video_urls = []
+
+    def record_url(value: Any, label: str, declared_kind: Optional[str] = None) -> None:
+        try:
+            url = _https_url(value, label)
+        except ContractError as exc:
+            raise ReceiptError("Factory page media readback is malformed") from exc
+        suffix = PurePosixPath(urllib.parse.urlsplit(url).path).suffix.casefold()
+        kind = declared_kind
+        if kind is None:
+            kind = "video" if suffix in (".mp4", ".mov", ".webm") else "image"
+        if kind == "video":
+            video_urls.append(url)
+        else:
+            image_urls.append(url)
+
+    for url in enrichment["cover_urls"]:
+        record_url(url, "Factory progressive cover URL")
+    for attachment in enrichment["attachments"]:
+        record_url(
+            attachment["url"],
+            "Factory progressive attachment URL",
+            attachment["kind"],
+        )
+
+    use_case = design.get("use_case")
+    if not isinstance(use_case, Mapping):
+        issues.append("use-case-missing")
+    else:
+        image = use_case.get("image")
+        if image in (None, ""):
+            issues.append("use-case-image-missing")
+        else:
+            record_url(image, "Factory use-case image URL", "image")
+
+    story_blocks = design.get("story_blocks")
+    if not isinstance(story_blocks, list) or not story_blocks:
+        issues.append("story-blocks-missing")
+        story_blocks = []
+    for index, block in enumerate(story_blocks):
+        if not isinstance(block, Mapping):
+            raise ReceiptError("Factory story block is malformed")
+        block_urls = []
+        hero = block.get("hero_image")
+        if hero not in (None, ""):
+            block_urls.append(hero)
+        pairs = block.get("pair_images") or []
+        if not isinstance(pairs, list):
+            raise ReceiptError("Factory story block pair images are malformed")
+        block_urls.extend(pairs)
+        if not block_urls:
+            issues.append("story-block-%d-media-missing" % index)
+            continue
+        for url in block_urls:
+            record_url(url, "Factory story image URL", "image")
+
+    if not video_urls:
+        issues.append("intro-video-missing")
+    return {
+        "ready": not issues,
+        "issues": issues,
+        "image_urls": image_urls,
+        "video_urls": video_urls,
+        "story_block_count": len(story_blocks),
+        "metadata_only": True,
     }
 
 

@@ -254,12 +254,14 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             self.assertTrue(facts["product"]["limitations"])
             self.assertEqual(facts["product"]["story"], self.spec.story)
             self.assertEqual(
+                facts["product"]["factory_brief"], self.spec.factory_brief
+            )
+            self.assertEqual(
                 facts["product"]["art_direction"], self.spec.art_direction
             )
             self.assertEqual(facts["product"]["design"], self.spec.design)
-        self.assertIn("Story:\n", transport.prompt)
-        self.assertIn(self.spec.story["core_promise"], transport.prompt)
-        self.assertIn("Art direction:\n", transport.prompt)
+        self.assertIn("Creative and film brief:\n", transport.prompt)
+        self.assertIn(self.spec.factory_brief, transport.prompt)
         self.assertIn(self.spec.art_direction["palette"], transport.prompt)
         self.assertIn(self.spec.art_direction["must_show_media"][0], transport.prompt)
         self.assertIn("Design facts:\n", transport.prompt)
@@ -389,6 +391,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             json.loads((made.artifact_root / "product.json").read_text()),
         )
         self.assertEqual(made.product["story"], self.spec.story)
+        self.assertEqual(made.product["factory_brief"], self.spec.factory_brief)
         self.assertEqual(made.product["art_direction"], self.spec.art_direction)
         self.assertEqual(made.product["design"], self.spec.design)
         instructions = self.root / "normal-instructions"
@@ -489,6 +492,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             )
             self.assertTrue(product["description"].endswith(suffix))
             self.assertEqual(product["story"], item.spec.story)
+            self.assertEqual(product["factory_brief"], item.spec.factory_brief)
             self.assertEqual(product["art_direction"], item.spec.art_direction)
             self.assertEqual(product["design"], item.spec.design)
             self.assertEqual(

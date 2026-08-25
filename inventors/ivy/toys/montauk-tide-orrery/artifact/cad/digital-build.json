@@ -22,10 +22,23 @@
     "path": "cad/model.py",
     "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
   },
+  "factory_assembly": {
+    "occurrence_count": 6,
+    "part_names": [
+      "phase-base",
+      "center-post",
+      "tide-arm",
+      "earth-hub",
+      "moon-marker",
+      "sun-arrow"
+    ],
+    "step_bytes": 150940,
+    "step_sha256": "febb10aeb06060c707ddf4b08400e1acf4b7ea9643e6a4515611ff0825f8e083"
+  },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08"
+    "sha256": "67528adb48c3bb16dd913059deab59f2d5cd1de81d411db02dbfc7f0a8bc6585"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -64,7 +77,7 @@
         ],
         "bytes": 5756,
         "reimported": true,
-        "sha256": "3ef2c56b6bc627666b88e166329b4d575cee601c6e56c754937683c8212ceef8",
+        "sha256": "106939e47d33ca742a65dd5a099be5cf70e344527ffb82b7777961a795181866",
         "solid_count": 1
       },
       "stl": {
@@ -103,7 +116,7 @@
         ],
         "bytes": 8548,
         "reimported": true,
-        "sha256": "4800cad03c5a36bf5d9d64fead90bdafb2fbc39c3fbbfbe80d44783cbbd99030",
+        "sha256": "742cf5056dcb4f28bc02928464886bf2a3404bde0b95614d310b28de2214ab20",
         "solid_count": 1
       },
       "stl": {
@@ -142,7 +155,7 @@
         ],
         "bytes": 16638,
         "reimported": true,
-        "sha256": "3ccf24ebb7c72e9665763beb5f460c02113e0aac687117bc3182dad3ad0227db",
+        "sha256": "23d062ebf731662094857a1f61c21469c8f4a3d206484606dc45b649174d5fc5",
         "solid_count": 1
       },
       "stl": {
@@ -181,7 +194,7 @@
         ],
         "bytes": 71863,
         "reimported": true,
-        "sha256": "f0c2281caa5abf5a27b3b4ba1c1288bac558cc2c1ff0d86e106b9bfc27935b67",
+        "sha256": "55fc7ca6bbd1c3625f8eda7cdcea59f4be85d0382a7e472fb0d0853c2d314714",
         "solid_count": 5
       },
       "stl": {
@@ -220,7 +233,7 @@
         ],
         "bytes": 22876,
         "reimported": true,
-        "sha256": "f2f6879619b88542d424cc89a8fd63b07f01aaa806f001e06554719ca5a7998b",
+        "sha256": "5d6134c2c798bc77ce48f5d0ec7ba3287e112cf1e5940d6ac6ac9df82989a533",
         "solid_count": 2
       },
       "stl": {
@@ -259,7 +272,7 @@
         ],
         "bytes": 32879,
         "reimported": true,
-        "sha256": "8152d3c4d1d97c7eaf38cdcb3b37922f5c12942e49464d4278ad1dc6bb502fcc",
+        "sha256": "9053b850647eab7dade06c90b32125e116498e02349b269256ca0bcfd0bc2035",
         "solid_count": 3
       },
       "stl": {
@@ -299,7 +312,7 @@
       ],
       "bytes": 162998,
       "reimported": true,
-      "sha256": "08c2e2ed4334d4f25cbb67d0adeb855ade42585c71dae20f2cfa43d3f27cdee1",
+      "sha256": "458f7d67eb3e41404f58a33c55d9ee4eb3d06d5c5b450829df3ed7ded591d6ad",
       "solid_count": 13
     },
     "stl": {

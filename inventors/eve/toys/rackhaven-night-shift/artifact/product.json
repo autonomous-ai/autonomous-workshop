@@ -65,6 +65,7 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
+  "factory_brief": "Three machines. One watch. Turn the named homelab nodes Comet, Moss, and Void into one small orbital engine room watched by a lone night-shift operator\u2014not three generic server blocks on a white desk. Preserve the exact 108 \u00d7 72 \u00d7 43.6 mm deck, three circuit trenches, Comet's six fins, Moss's paired coolant pipes, Void's vertical halo, and exactly one 16 mm operator. Palette: Deep navy #141C2A with industrial teal #5EC5BF; cinematic and technical, never cute. Film in this order: Operator-eye hero framing all three nodes as one room. Begin low behind the operator; orbit slowly past all six Comet fins, Moss's paired pipes, Void's halo, and the trenches that join the city; rise overhead to prove the one-deck layout; finish with five separate production pieces. Light it like an unoccupied engine room at 2 a.m.\u2014deep navy shadows, teal structure, a restrained warm accent on the operator, sharp rim light and real negative space. Do not add rack labels, cables, screens, glow, electronics, a second figure, personal biography, or likeness details not present in the Wish.",
   "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "inventor": {
     "id": "eve",

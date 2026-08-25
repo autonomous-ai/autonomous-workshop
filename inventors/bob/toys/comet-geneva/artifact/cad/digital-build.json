@@ -22,10 +22,22 @@
     "path": "cad/model.py",
     "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
   },
+  "factory_assembly": {
+    "occurrence_count": 5,
+    "part_names": [
+      "base",
+      "drive-axle",
+      "orbit-axle",
+      "comet-drive",
+      "six-slot-orbit"
+    ],
+    "step_bytes": 215467,
+    "step_sha256": "ffb2cce6497a222ee78e403f8d12db70cf1f628a474949cbf935cbb9fdbfefac"
+  },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08"
+    "sha256": "67528adb48c3bb16dd913059deab59f2d5cd1de81d411db02dbfc7f0a8bc6585"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -49,7 +61,7 @@
         ],
         "bytes": 5762,
         "reimported": true,
-        "sha256": "c0cafc05a83e1174bede74e9aab7f761a134cf594b6a63b6eb7df740c77ef652",
+        "sha256": "e922fd1c15e27bd017b9c7ff72567938d65b29c2e78dea82989bfb18698c4186",
         "solid_count": 1
       },
       "stl": {
@@ -88,7 +100,7 @@
         ],
         "bytes": 31756,
         "reimported": true,
-        "sha256": "ae58c405a1daec8f8c7f138fe849c7a96dd59c854448ad3647f1d88ac1f9648b",
+        "sha256": "0f8b49bf2088b92fc6c66d1ad043e3e551955090277ef8c144182d0335a7be61",
         "solid_count": 1
       },
       "stl": {
@@ -127,7 +139,7 @@
         ],
         "bytes": 50069,
         "reimported": true,
-        "sha256": "d54f5d5e8857e585eb295bca97c1c11c5d1d90f2a2a6c8a3d05286ed4d60bafe",
+        "sha256": "388a4fa859127701321e485320903cf6b719294d68421c47ef4767fc08138092",
         "solid_count": 3
       },
       "stl": {
@@ -166,7 +178,7 @@
         ],
         "bytes": 139921,
         "reimported": true,
-        "sha256": "0a3b1c92d0da4379eed148b5afbb6c2513bfc3ce87ae63dd44cfce80b23e7b98",
+        "sha256": "a24acda0ad0e1ad91635ca808fe9f88889a090c1b15852755a1191ebb19c9014",
         "solid_count": 7
       },
       "stl": {
@@ -206,7 +218,7 @@
       ],
       "bytes": 229094,
       "reimported": true,
-      "sha256": "446b73f3a3d65c013576c25266532b08f61d689c69eb3b08abbaa85a6811a656",
+      "sha256": "a2a3f385c216821e63b110e557f9636f15592098f6086caad754eb97352a7983",
       "solid_count": 13
     },
     "stl": {

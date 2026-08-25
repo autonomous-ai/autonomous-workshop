@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "33b316c49ad93fd4bb04bcedf0829c9f04976f2ccd7e4fe5a1f17366e36fd84f",
+      "evidence_sha256": "5b37500bd255143dc59d0273effff07a8f28492bdf92ec6445d99469ea1d0d00",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "3082c0059c67d133e8852290cdb1cf8828735610be6289dfae87ffd0050c0508",
+      "evidence_sha256": "ea7d330f81df6de84b69898820e1326fe6b9e8ef684ea0b94fe5330c922c2aee",
       "passed": true
     },
     "print-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "839941c3839e77c88d8373f9f0c83b72621663be6c67e990b94676a4060356ea",
+      "evidence_sha256": "0dbcea70a9aa544d83f5fa8a510c43283b54c47ea621f5e4ed1bb4d2d3c7ca62",
       "passed": true
     },
     "world-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "world-test.json",
-      "evidence_sha256": "3dba2267f7ed6d30f3e17756781c4b9899872800220416633a721c51feef83fd",
+      "evidence_sha256": "5b864ea46ce80473379eb0217f2a173d976a7b5396ec70be7f212a2acf5c9fcd",
       "passed": true
     }
   },
@@ -59,8 +59,8 @@
     "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
     "Fine details and handling durability are checked on the produced object during Deliver."
   ],
-  "playtest_evidence_artifact_sha256": "53eaac85168d1285eb76a6aec8574d029f59344395c2d3ff102352e804d1262e",
-  "product_artifact_sha256": "5f8a1b5cf56b325b7b1720cc7e1bd0d164821c2b91e6444010126c9b87e837b2",
+  "playtest_evidence_artifact_sha256": "479983bf35e5ed339a897d1d0b0d4d9629c4b0daf50b18cf99d82a677d2f8856",
+  "product_artifact_sha256": "6429608acef28e65b4ec981dfaf183d34bdc6397e7e24021aa8b65864b10f052",
   "schema_version": 2,
   "status": "facts-ready",
   "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.\n\nBy Eve.",

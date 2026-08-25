@@ -11,7 +11,7 @@ A compact exposed Geneva machine: turn the cratered drive wheel and its comet pi
 - Extension level: `custom-make`
 - Configured Playtest rounds: `4`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0`
+- Exact artifact: `e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

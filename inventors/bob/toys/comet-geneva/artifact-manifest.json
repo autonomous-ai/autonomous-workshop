@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0",
+  "artifact_sha256": "e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -7,6 +7,18 @@
       "executable": false,
       "path": "README.md",
       "sha256": "a5af67c85c8c5b505d2e1e1519f43111581dbd1667c88016f58214391b8edb4c"
+    },
+    {
+      "bytes": 215467,
+      "executable": false,
+      "path": "assembled.step",
+      "sha256": "ffb2cce6497a222ee78e403f8d12db70cf1f628a474949cbf935cbb9fdbfefac"
+    },
+    {
+      "bytes": 549,
+      "executable": false,
+      "path": "assembled.step.json",
+      "sha256": "0814ce5bf0cd894279927f1f63d487fc16bd0f90c6c3588d493c0569c892d477"
     },
     {
       "bytes": 527084,
@@ -21,10 +33,10 @@
       "sha256": "eaebb0d412d929eb7bc73c272b64462f50c5398482360d2e45bfb7dd6434e31c"
     },
     {
-      "bytes": 6143,
+      "bytes": 6436,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "c64c787ea8aff1328c9e6903689cba433fb3d05586d145974ad52c581d5e428f"
+      "sha256": "7f76f6af01603084981ef85609c29b5a0359c30623bb312693fd958499caaff2"
     },
     {
       "bytes": 999,
@@ -36,7 +48,7 @@
       "bytes": 5762,
       "executable": false,
       "path": "cad/parts/axle.step",
-      "sha256": "c0cafc05a83e1174bede74e9aab7f761a134cf594b6a63b6eb7df740c77ef652"
+      "sha256": "e922fd1c15e27bd017b9c7ff72567938d65b29c2e78dea82989bfb18698c4186"
     },
     {
       "bytes": 25084,
@@ -48,7 +60,7 @@
       "bytes": 31756,
       "executable": false,
       "path": "cad/parts/base.step",
-      "sha256": "ae58c405a1daec8f8c7f138fe849c7a96dd59c854448ad3647f1d88ac1f9648b"
+      "sha256": "0f8b49bf2088b92fc6c66d1ad043e3e551955090277ef8c144182d0335a7be61"
     },
     {
       "bytes": 26284,
@@ -60,7 +72,7 @@
       "bytes": 50069,
       "executable": false,
       "path": "cad/parts/comet-drive.step",
-      "sha256": "d54f5d5e8857e585eb295bca97c1c11c5d1d90f2a2a6c8a3d05286ed4d60bafe"
+      "sha256": "388a4fa859127701321e485320903cf6b719294d68421c47ef4767fc08138092"
     },
     {
       "bytes": 251684,
@@ -72,7 +84,7 @@
       "bytes": 139921,
       "executable": false,
       "path": "cad/parts/six-slot-orbit.step",
-      "sha256": "0a3b1c92d0da4379eed148b5afbb6c2513bfc3ce87ae63dd44cfce80b23e7b98"
+      "sha256": "a24acda0ad0e1ad91635ca808fe9f88889a090c1b15852755a1191ebb19c9014"
     },
     {
       "bytes": 199284,
@@ -84,7 +96,7 @@
       "bytes": 229094,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "446b73f3a3d65c013576c25266532b08f61d689c69eb3b08abbaa85a6811a656"
+      "sha256": "a2a3f385c216821e63b110e557f9636f15592098f6086caad754eb97352a7983"
     },
     {
       "bytes": 527084,
@@ -99,10 +111,10 @@
       "sha256": "5e6a62e4dda37b709dc4c0dacb8100c99d51bf074cc00af9388cba1ba36c449b"
     },
     {
-      "bytes": 4000,
+      "bytes": 5135,
       "executable": false,
       "path": "product.json",
-      "sha256": "6ef9b0a546340e43c497e935d191062fadb7e5492f6b85a630bc4158be9cbffe"
+      "sha256": "b5bfc3492c528ecc48687b55a72bc203c1d1336e5cfeea7d5e2526ab880279b8"
     },
     {
       "bytes": 53,
@@ -118,5 +130,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 2120058
+  "total_bytes": 2337502
 }

@@ -5,7 +5,7 @@
     "adversarial-breaker",
     "first-time-player"
   ],
-  "artifact_sha256": "b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0",
+  "artifact_sha256": "e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a",
   "claims": [
     "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
   ],

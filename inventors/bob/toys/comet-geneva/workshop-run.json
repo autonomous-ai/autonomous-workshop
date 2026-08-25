@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0",
+  "artifact_sha256": "e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -15,8 +15,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "8edc5b2d1c3e8ed2d1e513151a70fac2ddce7fe1a0d72924bd31eadfffe1b117",
-  "evidence_sha256": "f15645442662e8113312e23582be076fc8108c260a159c71c539bb7fe7e222cf",
-  "instructions_sha256": "49119aa5796d610ad341f0a7447fd5d1722f7d0ddb84aaba401e5f9c0ed19d98",
+  "evidence_sha256": "409cb826a901f3f065d23c766fb7fa0cfad7386e177416d5ba48c25102fca19c",
+  "instructions_sha256": "a80d48094e1f6199707c6cca29f956499fb989d6eb20c330bccc011e0d1e1bf5",
   "inventor": {
     "extension_level": "custom-make",
     "id": "bob",
@@ -25,7 +25,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "b77c040c72e890487c0eee207b93ff75adfb37322d04652bee6cf0af25ab1cd0",
+    "artifact_sha256": "e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -46,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "ce43a78adc43174308610ced03210ef6a440e833ed33a7a09680d52daeca2a08",
+    "builder_sha256": "67528adb48c3bb16dd913059deab59f2d5cd1de81d411db02dbfc7f0a8bc6585",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
