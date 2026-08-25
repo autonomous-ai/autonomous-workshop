@@ -45,6 +45,17 @@ class ReceiptError(EffectError):
     """A remote response cannot produce a trustworthy Receipt."""
 
 
+class ConceptProviderError(WorkshopError):
+    """A real Concept image or exploded-view inspection provider failed a call.
+
+    Raised for a failure in the call itself — a non-retryable HTTP status, an
+    exhausted retry budget, or a response that cannot be trusted (malformed,
+    oversized, or naming something it was never offered). Misconfiguration
+    caught at construction time (a missing key, base URL, or model) stays a
+    :class:`ContractError`, matching every other Workshop integration.
+    """
+
+
 # Workshop 0.3 compatibility names.
 SendError = EffectError
 AmbiguousSendError = AmbiguousEffectError

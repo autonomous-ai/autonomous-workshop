@@ -129,6 +129,9 @@ from .concept import (
     DefaultConcept,
     concept_handoff_text,
 )
+from .concept_artist_openrouter import OpenRouterConceptArtist
+from .concept_explode_inspector import OpenAICompatibleExplodeInspector
+from .env import load_dotenv
 from .workshop import (
     CUSTOMIZATION_LEVELS,
     ConceptJob,
@@ -139,6 +142,7 @@ from .workshop import (
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
+    ConceptProviderError,
     EffectError,
     ReceiptError,
     SendError,
@@ -220,7 +224,10 @@ __all__ = [
     "ConceptImageRequest",
     "ConceptImages",
     "ConceptJob",
+    "ConceptProviderError",
     "concept_handoff_text",
+    "OpenAICompatibleExplodeInspector",
+    "OpenRouterConceptArtist",
     "CUSTOMIZATION_LEVELS",
     "CustomerReview",
     "DefaultConcept",
@@ -308,6 +315,7 @@ __all__ = [
     "inspect_artifact",
     "inspect_stl_path",
     "inspect_stl_topology",
+    "load_dotenv",
     "load_manifest",
     "load_finalists",
     "load_taste",

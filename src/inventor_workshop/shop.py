@@ -8,12 +8,9 @@ import json
 import mimetypes
 import re
 import tempfile
-import urllib.error
 import urllib.parse
-import urllib.request
 import uuid
 import zipfile
-from dataclasses import dataclass
 from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Tuple
@@ -25,6 +22,8 @@ from .artifacts import (
     build_pack,
 )
 from .attribution import attribute_product_description
+from ._http import Transport, _NoRedirectHandler, make_urllib_transport
+from ._http import HttpResponse as _HttpResponse
 from .pack import _load_pack, _validate_pack_bytes
 from .errors import (
     AmbiguousPublishError,
@@ -40,7 +39,6 @@ DEFAULT_SHOP_API = "https://panda-social-api.autonomous.ai/api/v1"
 DEFAULT_SHOP_PAGE_BASE = "https://www.autonomous.ai/factory/product"
 SHOP_USER_AGENT = "Mozilla/5.0 (compatible; AutonomousWorkshop/1.0)"
 HTTP_TIMEOUT_SECONDS = 120
-Transport = Callable[[str, str, Mapping[str, str], Optional[bytes], int], "HttpResponse"]
 
 # Only response classes that prove the server rejected the request before
 # applying it may reopen a non-idempotent effect.  Redirects, timeouts,
@@ -355,56 +353,22 @@ def _receipt_with_details(
     return PublicationReceipt.from_dict(value)
 
 
-class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Authenticated API calls never forward a bearer through a redirect."""
+class HttpResponse(_HttpResponse):
+    """Shop Door's bounded response.
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
-        return None
-
-
-@dataclass(frozen=True)
-class HttpResponse:
-    status: int
-    headers: Mapping[str, str]
-    body: bytes
+    A body over ``MAX_RESPONSE_BYTES`` fails at construction time, not only
+    when read off the wire, so a caller who builds one from local bytes (see
+    ``ShopInstructionsWriter._read_page``) gets the same guarantee the
+    transport already gives every network response.
+    """
 
     def __post_init__(self) -> None:
-        if (
-            not isinstance(self.status, int)
-            or isinstance(self.status, bool)
-            or not 100 <= self.status <= 599
-        ):
-            raise ContractError("HTTP response status must be an integer from 100 to 599")
-        if not isinstance(self.headers, Mapping):
-            raise ContractError("HTTP response headers must be a mapping")
-        if not isinstance(self.body, bytes):
-            raise ContractError("HTTP response body must be bytes")
+        super().__post_init__()
         if len(self.body) > MAX_RESPONSE_BYTES:
             raise PublishError("Shop response exceeds the 2 MB safety limit")
 
 
-def urllib_transport(
-    method: str,
-    url: str,
-    headers: Mapping[str, str],
-    body: Optional[bytes],
-    timeout: int,
-) -> HttpResponse:
-    request = urllib.request.Request(url, method=method, data=body)
-    for name, value in headers.items():
-        request.add_header(name, value)
-    try:
-        opener = urllib.request.build_opener(_NoRedirectHandler())
-        with opener.open(request, timeout=timeout) as response:
-            content = response.read(MAX_RESPONSE_BYTES + 1)
-            if len(content) > MAX_RESPONSE_BYTES:
-                raise PublishError("Shop response exceeds the 2 MB safety limit")
-            return HttpResponse(response.status, dict(response.headers), content)
-    except urllib.error.HTTPError as exc:
-        content = exc.read(MAX_RESPONSE_BYTES + 1)
-        if len(content) > MAX_RESPONSE_BYTES:
-            raise PublishError("Shop error response exceeds the 2 MB safety limit")
-        return HttpResponse(exc.code, dict(exc.headers or {}), content)
+urllib_transport = make_urllib_transport(MAX_RESPONSE_BYTES, oversize_error=PublishError)
 
 
 def _json_body(response: HttpResponse) -> Mapping[str, Any]:
