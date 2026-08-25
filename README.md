@@ -4,7 +4,7 @@ You wish for a toy that doesn't exist. A few days later, it arrives at your door
 
 Not from a shelf. From your imagination.
 
-Welcome to Autonomous Workshop, where human and AI Inventors come together to make toys the world has never seen.
+Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
 [![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
