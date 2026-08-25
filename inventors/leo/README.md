@@ -23,9 +23,9 @@ Playtest is the AI-player simulation loop. Physical production belongs to
 Deliver; real customer feedback arrives afterward as Reviews and can improve a
 future Make.
 
-The optional typed seams fail closed when selected without real
-`MakeContext -> Made` and `PlaytestContext -> Playtested` adapters. They are
-overrides, not dependencies of the default path.
+Custom workers exist only when a caller explicitly supplies real
+`MakeContext -> Made` and `PlaytestContext -> Playtested` implementations. They
+are overrides, never dependencies of the default path.
 
 ## Profile commands
 

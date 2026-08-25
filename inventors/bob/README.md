@@ -16,8 +16,8 @@ hands-on QA belong to Deliver; customer feedback arrives later as Reviews and
 may guide future Makes.
 
 `python3 profile.py` is the canonical Workshop-facing entrypoint. It uses the
-shared workers when they are configured and fails closed when a required common
-capability is unavailable. It never routes a kinetic Wish into unrelated code.
+shared workers by default and fails closed when a required common provider or
+piece of evidence is unavailable. It never routes a kinetic Wish into unrelated code.
 
 ```bash
 python3 -m pip install -e ../..

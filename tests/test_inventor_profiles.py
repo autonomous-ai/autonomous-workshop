@@ -292,14 +292,14 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         overridden = bob.build_workshop(
             tools=WorkshopTools(make=shared_make), make=custom_make
         )
-        unconfigured = bob.build_workshop()
+        defaulted = bob.build_workshop()
 
         self.assertIs(shared.make_job, shared_make)
         self.assertEqual(shared.customization_level, "taste-only")
         self.assertIs(overridden.make_job, custom_make)
         self.assertEqual(overridden.customization_level, "custom-make")
-        self.assertIsNot(unconfigured.make_job, bob.bob_make)
-        self.assertEqual(unconfigured.customization_level, "taste-only")
+        self.assertIsNotNone(defaulted.make_job)
+        self.assertEqual(defaulted.customization_level, "taste-only")
 
     def test_leo_uses_both_shared_workers_by_default_and_overrides_are_opt_in(self):
         leo = load_profile("leo")
@@ -326,7 +326,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             make=custom_make,
             playtest=custom_playtest,
         )
-        unconfigured = leo.build_workshop()
+        defaulted = leo.build_workshop()
 
         self.assertIs(shared.make_job, shared_make)
         self.assertIs(shared.playtest_job, shared_playtest)
@@ -334,9 +334,9 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         self.assertIs(overridden.make_job, custom_make)
         self.assertIs(overridden.playtest_job, custom_playtest)
         self.assertEqual(overridden.customization_level, "custom-playtest")
-        self.assertIsNot(unconfigured.make_job, leo.leo_make)
-        self.assertIsNot(unconfigured.playtest_job, leo.leo_playtest)
-        self.assertEqual(unconfigured.customization_level, "taste-only")
+        self.assertIsNotNone(defaulted.make_job)
+        self.assertIsNotNone(defaulted.playtest_job)
+        self.assertEqual(defaulted.customization_level, "taste-only")
 
     def test_leo_partial_shared_configuration_falls_back_only_where_missing(self):
         leo = load_profile("leo")
@@ -356,8 +356,8 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         )
 
         self.assertIs(shared_make_only.make_job, shared_make)
-        self.assertIsNot(shared_make_only.playtest_job, leo.leo_playtest)
-        self.assertIsNot(shared_playtest_only.make_job, leo.leo_make)
+        self.assertIsNotNone(shared_make_only.playtest_job)
+        self.assertIsNotNone(shared_playtest_only.make_job)
         self.assertIs(shared_playtest_only.playtest_job, shared_playtest)
 
     def test_every_taste_enforces_wish_uniqueness_and_cool_over_twee(self):

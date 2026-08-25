@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Bob's thin, canonical moving-machines Workshop profile.
 
-The Workshop's shared Make/CAD worker is Bob's default. ``bob_make`` remains
-available only as an explicit compatibility override. The preserved board-game
-harness is unrelated and is never installed automatically.
+The Workshop's shared Make/CAD worker is Bob's default. A caller may supply a
+real custom Make implementation explicitly. The preserved board-game harness
+is unrelated and is never installed automatically.
 """
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from inventor_workshop.jobs import Need, WaitingFor
 from inventor_workshop.make import Wish, generate_wish_id
 from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.handoff import (
@@ -35,21 +34,6 @@ PROFILE = {
     "make": "Workshop shared Make/CAD by default; optional Bob override",
     "playtest": "Workshop default",
 }
-
-
-def bob_make(context):
-    """Typed fail-closed seam for Bob's not-yet-written machine Make."""
-
-    del context
-    raise WaitingFor(
-        Need(
-            "make",
-            "bob-moving-machine-make",
-            "Bob owns moving-machine Make, but no typed implementation exists yet.",
-            "Implement MakeContext -> Made for kinetic mechanisms; never route this Wish into bob.py's board-game harness.",
-        )
-    )
-
 
 def create_wish(product_id: str, objective: str) -> Wish:
     return Wish.create(

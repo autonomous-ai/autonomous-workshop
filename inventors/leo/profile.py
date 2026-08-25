@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Leo's canonical invented-games Workshop profile.
 
-The Workshop's shared Make/CAD and AI Playtest workers are Leo's defaults.
-``leo_make`` and ``leo_playtest`` remain available only as explicit
-compatibility overrides.
+The Workshop's shared Make/CAD and AI Playtest workers are Leo's defaults. A
+caller may supply real custom Make and Playtest implementations explicitly.
 """
 
 from __future__ import annotations
@@ -14,7 +13,6 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from inventor_workshop.jobs import Need, WaitingFor
 from inventor_workshop.make import Wish, generate_wish_id
 from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.handoff import (
@@ -36,35 +34,6 @@ PROFILE = {
     "playtest": "Workshop shared AI Playtest by default; optional Leo override",
     "release_gate": "1,000 seeded AI games across four player styles",
 }
-
-
-def leo_make(context):
-    """Typed fail-closed seam for Leo's not-yet-written custom Make."""
-
-    del context
-    raise WaitingFor(
-        Need(
-            "make",
-            "leo-custom-make-adapter",
-            "Leo owns invented-game Make, but no implementation returns Workshop Made records yet.",
-            "Implement Leo's candidates, rules, CAD, and artifacts as MakeContext -> Made.",
-        )
-    )
-
-
-def leo_playtest(context):
-    """Typed fail-closed seam for Leo's custom AI-player Playtest."""
-
-    del context
-    raise WaitingFor(
-        Need(
-            "playtest",
-            "leo-custom-playtest-adapter",
-            "Leo owns invented-game Playtest, but no implementation returns Workshop Playtested records yet.",
-            "Bind Leo's exact game evidence and feedback from PlaytestContext to Playtested.",
-        ),
-    )
-
 
 def create_wish(product_id: str, objective: str) -> Wish:
     return Wish.create(

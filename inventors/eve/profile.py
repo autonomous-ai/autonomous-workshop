@@ -64,7 +64,7 @@ def describe() -> dict:
         **PROFILE,
         "taste_sha256": workshop.taste.sha256,
         "blueprint_sha256": workshop.blueprint.sha256,
-        "adapter_status": "shared Workshop tools required",
+        "adapter_status": "shared Workshop engine",
     }
 
 
