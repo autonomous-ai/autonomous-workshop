@@ -256,6 +256,47 @@ owning job returns a typed `WaitingFor` result. The capabilities a run can wait
 for at Concept are `wish-research`, `concept-images`, and `exploded-view-check`.
 Missing capability is never converted into success.
 
+### The agent door: one contract for a role that needs an acting agent
+
+`doors.ModelDoor.run(role, request, budget_micros)` runs "one bounded model
+**or agent** role" — it is not tied to a single HTTP call. Concept's three
+capabilities above are also the role vocabulary this contract uses: a role
+name is exactly one of `wish-research`, `concept-images`,
+`exploded-view-check`, the same strings the `Need`s above already carry. No
+second naming scheme exists for wiring the same capability.
+
+`AgentSessionDoor` (`agent_session.py`) is a real, vendor-agnostic
+implementation of `ModelDoor`, backed by an actual tool-using coding-agent
+process rather than a single API call. It runs one named role at a time, in a
+workspace created fresh for that call, under a wall-clock bound and a dollar
+budget, and reads back the one structured JSON result file the process is
+told to write before it exits — never a guess assembled from partial or
+unparseable output. Per-role configuration owns the launched process's entire
+permission boundary (which tools it gets, which paths it may touch, what is
+pre-populated into its workspace) and the door builds that boundary itself;
+it is never inferred from the role's request or from anything the process's
+own output claims about itself (see CONTRIBUTING.md's tool-access rule for
+agent-backed capabilities).
+
+Three thin adapters in `concept_agent_adapters.py` —
+`AgentWishResearcher`, `AgentConceptArtist`, `AgentExplodeInspector` — satisfy
+Concept's existing `WishResearcher` / `ConceptArtist` / `ExplodeInspector`
+ports by dispatching through one shared `AgentSessionDoor`, calling it under
+the capability's own role name. They are a drop-in alternative to the
+existing single-shot OpenRouter adapters (`wish_researcher_openrouter.py`,
+`concept_artist_openrouter.py`, `concept_explode_inspector.py`): Concept
+cannot tell which kind of adapter it was given, and wiring one in place of
+the other changes nothing about Concept's own behavior. An operator who does
+not need agentic depth for these three single-shot roles keeps the cheaper,
+deterministic HTTP path; nothing forces a choice between the two.
+
+`Make` and `Playtest` still default to their `_missing_make` /
+`_missing_playtest` stubs — a `Workshop` wired only with an agent-backed
+Concept still parks at `make` once Concept completes, exactly as it does with
+the OpenRouter-backed adapters today. A real `ModelDoor`-backed
+implementation for Make and Playtest, reusing this same role contract with
+`toys.py`'s `ToyTask.task_id` strings, is a separate, later proposal.
+
 ## Job contracts
 
 The jobs exchange small, exact records:

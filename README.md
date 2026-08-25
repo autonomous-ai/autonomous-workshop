@@ -205,6 +205,54 @@ wins over one in `.env`.
 None of them is wired into an inventor by the module that defines it. A Workshop
 that has not been given one keeps waiting truthfully for that capability.
 
+#### The agent-backed alternative
+
+Each of the three capabilities above can instead be satisfied by one shared,
+tool-using coding-agent process rather than three independent HTTP adapters.
+`AgentSessionDoor` (`agent_session.py`) is the real `ModelDoor` that runs it;
+`AgentWishResearcher`, `AgentConceptArtist`, and `AgentExplodeInspector`
+(`concept_agent_adapters.py`) are drop-in replacements for the three adapters
+above, each dispatching through that one shared door under the capability's
+own role name. Nothing about Concept changes, and the two integration shapes
+coexist — wiring one does not require giving up the other for a different
+capability.
+
+`concept_agent_session_door_from_env()` builds the shared door the same way
+the adapters above build themselves — no vendor or binary is assumed, and a
+real environment variable always wins over one in `.env`:
+
+| Variable | Meaning |
+|---|---|
+| `AGENT_DOOR_LAUNCH_COMMAND` | The caller's own headless agent CLI invocation, e.g. `"agent-cli --headless --output-format json"`, split the way a shell would |
+| `AGENT_DOOR_<ROLE>_TOOLS` | Comma-separated tool names the launched process gets for that role |
+| `AGENT_DOOR_<ROLE>_ALLOWED_PATHS` | Comma-separated paths/globs the launched process may touch for that role |
+| `AGENT_DOOR_<ROLE>_WALL_CLOCK_SECONDS` | The hard wall-clock bound for that role's process |
+| `AGENT_DOOR_<ROLE>_MAX_BUDGET_MICROS` | Optional per-role ceiling on the dollar budget any call to that role may be given |
+
+`<ROLE>` is one of `WISH_RESEARCH`, `CONCEPT_IMAGES`, or
+`EXPLODED_VIEW_CHECK`; all three roles' `_TOOLS`, `_ALLOWED_PATHS`, and
+`_WALL_CLOCK_SECONDS` are required. The door builds each launched process's
+actual tool and file access from this configuration — never from anything the
+role's own request or output claims about itself; see
+[Contributing](CONTRIBUTING.md).
+
+```python
+from inventor_workshop.concept import DefaultConcept
+from inventor_workshop.concept_agent_adapters import (
+    AgentConceptArtist,
+    AgentExplodeInspector,
+    AgentWishResearcher,
+    concept_agent_session_door_from_env,
+)
+
+door = concept_agent_session_door_from_env()
+concept = DefaultConcept(
+    AgentConceptArtist(door, budget_micros=2_000_000),
+    AgentExplodeInspector(door, budget_micros=500_000),
+    wish_researcher=AgentWishResearcher(door, budget_micros=1_000_000),
+)
+```
+
 See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
 

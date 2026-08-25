@@ -1,5 +1,7 @@
 """Typed failures callers can act on without parsing log prose."""
 
+from typing import Optional
+
 
 class WorkshopError(Exception):
     """Base class for Inventor Workshop errors."""
@@ -57,6 +59,31 @@ class ConceptProviderError(WorkshopError):
     caught at construction time (a missing key, base URL, or model) stays a
     :class:`ContractError`, matching every other Workshop integration.
     """
+
+
+class AgentSessionError(WorkshopError):
+    """One named agent-door role failed to produce a trustworthy result.
+
+    Raised by ``AgentSessionDoor`` for every way a role's call can fail after
+    a process is launched: a non-zero exit, a wall-clock or budget bound
+    exceeded, a missing result file, or a result that does not match the
+    role's declared shape. Always names the role and carries the actual
+    elapsed time (and, when known, the actual cost) the call consumed, so a
+    budget stays auditable on failure the same as it is on success.
+    """
+
+    def __init__(
+        self,
+        role: str,
+        message: str,
+        *,
+        elapsed_seconds: float,
+        spent_micros: Optional[int] = None,
+    ) -> None:
+        super().__init__("agent door role %r %s" % (role, message))
+        self.role = role
+        self.elapsed_seconds = elapsed_seconds
+        self.spent_micros = spent_micros
 
 
 # Workshop 0.3 compatibility names.

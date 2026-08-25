@@ -92,17 +92,27 @@ ANNOTATIONS = [
 
 
 def completion(answer=None, annotations=None, *, content=None):
-    message = {
-        "role": "assistant",
-        "content": (
-            content
-            if content is not None
-            else json.dumps(answer if answer is not None else ANSWER)
-        ),
-    }
+    """Build the SSE byte stream a real endpoint sends for ``stream: true``.
+
+    One delta chunk carries the answer text, one carries the citations (when
+    given), and the stream ends with the standard ``data: [DONE]`` sentinel --
+    the same shape ``OpenAICompatibleWishResearcher`` now accumulates chunk by
+    chunk instead of reading one buffered JSON object.
+    """
+
+    text = (
+        content
+        if content is not None
+        else json.dumps(answer if answer is not None else ANSWER)
+    )
+    chunks = [{"choices": [{"index": 0, "delta": {"content": text}}]}]
     if annotations is not None:
-        message["annotations"] = annotations
-    return json.dumps({"choices": [{"message": message}]}).encode("utf-8")
+        chunks.append(
+            {"choices": [{"index": 0, "delta": {"annotations": annotations}}]}
+        )
+    lines = ["data: %s\n" % json.dumps(chunk) for chunk in chunks]
+    lines.append("data: [DONE]\n")
+    return "\n".join(lines).encode("utf-8")
 
 
 class RecordingTransport:

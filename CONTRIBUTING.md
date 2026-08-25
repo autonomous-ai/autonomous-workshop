@@ -171,6 +171,28 @@ Keep the Python runtime usable without credentials or paid providers. Heavy CAD
 dependencies and provider SDKs belong behind optional Make or adapter
 boundaries, with deterministic fakes for CI.
 
+A shared adapter that calls a caller-configured LLM endpoint must request a
+streamed response (`stream: true`, an SSE `data:` chunk sequence accumulated
+into the final answer) rather than one buffered JSON completion. A slow model
+generating a long, structured answer can otherwise trip a proxy sitting in
+front of the endpoint on an idle/response timeout well under the adapter's own
+configured timeout, with no way for this side to raise it — confirmed against
+a real endpoint that failed every buffered request past ~60s but succeeded
+once switched to streaming. `concept_explode_inspector.py` and
+`wish_researcher_openrouter.py` are the reference implementations.
+
+A shared adapter that dispatches through an agent door (`doors.ModelDoor`,
+implemented by `AgentSessionDoor`) must scope the launched process's tool and
+file access through the door's own per-role configuration, never through the
+role's prompt alone. Telling an agent process what it may touch is not the
+same as enforcing it: an unchecked prompt-only boundary is not acceptable,
+the same way an unchecked assumption is not a shared floor for any other
+capability (see the gate-strengthening rule above). Each role a caller
+configures gets exactly the tools, paths, and wall-clock bound its own
+`AgentRoleConfig` names — nothing wider, and nothing inferred from what the
+launched process's own request or output claims about itself.
+`concept_agent_adapters.py` is the reference implementation.
+
 ## Security, provenance, and generated files
 
 - Never commit `.env` files, bearer tokens, API keys, cookies, private keys,

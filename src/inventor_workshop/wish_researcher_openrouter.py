@@ -257,7 +257,13 @@ class OpenAICompatibleWishResearcher:
             )
         payload: Dict[str, Any] = {
             "model": self._model,
-            "stream": False,
+            # Streamed rather than buffered: a researched breakdown can take
+            # a while to generate, and a proxy sitting in front of the
+            # endpoint may time out an idle connection waiting on one large
+            # buffered response even when this adapter's own timeout would
+            # have allowed it. A steady stream of chunks keeps the
+            # connection visibly alive the whole way through.
+            "stream": True,
             # Web search, so the answer can rest on retrieved material rather
             # than recall alone. The endpoint's returned citations become the
             # source records behind the findings.
@@ -270,12 +276,12 @@ class OpenAICompatibleWishResearcher:
         headers = {
             "Authorization": "Bearer %s" % self._api_key,
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "text/event-stream",
         }
         response = self._send(
             "POST", self._base_url + CHAT_COMPLETIONS_PATH, headers, body
         )
-        answer, annotations = self._message(response)
+        answer, annotations = self._streamed_message(response)
         return self._parse(answer, annotations)
 
     def _send(
@@ -300,45 +306,72 @@ class OpenAICompatibleWishResearcher:
             self._sleep(2.0 ** (attempt - 1))
 
     @staticmethod
-    def _message(response: HttpResponse) -> Tuple[str, Sequence[Any]]:
-        """The answer text and the endpoint's own returned source citations."""
+    def _streamed_message(response: HttpResponse) -> Tuple[str, Sequence[Any]]:
+        """Accumulate an SSE chat-completions stream into its answer text.
+
+        Every request sets ``stream: true``, so the response is a sequence of
+        ``data: <chunk>`` lines ending in ``data: [DONE]`` rather than one
+        JSON object. Each chunk's ``choices[0].delta.content`` is appended in
+        order; a chunk carrying no content (the opening role-only chunk, the
+        closing finish-reason chunk) is simply skipped. Citations stream the
+        same way, in ``delta.annotations``, and are concatenated across every
+        chunk that carries any.
+        """
 
         try:
-            payload = json.loads(response.body.decode("utf-8"))
-        except (UnicodeDecodeError, ValueError) as exc:
+            text = response.body.decode("utf-8")
+        except UnicodeDecodeError as exc:
             raise ConceptProviderError(
-                "wish researcher returned a response that is not JSON: %s" % exc
+                "wish researcher returned a non-UTF-8 streamed response: %s"
+                % exc
             ) from exc
-        if not isinstance(payload, Mapping):
+        pieces: List[str] = []
+        annotations: List[Any] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line.startswith("data:"):
+                continue
+            data = line[len("data:") :].strip()
+            if not data or data == "[DONE]":
+                continue
+            try:
+                chunk = json.loads(data)
+            except ValueError as exc:
+                raise ConceptProviderError(
+                    "wish researcher returned a malformed streamed chunk: %s"
+                    % exc
+                ) from exc
+            if not isinstance(chunk, Mapping):
+                raise ConceptProviderError(
+                    "wish researcher streamed chunk is not an object"
+                )
+            choices = chunk.get("choices")
+            if (
+                not isinstance(choices, Sequence)
+                or isinstance(choices, (str, bytes))
+                or not choices
+            ):
+                continue
+            first = choices[0]
+            if not isinstance(first, Mapping):
+                continue
+            delta = first.get("delta")
+            if not isinstance(delta, Mapping):
+                continue
+            content = delta.get("content")
+            if isinstance(content, str) and content:
+                pieces.append(content)
+            chunk_annotations = delta.get("annotations")
+            if isinstance(chunk_annotations, Sequence) and not isinstance(
+                chunk_annotations, (str, bytes)
+            ):
+                annotations.extend(chunk_annotations)
+        answer = "".join(pieces)
+        if not answer.strip():
             raise ConceptProviderError(
-                "wish researcher response is not a JSON object"
+                "wish researcher streamed response carries no answer text"
             )
-        choices = payload.get("choices")
-        if (
-            isinstance(choices, (str, bytes))
-            or not isinstance(choices, Sequence)
-            or not choices
-            or not isinstance(choices[0], Mapping)
-        ):
-            raise ConceptProviderError(
-                "wish researcher response carries no answer"
-            )
-        message = choices[0].get("message")
-        if not isinstance(message, Mapping):
-            raise ConceptProviderError(
-                "wish researcher response carries no answer message"
-            )
-        content = message.get("content")
-        if not isinstance(content, str) or not content.strip():
-            raise ConceptProviderError(
-                "wish researcher answer carries no text"
-            )
-        annotations = message.get("annotations")
-        if isinstance(annotations, (str, bytes)) or not isinstance(
-            annotations, Sequence
-        ):
-            annotations = ()
-        return content, tuple(annotations)
+        return answer, tuple(annotations)
 
     def _sources(
         self, annotations: Sequence[Any]
