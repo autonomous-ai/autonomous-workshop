@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "01ce8b9497c30cc29ec942d48476635daffdae96617efd21c66d06537a07d9a7",
+  "artifact_sha256": "4c886bfee2e3e67a2d43678a2651275be6655dc540d6e03ce95f28c32a2ec464",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 2003606,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "1b696d6d51129d00f5a928921a8d31cd567d6efbc4efcbc2bac260b20d0c8558"
+      "sha256": "33926926a5fea6174bef310f6d13a61fcecb626f7c70ad4aa8d27498c09a4495"
     },
     {
       "bytes": 2445,
@@ -36,7 +36,7 @@
       "bytes": 5866,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "65216c395c53d4c792672dbb13440afc163a5eb1495dfa6a2e9d6e1e21fe5d3c"
+      "sha256": "501c5b032416bca29f4701a641a9f6d2c14de4ad9894bf792bfe36144897ec0b"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 651762,
       "executable": false,
       "path": "cad/parts/board.step",
-      "sha256": "6499f6e843affb12bc539235fb02a4a0a705c88af28db31ed4a0d543c253f99d"
+      "sha256": "19c6720afb4456030756ad2921480fc3de18965af01b20d305479a5db6d24cb0"
     },
     {
       "bytes": 48484,
@@ -60,7 +60,7 @@
       "bytes": 36945,
       "executable": false,
       "path": "cad/parts/five-ring-piece.step",
-      "sha256": "594e5556192d60ed30c01fb184df199d39a30dc0f910cdc6835b1d7000368852"
+      "sha256": "4216fa33ff8ccd935a25ad748b894c199da5e22d582b96992e78a6cea1aaa5db"
     },
     {
       "bytes": 150084,
@@ -72,7 +72,7 @@
       "bytes": 91893,
       "executable": false,
       "path": "cad/parts/five-spoke-piece.step",
-      "sha256": "567540a873e8c243cbc5efb52667aa86ecb0b399626b8fc774271a507524f32c"
+      "sha256": "6e6417d4e61ed94b9531d0333011b356399a134a21d9ce4de2a1a30ef643e894"
     },
     {
       "bytes": 28084,
@@ -84,7 +84,7 @@
       "bytes": 2274206,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "78f0887f25749af5fbf6f29bebc7bc1ae7f3884ba9bff79ee180da63cf0c1e48"
+      "sha256": "14d32313bff004b72befed8939f870e15095e7a6e87893d70709a3812a8ae1dd"
     },
     {
       "bytes": 2184484,

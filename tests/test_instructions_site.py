@@ -655,6 +655,9 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertIn("The shadow knows first", prompt)
         self.assertIn("cinematic intro video", prompt)
         self.assertIn("never leave a declared media slot blank", prompt)
+        self.assertIn("distinguish total pieces from unique part types", prompt)
+        self.assertIn("Never turn a CAD target, clearance, tolerance", prompt)
+        self.assertIn("claim of proven smooth fit", prompt)
         self.assertNotIn('"setting":"a midnight observatory"', prompt)
 
     def test_factory_page_readiness_requires_video_use_case_and_each_block_image(self):

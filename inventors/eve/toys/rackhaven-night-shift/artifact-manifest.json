@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "01d5602eaac3286ed2345c57643586df0a8c851fe7f8e5c2356362129a481d82",
+  "artifact_sha256": "2205f53542e360806bcd1d93bea955079d2f9fa43f30cc9a162d51414d14bd3e",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 304739,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "fbfe300a1f01a5dd3b5340563ebcdea514036d312e7d34562b4248419f96c92f"
+      "sha256": "45f6a56c91ebcad4d3e43f93e710bcdcdb374ebe25de4c90ad41bf1f991f90f2"
     },
     {
       "bytes": 569,
@@ -36,7 +36,7 @@
       "bytes": 7244,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "9773f7ec1b33596f386f46d9b187fcdc458fd4e5982a7a269f24b0324d600a6e"
+      "sha256": "186c594a8f2802b1f37623bfdc935a32d833275202d35a167c6af2ab28535f38"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 130955,
       "executable": false,
       "path": "cad/parts/comet-node.step",
-      "sha256": "04e51ce9d32bed9cac983738134cc3b2d9ab527f3495388392fd1b6cf4d812e3"
+      "sha256": "21c525d0c65126bcfe24a561d168854f126fc6c7e987d6a315b9a2372f6c0257"
     },
     {
       "bytes": 29884,
@@ -60,7 +60,7 @@
       "bytes": 81845,
       "executable": false,
       "path": "cad/parts/engine-deck.step",
-      "sha256": "cccd78845b327106cdfb280e84738da34bee3042e8dd77b88004b6d6be539a8b"
+      "sha256": "6cc013da0dd74aa555fcc3a587bcfd1737431589cd63b5027695106974174187"
     },
     {
       "bytes": 28084,
@@ -72,7 +72,7 @@
       "bytes": 57005,
       "executable": false,
       "path": "cad/parts/moss-node.step",
-      "sha256": "c2fda0b38976750f462b7b5385add0c3469b717cb7e2f25e11e455e1dd1c8dd5"
+      "sha256": "6ed8e137cdb5bfec758e79fc94224c83f1fa3b06da77b7b6e6d4e368777b37bc"
     },
     {
       "bytes": 126284,
@@ -84,7 +84,7 @@
       "bytes": 18035,
       "executable": false,
       "path": "cad/parts/night-operator.step",
-      "sha256": "0a72aa0c6c447a00d9850da943a9f9888ec196ce3ff7fce571c693f4dc74168e"
+      "sha256": "046ce42fe7a4ffbd911e1672c77c7f339107838168051c4861b72c918e7bafea"
     },
     {
       "bytes": 132184,
@@ -96,7 +96,7 @@
       "bytes": 37732,
       "executable": false,
       "path": "cad/parts/void-node.step",
-      "sha256": "3000bb54f126da31556b543e1a117f6237d7afd148262de3ac94ad479c0c3011"
+      "sha256": "f73b47677df5218b38872afc6fdfb415459dffe698e336cb67fd7505405bc665"
     },
     {
       "bytes": 1613884,
@@ -108,7 +108,7 @@
       "bytes": 328362,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "c6376c50beb39cbd366e77b33315bedebc9699a884b5ecf4265b4d398de5f331"
+      "sha256": "9d48db9220fc08dc4803069c8d289d828980c1a5a7638c3087f0f46dcaee4ffa"
     },
     {
       "bytes": 1929984,

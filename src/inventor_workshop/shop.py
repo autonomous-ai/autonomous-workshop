@@ -336,7 +336,12 @@ def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
             "image. Follow the brief's must-show sequence in order and never leave a "
             "declared media slot blank. Keep the copy vivid and accurate. Do not "
             "treat AI Playtest as a physical print, delivery, customer review, human "
-            "endorsement, proof of fun, or proof of balance."
+            "endorsement, proof of fun, or proof of balance. Count every repeated "
+            "physical occurrence exactly and distinguish total pieces from unique "
+            "part types. Never turn a CAD target, clearance, tolerance, digital "
+            "simulation, or intended mechanism into a claim of proven smooth fit, "
+            "no slop, durability, print finish, or physical feel; those claims wait "
+            "for physical evidence or customer Reviews."
         ),
     ]
     for label, value, limit in facts:

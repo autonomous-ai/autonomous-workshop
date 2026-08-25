@@ -32,12 +32,12 @@
       "night-operator"
     ],
     "step_bytes": 304739,
-    "step_sha256": "fbfe300a1f01a5dd3b5340563ebcdea514036d312e7d34562b4248419f96c92f"
+    "step_sha256": "45f6a56c91ebcad4d3e43f93e710bcdcdb374ebe25de4c90ad41bf1f991f90f2"
   },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "505bdcb2f28daf821506e2c908ade5f4e3265ae5b2331b8d6d02d3c97e28ae79"
+    "sha256": "6eb5293224c725f6e0236008c46e7df43c7b7966756ce57aee243d8dbbcef1f8"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -60,7 +60,7 @@
         ],
         "bytes": 130955,
         "reimported": true,
-        "sha256": "04e51ce9d32bed9cac983738134cc3b2d9ab527f3495388392fd1b6cf4d812e3",
+        "sha256": "21c525d0c65126bcfe24a561d168854f126fc6c7e987d6a315b9a2372f6c0257",
         "solid_count": 7
       },
       "stl": {
@@ -99,7 +99,7 @@
         ],
         "bytes": 81845,
         "reimported": true,
-        "sha256": "cccd78845b327106cdfb280e84738da34bee3042e8dd77b88004b6d6be539a8b",
+        "sha256": "6cc013da0dd74aa555fcc3a587bcfd1737431589cd63b5027695106974174187",
         "solid_count": 4
       },
       "stl": {
@@ -138,7 +138,7 @@
         ],
         "bytes": 57005,
         "reimported": true,
-        "sha256": "c2fda0b38976750f462b7b5385add0c3469b717cb7e2f25e11e455e1dd1c8dd5",
+        "sha256": "6ed8e137cdb5bfec758e79fc94224c83f1fa3b06da77b7b6e6d4e368777b37bc",
         "solid_count": 5
       },
       "stl": {
@@ -177,7 +177,7 @@
         ],
         "bytes": 18035,
         "reimported": true,
-        "sha256": "0a72aa0c6c447a00d9850da943a9f9888ec196ce3ff7fce571c693f4dc74168e",
+        "sha256": "046ce42fe7a4ffbd911e1672c77c7f339107838168051c4861b72c918e7bafea",
         "solid_count": 1
       },
       "stl": {
@@ -216,7 +216,7 @@
         ],
         "bytes": 37732,
         "reimported": true,
-        "sha256": "3000bb54f126da31556b543e1a117f6237d7afd148262de3ac94ad479c0c3011",
+        "sha256": "f73b47677df5218b38872afc6fdfb415459dffe698e336cb67fd7505405bc665",
         "solid_count": 2
       },
       "stl": {
@@ -256,7 +256,7 @@
       ],
       "bytes": 328362,
       "reimported": true,
-      "sha256": "c6376c50beb39cbd366e77b33315bedebc9699a884b5ecf4265b4d398de5f331",
+      "sha256": "9d48db9220fc08dc4803069c8d289d828980c1a5a7638c3087f0f46dcaee4ffa",
       "solid_count": 19
     },
     "stl": {

@@ -11,7 +11,7 @@ Rotate the tide arm through Sun–Earth–Moon alignment and quadrature to compa
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `9cfcce963fd4aa83829264c8b6f000d1c25cba4db1fa9e11dea4fd0111ad2357`
+- Exact artifact: `47900bf307ca41909148c3248e979120979dafa2f373475ccca73dfa25322d2e`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

@@ -39,12 +39,12 @@
       "spoke-signal-05"
     ],
     "step_bytes": 575320,
-    "step_sha256": "57f6930da0462d81593e03703685c1672de9eacc56df377d5367a23d66d26a37"
+    "step_sha256": "3deacc6b0b0441b1cbb4348bfac6497400fad7aea9ee25a71a4e584c9bb84a1f"
   },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "505bdcb2f28daf821506e2c908ade5f4e3265ae5b2331b8d6d02d3c97e28ae79"
+    "sha256": "6eb5293224c725f6e0236008c46e7df43c7b7966756ce57aee243d8dbbcef1f8"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -70,7 +70,7 @@
         ],
         "bytes": 56471,
         "reimported": true,
-        "sha256": "9d96e3b42cbc97eb40bc7a181a51fe76e27bb569502c730ffe17e782adf32a04",
+        "sha256": "628e734a9581b366fb9ea745cc7a157bdb063dd1ecbb1df31f6235daa4c35e68",
         "solid_count": 1
       },
       "stl": {
@@ -109,7 +109,7 @@
         ],
         "bytes": 36435,
         "reimported": true,
-        "sha256": "2ad616d97543a03a8796afecc8b5430c481667d0956dd348ab286778b7c0e5c5",
+        "sha256": "75930315651d56132a29756a7c9642fe47d2b37c4a254e2cfc63e332b557f18b",
         "solid_count": 2
       },
       "stl": {
@@ -148,7 +148,7 @@
         ],
         "bytes": 13231,
         "reimported": true,
-        "sha256": "96c216e02f5507675fe27384dd70719269997822e9ac80e4eb5a2e37d6948156",
+        "sha256": "14edb2e7b3e6590ddc6a869899fad359032ea660550099939c70600ad960f65e",
         "solid_count": 2
       },
       "stl": {
@@ -187,7 +187,7 @@
         ],
         "bytes": 91688,
         "reimported": true,
-        "sha256": "e9a09d2988649213c8c789a45d8792e16e19869730aa151ee80d99f10d6ba561",
+        "sha256": "3ad955f3deedad1051fb5da439162a568679abec6a46192fa3ad4eb356c987b8",
         "solid_count": 6
       },
       "stl": {
@@ -227,7 +227,7 @@
       ],
       "bytes": 629119,
       "reimported": true,
-      "sha256": "b4b15b7078cebb8e1a6c70e6312d6c6a7c22cf7f6afa358651fb04d47984326c",
+      "sha256": "191c2a511992188e333046b3e0d0adc870a73baf3d9689dcca69caba6013087a",
       "solid_count": 43
     },
     "stl": {

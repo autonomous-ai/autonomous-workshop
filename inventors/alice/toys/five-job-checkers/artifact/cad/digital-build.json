@@ -52,12 +52,12 @@
       "five-spoke-12"
     ],
     "step_bytes": 2003606,
-    "step_sha256": "1b696d6d51129d00f5a928921a8d31cd567d6efbc4efcbc2bac260b20d0c8558"
+    "step_sha256": "33926926a5fea6174bef310f6d13a61fcecb626f7c70ad4aa8d27498c09a4495"
   },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "505bdcb2f28daf821506e2c908ade5f4e3265ae5b2331b8d6d02d3c97e28ae79"
+    "sha256": "6eb5293224c725f6e0236008c46e7df43c7b7966756ce57aee243d8dbbcef1f8"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -80,7 +80,7 @@
         ],
         "bytes": 651762,
         "reimported": true,
-        "sha256": "6499f6e843affb12bc539235fb02a4a0a705c88af28db31ed4a0d543c253f99d",
+        "sha256": "19c6720afb4456030756ad2921480fc3de18965af01b20d305479a5db6d24cb0",
         "solid_count": 38
       },
       "stl": {
@@ -119,7 +119,7 @@
         ],
         "bytes": 36945,
         "reimported": true,
-        "sha256": "594e5556192d60ed30c01fb184df199d39a30dc0f910cdc6835b1d7000368852",
+        "sha256": "4216fa33ff8ccd935a25ad748b894c199da5e22d582b96992e78a6cea1aaa5db",
         "solid_count": 6
       },
       "stl": {
@@ -158,7 +158,7 @@
         ],
         "bytes": 91893,
         "reimported": true,
-        "sha256": "567540a873e8c243cbc5efb52667aa86ecb0b399626b8fc774271a507524f32c",
+        "sha256": "6e6417d4e61ed94b9531d0333011b356399a134a21d9ce4de2a1a30ef643e894",
         "solid_count": 6
       },
       "stl": {
@@ -198,7 +198,7 @@
       ],
       "bytes": 2274206,
       "reimported": true,
-      "sha256": "78f0887f25749af5fbf6f29bebc7bc1ae7f3884ba9bff79ee180da63cf0c1e48",
+      "sha256": "14d32313bff004b72befed8939f870e15095e7a6e87893d70709a3812a8ae1dd",
       "solid_count": 182
     },
     "stl": {
