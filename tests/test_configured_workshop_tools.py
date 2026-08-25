@@ -136,10 +136,12 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         rewarded_constructor.assert_called_once_with(None)
         self.assertIs(selected.instructions, rewarded)
 
-    def test_legacy_switch_adds_only_missing_invent(self):
+    def test_legacy_invent_switch_cannot_disable_other_shared_defaults(self):
         explicit_make = mock.Mock()
         explicit_deliver = mock.Mock()
         invented = mock.Mock()
+        playtested = mock.Mock()
+        rewarded = mock.Mock()
         existing = WorkshopTools(make=explicit_make, deliver=explicit_deliver)
         with mock.patch.dict(
             os.environ,
@@ -148,14 +150,29 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         ), mock.patch(
             "inventor_workshop.agent_invent.CodexInventor",
             return_value=invented,
-        ) as constructor:
+        ) as constructor, mock.patch(
+            "inventor_workshop.agent_playtest.LaneAwarePlaytester",
+            return_value=playtested,
+        ), mock.patch(
+            "inventor_workshop.agent_instructions.RewardedInstructions",
+            return_value=rewarded,
+        ):
             selected = configured_workshop_tools(existing)
         constructor.assert_called_once_with()
         self.assertIs(selected.invent, invented)
         self.assertIs(selected.make, explicit_make)
-        self.assertIsNone(selected.playtest)
-        self.assertIsNone(selected.instructions)
+        self.assertIs(selected.playtest, playtested)
+        self.assertIs(selected.instructions, rewarded)
         self.assertIs(selected.deliver, explicit_deliver)
+
+    def test_rejects_unknown_legacy_invent_mode(self):
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_INVENT_WORKER": "invent-only"}, clear=True
+        ):
+            with self.assertRaisesRegex(
+                ContractError, "WORKSHOP_INVENT_WORKER must be codex or unset"
+            ):
+                configured_workshop_tools()
 
     def test_full_switch_installs_all_shared_workers_without_factory_secrets(self):
         invented = mock.Mock()

@@ -674,9 +674,9 @@ def _missing_invent(context: InventContext) -> Invented:
     raise WaitingFor(
         Need(
             "invent",
-            "industrial-design-inventor",
-            "This Workshop has no configured concept and industrial-design worker.",
-            "Connect an Invent worker that researches directions, chooses one concept, and returns an Invented record after its reward target is reached.",
+            "industrial-design",
+            "This Workshop has no configured shared concept and industrial-design provider.",
+            "Configure the Workshop's shared Invent provider so it can research directions, choose one concept, and return an Invented record after its reward target is reached.",
         )
     )
 

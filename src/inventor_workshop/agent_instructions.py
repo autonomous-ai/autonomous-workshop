@@ -282,13 +282,13 @@ class RewardedInstructions:
             except CodexInvocationError as exc:
                 raise _waiting(
                     "codex-instructions",
-                    "The AI Inventor could not complete its Instructions action.",
+                    "The Workshop's shared Instructions creator could not complete its action.",
                     "Restore the authenticated Terra Instructions worker and resume this exact job.",
                 ) from exc
             except ContractError as exc:
                 raise _waiting(
                     "codex-instructions",
-                    "The AI Inventor returned malformed Instructions.",
+                    "The Workshop's shared Instructions creator returned malformed Instructions.",
                     "Repair the structured Instructions worker and resume this exact job.",
                 ) from exc
 
@@ -486,8 +486,9 @@ class RewardedInstructions:
                 "site-page",
                 "The manual and product facts are scored and sealed, but their "
                 "Factory handoff is not configured.",
-                "Configure the selected Inventor's Factory credentials, then resume "
-                "this exact handoff without regenerating Instructions.",
+                "Configure the Workshop-managed Factory account for the selected "
+                "Inventor identity, then resume this exact handoff without "
+                "regenerating Instructions.",
             )
         try:
             receipt = self.site_writer(context, root, manifest)

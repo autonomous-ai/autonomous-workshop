@@ -3,7 +3,7 @@
   "id": "ivy",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["holdable-science", "scientific-models", "taste-only"],
+  "capabilities": ["holdable-science", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

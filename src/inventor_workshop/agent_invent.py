@@ -1648,7 +1648,9 @@ class CodexInventor:
                 raise ValueError
             _validate_lane_contract(selected["lane_contract"], lane, source_ids)
         except (ContractError, KeyError, TypeError, ValueError) as exc:
-            raise _invent_wait("The Inventor returned an invalid industrial-design action.") from exc
+            raise _invent_wait(
+                "The Workshop's shared Invent creator returned an invalid industrial-design action."
+            ) from exc
         return value
 
     def _research(self, context: InventContext) -> InventResearch:
@@ -1726,7 +1728,9 @@ class CodexInventor:
                     workspace=context.workspace,
                 )
             except CodexInvocationError as exc:
-                raise _invent_wait("The AI Inventor could not complete its Invent action.") from exc
+                raise _invent_wait(
+                    "The Workshop's shared Invent creator could not complete its action."
+                ) from exc
             return self._validate_action(
                 action, research.source_ids, context.blueprint.lane
             )
@@ -1869,8 +1873,10 @@ def configured_workshop_tools(
     waits truthfully at the external handoff. Explicit caller tools always win
     field by field.
 
-    ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible Invent-only
-    switch.  It never enables the other workers or Factory authentication.
+    ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible alias for
+    the normal shared-worker default.  It must never strand an older direct
+    profile with Invent alone while silently removing Make, Playtest, and
+    Instructions.
     """
 
     from .workshop import WorkshopTools
@@ -1883,12 +1889,11 @@ def configured_workshop_tools(
         raise ContractError(
             "WORKSHOP_AGENT_WORKERS must be codex, disabled, or unset"
         )
-    legacy_invent = (
-        worker_mode is None
-        and os.environ.get("WORKSHOP_INVENT_WORKER") == "codex"
-    )
-    full_workers = worker_mode != "disabled" and not legacy_invent
-    if not full_workers and not legacy_invent:
+    legacy_invent = os.environ.get("WORKSHOP_INVENT_WORKER")
+    if legacy_invent not in (None, "codex"):
+        raise ContractError("WORKSHOP_INVENT_WORKER must be codex or unset")
+    full_workers = worker_mode != "disabled"
+    if not full_workers:
         return selected
 
     invent = selected.invent

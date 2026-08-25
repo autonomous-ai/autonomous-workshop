@@ -3,7 +3,7 @@
   "id": "bob",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["moving-machines", "kinetic-mechanisms", "taste-only"],
+  "capabilities": ["moving-machines", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
   "source": {"kind": "local"}
 }

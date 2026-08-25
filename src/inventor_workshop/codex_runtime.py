@@ -11,6 +11,11 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+from .errors import ContractError
+
+
+ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
+
 
 class CodexInvocationError(RuntimeError):
     pass
@@ -27,6 +32,10 @@ class CodexStructuredRunner:
         runner: Any = subprocess.run,
         cli_version: Optional[str] = None,
     ) -> None:
+        if model not in ALLOWED_WORKSHOP_MODELS:
+            raise ContractError(
+                "Workshop Codex model must be gpt-5.6-terra or gpt-5.6-luna"
+            )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
         self.binary = binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
@@ -114,4 +123,8 @@ class CodexStructuredRunner:
         return payload
 
 
-__all__ = ["CodexInvocationError", "CodexStructuredRunner"]
+__all__ = [
+    "ALLOWED_WORKSHOP_MODELS",
+    "CodexInvocationError",
+    "CodexStructuredRunner",
+]

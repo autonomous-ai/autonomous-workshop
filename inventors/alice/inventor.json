@@ -3,7 +3,7 @@
   "id": "alice",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["classics-made-yours", "personalization", "known-rules", "taste-only"],
+  "capabilities": ["classics-made-yours", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

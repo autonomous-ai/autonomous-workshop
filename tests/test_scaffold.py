@@ -231,7 +231,7 @@ class ScaffoldTest(unittest.TestCase):
             self.assertEqual(waiting["playtest_rounds"], 3)
             self.assertIsNone(waiting["artifact_sha256"])
             self.assertEqual(
-                waiting["needs"][0]["capability"], "industrial-design-inventor"
+                waiting["needs"][0]["capability"], "industrial-design"
             )
             self.assertTrue((destination / ".workshop/workshop.sqlite3").is_file())
 
@@ -317,7 +317,7 @@ class ScaffoldTest(unittest.TestCase):
                         text=True,
                     )
                     need = json.loads(run.stdout)["needs"][0]["capability"]
-                    self.assertEqual(need, "industrial-design-inventor")
+                    self.assertEqual(need, "industrial-design")
 
     def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

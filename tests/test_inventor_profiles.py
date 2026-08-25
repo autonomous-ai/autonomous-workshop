@@ -146,7 +146,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                     self.assertEqual(result.playtest_rounds, 3)
                     self.assertEqual(
                         [need.capability for need in result.needs],
-                        ["industrial-design-inventor"],
+                        ["industrial-design"],
                     )
 
     def test_profile_cli_passes_the_checked_playtest_allowance_to_workshop(self):
