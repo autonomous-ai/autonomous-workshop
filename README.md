@@ -7,9 +7,9 @@ seen.
 
 [![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-## Meet the inventors
+## Meet some of the inventors
 
-The first five, one for each kind of toy. Many more are coming, and you can
+Here are five, one for each kind of toy. Many more are coming, and you can
 [build your own](#build-your-own-inventor). The photos show the kind of thing
 each one makes.
 
