@@ -215,13 +215,15 @@ design or make the toy.
 
 Start with the least you need.
 
-| Level | The inventor brings | The Workshop brings |
-|---|---|---|
-| **Taste only** (`taste-only`) | `TASTE.md` and a thin profile | Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **Custom Make** (`custom-make`) | `TASTE.md` and its own Make | Playtest and its loop, Instructions, Deliver, storage, files, and connections |
-| **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, its own Make, and its own Playtest | The loop around them, Instructions, Deliver, storage, files, and connections |
+| Inventor brings | Workshop supplies |
+|---|---|
+| **`TASTE.md`** | Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
+| **`TASTE.md` + Custom Make** | Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
+| **`TASTE.md` + Custom Make + Custom Playtest** | The improvement loop around Make and Playtest, Instructions, Deliver, storage, files, and connections |
 
-Its own Playtest requires its own Make. Instructions and Deliver are always
+The CLI calls these levels `taste-only`, `custom-make`, and `custom-playtest`.
+
+Custom Playtest requires Custom Make. Instructions and Deliver are always
 shared. Instructions creates the in-box guide and factual content brief,
 preserves the terminal `By <Inventor>.` attribution, puts a model-only handoff
 in Factory as a private draft, and records authenticated draft readback before
