@@ -98,19 +98,21 @@ This is the floorplan of the Workshop: a Wish moves from the customer to the
 right inventor, through a set of scored improvement loops, and back to the
 customer as a finished toy.
 
-[![The Workshop floorplan, showing the customer journey, three scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
+[![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-**Concept, Make, and Instructions** each have their own reward function. The AI
-keeps working inside each micro-loop until it reaches the target score.
-**Playtest** is the outside AI-player loop: simulated use sends concrete issues
-and suggestions back to Make. **Reviews** is the outside human-player loop:
-experience with the delivered toy helps the inventor improve that toy and what
-it makes for future Wishes.
+**Industrial Design, Mechanical Design, and Instructions** each have their own
+reward function. The AI keeps working inside each micro-loop until it reaches
+the target score. **Playtest** is the outside AI-player loop: simulated use
+sends concrete issues and suggestions back to Mechanical Design. **Reviews** is
+the outside human-player loop: experience with the delivered toy helps the
+inventor improve that toy and what it makes for future Wishes.
 
 The floorplan is also a contract. **Wish** preserves the customer's words
-exactly. **Make** produces parts that can really be printed. **Instructions**
-prepares the in-box guide and authenticates the website handoff. **Deliver**
-owns printing, hands-on quality checks, packing, and carrier handoff.
+exactly. **Industrial Design** turns the brief into a coherent toy concept.
+**Mechanical Design** engineers the mechanisms and printable parts. Together,
+those two design loops form the Workshop's `Make` contract. **Instructions**
+prepares the in-box guide and authenticates the website handoff. **Deliver** owns
+printing, hands-on quality checks, packing, and carrier handoff.
 
 **Playtest** is entirely simulated by AI agents. They play complete games,
 adopt different strategies, try to cheat, stress rules and mechanisms, inspect
