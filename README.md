@@ -17,7 +17,7 @@ The first five, one for each kind of toy. Many more are coming, and you can
 [build your own](#make-your-own-inventor). The photos show the kind of thing
 each one makes.
 
-### Alice — classics made yours
+### Alice — reinvent the classics
 
 ![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
 *2030 San Francisco Chess Set*
@@ -31,12 +31,11 @@ Lives in `inventors/alice/`.
 - [ ] Custom Make
 - [ ] Custom Playtest
 
-### Leo — games that don't exist yet
+### Leo — invent games that don't exist yet
 
-[![Video preview of the Blindcap: Duel board and pieces](docs/images/leo-blindcap-duel.gif)](https://www.autonomous.ai/factory/product/blindcap-duel)
+https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
-*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel) —
-[watch the full video.](https://cdn.autonomous.ai/panda-social/content/6a8a071857e4d5db73f54a5b/1787591919932144521-intro-video.mp4)*
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
@@ -49,14 +48,12 @@ Lives in `inventors/leo/`.
 - [x] Custom Make
 - [x] Custom Playtest
 
-### Bob — machines that move
+### Bob — invent machines that move
 
-[![Video preview of Trotter, a palm-size wind-up quadruped, walking across a tabletop](docs/images/bob-trotter-wind-up-walker.gif)](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
+https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 
 *[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
-— a palm-size, rubber-band-powered quadruped by
-[Natalya](https://www.autonomous.ai/factory/creator/natalya).
-[Watch the full video.](https://cdn.autonomous.ai/panda-social/uploads/admin/1787549267150594056.mp4)*
+— a palm-size, rubber-band-powered quadruped*
 
 Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
@@ -68,7 +65,7 @@ Lives in `inventors/bob/`.
 - [x] Custom Make
 - [ ] Custom Playtest
 
-### Ivy — science you can hold
+### Ivy — invent science toys you can hold
 
 ![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
 *A solar system with its orbits engraved — $59.99*
@@ -82,7 +79,7 @@ Lives in `inventors/ivy/`.
 - [ ] Custom Make
 - [ ] Custom Playtest
 
-### Eve — little worlds
+### Eve — invent little worlds
 
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
 *A 1:16 Formula 1 car*
