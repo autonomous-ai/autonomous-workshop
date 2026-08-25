@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1620" role="img" aria-labelledby="title description">
-  <title id="title">The Workshop product lifecycle</title>
-  <desc id="description">A vertical product lifecycle from customer Wish through Match, Industrial Design, Mechanical Design, AI Playtest, Instructions, Deliver, and customer Reviews. Industrial Design, Mechanical Design, and Instructions repeat internal score loops. AI Playtest returns issues to Mechanical Design, and human Reviews return experience to Industrial Design for the next revision.</desc>
+  <title id="title">How a Wish becomes a toy</title>
+  <desc id="description">A vertical journey through the Workshop from Wish and Match to Invent, Make, Playtest, Instructions, Deliver, and Reviews. Invent, Make, and Instructions have little improvement loops. AI Players send problems back to Make, and customer Reviews inspire the next revision and future Wishes.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -46,18 +46,18 @@
 
   <rect width="1000" height="1620" rx="28" fill="#f5f2ec"/>
 
-  <text x="50" y="58" class="title">The Workshop product lifecycle</text>
-  <text x="50" y="87" class="subtitle">Professional toy development, powered by playful AI invention and real feedback</text>
+  <text x="50" y="58" class="title">How a Wish becomes a toy</text>
+  <text x="50" y="87" class="subtitle">A peek inside the Workshop</text>
 
   <g transform="translate(55 126)">
     <line x1="0" y1="0" x2="30" y2="0" stroke="#525b66" stroke-width="3"/>
-    <text x="40" y="5" class="legend">main journey</text>
+    <text x="40" y="5" class="legend">through the Workshop</text>
     <path d="M 182 2 C 192 19, 216 19, 226 2" fill="none" stroke="#d97706" stroke-width="3"/>
-    <text x="238" y="5" class="legend">internal score loop</text>
+    <text x="238" y="5" class="legend">try, score, improve</text>
     <line x1="420" y1="0" x2="450" y2="0" stroke="#1675b8" stroke-width="3"/>
-    <text x="460" y="5" class="legend">AI-player feedback</text>
+    <text x="460" y="5" class="legend">AI Players send it back</text>
     <line x1="660" y1="0" x2="690" y2="0" stroke="#7c4dcc" stroke-width="3"/>
-    <text x="700" y="5" class="legend">human feedback</text>
+    <text x="700" y="5" class="legend">players inspire what's next</text>
   </g>
 
   <!-- Main vertical journey -->
@@ -76,121 +76,121 @@
   <!-- Side-loop labels -->
   <g>
     <rect x="20" y="805" width="164" height="100" rx="16" fill="#eef8ff"/>
-    <text x="102" y="830" text-anchor="middle" class="edge-label-ai">AI PLAYER FEEDBACK</text>
-    <text x="102" y="853" text-anchor="middle" class="body">issues + suggestions</text>
-    <text x="102" y="874" text-anchor="middle" class="body">return to Mechanical</text>
-    <text x="102" y="895" text-anchor="middle" class="body">Design</text>
+    <text x="102" y="830" text-anchor="middle" class="edge-label-ai">AI PLAYERS SAY</text>
+    <text x="102" y="853" text-anchor="middle" class="body">what broke</text>
+    <text x="102" y="874" text-anchor="middle" class="body">what dragged</text>
+    <text x="102" y="895" text-anchor="middle" class="body">back to MAKE</text>
   </g>
   <g>
     <rect x="816" y="935" width="164" height="100" rx="16" fill="#f7f1ff"/>
-    <text x="898" y="960" text-anchor="middle" class="edge-label-human">HUMAN FEEDBACK</text>
-    <text x="898" y="983" text-anchor="middle" class="body">customer experience</text>
-    <text x="898" y="1004" text-anchor="middle" class="body">shapes the next revision</text>
-    <text x="898" y="1025" text-anchor="middle" class="body">and future Wishes</text>
+    <text x="898" y="960" text-anchor="middle" class="edge-label-human">PLAYERS SAY</text>
+    <text x="898" y="983" text-anchor="middle" class="body">what they loved</text>
+    <text x="898" y="1004" text-anchor="middle" class="body">what surprised them</text>
+    <text x="898" y="1025" text-anchor="middle" class="body">what they wish for next</text>
   </g>
 
   <!-- Wish -->
   <g filter="url(#shadow)">
     <rect class="node" x="220" y="170" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="198" class="eyebrow">CUSTOMER BRIEF</text>
+  <text x="250" y="198" class="eyebrow">SOMEONE IMAGINES IT</text>
   <text x="250" y="230" class="heading">WISH</text>
-  <text x="250" y="256" class="body">Describe a toy that does not exist yet. The customer's words stay intact.</text>
+  <text x="250" y="256" class="body">Say what you want, in your own words. The Workshop keeps every word.</text>
 
   <!-- Match -->
   <g filter="url(#shadow)">
     <rect class="node" x="220" y="320" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="348" class="eyebrow">CREATIVE DIRECTION · AI MANAGER</text>
+  <text x="250" y="348" class="eyebrow">THE WORKSHOP LISTENS</text>
   <text x="250" y="380" class="heading">MATCH</text>
-  <text x="250" y="406" class="body">Read every Taste, choose the best Inventor, and explain why the fit works.</text>
+  <text x="250" y="406" class="body">Find the Inventor who might love this Wish most—and say why.</text>
 
-  <!-- Industrial Design -->
+  <!-- Invent -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="470" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="490" x2="600" y2="590" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="497" class="eyebrow eyebrow-internal">AI INVENTOR · CONCEPT LOOP</text>
-  <text x="250" y="531" class="heading">INDUSTRIAL DESIGN</text>
-  <text x="250" y="558" class="body">Research the design space and shape the toy's form,</text>
-  <text x="250" y="580" class="body">play pattern, character, ergonomics, and delight.</text>
+  <text x="250" y="497" class="eyebrow eyebrow-internal">AI INVENTOR · LITTLE LOOP</text>
+  <text x="250" y="531" class="heading">INVENT</text>
+  <text x="250" y="558" class="body">Roam the possibilities. Find the toy's shape,</text>
+  <text x="250" y="580" class="body">character, play, and spark.</text>
   <path class="micro" d="M 665 498 C 735 472, 764 525, 730 572 C 700 612, 633 583, 646 536"/>
-  <text x="697" y="516" text-anchor="middle" class="micro-copy">EXPLORE</text>
+  <text x="697" y="516" text-anchor="middle" class="micro-copy">DREAM</text>
   <text x="697" y="544" text-anchor="middle" class="micro-copy">SCORE</text>
   <text x="697" y="572" text-anchor="middle" class="micro-copy">REFINE</text>
 
-  <!-- Industrial Design gate -->
+  <!-- Invent gate -->
   <rect x="442" y="626" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="644" text-anchor="middle" class="gate">TARGET REACHED</text>
+  <text x="500" y="644" text-anchor="middle" class="gate">SPARK FOUND</text>
 
-  <!-- Mechanical Design -->
+  <!-- Make -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="670" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="690" x2="600" y2="790" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="697" class="eyebrow eyebrow-internal">AI INVENTOR · MAKE LOOP</text>
-  <text x="250" y="731" class="heading">MECHANICAL DESIGN</text>
-  <text x="250" y="758" class="body">Engineer mechanisms, printable parts, fit, motion,</text>
-  <text x="250" y="780" class="body">materials, CAD, and manufacturability.</text>
+  <text x="250" y="697" class="eyebrow eyebrow-internal">AI INVENTOR · LITTLE LOOP</text>
+  <text x="250" y="731" class="heading">MAKE</text>
+  <text x="250" y="758" class="body">Turn the idea into mechanisms and printable parts</text>
+  <text x="250" y="780" class="body">that fit, move, and feel right.</text>
   <path class="micro" d="M 665 698 C 735 672, 764 725, 730 772 C 700 812, 633 783, 646 736"/>
   <text x="697" y="716" text-anchor="middle" class="micro-copy">BUILD</text>
   <text x="697" y="744" text-anchor="middle" class="micro-copy">INSPECT</text>
   <text x="697" y="772" text-anchor="middle" class="micro-copy">REFINE</text>
 
-  <!-- Mechanical Design gate -->
+  <!-- Make gate -->
   <rect x="442" y="826" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="844" text-anchor="middle" class="gate">TARGET REACHED</text>
+  <text x="500" y="844" text-anchor="middle" class="gate">READY TO PLAY</text>
 
   <!-- Playtest -->
   <g filter="url(#shadow)">
     <rect class="node-ai" x="220" y="870" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="890" x2="600" y2="990" stroke="#9bc8e8" stroke-width="1.5"/>
-  <text x="250" y="898" class="eyebrow eyebrow-ai">DESIGN VALIDATION · AI PLAYERS</text>
+  <text x="250" y="898" class="eyebrow eyebrow-ai">AI PLAYERS · OUTSIDE LOOP</text>
   <text x="250" y="932" class="heading">PLAYTEST</text>
-  <text x="250" y="957" class="body">Simulate complete games and real use.</text>
-  <text x="250" y="977" class="body">Probe balance, exploits, safety,</text>
-  <text x="250" y="997" class="body">mechanics, and printability.</text>
-  <text x="628" y="946" class="edge-label-ai">ISSUES → REDESIGN</text>
-  <text x="628" y="973" class="edge-label-ai">PASS → ADVANCE</text>
+  <text x="250" y="957" class="body">Play it all the way through. Try clever,</text>
+  <text x="250" y="977" class="body">strange, and troublesome things.</text>
+  <text x="250" y="997" class="body">Find every reason to send it back.</text>
+  <text x="628" y="946" class="edge-label-ai">TROUBLE: MAKE AGAIN</text>
+  <text x="628" y="973" class="edge-label-ai">PASSES: KEEP GOING</text>
 
   <!-- Playtest gate -->
   <rect x="432" y="1026" width="136" height="26" rx="13" fill="#eef8ff"/>
-  <text x="500" y="1044" text-anchor="middle" class="gate-ai">VALIDATION PASSED</text>
+  <text x="500" y="1044" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
 
   <!-- Instructions -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="1070" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="1090" x2="600" y2="1190" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="1097" class="eyebrow eyebrow-internal">PRODUCT DOCUMENTATION · MICRO-LOOP</text>
+  <text x="250" y="1097" class="eyebrow eyebrow-internal">AI INVENTOR · LITTLE LOOP</text>
   <text x="250" y="1131" class="heading">INSTRUCTIONS</text>
-  <text x="250" y="1158" class="body">Publish the toy guide and product facts.</text>
-  <text x="250" y="1180" class="body">Check clarity, safety, accuracy, and the exact handoff.</text>
+  <text x="250" y="1158" class="body">Write the guide that makes opening the box</text>
+  <text x="250" y="1180" class="body">feel easy, clear, and inviting.</text>
   <path class="micro" d="M 665 1098 C 735 1072, 764 1125, 730 1172 C 700 1212, 633 1183, 646 1136"/>
-  <text x="697" y="1116" text-anchor="middle" class="micro-copy">DRAFT</text>
-  <text x="697" y="1144" text-anchor="middle" class="micro-copy">CHECK</text>
-  <text x="697" y="1172" text-anchor="middle" class="micro-copy">REFINE</text>
+  <text x="697" y="1116" text-anchor="middle" class="micro-copy">WRITE</text>
+  <text x="697" y="1144" text-anchor="middle" class="micro-copy">FOLLOW</text>
+  <text x="697" y="1172" text-anchor="middle" class="micro-copy">POLISH</text>
 
   <!-- Instructions gate -->
   <rect x="442" y="1226" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="1244" text-anchor="middle" class="gate">TARGET REACHED</text>
+  <text x="500" y="1244" text-anchor="middle" class="gate">CLEAR AS DAY</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">
     <rect class="node" x="220" y="1270" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1298" class="eyebrow">PRODUCTION + FULFILLMENT · AUTONOMOUS</text>
+  <text x="250" y="1298" class="eyebrow">AUTONOMOUS</text>
   <text x="250" y="1330" class="heading">DELIVER</text>
-  <text x="250" y="1356" class="body">Print, perform hands-on quality checks, pack, and ship the finished toy.</text>
+  <text x="250" y="1356" class="body">Print it, check it by hand, tuck it into a box, and send it to your door.</text>
 
   <!-- Reviews -->
   <g filter="url(#shadow)">
     <rect class="node-human" x="220" y="1440" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1468" class="eyebrow eyebrow-human">FIELD LEARNING · CUSTOMER</text>
+  <text x="250" y="1468" class="eyebrow eyebrow-human">THE TOY MEETS PEOPLE</text>
   <text x="250" y="1500" class="heading">REVIEWS</text>
-  <text x="250" y="1526" class="body">Human experience improves the next revision and what the Inventor makes next.</text>
+  <text x="250" y="1526" class="body">What players say helps this toy grow—and starts the next adventure.</text>
 
-  <text x="500" y="1585" text-anchor="middle" class="subtitle">Every loop has evidence. Every gate has a target. The toy keeps its sense of play.</text>
+  <text x="500" y="1585" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
 </svg>
