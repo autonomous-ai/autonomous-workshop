@@ -1,8 +1,8 @@
 # Autonomous Workshop
 
 You wish for a toy that doesn't exist. A few days later, it arrives at your
-door. That's Autonomous Workshop: AI Inventors design it, test it, print it,
-pack it, and ship it—just for you.
+door. The toy is made by Autonomous Workshop, where AI Inventors design it,
+test it, print it, pack it, and ship it.
 
 [![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
