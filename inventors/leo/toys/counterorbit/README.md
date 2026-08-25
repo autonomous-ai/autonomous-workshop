@@ -11,7 +11,7 @@ Place one of five signal stones, rotate the shared orbit, and try to hold a thre
 - Extension level: `custom-playtest`
 - Configured Playtest rounds: `10`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `c8d3f910bd4f335fe8d1b4cb6aacf226ea617fe334f2c832c447569767935c18`
+- Exact artifact: `6980aeee1cac7b6c12a60f51f9589b6e9ff5fcc390844982d715fb5ca3522317`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.
@@ -26,7 +26,7 @@ AI Playtest passed. Shared Instructions created the box guide and factual handof
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
 - [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index

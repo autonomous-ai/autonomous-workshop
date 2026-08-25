@@ -10,8 +10,10 @@ Set the parts on a stable surface, follow the intended interaction shown in the 
 
 ## What's in the box
 
-- one Montauk base
+- one phase base
+- one center post
 - one tide-alignment arm
+- one Earth hub
 - one Sun marker
 - one Moon marker
 

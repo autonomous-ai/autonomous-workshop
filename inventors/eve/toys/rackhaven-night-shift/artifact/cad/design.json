@@ -33,6 +33,7 @@
       "Void"
     ],
     "operator_height_mm": 16.0,
+    "printed_piece_count": 5,
     "reference_scope": "Wish text only; no private likeness assets were used",
     "wish_features": [
       "three node identities are geometry, not labels",

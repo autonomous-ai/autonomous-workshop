@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "47900bf307ca41909148c3248e979120979dafa2f373475ccca73dfa25322d2e",
+  "artifact_sha256": "e2b3d89d776b994c0ffc2b90432601fc08ccaf9b99da3c59f654cd9876301d7b",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -15,8 +15,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "5df739e59f227d3271001ef795cfa41edc6e065c9bba9f99fcf3b7ba9898260f",
-  "evidence_sha256": "fe85b7733a7686c021158bec0c8e584db41f3c5ca501ffc6782fe3181753c954",
-  "instructions_sha256": "112ae7879809bb9579afd518318e8e2952d487f82a12d54a28deab28bb66ba23",
+  "evidence_sha256": "fde68cf8f7934ce8eff8bec5d4c9138ae33d4fcc3445a940d4b5f6b30b5260e2",
+  "instructions_sha256": "5e1d1f2408a3d97b84ee585346f34651d36c9f70d9ce5554ef7f2cb8958b8652",
   "inventor": {
     "extension_level": "taste-only",
     "id": "ivy",
@@ -25,7 +25,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "47900bf307ca41909148c3248e979120979dafa2f373475ccca73dfa25322d2e",
+    "artifact_sha256": "e2b3d89d776b994c0ffc2b90432601fc08ccaf9b99da3c59f654cd9876301d7b",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -46,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "6eb5293224c725f6e0236008c46e7df43c7b7966756ce57aee243d8dbbcef1f8",
+    "builder_sha256": "2f37b90949c72c999cd3896e02cdf3fea830f31f4e6e6885a335434b32952788",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },

@@ -40,6 +40,7 @@
       "style_matchups": 16,
       "terminating_games": 1200
     },
+    "printed_piece_count": 12,
     "token_diameter_mm": 7.4,
     "token_styles": {
       "ring": 5,

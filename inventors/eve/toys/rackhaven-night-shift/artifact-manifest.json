@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "2205f53542e360806bcd1d93bea955079d2f9fa43f30cc9a162d51414d14bd3e",
+  "artifact_sha256": "a4457ad61c296d7ff9fcc00fd469f3a8f683b7083b9ac202ff32b421ba265c5f",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -9,10 +9,10 @@
       "sha256": "9f413e3ff09cd3a50cca010dbf8e434017acd908b2144c44804fc8723205a579"
     },
     {
-      "bytes": 304739,
+      "bytes": 304756,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "45f6a56c91ebcad4d3e43f93e710bcdcdb374ebe25de4c90ad41bf1f991f90f2"
+      "sha256": "ae79a1f7b2810a984cc0698ab65d10914bfeac21cb7bc3bb10f500fb60e5cd19"
     },
     {
       "bytes": 569,
@@ -27,16 +27,16 @@
       "sha256": "9286c72c3889704c61f1045cd6cf1a0a9398c7ff30b99150dae3d30da34cc916"
     },
     {
-      "bytes": 1404,
+      "bytes": 1434,
       "executable": false,
       "path": "cad/design.json",
-      "sha256": "2fd4568c5c077afa605b79b97c7cb999ad9cdfe3b0a525096a9961ce6a97b673"
+      "sha256": "19a4182c56ff17f0e62eec56ac052d3fd4e0c93e5c36941d8f3cb77cc2b67767"
     },
     {
       "bytes": 7244,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "186c594a8f2802b1f37623bfdc935a32d833275202d35a167c6af2ab28535f38"
+      "sha256": "f38c0a763f870bec2c7ab6804fcb9d3fb5b878e0695d15824a4e0e103a65ae44"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 130955,
       "executable": false,
       "path": "cad/parts/comet-node.step",
-      "sha256": "21c525d0c65126bcfe24a561d168854f126fc6c7e987d6a315b9a2372f6c0257"
+      "sha256": "90a02f7486eaee63969949226d7af736d5c0b4605d721eb72882de756cf6578b"
     },
     {
       "bytes": 29884,
@@ -60,7 +60,7 @@
       "bytes": 81845,
       "executable": false,
       "path": "cad/parts/engine-deck.step",
-      "sha256": "6cc013da0dd74aa555fcc3a587bcfd1737431589cd63b5027695106974174187"
+      "sha256": "decce0841daef842e87e2999815488c4cde24bdf745331847f485ab812178fbf"
     },
     {
       "bytes": 28084,
@@ -72,7 +72,7 @@
       "bytes": 57005,
       "executable": false,
       "path": "cad/parts/moss-node.step",
-      "sha256": "6ed8e137cdb5bfec758e79fc94224c83f1fa3b06da77b7b6e6d4e368777b37bc"
+      "sha256": "bee4505c66eff0e40eb19acc5441856acaae22c5013897394e0e8405efc9a473"
     },
     {
       "bytes": 126284,
@@ -81,10 +81,10 @@
       "sha256": "c40ae81d19fbc92746fc077db86959188521dfd0194e82e89b348961d358cb75"
     },
     {
-      "bytes": 18035,
+      "bytes": 18052,
       "executable": false,
       "path": "cad/parts/night-operator.step",
-      "sha256": "046ce42fe7a4ffbd911e1672c77c7f339107838168051c4861b72c918e7bafea"
+      "sha256": "eadee78af549ca5d25276428f627291837c0229678c56f67527ca9239c64c644"
     },
     {
       "bytes": 132184,
@@ -96,7 +96,7 @@
       "bytes": 37732,
       "executable": false,
       "path": "cad/parts/void-node.step",
-      "sha256": "f73b47677df5218b38872afc6fdfb415459dffe698e336cb67fd7505405bc665"
+      "sha256": "27671cb14436cfe74f6317427fe6dccd37ec589462a45e2b74b018646656552b"
     },
     {
       "bytes": 1613884,
@@ -105,10 +105,10 @@
       "sha256": "db5334fc47ec58c7ca96fc1076e6562fe283210740399f41c75d59eaf61dc53b"
     },
     {
-      "bytes": 328362,
+      "bytes": 328379,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "9d48db9220fc08dc4803069c8d289d828980c1a5a7638c3087f0f46dcaee4ffa"
+      "sha256": "7cc8afd0b2d4bd4f5b1b16c4bb17ac26206eb679a5bf59bea3e904ddcce44e7c"
     },
     {
       "bytes": 1929984,
@@ -123,10 +123,10 @@
       "sha256": "9dd59f3108065d5808e49a2f3a30b2fd786220506a4722354da1c1b015d69c2e"
     },
     {
-      "bytes": 5451,
+      "bytes": 5481,
       "executable": false,
       "path": "product.json",
-      "sha256": "50ca09573377f90b01b966a62f93a6588cd27ddba7443aa6b543d33bbee76710"
+      "sha256": "b0393bc7e2ccb1a25c9c2e1f414fb61f2e27dfca1c9a161edd19860ce16315e4"
     },
     {
       "bytes": 72,
@@ -142,5 +142,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 6884758
+  "total_bytes": 6884869
 }

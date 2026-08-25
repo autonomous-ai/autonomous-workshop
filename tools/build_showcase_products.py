@@ -139,6 +139,7 @@ SPECS: tuple[ProductSpec, ...] = (
         },
         {
             "kind": "classic-checkers-edition",
+            "printed_piece_count": 25,
             "known_rules": "English draughts/checkers; this edition does not alter play",
             "board_mm": [132.0, 132.0, 5.5],
             "assembled_extents_mm": [132.0, 132.0, 10.0],
@@ -206,6 +207,7 @@ SPECS: tuple[ProductSpec, ...] = (
         },
         {
             "kind": "six-step-geneva-machine",
+            "printed_piece_count": 5,
             "base_mm": [94.0, 68.0, 5.0],
             "assembled_extents_mm": [94.0, 68.0, 20.0],
             "geneva_slots": 6,
@@ -276,6 +278,7 @@ SPECS: tuple[ProductSpec, ...] = (
         },
         {
             "kind": "personalized-homelab-diorama",
+            "printed_piece_count": 5,
             "deck_mm": [108.0, 72.0, 5.0],
             "assembled_extents_mm": [108.0, 72.0, 43.6],
             "nodes": ["Comet", "Moss", "Void"],
@@ -324,7 +327,8 @@ SPECS: tuple[ProductSpec, ...] = (
             "markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the "
             "thin layered disc from low three-quarter; move through 0° → 90° → 180° → "
             "270° with a clean stop at each phase; compare aligned/opposed with "
-            "quadrature side by side; show the four-piece assembly clearly; finish on "
+            "quadrature side by side; show all six printed pieces clearly—the phase "
+            "base, center post, tide arm, Earth hub, Moon marker, and Sun arrow; finish on "
             "the full circular silhouette. Use dark coastal light, ocean navy, "
             "instrument brass, and sea-glass teal. Never crop the base into a post, "
             "turn the markers into mushrooms or planets, omit an assembly image, or "
@@ -350,6 +354,7 @@ SPECS: tuple[ProductSpec, ...] = (
         },
         {
             "kind": "qualitative-tide-orrery",
+            "printed_piece_count": 6,
             "base_diameter_mm": 104.0,
             "assembled_extents_mm": [104.5, 104.0, 31.2],
             "phase_positions_degrees": [0, 90, 180, 270],
@@ -428,6 +433,7 @@ SPECS: tuple[ProductSpec, ...] = (
         },
         {
             "kind": "original-two-player-orbit-game",
+            "printed_piece_count": 12,
             "assembled_diameter_mm": 104.0,
             "fixed_core_diameter_mm": 70.0,
             "players": 2,
@@ -466,9 +472,21 @@ SPECS: tuple[ProductSpec, ...] = (
 
 SHOWCASE_COMPONENTS = {
     "alice": ["one checkers board", "twelve five-ring pieces", "twelve five-spoke pieces"],
-    "bob": ["one base", "one hand crank", "one comet drive wheel", "one six-station Geneva wheel"],
+    "bob": [
+        "one base",
+        "two axles (one is the hand-crank input axle)",
+        "one comet drive wheel",
+        "one six-slot orbit wheel",
+    ],
     "eve": ["one engine-room deck", "three named node structures", "one night-shift operator"],
-    "ivy": ["one Montauk base", "one tide-alignment arm", "one Sun marker", "one Moon marker"],
+    "ivy": [
+        "one phase base",
+        "one center post",
+        "one tide-alignment arm",
+        "one Earth hub",
+        "one Sun marker",
+        "one Moon marker",
+    ],
     "leo": ["one fixed core", "one rotating outer orbit", "ten signal stones", "one rulebook"],
 }
 
@@ -1481,6 +1499,10 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     _write_json(artifact / "cad" / "design.json", design_source)
     _write_text(artifact / "cad" / "model.py", MODEL_WRAPPER, executable=True)
     geometry = GEOMETRY_BUILDERS[spec.inventor_id](spec)
+    if spec.design.get("printed_piece_count") != len(geometry.occurrences):
+        raise RuntimeError(
+            "declared printed-piece count does not match the Factory occurrence inventory"
+        )
     cad_record = _build_cad_files(geometry, artifact / "cad")
     cad_record["factory_assembly"] = _build_factory_assembly(geometry, artifact)
     # Factory selects ``assembled.stl`` before nested part meshes. Keep this
@@ -1881,7 +1903,7 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
 - [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index

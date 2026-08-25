@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "4c886bfee2e3e67a2d43678a2651275be6655dc540d6e03ce95f28c32a2ec464",
+  "artifact_sha256": "9a40be169ab11f230dea2526944bde4c05cf8b090b3e5131ea2e00dd560036b8",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 2003606,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "33926926a5fea6174bef310f6d13a61fcecb626f7c70ad4aa8d27498c09a4495"
+      "sha256": "d4272a181bf16a1e1086dc868231cbb0461f4e8f3410b8f421a449e2ede6227d"
     },
     {
       "bytes": 2445,
@@ -27,16 +27,16 @@
       "sha256": "e225ab6863229abaab45b265b8bdfc841a47e6a1341330a8bddafef596f9b954"
     },
     {
-      "bytes": 1270,
+      "bytes": 1301,
       "executable": false,
       "path": "cad/design.json",
-      "sha256": "247c5c3c7c7c561e0d63726e073f64949ef386a6af1e7de5f9023c913152aeb4"
+      "sha256": "a58feb4b60a2e60c1f5c21df0b2fb50eb20e4a6ee57e14ee9e7ff9ac5104f32d"
     },
     {
       "bytes": 5866,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "501c5b032416bca29f4701a641a9f6d2c14de4ad9894bf792bfe36144897ec0b"
+      "sha256": "de79fd1e80843be6c650fc364e12615797c50f5ba8309b78f12d71f72ffcbdb9"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 651762,
       "executable": false,
       "path": "cad/parts/board.step",
-      "sha256": "19c6720afb4456030756ad2921480fc3de18965af01b20d305479a5db6d24cb0"
+      "sha256": "05e50d531954a7273a9d684443b2b78fa49d7f5ddbee1c6c5953346641a3471b"
     },
     {
       "bytes": 48484,
@@ -60,7 +60,7 @@
       "bytes": 36945,
       "executable": false,
       "path": "cad/parts/five-ring-piece.step",
-      "sha256": "4216fa33ff8ccd935a25ad748b894c199da5e22d582b96992e78a6cea1aaa5db"
+      "sha256": "597ad0c48a2c92b23c6ddbe2def8bd527c9e23b37040d968a8e102188d93ad9c"
     },
     {
       "bytes": 150084,
@@ -72,7 +72,7 @@
       "bytes": 91893,
       "executable": false,
       "path": "cad/parts/five-spoke-piece.step",
-      "sha256": "6e6417d4e61ed94b9531d0333011b356399a134a21d9ce4de2a1a30ef643e894"
+      "sha256": "04ebfbd118b66e6382aeaf519a5e2c0ad9b92a1bba25574ab15f0a247963f965"
     },
     {
       "bytes": 28084,
@@ -84,7 +84,7 @@
       "bytes": 2274206,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "14d32313bff004b72befed8939f870e15095e7a6e87893d70709a3812a8ae1dd"
+      "sha256": "1fe2061a030093ce39a0053c389b966f776899ba39117809ae6ac14d36ada459"
     },
     {
       "bytes": 2184484,
@@ -99,10 +99,10 @@
       "sha256": "82b8f3dd498522c62fd3480d00f21b8343ec64e40d11a35d35e89f620ac01d71"
     },
     {
-      "bytes": 5287,
+      "bytes": 5318,
       "executable": false,
       "path": "product.json",
-      "sha256": "0b0e336913d7113bf24f0d9ab41997f6d16d7f1c14a2e3dbbd68956ca3744574"
+      "sha256": "dc4437a6fb549f0274395d3c03df6d0cf98bafcb744f8b59b68b844d9ae76ab1"
     },
     {
       "bytes": 63,
@@ -118,5 +118,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 9797800
+  "total_bytes": 9797862
 }

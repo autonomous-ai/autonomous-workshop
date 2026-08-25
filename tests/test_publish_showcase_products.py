@@ -227,8 +227,54 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             )
             self.assertEqual(
                 archive.read("five-job-checkers.stl"),
-                archive.read("cad/product.stl"),
+                (self.bundle / "artifact" / "assembled.stl").read_bytes(),
             )
+            self.assertNotIn("cad/product.stl", archive.namelist())
+            source_sidecar = json.loads(
+                (self.bundle / "artifact" / "assembled.step.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            occurrence_paths = [
+                "five-job-checkers_parts/%s.stl" % item["name"]
+                for item in source_sidecar["parts"]
+            ]
+            self.assertEqual(
+                sorted(
+                    name for name in archive.namelist() if name.endswith(".stl")
+                ),
+                sorted(["five-job-checkers.stl"] + occurrence_paths),
+            )
+            self.assertEqual(len(occurrence_paths), 25)
+            self.assertFalse(
+                any(name.startswith("cad/parts/") and name.endswith(".stl") for name in archive.namelist())
+            )
+            self.assertNotIn("assembled.step", archive.namelist())
+            self.assertNotIn("assembled.step.json", archive.namelist())
+            self.assertEqual(
+                archive.read("five-job-checkers.step"),
+                (self.bundle / "artifact" / "assembled.step").read_bytes(),
+            )
+            transported_sidecar = json.loads(
+                archive.read("five-job-checkers.step.json")
+            )
+            self.assertEqual(
+                [item["name"] for item in transported_sidecar["parts"]],
+                [item["name"] for item in source_sidecar["parts"]],
+            )
+            self.assertEqual(
+                [item["stlPath"] for item in transported_sidecar["parts"]],
+                occurrence_paths,
+            )
+            for source_item, occurrence_path in zip(
+                source_sidecar["parts"], occurrence_paths
+            ):
+                self.assertEqual(
+                    archive.read(occurrence_path),
+                    (
+                        self.bundle / "artifact" / source_item["stlPath"]
+                    ).read_bytes(),
+                )
             self.assertEqual(
                 json.loads(archive.read("product.json"))["inventor"]["name"],
                 "Alice",
@@ -244,6 +290,11 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             self.assertEqual(
                 facts["primary_model"]["sha256"],
                 hashlib.sha256(archive.read("five-job-checkers.stl")).hexdigest(),
+            )
+            self.assertEqual(facts["factory_assembly"]["occurrence_count"], 25)
+            self.assertEqual(
+                facts["factory_assembly"]["parts_directory"],
+                "five-job-checkers_parts",
             )
             self.assertEqual(facts["product"]["components"], [
                 "one checkers board",
@@ -499,6 +550,118 @@ class PublishShowcaseProductsTest(unittest.TestCase):
                 json.loads((item.bundle / "artifact" / "project.json").read_text()),
                 {"id": item.spec.slug, "name": item.spec.title},
             )
+
+    def test_all_five_handoffs_match_factory_occurrence_family_contract(self):
+        repo = self.root / "all-five-repo"
+        expected_counts = {
+            "five-job-checkers": 25,
+            "comet-geneva": 5,
+            "rackhaven-night-shift": 5,
+            "montauk-tide-orrery": 6,
+            "counterorbit": 12,
+        }
+        for spec in publisher.showcase.SPECS:
+            source = (
+                publisher.REPO_ROOT
+                / "inventors"
+                / spec.inventor_id
+            )
+            inventor = repo / "inventors" / spec.inventor_id
+            bundle = inventor / "toys" / spec.slug
+            bundle.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(source / "toys" / spec.slug, bundle)
+            shutil.copy2(source / "TASTE.md", inventor / "TASTE.md")
+            shutil.copy2(source / "profile.py", inventor / "profile.py")
+
+        for spec in publisher.showcase.SPECS:
+            with self.subTest(slug=spec.slug):
+                transport = ShowcaseShopTransport(spec.slug, "owner-1")
+                publisher.publish_one(
+                    spec,
+                    token="test-token",
+                    owner_id="owner-1",
+                    repo_root=repo,
+                    state_root=self.root / "all-five-state",
+                    transport=transport,
+                )
+                bundle = (
+                    repo
+                    / "inventors"
+                    / spec.inventor_id
+                    / "toys"
+                    / spec.slug
+                )
+                source_sidecar = json.loads(
+                    (bundle / "artifact" / "assembled.step.json").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                expected_paths = [
+                    "%s_parts/%s.stl" % (spec.slug, item["name"])
+                    for item in source_sidecar["parts"]
+                ]
+                self.assertEqual(len(expected_paths), expected_counts[spec.slug])
+                with zipfile.ZipFile(io.BytesIO(transport.imported_pack)) as archive:
+                    names = archive.namelist()
+                    self.assertEqual(
+                        sorted(name for name in names if name.endswith(".stl")),
+                        sorted([spec.slug + ".stl"] + expected_paths),
+                    )
+                    self.assertIn(spec.slug + ".step", names)
+                    self.assertIn(spec.slug + ".step.json", names)
+                    self.assertNotIn("assembled.stl", names)
+                    self.assertNotIn("assembled.step", names)
+                    self.assertNotIn("assembled.step.json", names)
+                    self.assertFalse(
+                        any(
+                            name.startswith("cad/") and name.endswith(".stl")
+                            for name in names
+                        )
+                    )
+                    transported_sidecar = json.loads(
+                        archive.read(spec.slug + ".step.json")
+                    )
+                    self.assertEqual(
+                        [item["name"] for item in transported_sidecar["parts"]],
+                        [item["name"] for item in source_sidecar["parts"]],
+                    )
+                    self.assertEqual(
+                        [item["stlPath"] for item in transported_sidecar["parts"]],
+                        expected_paths,
+                    )
+                    for source_item, path in zip(
+                        source_sidecar["parts"], expected_paths
+                    ):
+                        source_mesh = (
+                            bundle / "artifact" / source_item["stlPath"]
+                        ).read_bytes()
+                        self.assertEqual(archive.read(path), source_mesh)
+                    facts = json.loads(
+                        archive.read("workshop-product-facts.json")
+                    )
+                    assembly = facts["factory_assembly"]
+                    self.assertEqual(
+                        assembly["occurrence_count"], expected_counts[spec.slug]
+                    )
+                    self.assertEqual(
+                        assembly["parts_directory"], spec.slug + "_parts"
+                    )
+                    self.assertEqual(
+                        [item["name"] for item in assembly["production_stls"]],
+                        [item["name"] for item in source_sidecar["parts"]],
+                    )
+                    self.assertEqual(
+                        [item["order"] for item in assembly["production_stls"]],
+                        list(range(expected_counts[spec.slug])),
+                    )
+                    self.assertEqual(
+                        [item["mesh_name"] for item in assembly["production_stls"]],
+                        [item["name"] for item in source_sidecar["parts"]],
+                    )
+                    self.assertEqual(
+                        [item["part"] for item in assembly["production_stls"]],
+                        [Path(path).name for path in expected_paths],
+                    )
 
     def test_changed_checked_in_bytes_fail_before_state_or_network(self):
         instructions = self.bundle / "instructions" / "INSTRUCTIONS.md"

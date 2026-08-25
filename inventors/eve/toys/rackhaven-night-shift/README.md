@@ -11,7 +11,7 @@ Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recog
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `2205f53542e360806bcd1d93bea955079d2f9fa43f30cc9a162d51414d14bd3e`
+- Exact artifact: `a4457ad61c296d7ff9fcc00fd469f3a8f683b7083b9ac202ff32b421ba265c5f`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.
@@ -26,7 +26,7 @@ AI Playtest passed. Shared Instructions created the box guide and factual handof
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
 - [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index

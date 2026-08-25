@@ -749,7 +749,7 @@ video. The Workshop's next job is production and shipping in Deliver.
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
 - [`instructions/product.json`](instructions/product.json) — the sealed factual handoff for Factory enrichment

@@ -14,9 +14,9 @@
   "audience": "grown-ups-14-plus",
   "components": [
     "one base",
-    "one hand crank",
+    "two axles (one is the hand-crank input axle)",
     "one comet drive wheel",
-    "one six-station Geneva wheel"
+    "one six-slot orbit wheel"
   ],
   "description": "A compact exposed Geneva machine: turn the cratered drive wheel and its comet pin advances the six-station orbit one crisp step at a time. The mechanism\u2014not a plaque\u2014is the Wish.\n\nBy Bob.",
   "design": {
@@ -37,6 +37,7 @@
     "kind": "six-step-geneva-machine",
     "nominal_clearance_per_side_mm": 0.35,
     "nominal_pin_slot_clearance_mm": 0.7,
+    "printed_piece_count": 5,
     "slot_width_mm": 5.0,
     "step_degrees": 60.0,
     "wish_features": [

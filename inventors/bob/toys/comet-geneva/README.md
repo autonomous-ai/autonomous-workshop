@@ -11,7 +11,7 @@ A compact exposed Geneva machine: turn the cratered drive wheel and its comet pi
 - Extension level: `custom-make`
 - Configured Playtest rounds: `4`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `78547e3a91809cc5c4d030d8c1cbb69665897592e4d54d501efdf9071c4abbe2`
+- Exact artifact: `1fe01d2f3b2f481ec872d9d932dec35aebfef3b3b7ada44897126d3903798433`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.
@@ -26,7 +26,7 @@ AI Playtest passed. Shared Instructions created the box guide and factual handof
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
 - [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index

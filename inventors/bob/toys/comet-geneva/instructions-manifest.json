@@ -1,20 +1,20 @@
 {
-  "artifact_sha256": "c6fe21728a2ba9beca804aa16b082ff910c9e0a57f7c03b97ce84cf8e2a37980",
+  "artifact_sha256": "4e5c2eaaf7d262db68bda79d84c55cef447a4e00cd9637dd9d7e68dd520d95ee",
   "created_at": "content-addressed",
   "entries": [
     {
-      "bytes": 597,
+      "bytes": 623,
       "executable": false,
       "path": "INSTRUCTIONS.md",
-      "sha256": "f9389f018df9308260ecbb662e3b2b44e4afbc701051e5ec444963f43d2da37b"
+      "sha256": "70f95be20754de9126a9a855025ed5df2edd9871df743981a14ef9eac4e0f0c4"
     },
     {
-      "bytes": 3195,
+      "bytes": 3221,
       "executable": false,
       "path": "product.json",
-      "sha256": "5b2cf1fbb40bd29dd13c2b0fa40ca16a7c452a8aac870805ccda0c08b2895db6"
+      "sha256": "a1b528c4886885ff217ad37a4a90f6c74ddc47e4fdd7c805356b0bf3d0177504"
     }
   ],
   "schema_version": 1,
-  "total_bytes": 3792
+  "total_bytes": 3844
 }

@@ -52,7 +52,16 @@ _LAUNCH_KEYS = {
 }
 
 _FACTORY_COLOR = re.compile(r"#[0-9A-Fa-f]{6}\Z")
-MAX_FACTORY_ASSEMBLY_PARTS = 2_048
+MAX_FACTORY_ASSEMBLY_PARTS = 128
+_FACTORY_ASSEMBLY_OCCURRENCE_KEYS = {
+    "order",
+    "mesh_name",
+    "part",
+    "color",
+}
+_FACTORY_ASSEMBLY_LEGACY_KEYS = {"part", "color"}
+FACTORY_ASSEMBLY_INVENTORY_FIELD = "_workshop_factory_assembly_inventory"
+_FACTORY_ASSEMBLY_INVENTORY_KEYS = {"order", "mesh_name", "part"}
 
 
 def _required_text(value: Any, label: str, maximum: int = 256) -> str:
@@ -110,13 +119,17 @@ def _launch_request_identity(request: Mapping[str, Any]) -> Mapping[str, Any]:
 
 def _validate_factory_assembly_parts(
     value: Any,
-) -> Optional[List[Mapping[str, str]]]:
+    *,
+    allow_legacy_shorthand: bool = False,
+) -> Optional[List[Mapping[str, Any]]]:
     """Canonicalize reviewed colors accepted by Factory's publish API.
 
-    Factory resolves occurrence order and mesh names itself.  Workshop only
-    sends a unique part basename and one full six-digit sRGB color per part.
-    Sorting by part makes equivalent caller orderings one durable request while
-    still fencing every material color change as a different public effect.
+    Factory's renderer addresses the combined model by occurrence ``order``;
+    it does not expand a part-level palette.  New public effects therefore carry
+    one complete, contiguous occurrence record per rendered shell.  The legacy
+    ``{part, color}`` form is accepted only when a caller explicitly opts into
+    read-only compatibility (for example, reconciling an already-persisted old
+    request).  It must never cross the Shop Door as a new live effect.
     """
 
     if value is None:
@@ -128,37 +141,224 @@ def _validate_factory_assembly_parts(
             "Factory assembly_parts must contain 1..%d reviewed entries"
             % MAX_FACTORY_ASSEMBLY_PARTS
         )
-    normalized: List[Mapping[str, str]] = []
-    seen = set()
-    for item in value:
-        if not isinstance(item, Mapping) or set(item) != {"part", "color"}:
+    if any(not isinstance(item, Mapping) for item in value):
+        raise ContractError(
+            "each Factory assembly_parts entry must be an object"
+        )
+    shapes = {frozenset(item) for item in value}
+    if len(shapes) != 1:
+        raise ContractError(
+            "Factory assembly_parts entries must use one consistent shape"
+        )
+    shape = next(iter(shapes), frozenset())
+    if shape == frozenset(_FACTORY_ASSEMBLY_LEGACY_KEYS):
+        if not allow_legacy_shorthand:
             raise ContractError(
-                "each Factory assembly_parts entry must contain exactly part and color"
+                "Factory live assembly_parts require full occurrence entries "
+                "with order, mesh_name, part, and color"
             )
-        part = item.get("part")
+        normalized_legacy: List[Mapping[str, Any]] = []
+        seen_parts = set()
+        for item in value:
+            part = _validate_factory_part(item.get("part"))
+            if part in seen_parts:
+                raise ContractError(
+                    "legacy Factory assembly_parts part names must be unique"
+                )
+            seen_parts.add(part)
+            normalized_legacy.append(
+                {
+                    "part": part,
+                    "color": _validate_factory_color(item.get("color")),
+                }
+            )
+        return sorted(normalized_legacy, key=lambda item: item["part"])
+    if shape != frozenset(_FACTORY_ASSEMBLY_OCCURRENCE_KEYS):
+        raise ContractError(
+            "each Factory assembly_parts entry must contain exactly order, "
+            "mesh_name, part, and color"
+        )
+
+    normalized: List[Mapping[str, Any]] = []
+    seen_orders = set()
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ContractError(
+                "each Factory assembly_parts entry must be an object"
+            )
+        order = item.get("order")
         if (
-            not isinstance(part, str)
-            or not part
-            or part != part.strip()
-            or len(part) > 255
-            or PurePosixPath(part).name != part
-            or "\\" in part
-            or part in (".", "..")
-            or any(ord(character) < 32 or ord(character) == 127 for character in part)
+            not isinstance(order, int)
+            or isinstance(order, bool)
+            or order < 0
+            or order >= MAX_FACTORY_ASSEMBLY_PARTS
         ):
             raise ContractError(
-                "Factory assembly_parts part must be one non-empty safe basename"
+                "Factory assembly_parts order must be an integer in 0..%d"
+                % (MAX_FACTORY_ASSEMBLY_PARTS - 1)
             )
-        if part in seen:
-            raise ContractError("Factory assembly_parts part names must be unique")
-        color = item.get("color")
-        if not isinstance(color, str) or _FACTORY_COLOR.fullmatch(color) is None:
+        if order in seen_orders:
             raise ContractError(
-                "Factory assembly_parts color must use full #RRGGBB hex"
+                "Factory assembly_parts occurrence orders must be unique"
             )
-        seen.add(part)
-        normalized.append({"part": part, "color": color.lower()})
-    return sorted(normalized, key=lambda item: item["part"])
+        mesh_name = item.get("mesh_name")
+        if (
+            not isinstance(mesh_name, str)
+            or not mesh_name
+            or mesh_name != mesh_name.strip()
+            or len(mesh_name) > 255
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in mesh_name
+            )
+        ):
+            raise ContractError(
+                "Factory assembly_parts mesh_name must be one non-empty "
+                "trimmed control-free string"
+            )
+        seen_orders.add(order)
+        normalized.append(
+            {
+                "order": order,
+                "mesh_name": mesh_name,
+                "part": _validate_factory_part(item.get("part")),
+                "color": _validate_factory_color(item.get("color")),
+            }
+        )
+    normalized.sort(key=lambda item: item["order"])
+    if [item["order"] for item in normalized] != list(range(len(normalized))):
+        raise ContractError(
+            "Factory assembly_parts must cover contiguous occurrence orders from zero"
+        )
+    return normalized
+
+
+def _validate_factory_assembly_inventory(
+    value: Any,
+) -> Optional[List[Mapping[str, Any]]]:
+    """Canonicalize the color-free occurrence inventory sealed at import.
+
+    This is internal publication identity, not caller-authored listing data.
+    Keeping it separate from ``assembly_parts`` makes the only mutable value in
+    a later palette the color itself.
+    """
+
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ContractError(
+            "sealed Factory assembly inventory must be a non-empty sequence"
+        )
+    if not value or len(value) > MAX_FACTORY_ASSEMBLY_PARTS:
+        raise ContractError(
+            "sealed Factory assembly inventory must contain 1..%d occurrences"
+            % MAX_FACTORY_ASSEMBLY_PARTS
+        )
+    normalized: List[Mapping[str, Any]] = []
+    seen_orders = set()
+    for item in value:
+        if not isinstance(item, Mapping) or set(item) != _FACTORY_ASSEMBLY_INVENTORY_KEYS:
+            raise ContractError(
+                "each sealed Factory assembly occurrence must contain exactly "
+                "order, mesh_name, and part"
+            )
+        order = item.get("order")
+        if (
+            not isinstance(order, int)
+            or isinstance(order, bool)
+            or order < 0
+            or order >= MAX_FACTORY_ASSEMBLY_PARTS
+            or order in seen_orders
+        ):
+            raise ContractError(
+                "sealed Factory assembly occurrence orders must be unique integers "
+                "in 0..%d" % (MAX_FACTORY_ASSEMBLY_PARTS - 1)
+            )
+        mesh_name = item.get("mesh_name")
+        if (
+            not isinstance(mesh_name, str)
+            or not mesh_name
+            or mesh_name != mesh_name.strip()
+            or len(mesh_name) > 255
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in mesh_name
+            )
+        ):
+            raise ContractError(
+                "sealed Factory assembly mesh_name must be one non-empty "
+                "trimmed control-free string"
+            )
+        seen_orders.add(order)
+        normalized.append(
+            {
+                "order": order,
+                "mesh_name": mesh_name,
+                "part": _validate_factory_part(item.get("part")),
+            }
+        )
+    normalized.sort(key=lambda item: item["order"])
+    if [item["order"] for item in normalized] != list(range(len(normalized))):
+        raise ContractError(
+            "sealed Factory assembly inventory must cover contiguous orders from zero"
+        )
+    return normalized
+
+
+def _bind_factory_assembly_parts(
+    value: Any,
+    inventory: Any,
+) -> Optional[List[Mapping[str, Any]]]:
+    """Bind a requested palette to the exact sealed import occurrences."""
+
+    normalized = _validate_factory_assembly_parts(value)
+    if normalized is None:
+        return None
+    expected = _validate_factory_assembly_inventory(inventory)
+    if expected is None:
+        raise ContractError(
+            "Factory assembly_parts require a sealed occurrence inventory in the "
+            "imported model handoff"
+        )
+    identities = [
+        {
+            "order": item["order"],
+            "mesh_name": item["mesh_name"],
+            "part": item["part"],
+        }
+        for item in normalized
+    ]
+    if identities != expected:
+        raise ContractError(
+            "Factory assembly_parts must match the exact sealed occurrence count, "
+            "order, mesh_name, and part; only colors may vary"
+        )
+    return normalized
+
+
+def _validate_factory_part(value: Any) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or len(value) > 255
+        or PurePosixPath(value).name != value
+        or "\\" in value
+        or value in (".", "..")
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise ContractError(
+            "Factory assembly_parts part must be one non-empty safe basename"
+        )
+    return value
+
+
+def _validate_factory_color(value: Any) -> str:
+    if not isinstance(value, str) or _FACTORY_COLOR.fullmatch(value) is None:
+        raise ContractError(
+            "Factory assembly_parts color must use full #RRGGBB hex"
+        )
+    return value.lower()
 
 
 def _validate_live_request(
@@ -192,8 +392,9 @@ def _validate_live_request(
         or not 100 <= listing["price_cents"] <= 1_000_000
     ):
         raise ContractError("live listing must contain one valid price_cents")
-    assembly_parts = _validate_factory_assembly_parts(
-        document.get("assembly_parts")
+    assembly_parts = _bind_factory_assembly_parts(
+        document.get("assembly_parts"),
+        persisted_request.get(FACTORY_ASSEMBLY_INVENTORY_FIELD),
     )
     if assembly_parts is not None:
         document["assembly_parts"] = assembly_parts
@@ -1275,6 +1476,12 @@ class InventorStore:
         request_document = dict(request)
         if request_document.get("status") != "draft":
             raise ContractError("publish intent requires status=draft")
+        if FACTORY_ASSEMBLY_INVENTORY_FIELD in request_document:
+            request_document[FACTORY_ASSEMBLY_INVENTORY_FIELD] = (
+                _validate_factory_assembly_inventory(
+                    request_document[FACTORY_ASSEMBLY_INVENTORY_FIELD]
+                )
+            )
         artifact_sha256 = _launch_value(request_document, "artifact_sha256")
         require_sha256(
             artifact_sha256,
@@ -1802,6 +2009,53 @@ class InventorStore:
             effect_token=effect_token,
             error=error,
         )
+
+    def resume_live(
+        self, intent_id: str, lease_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Resume one exact, reconciled draft-to-public request.
+
+        The caller must first read the remote design and prove it is still the
+        persisted draft.  Re-entry is safe because the full occurrence seed is
+        an idempotent merge by order and ``live_request_json`` cannot change.
+        """
+
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM publish_intents WHERE id=?", (intent_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError("unknown publish intent %r" % intent_id)
+            self._assert_lease_fence(
+                connection, row["product_id"], lease_token, utc_now()
+            )
+            if row["state"] != "live_unknown":
+                raise StateConflict(
+                    "intent %s is %s, expected live_unknown"
+                    % (intent_id, row["state"])
+                )
+            persisted_request = _object(row["request_json"])
+            live_request = _object(row["live_request_json"])
+            if not isinstance(persisted_request, Mapping) or not isinstance(
+                live_request, Mapping
+            ):
+                raise StateConflict("persisted live request is malformed")
+            request_document = _validate_live_request(
+                live_request, persisted_request
+            )
+            effect_token = secrets.token_hex(16)
+            connection.execute(
+                """UPDATE publish_intents
+                   SET state='publishing', live_request_json=?, effect_token=?,
+                       error=NULL, updated_at=? WHERE id=?""",
+                (
+                    _json(request_document),
+                    effect_token,
+                    utc_now(),
+                    intent_id,
+                ),
+            )
+        return self.get_publish_intent(intent_id)
 
     def restore_draft_after_publish_rejection(
         self, intent_id: str, effect_token: str, error: str

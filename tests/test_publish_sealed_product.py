@@ -393,8 +393,61 @@ class PublishSealedProductTest(unittest.TestCase):
             self.assertNotIn("assembled.stl", names)
             self.assertEqual(
                 archive.read("five-job-checkers.stl"),
-                archive.read("cad/product.stl"),
+                (
+                    self.fixture.bundle / "artifact" / "assembled.stl"
+                ).read_bytes(),
             )
+            self.assertNotIn("cad/product.stl", names)
+            source_sidecar = json.loads(
+                (
+                    self.fixture.bundle / "artifact" / "assembled.step.json"
+                ).read_text(encoding="utf-8")
+            )
+            occurrence_paths = [
+                "five-job-checkers_parts/%s.stl" % item["name"]
+                for item in source_sidecar["parts"]
+            ]
+            self.assertEqual(
+                sorted(name for name in names if name.endswith(".stl")),
+                sorted(["five-job-checkers.stl"] + occurrence_paths),
+            )
+            self.assertEqual(len(occurrence_paths), 25)
+            self.assertFalse(
+                any(
+                    name.startswith("cad/parts/") and name.endswith(".stl")
+                    for name in names
+                )
+            )
+            self.assertNotIn("assembled.step", names)
+            self.assertNotIn("assembled.step.json", names)
+            self.assertEqual(
+                archive.read("five-job-checkers.step"),
+                (
+                    self.fixture.bundle / "artifact" / "assembled.step"
+                ).read_bytes(),
+            )
+            transported_sidecar = json.loads(
+                archive.read("five-job-checkers.step.json")
+            )
+            self.assertEqual(
+                [item["name"] for item in transported_sidecar["parts"]],
+                [item["name"] for item in source_sidecar["parts"]],
+            )
+            self.assertEqual(
+                [item["stlPath"] for item in transported_sidecar["parts"]],
+                occurrence_paths,
+            )
+            for source_item, occurrence_path in zip(
+                source_sidecar["parts"], occurrence_paths
+            ):
+                self.assertEqual(
+                    archive.read(occurrence_path),
+                    (
+                        self.fixture.bundle
+                        / "artifact"
+                        / source_item["stlPath"]
+                    ).read_bytes(),
+                )
             self.assertIn("workshop-product-facts.json", names)
             self.assertEqual(
                 json.loads(archive.read("product.json"))["description"].count(
@@ -405,6 +458,7 @@ class PublishSealedProductTest(unittest.TestCase):
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(facts["product"]["description"].count("By Alice."), 1)
             self.assertEqual(facts["source_artifact_sha256"], self.fixture.make_sha256)
+            self.assertEqual(facts["factory_assembly"]["occurrence_count"], 25)
 
         call_count = len(transport.calls)
         replay = command.publish_sealed_draft(

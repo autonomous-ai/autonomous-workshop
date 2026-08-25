@@ -13,8 +13,10 @@
   },
   "audience": "grown-ups-14-plus",
   "components": [
-    "one Montauk base",
+    "one phase base",
+    "one center post",
     "one tide-alignment arm",
+    "one Earth hub",
     "one Sun marker",
     "one Moon marker"
   ],
@@ -35,6 +37,7 @@
       180,
       270
     ],
+    "printed_piece_count": 6,
     "relationship": {
       "aligned_or_opposed": "spring-tide configuration",
       "quadrature": "neap-tide configuration"
@@ -59,7 +62,7 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
-  "factory_brief": "The tide begins as geometry in the sky. Present this only as a qualitative spring\u2013neap alignment comparison, never as a Montauk tide forecast and never as a solar-system model. Copy rule: never use predict, prediction, or forecast as a product capability, heading, label, or call to action; say compare spring and neap alignment instead. Preserve the complete 104 mm circular phase base, four raised stops at 0\u00b0, 90\u00b0, 180\u00b0, and 270\u00b0, the full two-lobed arm, center post, Earth hub, Moon marker, and Sun arrow. Exact material story: deep-ocean #122630 base; instrument-gold #EDC250 center post, tide arm, and Sun arrow; sea-glass teal #2E7F8F Earth hub; warm ivory #D8D2C4 Moon marker. Film in this order: Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the thin layered disc from low three-quarter; move through 0\u00b0 \u2192 90\u00b0 \u2192 180\u00b0 \u2192 270\u00b0 with a clean stop at each phase; compare aligned/opposed with quadrature side by side; show the four-piece assembly clearly; finish on the full circular silhouette. Use dark coastal light, ocean navy, instrument brass, and sea-glass teal. Never crop the base into a post, turn the markers into mushrooms or planets, omit an assembly image, or claim scale accuracy, predictive ability, physical detent feel, or human proof.",
+  "factory_brief": "The tide begins as geometry in the sky. Present this only as a qualitative spring\u2013neap alignment comparison, never as a Montauk tide forecast and never as a solar-system model. Copy rule: never use predict, prediction, or forecast as a product capability, heading, label, or call to action; say compare spring and neap alignment instead. Preserve the complete 104 mm circular phase base, four raised stops at 0\u00b0, 90\u00b0, 180\u00b0, and 270\u00b0, the full two-lobed arm, center post, Earth hub, Moon marker, and Sun arrow. Exact material story: deep-ocean #122630 base; instrument-gold #EDC250 center post, tide arm, and Sun arrow; sea-glass teal #2E7F8F Earth hub; warm ivory #D8D2C4 Moon marker. Film in this order: Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the thin layered disc from low three-quarter; move through 0\u00b0 \u2192 90\u00b0 \u2192 180\u00b0 \u2192 270\u00b0 with a clean stop at each phase; compare aligned/opposed with quadrature side by side; show all six printed pieces clearly\u2014the phase base, center post, tide arm, Earth hub, Moon marker, and Sun arrow; finish on the full circular silhouette. Use dark coastal light, ocean navy, instrument brass, and sea-glass teal. Never crop the base into a post, turn the markers into mushrooms or planets, omit an assembly image, or claim scale accuracy, predictive ability, physical detent feel, or human proof.",
   "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "inventor": {
     "id": "ivy",

@@ -15,6 +15,13 @@ SHOWCASE_TOYS = {
     "ivy": ("Ivy", "montauk-tide-orrery"),
     "leo": ("Leo", "counterorbit"),
 }
+PRINTED_PIECE_COUNTS = {
+    "alice": 25,
+    "bob": 5,
+    "eve": 5,
+    "ivy": 6,
+    "leo": 12,
+}
 
 
 def load_json(path):
@@ -166,6 +173,47 @@ class ShowcaseToyTest(unittest.TestCase):
                         "status": "pending",
                     },
                 )
+
+    def test_printed_piece_truth_matches_the_occurrence_sidecar(self):
+        for inventor_id, (_, slug) in SHOWCASE_TOYS.items():
+            with self.subTest(inventor_id=inventor_id):
+                artifact = self.toy_root(inventor_id, slug) / "artifact"
+                product = load_json(artifact / "product.json")
+                sidecar = load_json(artifact / "assembled.step.json")
+                build = load_json(artifact / "cad" / "digital-build.json")
+                expected = PRINTED_PIECE_COUNTS[inventor_id]
+                names = [item["name"] for item in sidecar["parts"]]
+
+                self.assertEqual(product["design"]["printed_piece_count"], expected)
+                self.assertEqual(len(names), expected)
+                self.assertEqual(len(names), len(set(names)))
+                self.assertEqual(
+                    build["factory_assembly"]["occurrence_count"], expected
+                )
+                self.assertEqual(build["factory_assembly"]["part_names"], names)
+                if inventor_id == "bob":
+                    expected_components = [
+                        "one base",
+                        "two axles (one is the hand-crank input axle)",
+                        "one comet drive wheel",
+                        "one six-slot orbit wheel",
+                    ]
+                    self.assertEqual(product["components"], expected_components)
+                    instructions = load_json(
+                        self.toy_root(inventor_id, slug)
+                        / "instructions"
+                        / "product.json"
+                    )
+                    self.assertEqual(
+                        instructions["what_arrives"], expected_components
+                    )
+                if inventor_id == "ivy":
+                    self.assertEqual(len(product["components"]), 6)
+                    self.assertIn("one center post", product["components"])
+                    self.assertIn("one Earth hub", product["components"])
+                    self.assertIn(
+                        "all six printed pieces", product["factory_brief"]
+                    )
 
 
 if __name__ == "__main__":

@@ -1,60 +1,60 @@
 {
-  "artifact_sha256": "b3e20076e050bd9d5cc5535527e71dc30a3e0f7d410dbfbbf294e733f6ddeea5",
+  "artifact_sha256": "bde17cf900c720c5519089ca9ff41acbc2a80c943614baacee2af8d6f9e08c0a",
   "created_at": "content-addressed",
   "entries": [
     {
       "bytes": 588,
       "executable": false,
       "path": "agent-playtest.json",
-      "sha256": "a1d76d1f2267d598943ba2330996c4bcd9a6813b8b7fee793cf97c02f14cb7f2"
+      "sha256": "ac8bb629041101acae631347e400b6066ab32159376e054524efc280a74e2ef9"
     },
     {
       "bytes": 445,
       "executable": false,
       "path": "digital-geometry.json",
-      "sha256": "293f7d5e850b99f1e269e13b301b07bdd1d3db3efd58986aeb09c8a3dcef3f83"
+      "sha256": "42d13ad3dda306f2853b647c190712de47a7753e15a42d383b669aa6e8e8c82d"
     },
     {
       "bytes": 621,
       "executable": false,
       "path": "digital-lane.json",
-      "sha256": "58d43f0988cb28a3bcab44d01060395766fe556a53a913aeb64ce2d1c1a9681a"
+      "sha256": "dd50f9d3c435974246783e06af8266b06f6ccea3c125423fa9818c753c9a9413"
     },
     {
       "bytes": 481,
       "executable": false,
       "path": "digital-printability.json",
-      "sha256": "46f05391ece73206b609af1da5b3c55c6358038fab2d2aa562cebbd00b7a3c05"
+      "sha256": "841ceae4797b9110d98491860ac63338a2abb53f45deb478a9cb92b662aa7d06"
     },
     {
       "bytes": 769,
       "executable": false,
       "path": "evidence-index.json",
-      "sha256": "b7074de6f403ee1e74c4e424ef324efc730315f827b711dc1200f884b6563c5b"
+      "sha256": "350b05ccfad0369e452b0fb1b1dfe9e112c81b5a8e059a3fd894251151ecc9a3"
     },
     {
       "bytes": 613,
       "executable": false,
       "path": "mechanical-test.json",
-      "sha256": "7116e71c22e2c3ab870a4c98ea5efbe772397660c997c7dbf95766cac684d103"
+      "sha256": "2af3d83f92e3257c1baf5b68c8f74aa719dac269920bc2eb6b4a7a38522e1e09"
     },
     {
       "bytes": 631,
       "executable": false,
       "path": "print-test.json",
-      "sha256": "38e12f00f95500f4f16e441fa23d94edeb820a35e0118f1378f76dd8ad75fafd"
+      "sha256": "0c7f608487993697233adb3469587112cb95e0b9697f8d2ecc4962a782c6a544"
     },
     {
       "bytes": 832,
       "executable": false,
       "path": "wish-taste-trace.json",
-      "sha256": "2b9e0f0c1ac47b2d7340b05ceac8b239ea41c84ced2d179812ee23580de95815"
+      "sha256": "1f92bc9271c60f85765e4300856e90742673998f10875e8f9b007f135737585f"
     },
     {
       "bytes": 912,
       "executable": false,
       "path": "world-test.json",
-      "sha256": "f1d7b4b0f98a2b0a46641394aab0f4d1caa4f021ae66451fa178d1d0fb8f3b12"
+      "sha256": "6271427cc4d1dee2f3f08f6652744933c6d48ec9717fb078740e5aa97159d20e"
     }
   ],
   "schema_version": 1,

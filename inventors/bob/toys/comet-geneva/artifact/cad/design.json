@@ -18,6 +18,7 @@
     "kind": "six-step-geneva-machine",
     "nominal_clearance_per_side_mm": 0.35,
     "nominal_pin_slot_clearance_mm": 0.7,
+    "printed_piece_count": 5,
     "slot_width_mm": 5.0,
     "step_degrees": 60.0,
     "wish_features": [

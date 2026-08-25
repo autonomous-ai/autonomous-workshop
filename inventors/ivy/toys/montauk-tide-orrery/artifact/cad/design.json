@@ -16,6 +16,7 @@
       180,
       270
     ],
+    "printed_piece_count": 6,
     "relationship": {
       "aligned_or_opposed": "spring-tide configuration",
       "quadrature": "neap-tide configuration"

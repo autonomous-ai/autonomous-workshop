@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "47900bf307ca41909148c3248e979120979dafa2f373475ccca73dfa25322d2e",
+  "artifact_sha256": "e2b3d89d776b994c0ffc2b90432601fc08ccaf9b99da3c59f654cd9876301d7b",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 150940,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "d3925c26c437376326791ae8f20d110cb86bd56afb1f3153b2661293d1afb2b1"
+      "sha256": "72e3c225a1223b843c62174f32186131877bd875b3ddaca2fe6bed89e71be1ee"
     },
     {
       "bytes": 644,
@@ -27,16 +27,16 @@
       "sha256": "777fb5efa1ad595af49604c7482371d82b8b32a8fe9f1073b164fdbb654dc00b"
     },
     {
-      "bytes": 1415,
+      "bytes": 1445,
       "executable": false,
       "path": "cad/design.json",
-      "sha256": "6561da01f5108ad94c4186e563465b8221f7cfb9f0c865343f68f6d28965e2d8"
+      "sha256": "07da27b70852fdfea49e6127725c9fe6fe0293ca241c95ccf0e55a73478e9af4"
     },
     {
       "bytes": 8487,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "5a051c58f2ea0e1a2a4e75cc2580a90832d03138e56c56973d9ce52ee8708519"
+      "sha256": "7817c28b6673f4138ba00f32f941033456ca282122fe6289a80324af6e081a79"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 5756,
       "executable": false,
       "path": "cad/parts/center-post.step",
-      "sha256": "10fde60d295c79e23bef394dd689d0700a36c4b04aede47c7c693b1fee89a1f5"
+      "sha256": "63ba30487f7e8265617999f77dfcea57a6be37b3b1b0db2f2888ca0d65979d67"
     },
     {
       "bytes": 25084,
@@ -60,7 +60,7 @@
       "bytes": 8548,
       "executable": false,
       "path": "cad/parts/earth-hub.step",
-      "sha256": "84f5b2afc651d1c7ebd461e7770042b9b29de083d014667d4b257b262f1feae0"
+      "sha256": "44c8da58ba35f598f71111c52fa40d28f9105a3f65f91ea1ede2382db8d25505"
     },
     {
       "bytes": 192484,
@@ -72,7 +72,7 @@
       "bytes": 16638,
       "executable": false,
       "path": "cad/parts/moon-marker.step",
-      "sha256": "39e2cf1a5dacc6f81a168d11787b8dcf79c48a950324102a3187acb34b3f8d73"
+      "sha256": "ca0a09438122c82be784dc75b1f52456c043ea72d0b7e78de504b2c63682db1c"
     },
     {
       "bytes": 151084,
@@ -84,7 +84,7 @@
       "bytes": 71863,
       "executable": false,
       "path": "cad/parts/phase-base.step",
-      "sha256": "9bbb124645730c3326a6523364aba5370a6021bd01fdde8514554f6409c817ea"
+      "sha256": "ebbed26717306993028dde711290f60b1184055eb23eeb55d20e5515160af44f"
     },
     {
       "bytes": 27484,
@@ -96,7 +96,7 @@
       "bytes": 22876,
       "executable": false,
       "path": "cad/parts/sun-arrow.step",
-      "sha256": "04164e08b317578e17fd7b528f10cb0252b43b1398a717d27040e1c3e0785ed1"
+      "sha256": "f679034a5e2f323e7cf92f380809906b8d55886e504f79f1bd09fefa6b3401d5"
     },
     {
       "bytes": 25684,
@@ -108,7 +108,7 @@
       "bytes": 32879,
       "executable": false,
       "path": "cad/parts/tide-arm.step",
-      "sha256": "de12d1864daae8bb7ccffb502782d5046c3394540e9318763f64e88ee3cc0bd7"
+      "sha256": "d43b5c9082cb8c509306917af0d116ca2cced902bd2bf3c27766a3baaa746296"
     },
     {
       "bytes": 76084,
@@ -120,7 +120,7 @@
       "bytes": 162998,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "ddd86c00963394c1398b97c99beec18701883ac380133832d8e2e234778ec668"
+      "sha256": "4e7e5b94f81ffeb061388fb65e4bbcebb6f8313cbae5726db8a3af7fa9f533c1"
     },
     {
       "bytes": 497484,
@@ -135,10 +135,10 @@
       "sha256": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb"
     },
     {
-      "bytes": 6168,
+      "bytes": 6321,
       "executable": false,
       "path": "product.json",
-      "sha256": "b3ea2c09ef4d7adcbdc99b88d0b2756e0c114ad6a6979adab75a6c573799445f"
+      "sha256": "bada0eb3070b88be4c4461b2326ca6c3b893b8654a1a82a8b7c7f4cacab20863"
     },
     {
       "bytes": 67,
@@ -154,5 +154,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 2092646
+  "total_bytes": 2092829
 }

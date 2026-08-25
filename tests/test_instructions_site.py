@@ -403,12 +403,60 @@ class InstructionsSiteTest(unittest.TestCase):
             _factory_transport_primary(context, sealed_primary), sealed_primary
         )
 
+    def test_multipart_mesh_without_occurrence_sidecar_fails_closed(self):
+        parts = self.made.artifact_root / "parts"
+        parts.mkdir()
+        (parts / "body.stl").write_bytes(
+            b"solid undeclared-production-body\nendsolid undeclared-production-body\n"
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        primary = _factory_transport_primary(context, sealed_primary)
+        packet = self.root / "undeclared-multipart.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+
+        with self.assertRaisesRegex(ContractError, "occurrence sidecar"):
+            _build_model_handoff_pack(
+                made.artifact_root,
+                made.artifact_manifest,
+                packet,
+                facts,
+                primary,
+                sealed_primary_model=sealed_primary,
+            )
+
     def test_multipart_assembled_mesh_is_slug_named_only_in_factory_transport(self):
         parts = self.made.artifact_root / "verified-toy_parts"
         parts.mkdir()
         printable = parts / "body.stl"
         printable.write_text(
             "solid printable-body\nendsolid printable-body\n", encoding="utf-8"
+        )
+        (self.made.artifact_root / "assembled.step").write_bytes(
+            b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        )
+        (self.made.artifact_root / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {
+                            "name": "body",
+                            "stlPath": "verified-toy_parts/body.stl",
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
         generator = self.made.artifact_root / "main.py"
         generator.write_text(
@@ -463,6 +511,10 @@ class InstructionsSiteTest(unittest.TestCase):
             self.assertNotIn("assembled.stl", names)
             self.assertEqual(names.count("verified-toy.stl"), 1)
             self.assertIn("verified-toy_parts/body.stl", names)
+            self.assertIn("verified-toy.step", names)
+            self.assertIn("verified-toy.step.json", names)
+            self.assertNotIn("assembled.step", names)
+            self.assertNotIn("assembled.step.json", names)
             self.assertNotIn("main.py", names)
             self.assertIn("source/model.py", names)
             self.assertEqual(archive.read("source/model.py"), nested_generator.read_bytes())
@@ -477,6 +529,334 @@ class InstructionsSiteTest(unittest.TestCase):
             self.assertEqual(facts["primary_model"], transported_primary)
         self.assertTrue((made.artifact_root / "assembled.stl").is_file())
         self.assertFalse((made.artifact_root / "verified-toy.stl").exists())
+
+    def test_occurrence_sidecar_is_the_only_production_stl_inventory(self):
+        cad = self.made.artifact_root / "cad"
+        parts = cad / "parts"
+        parts.mkdir(parents=True)
+        assembly_bytes = (self.made.artifact_root / "assembled.stl").read_bytes()
+        (cad / "product.stl").write_bytes(assembly_bytes)
+        (cad / "reference.stl").write_bytes(
+            b"solid inspection-reference\nendsolid inspection-reference\n"
+        )
+        body = parts / "body.stl"
+        cap = parts / "cap.stl"
+        body.write_bytes(b"solid production-body\nendsolid production-body\n")
+        cap.write_bytes(b"solid production-cap\nendsolid production-cap\n")
+        step = self.made.artifact_root / "assembled.step"
+        step.write_bytes(b"ISO-10303-21;\nHEADER;\nENDSEC;\nEND-ISO-10303-21;\n")
+        sidecar = self.made.artifact_root / "assembled.step.json"
+        sidecar_payload = {
+            "schemaVersion": 1,
+            "generator": "test",
+            "entryKind": "assembly",
+            "primaryPose": "assembled",
+            "parts": [
+                {"name": "body-01", "stlPath": "cad/parts/body.stl"},
+                {"name": "body-02", "stlPath": "cad/parts/body.stl"},
+                {"name": "cap", "stlPath": "cad/parts/cap.stl"},
+            ],
+        }
+        sidecar.write_text(
+            json.dumps(sidecar_payload, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        primary = _factory_transport_primary(context, sealed_primary)
+        packet = self.root / "occurrence-inventory.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+
+        _build_model_handoff_pack(
+            made.artifact_root,
+            made.artifact_manifest,
+            packet,
+            facts,
+            primary,
+            sealed_primary_model=sealed_primary,
+        )
+
+        with zipfile.ZipFile(packet) as archive:
+            names = archive.namelist()
+            self.assertEqual(
+                sorted(name for name in names if name.endswith(".stl")),
+                sorted(
+                    [
+                    "verified-toy_parts/body-01.stl",
+                    "verified-toy_parts/body-02.stl",
+                    "verified-toy_parts/cap.stl",
+                    "verified-toy.stl",
+                    ]
+                ),
+            )
+            self.assertNotIn("cad/product.stl", names)
+            self.assertNotIn("cad/reference.stl", names)
+            self.assertNotIn("cad/parts/body.stl", names)
+            self.assertNotIn("cad/parts/cap.stl", names)
+            self.assertNotIn("assembled.step", names)
+            self.assertNotIn("assembled.step.json", names)
+            self.assertEqual(archive.read("verified-toy.step"), step.read_bytes())
+            transported_sidecar = json.loads(
+                archive.read("verified-toy.step.json")
+            )
+            self.assertEqual(
+                [item["name"] for item in transported_sidecar["parts"]],
+                ["body-01", "body-02", "cap"],
+            )
+            self.assertEqual(
+                [item["stlPath"] for item in transported_sidecar["parts"]],
+                [
+                    "verified-toy_parts/body-01.stl",
+                    "verified-toy_parts/body-02.stl",
+                    "verified-toy_parts/cap.stl",
+                ],
+            )
+            self.assertEqual(
+                archive.read("verified-toy_parts/body-01.stl"), body.read_bytes()
+            )
+            self.assertEqual(
+                archive.read("verified-toy_parts/body-02.stl"), body.read_bytes()
+            )
+            self.assertEqual(
+                archive.read("verified-toy_parts/cap.stl"), cap.read_bytes()
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["factory_assembly"]["occurrence_count"], 3)
+            self.assertEqual(
+                facts["factory_assembly"]["parts_directory"],
+                "verified-toy_parts",
+            )
+            self.assertEqual(
+                facts["factory_assembly"]["sidecar"]["sha256"],
+                hashlib.sha256(
+                    archive.read("verified-toy.step.json")
+                ).hexdigest(),
+            )
+            production = facts["factory_assembly"]["production_stls"]
+            self.assertEqual(
+                [item["mesh_name"] for item in production],
+                ["body-01", "body-02", "cap"],
+            )
+            self.assertEqual(
+                [item["part"] for item in production],
+                ["body-01.stl", "body-02.stl", "cap.stl"],
+            )
+            self.assertEqual(
+                [item["order"] for item in production],
+                [0, 1, 2],
+            )
+
+    def test_occurrence_sidecar_with_missing_print_mesh_fails_closed(self):
+        (self.made.artifact_root / "assembled.step").write_bytes(
+            b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        )
+        (self.made.artifact_root / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {
+                            "name": "missing-part",
+                            "stlPath": "cad/parts/missing.stl",
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        primary = _sealed_factory_primary(context)
+        packet = self.root / "missing-occurrence.zip"
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+
+        with self.assertRaisesRegex(ContractError, "missing production STL"):
+            _build_model_handoff_pack(
+                made.artifact_root,
+                made.artifact_manifest,
+                packet,
+                facts,
+                primary,
+            )
+
+    def test_nested_parts_directory_cannot_hijack_factory_slicing(self):
+        packet = io.BytesIO()
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "cad/rogue_parts/body.stl",
+                b"solid rogue\nendsolid rogue\n",
+            )
+
+        with self.assertRaisesRegex(ContractError, "<project-id>_parts"):
+            _assert_shop_importable_pack(packet.getvalue())
+
+    def test_raw_multipart_archive_requires_canonical_occurrence_family(self):
+        packet = io.BytesIO()
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "parts/body.stl",
+                b"solid undeclared-body\nendsolid undeclared-body\n",
+            )
+
+        with self.assertRaisesRegex(ContractError, "<project-id>_parts"):
+            _assert_shop_importable_pack(packet.getvalue())
+
+    def test_canonical_parts_tree_requires_slug_step_and_sidecar_siblings(self):
+        packet = io.BytesIO()
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "verified-toy_parts/body.stl",
+                b"solid production-body\nendsolid production-body\n",
+            )
+
+        with self.assertRaisesRegex(ContractError, "sibling STL, STEP, and sidecar"):
+            _assert_shop_importable_pack(packet.getvalue())
+
+    def test_raw_sibling_sidecar_requires_canonical_occurrence_family(self):
+        packet = io.BytesIO()
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "assembled.step",
+                b"ISO-10303-21;\nEND-ISO-10303-21;\n",
+            )
+            archive.writestr(
+                "assembled.step.json",
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "entryKind": "assembly",
+                        "primaryPose": "assembled",
+                        "parts": [
+                            {
+                                "name": "body",
+                                "stlPath": "cad/parts/body.stl",
+                            }
+                        ],
+                    }
+                ),
+            )
+
+        with self.assertRaisesRegex(ContractError, "<project-id>_parts"):
+            _assert_shop_importable_pack(packet.getvalue())
+
+    def test_single_stl_allows_a_non_occurrence_step_receipt(self):
+        packet = io.BytesIO()
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "part.step.json",
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "kind": "part-inspection-receipt",
+                        "measurements": [],
+                    }
+                ),
+            )
+
+        _assert_shop_importable_pack(packet.getvalue())
+
+    def test_canonical_family_rejects_a_competing_occurrence_sidecar(self):
+        packet = io.BytesIO()
+        canonical_parts = [
+            {
+                "name": "body",
+                "stlPath": "verified-toy_parts/body.stl",
+            }
+        ]
+        with zipfile.ZipFile(packet, "w") as archive:
+            archive.writestr(
+                "project.json",
+                json.dumps({"id": "verified-toy", "name": "Verified Toy"}),
+            )
+            archive.writestr(
+                "verified-toy.stl",
+                b"solid visual\nendsolid visual\n",
+            )
+            archive.writestr(
+                "verified-toy.step",
+                b"ISO-10303-21;\nEND-ISO-10303-21;\n",
+            )
+            archive.writestr(
+                "verified-toy.step.json",
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "entryKind": "assembly",
+                        "primaryPose": "assembled",
+                        "parts": canonical_parts,
+                    }
+                ),
+            )
+            archive.writestr(
+                "verified-toy_parts/body.stl",
+                b"solid production-body\nendsolid production-body\n",
+            )
+            archive.writestr(
+                "cad/assembled.step.json",
+                json.dumps(
+                    {
+                        "schemaVersion": 1,
+                        "entryKind": "assembly",
+                        "primaryPose": "assembled",
+                        "parts": canonical_parts,
+                    }
+                ),
+            )
+
+        with self.assertRaisesRegex(ContractError, "sibling STL, STEP, and sidecar"):
+            _assert_shop_importable_pack(packet.getvalue())
 
     def test_generator_only_artifact_remains_importable_and_keeps_generator(self):
         product_root = self.root / "generator-only"
@@ -597,6 +977,27 @@ class InstructionsSiteTest(unittest.TestCase):
         parts.mkdir()
         (parts / "part.stl").write_bytes(
             b"solid print-part\nendsolid print-part\n"
+        )
+        (product_root / "assembled.step").write_bytes(
+            b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        )
+        (product_root / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {
+                            "name": "part",
+                            "stlPath": "existing-slug-toy_parts/part.stl",
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
         made = Made.from_root(product_root, product)
         context = InstructionsSiteContext(made, "existing-slug-toy")

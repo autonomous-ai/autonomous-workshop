@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "146c1928e5013c20149d34a7606ecf52b20159439994cb6f6360ca9907492ec9",
+      "evidence_sha256": "72a666f3539bcb667c9f12b89e4d210c53f9bae258c7eeadd4f4839648ae234e",
       "passed": true
     },
     "game-simulation": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "game-simulation.json",
-      "evidence_sha256": "80c9ea05f3fbaa7510c9f308fa767037accdf1ef9d9fd299387a7d0adc7ede40",
+      "evidence_sha256": "9073dc7618ce285928d0185481f7617afe14757209920922178fc9ee234d5e71",
       "passed": true
     },
     "mechanical-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "2b4b40536997f5ec368eeec64de05054f64d2958f8434c9517e828a7d63140aa",
+      "evidence_sha256": "2e351eff56b8738c0061b575c544c1f7e140ef8c8f56ad2684c7bd5b67db6272",
       "passed": true
     },
     "print-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "40be719dda7365c894bfd579795238af9add327ffc25933f7b02696970a6988e",
+      "evidence_sha256": "3097ae9d2671c7bb216e16828f7afaad9256d39b680ce21af1966ed8be008b77",
       "passed": true
     }
   },
@@ -59,8 +59,8 @@
     "AI Playtest can establish executable rules, termination, balance signals, and exploit resistance, but it does not claim customer delight.",
     "Customer reactions are collected after delivery as Reviews and can improve a future edition."
   ],
-  "playtest_evidence_artifact_sha256": "14596954988548a8ecf6164ba0292554f749cd58bafcc07d5cbdb9519b53d35a",
-  "product_artifact_sha256": "c8d3f910bd4f335fe8d1b4cb6aacf226ea617fe334f2c832c447569767935c18",
+  "playtest_evidence_artifact_sha256": "c84393f6425fa7d8ddaefef797adf84e79b196a9b969c039d14e32e6511a6ff4",
+  "product_artifact_sha256": "6980aeee1cac7b6c12a60f51f9589b6e9ff5fcc390844982d715fb5ca3522317",
   "schema_version": 2,
   "status": "facts-ready",
   "summary": "An original ten-turn alignment duel played across a fixed core and rotating outer orbit.\n\nBy Leo.",

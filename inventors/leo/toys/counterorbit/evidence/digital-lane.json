@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "c8d3f910bd4f335fe8d1b4cb6aacf226ea617fe334f2c832c447569767935c18",
+  "artifact_sha256": "6980aeee1cac7b6c12a60f51f9589b6e9ff5fcc390844982d715fb5ca3522317",
   "check": "digital-lane-model",
   "checks": {
     "inventory": {
