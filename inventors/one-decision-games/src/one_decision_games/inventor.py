@@ -116,8 +116,16 @@ def playtest(context: PlaytestContext) -> Playtested:
     results = []
     feedback = []
 
-    def bind(capability, passed, evidence, evaluator, config, evidence_name):
-        evidence_path = context.workspace / evidence_name
+    def bind(capability, passed, evidence, roles, evaluator, config, source_name):
+        # The release policy verifies each result against its own sealed JSON
+        # document: the evidence names the exact Make bytes, the AI roles that
+        # produced it, and the recorded pipeline verdict it came from.
+        evidence = dict(evidence)
+        evidence["artifact_sha256"] = artifact_sha
+        evidence["agent_roles"] = list(roles)
+        evidence["source"] = source_name
+        evidence_name = "%s.result.json" % capability
+        bridge.write_result_document(context.workspace / evidence_name, evidence)
         results.append(
             PlaytestResult.create(
                 capability,
@@ -128,7 +136,7 @@ def playtest(context: PlaytestContext) -> Playtested:
                 bridge.BRIDGE_VERSION,
                 bridge.config_sha256(config),
                 evidence_name,
-                bridge.sha256_file(evidence_path),
+                bridge.sha256_file(context.workspace / evidence_name),
             )
         )
 
@@ -137,6 +145,7 @@ def playtest(context: PlaytestContext) -> Playtested:
         "agent-playtest",
         referee_passed,
         referee_evidence,
+        ("referee-player", "critic", "evaluator"),
         "text2game-referee",
         {"run": str(slug), "phase": 1},
         "phase1.json",
@@ -172,6 +181,7 @@ def playtest(context: PlaytestContext) -> Playtested:
         "mechanical-test",
         gate_passed,
         gate_evidence,
+        ("cad-measure-agent", "fit-probe-agent"),
         "text2game-contract-gate",
         {"run": str(slug), "phase": 3, "checks": ["watertight", "bodies", "fit"]},
         "gate.json",
@@ -194,6 +204,7 @@ def playtest(context: PlaytestContext) -> Playtested:
         "print-test",
         slice_passed,
         slice_evidence,
+        ("slicer-agent", "plate-packing-agent"),
         "text2game-slicer",
         {"run": str(slug), "profile": "petg"},
         "slice_report.json",
@@ -206,6 +217,8 @@ def playtest(context: PlaytestContext) -> Playtested:
             "game-simulation",
             sim_passed,
             sim_evidence,
+            sim_evidence.get("agent_roles")
+            or ("optimizing-player", "adversarial-player"),
             "text2game-simulation",
             {"run": str(slug)},
             bridge.SIMULATION_FILE,

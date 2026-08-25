@@ -159,6 +159,16 @@ def config_sha256(config: Dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def write_result_document(path: Path, evidence: Dict[str, Any]) -> None:
+    """Seal one result's evidence as the exact JSON document the policy reads."""
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(evidence, sort_keys=True, ensure_ascii=False, allow_nan=False),
+        encoding="utf-8",
+    )
+
+
 def copy_evidence(run: Path, workspace: Path) -> None:
     for name in EVIDENCE_FILES + OPTIONAL_EVIDENCE_FILES + (SIMULATION_FILE,):
         source = run / name

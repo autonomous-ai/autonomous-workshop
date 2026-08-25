@@ -6,6 +6,7 @@ success: every missing capability waits with a typed Need, and the lane's
 mass-simulation bar is never faked.
 """
 
+import hashlib
 import json
 import os
 import tempfile
@@ -13,9 +14,36 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop import WorkshopTools
+from inventor_workshop.jobs import Invented
+
 from one_decision_games.__main__ import build_workshop, create_wish
 
 SLUG = "fixture-duel"
+
+
+def invent_fixture(context):
+    """A deterministic shared-Invent stand-in so tests reach Pip's seams."""
+
+    wish_sha256 = hashlib.sha256(
+        json.dumps(
+            context.wish.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    return Invented(
+        wish_sha256,
+        context.taste.sha256,
+        context.blueprint.lane,
+        {
+            "title": "Fixture concept",
+            "summary": "A chosen industrial-design direction for seam tests.",
+        },
+        95,
+        90,
+    )
 
 
 def write_fixture_run(root: Path, slug: str = SLUG) -> Path:
@@ -94,15 +122,26 @@ def write_mass_simulation(run: Path) -> None:
 
 
 class SeamTest(unittest.TestCase):
-    def run_workshop(self, temporary: Path, pipeline_root: Path):
+    def run_workshop(self, temporary: Path, pipeline_root: Path, with_invent=True):
         environment = {
             "ONE_DECISION_GAMES_RUNTIME": str(temporary / "runtime"),
             "TEXT2GAME_ROOT": str(pipeline_root),
         }
+        tools = WorkshopTools(invent=invent_fixture) if with_invent else None
         with mock.patch.dict(os.environ, environment):
-            workshop = build_workshop()
+            workshop = build_workshop(tools=tools)
             wish = create_wish(SLUG, "I wish for a tile-flipping coin duel")
             return workshop.run(wish, playtest_rounds=2)
+
+    def test_without_a_shared_invent_provider_the_run_waits_at_invent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            pipeline = temporary / "pipeline"
+            pipeline.mkdir()
+            write_fixture_run(pipeline)
+            run = self.run_workshop(temporary, pipeline, with_invent=False)
+            self.assertEqual(run.status, "waiting")
+            self.assertEqual(run.job, "invent")
 
     def test_missing_pipeline_waits_for_it(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -133,11 +172,16 @@ class SeamTest(unittest.TestCase):
             run = self.run_workshop(temporary, pipeline)
             self.assertEqual(run.status, "waiting")
             self.assertEqual(run.job, "playtest")
+            needs = [need.capability for need in run.needs]
+            self.assertNotIn("agent-playtest", needs)
             self.assertEqual(
-                [need.capability for need in run.needs], ["game-simulation"]
+                needs, ["game-simulation", "mechanical-test", "print-test"]
             )
 
-    def test_mass_simulation_clears_playtest(self):
+    def test_agent_playtest_clears_the_release_bar(self):
+        # The referee evidence is the one lane proof text2game can fully seal
+        # today; the release policy accepts it and waits only on the proofs
+        # the pipeline does not measure yet.
         with tempfile.TemporaryDirectory() as temporary:
             temporary = Path(temporary)
             pipeline = temporary / "pipeline"
@@ -145,7 +189,11 @@ class SeamTest(unittest.TestCase):
             fixture = write_fixture_run(pipeline)
             write_mass_simulation(fixture)
             run = self.run_workshop(temporary, pipeline)
-            self.assertNotIn(run.job, ("make", "playtest"))
+            self.assertEqual(run.status, "waiting")
+            self.assertEqual(run.job, "playtest")
+            self.assertNotIn(
+                "agent-playtest", [need.capability for need in run.needs]
+            )
 
     def test_failed_gate_feeds_back_and_waits_for_a_revision(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -175,8 +223,8 @@ class SeamTest(unittest.TestCase):
             run = self.run_workshop(temporary, pipeline)
             self.assertEqual(run.status, "waiting")
             self.assertEqual(run.job, "playtest")
-            self.assertEqual(
-                [need.capability for need in run.needs], ["game-simulation"]
+            self.assertNotIn(
+                "agent-playtest", [need.capability for need in run.needs]
             )
 
     def test_make_imports_the_curated_product_tree(self):

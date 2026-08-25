@@ -1,10 +1,5 @@
 {
   "capabilities": [
-    "wish",
-    "make",
-    "playtest",
-    "instructions",
-    "deliver",
     "invented-games",
     "custom-playtest"
   ],

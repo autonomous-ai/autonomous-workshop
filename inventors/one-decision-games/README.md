@@ -47,18 +47,28 @@ defaults to `/root/text2game`.
   a kept design round passes, and open findings ride along as non-blocking
   note feedback destined for the print kit's watch-at-the-table list.
 
-## Evidence classes and the honest gap
+## Evidence classes and the honest gaps
 
-The lane demands a `game-simulation` result with **>= 1,000 seeded games**
-across optimizing, social, exploratory, and adversarial players. text2game's
-referee plays a handful of deep seeded games per round — it does not have a
-mass simulator yet. Pip therefore returns a `game-simulation` result only
-when a real `game_simulation.json` exists in the run; otherwise the run
-truthfully waits on that capability. **This is the known blocker today:**
-every real Pip run parks at Playtest with a `game-simulation` need until
-text2game grows a mass-simulation stage. With that evidence present, runs
-proceed to Instructions and wait on the Workshop site credential like the
-five showcase toys.
+Every result is sealed as its own byte-exact JSON document naming the exact
+Make bytes and the AI roles that produced it. Against the Workshop's release
+bar, text2game can fully prove **`agent-playtest`** today; the other three
+lane proofs are typed waits until the pipeline grows them:
+
+- **`game-simulation`** needs >= 1,000 seeded traces across optimizing,
+  social, exploratory, and adversarial players plus a sealed simulator and
+  analysis — the referee plays a handful of deep games per round, not a
+  thousand.
+- **`mechanical-test`** needs motion, load, and failure-mode case evidence —
+  the contract gate measures watertightness, bodies, and fit only.
+- **`print-test`** needs per-part G-code receipts under at least three
+  pinned profiles — text2game slices once under one PETG profile.
+
+So a real Pip run imports the product, seals the referee/gate/slicer
+verdicts, and parks at Playtest with exactly those needs. Nothing is
+invented to get past the bar; each need names the pipeline stage to build
+next. The upstream Invent stage is Workshop-owned and shared: without an
+operator-configured Invent provider a run truthfully waits at `invent`
+before Pip's seams are reached.
 
 ## Try the profile
 

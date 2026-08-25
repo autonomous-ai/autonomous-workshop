@@ -24,7 +24,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(workshop.customization_level, 'custom-playtest')
         self.assertEqual(
             tuple(WORKSHOP_JOBS),
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "invent", "make", "playtest", "instructions", "deliver"),
         )
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
@@ -57,7 +57,7 @@ class SmokeTest(unittest.TestCase):
                     )
                 result = json.loads(output.getvalue())
                 self.assertEqual(result["status"], "waiting")
-                self.assertEqual(result["job"], "make")
+                self.assertEqual(result["job"], "invent")
                 self.assertEqual(result["playtest_rounds"], 2)
                 self.assertIsNone(result["artifact_sha256"])
                 self.assertTrue(result["needs"])
