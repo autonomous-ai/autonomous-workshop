@@ -14,9 +14,15 @@ from .artifacts import MAX_PACK_BYTES
 from .clockwork import Clockwork
 from .contribution import check_target, manifests_for_target
 from .errors import WorkshopError
+from .factory_agent import (
+    FactoryAgentSession,
+    FactoryPublicTransition,
+    factory_credentials_from_environment,
+)
 from .jobs import WaitingFor
 from .make import Wish, generate_wish_id
 from .manifest import discover_inventors, inventor_collection, validate_entrypoints
+from .models import Receipt
 from .pack import pack_artifact, plan_pack, seal_artifact
 from .manager import WorkshopManager, discover_inventor_catalog
 from .semantic_manager import CodexSemanticManager
@@ -27,12 +33,31 @@ from .scaffold import (
 )
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
+from .store import InventorStore
 from .taste import load_taste, load_taste_header
 from .toys import PLAYTHING_LANES
 from .workshop import CUSTOMIZATION_LEVELS
 
 
 DEFAULT_WISH_PLAYTEST_ROUNDS = 4
+
+
+def _inventor_process_environment(inventor_id: str) -> Mapping[str, str]:
+    """Build one isolated worker environment without putting secrets in argv."""
+
+    environment = dict(os.environ)
+    environment["WORKSHOP_AGENT_WORKERS"] = "codex"
+    environment["WORKSHOP_INVENT_WORKER"] = "codex"
+    password = environment.get("FACTORY_PASSWORD")
+    if isinstance(password, str) and password:
+        environment["FACTORY_USERNAME"] = inventor_id
+    else:
+        # The CLI owns account selection. Without the shared secret, passing a
+        # username would manufacture a partial credential instead of reaching
+        # the normal truthful Instructions wait.
+        environment.pop("FACTORY_USERNAME", None)
+        environment.pop("FACTORY_PASSWORD", None)
+    return environment
 
 
 def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, Any]:
@@ -48,10 +73,11 @@ def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, A
             str(assignment.playtest_rounds),
         )
     )
+    inventor_id = assignment.decision.selected.card.inventor_id
     completed = runner(
         command,
         cwd=str(assignment.decision.selected.card.root),
-        env={**os.environ, "WORKSHOP_INVENT_WORKER": "codex"},
+        env=_inventor_process_environment(inventor_id),
         capture_output=True,
         text=True,
         timeout=3600,
@@ -70,6 +96,57 @@ def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, A
     if not isinstance(payload, dict):
         raise WorkshopError("the selected Inventor must return one Workshop result")
     return payload
+
+
+def _publish_inventor_draft(
+    assignment,
+    result: Mapping[str, Any],
+    *,
+    store_factory: Any = InventorStore,
+    session_factory: Any = FactoryAgentSession,
+    transition_factory: Any = FactoryPublicTransition,
+) -> Mapping[str, Any]:
+    """Make the exact authenticated Instructions draft public, then prove it."""
+
+    product_id = assignment.wish.product_id
+    inventor_id = assignment.decision.selected.card.inventor_id
+    page_url = result.get("page_url")
+    artifact_sha256 = result.get("artifact_sha256")
+    if not isinstance(page_url, str) or not page_url:
+        return {
+            "status": "waiting",
+            "reason": "Instructions has not produced an authenticated Factory draft yet.",
+        }
+    environment = _inventor_process_environment(inventor_id)
+    try:
+        credentials = factory_credentials_from_environment(inventor_id, environment)
+        runtime_root = Path(assignment.decision.selected.card.root) / ".workshop"
+        store = store_factory(runtime_root / "workshop.sqlite3")
+        intent = store.latest_publish_intent(product_id)
+        receipt_value = intent.get("receipt") if isinstance(intent, Mapping) else None
+        draft = Receipt.from_dict(receipt_value)
+        if draft.details.get("page_url") != page_url:
+            raise WorkshopError(
+                "the Factory draft URL differs from the Workshop Instructions receipt"
+            )
+        if isinstance(artifact_sha256, str):
+            draft.assert_artifact(artifact_sha256)
+        public = transition_factory(session_factory(credentials)).publish(draft)
+    except WorkshopError:
+        raise
+    except (KeyError, TypeError, ValueError) as exc:
+        raise WorkshopError(
+            "the selected Inventor has no exact authenticated draft to publish"
+        ) from exc
+    return {
+        "status": "public",
+        "verified": True,
+        "inventor_id": inventor_id,
+        "design_id": public.design_id,
+        "slug": public.slug,
+        "current_history_id": public.current_history_id,
+        "page_url": page_url,
+    }
 
 
 def _waiting_receipt(wish: Wish, waiting: WaitingFor) -> Mapping[str, Any]:
@@ -105,6 +182,12 @@ def _print_wish_receipt(receipt: Mapping[str, Any]) -> None:
             print("  %s — %s" % (need["capability"], need["reason"]))
     else:
         print("Status: %s" % result.get("status", "started"))
+    publication = result.get("publication")
+    if isinstance(publication, Mapping):
+        if publication.get("status") == "public":
+            print("Live: %s" % publication["page_url"])
+        elif publication.get("reason"):
+            print("Page: waiting — %s" % publication["reason"])
 
 
 def _wish(args: argparse.Namespace) -> int:
@@ -131,6 +214,11 @@ def _wish(args: argparse.Namespace) -> int:
         receipt = _waiting_receipt(wish, waiting)
     else:
         result = _run_inventor(assignment)
+        if args.publish:
+            result = {
+                **result,
+                "publication": _publish_inventor_draft(assignment, result),
+            }
         decision = assignment.decision
         receipt = {
             "schema_version": 1,
@@ -362,6 +450,14 @@ def parser() -> argparse.ArgumentParser:
         help="Workshop checkout or inventor collection (default: current directory)",
     )
     wish.add_argument("--json", action="store_true")
+    wish.add_argument(
+        "--publish",
+        action="store_true",
+        help=(
+            "make the exact authenticated Instructions draft public; this does "
+            "not claim the toy was printed or delivered"
+        ),
+    )
     wish.set_defaults(handler=_wish)
 
     registry = subcommands.add_parser(
