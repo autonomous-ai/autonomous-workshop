@@ -130,8 +130,8 @@
   <text x="697" y="572" text-anchor="middle" class="micro-copy">REFINE</text>
 
   <!-- Invent gate -->
-  <rect x="442" y="626" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="644" text-anchor="middle" class="gate">SPARK FOUND</text>
+  <rect x="530" y="626" width="116" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="644" text-anchor="middle" class="gate">SPARK FOUND</text>
 
   <!-- Make -->
   <g filter="url(#shadow)">
@@ -148,8 +148,8 @@
   <text x="697" y="772" text-anchor="middle" class="micro-copy">REFINE</text>
 
   <!-- Make gate -->
-  <rect x="442" y="826" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="844" text-anchor="middle" class="gate">READY TO PLAY</text>
+  <rect x="530" y="826" width="116" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="844" text-anchor="middle" class="gate">READY TO PLAY</text>
 
   <!-- Playtest -->
   <g filter="url(#shadow)">
@@ -165,8 +165,8 @@
   <text x="628" y="973" class="edge-label-ai">PASSES: KEEP GOING</text>
 
   <!-- Playtest gate -->
-  <rect x="432" y="1026" width="136" height="26" rx="13" fill="#eef8ff"/>
-  <text x="500" y="1044" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
+  <rect x="530" y="1026" width="136" height="26" rx="13" fill="#eef8ff"/>
+  <text x="598" y="1044" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
 
   <!-- Instructions -->
   <g filter="url(#shadow)">
@@ -183,8 +183,8 @@
   <text x="697" y="1172" text-anchor="middle" class="micro-copy">POLISH</text>
 
   <!-- Instructions gate -->
-  <rect x="442" y="1226" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="500" y="1244" text-anchor="middle" class="gate">CLEAR AS DAY</text>
+  <rect x="530" y="1226" width="116" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="1244" text-anchor="middle" class="gate">CLEAR AS DAY</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">
