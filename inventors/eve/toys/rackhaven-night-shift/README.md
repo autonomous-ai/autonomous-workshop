@@ -11,7 +11,7 @@ Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recog
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `a4457ad61c296d7ff9fcc00fd469f3a8f683b7083b9ac202ff32b421ba265c5f`
+- Exact artifact: `f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

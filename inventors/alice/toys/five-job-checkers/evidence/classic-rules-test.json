@@ -5,7 +5,7 @@
     "adversarial-breaker",
     "first-time-player"
   ],
-  "artifact_sha256": "9a40be169ab11f230dea2526944bde4c05cf8b090b3e5131ea2e00dd560036b8",
+  "artifact_sha256": "d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9",
   "claims": [
     "The lane-specific AI players completed their exact-design checks without a blocking finding."
   ],

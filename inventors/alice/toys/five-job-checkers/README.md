@@ -11,7 +11,7 @@ A regulation-readable checkers edition whose five-ring and five-spoke pieces, fi
 - Extension level: `taste-only`
 - Configured Playtest rounds: `2`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `9a40be169ab11f230dea2526944bde4c05cf8b090b3e5131ea2e00dd560036b8`
+- Exact artifact: `d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

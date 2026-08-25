@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "a4457ad61c296d7ff9fcc00fd469f3a8f683b7083b9ac202ff32b421ba265c5f",
+  "artifact_sha256": "f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -15,8 +15,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "da4952c5ae0c78ce82134e7c17c2018c11d130a8cf9e043677e7bc824cfb7c1e",
-  "evidence_sha256": "bde17cf900c720c5519089ca9ff41acbc2a80c943614baacee2af8d6f9e08c0a",
-  "instructions_sha256": "c61a82394704daa594f562e696ebd6670467a4c9bdcf17900d98aaace19a139d",
+  "evidence_sha256": "e3f180c35323b9a6b223c33e75a97e576470f08c6c630b6ad3426c670fb31e22",
+  "instructions_sha256": "35dfcaba8a0db7a9193767785a3cc60f400ef2de9e15d50ea1fabb1b508ad75f",
   "inventor": {
     "extension_level": "taste-only",
     "id": "eve",
@@ -25,7 +25,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "a4457ad61c296d7ff9fcc00fd469f3a8f683b7083b9ac202ff32b421ba265c5f",
+    "artifact_sha256": "f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -46,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "2f37b90949c72c999cd3896e02cdf3fea830f31f4e6e6885a335434b32952788",
+    "builder_sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },

@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "d53eaf5dc8ee0fe2c06ccc818756631088149cd2c590a7dee950d6290028f752",
+      "evidence_sha256": "87e2a80402cc608d0863bcd2fe9d816840d11a4be8f77fb364d75775fd04008a",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "a7c50fef55fa5461fba8e6676dd0c34b12f17dbc6d0510738809749d9591cc9b",
+      "evidence_sha256": "6cd83ce951d4616ec855b34447f114e40549ae2c2841c2683f919fcd01be11e8",
       "passed": true
     },
     "print-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "c543caa46030b72e291e4a787da438b5314368ba98501c7abca0338e09a884f9",
+      "evidence_sha256": "8df33ac76af1adc53a84e01c46ecb88385e1217921f5a6af28151c20d828deb9",
       "passed": true
     },
     "science-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "science-test.json",
-      "evidence_sha256": "98c1f3eff4f38fa535cb17d4ec5fd6238aa2adf4a20d1c0a417fbec176073002",
+      "evidence_sha256": "e75a28a431c581afb4ea3231147876eec66429ec736f735daf37924ba0440615",
       "passed": true
     }
   },
@@ -59,8 +59,8 @@
     "The model is qualitative and not a tide forecast; AI science players keep that simplification explicit.",
     "Detent feel and hands-on quality are checked during Deliver, then customer comprehension may arrive through Reviews."
   ],
-  "playtest_evidence_artifact_sha256": "fde68cf8f7934ce8eff8bec5d4c9138ae33d4fcc3445a940d4b5f6b30b5260e2",
-  "product_artifact_sha256": "e2b3d89d776b994c0ffc2b90432601fc08ccaf9b99da3c59f654cd9876301d7b",
+  "playtest_evidence_artifact_sha256": "d557ec48735898b1e80c87446d1d46be5da426619322ab3ed5f7e114595c1252",
+  "product_artifact_sha256": "70793ea2f7bbdad64dc314f640cbb1cc842070a21448857093dee391267b0fde",
   "schema_version": 2,
   "status": "facts-ready",
   "summary": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.\n\nBy Ivy.",

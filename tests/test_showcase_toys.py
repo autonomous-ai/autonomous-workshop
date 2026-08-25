@@ -190,6 +190,18 @@ class ShowcaseToyTest(unittest.TestCase):
                 self.assertEqual(
                     build["factory_assembly"]["occurrence_count"], expected
                 )
+                self.assertEqual(
+                    build["factory_assembly"]["step_solid_count"], expected
+                )
+                self.assertEqual(build["product"]["step"]["solid_count"], expected)
+                self.assertEqual(build["product"]["stl"]["shell_count"], expected)
+                self.assertTrue(
+                    all(
+                        record["step"]["solid_count"] == 1
+                        and record["stl"]["shell_count"] == 1
+                        for record in build["parts"].values()
+                    )
+                )
                 self.assertEqual(build["factory_assembly"]["part_names"], names)
                 if inventor_id == "bob":
                     expected_components = [

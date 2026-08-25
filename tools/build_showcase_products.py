@@ -559,6 +559,31 @@ def _shape(value: Any):
     return value.val() if hasattr(value, "val") else value
 
 
+def _fused(shapes: Sequence[Any]):
+    """Make one printable solid from features that belong to one part.
+
+    Factory assigns occurrence colors by connected STL shell order. A visual
+    feature that merely shares a compound with its part becomes a phantom
+    occurrence and shifts every color that follows it. Fuse all features of
+    one printable part and fail closed if OCC cannot produce one solid; only
+    the product-level assembly may contain multiple solids.
+    """
+
+    values = [_shape(item) for item in shapes]
+    if not values:
+        raise RuntimeError("cannot fuse an empty printable part")
+    result = values[0]
+    for value in values[1:]:
+        result = result.fuse(value)
+    result = result.clean()
+    solids = result.Solids()
+    if result.isNull() or len(solids) != 1 or not result.isValid():
+        raise RuntimeError(
+            "printable part features must fuse into exactly one valid solid"
+        )
+    return solids[0]
+
+
 def _placed(value: Any, xyz: tuple[float, float, float], angle: float = 0.0):
     result = _shape(value)
     if angle:
@@ -591,7 +616,7 @@ def _alice_geometry(spec: ProductSpec) -> GeometryBundle:
     for index in range(5):
         marker = cq.Workplane("XY").box(8.5, 2.4, 1.7, centered=(True, True, False))
         board_shapes.append(_placed(marker, ((index - 2) * 12.0, -63.0, 5.0)))
-    board = _compound(board_shapes)
+    board = _fused(board_shapes)
 
     # A checker must sit comfortably inside a 14.5 mm square.  The earlier
     # 20.4 mm draft nearly touched diagonal neighbors and failed Alice's table
@@ -609,8 +634,8 @@ def _alice_geometry(spec: ProductSpec) -> GeometryBundle:
         )
         spoke = cq.Workplane("XY").box(4.1, 1.05, 1.25, centered=(True, True, False))
         spoke_shapes.append(_placed(spoke, (1.8, 0.0, 3.2), index * 72.0))
-    five_ring = _compound(ring_shapes)
-    five_spoke = _compound(spoke_shapes)
+    five_ring = _fused(ring_shapes)
+    five_spoke = _fused(spoke_shapes)
 
     occurrences: list[tuple[str, str, Any]] = [("board", "board", board)]
     side_a = []
@@ -652,13 +677,16 @@ def _bob_geometry(spec: ProductSpec) -> GeometryBundle:
     drive = cq.Workplane("XY").circle(18.0).circle(2.7).extrude(4.0)
     for index in range(6):
         crater = cq.Workplane("XY").circle(1.6).extrude(0.8)
-        angle = math.radians(index * 60.0)
+        # Offset the crater ring from the crank axis. A crater directly under
+        # the fused hand knob becomes a sealed internal void: printable, but a
+        # second hidden render shell that breaks Factory occurrence coloring.
+        angle = math.radians(index * 60.0 + 30.0)
         drive = drive.cut(
             _placed(crater, (11.8 * math.cos(angle), 11.8 * math.sin(angle), 3.4))
         )
     comet_pin = cq.Workplane("XY").circle(2.15).extrude(6.0)
     hand_knob = cq.Workplane("XY").circle(3.2).extrude(8.0)
-    drive_part = _compound(
+    drive_part = _fused(
         [drive, _placed(comet_pin, (14.5, 0.0, 4.0)), _placed(hand_knob, (-11.5, 0.0, 4.0))]
     )
 
@@ -676,7 +704,7 @@ def _bob_geometry(spec: ProductSpec) -> GeometryBundle:
         geneva_shapes.append(
             _placed(station, (16.8 * math.cos(angle), 16.8 * math.sin(angle), 5.0))
         )
-    geneva_part = _compound(geneva_shapes)
+    geneva_part = _fused(geneva_shapes)
 
     occurrences = (
         ("base", "base", base),
@@ -709,7 +737,7 @@ def _eve_geometry(spec: ProductSpec) -> GeometryBundle:
     for y in (-19.0, 0.0, 19.0):
         trench = cq.Workplane("XY").box(82.0, 2.2, 0.9, centered=(True, True, False))
         deck_shapes.append(_placed(trench, (0.0, y, 5.0)))
-    deck_part = _compound(deck_shapes)
+    deck_part = _fused(deck_shapes)
 
     comet_core = _rounded_box(22.0, 18.0, 34.0, 1.8)
     comet_shapes: list[Any] = [comet_core]
@@ -717,20 +745,20 @@ def _eve_geometry(spec: ProductSpec) -> GeometryBundle:
         for z in (7.0, 15.0, 23.0):
             fin = cq.Workplane("XY").box(7.0, 16.0, 2.2, centered=(True, True, False))
             comet_shapes.append(_placed(fin, (side * 13.0, 0.0, z)))
-    comet = _compound(comet_shapes)
+    comet = _fused(comet_shapes)
 
     moss_core = _rounded_box(22.0, 18.0, 31.0, 1.8)
     moss_shapes: list[Any] = [moss_core]
     for x in (-7.5, 7.5):
         moss_shapes.append(_placed(cq.Workplane("XY").circle(2.2).extrude(35.0), (x, -10.5, 0.0)))
         moss_shapes.append(_placed(cq.Workplane("XY").circle(3.5).extrude(2.0), (x, -10.5, 33.0)))
-    moss = _compound(moss_shapes)
+    moss = _fused(moss_shapes)
 
     void_core = _rounded_box(22.0, 18.0, 32.0, 1.8)
     halo = cq.Solid.makeTorus(
         12.0, 1.7, cq.Vector(0.0, 0.0, 24.0), cq.Vector(1.0, 0.0, 0.0)
     )
-    void = _compound([void_core, halo])
+    void = _fused([void_core, halo])
 
     operator_profile = (
         cq.Workplane("XZ")
@@ -778,7 +806,7 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
         rad = math.radians(angle)
         notch = cq.Workplane("XY").box(7.0, 2.4, 1.6, centered=(True, True, False))
         base_shapes.append(_placed(notch, (45.0 * math.cos(rad), 45.0 * math.sin(rad), 4.0), angle))
-    base_part = _compound(base_shapes)
+    base_part = _fused(base_shapes)
     post = cq.Workplane("XY").circle(2.3).extrude(16.0)
 
     arm_bar = cq.Workplane("XY").box(78.0, 7.0, 3.2, centered=(True, True, False))
@@ -786,7 +814,7 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
     tide_lobes = [arm_bar]
     for x in (-40.0, 40.0):
         tide_lobes.append(_placed(cq.Workplane("XY").circle(8.0).extrude(3.2), (x, 0.0, 0.0)))
-    tide_arm = _compound(tide_lobes)
+    tide_arm = _fused(tide_lobes)
     earth = cq.Solid.makeSphere(8.0, cq.Vector(0.0, 0.0, 8.0)).cut(
         cq.Workplane("XY").circle(2.7).extrude(17.0).val()
     )
@@ -803,7 +831,7 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
     ):
         moon_profile = moon_profile.lineTo(radius, height)
     moon = moon_profile.close().revolve(360.0)
-    sun_marker = _compound(
+    sun_marker = _fused(
         [
             cq.Workplane("XY").box(15.0, 5.0, 3.0, centered=(True, True, False)),
             _placed(cq.Workplane("XY").circle(4.5).extrude(3.0), (9.0, 0.0, 0.0)),
@@ -851,7 +879,7 @@ def _leo_geometry(spec: ProductSpec) -> GeometryBundle:
         angle = math.radians(index * 72.0)
         well = cq.Workplane("XY").circle(4.2).extrude(3.0)
         base = base.cut(_placed(well, (22.0 * math.cos(angle), 22.0 * math.sin(angle), 3.1)))
-    core = _compound([base, cq.Workplane("XY").circle(3.0).extrude(9.0)])
+    core = _fused([base, cq.Workplane("XY").circle(3.0).extrude(9.0)])
 
     ring = cq.Workplane("XY").circle(52.0).circle(36.3).extrude(5.0)
     for index in range(10):
@@ -861,14 +889,14 @@ def _leo_geometry(spec: ProductSpec) -> GeometryBundle:
     ring_part = ring
 
     token_base = cq.Workplane("XY").circle(3.7).extrude(3.2)
-    token_ring = _compound(
+    token_ring = _fused(
         [token_base, _placed(cq.Workplane("XY").circle(1.4).extrude(1.1), (0.0, 0.0, 3.2))]
     )
     token_spoke_shapes: list[Any] = [token_base]
     for index in range(5):
         spoke = cq.Workplane("XY").box(3.8, 0.9, 1.0, centered=(True, True, False))
         token_spoke_shapes.append(_placed(spoke, (1.5, 0.0, 3.2), index * 72.0))
-    token_spoke = _compound(token_spoke_shapes)
+    token_spoke = _fused(token_spoke_shapes)
     occurrences: list[tuple[str, str, Any]] = [
         ("five-job-core", "five-job-core", core),
         ("counter-orbit", "counter-orbit", _placed(ring_part, (0.0, 0.0, 0.25), 18.0)),
@@ -943,13 +971,30 @@ def _mesh(path: Path):
     return loaded
 
 
-def _validate_cad_pair(step_path: Path, stl_path: Path) -> Mapping[str, Any]:
+def _validate_cad_pair(
+    step_path: Path,
+    stl_path: Path,
+    *,
+    expected_solid_count: int,
+    expected_shell_count: int,
+) -> Mapping[str, Any]:
     imported = cq.importers.importStep(str(step_path))
     solids = imported.solids().vals()
     if not solids:
         raise RuntimeError("STEP re-import produced no solids: %s" % step_path)
+    if len(solids) != expected_solid_count:
+        raise RuntimeError(
+            "STEP contains %d solids, expected %d: %s"
+            % (len(solids), expected_solid_count, step_path)
+        )
     bbox = imported.val().BoundingBox()
     mesh = _mesh(stl_path)
+    shell_count = len(mesh.split(only_watertight=False))
+    if shell_count != expected_shell_count:
+        raise RuntimeError(
+            "STL contains %d connected shells, expected %d: %s"
+            % (shell_count, expected_shell_count, stl_path)
+        )
     bounds = mesh.bounds
     extents = np.asarray(mesh.extents, dtype=float)
     watertight = bool(mesh.is_watertight)
@@ -970,6 +1015,7 @@ def _validate_cad_pair(step_path: Path, stl_path: Path) -> Mapping[str, Any]:
             "sha256": _sha_file(stl_path),
             "bytes": stl_path.stat().st_size,
             "triangles": int(mesh.faces.shape[0]),
+            "shell_count": shell_count,
             "watertight": watertight,
             "winding_consistent": winding,
             "volume_mm3": round(abs(float(mesh.volume)), 4),
@@ -1147,8 +1193,19 @@ def _build_cad_files(geometry: GeometryBundle, destination: Path) -> Mapping[str
         step_path = destination / "parts" / (name + ".step")
         stl_path = destination / "parts" / (name + ".stl")
         _export_shape(part, step_path, stl_path)
-        part_records[name] = _validate_cad_pair(step_path, stl_path)
-    product_record = _validate_cad_pair(destination / "product.step", destination / "product.stl")
+        part_records[name] = _validate_cad_pair(
+            step_path,
+            stl_path,
+            expected_solid_count=1,
+            expected_shell_count=1,
+        )
+    occurrence_count = len(geometry.occurrences)
+    product_record = _validate_cad_pair(
+        destination / "product.step",
+        destination / "product.stl",
+        expected_solid_count=occurrence_count,
+        expected_shell_count=occurrence_count,
+    )
     return {"schema_version": 1, "product": product_record, "parts": part_records}
 
 
@@ -1185,8 +1242,12 @@ def _build_factory_assembly(geometry: GeometryBundle, artifact: Path) -> Mapping
     if not exported or not step_path.is_file() or step_path.stat().st_size < 256:
         raise RuntimeError("Factory assembly STEP export is implausibly small")
     imported = cq.importers.importStep(str(step_path))
-    if not imported.solids().vals():
-        raise RuntimeError("Factory assembly STEP re-import produced no solids")
+    imported_solids = imported.solids().vals()
+    if len(imported_solids) != len(geometry.occurrences):
+        raise RuntimeError(
+            "Factory assembly STEP contains %d solids, expected %d occurrences"
+            % (len(imported_solids), len(geometry.occurrences))
+        )
     sidecar = {
         "schemaVersion": 1,
         "generator": BUILDER_ID,
@@ -1199,6 +1260,7 @@ def _build_factory_assembly(geometry: GeometryBundle, artifact: Path) -> Mapping
         "step_sha256": _sha_file(step_path),
         "step_bytes": step_path.stat().st_size,
         "occurrence_count": len(sidecar_parts),
+        "step_solid_count": len(imported_solids),
         "part_names": names,
     }
 
@@ -1650,6 +1712,11 @@ def showcase_playtest(context: PlaytestContext):
         "artifact_sha256": context.made.artifact_sha256,
         "step_reimported": bool(digital_build["product"]["step"]["reimported"]),
         "step_solid_count": digital_build["product"]["step"]["solid_count"],
+        "stl_shell_count": digital_build["product"]["stl"]["shell_count"],
+        "stl_shells_match_printed_pieces": (
+            digital_build["product"]["stl"]["shell_count"]
+            == spec.design["printed_piece_count"]
+        ),
         "stl_watertight": bool(digital_build["product"]["stl"]["watertight"]),
         "stl_winding_consistent": bool(
             digital_build["product"]["stl"]["winding_consistent"]
@@ -1660,6 +1727,10 @@ def showcase_playtest(context: PlaytestContext):
         ),
         "all_parts_watertight": all(
             item["stl"]["watertight"] for item in digital_build["parts"].values()
+        ),
+        "all_parts_are_one_solid_and_one_shell": all(
+            item["step"]["solid_count"] == 1 and item["stl"]["shell_count"] == 1
+            for item in digital_build["parts"].values()
         ),
         "claim_scope": "OpenCascade/mesh simulation; physical QA belongs to Deliver",
     }
@@ -2189,6 +2260,8 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     current_product_cad = _validate_cad_pair(
         bundle / "artifact" / "cad" / "product.step",
         bundle / "artifact" / "cad" / "product.stl",
+        expected_solid_count=spec.design["printed_piece_count"],
+        expected_shell_count=spec.design["printed_piece_count"],
     )
     if current_product_cad != build["product"]:
         raise RuntimeError("independent CAD revalidation disagrees with digital-build.json")
@@ -2196,6 +2269,8 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
         current_part = _validate_cad_pair(
             bundle / "artifact" / "cad" / "parts" / (part_name + ".step"),
             bundle / "artifact" / "cad" / "parts" / (part_name + ".stl"),
+            expected_solid_count=1,
+            expected_shell_count=1,
         )
         if current_part != stored_part:
             raise RuntimeError("independent CAD revalidation disagrees for part %s" % part_name)
@@ -2231,8 +2306,11 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
             or not (bundle / "artifact" / item["stlPath"]).is_file()
         ):
             raise RuntimeError("Factory occurrence assembly references a missing print part")
-    if not cq.importers.importStep(str(factory_step)).solids().vals():
-        raise RuntimeError("Factory occurrence assembly is not a readable STEP model")
+    factory_solids = cq.importers.importStep(str(factory_step)).solids().vals()
+    if len(factory_solids) != spec.design["printed_piece_count"]:
+        raise RuntimeError(
+            "Factory occurrence assembly solid count no longer matches printed pieces"
+        )
     current_builder_sha256 = _sha_file(Path(__file__).resolve())
     if (
         build["generator"]["sha256"] != current_builder_sha256

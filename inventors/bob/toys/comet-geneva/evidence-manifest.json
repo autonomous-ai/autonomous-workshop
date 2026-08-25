@@ -1,62 +1,62 @@
 {
-  "artifact_sha256": "7d06c1c0ebe36906f1e3cd6d69d46cf0c3c170e3d4a5d296e7a76db28a1f77dd",
+  "artifact_sha256": "f1c8a812021e19066987dd219a83edcae7ef027e5249019ca058c4ae6fbdffc3",
   "created_at": "content-addressed",
   "entries": [
     {
       "bytes": 588,
       "executable": false,
       "path": "agent-playtest.json",
-      "sha256": "474280963bf9f71bbbc461bfe35d6a6bf762b76ef6b60cd2d9a6051284d6ea17"
+      "sha256": "ee0e4fa122d4b5ef4607484b906d985a714ede71e7d9a68f17a8bffd71b423e0"
     },
     {
-      "bytes": 445,
+      "bytes": 560,
       "executable": false,
       "path": "digital-geometry.json",
-      "sha256": "489832f6dde91562f0576824a43d474e303d63135c7d0f1adec714b9a4690fa9"
+      "sha256": "392a3ed191c63abea7df5c5bb2492d60468594d3de4f08b1e6666bd285f140b7"
     },
     {
       "bytes": 684,
       "executable": false,
       "path": "digital-lane.json",
-      "sha256": "8b13ff128f61874a55d4ba68f35f49b40dcc01f3f649a3b70d6a6133aeab58fd"
+      "sha256": "ba2d97adb4d1d15cf3d92857e4a4b5990afd6cb5b254a6499440a4a6c8c7b6ac"
     },
     {
       "bytes": 481,
       "executable": false,
       "path": "digital-printability.json",
-      "sha256": "53b818620061de5daf952563d727c737a5d03ab9756ac0f4a9384e9dd8b99df2"
+      "sha256": "d8924d77a9a055b003f8dc84afb13abf127a911dd862577b8b94a4537518407b"
     },
     {
       "bytes": 771,
       "executable": false,
       "path": "evidence-index.json",
-      "sha256": "60fe30014858e130adc3eb050fa5287e0c59134c18009476359f7e97b3d24bac"
+      "sha256": "77e5c81efbc43dcc64588000cb9f50a1869f99ebcc53d37ad2db0eb2d42a2a59"
     },
     {
       "bytes": 613,
       "executable": false,
       "path": "mechanical-test.json",
-      "sha256": "c6c48bcb288dd022b5569cc31b79cfc7c866895e942010274bbc5bf884274759"
+      "sha256": "639b27524f6e028aac832aa941385f28802a772f497a65cfdd70a604c6b88aab"
     },
     {
       "bytes": 975,
       "executable": false,
       "path": "motion-test.json",
-      "sha256": "752b156dda21d13301c626c6d27099fe3fa3bdab3dffcac14076dd7c541c85e4"
+      "sha256": "03bc7a59010e1f0007b2dd3dc788477a623e88f160b58a82ccafd57fbd093d3d"
     },
     {
       "bytes": 631,
       "executable": false,
       "path": "print-test.json",
-      "sha256": "f102f918f74de8c22415fffa098ec50fdb1cea24426df5a803c2a10df308ee2f"
+      "sha256": "c2f7e30d78df0831ccdf9d679e3e342e4fef8bd8de214cad0efac2c5ddd4e29c"
     },
     {
       "bytes": 823,
       "executable": false,
       "path": "wish-taste-trace.json",
-      "sha256": "38c34aaff8da5af9c6556f974a1d84a289c0dfc8db819fdcc839f2b6daffa281"
+      "sha256": "6428c0dd2b74c7d351070d9b6e3eed432d9d18cab28e4172e80f63d2ee2af74a"
     }
   ],
   "schema_version": 1,
-  "total_bytes": 6011
+  "total_bytes": 6126
 }

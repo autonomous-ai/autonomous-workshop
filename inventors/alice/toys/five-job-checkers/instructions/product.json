@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "a3d0542043c48d750c71d6f18e37e6229f975175acccfdf15164583907605a8b",
+      "evidence_sha256": "0e9edd5ccf61fce4d9b2299b75166aa760e9985dbc5bfcca7728539f81b25f31",
       "passed": true
     },
     "classic-rules-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "classic-rules-test.json",
-      "evidence_sha256": "525b3bf2d9ae7370fdd6d00eeb9eb6aad5d79db11fcc8f86f657eaf5c256d4a9",
+      "evidence_sha256": "3856a12ac068a78f7256d1a40c631ecdb187db5a5705dedd9f43a8a189c34afa",
       "passed": true
     },
     "mechanical-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "c95a6ffec688a50f03f266155c70cac594a88cca01743c6fb111011cf55a0da6",
+      "evidence_sha256": "679a0e5eb9c09a16ab7ce7aa6343c8e128cd3a1abc91153983c1c2dc4c155a1b",
       "passed": true
     },
     "print-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "b01b134b91481d95f039469b4779f2451afc6aa38dbc058ca06a70965678c853",
+      "evidence_sha256": "22998c9753e3998438f65245642d6dc3975d545aa9cccf6e3d7ae2a5acd2b80f",
       "passed": true
     }
   },
@@ -59,8 +59,8 @@
     "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
     "The exact physical set is produced and checked during Deliver, not Playtest."
   ],
-  "playtest_evidence_artifact_sha256": "7c025084b92d00cab3bffcaf7490b54121515078344a9e9520f6f94b38b1fb6e",
-  "product_artifact_sha256": "9a40be169ab11f230dea2526944bde4c05cf8b090b3e5131ea2e00dd560036b8",
+  "playtest_evidence_artifact_sha256": "4a2a3a63e6bd4572dbeff3df46510f5c6ce363bf2f38aaec55a25cfa322c9d74",
+  "product_artifact_sha256": "d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9",
   "schema_version": 2,
   "status": "facts-ready",
   "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.\n\nBy Alice.",
