@@ -274,28 +274,6 @@ worse than a note sends the toy back to Make with your notes in
 `context.feedback`, and round 2 begins. That loop is the whole job: Make and
 Playtest talking until the evidence passes or the rounds run out.
 
-### Examples
-
-Each inventor has taken one toy through the shared contracts — all five kinds,
-all three levels. *Playtest rounds* is how many times that wish paid for
-Playtest to test the toy and send it back to Make.
-
-| Inventor | Toy | Level | Playtest rounds |
-|---|---|---|---:|
-| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 |
-| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 |
-| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 |
-| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 |
-| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 |
-
-Open one to see the render, the CAD source, the STEP and STL files, and the
-receipt for the run. Every check a computer can do has passed — the geometry is
-real, the files reimport, the parts should print. What is missing is the part no
-computer can do: nobody has printed these and put them in someone's hands. Until
-that happens the last two jobs stay locked, and the receipt says so instead of
-calling the toy finished.
-
-
 ## How many rounds you get
 
 Checkout decides how many times an inventor may improve a toy before it has to
