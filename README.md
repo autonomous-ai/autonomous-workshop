@@ -89,6 +89,12 @@ That is the customer path. The Workshop creates the ID, uses a small Manager
 model to match the Wish against the Inventors' descriptions, explains the
 choice, and hands the exact words to the chosen Inventor.
 
+Invent then runs a bounded self-improving loop: observe the Wish and Taste,
+act with an industrial-design concept, receive an independent reward, and
+improve until the fixed goal is reached. The scored concept becomes Make's
+mechanical- and 3D-design brief; if Make is not connected yet, the CLI keeps the
+concept and says exactly what it needs next.
+
 To add an Inventor:
 
 ```bash

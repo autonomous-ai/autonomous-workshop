@@ -55,7 +55,7 @@
     </g>
     <g transform="translate(230 0)">
       <path d="M 0 2 C 6 19, 24 19, 30 2" fill="none" stroke="#d97706" stroke-width="3"/>
-      <text x="40" y="5" class="legend">try, score, improve</text>
+      <text x="40" y="5" class="legend">observe, act, reward, improve</text>
     </g>
     <g transform="translate(460 0)">
       <line x1="0" y1="0" x2="30" y2="0" stroke="#1675b8" stroke-width="3"/>
@@ -125,13 +125,14 @@
   <text x="250" y="558" class="body">Explore many directions. Choose the concept and</text>
   <text x="250" y="580" class="body">shape its character, play, and spark.</text>
   <path class="micro" d="M 665 498 C 735 472, 764 525, 730 572 C 700 612, 633 583, 646 536"/>
-  <text x="697" y="516" text-anchor="middle" class="micro-copy">DREAM</text>
-  <text x="697" y="544" text-anchor="middle" class="micro-copy">SCORE</text>
-  <text x="697" y="572" text-anchor="middle" class="micro-copy">REFINE</text>
+  <text x="697" y="507" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="529" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="551" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="573" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Invent gate -->
-  <rect x="530" y="626" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="644" text-anchor="middle" class="gate">SPARK FOUND</text>
+  <rect x="516" y="626" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="644" text-anchor="middle" class="gate">INVENT GOAL REACHED</text>
 
   <!-- Make -->
   <g filter="url(#shadow)">
@@ -143,13 +144,14 @@
   <text x="250" y="758" class="body">Engineer the mechanics. Build the 3D design and</text>
   <text x="250" y="780" class="body">printable parts that fit, move, and feel right.</text>
   <path class="micro" d="M 665 698 C 735 672, 764 725, 730 772 C 700 812, 633 783, 646 736"/>
-  <text x="697" y="716" text-anchor="middle" class="micro-copy">BUILD</text>
-  <text x="697" y="744" text-anchor="middle" class="micro-copy">INSPECT</text>
-  <text x="697" y="772" text-anchor="middle" class="micro-copy">REFINE</text>
+  <text x="697" y="707" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="729" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="751" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="773" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Make gate -->
-  <rect x="530" y="826" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="844" text-anchor="middle" class="gate">READY TO PLAY</text>
+  <rect x="516" y="826" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="844" text-anchor="middle" class="gate">MAKE GOAL REACHED</text>
 
   <!-- Playtest -->
   <g filter="url(#shadow)">
@@ -178,13 +180,14 @@
   <text x="250" y="1158" class="body">Create the product page, manual, and everything</text>
   <text x="250" y="1180" class="body">the new owner needs to begin.</text>
   <path class="micro" d="M 665 1098 C 735 1072, 764 1125, 730 1172 C 700 1212, 633 1183, 646 1136"/>
-  <text x="697" y="1116" text-anchor="middle" class="micro-copy">WRITE</text>
-  <text x="697" y="1144" text-anchor="middle" class="micro-copy">FOLLOW</text>
-  <text x="697" y="1172" text-anchor="middle" class="micro-copy">POLISH</text>
+  <text x="697" y="1107" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="1129" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="1151" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="1173" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Instructions gate -->
-  <rect x="530" y="1226" width="116" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="1244" text-anchor="middle" class="gate">CLEAR AS DAY</text>
+  <rect x="504" y="1226" width="168" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="1244" text-anchor="middle" class="gate">INSTRUCTIONS GOAL REACHED</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">

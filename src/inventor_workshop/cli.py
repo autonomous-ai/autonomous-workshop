@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -50,6 +51,7 @@ def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, A
     completed = runner(
         command,
         cwd=str(assignment.decision.selected.card.root),
+        env={**os.environ, "WORKSHOP_INVENT_WORKER": "codex"},
         capture_output=True,
         text=True,
         timeout=3600,
@@ -87,6 +89,15 @@ def _print_wish_receipt(receipt: Mapping[str, Any]) -> None:
         print("Matched with %s." % match["name"])
         print("Why: %s" % match["explanation"])
     result = receipt.get("result", receipt)
+    invented = result.get("invented")
+    if isinstance(invented, dict):
+        concept = invented.get("concept")
+        title = concept.get("title") if isinstance(concept, dict) else None
+        if isinstance(title, str) and title:
+            print(
+                "Invented: %s (%s/%s)."
+                % (title, invented.get("score"), invented.get("target_score"))
+            )
     if result.get("status") == "waiting":
         job = result.get("job")
         print("Waiting%s." % (" at %s" % str(job).title() if job else ""))

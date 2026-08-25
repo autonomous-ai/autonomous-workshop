@@ -354,6 +354,7 @@ from pathlib import Path
 from typing import Optional
 
 from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop, WorkshopTools
+from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.make import generate_wish_id
 
 {custom_import}
@@ -412,7 +413,7 @@ def build_workshop(
     return Workshop(
         inventor_root(),
         LANE,
-        tools=tools if tools is not None else WorkshopTools(),
+        tools=configured_workshop_tools(tools),
         make=CUSTOM_MAKE,
         playtest=CUSTOM_PLAYTEST,
         runtime_root=runtime_root if runtime_root is not None else default_runtime_root(),

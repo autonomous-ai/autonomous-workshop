@@ -825,6 +825,7 @@ class WorkshopRun:
     delivery: Optional[Delivered] = None
     playtest_rounds: int = 1
     page_url: Optional[str] = None
+    invented: Optional[Invented] = None
 
     def __post_init__(self) -> None:
         _text(self.product_id, "WorkshopRun product_id", 256)
@@ -855,6 +856,8 @@ class WorkshopRun:
                 raise ContractError("WorkshopRun page_url must be a valid HTTPS URL") from exc
             if parsed_page_url.scheme != "https" or not parsed_page_url.hostname:
                 raise ContractError("WorkshopRun page_url must be a valid HTTPS URL")
+        if self.invented is not None and not isinstance(self.invented, Invented):
+            raise ContractError("WorkshopRun invented must use an Invented record")
         needs = tuple(self.needs)
         if not all(isinstance(item, Need) for item in needs):
             raise ContractError("WorkshopRun needs must use Need records")
@@ -870,6 +873,7 @@ class WorkshopRun:
             "artifact_sha256": self.artifact_sha256,
             "instructions_sha256": self.instructions_sha256,
             "page_url": self.page_url,
+            "invented": self.invented.to_dict() if self.invented is not None else None,
             "needs": [item.to_dict() for item in self.needs],
             "delivery": self.delivery.to_dict() if self.delivery is not None else None,
         }

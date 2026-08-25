@@ -12,6 +12,7 @@ from .artifacts import (
     build_publish_packet,
 )
 from .attribution import attribute_product_description
+from .agent_invent import CodexInventor
 from .cad import (
     CadReleaseBundle,
     KernelBodyObservation,
@@ -184,6 +185,7 @@ from .ports import (
 from .send import DEFAULT_SHOP_API, HttpResponse, Sender, ShopDoor
 from .shop import ShopInstructionsWriter
 from .runtime import Runtime
+from .reward_loop import RewardLoopResult, RewardSignal, RewardStep, run_reward_loop
 from .launch import DEFAULT_PORTAL_API, Launchpad, Portal, inspect_publish_packet
 from .schemas import discover_schemas, resolve_schemas_root
 from .scaffold import create_inventor
@@ -209,6 +211,7 @@ __all__ = [
     "CadBuildResult",
     "CadReleaseBundle",
     "CatalogPage",
+    "CodexInventor",
     "CUSTOMIZATION_LEVELS",
     "CustomerReview",
     "DefaultDeliver",
@@ -254,6 +257,9 @@ __all__ = [
     "ProductInstructions",
     "RandomPlayer",
     "ReviewsPolicy",
+    "RewardLoopResult",
+    "RewardSignal",
+    "RewardStep",
     "Receipt",
     "ReceiptError",
     "SealedDraft",
@@ -311,6 +317,7 @@ __all__ = [
     "retrieve_shortlist",
     "run_game",
     "run_league",
+    "run_reward_loop",
     "seal_artifact",
     "select_inventor",
     "shortlist_all",

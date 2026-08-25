@@ -10,6 +10,7 @@ from typing import Optional
 
 from inventor_workshop.jobs import Need, WaitingFor
 from inventor_workshop.make import Wish, generate_wish_id
+from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -75,7 +76,7 @@ def build_workshop(
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=tools,
+        tools=configured_workshop_tools(tools),
         make=leo_make if make is None else make,
         playtest=leo_playtest if playtest is None else playtest,
         runtime_root=runtime_root,

@@ -977,6 +977,7 @@ class Workshop:
         artifact_sha256: Optional[str] = None,
         instructions_sha256: Optional[str] = None,
         page_url: Optional[str] = None,
+        invented: Optional[Invented] = None,
     ) -> WorkshopRun:
         if any(need.job != job for need in waiting.needs):
             raise ContractError("waiting capability belongs to a different Workshop job")
@@ -1019,6 +1020,7 @@ class Workshop:
             waiting.needs,
             playtest_rounds=playtest_rounds,
             page_url=page_url,
+            invented=invented,
         )
 
     def _finish_instructions(
@@ -1031,6 +1033,7 @@ class Workshop:
         playtest_rounds: int,
         lease_token: str,
         instructions_workspace: Path,
+        invented: Optional[Invented] = None,
     ) -> WorkshopRun:
         """Validate Instructions once, then continue through the existing Deliver job."""
 
@@ -1071,6 +1074,7 @@ class Workshop:
                 artifact_sha256=made.artifact_sha256,
                 instructions_sha256=product_instructions.instructions_sha256,
                 page_url=product_instructions.page_url,
+                invented=invented,
             )
         if not isinstance(delivered, Delivered):
             raise ContractError("Deliver must return Delivered")
@@ -1098,6 +1102,7 @@ class Workshop:
             delivery=delivered,
             playtest_rounds=playtest_rounds,
             page_url=product_instructions.page_url,
+            invented=invented,
         )
 
     def resume_instructions(self, wish: Wish) -> WorkshopRun:
@@ -1405,6 +1410,7 @@ class Workshop:
                     "concept_sha256": invented.concept_sha256,
                     "invent_score": invented.score,
                     "invent_target_score": invented.target_score,
+                    "invented": invented.to_dict(),
                 },
                 lease_token=lease,
             )
@@ -1437,6 +1443,7 @@ class Workshop:
                         waiting,
                         lease,
                         selected_rounds,
+                        invented=invented,
                     )
                 if not isinstance(made, Made):
                     raise ContractError("Make must return Made")
@@ -1480,6 +1487,7 @@ class Workshop:
                         lease,
                         selected_rounds,
                         artifact_sha256=made.artifact_sha256,
+                        invented=invented,
                     )
                 if not isinstance(playtested, Playtested):
                     raise ContractError("Playtest must return Playtested")
@@ -1497,6 +1505,7 @@ class Workshop:
                             lease,
                             selected_rounds,
                             artifact_sha256=made.artifact_sha256,
+                            invented=invented,
                         )
                     checkpoint_payload = _instructions_checkpoint_payload(
                         wish,
@@ -1558,6 +1567,7 @@ class Workshop:
                         round_number,
                         made.artifact_sha256,
                         playtest_rounds=selected_rounds,
+                        invented=invented,
                     )
                 self._advance(
                     runtime,
@@ -1596,6 +1606,7 @@ class Workshop:
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
+                    invented=invented,
                 )
             return self._finish_instructions(
                 runtime,
@@ -1606,6 +1617,7 @@ class Workshop:
                 selected_rounds,
                 lease,
                 instructions_workspace,
+                invented,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)
