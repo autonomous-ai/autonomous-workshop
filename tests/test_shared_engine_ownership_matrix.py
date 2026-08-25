@@ -17,6 +17,7 @@ from inventor_workshop.playtest_release import (
     ReleaseProofSource,
 )
 from inventor_workshop.workshop import WorkshopTools
+from tests.delivery_support import fixture_delivery_evidence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -726,12 +727,14 @@ class DeterministicWorkshopFakes:
                 "1Z999AA10123456784",
                 "handed-off",
                 FIXED_TIME,
-                {
-                    "print_receipt": {"fixture": "print"},
-                    "qa_receipt": {"fixture": "qa"},
-                    "packing_receipt": {"fixture": "packing"},
-                    "carrier_receipt": {"fixture": "handoff"},
-                },
+                fixture_delivery_evidence(
+                    selected.made.artifact_sha256,
+                    selected.instructions.instructions_sha256,
+                    carrier="UPS",
+                    service="Ground",
+                    tracking_id="1Z999AA10123456784",
+                    observed_at=FIXED_TIME,
+                ),
             )
         )(context)
 

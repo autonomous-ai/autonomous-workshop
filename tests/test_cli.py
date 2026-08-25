@@ -12,6 +12,7 @@ import inventor_workshop
 from inventor_workshop.cli import (
     _inventor_process_environment,
     _publish_inventor_draft,
+    _resume_factory_instructions,
     _run_inventor,
     main,
     parser,
@@ -24,12 +25,31 @@ from inventor_workshop.errors import WorkshopError
 from inventor_workshop.manager import TasteFit, create_shortlist
 from inventor_workshop.make import Wish
 from inventor_workshop.models import Receipt
+from inventor_workshop.runtime import Runtime
+from inventor_workshop.taste import load_taste
+from inventor_workshop.toys import ToyBlueprint
 
 
 class CliTest(unittest.TestCase):
-    def test_selected_inventor_receives_only_its_factory_username(self):
+    @staticmethod
+    def resume_assignment(root, inventor_id, wish):
+        return SimpleNamespace(
+            wish=wish,
+            inventor_id=inventor_id,
+            playtest_rounds=4,
+            assignment_sha256="a" * 64,
+            decision=SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(
+                    card=SimpleNamespace(inventor_id=inventor_id, root=root)
+                ),
+            ),
+        )
+
+    def test_selected_inventor_receives_no_factory_or_unrelated_secrets(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary) / "factory-resume-inventor"
+            root.mkdir()
             wish = Wish.create(
                 "wish-one",
                 "A tiny world",
@@ -70,13 +90,25 @@ class CliTest(unittest.TestCase):
                 )
 
             with mock.patch.dict(
-                "os.environ", {"FACTORY_PASSWORD": "fixture-password"}, clear=False
+                "os.environ",
+                {
+                    "FACTORY_PASSWORD": "fixture-password",
+                    "AWS_SECRET_ACCESS_KEY": "unrelated-secret",
+                    "OPENAI_API_KEY": "codex-only-token",
+                },
+                clear=True,
             ):
-                result = _run_inventor(assignment, runner=runner)
+                result = _run_inventor(
+                    assignment,
+                    runner=runner,
+                    state_validator=lambda selected, payload: payload,
+                )
 
             self.assertEqual(result["status"], "waiting")
-            self.assertEqual(observed["env"]["FACTORY_USERNAME"], "eve")
-            self.assertEqual(observed["env"]["FACTORY_PASSWORD"], "fixture-password")
+            self.assertNotIn("FACTORY_USERNAME", observed["env"])
+            self.assertNotIn("FACTORY_PASSWORD", observed["env"])
+            self.assertNotIn("AWS_SECRET_ACCESS_KEY", observed["env"])
+            self.assertEqual(observed["env"]["OPENAI_API_KEY"], "codex-only-token")
             self.assertEqual(observed["env"]["WORKSHOP_AGENT_WORKERS"], "codex")
             self.assertNotIn("fixture-password", observed["command"])
             self.assertEqual(observed["command"][-2:], ["run", "--assignment-stdin"])
@@ -89,7 +121,8 @@ class CliTest(unittest.TestCase):
 
     def test_selected_inventor_result_must_match_the_exact_assignment(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary) / "unknown-level-inventor"
+            root.mkdir()
             assignment = SimpleNamespace(
                 entrypoint=("python3", "profile.py"),
                 wish=Wish.create(
@@ -129,6 +162,116 @@ class CliTest(unittest.TestCase):
             ):
                 _run_inventor(assignment, runner=drifted_runner)
 
+    def test_profile_stdout_cannot_upgrade_a_durable_wait_to_delivered(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "malicious-inventor"
+            root.mkdir()
+            (root / "TASTE.md").write_text(
+                "---\n"
+                "name: Malicious Fixture\n"
+                "description: A fixture whose stdout cannot outrank the Workshop log.\n"
+                "---\n"
+                "# Taste\n",
+                encoding="utf-8",
+            )
+            (root / "inventor.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 5,
+                        "id": "malicious-inventor",
+                        "status": "active",
+                        "entrypoint": ["python3", "profile.py"],
+                        "capabilities": ["little-worlds", "taste-only"],
+                        "checks": [],
+                        "source": {"kind": "local"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            wish = Wish.create("wish-one", "A tiny impossible world")
+            taste = load_taste(root)
+            card = SimpleNamespace(
+                inventor_id="malicious-inventor", root=root
+            )
+            decision = SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(card=card, taste=taste),
+            )
+            assignment = SimpleNamespace(
+                entrypoint=("python3", "profile.py"),
+                wish=wish,
+                inventor_id="malicious-inventor",
+                playtest_rounds=4,
+                assignment_sha256="a" * 64,
+                decision=decision,
+            )
+            runtime_root = root / ".workshop"
+            runtime = Runtime(runtime_root / "workshop.sqlite3")
+            runtime.register_product(
+                wish.product_id,
+                "wish",
+                {
+                    "wish": wish.to_dict(),
+                    "inventor_id": "malicious-inventor",
+                    "taste_sha256": taste.sha256,
+                    "blueprint_sha256": ToyBlueprint.for_lane("little-worlds").sha256,
+                    "lane": "little-worlds",
+                    "customization_level": "taste-only",
+                    "playtest_rounds": 4,
+                },
+            )
+            lease = runtime.acquire_lease(wish.product_id, "fixture")
+            product = runtime.get_product(wish.product_id)
+            runtime._transition(
+                wish.product_id,
+                "wish",
+                "invent",
+                product["revision"],
+                None,
+                {
+                    "status": "waiting",
+                    "round": 1,
+                    "needs": [
+                        {
+                            "job": "invent",
+                            "capability": "source-backed-design-research",
+                            "reason": "Research is unavailable.",
+                            "instructions": "Connect the shared provider.",
+                        }
+                    ],
+                },
+                lease,
+            )
+            runtime.release_lease(wish.product_id, lease)
+
+            def runner(command, **kwargs):
+                handoff = ManagerAssignmentHandoff.from_dict(
+                    json.loads(kwargs["input"]),
+                    expected_inventor_id="malicious-inventor",
+                )
+                fabricated = bind_manager_assignment_result(
+                    {
+                        "product_id": wish.product_id,
+                        "status": "delivered",
+                        "job": "deliver",
+                        "round": 1,
+                        "playtest_rounds": 4,
+                        "artifact_sha256": "f" * 64,
+                        "instructions_sha256": "e" * 64,
+                        "page_url": "https://attacker.invalid/fake",
+                        "invented": None,
+                        "needs": [],
+                        "delivery": None,
+                    },
+                    handoff,
+                )
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(fabricated)
+                )
+
+            with self.assertRaisesRegex(WorkshopError, "stdout differs"):
+                _run_inventor(assignment, runner=runner)
+
     def test_worker_environment_without_factory_secret_has_no_partial_login(self):
         with mock.patch.dict(
             "os.environ", {"FACTORY_USERNAME": "wrong-account"}, clear=True
@@ -137,6 +280,210 @@ class CliTest(unittest.TestCase):
         self.assertNotIn("FACTORY_USERNAME", environment)
         self.assertNotIn("FACTORY_PASSWORD", environment)
         self.assertEqual(environment["WORKSHOP_AGENT_WORKERS"], "codex")
+
+    def test_worker_environment_preserves_only_safe_shared_engine_configuration(self):
+        allowed = {
+            "WORKSHOP_CODEX_BIN": "/opt/workshop/codex",
+            "WORKSHOP_INVENT_MODEL": "gpt-5.6-terra",
+            "WORKSHOP_REWARD_MODEL": "gpt-5.6-luna",
+            "WORKSHOP_MAKE_MODEL": "gpt-5.6-terra",
+            "WORKSHOP_MAKE_REWARD_MODEL": "gpt-5.6-luna",
+            "WORKSHOP_PLAYTEST_MODEL": "gpt-5.6-luna",
+            "WORKSHOP_INSTRUCTIONS_MODEL": "gpt-5.6-terra",
+            "WORKSHOP_INSTRUCTIONS_REWARD_MODEL": "gpt-5.6-luna",
+            "WORKSHOP_PRUSASLICER_BIN": "/opt/workshop/PrusaSlicer",
+            "WORKSHOP_PRUSASLICER_PRINTER_PROFILE": "/opt/workshop/printer.ini",
+            "WORKSHOP_PRUSASLICER_FILAMENT_PROFILE": "/opt/workshop/filament.ini",
+            "WORKSHOP_PRUSASLICER_PROCESS_PROFILE": "/opt/workshop/process.ini",
+        }
+        forbidden = {
+            "FACTORY_PASSWORD": "factory-secret",
+            "WORKSHOP_SHOP_TOKEN": "shop-secret",
+            "AWS_SECRET_ACCESS_KEY": "cloud-secret",
+            "GITHUB_TOKEN": "git-secret",
+            "NPM_TOKEN": "package-secret",
+        }
+        with mock.patch.dict("os.environ", {**allowed, **forbidden}, clear=True):
+            environment = _inventor_process_environment("alice")
+        for name, value in allowed.items():
+            self.assertEqual(environment[name], value)
+        for name in forbidden:
+            self.assertNotIn(name, environment)
+
+    def test_manager_resumes_factory_handoff_without_exposing_credential_to_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "factory-resume-inventor"
+            root.mkdir()
+            (root / "inventor.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 5,
+                        "id": root.name,
+                        "status": "active",
+                        "entrypoint": ["python3", "profile.py"],
+                        "capabilities": ["little-worlds", "taste-only"],
+                        "checks": [],
+                        "source": {"kind": "local"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            # Manifest ids must match their folder; use the temporary basename.
+            inventor_id = root.name
+            assignment = self.resume_assignment(
+                root, inventor_id, Wish.create("wish-one", "A tiny world")
+            )
+            handoff = ManagerAssignmentHandoff.from_assignment(assignment)
+            observed = {}
+
+            def writer_factory(store, selected_id, credentials):
+                observed["store"] = store
+                observed["inventor_id"] = selected_id
+                observed["credentials"] = credentials
+                return lambda context, sealed_root, sealed_manifest: None
+
+            class FakeRun:
+                def to_dict(self):
+                    return {"status": "waiting", "job": "deliver", "page_url": "https://example.test/product"}
+
+            class FakeWorkshop:
+                def __init__(self, *args, **kwargs):
+                    observed["workshop_args"] = args
+                    observed["workshop_kwargs"] = kwargs
+
+                def resume_instructions(self, wish):
+                    observed["wish"] = wish
+                    return FakeRun()
+
+            result = _resume_factory_instructions(
+                assignment,
+                {
+                    "status": "waiting",
+                    "job": "instructions",
+                    "needs": [
+                        {"job": "instructions", "capability": "site-page"}
+                    ],
+                    "manager_assignment": handoff.result_binding(),
+                },
+                environment={"FACTORY_PASSWORD": "manager-only-secret"},
+                store_factory=lambda path: path,
+                writer_factory=writer_factory,
+                workshop_factory=FakeWorkshop,
+                state_validator=lambda selected, payload, **kwargs: payload,
+            )
+            self.assertEqual(result["job"], "deliver")
+            self.assertEqual(
+                result["manager_assignment"], handoff.result_binding()
+            )
+            self.assertEqual(observed["inventor_id"], inventor_id)
+            self.assertNotIn(
+                "manager-only-secret", repr(observed["credentials"])
+            )
+            self.assertIs(observed["wish"], assignment.wish)
+
+    def test_factory_resume_reconstructs_all_three_declared_contribution_levels(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary)
+            for level in ("taste-only", "custom-make", "custom-playtest"):
+                with self.subTest(level=level):
+                    inventor_id = "inventor-" + level
+                    root = collection / inventor_id
+                    root.mkdir()
+                    (root / "inventor.json").write_text(
+                        json.dumps(
+                            {
+                                "schema_version": 5,
+                                "id": inventor_id,
+                                "status": "active",
+                                "entrypoint": ["python3", "profile.py"],
+                                "capabilities": ["moving-machines", level],
+                                "checks": [],
+                                "source": {"kind": "local"},
+                            }
+                        ),
+                        encoding="utf-8",
+                    )
+                    assignment = self.resume_assignment(
+                        root,
+                        inventor_id,
+                        Wish.create("wish-" + level, "A moving toy"),
+                    )
+                    handoff = ManagerAssignmentHandoff.from_assignment(assignment)
+                    waiting = {
+                        "status": "waiting",
+                        "job": "instructions",
+                        "needs": [
+                            {"job": "instructions", "capability": "site-page"}
+                        ],
+                        "manager_assignment": handoff.result_binding(),
+                    }
+                    observed = {}
+
+                    class FakeRun:
+                        def to_dict(self):
+                            return {"status": "waiting", "job": "deliver"}
+
+                    class FakeWorkshop:
+                        def __init__(self, *args, **kwargs):
+                            observed["kwargs"] = kwargs
+
+                        def resume_instructions(self, wish):
+                            return FakeRun()
+
+                    result = _resume_factory_instructions(
+                        assignment,
+                        waiting,
+                        environment={"FACTORY_PASSWORD": "manager-only-secret"},
+                        store_factory=lambda path: path,
+                        writer_factory=lambda *args: (
+                            lambda context, sealed_root, sealed_manifest: None
+                        ),
+                        workshop_factory=FakeWorkshop,
+                        state_validator=lambda selected, payload, **kwargs: payload,
+                    )
+                    self.assertEqual(result["job"], "deliver")
+                    self.assertEqual(
+                        "make" in observed["kwargs"], level != "taste-only"
+                    )
+                    self.assertEqual(
+                        "playtest" in observed["kwargs"],
+                        level == "custom-playtest",
+                    )
+
+    def test_factory_resume_rejects_unknown_manifest_contribution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "unknown-level-inventor"
+            root.mkdir()
+            inventor_id = root.name
+            (root / "inventor.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 5,
+                        "id": inventor_id,
+                        "status": "active",
+                        "entrypoint": ["python3", "profile.py"],
+                        "capabilities": ["little-worlds", "inventor-owned-everything"],
+                        "checks": [],
+                        "source": {"kind": "local"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            assignment = self.resume_assignment(
+                root, inventor_id, Wish.create("wish-one", "A tiny world")
+            )
+            with self.assertRaisesRegex(WorkshopError, "known contribution level"):
+                _resume_factory_instructions(
+                    assignment,
+                    {
+                        "status": "waiting",
+                        "job": "instructions",
+                        "needs": [
+                            {"job": "instructions", "capability": "site-page"}
+                        ],
+                    },
+                    environment={"FACTORY_PASSWORD": "manager-only-secret"},
+                )
 
     def test_explicit_publish_uses_the_exact_durable_draft(self):
         page_url = "https://www.autonomous.ai/factory/product/pocket-duel"

@@ -60,6 +60,7 @@ from .models import PlaytestResult
 from .playtest import Playtest
 from .playtest_release import playtest_release_needs
 from .runtime import Runtime
+from .reviews import ReviewAuthentication, ReviewAuthenticator
 from .taste import load_taste
 from .toys import ToyBlueprint, playful_make_request
 
@@ -177,20 +178,25 @@ def _reviews_from_events(
     for event in runtime.events(product_id):
         payload = event.get("payload")
         if isinstance(payload, Mapping) and "customer_review" in payload:
-            records.append(_review_from_dict(payload["customer_review"]))
+            review = _review_from_dict(payload["customer_review"])
+            authentication = ReviewAuthentication.from_dict(
+                payload.get("customer_review_authentication")
+            )
+            records.append((review, authentication))
     if not records:
         return ()
 
     delivered = _delivery_from_events(runtime, product_id)
     seen_ids = set()
-    for review in records:
+    for review, authentication in records:
         if review.review_id in seen_ids:
             raise ContractError("persisted customer review_id must be unique")
         seen_ids.add(review.review_id)
         review.assert_delivery(delivered)
         if _utc_instant(review.observed_at) < _utc_instant(delivered.observed_at):
             raise ContractError("persisted customer Review cannot predate Deliver")
-    return tuple(records)
+        authentication.assert_review(review, delivered)
+    return tuple(review for review, _ in records)
 
 
 def _playtest_policy_needs(
@@ -726,6 +732,7 @@ class Workshop:
         tools: Optional[WorkshopTools] = None,
         make: Optional[MakeJob] = None,
         playtest: Optional[PlaytestJob] = None,
+        review_authenticator: Optional[ReviewAuthenticator] = None,
         runtime_root: Optional[Path] = None,
         max_rounds: int = 4,
     ) -> None:
@@ -740,6 +747,7 @@ class Workshop:
             raise ContractError("inventor root must be a directory")
         _callable_or_none(make, "inventor Make")
         _callable_or_none(playtest, "inventor Playtest")
+        _callable_or_none(review_authenticator, "Workshop Review authenticator")
         if playtest is not None and make is None:
             raise ContractError("custom Playtest requires custom Make")
         if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
@@ -785,6 +793,7 @@ class Workshop:
             selected_tools.instructions or DefaultInstructions()
         )
         self.deliver_job: DeliverJob = selected_tools.deliver or DefaultDeliver()
+        self.review_authenticator = review_authenticator
         self.runtime_root = selected_runtime
         self.max_rounds = max_rounds
         if playtest is not None:
@@ -815,6 +824,8 @@ class Workshop:
 
         runtime = self._runtime()
         runtime.get_product(product_id)
+        if not runtime.verify_event_chain(product_id):
+            raise ContractError("Workshop event chain is not trustworthy")
         return _reviews_from_events(runtime, product_id)
 
     def review_learnings(self, product_id: str) -> Tuple[Mapping[str, Any], ...]:
@@ -855,6 +866,8 @@ class Workshop:
         runtime.get_product(product_id)
         lease = runtime.acquire_lease(product_id, "workshop-reviews")
         try:
+            if not runtime.verify_event_chain(product_id):
+                raise ContractError("Workshop event chain is not trustworthy")
             product = runtime.get_product(product_id)
             if product["stage"] != "deliver":
                 raise ContractError("customer Reviews may be recorded only after Deliver")
@@ -876,6 +889,17 @@ class Workshop:
                     )
                 return existing
 
+            if self.review_authenticator is None:
+                raise ContractError(
+                    "customer Reviews require a configured order/reviewer authenticator"
+                )
+            authentication = self.review_authenticator(delivered, review)
+            if not isinstance(authentication, ReviewAuthentication):
+                raise ContractError(
+                    "Review authenticator must return ReviewAuthentication"
+                )
+            authentication.assert_review(review, delivered)
+
             self._advance(
                 runtime,
                 product_id,
@@ -884,6 +908,7 @@ class Workshop:
                 payload={
                     "status": "delivered",
                     "customer_review": review.to_dict(),
+                    "customer_review_authentication": authentication.to_dict(),
                     "review_learning": {
                         "applies_to": "future-make",
                         "delivered_revision_immutable": True,

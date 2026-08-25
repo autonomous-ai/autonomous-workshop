@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
 from .artifacts import ArtifactManifest, build_artifact_manifest
+from .delivery_evidence import validate_delivery_evidence_chain
 from .errors import ArtifactError, ContractError
 from .make import Wish
 from .models import Receipt, require_json_mapping, require_sha256, require_utc_timestamp
@@ -712,22 +713,16 @@ class Delivered:
         if self.status not in _DELIVERY_STATUSES:
             raise ContractError("Delivered status must be handed-off or delivered")
         require_utc_timestamp(self.observed_at, "Delivered observed_at")
-        evidence = _mapping(self.evidence, "Delivered evidence", nonempty=True)
-        required = {
-            "print_receipt",
-            "qa_receipt",
-            "packing_receipt",
-            "carrier_receipt",
-        }
-        missing = required - set(evidence)
-        if missing:
-            raise ContractError(
-                "Delivered evidence is missing %s" % ", ".join(sorted(missing))
-            )
-        for name in sorted(required):
-            evidence[name] = _mapping(
-                evidence[name], "Delivered %s" % name, nonempty=True
-            )
+        evidence = validate_delivery_evidence_chain(
+            self.evidence,
+            product_artifact_sha256=self.product_artifact_sha256,
+            instructions_sha256=self.instructions_sha256,
+            carrier=self.carrier,
+            service=self.service,
+            tracking_id=self.tracking_id,
+            status=self.status,
+            observed_at=self.observed_at,
+        )
         object.__setattr__(self, "evidence", evidence)
 
     def assert_context(self, context: DeliverContext) -> None:

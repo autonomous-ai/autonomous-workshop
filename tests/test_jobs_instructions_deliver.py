@@ -6,6 +6,7 @@ from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
+from inventor_workshop.delivery_evidence import DeliveryEvidenceReceipt
 from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import ArtifactError, ContractError
 from inventor_workshop.jobs import (
@@ -144,17 +145,87 @@ class WorkshopJobFixture(unittest.TestCase):
             self.instructions_context(name)
         )
 
-    def delivery_evidence(self):
+    def delivery_evidence(
+        self,
+        instructions_sha256=None,
+        *,
+        product_artifact_sha256=None,
+        carrier="USPS",
+        service="Priority Mail",
+        tracking_id="9400100000000000000000",
+        status="handed-off",
+        observed_at="2026-08-23T12:00:00+00:00",
+    ):
+        product_sha256 = product_artifact_sha256 or self.made.artifact_sha256
+        instructions_sha256 = instructions_sha256 or self._delivery_instructions_sha256
+        common = {
+            "provider": "fixture-fulfillment-bench",
+            "provider_version": "1.0.0",
+            "provider_config_sha256": "d" * 64,
+            "product_artifact_sha256": product_sha256,
+            "instructions_sha256": instructions_sha256,
+            "observed_at": observed_at,
+        }
+        printed = DeliveryEvidenceReceipt(
+            stage="print",
+            receipt_id="print-receipt-1",
+            details={
+                "job_id": "print-1",
+                "status": "completed",
+                "quantity": 1,
+                "material": "PLA",
+                "output_lot_id": "lot-1",
+            },
+            **common,
+        )
+        qa = DeliveryEvidenceReceipt(
+            stage="qa",
+            receipt_id="qa-receipt-1",
+            details={
+                "inspection_id": "qa-1",
+                "status": "passed",
+                "print_receipt_sha256": printed.receipt_sha256,
+                "checks": ["exact-product", "fit", "finish", "safety"],
+            },
+            **common,
+        )
+        packed = DeliveryEvidenceReceipt(
+            stage="packing",
+            receipt_id="packing-receipt-1",
+            details={
+                "package_id": "box-1",
+                "status": "sealed",
+                "print_receipt_sha256": printed.receipt_sha256,
+                "qa_receipt_sha256": qa.receipt_sha256,
+                "contents_count": 2,
+            },
+            **common,
+        )
+        carrier_receipt = DeliveryEvidenceReceipt(
+            stage="carrier",
+            receipt_id="carrier-receipt-1",
+            details={
+                "carrier": carrier,
+                "service": service,
+                "tracking_id": tracking_id,
+                "status": status,
+                "package_id": "box-1",
+                "packing_receipt_sha256": packed.receipt_sha256,
+                "acceptance_scan_id": "scan-1",
+            },
+            **common,
+        )
         return {
-            "print_receipt": {"job_id": "print-1", "passed": True},
-            "qa_receipt": {"job_id": "qa-1", "passed": True},
-            "packing_receipt": {"box_id": "box-1", "passed": True},
-            "carrier_receipt": {"acceptance_scan": "scan-1", "passed": True},
+            "print_receipt": printed.to_dict(),
+            "qa_receipt": qa.to_dict(),
+            "packing_receipt": packed.to_dict(),
+            "carrier_receipt": carrier_receipt.to_dict(),
         }
 
     def delivered(
         self, instructions: ProductInstructions, **changes
     ) -> Delivered:
+        self._delivery_instructions_sha256 = instructions.instructions_sha256
         values = {
             "product_artifact_sha256": self.made.artifact_sha256,
             "instructions_sha256": instructions.instructions_sha256,
@@ -163,9 +234,18 @@ class WorkshopJobFixture(unittest.TestCase):
             "tracking_id": "9400100000000000000000",
             "status": "handed-off",
             "observed_at": "2026-08-23T12:00:00+00:00",
-            "evidence": self.delivery_evidence(),
         }
         values.update(changes)
+        if "evidence" not in values:
+            values["evidence"] = self.delivery_evidence(
+                values["instructions_sha256"],
+                product_artifact_sha256=values["product_artifact_sha256"],
+                carrier=values["carrier"],
+                service=values["service"],
+                tracking_id=values["tracking_id"],
+                status=values["status"],
+                observed_at=values["observed_at"],
+            )
         return Delivered(**values)
 
 
@@ -438,17 +518,18 @@ class DeliverJobTest(WorkshopJobFixture):
 
     def test_delivery_requires_supported_carrier_and_all_receipts(self):
         instructions = self.generated_instructions("receipt-instructions")
-        with self.assertRaisesRegex(ContractError, "USPS, UPS, or FedEx"):
+        with self.assertRaisesRegex(ContractError, "unsupported carrier"):
             self.delivered(instructions, carrier="DHL")
+        self._delivery_instructions_sha256 = instructions.instructions_sha256
         evidence = self.delivery_evidence()
         del evidence["qa_receipt"]
-        with self.assertRaisesRegex(ContractError, "qa_receipt"):
+        with self.assertRaisesRegex(ContractError, "four receipts"):
             self.delivered(instructions, evidence=evidence)
         evidence = self.delivery_evidence()
         evidence["packing_receipt"] = {}
-        with self.assertRaisesRegex(ContractError, "packing_receipt"):
+        with self.assertRaisesRegex(ContractError, "envelope"):
             self.delivered(instructions, evidence=evidence)
-        with self.assertRaisesRegex(ContractError, "handed-off or delivered"):
+        with self.assertRaisesRegex(ContractError, "handoff"):
             self.delivered(instructions, status="label-created")
 
     def test_deliver_rejects_receipt_for_other_product_or_instructions(self):
@@ -479,6 +560,35 @@ class DeliverJobTest(WorkshopJobFixture):
         self.assertEqual(
             result.instructions_sha256, instructions.instructions_sha256
         )
+
+    def test_delivery_rejects_truthy_legacy_placeholders_and_broken_chain(self):
+        instructions = self.generated_instructions("strict-receipt-instructions")
+        placeholders = {
+            "print_receipt": {"passed": True},
+            "qa_receipt": {"passed": True},
+            "packing_receipt": {"passed": True},
+            "carrier_receipt": {"passed": True},
+        }
+        with self.assertRaisesRegex(ContractError, "envelope"):
+            self.delivered(instructions, evidence=placeholders)
+        self._delivery_instructions_sha256 = instructions.instructions_sha256
+        evidence = self.delivery_evidence()
+        evidence["carrier_receipt"]["details"]["packing_receipt_sha256"] = "0" * 64
+        # Recomputeing only the self-hash still cannot break cross-receipt binding.
+        carrier = DeliveryEvidenceReceipt(
+            stage="carrier",
+            provider=evidence["carrier_receipt"]["provider"],
+            provider_version=evidence["carrier_receipt"]["provider_version"],
+            provider_config_sha256=evidence["carrier_receipt"]["provider_config_sha256"],
+            receipt_id=evidence["carrier_receipt"]["receipt_id"],
+            product_artifact_sha256=evidence["carrier_receipt"]["product_artifact_sha256"],
+            instructions_sha256=evidence["carrier_receipt"]["instructions_sha256"],
+            observed_at=evidence["carrier_receipt"]["observed_at"],
+            details=evidence["carrier_receipt"]["details"],
+        )
+        evidence["carrier_receipt"] = carrier.to_dict()
+        with self.assertRaisesRegex(ContractError, "exact sealed package"):
+            self.delivered(instructions, evidence=evidence)
 
     def test_deliver_detects_instructions_tampering_before_calling_fulfiller(self):
         instructions = self.generated_instructions(

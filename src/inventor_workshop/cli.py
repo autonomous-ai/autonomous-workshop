@@ -15,6 +15,7 @@ from .clockwork import Clockwork
 from .contribution import check_target, manifests_for_target
 from .errors import WorkshopError
 from .factory_agent import (
+    FactoryAgentInstructionsWriter,
     FactoryAgentSession,
     FactoryPublicTransition,
     factory_credentials_from_environment,
@@ -23,9 +24,20 @@ from .handoff import (
     ManagerAssignmentHandoff,
     validate_manager_assignment_result,
 )
-from .jobs import WaitingFor
+from .jobs import Delivered, Invented, Need, WaitingFor, WorkshopRun
+from .execution_env import codex_subprocess_environment
+from .agent_instructions import (
+    DEFAULT_INSTRUCTIONS_CREATOR_MODEL,
+    DEFAULT_INSTRUCTIONS_REWARD_MODEL,
+    RewardedInstructions,
+)
 from .make import Wish, generate_wish_id
-from .manifest import discover_inventors, inventor_collection, validate_entrypoints
+from .manifest import (
+    discover_inventors,
+    inventor_collection,
+    load_manifest,
+    validate_entrypoints,
+)
 from .models import Receipt
 from .pack import pack_artifact, plan_pack, seal_artifact
 from .manager import WorkshopManager, discover_inventor_catalog
@@ -38,33 +50,408 @@ from .scaffold import (
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
 from .store import InventorStore
+from .runtime import Runtime
 from .taste import load_taste, load_taste_header
-from .toys import PLAYTHING_LANES
-from .workshop import CUSTOMIZATION_LEVELS
+from .toys import PLAYTHING_LANES, ToyBlueprint
+from .workshop import CUSTOMIZATION_LEVELS, Workshop, WorkshopTools
 
 
 DEFAULT_WISH_PLAYTEST_ROUNDS = 4
+_SHARED_ENGINE_ENVIRONMENT_NAMES = frozenset(
+    (
+        "WORKSHOP_CODEX_BIN",
+        "WORKSHOP_INVENT_MODEL",
+        "WORKSHOP_REWARD_MODEL",
+        "WORKSHOP_MAKE_MODEL",
+        "WORKSHOP_MAKE_REWARD_MODEL",
+        "WORKSHOP_PLAYTEST_MODEL",
+        "WORKSHOP_INSTRUCTIONS_MODEL",
+        "WORKSHOP_INSTRUCTIONS_REWARD_MODEL",
+        "WORKSHOP_CAD_PYTHON",
+        "WORKSHOP_HANDLING_FORCE_N",
+        "WORKSHOP_HANDLING_SAFETY_FACTOR",
+        "WORKSHOP_HANDLING_TORQUE_N_MM",
+        "WORKSHOP_PRUSASLICER_BIN",
+        "WORKSHOP_PRUSASLICER_PRINTER_PROFILE",
+        "WORKSHOP_PRUSASLICER_FILAMENT_PROFILE",
+        "WORKSHOP_PRUSASLICER_PROCESS_PROFILE",
+        "WORKSHOP_PRUSASLICER_VERSION",
+        "WORKSHOP_PRUSA_PROFILES",
+    )
+)
 
 
 def _inventor_process_environment(inventor_id: str) -> Mapping[str, str]:
-    """Build one isolated worker environment without putting secrets in argv."""
+    """Build a strict worker environment with no Factory or unrelated secrets.
 
-    environment = dict(os.environ)
+    An inventor entrypoint is contribution code. It receives the Codex runtime
+    inputs needed by shared Invent/Make/Playtest workers, but Factory authority
+    stays in the Workshop Manager process for the later Instructions handoff.
+    """
+
+    if not isinstance(inventor_id, str) or not inventor_id:
+        raise WorkshopError("selected Inventor identity is malformed")
+    environment = dict(codex_subprocess_environment(os.environ))
+    environment.update(
+        {
+            name: value
+            for name in _SHARED_ENGINE_ENVIRONMENT_NAMES
+            if isinstance((value := os.environ.get(name)), str) and value
+        }
+    )
     environment["WORKSHOP_AGENT_WORKERS"] = "codex"
     environment["WORKSHOP_INVENT_WORKER"] = "codex"
-    password = environment.get("FACTORY_PASSWORD")
-    if isinstance(password, str) and password:
-        environment["FACTORY_USERNAME"] = inventor_id
-    else:
-        # The CLI owns account selection. Without the shared secret, passing a
-        # username would manufacture a partial credential instead of reaching
-        # the normal truthful Instructions wait.
-        environment.pop("FACTORY_USERNAME", None)
-        environment.pop("FACTORY_PASSWORD", None)
     return environment
 
 
-def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, Any]:
+def _factory_credential_environment(
+    inventor_id: str, source: Optional[Mapping[str, str]] = None
+) -> Optional[Mapping[str, str]]:
+    """Select one Factory account inside the trusted Manager process only."""
+
+    values = os.environ if source is None else source
+    password = values.get("FACTORY_PASSWORD")
+    if not isinstance(password, str) or not password:
+        return None
+    return {"FACTORY_USERNAME": inventor_id, "FACTORY_PASSWORD": password}
+
+
+def _manifest_workshop_shape(card: Any) -> tuple[str, str]:
+    """Read one exact lane/contribution pair from the selected manifest."""
+
+    card_current = getattr(card, "assert_manifest_current", None)
+    if callable(card_current):
+        card_current()
+    manifest = load_manifest(Path(card.root) / "inventor.json")
+    lanes = tuple(item for item in manifest.capabilities if item in PLAYTHING_LANES)
+    levels = tuple(
+        item for item in manifest.capabilities if item in CUSTOMIZATION_LEVELS
+    )
+    if (
+        len(lanes) != 1
+        or len(levels) != 1
+        or set(manifest.capabilities) != {lanes[0], levels[0]}
+    ):
+        raise WorkshopError(
+            "selected Inventor manifest must declare exactly one lane and one known contribution level"
+        )
+    return lanes[0], levels[0]
+
+
+def _invented_from_event(value: Any) -> Invented:
+    if not isinstance(value, Mapping) or set(value) != {
+        "wish_sha256",
+        "taste_sha256",
+        "lane",
+        "concept",
+        "concept_sha256",
+        "score",
+        "target_score",
+        "passed",
+    }:
+        raise WorkshopError("persisted Invent result is malformed")
+    invented = Invented(
+        wish_sha256=value["wish_sha256"],
+        taste_sha256=value["taste_sha256"],
+        lane=value["lane"],
+        concept=value["concept"],
+        score=value["score"],
+        target_score=value["target_score"],
+    )
+    if invented.to_dict() != dict(value):
+        raise WorkshopError("persisted Invent result identity is inconsistent")
+    return invented
+
+
+def _delivered_from_event(value: Any) -> Delivered:
+    if not isinstance(value, Mapping) or set(value) != {
+        "schema_version",
+        "product_artifact_sha256",
+        "instructions_sha256",
+        "carrier",
+        "service",
+        "tracking_id",
+        "status",
+        "observed_at",
+        "evidence",
+    } or value.get("schema_version") != 1:
+        raise WorkshopError("persisted Deliver result is malformed")
+    return Delivered(
+        product_artifact_sha256=value["product_artifact_sha256"],
+        instructions_sha256=value["instructions_sha256"],
+        carrier=value["carrier"],
+        service=value["service"],
+        tracking_id=value["tracking_id"],
+        status=value["status"],
+        observed_at=value["observed_at"],
+        evidence=value["evidence"],
+    )
+
+
+def _validate_child_workshop_state(
+    assignment: Any,
+    child_result: Mapping[str, Any],
+    *,
+    allow_durable_factory_page: bool = False,
+) -> Mapping[str, Any]:
+    """Derive the child result from the trusted event chain, never stdout claims."""
+
+    card = assignment.decision.selected.card
+    lane, level = _manifest_workshop_shape(card)
+    database = Path(card.root) / ".workshop" / "workshop.sqlite3"
+    if database.is_symlink() or not database.is_file():
+        raise WorkshopError(
+            "selected Inventor returned no durable Workshop event chain"
+        )
+    runtime = Runtime(database)
+    product_id = assignment.wish.product_id
+    if not runtime.verify_event_chain(product_id):
+        raise WorkshopError("selected Inventor Workshop event chain is not trustworthy")
+    product = runtime.get_product(product_id)
+    events = runtime.events(product_id)
+    if not events:
+        raise WorkshopError("selected Inventor Workshop event chain is empty")
+    latest = events[-1]
+    payload = latest.get("payload")
+    if not isinstance(payload, Mapping):
+        raise WorkshopError("latest Workshop event payload is malformed")
+    taste = assignment.decision.selected.taste
+    expected_metadata = {
+        "wish": assignment.wish.to_dict(),
+        "inventor_id": card.inventor_id,
+        "taste_sha256": taste.sha256,
+        "blueprint_sha256": ToyBlueprint.for_lane(lane).sha256,
+        "lane": lane,
+        "customization_level": level,
+        "playtest_rounds": assignment.playtest_rounds,
+    }
+    if product.get("metadata") != expected_metadata:
+        raise WorkshopError(
+            "durable Workshop state differs from the exact Manager assignment"
+        )
+    job = product.get("stage")
+    if latest.get("to_stage") != job:
+        raise WorkshopError("latest Workshop event differs from product state")
+    status = payload.get("status")
+    if status not in ("waiting", "stopped", "delivered"):
+        raise WorkshopError(
+            "selected Inventor stopped without a terminal Workshop event"
+        )
+    round_number = payload.get("round")
+    if type(round_number) is not int:
+        raise WorkshopError("terminal Workshop event has no valid round")
+    artifact_sha256 = product.get("artifact_sha256")
+    if latest.get("artifact_sha256") != artifact_sha256:
+        raise WorkshopError("terminal Workshop artifact identity is inconsistent")
+    needs = ()
+    if status == "waiting":
+        raw_needs = payload.get("needs")
+        if not isinstance(raw_needs, list) or not raw_needs:
+            raise WorkshopError("waiting Workshop event has no typed needs")
+        try:
+            needs = tuple(Need(**dict(item)) for item in raw_needs)
+        except (TypeError, WorkshopError) as exc:
+            raise WorkshopError("waiting Workshop needs are malformed") from exc
+    instructions_sha256 = next(
+        (
+            event["payload"].get("instructions_sha256")
+            for event in reversed(events)
+            if isinstance(event.get("payload"), Mapping)
+            and isinstance(event["payload"].get("instructions_sha256"), str)
+        ),
+        None,
+    )
+    invented_value = next(
+        (
+            event["payload"].get("invented")
+            for event in events
+            if isinstance(event.get("payload"), Mapping)
+            and "invented" in event["payload"]
+        ),
+        None,
+    )
+    invented = (
+        _invented_from_event(invented_value)
+        if invented_value is not None
+        else None
+    )
+    delivery = None
+    if status == "delivered":
+        delivery = _delivered_from_event(payload.get("delivery"))
+        if (
+            delivery.product_artifact_sha256 != artifact_sha256
+            or delivery.instructions_sha256 != instructions_sha256
+        ):
+            raise WorkshopError("persisted Deliver result has different exact inputs")
+    page_url = None
+    if allow_durable_factory_page:
+        intent = InventorStore(database).latest_publish_intent(product_id)
+        receipt_value = intent.get("receipt") if isinstance(intent, Mapping) else None
+        try:
+            receipt = Receipt.from_dict(receipt_value)
+            receipt.assert_artifact(artifact_sha256)
+        except (TypeError, WorkshopError) as exc:
+            raise WorkshopError(
+                "Manager-resumed Instructions lacks an exact durable Factory receipt"
+            ) from exc
+        if not (receipt.is_verified_draft or receipt.is_verified_public):
+            raise WorkshopError(
+                "Manager-resumed Instructions Factory receipt is not verified"
+            )
+        if receipt.details.get("instructions_sha256") != instructions_sha256:
+            raise WorkshopError(
+                "Manager-resumed Factory receipt identifies different Instructions"
+            )
+        page_url = receipt.details.get("page_url")
+        if not isinstance(page_url, str) or not page_url:
+            raise WorkshopError("Manager-resumed Factory receipt has no product page")
+    trusted = WorkshopRun(
+        product_id=product_id,
+        status=status,
+        job=job,
+        round=round_number,
+        artifact_sha256=artifact_sha256,
+        instructions_sha256=instructions_sha256,
+        needs=needs,
+        delivery=delivery,
+        playtest_rounds=assignment.playtest_rounds,
+        page_url=page_url,
+        invented=invented,
+    ).to_dict()
+    supplied = {
+        key: value
+        for key, value in child_result.items()
+        if key != "manager_assignment"
+    }
+    if supplied != trusted:
+        raise WorkshopError(
+            "selected Inventor stdout differs from its durable Workshop state"
+        )
+    return {**trusted, "manager_assignment": child_result["manager_assignment"]}
+
+
+class _ResumeOnlyStructuredRunner:
+    """Identity-only runner; sealed Instructions resume must never invoke AI."""
+
+    def __init__(self, model: str, reasoning_effort: str) -> None:
+        self.model = model
+        self.reasoning_effort = reasoning_effort
+        self.cli_version = "resume-only.1.0.0"
+
+    def invoke(self, **kwargs):  # pragma: no cover - a resume invariant
+        del kwargs
+        raise WorkshopError("sealed Instructions resume attempted to rerun AI")
+
+
+def _resume_factory_instructions(
+    assignment: Any,
+    result: Mapping[str, Any],
+    *,
+    environment: Optional[Mapping[str, str]] = None,
+    store_factory: Any = InventorStore,
+    writer_factory: Any = FactoryAgentInstructionsWriter,
+    workshop_factory: Any = Workshop,
+    state_validator: Any = _validate_child_workshop_state,
+) -> Mapping[str, Any]:
+    """Resume only a sealed Factory handoff outside inventor-owned code.
+
+    The selected profile runs without Factory credentials and therefore stops
+    truthfully after scoring and sealing its manual/page facts. If the Manager
+    owns a credential, this function gives it only to the shared site adapter,
+    reconstructs the exact checkpoint, and resumes Instructions without
+    executing the profile or any custom Invent/Make/Playtest hook.
+    """
+
+    if not isinstance(result, Mapping):
+        raise WorkshopError("Workshop child result must be an object")
+    needs = result.get("needs")
+    is_factory_wait = (
+        result.get("status") == "waiting"
+        and result.get("job") == "instructions"
+        and isinstance(needs, list)
+        and any(
+            isinstance(need, Mapping)
+            and need.get("job") == "instructions"
+            and need.get("capability") in ("site-page", "site-reconciliation")
+            for need in needs
+        )
+    )
+    if not is_factory_wait:
+        return dict(result)
+    inventor_id = assignment.decision.selected.card.inventor_id
+    selected_environment = _factory_credential_environment(
+        inventor_id, os.environ if environment is None else environment
+    )
+    if selected_environment is None:
+        return dict(result)
+    assert_current = getattr(assignment, "assert_current", None)
+    if callable(assert_current):
+        assert_current()
+    card = assignment.decision.selected.card
+    lane, level = _manifest_workshop_shape(card)
+    credentials = factory_credentials_from_environment(
+        inventor_id, selected_environment
+    )
+    runtime_root = Path(card.root) / ".workshop"
+    writer = writer_factory(
+        store_factory(runtime_root / "workshop.sqlite3"),
+        inventor_id,
+        credentials,
+    )
+    instructions = RewardedInstructions(
+        writer,
+        creator=_ResumeOnlyStructuredRunner(
+            DEFAULT_INSTRUCTIONS_CREATOR_MODEL, "medium"
+        ),
+        evaluator=_ResumeOnlyStructuredRunner(
+            DEFAULT_INSTRUCTIONS_REWARD_MODEL, "low"
+        ),
+    )
+
+    def unavailable(context):  # pragma: no cover - resume must not call these
+        del context
+        raise WorkshopError("Instructions resume attempted an earlier Workshop stage")
+
+    workshop_kwargs = {
+        "inventor_id": inventor_id,
+        "tools": WorkshopTools(
+            invent=unavailable,
+            make=unavailable,
+            playtest=unavailable,
+            instructions=instructions,
+        ),
+        "runtime_root": runtime_root,
+    }
+    # These inert seams reconstruct only the checkpoint-bound contribution
+    # level. They are never called by resume_instructions and never import or
+    # execute the inventor's custom implementation.
+    if level in ("custom-make", "custom-playtest"):
+        workshop_kwargs["make"] = unavailable
+    if level == "custom-playtest":
+        workshop_kwargs["playtest"] = unavailable
+    workshop = workshop_factory(card.root, lane, **workshop_kwargs)
+    resumed = workshop.resume_instructions(assignment.wish).to_dict()
+    handoff = ManagerAssignmentHandoff.from_assignment(assignment)
+    if result.get("manager_assignment") != handoff.result_binding():
+        raise WorkshopError(
+            "Manager-resumed Instructions lost its exact assignment binding"
+        )
+    rebound = {**resumed, "manager_assignment": handoff.result_binding()}
+    if not callable(state_validator):
+        raise WorkshopError("Workshop resumed-state validator must be callable")
+    return state_validator(
+        assignment,
+        rebound,
+        allow_durable_factory_page=True,
+    )
+
+
+def _run_inventor(
+    assignment,
+    *,
+    runner: Any = subprocess.run,
+    state_validator: Any = _validate_child_workshop_state,
+) -> Mapping[str, Any]:
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     command = list(assignment.entrypoint)
     if command[0] in ("python", "python3"):
@@ -99,11 +486,14 @@ def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, A
     if not isinstance(payload, dict):
         raise WorkshopError("the selected Inventor must return one Workshop result")
     try:
-        return validate_manager_assignment_result(payload, handoff)
+        bound = validate_manager_assignment_result(payload, handoff)
     except WorkshopError as exc:
         raise WorkshopError(
             "the selected Inventor returned a result for a different Manager assignment"
         ) from exc
+    if not callable(state_validator):
+        raise WorkshopError("Workshop child state validator must be callable")
+    return state_validator(assignment, bound)
 
 
 def _publish_inventor_draft(
@@ -125,8 +515,10 @@ def _publish_inventor_draft(
             "status": "waiting",
             "reason": "Instructions has not produced an authenticated Factory draft yet.",
         }
-    environment = _inventor_process_environment(inventor_id)
+    environment = _factory_credential_environment(inventor_id)
     try:
+        if environment is None:
+            raise WorkshopError("Factory credentials are not configured")
         credentials = factory_credentials_from_environment(inventor_id, environment)
         runtime_root = Path(assignment.decision.selected.card.root) / ".workshop"
         store = store_factory(runtime_root / "workshop.sqlite3")
@@ -222,6 +614,7 @@ def _wish(args: argparse.Namespace) -> int:
         receipt = _waiting_receipt(wish, waiting)
     else:
         result = _run_inventor(assignment)
+        result = _resume_factory_instructions(assignment, result)
         if args.publish:
             result = {
                 **result,

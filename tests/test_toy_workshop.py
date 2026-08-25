@@ -24,7 +24,9 @@ from inventor_workshop.make import Wish
 from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
+from inventor_workshop.reviews import ReviewAuthentication, review_sha256
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from tests.delivery_support import fixture_delivery_evidence
 
 
 CONFIG_SHA256 = "c" * 64
@@ -689,12 +691,27 @@ class ToyWorkshopTest(unittest.TestCase):
             "9400100000000000000000",
             "handed-off",
             "2026-08-23T12:00:00+00:00",
-            {
-                "print_receipt": {"fixture": "print"},
-                "qa_receipt": {"fixture": "qa"},
-                "packing_receipt": {"fixture": "packing"},
-                "carrier_receipt": {"fixture": "handoff"},
-            },
+            fixture_delivery_evidence(
+                context.made.artifact_sha256,
+                context.instructions.instructions_sha256,
+            ),
+        )
+
+    @staticmethod
+    def review_authenticator(delivered, review):
+        return ReviewAuthentication(
+            authentication_id="review-auth-" + review.review_id,
+            provider="fixture-order-service",
+            provider_version="1.0.0",
+            provider_config_sha256="e" * 64,
+            order_id="order-" + delivered.tracking_id,
+            reviewer_id="customer-1",
+            review_id=review.review_id,
+            review_sha256=review_sha256(review),
+            product_artifact_sha256=review.product_artifact_sha256,
+            instructions_sha256=review.instructions_sha256,
+            delivery_tracking_id=review.delivery_tracking_id,
+            authenticated_at=review.observed_at,
         )
 
     def complete_tools(self, playtest=None):
@@ -973,6 +990,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=self.complete_tools(self.passing_playtest),
+            review_authenticator=self.review_authenticator,
             runtime_root=self.runtime,
         )
         result = workshop.run(
@@ -1009,6 +1027,30 @@ class ToyWorkshopTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ContractError, "already bound"):
             workshop.record_review("reviewed-top", changed)
+
+    def test_customer_review_fails_closed_without_order_authenticator(self):
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=self.complete_tools(self.passing_playtest),
+            runtime_root=self.runtime,
+        )
+        result = workshop.run(
+            Wish.create("unauthenticated-review", "A top someone might review"),
+            playtest_rounds=1,
+        )
+        review = CustomerReview(
+            "review-no-order-proof",
+            result.artifact_sha256,
+            result.instructions_sha256,
+            result.delivery.tracking_id,
+            5,
+            "Lovely, but this must still be order-authenticated.",
+            "2026-08-24T12:00:00+00:00",
+        )
+        with self.assertRaisesRegex(ContractError, "order/reviewer authenticator"):
+            workshop.record_review("unauthenticated-review", review)
+        self.assertEqual(workshop.reviews("unauthenticated-review"), ())
 
     def test_three_levels_are_explicit_and_playtest_requires_make(self):
         taste_only = Workshop(

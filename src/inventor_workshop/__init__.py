@@ -64,6 +64,7 @@ from .playtest_release import (
     ReleaseProofSource,
     playtest_release_needs,
 )
+from .reviews import ReviewAuthentication, ReviewAuthenticator, review_sha256
 from .sealed_draft import (
     CanonicalSlugDoor,
     SealedDraft,
@@ -71,6 +72,10 @@ from .sealed_draft import (
     publish_sealed_draft,
 )
 from .deliver import DefaultDeliver
+from .delivery_evidence import (
+    DeliveryEvidenceReceipt,
+    validate_delivery_evidence_chain,
+)
 from .instructions import (
     DefaultInstructions,
     InstructionsSiteWriter,
