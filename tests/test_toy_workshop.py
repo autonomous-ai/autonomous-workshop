@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
@@ -79,6 +81,25 @@ class ToyWorkshopTest(unittest.TestCase):
         (artifact / "instructions.md").write_text(
             "Spin it and discover the hidden rhythm.\n", encoding="utf-8"
         )
+        (artifact / "part_toy.stl").write_text(
+            "solid toy\nendsolid toy\n", encoding="utf-8"
+        )
+        (artifact / "edition-rules.json").write_text(
+            '{"rules":["take one legal turn"]}\n', encoding="utf-8"
+        )
+        (artifact / "source-model.json").write_text(
+            '{"relationship":"fixture model"}\n', encoding="utf-8"
+        )
+        (artifact / "personalization-map.json").write_text(
+            '{"feature":"fixture subject"}\n', encoding="utf-8"
+        )
+        (artifact / "game-rules.json").write_text(
+            '{"end":"finite","legal_actions":["play"]}\n', encoding="utf-8"
+        )
+        (artifact / "simulator.py").write_text(
+            "def play(seed):\n    return {'completed': True, 'seed': seed}\n",
+            encoding="utf-8",
+        )
         return Made.from_root(
             artifact,
             {
@@ -93,36 +114,334 @@ class ToyWorkshopTest(unittest.TestCase):
 
     @staticmethod
     def _playtest(
-        context, *, passed, valid_invented=False, ai_simulation=True
+        context,
+        *,
+        passed,
+        valid_invented=False,
+        ai_simulation=True,
+        valid_proofs=True,
     ):
         context.workspace.mkdir(parents=True)
-        results = []
-        for capability in context.blueprint.required_capabilities("playtest"):
-            evidence_path = context.workspace / (capability + ".json")
-            evidence_path.write_text(
-                '{"capability":"%s","passed":%s}\n'
-                % (capability, str(passed).lower()),
+        product_inventory = {
+            entry.path: entry.sha256
+            for entry in context.made.artifact_manifest.entries
+        }
+
+        def write_json(name, value):
+            path = context.workspace / name
+            path.write_text(
+                json.dumps(value, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
+            return path.name, hashlib.sha256(path.read_bytes()).hexdigest()
+
+        def source(role, scope, path, digest):
+            return {"role": role, "scope": scope, "path": path, "sha256": digest}
+
+        def release_proof(capability):
+            artifact_sha256 = context.made.artifact_sha256
+            if capability == "mechanical-test":
+                receipt, receipt_sha256 = write_json(
+                    "mechanical-receipt.json", {"computed": True}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "computed-mechanical-proof",
+                    "sources": [
+                        source(
+                            "step-model",
+                            "product",
+                            "toy.step",
+                            product_inventory["toy.step"],
+                        ),
+                        source(
+                            "mechanical-receipt",
+                            "playtest",
+                            receipt,
+                            receipt_sha256,
+                        ),
+                    ],
+                    "measurements": {
+                        "brep_valid": True,
+                        "interference_cases": 2,
+                        "fit_cases": 2,
+                        "assembly_paths_tested": 1,
+                        "motion_cases": 1,
+                        "load_cases": 1,
+                        "failure_modes_tested": 2,
+                        "forbidden_intersections": 0,
+                        "fit_failures": 0,
+                        "assembly_failures": 0,
+                        "motion_failures": 0,
+                        "load_failures": 0,
+                        "unresolved_critical_failures": 0,
+                    },
+                }
+            if capability == "print-test":
+                receipt, receipt_sha256 = write_json(
+                    "slicer-receipt.json", {"sliced": ["part_toy.stl"]}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "exact-slicer-proof",
+                    "sources": [
+                        source(
+                            "print-part",
+                            "product",
+                            "part_toy.stl",
+                            product_inventory["part_toy.stl"],
+                        ),
+                        source(
+                            "slicer-receipt",
+                            "playtest",
+                            receipt,
+                            receipt_sha256,
+                        ),
+                    ],
+                    "measurements": {
+                        "slicer": "PrusaSlicer",
+                        "slicer_version": "2.9.6",
+                        "profiles": {
+                            "strong": "1" * 64,
+                            "balanced": "2" * 64,
+                            "fast": "3" * 64,
+                        },
+                        "parts": [
+                            {
+                                "input_ref": "part_toy.stl",
+                                "input_sha256": product_inventory["part_toy.stl"],
+                                "gcode_sha256": "4" * 64,
+                                "gcode_bytes": 100,
+                                "returncode": 0,
+                            }
+                        ],
+                        "slicer_errors": 0,
+                    },
+                }
+            if capability == "motion-test":
+                receipt, receipt_sha256 = write_json(
+                    "motion-receipt.json", {"simulated": True}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "kinematic-motion-proof",
+                    "sources": [
+                        source(
+                            "step-model",
+                            "product",
+                            "toy.step",
+                            product_inventory["toy.step"],
+                        ),
+                        source(
+                            "motion-receipt",
+                            "playtest",
+                            receipt,
+                            receipt_sha256,
+                        ),
+                    ],
+                    "measurements": {
+                        "states_tested": 10,
+                        "continuous_sweep": True,
+                        "tolerance_cases_tested": 3,
+                        "load_cases_tested": 2,
+                        "orientations_tested": 3,
+                        "wear_cycles": 100,
+                        "misuse_cases_tested": 2,
+                        "collisions": 0,
+                        "stalls": 0,
+                        "failures": 0,
+                    },
+                }
+            if capability == "classic-rules-test":
+                reference, reference_sha256 = write_json(
+                    "reference-rules.json", {"known_rules": True}
+                )
+                traces, traces_sha256 = write_json(
+                    "classic-traces.json", {"games": [{"seed": 1}]}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "classic-rule-conformance-proof",
+                    "sources": [
+                        source(
+                            "edition-rules",
+                            "product",
+                            "edition-rules.json",
+                            product_inventory["edition-rules.json"],
+                        ),
+                        source("reference-rules", "playtest", reference, reference_sha256),
+                        source("game-traces", "playtest", traces, traces_sha256),
+                    ],
+                    "measurements": {
+                        "seeded_games": 1,
+                        "rule_conformance_cases": 3,
+                        "rule_mismatches": 0,
+                        "role_legibility_cases": 2,
+                        "role_legibility_failures": 0,
+                    },
+                }
+            if capability == "science-test":
+                sources, sources_sha256 = write_json(
+                    "science-sources.json", {"sources": ["fixture-source"]}
+                )
+                traces, traces_sha256 = write_json(
+                    "comprehension-traces.json", {"traces": [{"seed": 1}]}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "source-bound-science-proof",
+                    "sources": [
+                        source(
+                            "source-model",
+                            "product",
+                            "source-model.json",
+                            product_inventory["source-model.json"],
+                        ),
+                        source("science-sources", "playtest", sources, sources_sha256),
+                        source(
+                            "comprehension-traces", "playtest", traces, traces_sha256
+                        ),
+                    ],
+                    "measurements": {
+                        "accuracy_cases": 3,
+                        "accuracy_failures": 0,
+                        "simplifications_checked": 2,
+                        "dishonest_simplifications": 0,
+                        "comprehension_traces": 1,
+                        "comprehension_failures": 0,
+                    },
+                }
+            if capability == "world-test":
+                consent, consent_sha256 = write_json(
+                    "consent-record.json", {"consented": True}
+                )
+                reference, reference_sha256 = write_json(
+                    "reference-material.json", {"subject": "fixture"}
+                )
+                traces, traces_sha256 = write_json(
+                    "likeness-traces.json", {"traces": [{"recognized": True}]}
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "reference-bound-world-proof",
+                    "sources": [
+                        source(
+                            "personalization-map",
+                            "product",
+                            "personalization-map.json",
+                            product_inventory["personalization-map.json"],
+                        ),
+                        source("consent-record", "playtest", consent, consent_sha256),
+                        source(
+                            "reference-material", "playtest", reference, reference_sha256
+                        ),
+                        source("likeness-traces", "playtest", traces, traces_sha256),
+                    ],
+                    "measurements": {
+                        "consent_verified": True,
+                        "personalization_features": 1,
+                        "likeness_cases": 1,
+                        "recognition_failures": 0,
+                        "consent_violations": 0,
+                    },
+                }
+            if capability == "game-simulation":
+                measurements = {
+                    "requested_games": 1_000,
+                    "completed_games": 1_000,
+                    "balance_cases": 10,
+                    "exploit_cases": 10,
+                    "choice_cases": 10,
+                    "flow_cases": 10,
+                    "balance_failures": 0,
+                    "exploits_found": 0,
+                    "degenerate_choices": 0,
+                    "flow_failures": 0,
+                }
+                games = [
+                    {
+                        "seed": seed,
+                        "completed": True,
+                        "turns": 4,
+                        "player_styles": [
+                            "optimizing",
+                            "social",
+                            "exploratory",
+                            "adversarial",
+                        ],
+                        "issues": [],
+                    }
+                    for seed in range(1_000)
+                ]
+                traces, traces_sha256 = write_json(
+                    "game-traces.json",
+                    {"artifact_sha256": artifact_sha256, "games": games},
+                )
+                analysis, analysis_sha256 = write_json(
+                    "game-analysis.json",
+                    {
+                        "artifact_sha256": artifact_sha256,
+                        "measurements": measurements,
+                    },
+                )
+                return {
+                    "schema_version": 1,
+                    "capability": capability,
+                    "artifact_sha256": artifact_sha256,
+                    "proof_class": "seeded-game-analysis-proof",
+                    "sources": [
+                        source(
+                            "simulator-source",
+                            "product",
+                            "simulator.py",
+                            product_inventory["simulator.py"],
+                        ),
+                        source(
+                            "game-rules",
+                            "product",
+                            "game-rules.json",
+                            product_inventory["game-rules.json"],
+                        ),
+                        source("game-traces", "playtest", traces, traces_sha256),
+                        source("game-analysis", "playtest", analysis, analysis_sha256),
+                    ],
+                    "measurements": measurements,
+                }
+            return None
+
+        results = []
+        for capability in context.blueprint.required_capabilities("playtest"):
             evidence = {
                 "evidence_class": (
                     "ai-simulation" if ai_simulation else "deterministic-fixture"
                 ),
+                "artifact_sha256": context.made.artifact_sha256,
                 "agent_roles": ["optimizing-player", "adversarial-breaker"],
                 "claims": ["Synthetic contract evidence for %s." % capability],
             }
-            if valid_invented and capability == "game-simulation":
-                evidence = {
-                    "evidence_class": "ai-simulation",
-                    "completed_games": 1_000,
-                    "executable": True,
-                    "player_styles": [
-                        "optimizing",
-                        "social",
-                        "exploratory",
-                        "adversarial",
-                    ],
-                }
+            if (
+                passed
+                and valid_proofs
+                and (capability != "game-simulation" or valid_invented)
+            ):
+                proof = release_proof(capability)
+                if proof is not None:
+                    evidence["release_proof"] = proof
+            evidence_ref, evidence_sha256 = write_json(
+                capability + ".json", evidence
+            )
             results.append(
                 PlaytestResult.create(
                     capability,
@@ -132,8 +451,8 @@ class ToyWorkshopTest(unittest.TestCase):
                     "workshop-contract-fixture",
                     "1.0.0",
                     CONFIG_SHA256,
-                    evidence_path.name,
-                    hashlib.sha256(evidence_path.read_bytes()).hexdigest(),
+                    evidence_ref,
+                    evidence_sha256,
                 )
             )
         evidence_manifest = build_artifact_manifest(
@@ -253,6 +572,61 @@ class ToyWorkshopTest(unittest.TestCase):
                 "deliver",
             ],
         )
+
+    def test_workshop_passes_exact_inventor_identity_without_rewriting_wish(self):
+        seen = []
+
+        def make(context):
+            seen.append(context.inventor_id)
+            return self.make_job(context)
+
+        wish = Wish.create("identity-top", "A top for one exact inventor")
+        original = wish.to_dict()
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            inventor_id="machine-smith",
+            tools=WorkshopTools(
+                invent=self.invent_job,
+                make=make,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(site_writer=self.site_writer),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.root / "identity-runtime",
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((result.status, seen), ("delivered", ["machine-smith"]))
+        self.assertEqual(wish.to_dict(), original)
+        self.assertNotEqual("machine-smith", "Test Inventor".casefold())
+
+    def test_instructions_resume_cannot_switch_inventor_identity(self):
+        wish = Wish.create("identity-resume", "A top owned by one inventor")
+        waiting = Workshop(
+            self.inventor,
+            "moving-machines",
+            inventor_id="machine-smith",
+            tools=WorkshopTools(
+                invent=self.invent_job,
+                make=self.make_job,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(),
+            ),
+            runtime_root=self.root / "identity-resume-runtime",
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        with self.assertRaisesRegex(ContractError, "different inventor identity"):
+            Workshop(
+                self.inventor,
+                "moving-machines",
+                inventor_id="other-smith",
+                tools=WorkshopTools(
+                    invent=self.invent_job,
+                    make=self.make_job,
+                    playtest=self.passing_playtest,
+                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                ),
+                runtime_root=self.root / "identity-resume-runtime",
+            ).resume_instructions(wish)
 
     def test_resume_instructions_uses_checkpoint_without_repeating_make_or_playtest(self):
         calls = {"make": 0, "playtest": 0, "site": 0}
@@ -521,12 +895,15 @@ class ToyWorkshopTest(unittest.TestCase):
             )
 
     def test_missing_shared_make_waits_without_fabricating_a_product(self):
-        workshop = Workshop(
-            self.inventor,
-            "little-worlds",
-            tools=WorkshopTools(invent=self.invent_job),
-            runtime_root=self.runtime,
-        )
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
+            workshop = Workshop(
+                self.inventor,
+                "little-worlds",
+                tools=WorkshopTools(invent=self.invent_job),
+                runtime_root=self.runtime,
+            )
         result = workshop.run(
             Wish.create("tiny-friend", "A tiny desk companion"),
             playtest_rounds=2,
@@ -644,6 +1021,243 @@ class ToyWorkshopTest(unittest.TestCase):
             set(workshop.blueprint.required_capabilities("playtest"))
             - {workshop.blueprint.required_capabilities("playtest")[0]},
         )
+
+    def test_custom_playtest_labels_cannot_release_a_moving_machine(self):
+        calls = {"instructions": 0, "deliver": 0}
+
+        def synthetic_playtest(context):
+            return self._playtest(
+                context,
+                passed=True,
+                valid_proofs=False,
+            )
+
+        def forbidden_instructions(context):
+            del context
+            calls["instructions"] += 1
+            raise AssertionError("Instructions must not see synthetic Playtest labels")
+
+        def forbidden_deliver(context):
+            del context
+            calls["deliver"] += 1
+            raise AssertionError("Deliver must not see synthetic Playtest labels")
+
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                invent=self.invent_job,
+                instructions=forbidden_instructions,
+                deliver=forbidden_deliver,
+            ),
+            make=self.make_job,
+            playtest=synthetic_playtest,
+            runtime_root=self.root / "synthetic-moving-policy-runtime",
+        )
+        result = workshop.run(
+            Wish.create("synthetic-machine", "A moving toy with pretend pass labels"),
+            playtest_rounds=1,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in result.needs},
+            {"mechanical-test", "print-test", "motion-test"},
+        )
+        self.assertEqual(calls, {"instructions": 0, "deliver": 0})
+
+    def test_custom_playtest_pass_labels_cannot_bypass_any_lane_release_proof(self):
+        expected_by_lane = {
+            "classics-made-yours": {
+                "classic-rules-test",
+                "mechanical-test",
+                "print-test",
+            },
+            "invented-games": {
+                "game-simulation",
+                "mechanical-test",
+                "print-test",
+            },
+            "moving-machines": {
+                "motion-test",
+                "mechanical-test",
+                "print-test",
+            },
+            "holdable-science": {
+                "science-test",
+                "mechanical-test",
+                "print-test",
+            },
+            "little-worlds": {
+                "world-test",
+                "mechanical-test",
+                "print-test",
+            },
+        }
+
+        def synthetic_playtest(context):
+            return self._playtest(context, passed=True, valid_proofs=False)
+
+        for lane, expected in expected_by_lane.items():
+            with self.subTest(lane=lane):
+                workshop = Workshop(
+                    self.inventor,
+                    lane,
+                    tools=WorkshopTools(invent=self.invent_job),
+                    make=self.make_job,
+                    playtest=synthetic_playtest,
+                    runtime_root=self.root / (lane + "-synthetic-runtime"),
+                )
+                result = workshop.run(
+                    Wish.create(lane + "-synthetic", "Pretend every check passed"),
+                    playtest_rounds=1,
+                )
+                self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+                self.assertEqual(
+                    {need.capability for need in result.needs}, expected
+                )
+
+    def test_valid_engine_neutral_custom_proofs_can_advance_every_lane(self):
+        def valid_playtest(context):
+            return self._playtest(
+                context,
+                passed=True,
+                valid_invented=True,
+            )
+
+        for lane in (
+            "classics-made-yours",
+            "invented-games",
+            "moving-machines",
+            "holdable-science",
+            "little-worlds",
+        ):
+            with self.subTest(lane=lane):
+                result = Workshop(
+                    self.inventor,
+                    lane,
+                    tools=WorkshopTools(
+                        invent=self.invent_job,
+                        instructions=DefaultInstructions(site_writer=self.site_writer),
+                        deliver=DefaultDeliver(self.fulfiller),
+                    ),
+                    make=self.make_job,
+                    playtest=valid_playtest,
+                    runtime_root=self.root / (lane + "-valid-custom-runtime"),
+                ).run(
+                    Wish.create(lane + "-valid-custom", "Use exact custom evidence"),
+                    playtest_rounds=1,
+                )
+                self.assertEqual((result.status, result.job), ("delivered", "deliver"))
+
+    def test_result_mapping_must_equal_its_exact_sealed_evidence_document(self):
+        def mismatched_playtest(context):
+            complete = self._playtest(context, passed=True)
+            replaced = []
+            for result in complete.evidence.results:
+                if result.playtest_id != "mechanical-test":
+                    replaced.append(result)
+                    continue
+                value = result.to_dict()
+                value["evidence"] = {
+                    **dict(result.evidence),
+                    "claims": ["This mapping was never written to the sealed file."],
+                }
+                replaced.append(PlaytestResult(**value))
+            return Playtested(
+                Playtest(
+                    context.made.artifact_manifest,
+                    tuple(replaced),
+                    evidence_manifest=complete.evidence.evidence_manifest,
+                )
+            )
+
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(invent=self.invent_job),
+            make=self.make_job,
+            playtest=mismatched_playtest,
+            runtime_root=self.root / "mismatched-result-runtime",
+        ).run(
+            Wish.create("mismatched-result", "A toy with two evidence stories"),
+            playtest_rounds=1,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in result.needs}, {"mechanical-test"}
+        )
+
+    def test_changed_custom_playtest_evidence_fails_before_instructions(self):
+        instructions_calls = 0
+
+        def tampering_playtest(context):
+            result = self._playtest(context, passed=True)
+            (context.workspace / "mechanical-receipt.json").write_text(
+                '{"computed":false}\n', encoding="utf-8"
+            )
+            return result
+
+        def forbidden_instructions(context):
+            del context
+            nonlocal instructions_calls
+            instructions_calls += 1
+            raise AssertionError("tampered evidence must not reach Instructions")
+
+        workshop = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                invent=self.invent_job,
+                instructions=forbidden_instructions,
+            ),
+            make=self.make_job,
+            playtest=tampering_playtest,
+            runtime_root=self.root / "tampered-playtest-runtime",
+        )
+        with self.assertRaisesRegex(ContractError, "evidence bytes changed"):
+            workshop.run(
+                Wish.create("tampered-playtest", "A toy with changed proof bytes"),
+                playtest_rounds=1,
+            )
+        self.assertEqual(instructions_calls, 0)
+
+    def test_instructions_resume_revalidates_sealed_playtest_evidence(self):
+        wish = Wish.create("resume-proof", "A top whose proof must stay exact")
+        waiting = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                invent=self.invent_job,
+                make=self.make_job,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(),
+            ),
+            runtime_root=self.root / "resume-proof-runtime",
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        receipt = (
+            self.root
+            / "resume-proof-runtime"
+            / "runs"
+            / wish.product_id
+            / "round-001"
+            / "playtest"
+            / "mechanical-receipt.json"
+        )
+        receipt.write_text('{"computed":false}\n', encoding="utf-8")
+        with self.assertRaisesRegex(ContractError, "evidence bytes changed"):
+            Workshop(
+                self.inventor,
+                "moving-machines",
+                tools=WorkshopTools(
+                    invent=self.invent_job,
+                    make=self.make_job,
+                    playtest=self.passing_playtest,
+                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                    deliver=DefaultDeliver(self.fulfiller),
+                ),
+                runtime_root=self.root / "resume-proof-runtime",
+            ).resume_instructions(wish)
 
     def test_playtest_requires_ai_agent_simulation_evidence(self):
         def non_ai_playtest(context):

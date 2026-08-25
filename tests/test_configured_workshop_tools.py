@@ -6,10 +6,105 @@ from unittest import mock
 
 from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.errors import ContractError
-from inventor_workshop.workshop import WorkshopTools
+from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
 class ConfiguredWorkshopToolsTest(unittest.TestCase):
+    @staticmethod
+    def inventor_root(root):
+        inventor = root / "alice"
+        inventor.mkdir()
+        (inventor / "TASTE.md").write_text(
+            "---\n"
+            "name: Alice Display Name\n"
+            "description: Familiar games remade as personal objects.\n"
+            "---\n"
+            "# Taste\n\nFamiliar games remade as personal objects.\n",
+            encoding="utf-8",
+        )
+        return inventor
+
+    def test_workshop_itself_merges_bare_partial_and_custom_tools(self):
+        explicit_invent = mock.Mock(name="explicit-invent")
+        custom_make = mock.Mock(name="custom-make")
+        custom_playtest = mock.Mock(name="custom-playtest")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            inventor = self.inventor_root(root)
+            with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
+                "inventor_workshop.agent_invent.CodexInventor",
+                side_effect=lambda: mock.Mock(name="shared-invent"),
+            ), mock.patch(
+                "inventor_workshop.agent_make.CodexMaker",
+                side_effect=lambda: mock.Mock(name="shared-make"),
+            ), mock.patch(
+                "inventor_workshop.agent_playtest.LaneAwarePlaytester",
+                side_effect=lambda: mock.Mock(name="shared-playtest"),
+            ), mock.patch(
+                "inventor_workshop.agent_instructions.RewardedInstructions",
+                side_effect=lambda writer: mock.Mock(
+                    name="shared-instructions", site_writer=writer
+                ),
+            ):
+                bare = Workshop(
+                    inventor,
+                    "classics-made-yours",
+                    runtime_root=root / "bare-runtime",
+                )
+                partial = Workshop(
+                    inventor,
+                    "classics-made-yours",
+                    tools=WorkshopTools(invent=explicit_invent),
+                    runtime_root=root / "partial-runtime",
+                )
+                custom_make_workshop = Workshop(
+                    inventor,
+                    "classics-made-yours",
+                    make=custom_make,
+                    runtime_root=root / "custom-make-runtime",
+                )
+                custom_playtest_workshop = Workshop(
+                    inventor,
+                    "classics-made-yours",
+                    make=custom_make,
+                    playtest=custom_playtest,
+                    runtime_root=root / "custom-playtest-runtime",
+                )
+
+        self.assertEqual(bare.inventor_id, "alice")
+        self.assertIsNotNone(bare.tools.invent)
+        self.assertIsNotNone(bare.tools.make)
+        self.assertIsNotNone(bare.tools.playtest)
+        self.assertIsNotNone(bare.tools.instructions)
+        self.assertIs(partial.tools.invent, explicit_invent)
+        self.assertIsNotNone(partial.tools.make)
+        self.assertIsNotNone(partial.tools.playtest)
+        self.assertIs(custom_make_workshop.make_job, custom_make)
+        self.assertIsNotNone(custom_make_workshop.playtest_job)
+        self.assertEqual(custom_make_workshop.customization_level, "custom-make")
+        self.assertIs(custom_playtest_workshop.make_job, custom_make)
+        self.assertIs(custom_playtest_workshop.playtest_job, custom_playtest)
+        self.assertEqual(
+            custom_playtest_workshop.customization_level, "custom-playtest"
+        )
+
+    def test_workshop_honors_explicit_shared_worker_disable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            inventor = self.inventor_root(root)
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+            ):
+                workshop = Workshop(
+                    inventor,
+                    "classics-made-yours",
+                    runtime_root=root / "disabled-runtime",
+                )
+        self.assertIsNone(workshop.tools.invent)
+        self.assertIsNone(workshop.tools.make)
+        self.assertIsNone(workshop.tools.playtest)
+        self.assertIsNone(workshop.tools.instructions)
+
     def test_disabled_configuration_preserves_an_explicit_tool_set(self):
         explicit = WorkshopTools(make=mock.Mock(), deliver=mock.Mock())
         with mock.patch.dict(

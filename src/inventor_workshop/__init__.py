@@ -59,6 +59,11 @@ from .doors import (
 from .integrations import Adapter
 from .inspection import Inspection
 from .playtest import Playtest
+from .playtest_release import (
+    CapabilityReleaseProof,
+    ReleaseProofSource,
+    playtest_release_needs,
+)
 from .sealed_draft import (
     CanonicalSlugDoor,
     SealedDraft,
@@ -216,6 +221,7 @@ __all__ = [
     "attribute_product_description",
     "CadBuildResult",
     "CadReleaseBundle",
+    "CapabilityReleaseProof",
     "CatalogPage",
     "CodexInventor",
     "CUSTOMIZATION_LEVELS",
@@ -266,6 +272,7 @@ __all__ = [
     "Playtested",
     "ProductInstructions",
     "RandomPlayer",
+    "ReleaseProofSource",
     "ReviewsPolicy",
     "RewardLoopResult",
     "RewardSignal",
@@ -322,6 +329,7 @@ __all__ = [
     "load_taste_header",
     "plan_artifact",
     "playful_make_request",
+    "playtest_release_needs",
     "publish_sealed_draft",
     "resolve_schemas_root",
     "retrieve_shortlist",

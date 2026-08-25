@@ -356,28 +356,67 @@ workshop = Workshop(
 
 ## 7. Customize Playtest only for real niche expertise
 
-Custom Playtest receives the exact `Made` revision:
+Custom Playtest receives the exact `Made` revision. It owns the testing method;
+the Workshop still owns the release bar. Capability-specific results carry the
+public typed proof record in `evidence["release_proof"]`:
 
 ```python
-from inventor_workshop import PlaytestContext, Playtested
+from inventor_workshop import (
+    CapabilityReleaseProof,
+    PlaytestContext,
+    Playtested,
+    ReleaseProofSource,
+)
 
 
 def playtest(context: PlaytestContext) -> Playtested:
-    # Test context.made and seal evidence in context.workspace.
-    # Return artifact-bound results and actionable Feedback.
-    ...
+    motion = run_motion_check(context.made, context.workspace)
+    proof = CapabilityReleaseProof(
+        capability="motion-test",
+        artifact_sha256=context.made.artifact_sha256,
+        proof_class="kinematic-motion-proof",
+        sources=(
+            ReleaseProofSource(
+                "step-model", "product", motion.step_ref, motion.step_sha256
+            ),
+            ReleaseProofSource(
+                "motion-receipt",
+                "playtest",
+                motion.receipt_ref,
+                motion.receipt_sha256,
+            ),
+        ),
+        measurements=motion.measurements,
+    )
+    # Embed proof.to_dict(), then write the full result evidence mapping unchanged.
+    return seal_results(context, release_proof=proof.to_dict())
 ```
 
-It must preserve all shared guarantees while adding niche-specific checks:
+`ReleaseProofSource` identifies exact product or Playtest bytes by role, path,
+and hash. `CapabilityReleaseProof` rejects a proof class for the wrong
+capability and carries the capability's measured release semantics. The motion
+adapter above, for example, must report the required sweep, tolerance, load,
+orientation, wear, misuse, collision, stall, and failure measurements; naming
+those fields without their sealed sources is not enough.
+
+The adapter must preserve all shared guarantees while adding niche-specific
+checks:
 
 - every result names the exact product artifact hash;
 - every evidence reference exists with the declared hash in a sealed evidence
   manifest;
+- the result's evidence mapping exactly matches its sealed evidence document;
+- every capability promised by the `ToyBlueprint` returns its matching result
+  and, where required, a valid `CapabilityReleaseProof`;
 - evaluators, exact versions, configuration, and observation times are named;
 - failed results include `Feedback` with an observed finding and a concrete
   requested change;
 - missing capability returns `WaitingFor`, not pass;
 - an inventor's model does not grade its own output as independent evidence.
+
+The Workshop revalidates this common contract before Instructions and again
+when Instructions resumes. A custom adapter can supply better evidence; it
+cannot replace the gate with a passed label, model score, or weaker schema.
 
 Install both custom hooks for the maximum level:
 

@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import tempfile
 from typing import Any, Callable, Mapping, Optional, Tuple
 
@@ -54,8 +55,10 @@ from .jobs import (
     WorkshopRun,
 )
 from .make import Wish
+from .manifest import load_manifest
 from .models import PlaytestResult
 from .playtest import Playtest
+from .playtest_release import playtest_release_needs
 from .runtime import Runtime
 from .taste import load_taste
 from .toys import ToyBlueprint, playful_make_request
@@ -69,11 +72,36 @@ DeliverJob = Callable[[DeliverContext], Delivered]
 
 CUSTOMIZATION_LEVELS = ("taste-only", "custom-make", "custom-playtest")
 _INSTRUCTIONS_CHECKPOINT = "instructions-checkpoint.json"
+_INVENTOR_ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
 
 
 def _callable_or_none(value: Any, label: str) -> None:
     if value is not None and not callable(value):
         raise ContractError("%s must be callable or absent" % label)
+
+
+def _resolve_inventor_id(root: Path, requested: Optional[str]) -> str:
+    """Resolve operational identity from Workshop structure, never Taste/Wish."""
+
+    if requested is not None and (
+        not isinstance(requested, str) or not _INVENTOR_ID.fullmatch(requested)
+    ):
+        raise ContractError("Workshop inventor_id must be a canonical slug")
+    manifest_path = root / "inventor.json"
+    if manifest_path.exists() or manifest_path.is_symlink():
+        inventor_id = load_manifest(manifest_path).inventor_id
+        if requested is not None and requested != inventor_id:
+            raise ContractError(
+                "Workshop inventor_id does not match the inventor manifest"
+            )
+        return inventor_id
+    if requested is not None:
+        return requested
+    if _INVENTOR_ID.fullmatch(root.name):
+        return root.name
+    raise ContractError(
+        "Workshop requires inventor_id when its root has no inventor.json identity"
+    )
 
 
 def _inside(path: Path, root: Path, label: str) -> None:
@@ -166,102 +194,14 @@ def _reviews_from_events(
 
 
 def _playtest_policy_needs(
-    blueprint: ToyBlueprint, playtested: Playtested
+    blueprint: ToyBlueprint,
+    made: Made,
+    playtested: Playtested,
+    evidence_root: Path,
 ) -> tuple[Need, ...]:
-    """Return evidence the lane still needs before Instructions may begin.
+    """Apply the common release bar to shared and custom Playtest outputs."""
 
-    A custom Playtest can decide how to run its AI players, but it cannot silently
-    narrow the Workshop policy. Result IDs are the blueprint capability names.
-    Invented games additionally validate the meaning of their simulation result
-    instead of accepting a conveniently named pass.
-    """
-
-    by_id = {result.playtest_id: result for result in playtested.evidence.results}
-    required_capabilities = blueprint.required_capabilities("playtest")
-    needs = [
-        Need(
-            "playtest",
-            capability,
-            "The custom Playtest did not return this required lane result.",
-            "Return an artifact-bound PlaytestResult whose ID is %r, or wait for the real capability."
-            % capability,
-        )
-        for capability in required_capabilities
-        if capability not in by_id
-    ]
-
-    for capability in required_capabilities:
-        result = by_id.get(capability)
-        if (
-            result is not None
-            and result.passed
-            and result.evidence.get("evidence_class") != "ai-simulation"
-        ):
-            needs.append(
-                Need(
-                    "playtest",
-                    capability,
-                    "Playtest evidence must come from AI-agent simulation, not customer or physical testing.",
-                    "Return artifact-bound %s evidence with evidence_class=ai-simulation."
-                    % capability,
-                )
-            )
-
-    agent_playtest = by_id.get("agent-playtest")
-    if agent_playtest is not None and agent_playtest.passed:
-        roles = agent_playtest.evidence.get("agent_roles", ())
-        valid_roles = (
-            isinstance(roles, (list, tuple))
-            and len(roles) >= 2
-            and all(isinstance(role, str) and role.strip() for role in roles)
-            and len(set(roles)) == len(roles)
-        )
-        if not valid_roles:
-            needs.append(
-                Need(
-                    "playtest",
-                    "agent-playtest",
-                    "Playtest needs feedback from more than one distinct AI-player role.",
-                    "Return agent-playtest evidence with at least two distinct non-empty agent_roles.",
-                )
-            )
-
-    if blueprint.lane != "invented-games":
-        unique = {}
-        for need in needs:
-            unique.setdefault(need.capability, need)
-        return tuple(unique.values())
-
-    simulation = by_id.get("game-simulation")
-    if simulation is not None and simulation.passed:
-        evidence = simulation.evidence
-        styles = evidence.get("player_styles", ())
-        required_styles = {"optimizing", "social", "exploratory", "adversarial"}
-        simulation_is_real = (
-            evidence.get("evidence_class") == "ai-simulation"
-            and type(evidence.get("completed_games")) is int
-            and evidence["completed_games"] >= 1_000
-            and evidence.get("executable") is True
-            and isinstance(styles, (list, tuple))
-            and all(isinstance(style, str) for style in styles)
-            and required_styles <= set(styles)
-        )
-        if not simulation_is_real:
-            needs.append(
-                Need(
-                    "playtest",
-                    "game-simulation",
-                    "An invented game needs executable evidence from at least 1,000 seeded games across all four player styles.",
-                    "Return game-simulation evidence_class=ai-simulation, executable=true, completed_games>=1000, and optimizing/social/exploratory/adversarial player_styles.",
-                )
-            )
-
-    # Keep one actionable request per capability even when a malformed result
-    # and a missing-result check converge on the same policy requirement.
-    unique = {}
-    for need in needs:
-        unique.setdefault(need.capability, need)
-    return tuple(unique.values())
+    return playtest_release_needs(blueprint, made, playtested, evidence_root)
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -561,6 +501,7 @@ def _checkpoint_tree(root: Path, value: Any, label: str) -> Path:
 
 def _instructions_checkpoint_payload(
     wish: Wish,
+    inventor_id: str,
     taste_sha256: str,
     blueprint: ToyBlueprint,
     customization_level: str,
@@ -588,6 +529,7 @@ def _instructions_checkpoint_payload(
             )
     return {
         "product_id": wish.product_id,
+        "inventor_id": inventor_id,
         "wish": wish.to_dict(),
         "taste_sha256": taste_sha256,
         "blueprint_sha256": blueprint.sha256,
@@ -653,7 +595,7 @@ def _read_instructions_checkpoint(
 
 def _rebuild_checkpoint_results(
     run_root: Path, payload: Mapping[str, Any]
-) -> tuple[Made, Playtested]:
+) -> tuple[Made, Playtested, Path]:
     made_value = payload.get("made")
     playtested_value = payload.get("playtested")
     if not isinstance(made_value, Mapping) or set(made_value) != {
@@ -703,7 +645,7 @@ def _rebuild_checkpoint_results(
     playtested = Playtested(
         evidence, tuple(_feedback_from_dict(item) for item in raw_feedback)
     )
-    return made, playtested
+    return made, playtested, evidence_root
 
 
 @dataclass(frozen=True)
@@ -780,6 +722,7 @@ class Workshop:
         inventor_root: Path,
         lane: str,
         *,
+        inventor_id: Optional[str] = None,
         tools: Optional[WorkshopTools] = None,
         make: Optional[MakeJob] = None,
         playtest: Optional[PlaytestJob] = None,
@@ -802,7 +745,6 @@ class Workshop:
         if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
             raise ContractError("max_rounds must be an integer from 1 to 100")
 
-        selected_tools = tools or WorkshopTools()
         selected_runtime = Path(runtime_root) if runtime_root else root / ".workshop"
         if not selected_runtime.is_absolute():
             raise ContractError("Workshop runtime_root must be absolute")
@@ -810,8 +752,29 @@ class Workshop:
             raise ContractError("Workshop runtime_root must not be a symlink")
 
         self.inventor_root = root
+        self.inventor_id = _resolve_inventor_id(root, inventor_id)
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
+        requested_tools = tools or WorkshopTools()
+        if not isinstance(requested_tools, WorkshopTools):
+            raise ContractError("Workshop tools must be a WorkshopTools value")
+        # Constructor-level Make/Playtest hooks are inventor overrides. Include
+        # them in the field-by-field merge so the shared engine fills only the
+        # other stages and never instantiates an unrelated replacement.
+        requested_tools = WorkshopTools(
+            invent=requested_tools.invent,
+            make=make or requested_tools.make,
+            playtest=playtest or requested_tools.playtest,
+            instructions=requested_tools.instructions,
+            deliver=requested_tools.deliver,
+        )
+        from .agent_invent import configured_workshop_tools
+
+        selected_tools = configured_workshop_tools(
+            requested_tools,
+            inventor_id=self.inventor_id,
+            runtime_root=selected_runtime,
+        )
         self.tools = selected_tools
         self.invent_job: InventJob = selected_tools.invent or _missing_invent
         self.make_job: MakeJob = make or selected_tools.make or _missing_make
@@ -1139,6 +1102,7 @@ class Workshop:
                 raise ContractError("persisted Workshop metadata is malformed")
             required_metadata = {
                 "wish",
+                "inventor_id",
                 "taste_sha256",
                 "blueprint_sha256",
                 "lane",
@@ -1150,6 +1114,7 @@ class Workshop:
             if metadata["wish"] != wish.to_dict():
                 raise ContractError("resume Wish differs from the original Wish")
             expected_bindings = {
+                "inventor_id": self.inventor_id,
                 "taste_sha256": self.taste.sha256,
                 "blueprint_sha256": self.blueprint.sha256,
                 "lane": self.lane,
@@ -1157,7 +1122,7 @@ class Workshop:
             }
             if any(metadata.get(key) != value for key, value in expected_bindings.items()):
                 raise ContractError(
-                    "resume Workshop has different Taste, blueprint, lane, or customization"
+                    "resume Workshop has different inventor identity, Taste, blueprint, lane, or customization"
                 )
             selected_rounds = metadata["playtest_rounds"]
             if type(selected_rounds) is not int or not 1 <= selected_rounds <= 100:
@@ -1170,6 +1135,7 @@ class Workshop:
             checkpoint, checkpoint_sha256 = _read_instructions_checkpoint(run_root)
             if set(checkpoint) != {
                 "product_id",
+                "inventor_id",
                 "wish",
                 "taste_sha256",
                 "blueprint_sha256",
@@ -1183,6 +1149,7 @@ class Workshop:
                 raise ContractError("Instructions resume checkpoint bindings are malformed")
             checkpoint_bindings = {
                 "product_id": wish.product_id,
+                "inventor_id": self.inventor_id,
                 "wish": wish.to_dict(),
                 "taste_sha256": self.taste.sha256,
                 "blueprint_sha256": self.blueprint.sha256,
@@ -1235,9 +1202,11 @@ class Workshop:
                 raise ContractError(
                     "Instructions checkpoint is not bound to an approved Playtest event"
                 )
-            made, playtested = _rebuild_checkpoint_results(run_root, checkpoint)
+            made, playtested, evidence_root = _rebuild_checkpoint_results(
+                run_root, checkpoint
+            )
             if not playtested.passed or _playtest_policy_needs(
-                self.blueprint, playtested
+                self.blueprint, made, playtested, evidence_root
             ):
                 raise ContractError("checkpoint no longer satisfies Playtest policy")
             if (
@@ -1335,6 +1304,7 @@ class Workshop:
             "wish",
             {
                 "wish": wish.to_dict(),
+                "inventor_id": self.inventor_id,
                 "taste_sha256": self.taste.sha256,
                 "blueprint_sha256": self.blueprint.sha256,
                 "lane": self.lane,
@@ -1431,6 +1401,7 @@ class Workshop:
                     make_workspace,
                     feedback,
                     selected_rounds,
+                    self.inventor_id,
                 )
                 try:
                     made = self.make_job(make_context)
@@ -1494,7 +1465,15 @@ class Workshop:
                 playtested.assert_artifact(made.artifact_sha256)
                 made.assert_current()
                 if playtested.passed:
-                    policy_needs = _playtest_policy_needs(self.blueprint, playtested)
+                    evidence_root = (
+                        made.artifact_root
+                        if playtested.evidence.evidence_manifest.to_dict()
+                        == made.artifact_manifest.to_dict()
+                        else playtest_workspace
+                    )
+                    policy_needs = _playtest_policy_needs(
+                        self.blueprint, made, playtested, evidence_root
+                    )
                     if policy_needs:
                         return self._wait(
                             runtime,
@@ -1509,6 +1488,7 @@ class Workshop:
                         )
                     checkpoint_payload = _instructions_checkpoint_payload(
                         wish,
+                        self.inventor_id,
                         self.taste.sha256,
                         self.blueprint,
                         self.customization_level,

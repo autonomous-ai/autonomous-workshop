@@ -149,13 +149,38 @@ Choose `custom-playtest` only when the Inventor also needs genuinely different
 tests. Implement `playtest(context)` to return evidence and feedback; failed
 tests go back to Make. Custom Playtest always includes Custom Make.
 
-A Playtest runs its checks, seals their evidence, and binds every result to the
-exact Make:
+A custom worker may change how a check runs, but never the Workshop release
+bar. Each required capability still needs exact, sealed evidence. Use the
+public proof types to bind its method, measurements, and source bytes to the
+exact Make; put `proof.to_dict()` in that result's `evidence["release_proof"]`:
 
 ```python
+from inventor_workshop import CapabilityReleaseProof, ReleaseProofSource
+
+
 def showcase_playtest(context):
     evidence_root = context.workspace.absolute()
-    results = run_checks(context.made, evidence_root)
+    motion = run_motion_check(context.made, evidence_root)
+    proof = CapabilityReleaseProof(
+        capability="motion-test",
+        artifact_sha256=context.made.artifact_sha256,
+        proof_class="kinematic-motion-proof",
+        sources=(
+            ReleaseProofSource(
+                "step-model", "product", motion.step_ref, motion.step_sha256
+            ),
+            ReleaseProofSource(
+                "motion-receipt",
+                "playtest",
+                motion.receipt_ref,
+                motion.receipt_sha256,
+            ),
+        ),
+        measurements=motion.measurements,
+    )
+    results = run_checks(
+        context.made, evidence_root, release_proof=proof.to_dict()
+    )
     evidence = build_artifact_manifest(evidence_root, created_at="content-addressed")
     return Playtested(Playtest(
         context.made.artifact_manifest,
@@ -163,6 +188,10 @@ def showcase_playtest(context):
         evidence_manifest=evidence,
     ))
 ```
+
+Before Instructions—and again on resume—the Workshop validates every required
+proof against the sealed product and Playtest manifests. A passed label, model
+score, or renamed check cannot lower that bar.
 
 See the [complete Playtest adapter](tools/build_showcase_products.py#L1697-L1903).
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -249,6 +250,7 @@ class MakeContext:
     workspace: Path
     feedback: Sequence[Feedback] = field(default_factory=tuple)
     playtest_rounds: int = 1
+    inventor_id: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -272,6 +274,11 @@ class MakeContext:
             raise ContractError(
                 "MakeContext playtest_rounds must cover this round and be from 1 to 100"
             )
+        if self.inventor_id is not None and (
+            not isinstance(self.inventor_id, str)
+            or not re.fullmatch(r"[a-z][a-z0-9-]{1,62}", self.inventor_id)
+        ):
+            raise ContractError("MakeContext inventor_id must be a canonical slug")
         root = Path(self.workspace)
         if not root.is_absolute():
             raise ContractError("MakeContext workspace must be absolute")
