@@ -35,7 +35,8 @@ Lives in `inventors/alice/`.
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
-*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)*
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
+— a two-player hidden-information strategy game of mushrooms, probes, and crowns*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
