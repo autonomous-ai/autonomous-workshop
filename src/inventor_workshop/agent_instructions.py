@@ -149,15 +149,15 @@ class RewardedInstructions:
 
     def __init__(
         self,
-        site_writer: InstructionsSiteWriter,
+        site_writer: Optional[InstructionsSiteWriter] = None,
         *,
         creator: Optional[Any] = None,
         evaluator: Optional[Any] = None,
         goal: int = DEFAULT_INSTRUCTIONS_GOAL,
         max_steps: int = DEFAULT_INSTRUCTIONS_STEPS,
     ) -> None:
-        if not callable(site_writer):
-            raise ContractError("RewardedInstructions requires a Factory site writer")
+        if site_writer is not None and not callable(site_writer):
+            raise ContractError("Instructions site writer must be callable")
         self.site_writer = site_writer
         self.creator = creator or CodexStructuredRunner(
             model=os.environ.get(
@@ -481,6 +481,14 @@ class RewardedInstructions:
         manifest: ArtifactManifest,
     ) -> Receipt:
         context.assert_current()
+        if self.site_writer is None:
+            raise _waiting(
+                "site-page",
+                "The manual and product facts are scored and sealed, but their "
+                "Factory handoff is not configured.",
+                "Configure the selected Inventor's Factory credentials, then resume "
+                "this exact handoff without regenerating Instructions.",
+            )
         try:
             receipt = self.site_writer(context, root, manifest)
         except WaitingFor:

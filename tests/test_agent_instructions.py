@@ -16,6 +16,7 @@ from inventor_workshop.toys import ToyBlueprint
 
 
 CONFIG_SHA256 = "c" * 64
+_DEFAULT_SITE_WRITER = object()
 
 
 def action(opening):
@@ -160,13 +161,24 @@ class RewardedInstructionsTest(unittest.TestCase):
             },
         )
 
-    def worker(self, creator_outputs, reward_outputs, site_writer=None, **changes):
+    def worker(
+        self,
+        creator_outputs,
+        reward_outputs,
+        site_writer=_DEFAULT_SITE_WRITER,
+        **changes,
+    ):
         creator = FakeCodex("gpt-5.6-terra", creator_outputs)
         evaluator = FakeCodex("gpt-5.6-luna", reward_outputs)
         evaluator.reasoning_effort = "low"
+        selected_site_writer = (
+            self.site_writer
+            if site_writer is _DEFAULT_SITE_WRITER
+            else site_writer
+        )
         return (
             RewardedInstructions(
-                site_writer or self.site_writer,
+                selected_site_writer,
                 creator=creator,
                 evaluator=evaluator,
                 **changes,
@@ -236,6 +248,38 @@ class RewardedInstructionsTest(unittest.TestCase):
         self.assertEqual(len(creator.prompts), 1)
         self.assertEqual(len(evaluator.prompts), 1)
         self.assertEqual(resumed.instructions_sha256, manifest_before)
+
+    def test_missing_factory_credentials_waits_after_seal_then_resumes_exact_bytes(self):
+        worker, creator, evaluator = self.worker(
+            [action("A clear little duel.")],
+            [verdict(95, "Ready.")],
+            site_writer=None,
+        )
+        context = self.context("factory-wait")
+
+        with self.assertRaises(WaitingFor) as raised:
+            worker(context)
+
+        self.assertEqual(raised.exception.needs[0].capability, "site-page")
+        self.assertTrue((context.workspace / "INSTRUCTIONS.md").is_file())
+        self.assertTrue((context.workspace / "product.json").is_file())
+        self.assertTrue((context.workspace / "instructions-reward.json").is_file())
+        sealed_before = build_artifact_manifest(
+            context.workspace, created_at="content-addressed"
+        ).artifact_sha256
+
+        credentialed_worker, resume_creator, resume_evaluator = self.worker(
+            [],
+            [],
+            site_writer=self.site_writer,
+        )
+        resumed = credentialed_worker.resume(context)
+
+        self.assertEqual(len(creator.prompts), 1)
+        self.assertEqual(len(evaluator.prompts), 1)
+        self.assertEqual(len(resume_creator.prompts), 0)
+        self.assertEqual(len(resume_evaluator.prompts), 0)
+        self.assertEqual(resumed.instructions_sha256, sealed_before)
 
 
 if __name__ == "__main__":

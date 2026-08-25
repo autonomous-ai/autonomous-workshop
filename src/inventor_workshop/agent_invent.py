@@ -353,10 +353,10 @@ def configured_workshop_tools(
     The Workshop-owned Invent, Make, and Playtest workers are the default.
     ``WORKSHOP_AGENT_WORKERS=disabled`` is an explicit diagnostic escape hatch;
     normal Inventors never need an environment switch to receive the engine.
-    Instructions is installed only when the selected inventor's exact Factory
-    username/password pair is present; otherwise the shared truthful
-    Instructions wait remains in charge. Explicit caller tools always win field
-    by field.
+    Rewarded Instructions is also a shared default. Without Factory credentials
+    it still creates, scores, and seals the local manual and product facts, then
+    waits truthfully at the external handoff. Explicit caller tools always win
+    field by field.
 
     ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible Invent-only
     switch.  It never enables the other workers or Factory authentication.
@@ -397,46 +397,48 @@ def configured_workshop_tools(
         if playtest is None:
             playtest = LaneAwarePlaytester()
 
-        factory_names = ("FACTORY_USERNAME", "FACTORY_PASSWORD")
-        factory_environment_present = any(
-            name in os.environ for name in factory_names
-        )
-        if instructions is None and factory_environment_present:
+        if instructions is None:
             from .agent_instructions import RewardedInstructions
-            from .factory_agent import (
-                FactoryAgentInstructionsWriter,
-                factory_credentials_from_environment,
-            )
-            from .store import InventorStore
 
-            if inventor_id is None:
-                raise ContractError(
-                    "Factory Instructions require the selected inventor_id"
-                )
-            if runtime_root is None:
-                raise ContractError(
-                    "Factory Instructions require a caller-supplied runtime_root"
-                )
-            try:
-                selected_runtime = Path(runtime_root)
-            except TypeError as exc:
-                raise ContractError("Workshop runtime_root must be path-like") from exc
-            if not selected_runtime.is_absolute():
-                raise ContractError("Workshop runtime_root must be absolute")
-            if selected_runtime.is_symlink():
-                raise ContractError("Workshop runtime_root must not be a symlink")
-            credentials = factory_credentials_from_environment(
-                inventor_id,
-                os.environ,
+            site_writer = None
+            factory_names = ("FACTORY_USERNAME", "FACTORY_PASSWORD")
+            factory_environment_present = any(
+                name in os.environ for name in factory_names
             )
-            store = InventorStore(selected_runtime / "workshop.sqlite3")
-            instructions = RewardedInstructions(
-                FactoryAgentInstructionsWriter(
+            if factory_environment_present:
+                from .factory_agent import (
+                    FactoryAgentInstructionsWriter,
+                    factory_credentials_from_environment,
+                )
+                from .store import InventorStore
+
+                if inventor_id is None:
+                    raise ContractError(
+                        "Factory Instructions require the selected inventor_id"
+                    )
+                if runtime_root is None:
+                    raise ContractError(
+                        "Factory Instructions require a caller-supplied runtime_root"
+                    )
+                try:
+                    selected_runtime = Path(runtime_root)
+                except TypeError as exc:
+                    raise ContractError("Workshop runtime_root must be path-like") from exc
+                if not selected_runtime.is_absolute():
+                    raise ContractError("Workshop runtime_root must be absolute")
+                if selected_runtime.is_symlink():
+                    raise ContractError("Workshop runtime_root must not be a symlink")
+                credentials = factory_credentials_from_environment(
+                    inventor_id,
+                    os.environ,
+                )
+                store = InventorStore(selected_runtime / "workshop.sqlite3")
+                site_writer = FactoryAgentInstructionsWriter(
                     store,
                     inventor_id,
                     credentials,
                 )
-            )
+            instructions = RewardedInstructions(site_writer)
 
     return WorkshopTools(
         invent=invent,

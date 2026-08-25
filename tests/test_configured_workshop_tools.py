@@ -22,6 +22,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         invented = mock.Mock()
         made = mock.Mock()
         playtested = mock.Mock()
+        rewarded = mock.Mock()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
             "inventor_workshop.agent_invent.CodexInventor", return_value=invented
         ), mock.patch(
@@ -29,12 +30,16 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         ), mock.patch(
             "inventor_workshop.agent_playtest.LaneAwarePlaytester",
             return_value=playtested,
-        ):
+        ), mock.patch(
+            "inventor_workshop.agent_instructions.RewardedInstructions",
+            return_value=rewarded,
+        ) as rewarded_constructor:
             selected = configured_workshop_tools()
         self.assertIs(selected.invent, invented)
         self.assertIs(selected.make, made)
         self.assertIs(selected.playtest, playtested)
-        self.assertIsNone(selected.instructions)
+        rewarded_constructor.assert_called_once_with(None)
+        self.assertIs(selected.instructions, rewarded)
 
     def test_legacy_switch_adds_only_missing_invent(self):
         explicit_make = mock.Mock()
@@ -61,6 +66,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         invented = mock.Mock()
         made = mock.Mock()
         playtested = mock.Mock()
+        rewarded = mock.Mock()
         with mock.patch.dict(
             os.environ,
             {"WORKSHOP_AGENT_WORKERS": "codex"},
@@ -72,12 +78,16 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         ), mock.patch(
             "inventor_workshop.agent_playtest.LaneAwarePlaytester",
             return_value=playtested,
-        ):
+        ), mock.patch(
+            "inventor_workshop.agent_instructions.RewardedInstructions",
+            return_value=rewarded,
+        ) as rewarded_constructor:
             selected = configured_workshop_tools()
         self.assertIs(selected.invent, invented)
         self.assertIs(selected.make, made)
         self.assertIs(selected.playtest, playtested)
-        self.assertIsNone(selected.instructions)
+        rewarded_constructor.assert_called_once_with(None)
+        self.assertIs(selected.instructions, rewarded)
         self.assertIsNone(selected.deliver)
 
     def test_full_switch_preserves_every_explicit_non_none_tool(self):
