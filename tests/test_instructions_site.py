@@ -7,8 +7,10 @@ import zipfile
 from email.parser import BytesParser
 from email.policy import default as email_policy
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.cad.mesh import inspect_stl_path
 from inventor_workshop.errors import ContractError, ReceiptError
 from inventor_workshop.jobs import Made
 from inventor_workshop.make import Wish
@@ -43,6 +45,29 @@ def _multipart_parts(headers, body):
         name = part.get_param("name", header="content-disposition")
         parts.setdefault(name, []).append(part.get_payload(decode=True))
     return parts
+
+
+def _tetra_shells(count, *, x_origin=0):
+    """Return a valid STL with ``count`` disconnected watertight shells."""
+
+    lines = ["solid workshop"]
+    faces = (
+        ((0, 0, 0), (0, 1, 0), (1, 0, 0)),
+        ((0, 0, 0), (1, 0, 0), (0, 0, 1)),
+        ((0, 0, 0), (0, 0, 1), (0, 1, 0)),
+        ((1, 0, 0), (0, 1, 0), (0, 0, 1)),
+    )
+    for shell in range(count):
+        x_offset = x_origin + shell * 3
+        for face in faces:
+            lines.extend(("  facet normal 0 0 0", "    outer loop"))
+            lines.extend(
+                "      vertex %s %s %s" % (x + x_offset, y, z)
+                for x, y, z in face
+            )
+            lines.extend(("    endloop", "  endfacet"))
+    lines.append("endsolid workshop")
+    return ("\n".join(lines) + "\n").encode("ascii")
 
 
 class InstructionsSiteContext:
@@ -431,12 +456,11 @@ class InstructionsSiteTest(unittest.TestCase):
             )
 
     def test_multipart_assembled_mesh_is_slug_named_only_in_factory_transport(self):
+        (self.made.artifact_root / "assembled.stl").write_bytes(_tetra_shells(1))
         parts = self.made.artifact_root / "verified-toy_parts"
         parts.mkdir()
         printable = parts / "body.stl"
-        printable.write_text(
-            "solid printable-body\nendsolid printable-body\n", encoding="utf-8"
-        )
+        printable.write_bytes(_tetra_shells(1, x_origin=10))
         (self.made.artifact_root / "assembled.step").write_bytes(
             b"ISO-10303-21;\nEND-ISO-10303-21;\n"
         )
@@ -531,6 +555,7 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertFalse((made.artifact_root / "verified-toy.stl").exists())
 
     def test_occurrence_sidecar_is_the_only_production_stl_inventory(self):
+        (self.made.artifact_root / "assembled.stl").write_bytes(_tetra_shells(3))
         cad = self.made.artifact_root / "cad"
         parts = cad / "parts"
         parts.mkdir(parents=True)
@@ -541,8 +566,8 @@ class InstructionsSiteTest(unittest.TestCase):
         )
         body = parts / "body.stl"
         cap = parts / "cap.stl"
-        body.write_bytes(b"solid production-body\nendsolid production-body\n")
-        cap.write_bytes(b"solid production-cap\nendsolid production-cap\n")
+        body.write_bytes(_tetra_shells(1))
+        cap.write_bytes(_tetra_shells(1))
         step = self.made.artifact_root / "assembled.step"
         step.write_bytes(b"ISO-10303-21;\nHEADER;\nENDSEC;\nEND-ISO-10303-21;\n")
         sidecar = self.made.artifact_root / "assembled.step.json"
@@ -571,13 +596,21 @@ class InstructionsSiteTest(unittest.TestCase):
             "primary_model": dict(primary),
         }
 
-        _build_model_handoff_pack(
-            made.artifact_root,
-            made.artifact_manifest,
-            packet,
-            facts,
-            primary,
-            sealed_primary_model=sealed_primary,
+        with mock.patch(
+            "inventor_workshop.shop.inspect_stl_path", wraps=inspect_stl_path
+        ) as inspect:
+            _build_model_handoff_pack(
+                made.artifact_root,
+                made.artifact_manifest,
+                packet,
+                facts,
+                primary,
+                sealed_primary_model=sealed_primary,
+            )
+        self.assertEqual(inspect.call_count, 3)
+        self.assertEqual(
+            [call.kwargs["expected_shell_count"] for call in inspect.call_args_list],
+            [3, 1, 1],
         )
 
         with zipfile.ZipFile(packet) as archive:
@@ -648,6 +681,99 @@ class InstructionsSiteTest(unittest.TestCase):
             self.assertEqual(
                 [item["order"] for item in production],
                 [0, 1, 2],
+            )
+
+    def test_occurrence_primary_requires_one_shell_per_physical_occurrence(self):
+        (self.made.artifact_root / "assembled.stl").write_bytes(_tetra_shells(1))
+        parts = self.made.artifact_root / "cad" / "parts"
+        parts.mkdir(parents=True)
+        (parts / "body.stl").write_bytes(_tetra_shells(1))
+        (self.made.artifact_root / "assembled.step").write_bytes(
+            b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        )
+        (self.made.artifact_root / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "body-01", "stlPath": "cad/parts/body.stl"},
+                        {"name": "body-02", "stlPath": "cad/parts/body.stl"},
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        primary = _factory_transport_primary(context, sealed_primary)
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+
+        with self.assertRaisesRegex(
+            ContractError,
+            r"assembly STL failed connected-shell guard: .*expected=2 observed=1",
+        ):
+            _build_model_handoff_pack(
+                made.artifact_root,
+                made.artifact_manifest,
+                self.root / "bad-assembly-shells.zip",
+                facts,
+                primary,
+                sealed_primary_model=sealed_primary,
+            )
+
+    def test_each_unique_production_stl_requires_exactly_one_shell(self):
+        (self.made.artifact_root / "assembled.stl").write_bytes(_tetra_shells(1))
+        parts = self.made.artifact_root / "cad" / "parts"
+        parts.mkdir(parents=True)
+        (parts / "body.stl").write_bytes(_tetra_shells(2))
+        (self.made.artifact_root / "assembled.step").write_bytes(
+            b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        )
+        (self.made.artifact_root / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "body", "stlPath": "cad/parts/body.stl"},
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        made = Made.from_root(self.made.artifact_root, self.made.product)
+        context = InstructionsSiteContext(made, "verified-toy")
+        sealed_primary = _sealed_factory_primary(context)
+        primary = _factory_transport_primary(context, sealed_primary)
+        facts = {
+            "schema_version": 2,
+            "kind": "workshop.product-facts",
+            "primary_model": dict(primary),
+        }
+
+        with self.assertRaisesRegex(
+            ContractError,
+            r"production STL failed connected-shell guard: .*expected=1 observed=2",
+        ):
+            _build_model_handoff_pack(
+                made.artifact_root,
+                made.artifact_manifest,
+                self.root / "bad-production-shells.zip",
+                facts,
+                primary,
+                sealed_primary_model=sealed_primary,
             )
 
     def test_occurrence_sidecar_with_missing_print_mesh_fails_closed(self):
@@ -970,14 +1096,12 @@ class InstructionsSiteTest(unittest.TestCase):
         (product_root / "product.json").write_text(
             json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
         )
-        mesh_bytes = b"solid exact-assembly\nendsolid exact-assembly\n"
+        mesh_bytes = _tetra_shells(1)
         (product_root / "assembled.stl").write_bytes(mesh_bytes)
         (product_root / "existing-slug-toy.stl").write_bytes(mesh_bytes)
         parts = product_root / "existing-slug-toy_parts"
         parts.mkdir()
-        (parts / "part.stl").write_bytes(
-            b"solid print-part\nendsolid print-part\n"
-        )
+        (parts / "part.stl").write_bytes(_tetra_shells(1, x_origin=10))
         (product_root / "assembled.step").write_bytes(
             b"ISO-10303-21;\nEND-ISO-10303-21;\n"
         )

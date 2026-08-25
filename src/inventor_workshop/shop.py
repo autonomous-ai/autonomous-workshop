@@ -25,6 +25,7 @@ from .artifacts import (
     build_pack,
 )
 from .attribution import attribute_product_description
+from .cad.mesh import inspect_stl_path
 from .pack import _load_pack, _validate_pack_bytes
 from .errors import (
     AmbiguousPublishError,
@@ -972,6 +973,79 @@ def _factory_occurrence_transport(
     }
 
 
+def _assert_factory_occurrence_shells(
+    root: Path,
+    manifest: ArtifactManifest,
+    sealed_primary_path: PurePosixPath,
+    occurrence_transport: Mapping[str, Any],
+) -> None:
+    """Fail closed unless one occurrence maps to one connected STL shell.
+
+    Factory renders the sealed primary assembly but manufactures the occurrence
+    files below ``<slug>_parts``.  A mismatch on either side can make the page
+    show one product while the slicer prices or prints another.  Bind both
+    checks to the sealed Make inventory before any transport Pack is staged.
+
+    Several physical occurrences may intentionally reuse one source STL.  The
+    source-path cache keeps that common case O(unique part designs), while the
+    assembled STL is still checked against the full physical occurrence count.
+    """
+
+    occurrences = occurrence_transport.get("occurrences")
+    if not isinstance(occurrences, tuple) or not occurrences:
+        raise ContractError("Factory occurrence shell guard requires occurrences")
+    manifest_by_path = {entry.path: entry for entry in manifest.entries}
+
+    def inspect(path: PurePosixPath, expected_shell_count: int, label: str) -> None:
+        entry = manifest_by_path.get(path.as_posix())
+        if entry is None:
+            raise ContractError(
+                "Factory occurrence %s STL is absent from sealed Made" % label
+            )
+        source = root.joinpath(*path.parts)
+        try:
+            receipt = inspect_stl_path(
+                source,
+                expected_shell_count=expected_shell_count,
+                expected_source_sha256=entry.sha256,
+                expected_source_bytes=entry.bytes,
+            )
+        except OSError as exc:
+            raise ContractError(
+                "Factory occurrence %s STL could not be inspected: %s"
+                % (label, path.as_posix())
+            ) from exc
+        if receipt.status != "passed":
+            reasons = tuple(receipt.failure_reasons) + tuple(receipt.hold_reasons)
+            raise ContractError(
+                "Factory occurrence %s STL failed connected-shell guard: "
+                "path=%s expected=%s observed=%s status=%s reasons=%s"
+                % (
+                    label,
+                    path.as_posix(),
+                    expected_shell_count,
+                    receipt.observed_shell_count,
+                    receipt.status,
+                    ",".join(reasons) or "unknown",
+                )
+            )
+
+    inspect(sealed_primary_path, len(occurrences), "assembly")
+    inspected_sources = set()
+    for occurrence in occurrences:
+        if not isinstance(occurrence, Mapping):
+            raise ContractError("Factory occurrence shell guard is malformed")
+        source_path = occurrence.get("source_path")
+        source_sha256 = occurrence.get("sha256")
+        if not isinstance(source_path, str) or not isinstance(source_sha256, str):
+            raise ContractError("Factory occurrence shell guard is malformed")
+        cache_key = (source_path, source_sha256)
+        if cache_key in inspected_sources:
+            continue
+        inspected_sources.add(cache_key)
+        inspect(PurePosixPath(source_path), 1, "production")
+
+
 def _assert_model_only_handoff(content: bytes) -> None:
     """Prove a handoff cannot supply creator-owned page media anywhere."""
 
@@ -1138,6 +1212,13 @@ def _build_model_handoff_pack(
         if primary_model["kind"] == "mesh"
         else None
     )
+    if occurrence_transport is not None:
+        _assert_factory_occurrence_shells(
+            root,
+            manifest,
+            sealed_primary_path,
+            occurrence_transport,
+        )
     if occurrence_transport is None and primary_model["kind"] == "mesh":
         undeclared_stls = [
             entry.path
