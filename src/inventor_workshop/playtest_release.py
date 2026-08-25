@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
-from .artifacts import build_artifact_manifest
+from .artifacts import MAX_FILE_BYTES, build_artifact_manifest
 from .errors import ContractError
 from .jobs import Made, Need, Playtested
 from .models import (
@@ -47,6 +47,17 @@ _RELEASE_PROOF_CLASSES = {
 }
 _PROOF_CAPABILITIES = frozenset(_RELEASE_PROOF_CLASSES)
 _GAME_STYLES = frozenset(("optimizing", "social", "exploratory", "adversarial"))
+_RELEASE_RECEIPT_KIND = "workshop.capability-release-receipt"
+_RECEIPT_ROLES = {
+    "mechanical-test": frozenset(("mechanical-receipt",)),
+    "print-test": frozenset(("slicer-receipt",)),
+    "motion-test": frozenset(("motion-receipt",)),
+    "classic-rules-test": frozenset(("reference-rules", "game-traces")),
+    "science-test": frozenset(("science-sources", "comprehension-traces")),
+    "world-test": frozenset(
+        ("consent-record", "reference-material", "likeness-traces")
+    ),
+}
 
 
 def _plain_json(value: Any, label: str) -> Any:
@@ -325,7 +336,9 @@ def _validate_slicer_measurements(
 
 
 def _validate_print(
-    proof: CapabilityReleaseProof, product_inventory: Mapping[str, str]
+    proof: CapabilityReleaseProof,
+    product_inventory: Mapping[str, str],
+    evidence_root: Path,
 ) -> None:
     part_sources = _roles(proof, "print-part", scope="product")
     _one_role(proof, "slicer-receipt", scope="playtest")
@@ -333,6 +346,64 @@ def _validate_print(
     if tuple(sorted(source.path for source in part_sources)) != expected:
         raise ContractError("print proof sources omit a sealed per-part STL")
     _validate_slicer_measurements(proof.measurements, product_inventory)
+
+    # Engine-neutral/custom print proofs must seal the actual profiles and
+    # G-code.  A digest typed into a JSON measurement is not evidence that
+    # those bytes ever existed.  The shared inline Prusa receipt remains a
+    # separate, already byte-producing trusted path below.
+    profile_sources = _roles(proof, "slicer-profile", scope="playtest")
+    gcode_sources = _roles(proof, "gcode-output", scope="playtest")
+    profiles = proof.measurements["profiles"]
+    if len(profile_sources) < 3 or len(profile_sources) != len(profiles):
+        raise ContractError("print proof must seal every named slicer profile")
+    expected_profiles = {source.path: source.sha256 for source in profile_sources}
+    observed_profiles = {}
+    for role, profile in profiles.items():
+        if not isinstance(profile, Mapping) or set(profile) != {"path", "sha256"}:
+            raise ContractError("custom print profile must name sealed profile bytes")
+        path = profile["path"]
+        digest = profile["sha256"]
+        if not isinstance(path, str) or path in observed_profiles:
+            raise ContractError("custom print profile paths must be unique")
+        require_sha256(digest, "print profile sha256")
+        if expected_profiles.get(path) != digest:
+            raise ContractError("custom print profile is not sealed Playtest evidence")
+        observed_profiles[path] = digest
+        _load_source_bytes(
+            evidence_root,
+            ReleaseProofSource("slicer-profile", "playtest", path, digest),
+            "print profile %s" % role,
+        )
+    if observed_profiles != expected_profiles:
+        raise ContractError("print proof profile measurements omit sealed bytes")
+
+    expected_gcode = {source.path: source.sha256 for source in gcode_sources}
+    observed_gcode = {}
+    for part in proof.measurements["parts"]:
+        ref = part.get("gcode_ref")
+        digest = part.get("gcode_sha256", part.get("output_sha256"))
+        if not isinstance(ref, str) or ref in observed_gcode:
+            raise ContractError("custom print part must name unique sealed G-code")
+        if expected_gcode.get(ref) != digest:
+            raise ContractError("custom print G-code is not sealed Playtest evidence")
+        payload = _load_source_bytes(
+            evidence_root,
+            ReleaseProofSource("gcode-output", "playtest", ref, digest),
+            "print G-code",
+            maximum_bytes=MAX_FILE_BYTES,
+        )
+        if len(payload) != part.get("gcode_bytes"):
+            raise ContractError("custom print G-code byte count is not exact")
+        header = payload[: 64 * 1024].lower()
+        if (
+            proof.measurements["slicer"].encode("utf-8").lower() not in header
+            or proof.measurements["slicer_version"].encode("ascii") not in header
+            or re.search(rb"(?m)^[GMT][0-9]+(?:\s|$)", payload[: 64 * 1024]) is None
+        ):
+            raise ContractError("custom print output is not identified slicer G-code")
+        observed_gcode[ref] = digest
+    if observed_gcode != expected_gcode or len(observed_gcode) != len(expected):
+        raise ContractError("print proof must seal one G-code output per part")
 
 
 def _validate_motion(proof: CapabilityReleaseProof) -> None:
@@ -393,7 +464,13 @@ def _validate_world(proof: CapabilityReleaseProof) -> None:
     _int_measurement(measurements, "consent_violations", minimum=0, maximum=0)
 
 
-def _load_json_file(root: Path, source: ReleaseProofSource, label: str) -> Any:
+def _load_source_bytes(
+    root: Path,
+    source: ReleaseProofSource,
+    label: str,
+    *,
+    maximum_bytes: int = MAX_EVIDENCE_JSON_BYTES,
+) -> bytes:
     path = root / source.path
     try:
         resolved = path.resolve(strict=True)
@@ -403,14 +480,139 @@ def _load_json_file(root: Path, source: ReleaseProofSource, label: str) -> Any:
         payload = resolved.read_bytes()
     except (OSError, ValueError) as exc:
         raise ContractError("%s source is missing or unsafe" % label) from exc
-    if not payload or len(payload) > MAX_EVIDENCE_JSON_BYTES:
+    if not payload or len(payload) > maximum_bytes:
         raise ContractError("%s source is empty or oversized" % label)
     if hashlib.sha256(payload).hexdigest() != source.sha256:
         raise ContractError("%s source bytes changed" % label)
+    return payload
+
+
+def _load_json_file(root: Path, source: ReleaseProofSource, label: str) -> Any:
+    payload = _load_source_bytes(root, source, label)
     try:
         return json.loads(payload.decode("utf-8"))
     except (UnicodeError, json.JSONDecodeError) as exc:
         raise ContractError("%s source must be valid UTF-8 JSON" % label) from exc
+
+
+def _receipt_dependency_hashes(
+    proof: CapabilityReleaseProof,
+) -> Dict[str, str]:
+    receipt_roles = _RECEIPT_ROLES.get(proof.capability, frozenset())
+    return {
+        "%s:%s" % (source.scope, source.path): source.sha256
+        for source in proof.sources
+        if source.role not in receipt_roles
+    }
+
+
+def _validate_legacy_shared_mechanical_receipt(
+    document: Any,
+    proof: CapabilityReleaseProof,
+    product_inventory: Mapping[str, str],
+) -> bool:
+    """Accept the Workshop's already-sealed mechanical receipt.
+
+    This is not a permissive legacy JSON shape.  Its kind has one fixed
+    capability and proof class, and its exact source and measurement maps are
+    checked here.  Custom adapters should emit the engine-neutral envelope.
+    """
+
+    if not isinstance(document, Mapping) or document.get("kind") != (
+        "workshop.digital-mechanical-simulation"
+    ):
+        return False
+    if (
+        proof.capability != "mechanical-test"
+        or proof.proof_class != "computed-mechanical-proof"
+        or document.get("schema_version") != 1
+        or document.get("artifact_sha256") != proof.artifact_sha256
+        or document.get("measurements") != dict(proof.measurements)
+        or not isinstance(document.get("source_sha256"), Mapping)
+        or not isinstance(document.get("plan"), Mapping)
+        or not document["plan"]
+        or not isinstance(document.get("fit_cases"), list)
+        or not isinstance(document.get("assembly_motion_manifest"), Mapping)
+        or not isinstance(document.get("assembly_motion_result"), Mapping)
+        or not isinstance(document.get("load_cases"), list)
+        or not isinstance(document.get("not_proven"), list)
+        or not _nonempty_text(document.get("claim_scope"), "mechanical claim scope")
+    ):
+        raise ContractError("shared mechanical receipt is incomplete or mismatched")
+    source_sha256 = document["source_sha256"]
+    if not source_sha256 or any(
+        not isinstance(path, str) or product_inventory.get(path) != digest
+        for path, digest in source_sha256.items()
+    ):
+        raise ContractError("shared mechanical receipt does not bind sealed sources")
+    for source in proof.sources:
+        if source.scope == "product" and source_sha256.get(source.path) != source.sha256:
+            raise ContractError("shared mechanical receipt omits a proof source")
+    return True
+
+
+def _validate_release_receipts(
+    proof: CapabilityReleaseProof,
+    *,
+    product_inventory: Mapping[str, str],
+    evidence_root: Path,
+) -> None:
+    """Parse and correlate every Playtest receipt in a custom release proof."""
+
+    expected_roles = _RECEIPT_ROLES.get(proof.capability)
+    if expected_roles is None:
+        return
+    for role in expected_roles:
+        _one_role(proof, role, scope="playtest")
+    allowed_non_receipts = (
+        frozenset(("slicer-profile", "gcode-output"))
+        if proof.capability == "print-test"
+        else frozenset()
+    )
+    for source in proof.sources:
+        if (
+            source.scope == "playtest"
+            and source.role not in expected_roles
+            and source.role not in allowed_non_receipts
+        ):
+            raise ContractError("release proof contains an unparsed Playtest source")
+
+    expected_dependencies = _receipt_dependency_hashes(proof)
+    for role in sorted(expected_roles):
+        source = _one_role(proof, role, scope="playtest")
+        document = _load_json_file(evidence_root, source, "%s receipt" % role)
+        if (
+            role == "mechanical-receipt"
+            and _validate_legacy_shared_mechanical_receipt(
+                document, proof, product_inventory
+            )
+        ):
+            continue
+        if not isinstance(document, Mapping) or set(document) != {
+            "schema_version",
+            "kind",
+            "artifact_sha256",
+            "capability",
+            "proof_class",
+            "role",
+            "source_sha256",
+            "measurements",
+            "payload",
+        }:
+            raise ContractError("%s is not a canonical release receipt" % role)
+        if (
+            document.get("schema_version") != 1
+            or document.get("kind") != _RELEASE_RECEIPT_KIND
+            or document.get("artifact_sha256") != proof.artifact_sha256
+            or document.get("capability") != proof.capability
+            or document.get("proof_class") != proof.proof_class
+            or document.get("role") != role
+            or document.get("source_sha256") != expected_dependencies
+            or document.get("measurements") != dict(proof.measurements)
+            or not isinstance(document.get("payload"), Mapping)
+            or not document["payload"]
+        ):
+            raise ContractError("%s does not match its exact release proof" % role)
 
 
 def _validate_game(
@@ -654,8 +856,17 @@ def _validate_capability_result(
         evidence_inventory=evidence_inventory,
         result_ref=result.evidence_ref,
     )
+    _validate_release_receipts(
+        proof,
+        product_inventory=product_inventory,
+        evidence_root=evidence_root,
+    )
     if capability == "print-test":
-        _validate_print(proof, product_inventory)
+        _validate_print(
+            proof,
+            product_inventory,
+            evidence_root,
+        )
     elif capability == "game-simulation":
         _validate_game(
             proof,

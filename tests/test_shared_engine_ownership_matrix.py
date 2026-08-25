@@ -202,8 +202,45 @@ class DeterministicWorkshopFakes:
         return relative, hashlib.sha256(path.read_bytes()).hexdigest()
 
     @staticmethod
+    def _write_bytes(root, relative, payload):
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+        return relative, hashlib.sha256(payload).hexdigest(), len(payload)
+
+    @staticmethod
     def _source(role, scope, path, sha256):
         return ReleaseProofSource(role, scope, path, sha256)
+
+    def _canonical_receipt(
+        self,
+        context,
+        *,
+        capability,
+        proof_class,
+        role,
+        dependencies,
+        measurements,
+        payload,
+    ):
+        return self._write_json(
+            context.workspace,
+            "proof/%s.json" % role,
+            {
+                "schema_version": 1,
+                "kind": "workshop.capability-release-receipt",
+                "artifact_sha256": context.made.artifact_sha256,
+                "capability": capability,
+                "proof_class": proof_class,
+                "role": role,
+                "source_sha256": {
+                    "%s:%s" % (item.scope, item.path): item.sha256
+                    for item in dependencies
+                },
+                "measurements": measurements,
+                "payload": payload,
+            },
+        )
 
     def _release_proof(self, capability, context, product_inventory):
         artifact_sha256 = context.made.artifact_sha256
@@ -213,156 +250,261 @@ class DeterministicWorkshopFakes:
         )
 
         if capability == "mechanical-test":
-            receipt, receipt_sha256 = write_json(
-                "proof/mechanical.json", {"computed": True}
+            proof_class = "computed-mechanical-proof"
+            measurements = {
+                "brep_valid": True,
+                "interference_cases": 2,
+                "fit_cases": 2,
+                "assembly_paths_tested": 1,
+                "motion_cases": 1,
+                "load_cases": 1,
+                "failure_modes_tested": 2,
+                "forbidden_intersections": 0,
+                "fit_failures": 0,
+                "assembly_failures": 0,
+                "motion_failures": 0,
+                "load_failures": 0,
+                "unresolved_critical_failures": 0,
+            }
+            step_source = source(
+                "step-model",
+                "product",
+                "toy.step",
+                product_inventory["toy.step"],
+            )
+            receipt, receipt_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="mechanical-receipt",
+                dependencies=(step_source,),
+                measurements=measurements,
+                payload={
+                    "method": "deterministic ownership-matrix mechanical fixture",
+                    "checks": ["brep", "fit", "assembly", "load"],
+                },
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "computed-mechanical-proof",
+                proof_class,
                 (
-                    source(
-                        "step-model",
-                        "product",
-                        "toy.step",
-                        product_inventory["toy.step"],
-                    ),
+                    step_source,
                     source("mechanical-receipt", "playtest", receipt, receipt_sha256),
                 ),
-                {
-                    "brep_valid": True,
-                    "interference_cases": 2,
-                    "fit_cases": 2,
-                    "assembly_paths_tested": 1,
-                    "motion_cases": 1,
-                    "load_cases": 1,
-                    "failure_modes_tested": 2,
-                    "forbidden_intersections": 0,
-                    "fit_failures": 0,
-                    "assembly_failures": 0,
-                    "motion_failures": 0,
-                    "load_failures": 0,
-                    "unresolved_critical_failures": 0,
-                },
+                measurements,
             )
 
         if capability == "print-test":
-            receipt, receipt_sha256 = write_json(
-                "proof/slicer.json", {"sliced": ["part_body.stl"]}
+            proof_class = "exact-slicer-proof"
+            part_source = source(
+                "print-part",
+                "product",
+                "part_body.stl",
+                product_inventory["part_body.stl"],
+            )
+            profile_sources = []
+            profiles = {}
+            for role, payload in (
+                ("printer", b"printer_technology = FFF\nnozzle_diameter = 0.4\n"),
+                ("process", b"layer_height = 0.2\nperimeters = 3\n"),
+                ("filament", b"filament_type = PLA\ntemperature = 210\n"),
+            ):
+                path, digest, unused_bytes = self._write_bytes(
+                    context.workspace,
+                    "proof/profiles/%s.ini" % role,
+                    payload,
+                )
+                del unused_bytes
+                profile_sources.append(
+                    source("slicer-profile", "playtest", path, digest)
+                )
+                profiles[role] = {"path": path, "sha256": digest}
+            gcode_payload = (
+                b"; generated by PrusaSlicer 2.9.6\n"
+                b"G90\n"
+                b"G1 X1.0 Y1.0 E0.1\n"
+            )
+            gcode_ref, gcode_sha256, gcode_bytes = self._write_bytes(
+                context.workspace,
+                "proof/gcode/part_body.gcode",
+                gcode_payload,
+            )
+            gcode_source = source(
+                "gcode-output", "playtest", gcode_ref, gcode_sha256
+            )
+            measurements = {
+                "slicer": "PrusaSlicer",
+                "slicer_version": "2.9.6",
+                "profiles": profiles,
+                "parts": [
+                    {
+                        "input_ref": "part_body.stl",
+                        "input_sha256": product_inventory["part_body.stl"],
+                        "gcode_ref": gcode_ref,
+                        "gcode_sha256": gcode_sha256,
+                        "gcode_bytes": gcode_bytes,
+                        "returncode": 0,
+                    }
+                ],
+                "slicer_errors": 0,
+            }
+            dependencies = (
+                part_source,
+                *profile_sources,
+                gcode_source,
+            )
+            receipt, receipt_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="slicer-receipt",
+                dependencies=dependencies,
+                measurements=measurements,
+                payload={
+                    "command": "PrusaSlicer --export-gcode part_body.stl",
+                    "returncode": 0,
+                },
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "exact-slicer-proof",
+                proof_class,
                 (
-                    source(
-                        "print-part",
-                        "product",
-                        "part_body.stl",
-                        product_inventory["part_body.stl"],
-                    ),
+                    *dependencies,
                     source("slicer-receipt", "playtest", receipt, receipt_sha256),
                 ),
-                {
-                    "slicer": "PrusaSlicer",
-                    "slicer_version": "2.9.6",
-                    "profiles": {
-                        "strong": "1" * 64,
-                        "balanced": "2" * 64,
-                        "fast": "3" * 64,
-                    },
-                    "parts": [
-                        {
-                            "input_ref": "part_body.stl",
-                            "input_sha256": product_inventory["part_body.stl"],
-                            "gcode_sha256": "4" * 64,
-                            "gcode_bytes": 100,
-                            "returncode": 0,
-                        }
-                    ],
-                    "slicer_errors": 0,
-                },
+                measurements,
             )
 
         if capability == "motion-test":
-            receipt, receipt_sha256 = write_json(
-                "proof/motion.json", {"simulated": True}
+            proof_class = "kinematic-motion-proof"
+            measurements = {
+                "states_tested": 10,
+                "continuous_sweep": True,
+                "tolerance_cases_tested": 3,
+                "load_cases_tested": 2,
+                "orientations_tested": 3,
+                "wear_cycles": 100,
+                "misuse_cases_tested": 2,
+                "collisions": 0,
+                "stalls": 0,
+                "failures": 0,
+            }
+            step_source = source(
+                "step-model",
+                "product",
+                "toy.step",
+                product_inventory["toy.step"],
+            )
+            receipt, receipt_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="motion-receipt",
+                dependencies=(step_source,),
+                measurements=measurements,
+                payload={
+                    "method": "deterministic ownership-matrix motion fixture",
+                    "sweeps": 10,
+                },
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "kinematic-motion-proof",
+                proof_class,
                 (
-                    source(
-                        "step-model",
-                        "product",
-                        "toy.step",
-                        product_inventory["toy.step"],
-                    ),
+                    step_source,
                     source("motion-receipt", "playtest", receipt, receipt_sha256),
                 ),
-                {
-                    "states_tested": 10,
-                    "continuous_sweep": True,
-                    "tolerance_cases_tested": 3,
-                    "load_cases_tested": 2,
-                    "orientations_tested": 3,
-                    "wear_cycles": 100,
-                    "misuse_cases_tested": 2,
-                    "collisions": 0,
-                    "stalls": 0,
-                    "failures": 0,
-                },
+                measurements,
             )
 
         if capability == "classic-rules-test":
-            reference, reference_sha256 = write_json(
-                "proof/reference-rules.json", {"known_rules": True}
+            proof_class = "classic-rule-conformance-proof"
+            measurements = {
+                "seeded_games": 1,
+                "rule_conformance_cases": 3,
+                "rule_mismatches": 0,
+                "role_legibility_cases": 2,
+                "role_legibility_failures": 0,
+            }
+            edition_source = source(
+                "edition-rules",
+                "product",
+                "edition-rules.json",
+                product_inventory["edition-rules.json"],
             )
-            traces, traces_sha256 = write_json(
-                "proof/classic-traces.json", {"games": [{"seed": 1}]}
+            reference, reference_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="reference-rules",
+                dependencies=(edition_source,),
+                measurements=measurements,
+                payload={"known_rules": ["one legal turn"]},
+            )
+            traces, traces_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="game-traces",
+                dependencies=(edition_source,),
+                measurements=measurements,
+                payload={"games": [{"seed": 1, "completed": True}]},
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "classic-rule-conformance-proof",
+                proof_class,
                 (
-                    source(
-                        "edition-rules",
-                        "product",
-                        "edition-rules.json",
-                        product_inventory["edition-rules.json"],
-                    ),
+                    edition_source,
                     source("reference-rules", "playtest", reference, reference_sha256),
                     source("game-traces", "playtest", traces, traces_sha256),
                 ),
-                {
-                    "seeded_games": 1,
-                    "rule_conformance_cases": 3,
-                    "rule_mismatches": 0,
-                    "role_legibility_cases": 2,
-                    "role_legibility_failures": 0,
-                },
+                measurements,
             )
 
         if capability == "science-test":
-            sources, sources_sha256 = write_json(
-                "proof/science-sources.json", {"sources": ["fixture-source"]}
+            proof_class = "source-bound-science-proof"
+            measurements = {
+                "accuracy_cases": 3,
+                "accuracy_failures": 0,
+                "simplifications_checked": 2,
+                "dishonest_simplifications": 0,
+                "comprehension_traces": 1,
+                "comprehension_failures": 0,
+            }
+            model_source = source(
+                "source-model",
+                "product",
+                "source-model.json",
+                product_inventory["source-model.json"],
             )
-            traces, traces_sha256 = write_json(
-                "proof/comprehension-traces.json", {"traces": [{"seed": 1}]}
+            sources, sources_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="science-sources",
+                dependencies=(model_source,),
+                measurements=measurements,
+                payload={"sources": ["fixture-source"]},
+            )
+            traces, traces_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="comprehension-traces",
+                dependencies=(model_source,),
+                measurements=measurements,
+                payload={"traces": [{"seed": 1, "understood": True}]},
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "source-bound-science-proof",
+                proof_class,
                 (
-                    source(
-                        "source-model",
-                        "product",
-                        "source-model.json",
-                        product_inventory["source-model.json"],
-                    ),
+                    model_source,
                     source("science-sources", "playtest", sources, sources_sha256),
                     source(
                         "comprehension-traces",
@@ -371,37 +513,57 @@ class DeterministicWorkshopFakes:
                         traces_sha256,
                     ),
                 ),
-                {
-                    "accuracy_cases": 3,
-                    "accuracy_failures": 0,
-                    "simplifications_checked": 2,
-                    "dishonest_simplifications": 0,
-                    "comprehension_traces": 1,
-                    "comprehension_failures": 0,
-                },
+                measurements,
             )
 
         if capability == "world-test":
-            consent, consent_sha256 = write_json(
-                "proof/consent-record.json", {"consented": True}
+            proof_class = "reference-bound-world-proof"
+            measurements = {
+                "consent_verified": True,
+                "personalization_features": 1,
+                "likeness_cases": 1,
+                "recognition_failures": 0,
+                "consent_violations": 0,
+            }
+            map_source = source(
+                "personalization-map",
+                "product",
+                "personalization-map.json",
+                product_inventory["personalization-map.json"],
             )
-            reference, reference_sha256 = write_json(
-                "proof/reference-material.json", {"subject": "fixture"}
+            consent, consent_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="consent-record",
+                dependencies=(map_source,),
+                measurements=measurements,
+                payload={"consented": True, "basis": "deterministic fixture"},
             )
-            traces, traces_sha256 = write_json(
-                "proof/likeness-traces.json", {"recognized": True}
+            reference, reference_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="reference-material",
+                dependencies=(map_source,),
+                measurements=measurements,
+                payload={"subject": "fixture", "authorized": True},
+            )
+            traces, traces_sha256 = self._canonical_receipt(
+                context,
+                capability=capability,
+                proof_class=proof_class,
+                role="likeness-traces",
+                dependencies=(map_source,),
+                measurements=measurements,
+                payload={"recognized": True, "cases": 1},
             )
             return CapabilityReleaseProof(
                 capability,
                 artifact_sha256,
-                "reference-bound-world-proof",
+                proof_class,
                 (
-                    source(
-                        "personalization-map",
-                        "product",
-                        "personalization-map.json",
-                        product_inventory["personalization-map.json"],
-                    ),
+                    map_source,
                     source("consent-record", "playtest", consent, consent_sha256),
                     source(
                         "reference-material",
@@ -411,13 +573,7 @@ class DeterministicWorkshopFakes:
                     ),
                     source("likeness-traces", "playtest", traces, traces_sha256),
                 ),
-                {
-                    "consent_verified": True,
-                    "personalization_features": 1,
-                    "likeness_cases": 1,
-                    "recognition_failures": 0,
-                    "consent_violations": 0,
-                },
+                measurements,
             )
 
         if capability == "game-simulation":

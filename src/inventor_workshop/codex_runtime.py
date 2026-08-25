@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Mapping, Optional
 
 from .errors import ContractError
+from .execution_env import codex_subprocess_environment
 
 
 ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
@@ -55,6 +56,7 @@ class CodexStructuredRunner:
                 text=True,
                 timeout=10,
                 check=False,
+                env=codex_subprocess_environment(),
             )
         except (OSError, subprocess.SubprocessError):
             return "0.0.0"
@@ -110,6 +112,7 @@ class CodexStructuredRunner:
                     text=True,
                     timeout=self.timeout_seconds,
                     check=False,
+                    env=codex_subprocess_environment(),
                 )
                 if completed.returncode != 0 or not output_path.is_file():
                     raise CodexInvocationError("Codex did not complete the structured call")

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
 from .errors import ContractError
+from .execution_env import codex_subprocess_environment
 from .jobs import Need, WaitingFor
 from .manager import (
     MAX_PAGE_SIZE,
@@ -164,6 +165,7 @@ class CodexSemanticManager:
                 text=True,
                 timeout=10,
                 check=False,
+                env=codex_subprocess_environment(),
             )
         except (OSError, subprocess.SubprocessError):
             return "0.0.0"
@@ -211,6 +213,7 @@ class CodexSemanticManager:
                     text=True,
                     timeout=self.timeout_seconds,
                     check=False,
+                    env=codex_subprocess_environment(),
                 )
                 if completed.returncode != 0 or not output_path.is_file():
                     raise _semantic_need(

@@ -399,6 +399,30 @@ adapter above, for example, must report the required sweep, tolerance, load,
 orientation, wear, misuse, collision, stall, and failure measurements; naming
 those fields without their sealed sources is not enough.
 
+Every cited Playtest receipt uses this engine-neutral envelope (shown for the
+motion receipt above):
+
+```json
+{
+  "schema_version": 1,
+  "kind": "workshop.capability-release-receipt",
+  "artifact_sha256": "<exact Made artifact hash>",
+  "capability": "motion-test",
+  "proof_class": "kinematic-motion-proof",
+  "role": "motion-receipt",
+  "source_sha256": {"product:<STEP path>": "<STEP hash>"},
+  "measurements": {"<exactly the same fields as the typed proof>": "..."},
+  "payload": {"<replayable adapter-specific observations>": "..."}
+}
+```
+
+The receipt file itself is then cited by path and hash in
+`ReleaseProofSource`. Classic, science, and world proofs use the same envelope
+for each of their Playtest receipt roles. Custom print proofs additionally cite
+at least three `slicer-profile` sources and one `gcode-output` source per sealed
+part; each profile and G-code path and hash must also appear in the print
+measurements. Arbitrary digest strings are not output evidence.
+
 The adapter must preserve all shared guarantees while adding niche-specific
 checks:
 

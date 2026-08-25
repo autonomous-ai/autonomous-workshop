@@ -1,16 +1,25 @@
 import json
+import math
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from inventor_workshop.agent_make import CodexMaker
-from inventor_workshop.cad import inspect_stl_path
+from inventor_workshop.agent_make import (
+    MAKE_GENERATOR_ID,
+    MAKE_GENERATOR_VERSION,
+    CadSkillBuild,
+    CodexMaker,
+    LockedCadSkillBuilder,
+    _MAKE_SCHEMA,
+    _validate_action,
+)
 from inventor_workshop.errors import ArtifactError
 from inventor_workshop.jobs import InventContext, Invented, MakeContext, WaitingFor
 from inventor_workshop.make import Wish
 from inventor_workshop.reward_loop import json_sha256
+from inventor_workshop.sealed_draft import _load_artifact_contract
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 
@@ -60,7 +69,7 @@ def make_action(title="Orbit Press", *, overlap=False):
                 "size_mm": {"x": 14, "y": 14, "z": 8},
                 "print_center_mm": {"x": 108, "y": 28},
                 "print_rotation_deg": 0,
-                "assembly_center_mm": {"x": 108, "y": 80, "z": 0},
+                "assembly_center_mm": {"x": 122, "y": 80, "z": 0},
                 "assembly_rotation_deg": 0,
                 "material": "PLA",
             },
@@ -161,6 +170,98 @@ class FakeCodex:
         return self.outputs.pop(0)
 
 
+class FakeCadBuilder:
+    """Deterministic fixture for CodexMaker; locked-tool orchestration is tested separately."""
+
+    def ensure_available(self):
+        return {"cad": "a" * 64, "product-to-cad": "b" * 64}
+
+    def build(self, action, *, lane, root):
+        root.mkdir(parents=True)
+        for relative, source in LockedCadSkillBuilder._project_sources(action).items():
+            (root / relative).write_text(source, encoding="utf-8")
+        stems = ["product", "print_plate"] + [
+            "part_" + part["part_id"].replace("-", "_") for part in action["parts"]
+        ]
+        for stem in stems:
+            (root / (stem + ".step")).write_bytes(
+                ("ISO-10303-21;\n%s\nEND-ISO-10303-21;\n" % stem).encode("utf-8")
+            )
+            (root / (stem + ".stl")).write_bytes(
+                ("solid %s\nendsolid %s\n" % (stem, stem)).encode("utf-8")
+            )
+        def bounds(part, pose):
+            size = part["size_mm"]
+            rotation = math.radians(float(part[pose + "_rotation_deg"]))
+            half_x = (
+                abs(math.cos(rotation)) * float(size["x"]) / 2
+                + abs(math.sin(rotation)) * float(size["y"]) / 2
+            )
+            half_y = (
+                abs(math.sin(rotation)) * float(size["x"]) / 2
+                + abs(math.cos(rotation)) * float(size["y"]) / 2
+            )
+            center = part[pose + "_center_mm"]
+            z = float(center.get("z", 0))
+            return (
+                float(center["x"]) - half_x,
+                float(center["x"]) + half_x,
+                float(center["y"]) - half_y,
+                float(center["y"]) + half_y,
+                z,
+                z + float(size["z"]),
+            )
+
+        forbidden = 0
+        for pose in ("print", "assembly"):
+            boxes = [bounds(part, pose) for part in action["parts"]]
+            for left_index, left in enumerate(boxes):
+                for right in boxes[left_index + 1 :]:
+                    if all(
+                        min(left[axis + 1], right[axis + 1])
+                        - max(left[axis], right[axis])
+                        > 0
+                        for axis in (0, 2, 4)
+                    ):
+                        forbidden += 1
+        passed = forbidden == 0
+        issues = [] if passed else [
+            "assembly or print-layout pose has a CAD-kernel interference"
+        ]
+        checks = {
+            "manifest": {"status": "passed", "measurements": {"inventory_valid": True}},
+            "source-step-identity": {"status": "passed", "measurements": {"matched_outputs": len(action["parts"]) + 2, "mismatches": 0}},
+            "brep": {"status": "passed", "measurements": {"valid_solids": len(action["parts"]), "invalid_solids": 0}},
+            "dimensions": {"status": "passed", "measurements": {"measured_parts": len(action["parts"]), "out_of_tolerance": 0}},
+            "interference": {"status": "passed" if passed else "failed", "measurements": {"poses_tested": 2, "forbidden_intersections": forbidden}},
+            "bed-packing": {"status": "passed", "measurements": {"beds_used": 1, "out_of_bounds_parts": 0}},
+            "mesh-topology": {"status": "passed", "measurements": {"watertight_parts": len(action["parts"]), "non_manifold_edges": 0}},
+            "thickness": {"status": "passed", "measurements": {"parts_measured": len(action["parts"]), "below_minimum": 0}},
+        }
+        observation = {
+            "schema_version": 2,
+            "generator": {"id": MAKE_GENERATOR_ID, "version": MAKE_GENERATOR_VERSION},
+            "skills": self.ensure_available(),
+            "lane": lane,
+            "claim_scope": "fixture STEP-first digital checks only",
+            "checks": checks,
+            "issues": issues,
+            "passed": passed,
+            "release_ready": False,
+            "release_blockers": ["exact slicer profile", "physical QA"],
+            "not_proven": [
+                "slicer success or support requirements",
+                "physical fit, loads, wear, safety, print quality, or motion",
+            ],
+            "inventory": {},
+        }
+        (root / "verification").mkdir()
+        (root / "verification" / "cad-build.json").write_text(
+            json.dumps(observation, sort_keys=True), encoding="utf-8"
+        )
+        return CadSkillBuild(root.resolve(), observation)
+
+
 class AgentMakeTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -199,7 +300,7 @@ class AgentMakeTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def context(self, workspace="make"):
+    def context(self, workspace="make", *, inventor_id="bob"):
         return MakeContext(
             self.wish,
             self.taste,
@@ -209,6 +310,7 @@ class AgentMakeTest(unittest.TestCase):
             (self.root / workspace).absolute(),
             (),
             2,
+            inventor_id,
         )
 
     def game_context(self, workspace="game-make"):
@@ -236,15 +338,17 @@ class AgentMakeTest(unittest.TestCase):
             (self.root / workspace).absolute(),
             (),
             2,
+            "leo",
         )
 
     def worker(self, actions, verdicts, **kwargs):
         creator = FakeCodex("gpt-5.6-terra", actions)
         evaluator = FakeCodex("gpt-5.6-luna", verdicts)
         evaluator.reasoning_effort = "low"
+        kwargs.setdefault("cad_builder", FakeCadBuilder())
         return CodexMaker(creator=creator, evaluator=evaluator, **kwargs), creator, evaluator
 
-    def test_make_improves_then_writes_exact_inspected_printable_stls(self):
+    def test_make_improves_then_seals_step_first_cad_and_truthful_holds(self):
         worker, creator, evaluator = self.worker(
             [make_action("First Press"), make_action("Orbit Press")],
             [verdict(72, "Tie the wheel more closely to the Wish."), verdict(92)],
@@ -260,45 +364,61 @@ class AgentMakeTest(unittest.TestCase):
             (made.artifact_root / "assembled.stl").read_bytes(),
             (made.artifact_root / "cad" / "product.stl").read_bytes(),
         )
-        self.assertNotEqual(
-            (made.artifact_root / "assembled.stl").read_bytes(),
-            (made.artifact_root / "validation" / "print-plate.stl").read_bytes(),
+        self.assertEqual(
+            (made.artifact_root / "assembled.step").read_bytes(),
+            (made.artifact_root / "cad" / "product.step").read_bytes(),
         )
-        receipt = inspect_stl_path(
-            made.artifact_root / "assembled.stl", expected_shell_count=3
-        )
-        self.assertEqual(receipt.status, "passed")
-        print_receipt = inspect_stl_path(
-            made.artifact_root / "validation" / "print-plate.stl", expected_shell_count=3
-        )
-        self.assertEqual(print_receipt.status, "passed")
         for part_id in ("base", "index-wheel", "marker"):
-            part_receipt = inspect_stl_path(
-                made.artifact_root / "validation" / "parts" / (part_id + ".stl"),
-                expected_shell_count=1,
-            )
-            self.assertEqual(part_receipt.status, "passed")
+            stem = "part_" + part_id.replace("-", "_")
+            self.assertTrue((made.artifact_root / "cad" / (stem + ".step.py")).is_file())
+            self.assertTrue((made.artifact_root / "cad" / (stem + ".step")).is_file())
+            self.assertTrue((made.artifact_root / "cad" / (stem + ".stl")).is_file())
         geometry = json.loads(
-            (made.artifact_root / "validation" / "digital-geometry.json").read_text(encoding="utf-8")
+            (made.artifact_root / "validation" / "cad-build.json").read_text(encoding="utf-8")
         )
         self.assertTrue(geometry["passed"])
-        self.assertEqual(geometry["print_plate"]["status"], "passed")
-        self.assertEqual(geometry["assembled_presentation"]["status"], "passed")
-        self.assertEqual(geometry["motion"]["status"], "passed")
+        self.assertFalse(geometry["release_ready"])
+        self.assertEqual(geometry["checks"]["brep"]["status"], "passed")
+        self.assertEqual(geometry["checks"]["interference"]["status"], "passed")
+        self.assertEqual(geometry["checks"]["mesh-topology"]["status"], "passed")
         self.assertIn("slicer success or support requirements", geometry["not_proven"])
+        print_declaration = json.loads(
+            (made.artifact_root / "playtest" / "print.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(print_declaration["slicer"]["status"], "held")
+        motion = json.loads(
+            (made.artifact_root / "playtest" / "motion.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(motion["status"], "held")
         paths = {entry.path for entry in made.artifact_manifest.entries}
         self.assertIn("cad/design.json", paths)
-        self.assertIn("validation/digital-geometry.json", paths)
-        self.assertIn("validation/parts/base.stl", paths)
-        self.assertIn("validation/print-plate.stl", paths)
+        self.assertIn("validation/cad-build.json", paths)
+        self.assertIn("cad/part_base.step.py", paths)
+        self.assertIn("cad/part_base.step", paths)
+        self.assertIn("cad/part_base.stl", paths)
+        self.assertIn("cad/print_plate.step", paths)
+        self.assertIn("cad/print_plate.stl", paths)
+        self.assertIn("assembled.step", paths)
         self.assertIn("cad/FORMAT-LIMITATIONS.md", paths)
         self.assertIn("playtest/mechanical.json", paths)
         self.assertIn("playtest/print.json", paths)
         self.assertIn("playtest/motion.json", paths)
-        handoff_stls = sorted(
-            path for path in paths if path.endswith(".stl") and not path.startswith("validation/")
+        self.assertIn("assembled.stl", paths)
+        self.assertIn("cad/product.stl", paths)
+
+    def test_shared_make_requires_at_least_two_mechanical_parts(self):
+        self.assertEqual(_MAKE_SCHEMA["properties"]["parts"]["minItems"], 2)
+        action = make_action()
+        action["parts"] = action["parts"][:1]
+        with self.assertRaises(WaitingFor):
+            _validate_action(action)
+
+        worker, creator, unused_evaluator = self.worker(
+            [action], [verdict(100)]
         )
-        self.assertEqual(handoff_stls, ["assembled.stl", "cad/product.stl"])
+        with self.assertRaises(WaitingFor):
+            worker(self.context())
+        self.assertEqual(len(creator.prompts), 1)
 
     def test_deterministic_action_produces_identical_content_address(self):
         first, _, _ = self.worker([make_action()], [verdict(95)])
@@ -306,6 +426,31 @@ class AgentMakeTest(unittest.TestCase):
         made_one = first(self.context("make-one"))
         made_two = second(self.context("make-two"))
         self.assertEqual(made_one.artifact_sha256, made_two.artifact_sha256)
+
+    def test_make_uses_exact_assignment_identity_not_wish_metadata_or_display_name(self):
+        worker, _, _ = self.worker([make_action()], [verdict(95)])
+        made = worker(self.context(inventor_id="machine-smith"))
+        self.assertEqual(made.product["inventor"]["id"], "machine-smith")
+        self.assertEqual(made.product["inventor"]["name"], "Bob")
+        self.assertEqual(self.wish.context["inventor_id"], "bob")
+        self.assertEqual(made.product["slug"], self.wish.product_id)
+        self.assertTrue(made.product["description"].endswith("By Bob."))
+        loaded_wish, loaded_made, loaded_blueprint = _load_artifact_contract(
+            made.artifact_root,
+            made.artifact_manifest,
+            "machine-smith",
+            self.taste,
+        )
+        self.assertEqual(loaded_wish.to_dict(), self.wish.to_dict())
+        self.assertEqual(loaded_made.product, made.product)
+        self.assertEqual(loaded_blueprint.lane, self.blueprint.lane)
+
+    def test_make_waits_without_exact_assignment_identity(self):
+        worker, creator, _ = self.worker([make_action()], [verdict(95)])
+        with self.assertRaises(WaitingFor) as caught:
+            worker(self.context(inventor_id=None))
+        self.assertEqual(caught.exception.needs[0].capability, "inventor-assignment")
+        self.assertEqual(creator.prompts, [])
 
     def test_geometry_failure_cannot_be_overruled_by_model_scores(self):
         worker, _, _ = self.worker(

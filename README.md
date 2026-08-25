@@ -191,7 +191,11 @@ def showcase_playtest(context):
 
 Before Instructions—and again on resume—the Workshop validates every required
 proof against the sealed product and Playtest manifests. A passed label, model
-score, or renamed check cannot lower that bar.
+score, or renamed check cannot lower that bar. Each cited Playtest receipt is a
+`workshop.capability-release-receipt`: it repeats the exact artifact,
+capability, proof class, receipt role, dependency hashes, and measurements,
+plus the adapter's non-empty payload. Print proofs also cite the sealed profile
+files and one sealed G-code output per part; hash strings alone do not pass.
 
 See the [complete Playtest adapter](tools/build_showcase_products.py#L1697-L1903).
 

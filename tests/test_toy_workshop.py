@@ -120,6 +120,9 @@ class ToyWorkshopTest(unittest.TestCase):
         valid_invented=False,
         ai_simulation=True,
         valid_proofs=True,
+        placeholder_receipts=(),
+        tampered_receipts=(),
+        unsealed_print_outputs=False,
     ):
         context.workspace.mkdir(parents=True)
         product_inventory = {
@@ -129,20 +132,75 @@ class ToyWorkshopTest(unittest.TestCase):
 
         def write_json(name, value):
             path = context.workspace / name
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(
                 json.dumps(value, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
             return path.name, hashlib.sha256(path.read_bytes()).hexdigest()
 
+        def write_bytes(name, value):
+            path = context.workspace / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(value)
+            return name, hashlib.sha256(value).hexdigest()
+
         def source(role, scope, path, digest):
             return {"role": role, "scope": scope, "path": path, "sha256": digest}
+
+        def write_receipt(
+            capability,
+            proof_class,
+            role,
+            measurements,
+            source_sha256,
+            payload,
+        ):
+            document = {
+                "schema_version": 1,
+                "kind": "workshop.capability-release-receipt",
+                "artifact_sha256": context.made.artifact_sha256,
+                "capability": capability,
+                "proof_class": proof_class,
+                "role": role,
+                "source_sha256": source_sha256,
+                "measurements": measurements,
+                "payload": payload,
+            }
+            if capability in placeholder_receipts:
+                document = {"computed": True}
+            elif capability in tampered_receipts:
+                document["artifact_sha256"] = "f" * 64
+            return write_json(role + ".json", document)
 
         def release_proof(capability):
             artifact_sha256 = context.made.artifact_sha256
             if capability == "mechanical-test":
-                receipt, receipt_sha256 = write_json(
-                    "mechanical-receipt.json", {"computed": True}
+                measurements = {
+                    "brep_valid": True,
+                    "interference_cases": 2,
+                    "fit_cases": 2,
+                    "assembly_paths_tested": 1,
+                    "motion_cases": 1,
+                    "load_cases": 1,
+                    "failure_modes_tested": 2,
+                    "forbidden_intersections": 0,
+                    "fit_failures": 0,
+                    "assembly_failures": 0,
+                    "motion_failures": 0,
+                    "load_failures": 0,
+                    "unresolved_critical_failures": 0,
+                }
+                receipt, receipt_sha256 = write_receipt(
+                    capability,
+                    "computed-mechanical-proof",
+                    "mechanical-receipt",
+                    measurements,
+                    {"product:toy.step": product_inventory["toy.step"]},
+                    {
+                        "method": "fixture-exact-mechanical-computation",
+                        "case_ids": ["fit-a", "fit-b", "load-a"],
+                    },
                 )
                 return {
                     "schema_version": 1,
@@ -163,25 +221,87 @@ class ToyWorkshopTest(unittest.TestCase):
                             receipt_sha256,
                         ),
                     ],
-                    "measurements": {
-                        "brep_valid": True,
-                        "interference_cases": 2,
-                        "fit_cases": 2,
-                        "assembly_paths_tested": 1,
-                        "motion_cases": 1,
-                        "load_cases": 1,
-                        "failure_modes_tested": 2,
-                        "forbidden_intersections": 0,
-                        "fit_failures": 0,
-                        "assembly_failures": 0,
-                        "motion_failures": 0,
-                        "load_failures": 0,
-                        "unresolved_critical_failures": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "print-test":
-                receipt, receipt_sha256 = write_json(
-                    "slicer-receipt.json", {"sliced": ["part_toy.stl"]}
+                profiles = {}
+                profile_sources = []
+                for role in ("printer", "process", "filament"):
+                    path, digest = write_bytes(
+                        "profiles/%s.ini" % role,
+                        ("[%s]\nfixture=1\n" % role).encode("utf-8"),
+                    )
+                    profiles[role] = {"path": path, "sha256": digest}
+                    profile_sources.append(source("slicer-profile", "playtest", path, digest))
+                gcode, gcode_sha256 = write_bytes(
+                    "gcode/part_toy.gcode",
+                    b"; generated by PrusaSlicer 2.9.6\nG28\nG1 X1 Y1\n",
+                )
+                measurements = {
+                    "slicer": "PrusaSlicer",
+                    "slicer_version": "2.9.6",
+                    "profiles": profiles,
+                    "parts": [
+                        {
+                            "input_ref": "part_toy.stl",
+                            "input_sha256": product_inventory["part_toy.stl"],
+                            "gcode_ref": gcode,
+                            "gcode_sha256": gcode_sha256,
+                            "gcode_bytes": len(
+                                b"; generated by PrusaSlicer 2.9.6\nG28\nG1 X1 Y1\n"
+                            ),
+                            "returncode": 0,
+                        }
+                    ],
+                    "slicer_errors": 0,
+                }
+                cited_profile_sources = profile_sources
+                cited_gcode_sources = [
+                    source("gcode-output", "playtest", gcode, gcode_sha256)
+                ]
+                dependencies = {
+                    "product:part_toy.stl": product_inventory["part_toy.stl"],
+                    **{
+                        "playtest:%s" % item["path"]: item["sha256"]
+                        for item in profile_sources
+                    },
+                    "playtest:%s" % gcode: gcode_sha256,
+                }
+                if unsealed_print_outputs:
+                    measurements = {
+                        "slicer": "PrusaSlicer",
+                        "slicer_version": "2.9.6",
+                        "profiles": {
+                            "printer": "1" * 64,
+                            "process": "2" * 64,
+                            "filament": "3" * 64,
+                        },
+                        "parts": [
+                            {
+                                "input_ref": "part_toy.stl",
+                                "input_sha256": product_inventory["part_toy.stl"],
+                                "gcode_sha256": "4" * 64,
+                                "gcode_bytes": 100,
+                                "returncode": 0,
+                            }
+                        ],
+                        "slicer_errors": 0,
+                    }
+                    cited_profile_sources = []
+                    cited_gcode_sources = []
+                    dependencies = {
+                        "product:part_toy.stl": product_inventory["part_toy.stl"]
+                    }
+                receipt, receipt_sha256 = write_receipt(
+                    capability,
+                    "exact-slicer-proof",
+                    "slicer-receipt",
+                    measurements,
+                    dependencies,
+                    {
+                        "command": "PrusaSlicer --export-gcode",
+                        "exit_codes": [0],
+                    },
                 )
                 return {
                     "schema_version": 1,
@@ -201,30 +321,31 @@ class ToyWorkshopTest(unittest.TestCase):
                             receipt,
                             receipt_sha256,
                         ),
+                        *cited_profile_sources,
+                        *cited_gcode_sources,
                     ],
-                    "measurements": {
-                        "slicer": "PrusaSlicer",
-                        "slicer_version": "2.9.6",
-                        "profiles": {
-                            "strong": "1" * 64,
-                            "balanced": "2" * 64,
-                            "fast": "3" * 64,
-                        },
-                        "parts": [
-                            {
-                                "input_ref": "part_toy.stl",
-                                "input_sha256": product_inventory["part_toy.stl"],
-                                "gcode_sha256": "4" * 64,
-                                "gcode_bytes": 100,
-                                "returncode": 0,
-                            }
-                        ],
-                        "slicer_errors": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "motion-test":
-                receipt, receipt_sha256 = write_json(
-                    "motion-receipt.json", {"simulated": True}
+                measurements = {
+                    "states_tested": 10,
+                    "continuous_sweep": True,
+                    "tolerance_cases_tested": 3,
+                    "load_cases_tested": 2,
+                    "orientations_tested": 3,
+                    "wear_cycles": 100,
+                    "misuse_cases_tested": 2,
+                    "collisions": 0,
+                    "stalls": 0,
+                    "failures": 0,
+                }
+                receipt, receipt_sha256 = write_receipt(
+                    capability,
+                    "kinematic-motion-proof",
+                    "motion-receipt",
+                    measurements,
+                    {"product:toy.step": product_inventory["toy.step"]},
+                    {"state_ids": list(range(10)), "continuous_sweep": True},
                 )
                 return {
                     "schema_version": 1,
@@ -245,25 +366,36 @@ class ToyWorkshopTest(unittest.TestCase):
                             receipt_sha256,
                         ),
                     ],
-                    "measurements": {
-                        "states_tested": 10,
-                        "continuous_sweep": True,
-                        "tolerance_cases_tested": 3,
-                        "load_cases_tested": 2,
-                        "orientations_tested": 3,
-                        "wear_cycles": 100,
-                        "misuse_cases_tested": 2,
-                        "collisions": 0,
-                        "stalls": 0,
-                        "failures": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "classic-rules-test":
-                reference, reference_sha256 = write_json(
-                    "reference-rules.json", {"known_rules": True}
+                measurements = {
+                    "seeded_games": 1,
+                    "rule_conformance_cases": 3,
+                    "rule_mismatches": 0,
+                    "role_legibility_cases": 2,
+                    "role_legibility_failures": 0,
+                }
+                dependencies = {
+                    "product:edition-rules.json": product_inventory[
+                        "edition-rules.json"
+                    ]
+                }
+                reference, reference_sha256 = write_receipt(
+                    capability,
+                    "classic-rule-conformance-proof",
+                    "reference-rules",
+                    measurements,
+                    dependencies,
+                    {"ruleset": "fixture-reference", "rule_ids": [1, 2, 3]},
                 )
-                traces, traces_sha256 = write_json(
-                    "classic-traces.json", {"games": [{"seed": 1}]}
+                traces, traces_sha256 = write_receipt(
+                    capability,
+                    "classic-rule-conformance-proof",
+                    "game-traces",
+                    measurements,
+                    dependencies,
+                    {"games": [{"seed": 1, "completed": True}]},
                 )
                 return {
                     "schema_version": 1,
@@ -280,20 +412,37 @@ class ToyWorkshopTest(unittest.TestCase):
                         source("reference-rules", "playtest", reference, reference_sha256),
                         source("game-traces", "playtest", traces, traces_sha256),
                     ],
-                    "measurements": {
-                        "seeded_games": 1,
-                        "rule_conformance_cases": 3,
-                        "rule_mismatches": 0,
-                        "role_legibility_cases": 2,
-                        "role_legibility_failures": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "science-test":
-                sources, sources_sha256 = write_json(
-                    "science-sources.json", {"sources": ["fixture-source"]}
+                measurements = {
+                    "accuracy_cases": 3,
+                    "accuracy_failures": 0,
+                    "simplifications_checked": 2,
+                    "dishonest_simplifications": 0,
+                    "comprehension_traces": 1,
+                    "comprehension_failures": 0,
+                }
+                dependencies = {
+                    "product:source-model.json": product_inventory[
+                        "source-model.json"
+                    ]
+                }
+                sources, sources_sha256 = write_receipt(
+                    capability,
+                    "source-bound-science-proof",
+                    "science-sources",
+                    measurements,
+                    dependencies,
+                    {"sources": ["fixture-source"], "checked_claim_ids": [1, 2, 3]},
                 )
-                traces, traces_sha256 = write_json(
-                    "comprehension-traces.json", {"traces": [{"seed": 1}]}
+                traces, traces_sha256 = write_receipt(
+                    capability,
+                    "source-bound-science-proof",
+                    "comprehension-traces",
+                    measurements,
+                    dependencies,
+                    {"traces": [{"seed": 1, "understood": True}]},
                 )
                 return {
                     "schema_version": 1,
@@ -312,24 +461,44 @@ class ToyWorkshopTest(unittest.TestCase):
                             "comprehension-traces", "playtest", traces, traces_sha256
                         ),
                     ],
-                    "measurements": {
-                        "accuracy_cases": 3,
-                        "accuracy_failures": 0,
-                        "simplifications_checked": 2,
-                        "dishonest_simplifications": 0,
-                        "comprehension_traces": 1,
-                        "comprehension_failures": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "world-test":
-                consent, consent_sha256 = write_json(
-                    "consent-record.json", {"consented": True}
+                measurements = {
+                    "consent_verified": True,
+                    "personalization_features": 1,
+                    "likeness_cases": 1,
+                    "recognition_failures": 0,
+                    "consent_violations": 0,
+                }
+                dependencies = {
+                    "product:personalization-map.json": product_inventory[
+                        "personalization-map.json"
+                    ]
+                }
+                consent, consent_sha256 = write_receipt(
+                    capability,
+                    "reference-bound-world-proof",
+                    "consent-record",
+                    measurements,
+                    dependencies,
+                    {"consented": True, "scope": ["fixture-subject"]},
                 )
-                reference, reference_sha256 = write_json(
-                    "reference-material.json", {"subject": "fixture"}
+                reference, reference_sha256 = write_receipt(
+                    capability,
+                    "reference-bound-world-proof",
+                    "reference-material",
+                    measurements,
+                    dependencies,
+                    {"subject": "fixture", "reference_ids": ["reference-a"]},
                 )
-                traces, traces_sha256 = write_json(
-                    "likeness-traces.json", {"traces": [{"recognized": True}]}
+                traces, traces_sha256 = write_receipt(
+                    capability,
+                    "reference-bound-world-proof",
+                    "likeness-traces",
+                    measurements,
+                    dependencies,
+                    {"traces": [{"recognized": True}]},
                 )
                 return {
                     "schema_version": 1,
@@ -349,13 +518,7 @@ class ToyWorkshopTest(unittest.TestCase):
                         ),
                         source("likeness-traces", "playtest", traces, traces_sha256),
                     ],
-                    "measurements": {
-                        "consent_verified": True,
-                        "personalization_features": 1,
-                        "likeness_cases": 1,
-                        "recognition_failures": 0,
-                        "consent_violations": 0,
-                    },
+                    "measurements": measurements,
                 }
             if capability == "game-simulation":
                 measurements = {
@@ -1148,6 +1311,99 @@ class ToyWorkshopTest(unittest.TestCase):
                     playtest_rounds=1,
                 )
                 self.assertEqual((result.status, result.job), ("delivered", "deliver"))
+
+    def test_placeholder_custom_receipts_cannot_release_any_capability(self):
+        lanes = {
+            "mechanical-test": "moving-machines",
+            "print-test": "moving-machines",
+            "motion-test": "moving-machines",
+            "classic-rules-test": "classics-made-yours",
+            "science-test": "holdable-science",
+            "world-test": "little-worlds",
+        }
+        for capability, lane in lanes.items():
+            with self.subTest(capability=capability):
+                def placeholder_playtest(context, selected=capability):
+                    return self._playtest(
+                        context,
+                        passed=True,
+                        valid_invented=True,
+                        placeholder_receipts=(selected,),
+                    )
+
+                result = Workshop(
+                    self.inventor,
+                    lane,
+                    tools=WorkshopTools(invent=self.invent_job),
+                    make=self.make_job,
+                    playtest=placeholder_playtest,
+                    runtime_root=self.root / (capability + "-placeholder-runtime"),
+                ).run(
+                    Wish.create(capability + "-placeholder", "Reject placeholder JSON"),
+                    playtest_rounds=1,
+                )
+                self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+                self.assertEqual(
+                    {need.capability for need in result.needs}, {capability}
+                )
+
+    def test_mismatched_custom_receipts_cannot_release_any_capability(self):
+        lanes = {
+            "mechanical-test": "moving-machines",
+            "print-test": "moving-machines",
+            "motion-test": "moving-machines",
+            "classic-rules-test": "classics-made-yours",
+            "science-test": "holdable-science",
+            "world-test": "little-worlds",
+        }
+        for capability, lane in lanes.items():
+            with self.subTest(capability=capability):
+                def mismatched_playtest(context, selected=capability):
+                    return self._playtest(
+                        context,
+                        passed=True,
+                        valid_invented=True,
+                        tampered_receipts=(selected,),
+                    )
+
+                result = Workshop(
+                    self.inventor,
+                    lane,
+                    tools=WorkshopTools(invent=self.invent_job),
+                    make=self.make_job,
+                    playtest=mismatched_playtest,
+                    runtime_root=self.root / (capability + "-mismatched-runtime"),
+                ).run(
+                    Wish.create(capability + "-mismatched", "Reject mismatched proof"),
+                    playtest_rounds=1,
+                )
+                self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+                self.assertEqual(
+                    {need.capability for need in result.needs}, {capability}
+                )
+
+    def test_custom_print_hash_claims_do_not_replace_sealed_profiles_and_gcode(self):
+        def unsealed_print_playtest(context):
+            return self._playtest(
+                context,
+                passed=True,
+                valid_invented=True,
+                unsealed_print_outputs=True,
+            )
+
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(invent=self.invent_job),
+            make=self.make_job,
+            playtest=unsealed_print_playtest,
+            runtime_root=self.root / "unsealed-print-output-runtime",
+        ).run(
+            Wish.create("unsealed-print-output", "Reject typed-in output hashes"),
+            playtest_rounds=1,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual({need.capability for need in result.needs}, {"print-test"})
 
     def test_result_mapping_must_equal_its_exact_sealed_evidence_document(self):
         def mismatched_playtest(context):

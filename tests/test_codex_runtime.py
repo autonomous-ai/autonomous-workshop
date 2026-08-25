@@ -1,5 +1,8 @@
+import json
 import os
+import subprocess
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from inventor_workshop.agent_instructions import RewardedInstructions
@@ -12,6 +15,19 @@ from inventor_workshop.codex_runtime import (
 )
 from inventor_workshop.errors import ContractError
 from inventor_workshop.semantic_manager import CodexSemanticManager
+
+
+class EnvironmentRecordingRunner:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, command, **kwargs):
+        self.calls.append((tuple(command), dict(kwargs.get("env", {}))))
+        if "--version" in command:
+            return subprocess.CompletedProcess(command, 0, "codex-cli 2.3.4\n", "")
+        output = Path(command[command.index("--output-last-message") + 1])
+        output.write_text(json.dumps({"ok": True}), encoding="utf-8")
+        return subprocess.CompletedProcess(command, 0, "", "")
 
 
 class CodexModelPolicyTest(unittest.TestCase):
@@ -62,6 +78,65 @@ class CodexModelPolicyTest(unittest.TestCase):
                 "inventor_workshop.codex_runtime.shutil.which", return_value=None
             ), self.assertRaises(ContractError):
                 constructor()
+
+    def test_codex_and_manager_probes_and_calls_receive_only_codex_auth(self):
+        parent_environment = {
+            "PATH": "/fixture/bin:/usr/bin",
+            "HOME": "/fixture/home",
+            "CODEX_HOME": "/fixture/codex-home",
+            "OPENAI_API_KEY": "fixture-codex-auth",
+            "CODEX_API_KEY": "fixture-codex-api-auth",
+            "FACTORY_USERNAME": "alice",
+            "FACTORY_PASSWORD": "must-not-reach-codex",
+            "WORKSHOP_SHOP_TOKEN": "must-not-reach-codex",
+            "AWS_SECRET_ACCESS_KEY": "must-not-reach-codex",
+            "GITHUB_TOKEN": "must-not-reach-codex",
+        }
+        structured_runner = EnvironmentRecordingRunner()
+        manager_runner = EnvironmentRecordingRunner()
+        with mock.patch.dict(os.environ, parent_environment, clear=True):
+            structured = CodexStructuredRunner(
+                model="gpt-5.6-terra",
+                reasoning_effort="low",
+                binary="/fixture/codex",
+                runner=structured_runner,
+            )
+            self.assertEqual(
+                structured.invoke(
+                    prompt="fixture",
+                    schema={"type": "object", "additionalProperties": True},
+                ),
+                {"ok": True},
+            )
+            manager = CodexSemanticManager(
+                binary="/fixture/codex",
+                runner=manager_runner,
+            )
+            self.assertEqual(
+                manager._invoke(
+                    prompt="fixture",
+                    schema={"type": "object", "additionalProperties": True},
+                    capability="semantic-inventor-retriever",
+                ),
+                {"ok": True},
+            )
+
+        for calls in (structured_runner.calls, manager_runner.calls):
+            self.assertEqual(len(calls), 2)
+            self.assertIn("--version", calls[0][0])
+            for unused_command, environment in calls:
+                self.assertEqual(environment["HOME"], "/fixture/home")
+                self.assertEqual(environment["CODEX_HOME"], "/fixture/codex-home")
+                self.assertEqual(environment["OPENAI_API_KEY"], "fixture-codex-auth")
+                self.assertEqual(environment["CODEX_API_KEY"], "fixture-codex-api-auth")
+                for forbidden in (
+                    "FACTORY_USERNAME",
+                    "FACTORY_PASSWORD",
+                    "WORKSHOP_SHOP_TOKEN",
+                    "AWS_SECRET_ACCESS_KEY",
+                    "GITHUB_TOKEN",
+                ):
+                    self.assertNotIn(forbidden, environment)
 
 
 if __name__ == "__main__":

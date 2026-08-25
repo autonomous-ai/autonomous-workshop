@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.agent_playtest import (
     DEFAULT_GAME_COUNT,
@@ -15,6 +17,7 @@ from inventor_workshop.agent_make import CodexMaker
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.jobs import Invented, Made, MakeContext, PlaytestContext, WaitingFor
 from inventor_workshop.make import Wish
+from inventor_workshop.playtest_release import playtest_release_needs
 from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
@@ -112,10 +115,41 @@ class AgentPlaytestTest(unittest.TestCase):
             "Every legal turn advances one marker. The first to seven wins.\n",
             encoding="utf-8",
         )
+        (artifact / "game-rules.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "setup": "Put seven markers in a shared supply.",
+                    "legal_action": "Take one marker per legal turn.",
+                    "terminal": "The first player to seven wins.",
+                }
+            ),
+            encoding="utf-8",
+        )
         (artifact / "toy.step").write_text("ISO-10303-21;\nEND-ISO-10303-21;\n", encoding="utf-8")
         (artifact / "toy.stl").write_text("solid toy\nendsolid toy\n", encoding="utf-8")
         (artifact / "simulator.py").write_text(
             "# Exact deterministic simulator source used by the test adapter.\n",
+            encoding="utf-8",
+        )
+        (artifact / "slicer-receipt.json").write_text(
+            json.dumps({"slicer": "fixture", "version": "2.9.6", "errors": 0}),
+            encoding="utf-8",
+        )
+        (artifact / "motion-receipt.json").write_text(
+            json.dumps({"states": 37, "continuous_sweep": True, "failures": 0}),
+            encoding="utf-8",
+        )
+        (artifact / "mechanical-receipt.json").write_text(
+            json.dumps(
+                {
+                    "parts_checked": 2,
+                    "tolerance_cases": 3,
+                    "assembly_paths": 1,
+                    "load_cases": 2,
+                    "failures": 0,
+                }
+            ),
             encoding="utf-8",
         )
         made = Made.from_root(
@@ -149,6 +183,142 @@ class AgentPlaytestTest(unittest.TestCase):
 
             def check(received, capability=capability, source=source):
                 passed = capability != failing
+                source_refs = [source]
+                method_class = "deterministic-digital-check"
+                metrics = {"checked": 1, "failures": 0 if passed else 1}
+                inventory = {
+                    entry.path: entry.sha256
+                    for entry in received.made.artifact_manifest.entries
+                }
+                if capability == "print-test" and passed:
+                    method_class = "deterministic-exact-slicer-profile"
+                    receipt = {
+                        "schema_version": 1,
+                        "slicer": "PrusaSlicer",
+                        "slicer_version": "2.9.6",
+                        "profiles": {
+                            "printer": {
+                                "name": "printer.ini",
+                                "origin": "test-pinned",
+                                "bytes": 10,
+                                "sha256": "1" * 64,
+                            },
+                            "process": {
+                                "name": "process.ini",
+                                "origin": "test-pinned",
+                                "bytes": 11,
+                                "sha256": "2" * 64,
+                            },
+                            "filament": {
+                                "name": "filament.ini",
+                                "origin": "test-pinned",
+                                "bytes": 12,
+                                "sha256": "3" * 64,
+                            },
+                        },
+                        "parts": [
+                            {
+                                "input_ref": source,
+                                "input_sha256": inventory[source],
+                                "command": [
+                                    "PrusaSlicer",
+                                    "--export-gcode",
+                                    source,
+                                ],
+                                "returncode": 0,
+                                "stdout": "sliced",
+                                "stderr": "",
+                                "gcode_bytes": 100,
+                                "gcode_sha256": "4" * 64,
+                                "gcode_metrics": {"estimated_print_time": "4m"},
+                            }
+                        ],
+                    }
+                    receipt_sha256 = hashlib.sha256(
+                        json.dumps(
+                            receipt,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        ).encode("utf-8")
+                    ).hexdigest()
+                    metrics.update(
+                        {
+                            "profiles_checked": 3,
+                            "parts_sliced": 1,
+                            "slicer_errors": 0,
+                            "slicer_receipt": receipt,
+                            "slicer_receipt_sha256": receipt_sha256,
+                        }
+                    )
+                if capability == "motion-test" and passed:
+                    source_refs.append("motion-receipt.json")
+                    method_class = "deterministic-kinematic-simulation"
+                    metrics.update(
+                        {
+                            "states_tested": 37,
+                            "continuous_sweep": True,
+                            "collisions": 0,
+                            "tolerance_cases_tested": 3,
+                            "load_cases_tested": 2,
+                            "failures": 0,
+                            "motion_receipt_ref": "motion-receipt.json",
+                            "motion_receipt_sha256": inventory["motion-receipt.json"],
+                        }
+                    )
+                if capability == "mechanical-test" and passed:
+                    method_class = "deterministic-mechanical-verification"
+                    mechanical_measurements = {
+                        "brep_valid": True,
+                        "interference_cases": 2,
+                        "fit_cases": 3,
+                        "assembly_paths_tested": 1,
+                        "motion_cases": 1,
+                        "load_cases": 2,
+                        "failure_modes_tested": 2,
+                        "forbidden_intersections": 0,
+                        "fit_failures": 0,
+                        "assembly_failures": 0,
+                        "motion_failures": 0,
+                        "load_failures": 0,
+                        "unresolved_critical_failures": 0,
+                    }
+                    mechanical_receipt = {
+                        "schema_version": 1,
+                        "kind": "workshop.digital-mechanical-simulation",
+                        "artifact_sha256": received.made.artifact_sha256,
+                        "claim_scope": "Deterministic test fixture only.",
+                        "source_sha256": {source: inventory[source]},
+                        "plan": {"kind": "fixture"},
+                        "fit_cases": [{"passed": True}],
+                        "assembly_motion_manifest": {"conditions": [{}]},
+                        "assembly_motion_result": {
+                            "results": [{"status": "pass"}]
+                        },
+                        "load_cases": [{"passed": True}],
+                        "measurements": mechanical_measurements,
+                        "not_proven": ["physical fit"],
+                    }
+                    mechanical_receipt_sha256 = hashlib.sha256(
+                        json.dumps(
+                            mechanical_receipt,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        ).encode("utf-8")
+                    ).hexdigest()
+                    metrics.update(
+                        {
+                            **mechanical_measurements,
+                            "parts_checked": 2,
+                            "tolerance_cases_tested": 3,
+                            "assembly_paths_checked": 1,
+                            "load_cases_tested": 2,
+                            "failures": 0,
+                            "mechanical_receipt": mechanical_receipt,
+                            "mechanical_receipt_sha256": mechanical_receipt_sha256,
+                        }
+                    )
                 findings = []
                 if not passed:
                     findings.append(
@@ -168,10 +338,10 @@ class AgentPlaytestTest(unittest.TestCase):
                     "checker": "test-digital-checker",
                     "checker_version": "1.2.3",
                     "config_sha256": CHECK_CONFIG_SHA256,
-                    "method_class": "deterministic-digital-check",
-                    "source_refs": [source],
+                    "method_class": method_class,
+                    "source_refs": source_refs,
                     "observations": ["The exact sealed source passed a deterministic fixture."],
-                    "metrics": {"checked": 1, "failures": 0 if passed else 1},
+                    "metrics": metrics,
                     "findings": findings,
                 }
 
@@ -188,6 +358,7 @@ class AgentPlaytestTest(unittest.TestCase):
         # produces exactly one independently seeded trace for every plan item.
         for game in plan["games"]:
             seed = game["seed"]
+            winner = (game["index"] // 4) % 2
             games.append(
                 {
                     "index": game["index"],
@@ -195,7 +366,14 @@ class AgentPlaytestTest(unittest.TestCase):
                     "player_styles": game["player_styles"],
                     "completed": True,
                     "turns": 7 + seed % 19,
-                    "outcome": "first" if seed % 2 else "second",
+                    "outcome": json.dumps(
+                        {
+                            "winner": winner,
+                            "winner_style": game["player_styles"][winner],
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
                     "issues": [],
                 }
             )
@@ -252,6 +430,15 @@ class AgentPlaytestTest(unittest.TestCase):
             result.evidence.evidence_manifest.to_dict(),
         )
         self.assertIn("never replace or override a failed check", evaluator.calls[0][0])
+        release_needs = playtest_release_needs(
+            context.blueprint, context.made, result, context.workspace
+        )
+        self.assertNotIn(
+            "mechanical-test", {need.capability for need in release_needs}
+        )
+        self.assertTrue(
+            (context.workspace / "receipts" / "mechanical-test.json").is_file()
+        )
 
     def test_failed_digital_check_cannot_be_overridden_by_high_model_reward(self):
         context = self.context("moving-machines")
@@ -287,6 +474,28 @@ class AgentPlaytestTest(unittest.TestCase):
         self.assertEqual(caught.exception.needs[0].capability, "game-simulation")
         self.assertEqual(evaluator.calls, [])
 
+    def test_shared_lane_proof_gaps_wait_before_ai_scores_can_claim_release(self):
+        for index, (lane, capability) in enumerate(
+            (
+                ("classics-made-yours", "classic-rules-test"),
+                ("holdable-science", "science-test"),
+                ("little-worlds", "world-test"),
+            )
+        ):
+            with self.subTest(lane=lane):
+                context = self.context(lane, "proof-gap-%d" % index)
+                evaluator = FakeEvaluator({"reviews": []})
+                with self.assertRaises(WaitingFor) as caught:
+                    LaneAwarePlaytester(
+                        evaluator=evaluator,
+                        capability_checks=self.digital_checks(context),
+                    )(context)
+                self.assertIn(
+                    capability,
+                    {need.capability for need in caught.exception.needs},
+                )
+                self.assertEqual(evaluator.calls, [])
+
     def test_invented_game_passes_only_after_1000_full_seeded_traces(self):
         context = self.context("invented-games")
         capabilities = tuple(
@@ -312,6 +521,12 @@ class AgentPlaytestTest(unittest.TestCase):
         self.assertEqual(
             [item["seed"] for item in trace["games"]],
             list(range(trace["games"][0]["seed"], trace["games"][0]["seed"] + DEFAULT_GAME_COUNT)),
+        )
+        release_needs = playtest_release_needs(
+            context.blueprint, context.made, result, context.workspace
+        )
+        self.assertNotIn(
+            "game-simulation", {need.capability for need in release_needs}
         )
 
     def test_aggregate_game_claim_without_traces_fails_closed(self):
@@ -339,7 +554,9 @@ class AgentPlaytestTest(unittest.TestCase):
             )(context)
         self.assertEqual(caught.exception.needs[0].capability, "game-simulation")
 
-    def test_agent_make_game_runs_through_all_default_playtest_adapters(self):
+    def test_default_playtest_waits_when_locked_cad_runtime_is_absent(self):
+        from tests.test_agent_make import FakeCadBuilder
+
         wish = Wish.create("default-seven", "A seven-token strategy game for my studio")
         blueprint = ToyBlueprint.for_lane("invented-games")
         invented = Invented(
@@ -399,7 +616,9 @@ class AgentPlaytestTest(unittest.TestCase):
             "design_limitations": ["This is a constrained primitive-geometry MVP."],
         }
         maker = CodexMaker(
-            creator=FakeEvaluator(action), evaluator=FakeEvaluator(make_verdict())
+            creator=FakeEvaluator(action),
+            evaluator=FakeEvaluator(make_verdict()),
+            cad_builder=FakeCadBuilder(),
         )
         made = maker(
             MakeContext(
@@ -411,6 +630,7 @@ class AgentPlaytestTest(unittest.TestCase):
                 (self.root / "default-game-make").absolute(),
                 (),
                 2,
+                "leo",
             )
         )
         playtest_context = PlaytestContext(
@@ -427,17 +647,15 @@ class AgentPlaytestTest(unittest.TestCase):
             for item in blueprint.required_capabilities("playtest")
             if item != "game-simulation"
         )
-        result = LaneAwarePlaytester(
-            evaluator=FakeEvaluator(review_batch(model_capabilities))
-        )(playtest_context)
-        self.assertTrue(result.passed)
-        simulation = {
-            item.playtest_id: item for item in result.evidence.results
-        }["game-simulation"]
-        self.assertEqual(simulation.evidence["completed_games"], 1_000)
-        self.assertEqual(
-            simulation.evidence["simulator"]["source_path"], "game/simulate.py"
-        )
+        with self.assertRaises(WaitingFor) as caught:
+            with mock.patch.dict(
+                os.environ,
+                {"WORKSHOP_CAD_PYTHON": "/missing/workshop-cad-python"},
+            ):
+                LaneAwarePlaytester(
+                    evaluator=FakeEvaluator(review_batch(model_capabilities))
+                )(playtest_context)
+        self.assertEqual(caught.exception.needs[0].capability, "cad-skill-runtime")
 
 
 if __name__ == "__main__":
