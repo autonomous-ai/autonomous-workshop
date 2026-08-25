@@ -1,9 +1,22 @@
 # Native coding-agent runtime
 
-This document is the operating map for contributors and coding agents working
-on Autonomous Workshop. It is authoritative together with
+This document is the operating map for contributors and builder agents working
+on the Autonomous Workshop repository. It is authoritative together with
 [ADR 0012](adr/0012-codex-orchestrated-runtime.md) and the repository
 [agent constitution](../AGENTS.md).
+
+## Two different coding-agent roles
+
+Do not confuse these actors:
+
+| Actor | Purpose | Instructions |
+|---|---|---|
+| Builder agent | Builds, reviews, tests, and documents this repository | root [`AGENTS.md`](../AGENTS.md), especially “Coding agents building this repository” |
+| Product-run agent | Is launched by `workshop wish` to turn one exact Wish into one product | [`.agents/product-run/AGENTS.md`](../.agents/product-run/AGENTS.md) and [the product-run skill](../.agents/skills/autonomous-workshop/SKILL.md) |
+
+The builder agent implements the harness. It is not the agent that Matches,
+Invents, Makes, or Playtests a customer's product. The product-run agent works
+in an isolated run root; it does not maintain the Workshop repository.
 
 ## The boundary in one sentence
 
@@ -69,16 +82,19 @@ return value of a model is never itself a passed gate.
 
 ## Run workspace and skill materialization
 
-The canonical team skill is checked in at:
+The canonical product-run instructions are checked in at:
 
 ```text
+.agents/product-run/AGENTS.md
 .agents/skills/autonomous-workshop/SKILL.md
 .agents/skills/autonomous-workshop/references/**
 ```
 
-In a source checkout, Codex discovers that tree directly. The built
-distribution carries an exact byte-for-byte snapshot. Before a run starts, the
-host materializes the constitution and skill into the private run root:
+The repository root `AGENTS.md` contains shared architecture and a section for
+builder agents; it is not copied wholesale into product runs. The built
+distribution carries an exact byte-for-byte snapshot of the product-run
+constitution and skill. Before a run starts, the host materializes them into
+the private run root:
 
 ```text
 <run-root>/AGENTS.md
@@ -86,10 +102,11 @@ host materializes the constitution and skill into the private run root:
 <run-root>/.agents/skills/autonomous-workshop/references/**
 ```
 
-The host hashes those exact bytes and binds the hash to the run. Resume fails
-closed if the materialized instructions have changed. Do not maintain a second
-hand-edited copy and do not install the project skill globally under a user's
-Codex home.
+The host copies `.agents/product-run/AGENTS.md` to `<run-root>/AGENTS.md`, then
+hashes all materialized instruction bytes and binds the hash to the run. Resume
+fails closed if the materialized instructions have changed. Do not maintain a
+second hand-edited copy and do not install the project skill globally under a
+user's Codex home.
 
 Substantive output also lives in the run workspace. Agent messages contain only
 a bounded outcome envelope: current stage, status, changed artifact paths and
@@ -107,7 +124,7 @@ Native search and repository tools are deliberate capabilities. Broad
 unrestricted filesystem access, ignored repository rules, secrets in prompts,
 and direct authenticated publication are not.
 
-## Rules for new work
+## Rules for builder-agent changes
 
 Before adding Python, ask whether the code is one of these:
 
@@ -128,7 +145,7 @@ only until equivalent native-session paths are covered and can be removed.
 ## Where changes go
 
 ```text
-AGENTS.md                                      durable repo constitution
+.agents/product-run/AGENTS.md                  product-run constitution source
 .agents/skills/autonomous-workshop/           native workflow instructions
 src/cli/                                      host command entry points
 src/workshop/runtime/                         native runtime and trusted state

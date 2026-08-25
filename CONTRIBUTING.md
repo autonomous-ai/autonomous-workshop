@@ -174,13 +174,15 @@ interpolation.
 
 ## Change Workshop safely
 
-Read [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) before changing
-the CLI, runtime, workflow, or any lifecycle stage. One native Codex session
-starts immediately after Wish persistence and before Match, then owns the
-cognitive work through Deliver. Python owns deterministic contracts, tools,
-gates, checkpoints, and authorized effects. Do not extend the transitional
-per-stage model calls or add Python planning, browsing, candidate, judge, or
-repair loops.
+Builder agents must read
+[Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) before changing the
+CLI, runtime, workflow, or any lifecycle stage. This paragraph is guidance for
+agents building Workshop, not for the per-Wish product-run agent. One native
+Codex session starts immediately after Wish persistence and before Match, then
+owns the cognitive work through Deliver. Python owns deterministic contracts,
+tools, gates, checkpoints, and authorized effects. Do not extend the
+transitional per-stage model calls or add Python planning, browsing, candidate,
+judge, or repair loops.
 
 A Workshop pull request needs contract tests in the matching component folder
 under `tests/` and must preserve the dependency direction: inventors import

@@ -78,11 +78,12 @@ Workshop needs a genuinely different craft.
 
 Requires Python 3.11 or newer and a signed-in Codex CLI.
 
-The runtime is a thin host over one native Codex session per Wish. Codex is the
-main orchestrator—not a response generator called by a Python agent loop. The
-host launches it before Match, resumes the same session through every stage,
-and independently owns deterministic gates and external-effect authority. See
-[Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md).
+The runtime is a thin host over one native Codex session per Wish. That
+product-run agent is distinct from coding agents building this repository.
+Codex is the main orchestrator—not a response generator called by a Python
+agent loop. The host launches it before Match, resumes the same session through
+every stage, and independently owns deterministic gates and external-effect
+authority. See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md).
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git

@@ -35,7 +35,9 @@ different native coding-agent adapter later. Session memory improves
 continuity, but durable workspace checkpoints, exact-byte manifests, and
 verified receipts remain authoritative.
 
-The host provides the repo-scoped `autonomous-workshop` skill and the current
+The host provides the product-run constitution from
+`.agents/product-run/AGENTS.md`, the repo-scoped `autonomous-workshop` skill,
+and the current
 stage/capability envelope. Codex uses its native repository tools, shell, web
 search, image/render inspection, and applicable skills to perform research,
 creation, and repair. Required research uses the runtime's native search mode
@@ -160,7 +162,8 @@ publish by default. The target host must record suitable authorization before
 using that behavior, and a safer default can be introduced through the normal
 CLI compatibility process.
 
-Migration proceeds by placing the repository constitution and skill first,
+Migration proceeds by placing the shared repository guidance, separate
+product-run constitution, and product-run skill first,
 then adding a host session adapter, then exposing existing CAD, simulation,
 sealing, validation, and effect code as narrow tools. Each stage moves from
 large ephemeral structured calls to workspace artifacts in the resumed native
