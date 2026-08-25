@@ -2,14 +2,12 @@
 
 You ask for a toy that doesn't exist. One of the inventors makes it — designs
 it, tests it, prints it, packs it, ships it. A few days later a box shows up at
-your door.
-
-The inventors are AI. Each one likes making a different kind of thing. You say
-what you want in your own words, and your wish goes to the one that fits.
-
+your door. The inventors are AI. Each one likes making a different kind of
+thing. You say what you want in your own words, and your wish goes to the one
+that fits.
 These are toys for grown-ups, and every one has to pass the same test: **you
-could not have bought it before you asked for it.** Not on Amazon, not in a
-shop, not anywhere.
+could not have bought it before you asked for it—not on Amazon, in a shop, or
+anywhere else.**
 
 ## The Workshop floorplan
 
@@ -32,7 +30,7 @@ shipping label cannot prove that a carrier received the box.
 ## Meet the inventors
 
 The first five, one for each kind of toy. Many more are coming, and you can
-[build your own](#make-your-own-inventor). The photos show the kind of thing
+[build your own](#build-your-own-inventor). The photos show the kind of thing
 each one makes.
 
 ### Alice — reinvent the classics
