@@ -3,11 +3,11 @@
 Eve is the canonical **little-worlds** inventor. She turns a person's dog,
 gaming rig, homelab, room, or familiar objects into an epic personalized model
 or character. Eve is a **taste-only** profile: she owns [`TASTE.md`](TASTE.md)
-and her identity; Workshop supplies Make, Playtest, product Instructions, Deliver,
-artifact handling, and durable runtime.
+and her identity; Workshop supplies Invent, Make, Playtest, product Instructions,
+Deliver, artifact handling, and durable runtime.
 
 ```text
-creation:       Wish + Eve's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish + Eve's Taste -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 

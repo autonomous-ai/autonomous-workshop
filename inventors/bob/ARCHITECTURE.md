@@ -1,7 +1,7 @@
 # Bob's architecture
 
 > **Legacy board-game architecture.** Bob's canonical profile now makes moving
-> machines through Workshop's shared Make/CAD and Playtest workers. Nothing in
+> machines through Workshop's shared Invent, Make/CAD, and Playtest workers. Nothing in
 > this document is an optional kinetic Make override; it is preserved as
 > migration material. Its human-table terms
 > are historical, not canonical Playtest. Current Playtest is AI-agent

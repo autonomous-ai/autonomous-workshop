@@ -70,8 +70,9 @@ one works the same whether there are five of them or a thousand.
 
 ## Build your own inventor
 
-Every Inventor begins with Taste. Add its own Make or Playtest only when the
-shared Workshop loops are not enough.
+Every Inventor brings Taste. The Workshop supplies Invent, Make, Playtest,
+Instructions, and Deliver. Add a custom Make or Playtest only when the shared
+Workshop needs a genuinely different craft.
 
 ### Quick start
 
@@ -89,11 +90,10 @@ That is the customer path. The Workshop creates the ID, uses a small Manager
 model to match the Wish against the Inventors' descriptions, explains the
 choice, and hands the exact words to the chosen Inventor.
 
-Invent then runs a bounded self-improving loop: observe the Wish and Taste,
-act with an industrial-design concept, receive an independent reward, and
-improve until the fixed goal is reached. The scored concept becomes Make's
-mechanical- and 3D-design brief; if Make is not connected yet, the CLI keeps the
-concept and says exactly what it needs next.
+Invent then runs the shared industrial-design loop: observe the Wish and Taste,
+explore a concept, receive an independent reward, and improve until the fixed
+goal is reached. The scored concept flows into the Workshop's shared Make loop
+for mechanical and 3D design.
 
 To add an Inventor:
 
@@ -115,8 +115,8 @@ connected and reports the exact capability it needs when one is missing.
 ### Custom `TASTE.md`
 
 Edit `inventors/ada/TASTE.md` to define what Ada loves, avoids, notices, and
-makes differently from anyone else. If the shared Make and Playtest fit, stop
-here: `taste-only` needs no custom code.
+makes differently from anyone else. If the shared Invent, Make, and Playtest
+fit, stop here: `taste-only` needs no custom code.
 
 - [Alice](inventors/alice/TASTE.md) — personal heirloom editions of known games
 - [Leo](inventors/leo/TASTE.md) — original games whose personalization changes play
@@ -126,9 +126,10 @@ here: `taste-only` needs no custom code.
 
 ### Custom Make
 
-Choose `custom-make` when the Inventor needs its own way to turn a Wish and
-Playtest feedback into parts. Implement the generated `make(context)` hook; the
-Workshop still supplies Playtest, Instructions, and Deliver.
+Choose `custom-make` only when the Inventor needs a genuinely different way to
+turn the shared Invent concept and Playtest feedback into parts. Implement the
+generated `make(context)` hook; the Workshop still supplies Invent, Playtest,
+Instructions, and Deliver.
 
 The checked-in showcase Make follows this pattern:
 
@@ -144,8 +145,8 @@ See the [complete Make adapter](tools/build_showcase_products.py#L1619-L1631).
 
 ### Custom Playtest
 
-Choose `custom-playtest` when the Inventor also needs its own way to test what
-it makes. Implement `playtest(context)` to return evidence and feedback; failed
+Choose `custom-playtest` only when the Inventor also needs genuinely different
+tests. Implement `playtest(context)` to return evidence and feedback; failed
 tests go back to Make. Custom Playtest always includes Custom Make.
 
 A Playtest runs its checks, seals their evidence, and binds every result to the

@@ -2,11 +2,11 @@
 
 Leo is the canonical **invented-games** inventor. His Taste guides rules and
 table play that did not exist before the Wish; Workshop supplies the common
-Make/CAD, AI Playtest, Instructions, Deliver, artifact identity, and durable
-runtime. Known classics belong to Alice.
+Invent, Make/CAD, AI Playtest, Instructions, Deliver, artifact identity, and
+durable runtime. Known classics belong to Alice.
 
 ```text
-creation:       Wish + Leo's Taste -> Workshop Make/CAD <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish + Leo's Taste -> Workshop Invent -> Workshop Make/CAD <-> Workshop Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 

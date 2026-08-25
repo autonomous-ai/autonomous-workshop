@@ -1,13 +1,13 @@
 # Bob
 
 Bob is the canonical **moving-machines** inventor. [`TASTE.md`](TASTE.md)
-defines his kinetic point of view; Workshop supplies the common Make/CAD,
-AI-agent Playtest, Instructions, Deliver, and durable runtime. Bob can opt into
-his own Make worker when a specialized mechanism truly needs one, but it is not
-required for an ordinary Wish.
+defines his kinetic point of view; Workshop supplies the common Invent,
+Make/CAD, AI-agent Playtest, Instructions, Deliver, and durable runtime. Bob can
+opt into a custom Make worker when a specialized mechanism truly needs one,
+but it is not required for an ordinary Wish.
 
 ```text
-creation:       Wish -> Workshop Make/CAD <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish -> Workshop Invent -> Workshop Make/CAD <-> Workshop Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 
@@ -26,8 +26,8 @@ python3 profile.py preview first-machine "I wish my rally car became a hand-cran
 python3 profile.py run first-machine "I wish my rally car became a hand-cranked climbing machine" --playtest-rounds 4
 ```
 
-`run` sends Bob's Taste-bound Wish through the shared Make/CAD and AI Playtest
-workers. A caller may explicitly install a Bob-specific `MakeContext -> Made`
+`run` sends Bob's Taste-bound Wish through shared Invent, Make/CAD, and AI
+Playtest. A caller may explicitly install a Bob-specific `MakeContext -> Made`
 override; `bob.py` is never used as a fallback.
 `--playtest-rounds` is a checked 1–100 allowance recorded with the Wish; it is
 not inferred from free-form prompt text.

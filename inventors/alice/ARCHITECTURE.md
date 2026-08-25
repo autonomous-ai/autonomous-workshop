@@ -5,7 +5,8 @@
 > It is not Alice's current classics profile or the canonical Workshop stage
 > boundary. Current Playtest is AI-agent simulation only; printing and physical
 > QA belong to Deliver; customer feedback after delivery is Reviews and may
-> inform future Makes.
+> inform future Makes. Alice's current profile uses shared Invent, Make,
+> Playtest, Instructions, and Deliver.
 
 ## Objective
 
@@ -26,9 +27,10 @@ WISH ------------------ WAIT ------------------ RECEIVE
                  artifact + runtime + adapters + receipts
 ```
 
-Taste guides Make. Alice owns her niche-specific Make and Inspect work;
-Workshop supplies content-addressed artifacts, a durable runtime, adapters, and
-receipts. Future fulfillment connects an accepted Wish to physical delivery.
+In this preserved laboratory, Taste guided Alice's niche-specific Make and
+Inspect work while Workshop supplied content-addressed artifacts, a durable
+runtime, adapters, and receipts. It is historical architecture, not the
+ownership model for current Wishes.
 
 ## The system
 

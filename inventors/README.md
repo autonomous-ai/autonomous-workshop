@@ -9,19 +9,18 @@ depend on the shared [Workshop root](../README.md); Workshop never imports an
 inventor. Every toy the inventor makes lives under
 `inventors/<id>/toys/<toy-name>/`.
 
-| Inventor | Makes | `TASTE.md` | Custom Make | Custom Playtest |
-|---|---|:---:|:---:|:---:|
-| [Alice](alice/) | classics made yours | ✅ | ⬜ | ⬜ |
-| [Leo](leo/) | games that don't exist yet | ✅ | ✅ | ✅ |
-| [Bob](bob/) | machines that move | ✅ | ✅ | ⬜ |
-| [Ivy](ivy/) | science you can hold | ✅ | ⬜ | ⬜ |
-| [Eve](eve/) | little worlds | ✅ | ⬜ | ⬜ |
+| Inventor | Makes | Default path |
+|---|---|---|
+| [Alice](alice/) | classics made yours | shared Workshop |
+| [Leo](leo/) | games that don't exist yet | shared Workshop |
+| [Bob](bob/) | machines that move | shared Workshop |
+| [Ivy](ivy/) | science you can hold | shared Workshop |
+| [Eve](eve/) | little worlds | shared Workshop |
 
-Every inventor owns a `TASTE.md`. Leo also owns his own Make and Playtest,
-because inventing rules and simulating a table are his alone; Bob owns his
-Make, because a machine that moves is designed differently from anything else.
-Leo's and Bob's Make seams are typed and waiting — a run stops and says so
-rather than faking a result.
+Every inventor owns a `TASTE.md`. The Workshop supplies Invent, Make, Playtest,
+Instructions, and Deliver for all five. Any inventor may explicitly replace a
+shared seam for unusual work; ordinary Wishes never depend on inventor-owned
+infrastructure.
 
 ## Five Workshop toys
 
@@ -61,9 +60,8 @@ workshop create inventor pocket-orreries \
   --root .
 ```
 
-The command writes `inventors/pocket-orreries/`. Give the inventor a Wish
-boundary, its own Taste, and only the niche-specific Make or Playtest work it
-truly needs. Reuse the Workshop's artifact handling, durable runtime, and
-adapters instead of creating
-new branded stages for those implementation details. Keep prompts, generators,
-evaluators, and the reward hypothesis in the inventor folder.
+The command writes `inventors/pocket-orreries/`. Give the inventor its own
+Taste, then stop unless it truly needs a niche-specific Make or Playtest
+override. Reuse the Workshop's Invent, Make, Playtest, Instructions, Deliver,
+artifact handling, durable runtime, and adapters instead of creating branded
+copies of common machinery.

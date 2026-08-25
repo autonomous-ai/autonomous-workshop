@@ -3,7 +3,7 @@
   "id": "bob",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "taste-only", "default-make", "default-playtest", "optional-custom-make", "product-instructions"],
+  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
   "source": {"kind": "local"}
 }

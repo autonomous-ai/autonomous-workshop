@@ -2,17 +2,18 @@
 
 An inventor is a durable creative identity in the Autonomous Workshop
 for one kind of plaything. The inventor supplies recognizable Taste and, only
-when needed, custom Make or Playtest craft. Workshop supplies the product
-journey:
+when needed, a custom Make or Playtest override. Workshop supplies the complete
+product journey:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                       feedback
 after delivery: customer Reviews -> future Makes
 ```
 
-The inventor participates only in the five creation jobs. Reviews is
-post-delivery feedback for future work, not another hook to implement.
+Every assignment follows these six creation jobs. Taste shapes the shared
+workers; Reviews is post-delivery feedback for future work, not another hook to
+implement.
 
 This guide is for the first Workshop, which makes playthings for grown-ups
 (14+). It is not a generic framework for organizers, replacement parts, or
@@ -79,11 +80,11 @@ their Tastes in full and explain the choice. A tie is resolved deterministically
 If every finalist rejects the Wish, the Manager waits for clarification, wider
 retrieval, or a genuinely new Taste instead of forcing a bad match.
 
-The Manager is not a sixth job. Once assigned, the Wish still follows only:
+The Manager is not one of the six jobs. Once assigned, the Wish follows:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                       feedback
 after delivery: customer Reviews -> future Makes
 ```
 
@@ -101,13 +102,13 @@ Start with the least code that can express the inventor:
 
 | Level | Files or hooks you author | Shared behavior |
 |---|---|---|
-| `taste-only` | `TASTE.md` | Workshop Make and Playtest |
-| `custom-make` | `TASTE.md` plus `MakeContext -> Made` | Workshop Playtest |
-| `custom-playtest` | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Workshop still owns the feedback loop |
+| `taste-only` | `TASTE.md` | Workshop Invent, Make, and Playtest |
+| `custom-make` | `TASTE.md` plus `MakeContext -> Made` | Workshop Invent and Playtest |
+| `custom-playtest` | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Workshop Invent and the feedback loop |
 
-Workshop owns Instructions, Deliver, artifact identity, evidence binding, runtime, and
-truthful waiting at every level. Custom Playtest is available only with custom
-Make.
+Workshop owns Invent, Instructions, Deliver, artifact identity, evidence
+binding, runtime, and truthful waiting at every level. Custom Playtest is
+available only with custom Make.
 
 Do not add a hook merely to rename phases or wrap a shared call. Add one when
 the inventor has real niche logic that Taste and shared tools cannot express.
@@ -122,8 +123,8 @@ Alice, the `classics-made-yours` inventor, illustrates the boundary:
                            |
                            v
 +-------------------- SHARED WORKSHOP ----------------+
-| Wish -> Make <-> Playtest -> Instructions -> Deliver        |
-|        artifacts + feedback + evidence + runtime    |
+| Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver |
+|                 artifacts + feedback + evidence + runtime     |
 +-----------------------------------------------------+
                            |
                            v
@@ -133,8 +134,9 @@ Alice, the `classics-made-yours` inventor, illustrates the boundary:
 A new inventor follows this dependency shape and chooses the smallest level its
 category needs; it does not copy Alice's state machine or private history.
 Alice's earlier Blindcap work is Workshop provenance, while Leo is the bundled
-`invented-games` example using shared Make/CAD and Playtest by default. Custom
-workers remain optional when an inventor has genuinely category-specific logic.
+`invented-games` example using shared Invent, Make/CAD, and Playtest by default.
+Custom workers remain optional when an inventor has genuinely
+category-specific logic.
 
 ## 3. Create your inventor
 
@@ -197,7 +199,7 @@ list every shared internal module:
   "id": "your-id",
   "status": "experimental",
   "entrypoint": ["python3", "-m", "your_id"],
-  "capabilities": ["wish", "make", "playtest", "instructions", "deliver", "moving-machines", "taste-only"],
+  "capabilities": ["wish", "moving-machines", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }
@@ -251,7 +253,7 @@ Reviews after shipping.
 
 Keep routing guidance inside the same Taste rather than adding a second prompt
 or manager-only description. The Manager compares each finalist's complete,
-exact file, and Workshop binds that same hash to Make and Playtest. If a
+exact file, and Workshop binds that same hash to Invent, Make, and Playtest. If a
 finalist Taste changes after routing, the assignment is stale and must be made
 again; it may not silently change who the Wish was assigned to midway through
 a run.
@@ -288,12 +290,12 @@ def build_workshop(shared_tools: WorkshopTools) -> Workshop:
 ```
 
 `WorkshopTools` is configured once by the Workshop operator. It contains the
-shared Make, Playtest, Instructions, and Deliver implementations. A profile must not
-embed shared credentials or quietly fall back to a developer's personal
-account.
+shared Invent, Make, Playtest, Instructions, and Deliver implementations. A
+profile must not embed shared credentials or quietly fall back to a developer's
+personal account.
 
 Before running, `Workshop.preview(wish)` can show the exact Wish-, Taste-, and
-category-bound Make brief without starting work.
+category-bound brief without starting work.
 
 The application dispatches the Manager's typed assignment to the selected
 profile once. A profile should not rediscover the roster, reroute the Wish,
@@ -302,15 +304,16 @@ new Manager decision with a new assignment identity.
 
 ## 6. Customize Make only when necessary
 
-Custom Make has one stable boundary:
+Custom Make has one stable boundary after shared Invent has selected and scored
+the industrial-design concept:
 
 ```python
 from inventor_workshop import Made, MakeContext
 
 
 def make(context: MakeContext) -> Made:
-    # Use context.wish, context.taste, context.blueprint, context.feedback,
-    # context.round, and the fresh context.workspace.
+    # Use context.wish, context.taste, context.blueprint, context.invented,
+    # context.feedback, context.round, and the fresh context.workspace.
     # Run the inventor's real niche-specific creation here.
     ...
 ```
@@ -455,7 +458,7 @@ is a separate downstream responsibility. The draft records
 copy, or video were generated.
 Instructions does not make the page public and does not require an active
 listing. An owner reviews the draft and may make it public later through a
-separate action outside the five-job pipeline.
+separate action outside the six-job pipeline.
 
 If a run waits here, resume the exact sealed work instead of starting over:
 
@@ -484,7 +487,7 @@ inventing facts:
 
 An inventor does not implement its own Factory draft path. Improve shared
 Instructions when every inventor needs the change. The later owner-controlled
-public transition is not an inventor hook or a sixth Workshop job.
+public transition is not an inventor hook or a seventh Workshop job.
 
 ## 10. Let shared Deliver ship the exact approval
 
@@ -509,7 +512,7 @@ Reviews records what customers report after they receive the exact shipped
 toy. That feedback may inspire a new Wish or enter a future Make as product
 learning. It never rewrites the completed run, delays the original order, or
 becomes a custom inventor hook. Reviews is post-delivery feedback around the
-five jobs—not a sixth job.
+six jobs—not a seventh job.
 
 ## 11. Test failure before success
 
@@ -575,4 +578,4 @@ niche Playtest logic.
 Shared changes need credential-free contract tests, failure-path tests,
 artifact and evidence binding, and backward-compatible persisted-state
 handling. Older compatibility aliases may remain for existing runs, but new
-inventors should learn and expose only the five jobs.
+inventors should learn and expose only the six jobs.

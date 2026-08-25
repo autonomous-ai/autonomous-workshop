@@ -2,11 +2,11 @@
 
 Workshop 0.5 turns the repository into one opinionated Toy Workshop for
 playthings for grown-ups. Every new profile uses one of five product categories
-and the same five creation jobs:
+and the same six creation jobs:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                       feedback
 after delivery: customer Reviews -> future revision + future Wishes
 ```
 
@@ -20,11 +20,13 @@ readiness is recorded in [ADOPTION.md](ADOPTION.md).
   machines that move, science you can hold, and little worlds.
 - `Playtest` is the canonical name for AI agents simulating, testing, and
   improving an exact Make. It does not include human print-and-play.
+- `Invent` is the shared industrial-design loop; `Make` is the shared
+  mechanical-, CAD-, and 3D-design loop.
 - Instructions and Deliver are explicit shared jobs after the Make–Playtest loop.
 - Deliver owns printing and physical QA. Reviews begins after delivery and may
   inform a future revision of the same toy and future Wishes without becoming
-  a sixth job or inventor hook.
-- Inventors choose Taste-only, custom-Make, or custom-Playtest adoption.
+  a seventh job or inventor hook.
+- Inventors begin Taste-only. Custom Make or Playtest remain optional overrides.
 - Intake is one Wish at a time through a Taste-based Workshop Manager; a
   continuously running scheduler is not an inventor requirement.
 - `playtest_rounds` can be selected per Wish by a trusted boundary.
@@ -148,8 +150,8 @@ inventor. V1 intake has one request-scoped boundary:
 one Wish -> Workshop Manager -> one chosen Taste -> one assignment
                                                      |
                                                      v
-                       creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                          feedback
+                       creation: Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                                    feedback
                        later:    customer Reviews -> future revision + future Wishes
 ```
 
@@ -170,13 +172,13 @@ Migrate an old intake loop by separating these responsibilities:
 3. Record the retrieval receipt, complete finalist ranking, and explanation,
    not just the winner.
 4. Dispatch the content-bound assignment exactly once.
-5. Let the selected profile enter the shared five-job workflow without
+5. Let the selected profile enter the shared six-job workflow without
    rediscovering or rerouting the Wish.
 
 If no Taste fits, return a truthful wait for clarification or a new inventor.
 Do not weaken an existing Taste, use keyword routing, or choose the least-bad
 inventor. A future scheduler may wrap this one-Wish API and invoke it repeatedly,
-but that adapter remains outside inventor folders and does not become a sixth
+but that adapter remains outside inventor folders and does not become a seventh
 Workshop job.
 
 ## Migrate the workflow
@@ -188,32 +190,33 @@ delivery:
 ```text
 0.4:  Wish + Taste -> Make <-> legacy review
 
-0.5 creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                 feedback
+0.5 creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                           feedback
     after delivery: customer Reviews -> future revision + future Wishes
 ```
 
 Taste guides every choice but is not a job. Research, ideation, rules, CAD,
 AI simulation, repair, slicing, rendering, printing, QA, packing, and carrier
-calls are tasks within the five jobs. Customer Reviews occur only after
+calls are tasks within the six jobs. Customer Reviews occur only after
 Deliver and may influence a future revision of the same toy and future Wishes;
-they are not a sixth job or migration gate for the completed order, and they
+they are not a seventh job or migration gate for the completed order, and they
 cannot mutate already shipped bytes.
 
 For a mature state machine:
 
-1. Map its invention output to `MakeContext -> Made` and seal the exact product
-   tree.
-2. Map every required evaluator and evidence file to
+1. Map its concept and industrial-design output to `InventContext -> Invented`.
+2. Map its mechanical, CAD, and 3D output to `MakeContext -> Made` and seal the
+   exact product tree.
+3. Map every required evaluator and evidence file to
    `PlaytestContext -> Playtested`.
-3. Convert failed findings into structured `Feedback` for a new immutable Make
+4. Convert failed findings into structured `Feedback` for a new immutable Make
    round.
-4. Require a passed Playtest for the exact artifact before creating Instructions.
-5. Bind every Instructions fact and in-box guide to that artifact and its evidence;
+5. Require a passed Playtest for the exact artifact before creating Instructions.
+6. Bind every Instructions fact and in-box guide to that artifact and its evidence;
    leave customer-facing copy, images, and video to Factory.
-6. Bind production, QA, packing, and carrier receipts to the exact product and
+7. Bind production, QA, packing, and carrier receipts to the exact product and
    Instructions hashes before returning Delivered.
-7. Keep post-delivery Reviews attached to the delivered product and offer them
+8. Keep post-delivery Reviews attached to the delivered product and offer them
    only to a future revision of the same toy and future Wishes; never rewrite
    the completed run.
 
@@ -225,9 +228,9 @@ than dual-writing or guessing a conversion.
 
 | Level | Profile owns | Workshop owns |
 |---|---|---|
-| Taste only | `TASTE.md` | Make, Playtest, loop, Instructions, Deliver, runtime |
-| Custom Make | Taste and `MakeContext -> Made` | Playtest, loop, Instructions, Deliver, runtime |
-| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | loop, Instructions, Deliver, runtime |
+| Taste only | `TASTE.md` | Invent, Make, Playtest, loops, Instructions, Deliver, runtime |
+| Custom Make | Taste and `MakeContext -> Made` | Invent, Playtest, loop, Instructions, Deliver, runtime |
+| Custom Playtest | Taste, custom Make, and `PlaytestContext -> Playtested` | Invent, loop, Instructions, Deliver, runtime |
 
 A custom Playtest requires a custom Make. Keep stronger niche checks, but return
 their observations through the shared result and evidence contracts.
@@ -237,13 +240,13 @@ they are examples, not a closed catalog or five completed live inventors:
 
 - Alice demonstrates `classics-made-yours` at the Taste-only level. Her Blindcap
   laboratory is provenance that taught Workshop, not her active profile or a
-  second invented-game inventor. Shared Make and Playtest must wait when their real
-  capabilities are absent.
-- Leo is the clean Workshop-native `invented-games` inventor. Shared Make/CAD
-  and Playtest are his defaults and must enforce the pinned seeded simulation
+  second invented-game inventor. Shared workers wait when a real provider
+  capability is absent.
+- Leo is the clean Workshop-native `invented-games` inventor. Shared Invent,
+  Make/CAD, and Playtest are his defaults and must enforce the pinned seeded simulation
   policy. Paired custom Make and Playtest workers remain an optional override,
   not a prerequisite for making a Wish.
-- Bob demonstrates `moving-machines` through shared Make/CAD and Playtest. An
+- Bob demonstrates `moving-machines` through shared Invent, Make/CAD, and Playtest. An
   inventor-specific Make worker is optional; his preserved board-game
   laboratory is not that worker.
 - Ivy (`holdable-science`) and Eve (`little-worlds`) are Taste-only profiles and
@@ -342,14 +345,15 @@ and never merge authorities by modification time.
 5. Replace profile-owned polling with one content-bound assignment entry point;
    keep any needed scheduler as a separate application adapter.
 6. Add the Workshop-native profile and let unfinished seams return `WaitingFor`.
-7. Adopt immutable `Made` identity without weakening local invariants.
-8. Adopt artifact-bound `Playtested` evidence and actionable feedback.
-9. Add trusted per-Wish `playtest_rounds` without changing gates.
-10. Move lifecycle, leases, and budgets only after parity tests pass.
-11. Adopt shared Instructions, then exact production and Deliver receipts.
-12. Connect post-delivery Reviews to a future revision of the same toy and
+7. Adopt shared `Invented` identity for the scored industrial-design concept.
+8. Adopt immutable `Made` identity without weakening local invariants.
+9. Adopt artifact-bound `Playtested` evidence and actionable feedback.
+10. Add trusted per-Wish `playtest_rounds` without changing gates.
+11. Move lifecycle, leases, and budgets only after parity tests pass.
+12. Adopt shared Instructions, then exact production and Deliver receipts.
+13. Connect post-delivery Reviews to a future revision of the same toy and
     future Wishes, never as a new job or a rewrite of completed evidence.
-13. Simplify operational names only after every entry point uses one authority.
+14. Simplify operational names only after every entry point uses one authority.
 
 Blindcap provenance and Bob's preserved laboratory should retain every stronger
 native invariant until Workshop proves equivalent behavior. All five active

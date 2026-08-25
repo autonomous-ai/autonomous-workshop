@@ -43,20 +43,22 @@ Every category faces the same bar:
 Kits and numbered series may become later ways to extend a successful product.
 They are not Workshop jobs and are not V1 promises.
 
-## The five jobs
+## The six jobs
 
 The complete Workshop vocabulary is:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                       feedback
 after delivery: customer Reviews -> a future revision of this toy
                                   -> future Wishes and Makes
 ```
 
 - **Wish** preserves what the person asked for and the relevant constraints.
-- **Make** invents the plaything, writes any rules, and creates its exact
-  printable product files.
+- **Invent** explores the plaything's industrial design and improves the chosen
+  concept to its fixed reward goal.
+- **Make** turns that concept into mechanical and 3D design, including any
+  rules and exact printable product files.
 - **Playtest** has AI agents simulate using or playing that exact Make from
   every relevant angle. A failed check returns actionable feedback to Make,
   producing a new immutable round. Playtest never means a human
@@ -73,16 +75,16 @@ after delivery: customer Reviews -> a future revision of this toy
 
 `Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
-tasks inside the five jobs, not extra lifecycle concepts. After Deliver,
+tasks inside the six jobs, not extra lifecycle concepts. After Deliver,
 customer **Reviews** may improve a future revision of the same toy and inform
 future Wishes and Makes. Reviews is a public, post-delivery feedback stream,
-not a sixth inventor job, custom inventor hook, or release gate for the order
+not a seventh inventor job, custom inventor hook, or release gate for the order
 already shipped.
 
 The owner-facing transition from private draft to public page is deliberately
-outside those five jobs. An owner reviews the finished draft and decides when
+outside those six jobs. An owner reviews the finished draft and decides when
 to make it public; that decision does not delay Instructions or Deliver and
-does not introduce a sixth job.
+does not introduce a seventh job.
 
 ## The Workshop Manager
 
@@ -110,8 +112,8 @@ one Wish to the best fit once.
                          chosen inventor
                                |
                                v
-             creation: Wish -> Make <-> Playtest -> Instructions -> Deliver
-                                      feedback
+             creation: Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                                feedback
              later:    customer Reviews -> future Makes
 ```
 
@@ -152,7 +154,7 @@ category.
 The Manager is typed Workshop engine code, not a skill, a sixth Workshop job,
 or a creative supervisor once work begins. Making it a skill would leave the
 host to select the selector and would hide routing behind prompt behavior. Its
-assignment enters the same five-job contract as every other Wish. A future
+assignment enters the same six-job contract as every other Wish. A future
 continuous service may repeatedly call this one-Wish interface, but scheduling,
 polling, and 24/7 operation stay outside an inventor profile and outside the V1
 Workshop promise.
@@ -172,10 +174,10 @@ the machinery beneath her is shared by every inventor.
                              v
 +-------------------- SHARED WORKSHOP ----------------------+
 |                                                            |
-|  [Wish] -> [Make] -> [Playtest] --pass--> [Instructions]          |
-|              ^            |                    |            |
-|              +--feedback--+                    v            |
-|                                             [Deliver]       |
+|  [Wish] -> [Invent] -> [Make] -> [Playtest] -> [Instructions] |
+|                          ^            |              |       |
+|                          +--feedback--+              v       |
+|                                                   [Deliver]  |
 |                                                            |
 |  CAD | AI players | evidence | runtime | rendering         |
 |  product pages | production | USPS / UPS / FedEx           |
@@ -189,8 +191,8 @@ the machinery beneath her is shared by every inventor.
 ```
 
 Dependency remains one-way: Alice imports Workshop; Workshop never imports
-Alice. She demonstrates the Taste-only level: shared Workshop owns Make,
-Playtest, the improvement loop, Instructions, Deliver, and runtime.
+Alice. She demonstrates the Taste-only level: shared Workshop owns Invent,
+Make, Playtest, their improvement loops, Instructions, Deliver, and runtime.
 
 Alice is the bundled `classics-made-yours` example. Her earlier Blindcap work
 remains provenance that taught Workshop how to make and Playtest games; Leo is
@@ -206,9 +208,9 @@ The same boundary supports three levels of authorship:
 
 | Level | Inventor supplies | Workshop supplies |
 |---|---|---|
-| **Taste only** | `TASTE.md` | Make, Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | the improvement loop, Instructions, Deliver, and runtime |
+| **Taste only** | `TASTE.md` | Invent, Make, Playtest, their loops, Instructions, Deliver, and runtime |
+| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Invent, Playtest, the feedback loop, Instructions, Deliver, and runtime |
+| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Invent, the feedback loop, Instructions, Deliver, and runtime |
 
 A custom Playtest requires a custom Make. This keeps the maximum level honest:
 an inventor that changes how evidence is interpreted must also own the product
@@ -229,6 +231,9 @@ The jobs exchange small, exact records:
 Wish + Taste + ToyBlueprint
               |
               v
+       InventContext  ->  Invented
+                            | scored industrial-design concept
+                            v
          MakeContext  ->  Made
                             | exact product manifest
                             v
@@ -244,7 +249,9 @@ Wish + Taste + ToyBlueprint
                        WorkshopRun
 ```
 
-`Made` binds product metadata to an immutable artifact tree. `Playtested` binds
+`Invented` binds the scored industrial-design concept to the exact Wish and
+Taste. `Made` binds the resulting mechanical and 3D design to an immutable
+artifact tree. `Playtested` binds
 every result and evidence file to that artifact hash. `ProductInstructions` binds
 the factual Factory handoff and in-box paper to both its own manifest and the
 product hash. Factory alone creates customer-facing page copy, images, and video.
@@ -357,7 +364,7 @@ creator-authored page output.
 
 Instructions stops there and advances to Deliver. It neither makes the page
 public nor requires an active listing. An owner may review the draft and make
-it public later through a separate, explicit action outside the five-job
+it public later through a separate, explicit action outside the six-job
 pipeline.
 
 This is a fail-closed boundary across every shared Shop entry point, including
@@ -413,7 +420,7 @@ inventors/<id>/
 src/inventor_workshop/
   manager.py            one-Wish, Taste-bound inventor assignment
   toys.py               five categories and their shared task blueprint
-  workshop.py           five-job orchestration and improvement loop
+  workshop.py           six-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
   make.py               Wish and shared making boundary
   gameplay.py           reproducible AI-player games and leagues
@@ -446,5 +453,5 @@ inventors.
 
 A scheduler belongs in a future application adapter only when an operator
 actually needs continuous intake. It may create repeated one-shot assignments;
-it must not become a sixth job, hide inside `TASTE.md`, or make every inventor
+it must not become a seventh job, hide inside `TASTE.md`, or make every inventor
 carry queue and daemon infrastructure.

@@ -2,11 +2,12 @@
 
 Alice is the canonical **classics-made-yours** inventor. She is a **taste-only**
 profile: Alice owns [`TASTE.md`](TASTE.md) and her identity; Workshop supplies
-Make, Playtest, product Instructions, Deliver, artifact handling, and durable runtime.
+Invent, Make, Playtest, product Instructions, Deliver, artifact handling, and
+durable runtime.
 She starts with known rules and makes the physical classic unmistakably personal.
 
 ```text
-creation:       Wish + Alice's Taste -> Workshop Make <-> Workshop Playtest -> Instructions -> Deliver
+creation:       Wish + Alice's Taste -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 
@@ -18,14 +19,14 @@ belong in Leo's `invented-games` lane.
 The public creation language stays deliberately small:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 
 Research, AI simulation, and CAD checks live inside Playtest; printing and
 hands-on QA live inside Deliver. Customer Reviews arrive only after delivery
 and may inform future Makes; they are not another creation job. Product-page
-assembly and shipping likewise stay inside the five jobs. The new `python3
+assembly and shipping likewise stay inside the six jobs. The new `python3
 profile.py` entrypoint is the Workshop-facing profile. The
 historical `alice` command remains available for operating and migrating the
 custom laboratory; it is not a second Workshop.

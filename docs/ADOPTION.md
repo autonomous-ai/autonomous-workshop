@@ -4,12 +4,12 @@ Autonomous Workshop 0.5 is the shared Toy Workshop for playthings for grown-ups
 (14+). Its product journey is exactly:
 
 ```text
-creation:       Wish -> Make <-> Playtest -> Instructions -> Deliver
-                             feedback
+creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+                                       feedback
 after delivery: customer Reviews -> future revision + future Wishes
 ```
 
-The creation workflow still has exactly five jobs. Reviews is shown only as
+The creation workflow has exactly six jobs. Reviews is shown only as
 post-delivery feedback for future work.
 
 This page records what the five bundled showcase profiles can do **now**. A
@@ -26,11 +26,11 @@ required to run 24/7, poll a queue, or schedule itself.
 
 | Profile | Category | Customization level | Truthful 0.5 status |
 |---|---|---|---|
-| Alice | classics made yours (`classics-made-yours`) | Taste only | Alice deliberately demonstrates the minimum extension level and delegates Make and Playtest to shared tools. Her Blindcap laboratory is provenance that taught Workshop, not her active profile or a second invented-game inventor. |
-| Leo | games that don't exist yet (`invented-games`) | Taste only by default | Shared Make/CAD and AI Playtest build and test Leo's games. The shared game path must execute the pinned simulation policy before Instructions. Leo may opt into paired custom Make and Playtest workers when a game needs them. |
-| Bob | machines that move (`moving-machines`) | Taste only by default | Shared Make/CAD and AI Playtest build and test Bob's moving machines. Bob may opt into a custom Make worker for specialized mechanisms; his preserved board-game laboratory is not that worker. |
-| Ivy | science you can hold (`holdable-science`) | Taste only | Her science profile delegates Make and Playtest to shared tools. Without configured shared model/CAD and scientific-evidence tools, a run truthfully waits at Make or Playtest. |
-| Eve | little worlds (`little-worlds`) | Taste only | Her fresh personalized-world profile delegates Make and Playtest to shared tools. Without configured shared tools, a run truthfully waits at Make. This profile does not restore the old Eve implementation. |
+| Alice | classics made yours (`classics-made-yours`) | Taste only | Alice brings Taste; shared Invent, Make, and Playtest do the work. Her Blindcap laboratory is provenance that taught Workshop, not her active profile or a second invented-game inventor. |
+| Leo | games that don't exist yet (`invented-games`) | Taste only by default | Shared Invent, Make/CAD, and AI Playtest build and test Leo's games, including the pinned simulation policy. Paired custom Make and Playtest workers remain optional. |
+| Bob | machines that move (`moving-machines`) | Taste only by default | Shared Invent, Make/CAD, and AI Playtest build and test Bob's moving machines. A custom Make worker is optional for specialized mechanisms; his preserved board-game laboratory is not that worker. |
+| Ivy | science you can hold (`holdable-science`) | Taste only | Shared Invent, Make, and Playtest do the work, including the lane's scientific-evidence checks. |
+| Eve | little worlds (`little-worlds`) | Taste only | Shared Invent, Make, and Playtest do the work. This profile does not restore the old Eve implementation. |
 
 All five categories share the same bar: the result could not have been
 bought before the Wish; cool, clever, or striking beats merely cute or
@@ -72,9 +72,9 @@ add another Workshop job. A future continuous-intake adapter may repeatedly
 invoke the same one-Wish contract without adding queue or daemon machinery to
 the inventors themselves.
 
-All five profiles use shared Make/CAD and Playtest by default. The inventor
-supplies Taste; Workshop owns those common workers, the improvement loop,
-Instructions, Deliver, artifact identity, and runtime. Bob and Leo retain
+All five profiles use shared Invent, Make/CAD, and Playtest by default. The
+inventor supplies Taste; Workshop owns those common workers, their reward and
+feedback loops, Instructions, Deliver, artifact identity, and runtime. Bob and Leo retain
 fail-closed compatibility seams and can accept explicit custom workers, but a
 customer Wish does not depend on either inventor building common infrastructure.
 Mature legacy code remains useful migration material and is never invoked
@@ -91,6 +91,7 @@ All five profiles use the same 0.5 contracts for:
 - one-Wish, exact-Taste routing and content-bound assignment;
 - exact, human-owned Taste bytes and SHA-256 identity;
 - one of the five Workshop product categories;
+- the `InventContext -> Invented` industrial-design seam;
 - the `MakeContext -> Made` and `PlaytestContext -> Playtested` seams;
 - actionable Playtest feedback and bounded immutable rounds;
 - typed `Need` and `WaitingFor` results instead of fabricated success;
@@ -112,7 +113,7 @@ evidence; slicer output does not become a physical print; concept art does not
 become a product photograph; a generated label does not become carrier handoff.
 
 Reviews is post-delivery feedback that can inform a future revision of the same
-toy and future Wishes. It is not a sixth job, a custom inventor hook, or a gate
+toy and future Wishes. It is not a seventh job, a custom inventor hook, or a gate
 that holds the original order, and it cannot mutate shipped bytes.
 
 ## Per-Wish Playtest allowance
@@ -197,11 +198,11 @@ model credential, catalog credential, printer, carrier, or paid service.
 1. Connect real semantic retrieval and judgment to the one-Wish Manager and
    rehearse explained routing across a large catalog, including ambiguous,
    close-margin, stale, and all-rejected shortlists.
-2. Prove the shared Make/CAD and Playtest workers preserve Alice's known rules
+2. Prove the shared Invent, Make/CAD, and Playtest workers preserve Alice's known rules
    while producing a genuinely personal edition.
-3. Prove the shared workers create and execute Leo's invented games, including
+3. Prove the shared workers invent, create, and execute Leo's games, including
    seeded AI-player simulation and the 1,000-game gate.
-4. Prove the shared workers create and test Bob's moving machines without
+4. Prove the shared workers invent, create, and test Bob's moving machines without
    routing those Wishes into the preserved board-game laboratory.
 5. Add an inventor-specific Make or Playtest override only when a category
    truly needs behavior the shared workers cannot express.

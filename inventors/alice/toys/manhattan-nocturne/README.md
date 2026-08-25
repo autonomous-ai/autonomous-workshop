@@ -23,7 +23,7 @@ Concept art is visual intent, not evidence of the final geometry.
 ## Public pipeline
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
+Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 ```
 
 AI Players can test exact digital artifacts for chess fidelity, recognition,
