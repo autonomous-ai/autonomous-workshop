@@ -24,10 +24,6 @@ Chess, go, dominoes, puzzles — games everyone already knows, made into a set
 that is yours. Alice never touches the rules. She changes what the pieces are,
 so the set is about you. It is judged as an object, not as a game.
 
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
-
 ### Leo — invent games that don't exist yet
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
@@ -41,10 +37,6 @@ Instructions, his AI players must finish the required seeded games and expose
 broken rules, loops, exploits, and weak strategies. Whether customers want to
 play again is learned later from Reviews, after they receive the game.
 
-- [x] `TASTE.md`
-- [x] Custom Make
-- [x] Custom Playtest
-
 ### Bob — invent machines that move
 
 https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
@@ -57,10 +49,6 @@ something in. No motors, no batteries, no electronics — the movement has to co
 out of the shape itself. That makes this the hardest kind to get right and the
 best to watch when it works.
 
-- [x] `TASTE.md`
-- [x] Custom Make
-- [ ] Custom Playtest
-
 ### Ivy — invent science toys you can hold
 
 ![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
@@ -70,10 +58,6 @@ The planets, a swinging pendulum, a shape that looks impossible — real science
 small enough to pick up. Ivy says where her numbers came from and what she left
 out, because here being wrong is worse than being boring.
 
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
-
 ### Eve — invent little worlds
 
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
@@ -82,10 +66,6 @@ out, because here being wrong is worse than being boring.
 Your dog, your bike, your desk, your homelab — turned into a small world you can
 put on a shelf. Anyone can buy a generic model of anything. Eve's only counts if
 it could not have existed before your wish.
-
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
 
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
