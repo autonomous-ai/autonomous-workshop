@@ -59,9 +59,10 @@ They are not jobs and are not promises of the V1 Workshop.
 
 This checkout starts with five showcase inventors: Alice for classics, Leo for
 invented games, Bob for moving machines, Ivy for holdable science, and Eve for
-little worlds. They demonstrate the five categories and three extension
-levels; they are not a closed roster. Anyone may add an inventor, and many
-inventors may serve the same category with different niches and Taste.
+little worlds. They demonstrate the five categories with Taste-only defaults;
+the scaffold also supports the two optional override levels. They are not a
+closed roster. Anyone may add an inventor, and many inventors may serve the
+same category with different niches and Taste.
 
 ### How the Workshop Manager chooses
 
@@ -143,6 +144,9 @@ category-specific logic.
 The canonical creator writes the thin folder, validates its schema-v5 identity,
 runs its smoke checks, and only then lets it join the Manager's catalog:
 
+Generated Inventors require Python 3.11 or newer because the shared CAD runtime
+is part of the default Workshop path.
+
 ```bash
 workshop create inventor ada \
   --description "Choose Ada for Wish-shaped hand-cranked creatures; not static models, tabletop rules, or science explainers." \
@@ -199,7 +203,7 @@ list every shared internal module:
   "id": "your-id",
   "status": "experimental",
   "entrypoint": ["python3", "-m", "your_id"],
-  "capabilities": ["wish", "moving-machines", "taste-only"],
+  "capabilities": ["moving-machines", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

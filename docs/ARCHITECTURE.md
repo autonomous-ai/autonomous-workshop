@@ -170,7 +170,7 @@ the machinery beneath her is shared by every inventor.
 |  category: classics-made-yours                           |
 |  no custom Make or Playtest code                         |
 +----------------------------+------------------------------+
-                             | configures typed hooks
+                             | Taste + one assignment
                              v
 +-------------------- SHARED WORKSHOP ----------------------+
 |                                                            |

@@ -226,7 +226,7 @@ than dual-writing or guessing a conversion.
 
 ## Adopt at the smallest level
 
-| Level | Profile owns | Workshop owns |
+| Level | Inventor contributes or overrides | Workshop supplies |
 |---|---|---|
 | Taste only | `TASTE.md` | Invent, Make, Playtest, loops, Instructions, Deliver, runtime |
 | Custom Make | Taste and `MakeContext -> Made` | Invent, Playtest, loop, Instructions, Deliver, runtime |

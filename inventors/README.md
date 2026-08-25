@@ -17,7 +17,7 @@ inventor. Every toy the inventor makes lives under
 | [Ivy](ivy/) | science you can hold | shared Workshop |
 | [Eve](eve/) | little worlds | shared Workshop |
 
-Every inventor owns a `TASTE.md`. The Workshop supplies Invent, Make, Playtest,
+Every inventor contributes a `TASTE.md`. The Workshop supplies Invent, Make, Playtest,
 Instructions, and Deliver for all five. Any inventor may explicitly replace a
 shared seam for unusual work; ordinary Wishes never depend on inventor-owned
 infrastructure.

@@ -134,8 +134,8 @@ def _files(
     env = inventor_id.upper().replace("-", "_")
     lane_guidance = _LANE_GUIDANCE[lane]
     # Capabilities describe the Inventor's public lane and chosen override
-    # level—not the shared engine components it inherits automatically.
-    capabilities = ["wish", lane, level]
+    # level—not shared intake or engine components inherited automatically.
+    capabilities = [lane, level]
     manifest = {
         "schema_version": 5,
         "id": inventor_id,
@@ -160,23 +160,26 @@ def _files(
 
     ownership = {
         "taste-only": (
-            "This inventor owns only `TASTE.md`. Workshop supplies Make, Playtest, "
-            "Instructions, Deliver, the improvement loop, and durable state."
+            "This inventor contributes only `TASTE.md`. Workshop supplies Invent, "
+            "Make, Playtest, Instructions, Deliver, the improvement loops, and "
+            "durable state."
         ),
         "custom-make": (
-            "This inventor owns `TASTE.md` and `inventor.py:make`. Workshop supplies "
-            "Playtest, Instructions, Deliver, the improvement loop, and durable state."
+            "This inventor contributes `TASTE.md` and explicitly overrides Make with "
+            "`inventor.py:make`. Workshop supplies Invent, Playtest, Instructions, "
+            "Deliver, the improvement loops, and durable state."
         ),
         "custom-playtest": (
-            "This inventor owns `TASTE.md`, `inventor.py:make`, and "
-            "`inventor.py:playtest`. Workshop still owns the loop, Instructions, Deliver, "
-            "artifact identity, and durable state."
+            "This inventor contributes `TASTE.md` and explicitly overrides Make and "
+            "Playtest with `inventor.py:make` and `inventor.py:playtest`. Workshop "
+            "still supplies Invent, the feedback loop, Instructions, Deliver, artifact "
+            "identity, and durable state."
         ),
     }[level]
     hook_step = {
         "taste-only": (
-            "2. Configure shared `WorkshopTools` once for every inventor; do not copy a "
-            "Make or Playtest harness into this folder."
+            "2. Use the operator-configured shared `WorkshopTools`; do not copy Invent, "
+            "Make, or Playtest machinery into this folder."
         ),
         "custom-make": (
             "2. Implement the typed `make(context)` seam in `src/%s/inventor.py`."
@@ -280,6 +283,8 @@ Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 
 Generated inventors use the installable `{package}` module for their profile entrypoint,
 so the manifest, source checkout, and built package all run the same thin wrapper.
+They require Python 3.11 or newer because the common Workshop path includes the
+shared CAD runtime.
 
 ```bash
 python3 -m pip install -e ../.. -e .
@@ -314,7 +319,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "inventor-{inventor_id}"
 version = "0.1.0"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = ["inventor-workshop>=0.5,<0.6"]
 
 [project.scripts]

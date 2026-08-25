@@ -30,6 +30,7 @@ PROFILE = {
     "lane": LANE,
     "customization": "taste-only; optional custom Make + Playtest",
     "workshop_level": "taste-only",
+    "invent": "Workshop shared Invent",
     "make": "Workshop shared Make/CAD by default; optional Leo override",
     "playtest": "Workshop shared AI Playtest by default; optional Leo override",
     "release_gate": "1,000 seeded AI games across four player styles",
@@ -52,7 +53,7 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
-    """Use shared Workshop workers unless explicit Leo overrides are supplied."""
+    """Use shared stages unless explicit tools or Leo overrides are supplied."""
 
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
     selected_tools = configured_workshop_tools(

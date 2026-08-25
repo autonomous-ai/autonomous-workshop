@@ -3,7 +3,7 @@
   "id": "eve",
   "status": "experimental",
   "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "little-worlds", "personalization", "taste-only"],
+  "capabilities": ["little-worlds", "personalization", "taste-only"],
   "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
   "source": {"kind": "local"}
 }

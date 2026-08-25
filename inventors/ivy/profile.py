@@ -26,8 +26,9 @@ PROFILE = {
     "lane": LANE,
     "customization": "taste-only",
     "workshop_level": "taste-only",
-    "make": "Workshop default",
-    "playtest": "Workshop default",
+    "invent": "Workshop shared Invent",
+    "make": "Workshop shared Make/CAD",
+    "playtest": "Workshop shared AI Playtest",
 }
 
 
@@ -46,6 +47,8 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
+    """Use shared Workshop stages; explicit ``WorkshopTools`` values win."""
+
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
     return Workshop(
         INVENTOR_ROOT,

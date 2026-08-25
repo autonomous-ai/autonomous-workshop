@@ -74,9 +74,10 @@ the inventors themselves.
 
 All five profiles use shared Invent, Make/CAD, and Playtest by default. The
 inventor supplies Taste; Workshop owns those common workers, their reward and
-feedback loops, Instructions, Deliver, artifact identity, and runtime. Bob and Leo retain
-fail-closed compatibility seams and can accept explicit custom workers, but a
-customer Wish does not depend on either inventor building common infrastructure.
+feedback loops, Instructions, Deliver, artifact identity, and runtime. Bob's
+profile accepts an explicit custom Make override, and Leo's accepts paired
+custom Make and Playtest overrides, but a customer Wish does not depend on
+either inventor building common infrastructure.
 Mature legacy code remains useful migration material and is never invoked
 silently through a bundled profile.
 

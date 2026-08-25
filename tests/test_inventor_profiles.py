@@ -12,6 +12,7 @@ from unittest import mock
 from inventor_workshop.handoff import ManagerAssignmentHandoff
 from inventor_workshop.jobs import Invented, Made
 from inventor_workshop.make import Wish
+from inventor_workshop.manifest import load_manifest
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -81,8 +82,37 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(described["inventor_id"], inventor_id)
                 self.assertEqual(described["lane"], lane)
                 self.assertEqual(described["workshop_level"], level)
+                self.assertEqual(described["invent"], "Workshop shared Invent")
                 self.assertEqual(len(described["taste_sha256"]), 64)
                 self.assertEqual(len(described["blueprint_sha256"]), 64)
+
+                manifest = load_manifest(
+                    ROOT / "inventors" / inventor_id / "inventor.json"
+                )
+                self.assertIn(lane, manifest.capabilities)
+                self.assertIn("taste-only", manifest.capabilities)
+                self.assertTrue(
+                    set(manifest.capabilities).isdisjoint(
+                        {
+                            "wish",
+                            "invent",
+                            "make",
+                            "playtest",
+                            "instructions",
+                            "deliver",
+                        }
+                    )
+                )
+
+    def test_every_profile_accepts_an_explicit_shared_invent_provider(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                workshop = profile.build_workshop(
+                    tools=WorkshopTools(invent=invent_fixture)
+                )
+                self.assertIs(workshop.invent_job, invent_fixture)
+                self.assertEqual(workshop.customization_level, "taste-only")
 
     def test_every_profile_creates_a_taste_bound_shared_workshop_preview(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):

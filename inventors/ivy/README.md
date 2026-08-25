@@ -3,7 +3,7 @@
 Ivy is the canonical **holdable-science** inventor. She makes orreries,
 pendulums, linkages, mathematical constructions, and physical explanations that
 turn an abstract relationship into something a person can see and feel. Ivy is
-a **taste-only** profile: she owns [`TASTE.md`](TASTE.md) and her identity;
+a **taste-only** profile: she contributes [`TASTE.md`](TASTE.md) and a thin identity;
 Workshop supplies Invent, Make, Playtest, product Instructions, Deliver,
 artifact handling, and durable runtime.
 
@@ -12,7 +12,7 @@ creation:       Wish + Ivy's Taste -> Invent -> Make <-> Playtest -> Instruction
 after delivery: customer Reviews -> future Makes
 ```
 
-## What Ivy owns
+## What Ivy contributes
 
 - A point of view about scientific truth, elegant geometry, interaction, and awe.
 - Wish-specific parameters, cited sources, explicit units, and honest

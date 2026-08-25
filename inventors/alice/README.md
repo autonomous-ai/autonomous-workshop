@@ -1,7 +1,7 @@
 # Alice
 
 Alice is the canonical **classics-made-yours** inventor. She is a **taste-only**
-profile: Alice owns [`TASTE.md`](TASTE.md) and her identity; Workshop supplies
+profile: Alice contributes [`TASTE.md`](TASTE.md) and a thin identity; Workshop supplies
 Invent, Make, Playtest, product Instructions, Deliver, artifact handling, and
 durable runtime.
 She starts with known rules and makes the physical classic unmistakably personal.
@@ -53,7 +53,7 @@ shared Workshop. It remains a restartable multi-agent game laboratory whose
 events are immutable.
 
 It is not the implementation behind Alice's new taste-only profile and it must
-not receive new classics Wishes. Leo owns the canonical invented-games profile;
+not receive new classics Wishes. Leo is the bundled invented-games profile;
 future migration should extract proven capabilities into Workshop or adapt them
 behind Leo's typed Make and Playtest contracts without calling this legacy loop
 implicitly.

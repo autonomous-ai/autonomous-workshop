@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "inventor-workshop"
 version = "0.5.0"
 description = "A request-driven toy workshop that routes each Wish to the right inventor"
-requires-python = ">=3.9"
-dependencies = []
+requires-python = ">=3.11"
+dependencies = ["cadgen==0.4.19"]
 
 [project.scripts]
 workshop = "inventor_workshop.cli:main"

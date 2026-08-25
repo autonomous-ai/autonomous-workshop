@@ -104,7 +104,12 @@ class ScaffoldTest(unittest.TestCase):
             self.assertEqual(manifest.workshop_features, ())
             self.assertEqual(
                 tuple(manifest.capabilities),
-                ("wish", "invented-games", "taste-only"),
+                ("invented-games", "taste-only"),
+            )
+            self.assertTrue(
+                set(manifest.capabilities).isdisjoint(
+                    {"wish", "invent", "make", "playtest", "instructions", "deliver"}
+                )
             )
 
             package = destination / "src/word_games"
@@ -125,11 +130,16 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn(
                 "Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver", readme
             )
-            self.assertIn("owns only `TASTE.md`", readme)
+            self.assertIn("contributes only `TASTE.md`", readme)
+            self.assertIn("Workshop supplies Invent, Make, Playtest", readme)
+            self.assertIn("require Python 3.11 or newer", readme)
             self.assertIn("trusted checkout or product tier", readme)
             self.assertIn("No generic, off-the-shelf prints", readme)
             self.assertNotIn("Make/Inspect", readme)
-            self.assertIn('requires-python = ">=3.9"', (destination / "pyproject.toml").read_text())
+            self.assertIn(
+                'requires-python = ">=3.11"',
+                (destination / "pyproject.toml").read_text(),
+            )
 
             environment = self.environment(destination)
             observed = []
@@ -262,6 +272,11 @@ class ScaffoldTest(unittest.TestCase):
                         lane="moving-machines",
                         level=level,
                     )
+                    manifest = load_manifest(destination / "inventor.json")
+                    self.assertEqual(
+                        tuple(manifest.capabilities), ("moving-machines", level)
+                    )
+                    self.assertNotIn("wish", manifest.capabilities)
                     hook = destination / "src" / inventor_id.replace("-", "_") / "inventor.py"
                     self.assertEqual(hook.exists(), has_make)
                     if hook.exists():

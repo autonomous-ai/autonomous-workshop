@@ -76,7 +76,7 @@ Workshop needs a genuinely different craft.
 
 ### Quick start
 
-Requires Python 3.9 or newer and a signed-in Codex CLI.
+Requires Python 3.11 or newer and a signed-in Codex CLI.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git

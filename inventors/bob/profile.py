@@ -31,8 +31,9 @@ PROFILE = {
     "lane": LANE,
     "customization": "taste-only; optional custom Make",
     "workshop_level": "taste-only",
+    "invent": "Workshop shared Invent",
     "make": "Workshop shared Make/CAD by default; optional Bob override",
-    "playtest": "Workshop default",
+    "playtest": "Workshop shared AI Playtest",
 }
 
 def create_wish(product_id: str, objective: str) -> Wish:
@@ -61,7 +62,7 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
-    """Use shared Workshop workers unless the caller explicitly overrides Make."""
+    """Use shared stages unless explicit tools or a custom Make override them."""
 
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
     selected_tools = configured_workshop_tools(

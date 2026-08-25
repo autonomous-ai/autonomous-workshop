@@ -1,8 +1,10 @@
 # Contributing
 
 This repository is a shared blueprint for autonomous inventors. The normal
-contribution is one new folder under `inventors/` whose developer-defined taste
-and workflow reuse Workshop instead of rebuilding infrastructure.
+contribution is one new folder under `inventors/` with a distinctive Taste and
+a thin connection to the shared Workshop. Invent, Make, Playtest,
+Instructions, and Deliver are already supplied; custom Make or Playtest code
+is an explicit exception for genuinely niche behavior.
 
 Start with [Build an inventor](docs/BUILD_AN_INVENTOR.md). For a new
 inventor, the expected path is scaffold, customize, prove it offline, and open a
@@ -27,28 +29,33 @@ Workshop contract.
 
 ## Add an inventor
 
-Create a clean package rather than copying Alice, Bob, or an imported
-snapshot:
+Create a clean Taste-only package rather than copying Alice, Bob, or an
+imported snapshot:
 
 ```bash
-workshop new deduction-games \
+workshop create inventor deduction-games \
   --name Ada \
-  --niche "two-player printable deduction games" \
-  --template board-game \
-  --root inventors
+  --description "Choose Ada for Wish-shaped two-player deduction games; not known classics, kinetic machines, or decorative miniatures." \
+  --lane invented-games \
+  --level taste-only \
+  --root .
 ```
 
-Choose `board-game`, `physical-product`, or `custom` for `--template`.
+Choose one of the five lanes documented in
+[Build an inventor](docs/BUILD_AN_INVENTOR.md). Start with `taste-only`; use
+`custom-make` or `custom-playtest` only when the contribution really replaces
+that typed shared seam.
 
 The pull request must include:
 
-- `inventors/<inventor-id>/inventor.json` with truthful, implemented
-  capabilities;
+- `inventors/<inventor-id>/inventor.json` whose capabilities describe the
+  Taste lane and actual custom behavior—not shared Workshop stages;
 - one canonical, non-empty root `TASTE.md`;
 - a README explaining the thesis, workflow, commands, evidence bar, external
   dependencies, current limitations, and live-readiness status;
-- complete inventor-owned code, prompts, roles, generators, evaluators, and
-  integration composition needed for the claimed behavior;
+- complete code and tests for each custom override the inventor actually
+  claims; Taste-only profiles do not need their own workers, prompts,
+  generators, evaluators, CAD stack, or integration composition;
 - deterministic tests and an offline smoke path that need no credentials,
   network, paid provider, CAD service, or printer;
 - no runtime databases, transcripts, credentials, generated backups, or private
@@ -60,35 +67,43 @@ byte-locked imports with an `UPSTREAM.md` provenance record and snapshot lock.
 
 ## Keep the ownership boundary clear
 
-Inventor-owned code answers:
+The Inventor contribution answers:
 
 - Who is this for?
 - What does this inventor value and reject?
-- Which roles, prompts, mechanisms, and experiments generate candidates?
-- Which stronger niche-specific evaluators define good?
-- Which verified outcomes alter future choices?
+- What makes this Taste recognizable and which Wishes should it reject?
+- Does this niche truly require a custom Make or Playtest override?
+- If so, what extra behavior and evidence does that override provide?
 
 Workshop-owned code answers:
 
+- How do shared Invent, Make/CAD, Playtest, Instructions, and Deliver run?
+- How do their reward goals, feedback loops, and truthful waits work?
 - How does the runtime persist identity, state, leases, retries, budgets, and effects?
 - How are making skills and CAD/print evidence invoked and versioned?
 - How are artifacts and evidence bound to exact bytes?
 - How are outside effects recorded, executed, and reconciled by receipt?
 - How are shared adapters tested without exposing credentials?
 
-Put reusable infrastructure in the repository's shared root, not in the new inventor. Put
-taste, creative policy, and niche-specific workflow in the inventor, not in
-Workshop. If an adapter is generally useful, propose it as a shared Workshop
-integration and keep provider-specific transport out of inventor domain logic.
+Put reusable infrastructure in the repository's shared root, not in the new
+inventor. Put Taste and only genuinely niche override behavior in the inventor.
+If an adapter is generally useful, propose it as a shared Workshop integration
+and keep provider-specific transport out of inventor domain logic.
 
 ## Public names
 
-The developer-facing vocabulary has four concepts:
+The creation vocabulary has six jobs:
 
 - **Wish** for preserved intent;
-- **Taste** for the inventor's creative constitution;
-- **Make** for creation and revision;
-- **Inspect** for exact-artifact checks and feedback.
+- **Invent** for industrial design and concept selection;
+- **Make** for mechanical, CAD, and 3D design;
+- **Playtest** for exact-artifact checks and feedback;
+- **Instructions** for the product manual and authenticated private Factory handoff;
+- **Deliver** for printing, physical QA, packing, and carrier handoff.
+
+**Taste** is the inventor's creative constitution and guides every job; it is
+not another job. Customer Reviews arrive after Deliver and may guide future
+work; they are not an Inventor hook.
 
 Use `workshop` for the CLI and `inventor_workshop` for the Python package.
 Artifact, runtime, adapter, and receipt are literal internal implementation
@@ -123,19 +138,18 @@ documented commands:
 
 ```bash
 python -m pip install -e ../.. -e .
-deduction_games doctor
-deduction_games make first-product
-deduction_games status
+deduction_games profile
+deduction_games preview first-product "I wish for a tiny deduction duel"
+deduction_games run first-product "I wish for a tiny deduction duel"
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The generated offline Make proves the complete Taste → Make → Inspect path with
-deterministic workshop fakes, binds its artifact identity, and records local
-state. It is necessary but not sufficient for production readiness. Add tests
-for each claimed capability, including Taste binding, deterministic agent fakes,
-Make/Inspect failures, artifact identity, bounded repair, and outside-effect
-ambiguity where those capabilities apply. A mock outcome must be visibly
-identified as a mock and cannot establish live readiness.
+The generated smoke path proves discovery, exact Taste binding, shared-engine
+wiring, and truthful waiting without claiming that a product was made. Add
+tests for every custom capability claimed, including artifact identity,
+Playtest failures, bounded repair, and outside-effect ambiguity where those
+capabilities apply. A mock outcome must be visibly identified as a mock and
+cannot establish live readiness.
 
 Run the repository checks from the root:
 
@@ -161,15 +175,16 @@ A Workshop pull request needs contract tests in `tests/` and must
 preserve the dependency direction: inventors import Workshop; Workshop
 never imports an inventor.
 
-Changes to the runtime, budgets, artifact identity, Make or Inspect
+Changes to the runtime, budgets, artifact identity, Make or Playtest
 floors, or outside effects need tests for success, malformed input,
 unknown outcomes, retry/recovery, and compatibility with already persisted
 data. An inventor may strengthen a gate but must not create a bypass around a
 shared floor.
 
-Keep the Python runtime usable without credentials or paid providers. Heavy CAD
-dependencies and provider SDKs belong behind optional Make or adapter
-boundaries, with deterministic fakes for CI.
+Keep the Python runtime usable without credentials or paid providers. Shared
+CAD dependencies and provider SDKs belong behind explicit Workshop provider
+boundaries, with deterministic fakes for CI; they do not become an Inventor's
+private stack merely because a provider is unavailable.
 
 ## Security, provenance, and generated files
 
@@ -196,7 +211,7 @@ Reviewers will check that:
 
 1. capability claims match executable code and tests;
 2. the root taste contract influences the workflow;
-3. shared Make, Inspect, artifact, runtime, and integration infrastructure was reused
+3. shared Invent, Make, Playtest, Instructions, Deliver, artifact, runtime, and integration infrastructure was reused
    rather than copied;
 4. failure and ambiguity stop safely;
 5. current adoption is not described as completed target architecture;

@@ -51,16 +51,15 @@ queue policy                     ----->   durable runtime and effect outbox
 storefront metadata              ----->   adapter + typed receipt
 ```
 
-Bob intentionally does not claim the Workshop's generic
-`Inspection`/`InspectionResult` surface yet. His existing rule, simulation,
-table, CAD, and reward inspectors have board-game-specific evidence. The
-manifest advertises only the shared features Bob actually uses.
+This table describes only the preserved board-game laboratory. Bob's current
+schema-v5 manifest advertises his moving-machines Taste lane, not historical
+shared features or workers. His canonical profile receives shared Invent,
+Make/CAD, and Playtest from Workshop unless a caller explicitly supplies a
+real custom Make override.
 
-The general Workshop Make surface is `Wish -> Workbench.make() -> MakeResult`.
-Bob's older board-game loop currently owns its specialized Make orchestration,
-so it does not claim `workbench.make` either. This distinction keeps the
-manifest honest while Bob still shares Taste, artifact handling, and runtime
-infrastructure.
+The older laboratory predates the current `InventContext`, `MakeContext`, and
+`PlaytestContext` contracts. Its specialized orchestration remains migration
+material and is never selected implicitly by Bob's canonical profile.
 
 At the effect boundary the authority chain is:
 
