@@ -12,6 +12,11 @@ from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.errors import ArtifactError, ContractError
+from inventor_workshop.concept import (
+    CONCEPT_RESEARCH_DIRECTORY,
+    CONCEPT_RESEARCH_FINDINGS_FILENAME,
+    CONCEPT_RESEARCH_SOURCES_DIRECTORY,
+)
 from inventor_workshop.jobs import (
     CONCEPT_DESCRIPTOR_FILENAME,
     CONCEPT_OVERALL_ROLES,
@@ -19,8 +24,12 @@ from inventor_workshop.jobs import (
     ConceptComponent,
     ConceptContext,
     ConceptImages,
+    DerivedWish,
     Feedback,
     MakeContext,
+    WishResearch,
+    WishResearchFinding,
+    WishResearchSource,
 )
 from inventor_workshop.make import Wish
 from inventor_workshop.taste import load_taste
@@ -75,6 +84,134 @@ def brief(components=None, **overrides):
     )
 
 
+RESEARCH_EXCERPT = (
+    "A tournament king stands 95 mm tall on a 40 mm base, and the board's "
+    "squares are 55 mm across."
+)
+
+
+def source(identifier="fide-standards"):
+    return WishResearchSource.create(
+        identifier,
+        "https://example.invalid/standards",
+        "Tournament equipment standards",
+        RESEARCH_EXCERPT,
+        "2026-08-25T00:00:00Z",
+    )
+
+
+def research(components=None, findings=None, sources=None, **overrides):
+    """One breakdown that satisfies every attribution rule by default."""
+
+    parts = components if components is not None else (
+        component(),
+        component(
+            "lid",
+            name="Lid",
+            purpose="Closes the body.",
+            form="a shallow dome with a knurled rim",
+            dimensions_mm=(38.0, 38.0, 8.0),
+            placement="on top of the body",
+            interfaces="snaps onto the body rim",
+        ),
+    )
+    fields = {
+        "object": "a pocket spinner",
+        "category": "a hand-operated mechanism",
+        "envelope_mm": (60.0, 60.0, 20.0),
+        "wall_mm": 2.4,
+        "features": ("one surprising rhythm",),
+        "print": {"orientation": "flat on its largest face", "supports": False},
+        "components": parts,
+        "fits": None,
+    }
+    fields.update(overrides)
+    recorded = source() if sources is None else None
+    if findings is None:
+        findings = tuple(
+            WishResearchFinding(
+                "Research decided %s." % name,
+                name,
+                decided_because="no source stated it",
+            )
+            for name in (
+                "object",
+                "category",
+                "envelope_mm",
+                "wall_mm",
+                "features",
+                "print",
+            )
+        ) + (
+            WishResearchFinding(
+                "The design is made of %d printed parts." % len(parts),
+                "components",
+                ("fide-standards",),
+            ),
+        )
+        if fields["fits"] is not None:
+            findings += (
+                WishResearchFinding(
+                    "It must hold the stated target.",
+                    "fits",
+                    decided_because="no source stated it",
+                ),
+            )
+    return WishResearch(
+        fields["object"],
+        fields["category"],
+        fields["envelope_mm"],
+        fields["wall_mm"],
+        fields["features"],
+        fields["print"],
+        fields["components"],
+        fields["fits"],
+        findings,
+        (recorded,) if sources is None else tuple(sources),
+    )
+
+
+def derived(wish=None, constraints=None):
+    routed = wish if wish is not None else Wish.create(
+        "pocket-spinner", "A pocket spinner that reveals a changing beat"
+    )
+    return DerivedWish.derive(
+        routed, constraints if constraints is not None else {"wall_mm": 2.4}
+    )
+
+
+def write_research(root, record):
+    """Lay the research out on disk the way DefaultConcept seals it."""
+
+    directory = Path(root) / CONCEPT_RESEARCH_DIRECTORY
+    (directory / CONCEPT_RESEARCH_SOURCES_DIRECTORY).mkdir(
+        parents=True, exist_ok=True
+    )
+    filed = []
+    for position, item in enumerate(record.sources, start=1):
+        relative = "%s/%03d.json" % (CONCEPT_RESEARCH_SOURCES_DIRECTORY, position)
+        (directory / relative).write_text(
+            json.dumps(item.to_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        filed.append({"id": item.id, "file": relative})
+    (directory / CONCEPT_RESEARCH_FINDINGS_FILENAME).write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "kind": "workshop-wish-research",
+                "research_sha256": record.research_sha256,
+                "findings": [item.to_dict() for item in record.findings],
+                "sources": filed,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def write_concept(
     root,
     design,
@@ -83,11 +220,16 @@ def write_concept(
     components=None,
     descriptor=None,
     round_number=1,
+    record=None,
+    derived_wish=None,
 ):
     """Lay out a concept on disk the way DefaultConcept seals one."""
 
     root = Path(root)
     (root / "images").mkdir(parents=True, exist_ok=True)
+    record = record if record is not None else research(components=design.components)
+    derived_wish = derived_wish if derived_wish is not None else derived()
+    write_research(root, record)
     if overall is None:
         overall = {role: "images/%s.png" % role for role in CONCEPT_OVERALL_ROLES}
     if components is None:
@@ -109,20 +251,30 @@ def write_concept(
             "concept_art": True,
             "brief": design.to_dict(),
             "images": images,
+            "research": {
+                "research_sha256": record.research_sha256,
+                "valid_as_product_proof": False,
+            },
+            "derived_wish": {
+                "wish_sha256": derived_wish.wish_sha256,
+                "derived_wish_sha256": derived_wish.derived_wish_sha256,
+            },
         }
     if descriptor is not False:
         (root / CONCEPT_DESCRIPTOR_FILENAME).write_text(
             json.dumps(descriptor, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-    return overall, components
+    return overall, components, record, derived_wish
 
 
 def seal(root, design, *, round_number=1, **kwargs):
-    overall, components = write_concept(
+    overall, components, record, derived_wish = write_concept(
         root, design, round_number=round_number, **kwargs
     )
-    return ConceptImages.from_root(root, design, overall, components, round_number)
+    return ConceptImages.from_root(
+        root, design, overall, components, round_number, record, derived_wish
+    )
 
 
 class ConceptComponentTest(unittest.TestCase):
@@ -265,7 +417,7 @@ class ConceptImagesTest(unittest.TestCase):
             seal(self.root, self.design, components={})
 
     def test_image_paths_must_be_safe_and_distinct(self):
-        overall, components = write_concept(self.root, self.design)
+        overall, components, record, derived_wish = write_concept(self.root, self.design)
         manifest = build_artifact_manifest(self.root, created_at="content-addressed")
         for value in (
             "/etc/passwd.png",
@@ -281,7 +433,14 @@ class ConceptImagesTest(unittest.TestCase):
                 unsafe["front"] = value
                 with self.assertRaises(ContractError):
                     ConceptImages(
-                        self.root, manifest, self.design, unsafe, components, 1
+                        self.root,
+                        manifest,
+                        self.design,
+                        unsafe,
+                        components,
+                        1,
+                        record,
+                        derived_wish,
                     )
 
     def test_two_roles_may_not_share_one_file(self):
@@ -303,29 +462,42 @@ class ConceptImagesTest(unittest.TestCase):
             )
 
     def test_a_symlinked_image_or_root_is_refused(self):
-        overall, components = write_concept(self.root, self.design)
+        overall, components, record, derived_wish = write_concept(self.root, self.design)
         target = self.root / "images" / "front.png"
         link = self.root / "images" / "top.png"
         link.unlink()
         link.symlink_to(target)
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
 
     def test_a_descriptor_that_disagrees_with_the_files_is_refused(self):
-        overall, components = write_concept(self.root, self.design)
+        overall, components, record, derived_wish = write_concept(self.root, self.design)
         manifest = build_artifact_manifest(self.root, created_at="content-addressed")
         with self.assertRaises(ContractError):
             # A relabelled descriptor: top and bottom swapped.
             swapped = dict(overall)
             swapped["top"], swapped["bottom"] = swapped["bottom"], swapped["top"]
-            ConceptImages(self.root, manifest, self.design, swapped, components, 1)
+            ConceptImages(
+                self.root,
+                manifest,
+                self.design,
+                swapped,
+                components,
+                1,
+                record,
+                derived_wish,
+            )
 
         write_concept(self.root, self.design, descriptor={"schema_version": 1})
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
 
     def test_a_descriptor_naming_a_missing_file_is_refused(self):
-        overall, components = write_concept(self.root, self.design)
+        overall, components, record, derived_wish = write_concept(self.root, self.design)
         images = dict(overall)
         images["components"] = dict(components)
         images["front"] = "images/absent.png"
@@ -341,10 +513,12 @@ class ConceptImagesTest(unittest.TestCase):
             },
         )
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
 
     def test_a_concept_must_mark_itself_as_concept_art(self):
-        overall, components = write_concept(self.root, self.design)
+        overall, components, record, derived_wish = write_concept(self.root, self.design)
         images = dict(overall)
         images["components"] = dict(components)
         write_concept(
@@ -359,17 +533,23 @@ class ConceptImagesTest(unittest.TestCase):
             },
         )
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
 
     def test_a_missing_or_malformed_descriptor_is_refused(self):
-        overall, components = write_concept(self.root, self.design, descriptor=False)
+        overall, components, record, derived_wish = write_concept(self.root, self.design, descriptor=False)
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
         (self.root / CONCEPT_DESCRIPTOR_FILENAME).write_text(
             "not json\n", encoding="utf-8"
         )
         with self.assertRaises(ContractError):
-            ConceptImages.from_root(self.root, self.design, overall, components, 1)
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, record, derived_wish
+            )
 
     def test_relabelling_a_sealed_concept_changes_its_identity(self):
         concept = seal(self.root, self.design)
@@ -546,6 +726,291 @@ class MakeContextConceptTest(unittest.TestCase):
     def test_a_concept_must_be_a_concept_record(self):
         with self.assertRaises(ContractError):
             self.make_context(concept={"front": "images/front.png"})
+
+
+class WishResearchRecordTest(unittest.TestCase):
+    """What a breakdown must refuse before any brief is derived from it."""
+
+    def test_a_source_records_the_excerpt_it_contributed(self):
+        recorded = source()
+        self.assertEqual(recorded.excerpt, RESEARCH_EXCERPT)
+        self.assertEqual(
+            set(recorded.to_dict()),
+            {"id", "origin", "title", "excerpt", "excerpt_sha256", "retrieved_at"},
+        )
+
+    def test_a_source_whose_hash_does_not_match_its_excerpt_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "does not hash its own excerpt"):
+            WishResearchSource(
+                "fide-standards",
+                "https://example.invalid/standards",
+                "Tournament equipment standards",
+                RESEARCH_EXCERPT,
+                "0" * 64,
+                "2026-08-25T00:00:00Z",
+            )
+
+    def test_a_source_recorded_without_its_excerpt_is_refused(self):
+        with self.assertRaises(ContractError):
+            WishResearchSource.create(
+                "fide-standards",
+                "https://example.invalid/standards",
+                "Tournament equipment standards",
+                "",
+                "2026-08-25T00:00:00Z",
+            )
+
+    def test_a_finding_carrying_both_a_source_and_a_decision_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "never both and never neither"):
+            WishResearchFinding(
+                "A king stands 95 mm tall.",
+                "envelope_mm",
+                ("fide-standards",),
+                "no source stated it",
+            )
+
+    def test_a_finding_carrying_neither_is_refused(self):
+        with self.assertRaisesRegex(ContractError, "never both and never neither"):
+            WishResearchFinding("A king stands 95 mm tall.", "envelope_mm")
+
+    def test_a_finding_must_decide_a_field_the_brief_needs(self):
+        with self.assertRaises(ContractError):
+            WishResearchFinding(
+                "Something true.", "colour", decided_because="no source stated it"
+            )
+
+    def test_a_breakdown_citing_an_unknown_source_is_refused(self):
+        findings = tuple(
+            WishResearchFinding(
+                "Research decided %s." % name,
+                name,
+                decided_because="no source stated it",
+            )
+            for name in (
+                "object",
+                "category",
+                "envelope_mm",
+                "wall_mm",
+                "features",
+                "print",
+            )
+        ) + (
+            WishResearchFinding(
+                "The design is made of two printed parts.",
+                "components",
+                ("never-recorded",),
+            ),
+        )
+        with self.assertRaisesRegex(ContractError, "recorded sources do not contain"):
+            research(findings=findings)
+
+    def test_a_breakdown_leaving_a_required_field_unattributed_is_refused(self):
+        findings = tuple(
+            WishResearchFinding(
+                "Research decided %s." % name,
+                name,
+                decided_because="no source stated it",
+            )
+            for name in (
+                "object",
+                "category",
+                "envelope_mm",
+                "features",
+                "print",
+                "components",
+            )
+        )
+        with self.assertRaisesRegex(ContractError, "leaves wall_mm unattributed"):
+            research(findings=findings, sources=())
+
+    def test_a_stated_fit_target_must_be_attributed_too(self):
+        findings = tuple(
+            WishResearchFinding(
+                "Research decided %s." % name,
+                name,
+                decided_because="no source stated it",
+            )
+            for name in (
+                "object",
+                "category",
+                "envelope_mm",
+                "wall_mm",
+                "features",
+                "print",
+                "components",
+            )
+        )
+        with self.assertRaisesRegex(ContractError, "leaves fits unattributed"):
+            research(
+                findings=findings,
+                sources=(),
+                fits={
+                    "target": "four coasters",
+                    "ref_mm": [100.0, 100.0, 8.0],
+                    "clearance_mm": 0.6,
+                },
+            )
+
+    def test_a_derived_wish_that_changed_the_words_is_refused(self):
+        routed = Wish.create("pocket-spinner", "A pocket spinner")
+        altered = DerivedWish(
+            DerivedWish.derive(routed, {}).wish_sha256,
+            Wish.create("pocket-spinner", "A pocket spinner with a light"),
+        )
+        with self.assertRaisesRegex(ContractError, "unchanged"):
+            altered.assert_derived_from(routed)
+
+    def test_a_derived_wish_names_both_identities(self):
+        routed = Wish.create("pocket-spinner", "A pocket spinner")
+        record = DerivedWish.derive(routed, {"wall_mm": 2.0})
+        record.assert_derived_from(routed)
+        self.assertNotEqual(record.wish_sha256, record.derived_wish_sha256)
+        self.assertEqual(record.wish.objective, routed.objective)
+        self.assertEqual(record.wish.constraints, {"wall_mm": 2.0})
+        self.assertEqual(
+            DerivedWish.from_dict(record.to_dict()).to_dict(), record.to_dict()
+        )
+
+
+class SealedResearchTest(unittest.TestCase):
+    """The research is covered by the concept's hash, exactly as the pixels are."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name).resolve() / "concept"
+        self.root.mkdir()
+        self.design = brief()
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def findings_path(self):
+        return (
+            self.root
+            / CONCEPT_RESEARCH_DIRECTORY
+            / CONCEPT_RESEARCH_FINDINGS_FILENAME
+        )
+
+    def test_the_sealed_root_contains_the_research(self):
+        concept = seal(self.root, self.design)
+        self.assertTrue(self.findings_path().is_file())
+        sources = (
+            self.root / CONCEPT_RESEARCH_DIRECTORY / CONCEPT_RESEARCH_SOURCES_DIRECTORY
+        )
+        self.assertEqual(
+            sorted(item.name for item in sources.iterdir()), ["001.json"]
+        )
+        self.assertEqual(
+            concept.research.research_sha256,
+            json.loads(self.findings_path().read_text(encoding="utf-8"))[
+                "research_sha256"
+            ],
+        )
+        paths = {entry.path for entry in concept.manifest.entries}
+        self.assertIn("research/findings.json", paths)
+        self.assertIn("research/sources/001.json", paths)
+
+    def test_editing_the_research_after_sealing_invalidates_the_concept(self):
+        concept = seal(self.root, self.design)
+        concept.assert_current()
+        record = json.loads(self.findings_path().read_text(encoding="utf-8"))
+        record["findings"][0]["claim"] = "Something else entirely."
+        self.findings_path().write_text(
+            json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        with self.assertRaises(ArtifactError):
+            concept.assert_current()
+
+    def test_two_identical_briefs_with_different_research_seal_differently(self):
+        first = seal(self.root, self.design)
+        other_root = self.root.parent / "other"
+        other_root.mkdir()
+        second = seal(
+            other_root,
+            self.design,
+            record=research(
+                components=self.design.components,
+                sources=(
+                    WishResearchSource.create(
+                        "other-standards",
+                        "https://example.invalid/other",
+                        "A different source",
+                        "A different excerpt was relied upon here.",
+                        "2026-08-25T00:00:00Z",
+                    ),
+                ),
+                findings=tuple(
+                    WishResearchFinding(
+                        "Research decided %s." % name,
+                        name,
+                        decided_because="no source stated it",
+                    )
+                    for name in (
+                        "object",
+                        "category",
+                        "envelope_mm",
+                        "wall_mm",
+                        "features",
+                        "print",
+                    )
+                )
+                + (
+                    WishResearchFinding(
+                        "The design is made of two printed parts.",
+                        "components",
+                        ("other-standards",),
+                    ),
+                ),
+            ),
+        )
+        self.assertEqual(first.brief.to_dict(), second.brief.to_dict())
+        self.assertNotEqual(
+            first.research.research_sha256, second.research.research_sha256
+        )
+        self.assertNotEqual(first.concept_sha256, second.concept_sha256)
+
+    def test_the_sealed_research_is_labelled_as_not_product_proof(self):
+        seal(self.root, self.design)
+        descriptor = json.loads(
+            (self.root / CONCEPT_DESCRIPTOR_FILENAME).read_text(encoding="utf-8")
+        )
+        self.assertIs(descriptor["research"]["valid_as_product_proof"], False)
+
+    def test_a_concept_without_its_research_is_refused(self):
+        overall, components, _, derived_wish = write_concept(self.root, self.design)
+        with self.assertRaisesRegex(ContractError, "WishResearch"):
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, None, derived_wish
+            )
+
+    def test_a_descriptor_naming_other_research_is_refused(self):
+        overall, components, record, derived_wish = write_concept(
+            self.root, self.design
+        )
+        other = research(
+            components=self.design.components,
+            findings=tuple(
+                WishResearchFinding(
+                    "Research decided %s, differently." % name,
+                    name,
+                    decided_because="no source stated it",
+                )
+                for name in (
+                    "object",
+                    "category",
+                    "envelope_mm",
+                    "wall_mm",
+                    "features",
+                    "print",
+                    "components",
+                )
+            ),
+            sources=(),
+        )
+        with self.assertRaisesRegex(ContractError, "different research"):
+            ConceptImages.from_root(
+                self.root, self.design, overall, components, 1, other, derived_wish
+            )
 
 
 if __name__ == "__main__":

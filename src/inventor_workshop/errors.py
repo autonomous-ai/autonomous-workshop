@@ -46,7 +46,10 @@ class ReceiptError(EffectError):
 
 
 class ConceptProviderError(WorkshopError):
-    """A real Concept image or exploded-view inspection provider failed a call.
+    """A real Concept capability provider failed a call.
+
+    Covers the image provider, the exploded-view inspection, and the wish
+    research a brief is derived from.
 
     Raised for a failure in the call itself — a non-retryable HTTP status, an
     exhausted retry budget, or a response that cannot be trusted (malformed,

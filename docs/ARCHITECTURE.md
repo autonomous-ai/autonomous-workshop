@@ -58,16 +58,27 @@ after delivery: customer Reviews -> a future revision of this toy
 
 - **Wish** preserves what the person asked for and the relevant constraints.
 - **Concept** decides what the plaything actually looks like before anything is
-  built. It locks the design's physical facts — envelope, wall thickness, fit
+  built, in one order: research, then brief, then images. It first researches
+  the Wish into a breakdown of what the named object actually is and how big its
+  parts really are, where every stated fact is attributable — either to a source
+  the research recorded, or to a decision recorded with its reason. From that
+  breakdown it locks the design's physical facts — envelope, wall thickness, fit
   target, features, print orientation, and the component breakdown — and then
   draws one mutually consistent set of images from them: `front`, `top`,
   `bottom`, an `exploded` view, and one view per component. Every image request
   carries the locked numbers, and each image after the first is anchored on the
   ones already drawn, so the set depicts one object rather than several
-  interpretations of the same words. Concept runs at the top of every round, so
-  a Playtest rejection can be answered in the design instead of worked around in
-  geometry. With no image provider configured it raises a truthful `Need` and
-  the run parks; it never describes a design it did not draw.
+  interpretations of the same words. The research is sealed inside the concept
+  root, so `concept_sha256` covers the findings as well as the pixels, and the
+  researched constraints are written back as a *derived* Wish that later jobs
+  build to — the routed Wish keeps its exact bytes, because routing was decided
+  from them. Concept runs at the top of every round, and a refining round reuses
+  the standing research rather than researching again, so a Playtest rejection
+  can be answered in the design instead of worked around in geometry. With no
+  researcher, image provider, or exploded-view check configured it raises a
+  truthful `Need` for each and the run parks; it never describes a design it did
+  not draw, and never substitutes default physical facts for research that did
+  not happen.
 - **Make** invents the plaything, writes any rules, and creates its exact
   printable product files. When a concept is present it is the primary
   reference for form, proportion, construction, and the part breakdown; the
@@ -239,10 +250,11 @@ contract being tested. Instructions and Deliver remain shared so every inventor 
 the same truth and exact-artifact guarantees.
 
 The shared defaults are capabilities configured for the Workshop as a whole,
-not magic built into a profile. If a model, CAD worker, AI simulator, image
-renderer, printer, or carrier connection is unavailable, its owning job
-returns a typed `WaitingFor` result. Missing capability is never converted
-into success.
+not magic built into a profile. If a model, CAD worker, AI simulator, wish
+researcher, image renderer, printer, or carrier connection is unavailable, its
+owning job returns a typed `WaitingFor` result. The capabilities a run can wait
+for at Concept are `wish-research`, `concept-images`, and `exploded-view-check`.
+Missing capability is never converted into success.
 
 ## Job contracts
 
@@ -252,8 +264,12 @@ The jobs exchange small, exact records:
 Wish + Taste + ToyBlueprint
               |
               v
+      WishResearchRequest  ->  WishResearch
+              |                  | attributed breakdown + its sources
+              v                  v
       ConceptContext  ->  ConceptImages
-                            | locked brief + sealed image set
+                            | locked brief + sealed image set + sealed research
+                            | + the derived Wish carrying the researched constraints
                             v
          MakeContext  ->  Made
                             | exact product manifest
@@ -270,9 +286,12 @@ Wish + Taste + ToyBlueprint
                        WorkshopRun
 ```
 
-`ConceptImages` binds a locked `ConceptBrief` and every image role to a sealed
-concept root, giving a `concept_sha256` the run records and re-checks whenever
-the concept is used. `Made` binds product metadata to an immutable artifact
+`ConceptImages` binds a locked `ConceptBrief`, the `WishResearch` that brief was
+derived from, the derived Wish written back from it, and every image role to a
+sealed concept root, giving a `concept_sha256` the run records and re-checks
+whenever the concept is used. The run records `wish_sha256` and
+`derived_wish_sha256` beside it, so the person's own words and the constraints
+research added to them stay separable. `Made` binds product metadata to an immutable artifact
 tree. `Playtested` binds every result and evidence file to that artifact hash.
 `ProductInstructions` binds the factual Factory handoff and in-box paper to both
 its own manifest and the product hash. Factory alone creates customer-facing page
@@ -459,7 +478,8 @@ src/inventor_workshop/
   toys.py               five categories and their shared task blueprint
   workshop.py           six-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
-  concept.py            locked design brief, image anchoring, and the artist seam
+  concept.py            wish research, locked design brief, image anchoring, and the artist seam
+  wish_researcher_openrouter.py  a real researcher on a caller-configured endpoint
   make.py               Wish and shared making boundary
   gameplay.py           reproducible AI-player games and leagues
   playtest.py           exact artifact-bound evidence

@@ -28,7 +28,7 @@ from .cad import (
     VerificationCheck,
     VerificationReceipt,
 )
-from .concept import DefaultConcept, MAX_CONCEPT_REFINE_DEPTH
+from .concept import DefaultConcept, MAX_CONCEPT_REFINE_DEPTH, WishResearcher
 from .deliver import DefaultDeliver
 from .instructions import (
     DefaultInstructions,
@@ -42,6 +42,7 @@ from .jobs import (
     CustomerReview,
     DeliverContext,
     Delivered,
+    DerivedWish,
     InstructionsContext,
     Made,
     MakeContext,
@@ -570,6 +571,7 @@ def _instructions_checkpoint_payload(
     run_root: Path,
     playtest_workspace: Path,
     concept_sha256: Optional[str],
+    derived_wish: DerivedWish,
 ) -> Mapping[str, Any]:
     made.assert_current()
     playtested.evidence.assert_valid()
@@ -598,6 +600,9 @@ def _instructions_checkpoint_payload(
         # The concept this build followed, so a resumed run cannot silently
         # attach its approved product to a different design.
         "concept_sha256": concept_sha256,
+        # The researched constraints Make actually built to, naming the routed
+        # Wish they were derived from so a resumed run cannot swap them.
+        "derived_wish": derived_wish.to_dict(),
         "made": {
             "root": _relative_tree(run_root, made.artifact_root, "Made artifact"),
             "manifest": made.artifact_manifest.to_dict(),
@@ -718,6 +723,7 @@ class WorkshopTools:
     instructions: Optional[InstructionsJob] = None
     deliver: Optional[DeliverJob] = None
     concept: Optional[ConceptJob] = None
+    wish_researcher: Optional[WishResearcher] = None
 
     def __post_init__(self) -> None:
         for value, label in (
@@ -726,6 +732,7 @@ class WorkshopTools:
             (self.playtest, "Workshop Playtest"),
             (self.instructions, "Workshop Instructions"),
             (self.deliver, "Workshop Deliver"),
+            (self.wish_researcher, "Workshop wish research"),
         ):
             _callable_or_none(value, label)
 
@@ -869,9 +876,19 @@ class Workshop:
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
         self.tools = selected_tools
-        self.concept_job: ConceptJob = (
+        concept_job: ConceptJob = (
             concept or selected_tools.concept or _missing_concept
         )
+        # The researcher is installed once for the Workshop, exactly as the
+        # artist and the inspector are, rather than per inventor.
+        if selected_tools.wish_researcher is not None and isinstance(
+            concept_job, DefaultConcept
+        ):
+            if concept_job.wish_researcher is None:
+                concept_job = concept_job.with_wish_researcher(
+                    selected_tools.wish_researcher
+                )
+        self.concept_job: ConceptJob = concept_job
         self.make_job: MakeJob = make or selected_tools.make or _missing_make
         self.playtest_job: PlaytestJob = (
             playtest or selected_tools.playtest or _missing_playtest
@@ -1038,6 +1055,7 @@ class Workshop:
         instructions_sha256: Optional[str] = None,
         page_url: Optional[str] = None,
         concept_sha256: Optional[str] = None,
+        derived_wish_sha256: Optional[str] = None,
     ) -> WorkshopRun:
         if any(need.job != job for need in waiting.needs):
             raise ContractError("waiting capability belongs to a different Workshop job")
@@ -1048,6 +1066,8 @@ class Workshop:
         }
         if concept_sha256 is not None:
             wait_payload["concept_sha256"] = concept_sha256
+        if derived_wish_sha256 is not None:
+            wait_payload["derived_wish_sha256"] = derived_wish_sha256
         if job == "instructions":
             run_root = self.runtime_root / "runs" / wish.product_id
             _, checkpoint_sha256 = _read_instructions_checkpoint(run_root)
@@ -1096,6 +1116,7 @@ class Workshop:
         lease_token: str,
         instructions_workspace: Path,
         concept_sha256: Optional[str] = None,
+        derived_wish_sha256: Optional[str] = None,
     ) -> WorkshopRun:
         """Validate Instructions once, then continue through the existing Deliver job."""
 
@@ -1137,6 +1158,7 @@ class Workshop:
                 instructions_sha256=product_instructions.instructions_sha256,
                 page_url=product_instructions.page_url,
                 concept_sha256=concept_sha256,
+                derived_wish_sha256=derived_wish_sha256,
             )
         if not isinstance(delivered, Delivered):
             raise ContractError("Deliver must return Delivered")
@@ -1240,6 +1262,7 @@ class Workshop:
                 "playtest_rounds",
                 "round",
                 "concept_sha256",
+                "derived_wish",
                 "made",
                 "playtested",
             }:
@@ -1272,6 +1295,12 @@ class Workshop:
                 require_sha256(
                     checkpoint_concept, "Instructions checkpoint concept sha256"
                 )
+            # The researched constraints Make built to. Restoring them is what
+            # keeps a resumed Instructions describing the same design, and the
+            # derived record names the routed Wish so a swap cannot hide.
+            restored_wish = DerivedWish.from_dict(checkpoint["derived_wish"])
+            restored_wish.assert_derived_from(wish)
+            checkpoint_derived = restored_wish.derived_wish_sha256
 
             events = runtime.events(wish.product_id)
             latest = events[-1]
@@ -1326,10 +1355,19 @@ class Workshop:
                 raise ContractError(
                     "persisted Instructions state was built against a different concept"
                 )
+            if (
+                approval_event["payload"].get("derived_wish_sha256")
+                != checkpoint_derived
+                or latest_payload.get("derived_wish_sha256") != checkpoint_derived
+            ):
+                raise ContractError(
+                    "persisted Instructions state was built against a different "
+                    "derived Wish"
+                )
 
             instructions_workspace = (run_root / "instructions").absolute()
             instructions_context = InstructionsContext(
-                wish,
+                restored_wish.wish,
                 self.taste,
                 self.blueprint,
                 made,
@@ -1379,10 +1417,11 @@ class Workshop:
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                     concept_sha256=checkpoint_concept,
+                    derived_wish_sha256=checkpoint_derived,
                 )
             return self._finish_instructions(
                 runtime,
-                wish,
+                restored_wish.wish,
                 made,
                 product_instructions,
                 round_number,
@@ -1390,6 +1429,7 @@ class Workshop:
                 lease,
                 instructions_workspace,
                 checkpoint_concept,
+                checkpoint_derived,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)
@@ -1476,6 +1516,16 @@ class Workshop:
                 concept.assert_current()
                 if concept.round != round_number:
                     raise ContractError("Concept returned a design for another round")
+                # Research wrote its constraints back to a second record. The
+                # routed Wish keeps its bytes -- routing was decided from them
+                # -- and every job after Concept builds to the derived one.
+                derived_wish = concept.derived_wish
+                if not isinstance(derived_wish, DerivedWish):
+                    raise ContractError(
+                        "Concept must return the derived Wish its research wrote back"
+                    )
+                derived_wish.assert_derived_from(wish)
+                round_wish = derived_wish.wish
                 if previous_concept is not None and feedback:
                     refine_depth = (
                         0
@@ -1493,13 +1543,15 @@ class Workshop:
                         "status": "working",
                         "round": round_number,
                         "concept_sha256": concept.concept_sha256,
+                        "wish_sha256": derived_wish.wish_sha256,
+                        "derived_wish_sha256": derived_wish.derived_wish_sha256,
                     },
                     lease_token=lease,
                 )
 
                 make_workspace = (round_root / "make").absolute()
                 make_context = MakeContext(
-                    wish,
+                    round_wish,
                     self.taste,
                     self.blueprint,
                     round_number,
@@ -1520,6 +1572,7 @@ class Workshop:
                         lease,
                         selected_rounds,
                         concept_sha256=concept.concept_sha256,
+                        derived_wish_sha256=derived_wish.derived_wish_sha256,
                     )
                 if not isinstance(made, Made):
                     raise ContractError("Make must return Made")
@@ -1547,7 +1600,7 @@ class Workshop:
 
                 playtest_workspace = (round_root / "playtest").absolute()
                 playtest_context = PlaytestContext(
-                    wish,
+                    round_wish,
                     self.taste,
                     self.blueprint,
                     round_number,
@@ -1585,6 +1638,7 @@ class Workshop:
                             selected_rounds,
                             artifact_sha256=made.artifact_sha256,
                             concept_sha256=concept.concept_sha256,
+                            derived_wish_sha256=derived_wish.derived_wish_sha256,
                         )
                     checkpoint_payload = _instructions_checkpoint_payload(
                         wish,
@@ -1598,6 +1652,7 @@ class Workshop:
                         run_root,
                         playtest_workspace,
                         concept.concept_sha256,
+                        derived_wish,
                     )
                     checkpoint_sha256 = _write_instructions_checkpoint(
                         run_root, checkpoint_payload
@@ -1614,6 +1669,7 @@ class Workshop:
                                 playtested.evidence.evidence_artifact_sha256
                             ),
                             "concept_sha256": concept.concept_sha256,
+                            "derived_wish_sha256": derived_wish.derived_wish_sha256,
                             "resume_checkpoint_sha256": checkpoint_sha256,
                         },
                         lease_token=lease,
@@ -1638,6 +1694,7 @@ class Workshop:
                             "status": "stopped",
                             "round": round_number,
                             "concept_sha256": concept.concept_sha256,
+                            "derived_wish_sha256": derived_wish.derived_wish_sha256,
                             "feedback": [item.to_dict() for item in feedback],
                         },
                         lease_token=lease,
@@ -1662,6 +1719,7 @@ class Workshop:
                         "status": "working",
                         "round": round_number + 1,
                         "concept_sha256": concept.concept_sha256,
+                        "derived_wish_sha256": derived_wish.derived_wish_sha256,
                         "feedback": [item.to_dict() for item in feedback],
                     },
                     lease_token=lease,
@@ -1672,7 +1730,7 @@ class Workshop:
             assert concept is not None
             instructions_workspace = (run_root / "instructions").absolute()
             instructions_context = InstructionsContext(
-                wish,
+                round_wish,
                 self.taste,
                 self.blueprint,
                 made,
@@ -1694,10 +1752,11 @@ class Workshop:
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                     concept_sha256=concept.concept_sha256,
+                    derived_wish_sha256=derived_wish.derived_wish_sha256,
                 )
             return self._finish_instructions(
                 runtime,
-                wish,
+                round_wish,
                 made,
                 product_instructions,
                 round_number,
@@ -1705,6 +1764,7 @@ class Workshop:
                 lease,
                 instructions_workspace,
                 concept.concept_sha256,
+                derived_wish.derived_wish_sha256,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)

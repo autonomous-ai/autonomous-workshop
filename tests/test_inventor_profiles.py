@@ -10,6 +10,7 @@ from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.jobs import Made
 from inventor_workshop.workshop import Workshop, WorkshopTools
 from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,7 +24,8 @@ def concept_tools():
     """
 
     return WorkshopTools(
-        concept=DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)
+        concept=DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector),
+        wish_researcher=FixtureWishResearcher(),
     )
 
 

@@ -12,11 +12,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from inventor_workshop import concept as concept_module
 from inventor_workshop.concept import (
     DESIGN_FACTS_HEADING,
     MAX_CONCEPT_REFINE_DEPTH,
     NEUTRAL_PRESENTATION,
+    RESEARCH_RULE_FEATURES_RESTATE_OBJECTIVE,
+    RESEARCH_RULE_LONE_COMPONENT_RESTATES_ENVELOPE,
+    RESEARCH_RULE_SINGLE_COMPONENT_UNDECLARED,
     DefaultConcept,
+    assert_researched_breakdown,
     concept_handoff_text,
     derive_brief,
     design_facts_block,
@@ -26,14 +31,19 @@ from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import (
     CONCEPT_DESCRIPTOR_FILENAME,
     CONCEPT_OVERALL_ROLES,
+    ConceptComponent,
     ConceptContext,
     Feedback,
     WaitingFor,
+    WishResearch,
+    WishResearchFinding,
+    WishResearchSource,
 )
 from inventor_workshop.make import Wish
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 COMPONENTS = [
@@ -114,10 +124,16 @@ class ConceptGenerationTest(unittest.TestCase):
             refine_depth,
         )
 
-    def run_concept(self, context=None, artist=None, inspector=None):
+    def run_concept(
+        self, context=None, artist=None, inspector=None, researcher=None
+    ):
         artist = artist if artist is not None else FixtureConceptArtist()
         job = DefaultConcept(
-            artist, inspector if inspector is not None else fixture_explode_inspector
+            artist,
+            inspector if inspector is not None else fixture_explode_inspector,
+            wish_researcher=(
+                researcher if researcher is not None else FixtureWishResearcher()
+            ),
         )
         return job(context if context is not None else self.context()), artist
 
@@ -302,15 +318,29 @@ class ConceptGenerationTest(unittest.TestCase):
             DefaultConcept()(self.context())
         needs = {need.capability: need for need in caught.exception.needs}
         self.assertEqual(
-            set(needs), {"concept-images", "exploded-view-check"}
+            set(needs),
+            {"wish-research", "concept-images", "exploded-view-check"},
         )
         self.assertEqual(needs["concept-images"].job, "concept")
         self.assertIn("provider", needs["concept-images"].instructions)
         self.assertFalse((self.root / "run-1" / "concept").exists())
 
+    def test_concept_waits_when_the_wish_was_never_researched(self):
+        with self.assertRaises(WaitingFor) as caught:
+            DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)(
+                self.context()
+            )
+        needs = {need.capability: need for need in caught.exception.needs}
+        self.assertEqual(set(needs), {"wish-research"})
+        self.assertEqual(needs["wish-research"].job, "concept")
+        self.assertIn("research", needs["wish-research"].instructions)
+        self.assertFalse((self.root / "run-1" / "concept").exists())
+
     def test_concept_waits_when_the_explode_cannot_be_checked(self):
         with self.assertRaises(WaitingFor) as caught:
-            DefaultConcept(FixtureConceptArtist())(self.context())
+            DefaultConcept(
+                FixtureConceptArtist(), wish_researcher=FixtureWishResearcher()
+            )(self.context())
         self.assertEqual(
             [need.capability for need in caught.exception.needs],
             ["exploded-view-check"],
@@ -480,12 +510,137 @@ class ConceptGenerationTest(unittest.TestCase):
         self.assertIn("the numbers below govern", text)
         self.assertIn(json.dumps(concept.brief.to_dict()["object"]), text)
 
+    # -- refused breakdowns --------------------------------------------------
+
+    def researched(self, **overrides):
+        """A breakdown that satisfies every rule, so one can be broken at a time."""
+
+        fields = {
+            "object": "a desk spinner",
+            "category": "a hand-operated mechanism",
+            "envelope_mm": (60.0, 60.0, 30.0),
+            "wall_mm": 2.0,
+            "features": ("a weighted rim that changes the beat as it slows",),
+            "print": {"orientation": "flat on its largest face", "supports": False},
+            "components": (
+                ConceptComponent(
+                    "base",
+                    "Base",
+                    "Seats the spinner.",
+                    "a squared plinth with a recessed underside",
+                    (60.0, 60.0, 12.0),
+                    "the lowest part of the assembly",
+                    "its rim receives the crown",
+                ),
+            ),
+            "fits": None,
+            "findings": None,
+            "sources": (),
+        }
+        fields.update(overrides)
+        findings = fields["findings"]
+        if findings is None:
+            findings = tuple(
+                WishResearchFinding(
+                    "Research decided %s." % name,
+                    name,
+                    decided_because="no source stated it",
+                )
+                for name in (
+                    "object",
+                    "category",
+                    "envelope_mm",
+                    "wall_mm",
+                    "features",
+                    "print",
+                )
+            ) + (
+                WishResearchFinding(
+                    "The design prints as one part.",
+                    "components",
+                    decided_because="the parts do not separate",
+                ),
+            )
+        return WishResearch(
+            fields["object"],
+            fields["category"],
+            fields["envelope_mm"],
+            fields["wall_mm"],
+            fields["features"],
+            fields["print"],
+            fields["components"],
+            fields["fits"],
+            findings,
+            fields["sources"],
+        )
+
+    def test_a_feature_that_restates_the_objective_is_refused(self):
+        with self.assertRaises(ContractError) as caught:
+            assert_researched_breakdown(
+                self.wish,
+                self.researched(
+                    features=(
+                        "one signature interaction that exists because of this "
+                        "Wish: %s" % self.wish.objective,
+                    )
+                ),
+            )
+        self.assertIn(RESEARCH_RULE_FEATURES_RESTATE_OBJECTIVE, str(caught.exception))
+
+    def test_a_lone_component_that_restates_the_envelope_is_refused(self):
+        placeholder = ConceptComponent(
+            "body",
+            "Body",
+            "Carries the whole design as one printed piece.",
+            "a single closed shell following the envelope, with flat faces "
+            "where the design meets a surface",
+            (60.0, 60.0, 30.0),
+            "the whole assembly; there is nothing else to sit beside",
+            "none; this design prints as one part",
+        )
+        with self.assertRaises(ContractError) as caught:
+            assert_researched_breakdown(
+                self.wish, self.researched(components=(placeholder,))
+            )
+        self.assertIn(
+            RESEARCH_RULE_LONE_COMPONENT_RESTATES_ENVELOPE, str(caught.exception)
+        )
+
+    def test_a_single_component_without_a_one_part_finding_is_refused(self):
+        findings = tuple(
+            WishResearchFinding(
+                "Research decided %s." % name,
+                name,
+                decided_because="no source stated it",
+            )
+            for name in (
+                "object",
+                "category",
+                "envelope_mm",
+                "wall_mm",
+                "features",
+                "print",
+                "components",
+            )
+        )
+        with self.assertRaises(ContractError) as caught:
+            assert_researched_breakdown(
+                self.wish, self.researched(findings=findings)
+            )
+        self.assertIn(
+            RESEARCH_RULE_SINGLE_COMPONENT_UNDECLARED, str(caught.exception)
+        )
+
+    def test_a_breakdown_that_decided_its_facts_is_accepted(self):
+        assert_researched_breakdown(self.wish, self.researched())
+
     # -- brief derivation ----------------------------------------------------
 
-    def test_silence_in_the_wish_becomes_a_recorded_assumption(self):
-        bare = Wish.create("bare-top", "A quiet desk object")
-        context = ConceptContext(
-            bare,
+    def bare_context(self, wish=None):
+        return ConceptContext(
+            wish if wish is not None else Wish.create(
+                "bare-top", "A quiet desk object"
+            ),
             self.taste,
             self.blueprint,
             1,
@@ -493,12 +648,99 @@ class ConceptGenerationTest(unittest.TestCase):
             (),
             4,
         )
-        design = derive_brief(context)
+
+    def test_a_researched_breakdown_produces_a_brief_stating_its_facts(self):
+        context = self.bare_context()
+        research = self.researched(
+            object="a stepped desk marker",
+            envelope_mm=(74.5, 51.0, 26.5),
+            wall_mm=1.8,
+        )
+        design = derive_brief(context, research)
+        self.assertEqual(design.object, "a stepped desk marker")
+        self.assertEqual(design.envelope_mm, (74.5, 51.0, 26.5))
+        self.assertEqual(design.wall_mm, 1.8)
+        self.assertEqual(design.features, research.features)
+        self.assertEqual(design.component_keys, ("base",))
+
+    def test_every_decided_fact_reaches_the_assumptions_with_its_reason(self):
+        design = derive_brief(self.bare_context(), self.researched())
         joined = " ".join(design.assumptions)
-        self.assertIn("did not state an envelope", joined)
-        self.assertIn("did not state a wall thickness", joined)
-        self.assertIn("did not decide a part breakdown", joined)
-        self.assertEqual(design.component_keys, ("body",))
+        self.assertIn("Decided because no source stated it", joined)
+        self.assertNotIn("The Wish did not state", joined)
+
+    def test_a_sourced_fact_is_not_recorded_as_an_assumption(self):
+        research = self.researched(
+            findings=tuple(
+                WishResearchFinding(
+                    "Research decided %s." % name,
+                    name,
+                    decided_because="no source stated it",
+                )
+                for name in ("object", "category", "wall_mm", "features", "print")
+            )
+            + (
+                WishResearchFinding(
+                    "A desk spinner of this class is 60 mm across.",
+                    "envelope_mm",
+                    ("desk-objects",),
+                ),
+                WishResearchFinding(
+                    "The design prints as one part.",
+                    "components",
+                    decided_because="the parts do not separate",
+                ),
+            ),
+            sources=(
+                WishResearchSource.create(
+                    "desk-objects",
+                    "https://example.invalid/desk-objects",
+                    "Desk object proportions",
+                    "Desk spinners of this class measure 60 mm across the rim.",
+                    "2026-08-25T00:00:00Z",
+                ),
+            ),
+        )
+        design = derive_brief(self.bare_context(), research)
+        joined = " ".join(design.assumptions)
+        self.assertNotIn("60 mm across", joined)
+        self.assertIn("Research decided wall_mm.", joined)
+
+    def test_a_wish_carrying_hand_authored_components_keeps_them(self):
+        design = derive_brief(self.context(), self.researched())
+        self.assertEqual(design.component_keys, ("body", "cap", "spring"))
+        self.assertIn(
+            "The Wish stated its own part breakdown", " ".join(design.assumptions)
+        )
+
+    def test_no_code_path_yields_the_old_defaults(self):
+        design = derive_brief(self.bare_context(), self.researched())
+        self.assertNotEqual(design.envelope_mm, (120.0, 120.0, 60.0))
+        self.assertNotEqual(design.wall_mm, 2.4)
+        self.assertNotIn("signature interaction", " ".join(design.features))
+        source = Path(concept_module.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("_DEFAULT_ENVELOPE_MM", source)
+        self.assertNotIn("_DEFAULT_WALL_MM", source)
+
+    def test_a_body_component_appears_only_when_research_decided_it(self):
+        design = derive_brief(self.bare_context(), self.researched())
+        self.assertNotIn("body", design.component_keys)
+        decided = self.researched(
+            components=(
+                ConceptComponent(
+                    "body",
+                    "Body",
+                    "Carries the mechanism.",
+                    "a rounded shell whose rim steps twice toward the base",
+                    (60.0, 60.0, 30.0),
+                    "the only printed part",
+                    "no mating faces; the rim is closed",
+                ),
+            )
+        )
+        self.assertEqual(
+            derive_brief(self.bare_context(), decided).component_keys, ("body",)
+        )
 
     def test_the_style_descriptor_carries_no_cad_verbs_or_measurements(self):
         style = style_descriptor(self.taste)

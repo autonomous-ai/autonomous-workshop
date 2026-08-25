@@ -70,6 +70,7 @@ from inventor_workshop.toys import ToyBlueprint
 # A deterministic fixture, deliberately outside the installed package: this repo
 # ships no image provider, and none is being pretended into existence here.
 from concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from wish_research_fixture import FixtureWishResearcher
 
 
 SCHEMA_VERSION = 1
@@ -2076,6 +2077,7 @@ def _showcase_concept():
         FixtureConceptArtist(),
         fixture_explode_inspector,
         showcase_concept_brief,
+        FixtureWishResearcher(),
     )
 
 

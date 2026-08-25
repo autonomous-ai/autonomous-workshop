@@ -25,6 +25,7 @@ from inventor_workshop.jobs import CONCEPT_OVERALL_ROLES, ConceptContext
 from inventor_workshop.make import Wish
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 PNG_1X1 = base64.b64decode(
@@ -109,7 +110,9 @@ class RealProvidersConceptPipelineTest(unittest.TestCase):
             "vision-model",
             transport=_all_components_visible_transport(component_keys),
         )
-        job = DefaultConcept(artist, inspector)
+        job = DefaultConcept(
+            artist, inspector, wish_researcher=FixtureWishResearcher()
+        )
         context = ConceptContext(
             self.wish,
             self.taste,
@@ -142,7 +145,9 @@ class RealProvidersConceptPipelineTest(unittest.TestCase):
             "vision-model",
             transport=_all_components_visible_transport(["body"]),
         )
-        job = DefaultConcept(artist, inspector)
+        job = DefaultConcept(
+            artist, inspector, wish_researcher=FixtureWishResearcher()
+        )
         context = ConceptContext(
             self.wish,
             self.taste,

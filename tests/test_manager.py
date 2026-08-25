@@ -23,7 +23,12 @@ from inventor_workshop.manager import (
     select_inventor,
     shortlist_all,
 )
+from inventor_workshop.concept import DefaultConcept
+from inventor_workshop.jobs import ConceptContext, DerivedWish
 from inventor_workshop.taste import load_taste, load_taste_header
+from inventor_workshop.toys import ToyBlueprint
+from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 JUDGE_PROVENANCE = {
@@ -590,6 +595,77 @@ class WorkshopManagerTest(unittest.TestCase):
                 TasteFit("inventor", "a" * 64, score, True, "Explanation")
         with self.assertRaisesRegex(ContractError, "tension"):
             TasteFit("inventor", "a" * 64, 0, False, "Rejected without a reason")
+
+
+class RoutingIdentitySurvivesResearchTest(unittest.TestCase):
+    """Research writes back to a second record; routing keeps the exact bytes."""
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.repo = Path(self.temporary.name)
+        self.collection = self.repo / "inventors"
+        self.collection.mkdir()
+        add_inventor(
+            self.collection,
+            "game-maker",
+            "Game Maker",
+            "Invents original printable games for one particular group and table.",
+            "# Taste\n\nReject cosmetic themes. Require replay demand from humans.",
+        )
+        self.wish = Wish.create(
+            "wish-9", "Invent a tense deduction game for our research team."
+        )
+        self.taste = load_taste(self.collection / "game-maker")
+        self.blueprint = ToyBlueprint.for_lane("invented-games")
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def concept(self):
+        workspace = (self.repo / "run" / "concept").absolute()
+        return DefaultConcept(
+            FixtureConceptArtist(),
+            fixture_explode_inspector,
+            wish_researcher=FixtureWishResearcher(),
+        )(
+            ConceptContext(
+                self.wish,
+                self.taste,
+                self.blueprint,
+                1,
+                workspace,
+                (),
+                1,
+            )
+        )
+
+    def test_the_routed_wish_hash_is_unchanged_by_the_write_back(self):
+        before = WorkshopManager(self.repo).prepare(self.wish).wish_sha256
+        concept = self.concept()
+        after = WorkshopManager(self.repo).prepare(self.wish).wish_sha256
+        self.assertEqual(before, after)
+        self.assertEqual(concept.derived_wish.wish_sha256, before)
+
+    def test_routing_hashes_the_routed_wish_and_never_the_derived_one(self):
+        concept = self.concept()
+        derived = concept.derived_wish
+        self.assertNotEqual(derived.derived_wish_sha256, derived.wish_sha256)
+        routed = WorkshopManager(self.repo).prepare(self.wish)
+        self.assertEqual(routed.wish.constraints, {})
+        self.assertNotEqual(derived.wish.constraints, {})
+        self.assertEqual(
+            WorkshopManager(self.repo).prepare(derived.wish).wish_sha256,
+            derived.derived_wish_sha256,
+        )
+
+    def test_a_derived_wish_that_altered_the_objective_is_refused(self):
+        derived = self.concept().derived_wish
+        altered = DerivedWish(
+            derived.wish_sha256,
+            Wish.create(self.wish.product_id, self.wish.objective + " Also a light."),
+        )
+        with self.assertRaisesRegex(ContractError, "unchanged"):
+            altered.assert_derived_from(self.wish)
 
 
 if __name__ == "__main__":

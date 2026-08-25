@@ -1,4 +1,6 @@
+import dataclasses
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,11 +13,13 @@ from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import (
     CustomerReview,
     Delivered,
+    DerivedWish,
     Feedback,
     Made,
     Need,
     Playtested,
     WaitingFor,
+    wish_sha256,
 )
 from inventor_workshop.make import Wish
 from inventor_workshop.models import PlaytestResult, Receipt
@@ -23,6 +27,7 @@ from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.workshop import Workshop, WorkshopTools
 from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 CONFIG_SHA256 = "c" * 64
@@ -49,7 +54,11 @@ class ToyWorkshopTest(unittest.TestCase):
         self.temporary.cleanup()
 
     concept_job = staticmethod(
-        DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)
+        DefaultConcept(
+            FixtureConceptArtist(),
+            fixture_explode_inspector,
+            wish_researcher=FixtureWishResearcher(),
+        )
     )
 
     @staticmethod
@@ -671,6 +680,133 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual(preview["taste"]["sha256"], workshop.taste.sha256)
         self.assertIn("merely useful", preview["brief"]["utility_rule"])
         self.assertIn("Cool beats cute", preview["brief"]["tone"])
+
+
+class DerivedWishWriteBackTest(ToyWorkshopTest):
+    """The researched constraints reach Make; the person's words never change."""
+
+    OBJECTIVE = "A delightful desk spinner that reveals a changing beat"
+
+    def setUp(self):
+        super().setUp()
+        self.made_wishes = []
+
+    def recording_make(self, context):
+        self.made_wishes.append(context.wish)
+        made = self.make_job(context)
+        (made.artifact_root / "wish.json").write_text(
+            json.dumps(context.wish.to_dict(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        return Made.from_root(made.artifact_root, made.product)
+
+    def run_once(self, product_id="derived-top"):
+        wish = Wish.create(product_id, self.OBJECTIVE)
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                concept=self.concept_job,
+                make=self.recording_make,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(site_writer=self.site_writer),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=1)
+        return wish, result
+
+    def test_make_receives_the_researched_constraints(self):
+        wish, result = self.run_once()
+        self.assertEqual(result.status, "delivered")
+        self.assertEqual(wish.constraints, {})
+        received = self.made_wishes[0]
+        self.assertNotEqual(received.constraints, {})
+        for key in ("envelope_mm", "wall_mm", "features", "components"):
+            self.assertIn(key, received.constraints)
+        self.assertEqual(received.objective, wish.objective)
+        self.assertEqual(received.product_id, wish.product_id)
+
+    def test_the_artifact_wish_carries_the_researched_constraints(self):
+        wish, _ = self.run_once("artifact-wish")
+        artifact = (
+            self.runtime
+            / "runs"
+            / wish.product_id
+            / "round-001"
+            / "make"
+            / "artifact"
+            / "wish.json"
+        )
+        recorded = json.loads(artifact.read_text(encoding="utf-8"))
+        self.assertEqual(recorded["objective"], self.OBJECTIVE)
+        self.assertIn("envelope_mm", recorded["constraints"])
+
+    def test_the_run_records_both_wish_identities_beside_the_concept(self):
+        wish, result = self.run_once("both-identities")
+        state = Runtime(self.runtime / "workshop.sqlite3")
+        payload = next(
+            event["payload"]
+            for event in state.events(wish.product_id)
+            if event["to_stage"] == "make"
+        )
+        self.assertEqual(payload["wish_sha256"], wish_sha256(wish))
+        self.assertNotEqual(payload["derived_wish_sha256"], payload["wish_sha256"])
+        self.assertEqual(len(payload["derived_wish_sha256"]), 64)
+        self.assertEqual(payload["concept_sha256"], result.concept_sha256)
+
+    def test_the_routed_wish_is_never_mutated_by_the_write_back(self):
+        wish, _ = self.run_once("untouched")
+        self.assertEqual(wish.constraints, {})
+        self.assertEqual(wish_sha256(wish), wish_sha256(Wish.create(
+            "untouched", self.OBJECTIVE
+        )))
+
+    def test_instructions_still_quote_the_persons_own_words(self):
+        wish, _ = self.run_once("quoted-words")
+        facts = json.loads(
+            (
+                self.runtime
+                / "runs"
+                / wish.product_id
+                / "instructions"
+                / "product.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(facts["wish"], self.OBJECTIVE)
+
+    def test_a_derived_wish_that_altered_the_objective_is_refused(self):
+        routed = Wish.create("altered", self.OBJECTIVE)
+
+        class Altering:
+            def __init__(self, inner):
+                self.inner = inner
+
+            def __call__(self, context):
+                concept = self.inner(context)
+                altered = DerivedWish(
+                    concept.derived_wish.wish_sha256,
+                    Wish.create("altered", self.OBJECTIVE + " and a light"),
+                )
+                return dataclasses.replace(concept, derived_wish=altered)
+
+        Altering.OBJECTIVE = self.OBJECTIVE
+        # The seal refuses it first -- the descriptor names the derived Wish the
+        # research actually wrote back -- and the Workshop's own check refuses
+        # it again if a concept ever reaches it unsealed.
+        with self.assertRaisesRegex(ContractError, "derived Wish"):
+            Workshop(
+                self.inventor,
+                "moving-machines",
+                tools=WorkshopTools(
+                    concept=Altering(self.concept_job),
+                    make=self.recording_make,
+                    playtest=self.passing_playtest,
+                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                    deliver=DefaultDeliver(self.fulfiller),
+                ),
+                runtime_root=self.runtime,
+            ).run(routed, playtest_rounds=1)
 
 
 if __name__ == "__main__":

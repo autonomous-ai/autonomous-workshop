@@ -306,38 +306,49 @@ new Manager decision with a new assignment identity.
 
 ## 6. Concept decides the design before Make builds it
 
-Concept runs at the top of every round, between Wish and Make. It produces a
-`ConceptImages`: a locked `ConceptBrief` of physical facts plus a sealed set of
-images — `front`, `top`, `bottom`, `exploded`, and one per component — that all
-depict that one design.
+Concept runs at the top of every round, between Wish and Make, and does its work
+in one order: research, then brief, then images. It produces a `ConceptImages`:
+the `WishResearch` the design's facts were decided from, a locked `ConceptBrief`
+of those facts, and a sealed set of images — `front`, `top`, `bottom`,
+`exploded`, and one per component — that all depict that one design.
 
-Like Instructions' media and site writers, the pixels come from an injected
-provider rather than from the job itself:
+Like Instructions' media and site writers, the facts and the pixels come from
+injected providers rather than from the job itself:
 
 ```python
 from inventor_workshop import DefaultConcept, WorkshopTools
 
 tools = WorkshopTools(
     concept=DefaultConcept(
-        concept_artist=my_image_provider,       # one request -> one image path
+        concept_artist=my_image_provider,        # one request -> one image path
         explode_inspector=my_component_counter,  # which parts the explode shows
+        wish_researcher=my_wish_researcher,      # one Wish -> one breakdown
     ),
     ...
 )
 ```
 
-`DefaultConcept` owns everything except those two capabilities: it derives the
-brief, builds the prompts, generates in dependency order, checks the exploded
-view for component completeness, writes the sealed `concept.json` descriptor,
-and seals the root. The artist receives one `ConceptImageRequest` at a time —
-role, prompt, the earlier images to use as references, and the filename to
-write — so a provider never has to know the anchoring rules to satisfy them.
-Pass `brief_maker=` when the inventor already knows its own physical facts.
+The researcher can also be installed once for the whole Workshop, beside its
+siblings, with `WorkshopTools(wish_researcher=...)`.
 
-With no provider configured, Concept raises `WaitingFor` with
-`Need(job="concept", capability="concept-images", ...)` and the run parks. This
-repo ships no image model, so that is the default behavior: a described design
-is not a drawn one.
+`DefaultConcept` owns everything except those three capabilities: it derives the
+brief from the breakdown, builds the prompts, generates in dependency order,
+checks the exploded view for component completeness, seals the research under
+`research/`, writes the sealed `concept.json` descriptor, and seals the root.
+The artist receives one `ConceptImageRequest` at a time — role, prompt, the
+earlier images to use as references, and the filename to write — so a provider
+never has to know the anchoring rules to satisfy them. The researcher receives
+one `WishResearchRequest` — the round's Wish, Taste, and lane blueprint — and
+returns one `WishResearch` in which every stated fact names either a recorded
+source or a recorded decision; a fact with neither is refused. Research runs
+once per run: a refining round reuses the standing concept's research. Pass
+`brief_maker=` when the inventor already knows its own physical facts.
+
+With no provider configured, Concept raises `WaitingFor` with a `Need` for each
+missing capability — `wish-research`, `concept-images`, `exploded-view-check` —
+and the run parks. This repo ships no image model and no researcher, so that is
+the default behavior: a described design is not a drawn one, and a defaulted
+number is not a researched one.
 
 An inventor may also own the whole job, the way it can own Make:
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import urllib.parse
 from dataclasses import dataclass, field
@@ -339,6 +340,448 @@ class ConceptBrief:
         }
 
 
+WISH_RESEARCH_FIELDS: Tuple[str, ...] = (
+    "object",
+    "category",
+    "envelope_mm",
+    "wall_mm",
+    "features",
+    "print",
+    "components",
+    "fits",
+)
+# ``fits`` is decided only where the design holds something, so it is required
+# to be attributed only when the breakdown actually states one.
+_ALWAYS_DECIDED_FIELDS = frozenset(WISH_RESEARCH_FIELDS) - {"fits"}
+MAX_WISH_RESEARCH_SOURCES = 64
+MAX_WISH_RESEARCH_FINDINGS = 128
+_RESEARCH_ID_CHARACTERS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789-")
+
+
+def _research_id(value: Any, label: str) -> str:
+    _text(value, label, 64)
+    identifier = str(value)
+    if (
+        not set(identifier) <= _RESEARCH_ID_CHARACTERS
+        or identifier.startswith("-")
+        or identifier.endswith("-")
+    ):
+        raise ContractError(
+            "%s must be a lowercase hyphenated identifier so a filename can carry it"
+            % label
+        )
+    return identifier
+
+
+def _canonical_digest(value: Any) -> str:
+    try:
+        payload = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError) as exc:
+        raise ContractError("record must be JSON-safe to be hashed") from exc
+    return hashlib.sha256(payload).hexdigest()
+
+
+def wish_sha256(wish: Wish) -> str:
+    """The routed identity of one Wish, hashed exactly as routing hashes it."""
+
+    if not isinstance(wish, Wish):
+        raise ContractError("wish_sha256 requires a Wish")
+    return _canonical_digest(wish.to_dict())
+
+
+@dataclass(frozen=True)
+class WishResearchSource:
+    """One source the research actually read, recorded by what it contributed.
+
+    ``excerpt_sha256`` hashes ``excerpt`` and nothing else. It proves what was
+    recorded, not what the origin says today: re-fetching a URL to check it
+    still reads that way is a separate job this record deliberately does not
+    claim to do.
+    """
+
+    id: str
+    origin: str
+    title: str
+    excerpt: str
+    excerpt_sha256: str
+    retrieved_at: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "id", _research_id(self.id, "wish research source id")
+        )
+        _text(self.origin, "wish research source origin", 2_000)
+        _text(self.title, "wish research source title", 500)
+        _text(self.excerpt, "wish research source excerpt", 20_000)
+        require_sha256(self.excerpt_sha256, "wish research source excerpt_sha256")
+        require_utc_timestamp(
+            self.retrieved_at, "wish research source retrieved_at"
+        )
+        if hashlib.sha256(self.excerpt.encode("utf-8")).hexdigest() != (
+            self.excerpt_sha256
+        ):
+            raise ContractError(
+                "wish research source %s excerpt_sha256 does not hash its own excerpt"
+                % self.id
+            )
+
+    @classmethod
+    def create(
+        cls,
+        identifier: str,
+        origin: str,
+        title: str,
+        excerpt: str,
+        retrieved_at: str,
+    ) -> "WishResearchSource":
+        """Record a source, hashing the excerpt that is being relied upon."""
+
+        _text(excerpt, "wish research source excerpt", 20_000)
+        return cls(
+            identifier,
+            origin,
+            title,
+            excerpt,
+            hashlib.sha256(excerpt.encode("utf-8")).hexdigest(),
+            retrieved_at,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "origin": self.origin,
+            "title": self.title,
+            "excerpt": self.excerpt,
+            "excerpt_sha256": self.excerpt_sha256,
+            "retrieved_at": self.retrieved_at,
+        }
+
+
+@dataclass(frozen=True)
+class WishResearchFinding:
+    """One decided fact, and the single thing it rests on.
+
+    Exactly one of ``source_ids`` and ``decided_because`` is carried. A fact
+    with both would let a decision hide behind a citation; a fact with neither
+    is a number nobody stands behind.
+    """
+
+    claim: str
+    field: str
+    source_ids: Sequence[str] = ()
+    decided_because: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        _text(self.claim, "wish research finding claim", 2_000)
+        if self.field not in WISH_RESEARCH_FIELDS:
+            raise ContractError(
+                "wish research finding must decide one of %s, not %r"
+                % (", ".join(WISH_RESEARCH_FIELDS), self.field)
+            )
+        if isinstance(self.source_ids, (str, bytes, Mapping)) or not isinstance(
+            self.source_ids, Sequence
+        ):
+            raise ContractError(
+                "wish research finding source_ids must be a sequence of source ids"
+            )
+        sources = tuple(
+            _research_id(item, "wish research finding source id")
+            for item in self.source_ids
+        )
+        if len(set(sources)) != len(sources):
+            raise ContractError(
+                "wish research finding must not name the same source twice"
+            )
+        if self.decided_because is not None:
+            _text(
+                self.decided_because,
+                "wish research finding decided_because",
+                2_000,
+            )
+        if bool(sources) == (self.decided_because is not None):
+            raise ContractError(
+                "wish research finding for %s must name either the sources it "
+                "was taken from or the reason it was decided, never both and "
+                "never neither" % self.field
+            )
+        object.__setattr__(self, "source_ids", sources)
+
+    @property
+    def is_decision(self) -> bool:
+        return self.decided_because is not None
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "claim": self.claim,
+            "field": self.field,
+            "source_ids": list(self.source_ids),
+            "decided_because": self.decided_because,
+        }
+
+
+@dataclass(frozen=True)
+class WishResearch:
+    """One researched breakdown of a Wish into the facts a brief must state.
+
+    Every field the brief needs is decided here, and every decided field is
+    named by at least one finding, so a number that nothing stands behind
+    cannot reach a brief.
+    """
+
+    object: str
+    category: str
+    envelope_mm: Sequence[float]
+    wall_mm: float
+    features: Sequence[str]
+    print: Mapping[str, Any]
+    components: Sequence[ConceptComponent]
+    fits: Optional[Mapping[str, Any]] = None
+    findings: Sequence[WishResearchFinding] = ()
+    sources: Sequence[WishResearchSource] = ()
+
+    def __post_init__(self) -> None:
+        _text(self.object, "wish research object", 500)
+        _text(self.category, "wish research category", 200)
+        object.__setattr__(
+            self,
+            "envelope_mm",
+            _dimensions_mm(self.envelope_mm, "wish research envelope_mm"),
+        )
+        object.__setattr__(
+            self, "wall_mm", _positive_number(self.wall_mm, "wish research wall_mm")
+        )
+        features = _text_tuple(self.features, "wish research feature")
+        if not features:
+            raise ContractError(
+                "wish research must decide at least one distinctive feature"
+            )
+        object.__setattr__(self, "features", features)
+        printing = _mapping(self.print, "wish research print", nonempty=True)
+        if set(printing) != {"orientation", "supports"}:
+            raise ContractError(
+                "wish research print must state orientation and supports"
+            )
+        _text(printing["orientation"], "wish research print orientation", 500)
+        if printing["supports"] is not True and printing["supports"] is not False:
+            raise ContractError("wish research print supports must be true or false")
+        object.__setattr__(self, "print", printing)
+        components = tuple(self.components)
+        if not components or not all(
+            isinstance(item, ConceptComponent) for item in components
+        ):
+            raise ContractError("wish research requires ConceptComponent records")
+        if len(components) > MAX_CONCEPT_COMPONENTS:
+            raise ContractError(
+                "wish research must name at most %d components; components are "
+                "part types, and the count of each belongs in its purpose and "
+                "placement rather than in one entry per instance"
+                % MAX_CONCEPT_COMPONENTS
+            )
+        if len({item.key for item in components}) != len(components):
+            raise ContractError("wish research component keys must be unique")
+        object.__setattr__(self, "components", components)
+        if self.fits is not None:
+            fits = _mapping(self.fits, "wish research fits", nonempty=True)
+            if set(fits) != {"target", "ref_mm", "clearance_mm"}:
+                raise ContractError(
+                    "wish research fits must state target, ref_mm, and clearance_mm"
+                )
+            _text(fits["target"], "wish research fits target", 500)
+            fits["ref_mm"] = list(
+                _dimensions_mm(fits["ref_mm"], "wish research fits ref_mm")
+            )
+            fits["clearance_mm"] = _positive_number(
+                fits["clearance_mm"], "wish research fits clearance_mm"
+            )
+            object.__setattr__(self, "fits", fits)
+
+        sources = tuple(self.sources)
+        if not all(isinstance(item, WishResearchSource) for item in sources):
+            raise ContractError("wish research requires WishResearchSource records")
+        if len(sources) > MAX_WISH_RESEARCH_SOURCES:
+            raise ContractError(
+                "wish research must record at most %d sources"
+                % MAX_WISH_RESEARCH_SOURCES
+            )
+        known = {item.id for item in sources}
+        if len(known) != len(sources):
+            raise ContractError("wish research source ids must be unique")
+        object.__setattr__(self, "sources", sources)
+
+        findings = tuple(self.findings)
+        if not findings or not all(
+            isinstance(item, WishResearchFinding) for item in findings
+        ):
+            raise ContractError("wish research requires WishResearchFinding records")
+        if len(findings) > MAX_WISH_RESEARCH_FINDINGS:
+            raise ContractError(
+                "wish research must record at most %d findings"
+                % MAX_WISH_RESEARCH_FINDINGS
+            )
+        for item in findings:
+            unknown = [name for name in item.source_ids if name not in known]
+            if unknown:
+                raise ContractError(
+                    "wish research finding for %s cites %s, which the recorded "
+                    "sources do not contain"
+                    % (item.field, ", ".join(sorted(set(unknown))))
+                )
+        object.__setattr__(self, "findings", findings)
+
+        required = set(_ALWAYS_DECIDED_FIELDS)
+        if self.fits is not None:
+            required.add("fits")
+        unattributed = required - {item.field for item in findings}
+        if unattributed:
+            raise ContractError(
+                "wish research leaves %s unattributed; every decided fact must "
+                "name a source it was taken from or a decision it rests on"
+                % ", ".join(sorted(unattributed))
+            )
+
+    def findings_for(self, name: str) -> Tuple[WishResearchFinding, ...]:
+        return tuple(item for item in self.findings if item.field == name)
+
+    def decisions(self) -> Tuple[WishResearchFinding, ...]:
+        """Every fact that rests on a recorded decision rather than a source."""
+
+        return tuple(item for item in self.findings if item.is_decision)
+
+    def source(self, identifier: str) -> WishResearchSource:
+        for item in self.sources:
+            if item.id == identifier:
+                return item
+        raise ContractError("wish research does not record source %r" % identifier)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "object": self.object,
+            "category": self.category,
+            "envelope_mm": list(self.envelope_mm),
+            "wall_mm": self.wall_mm,
+            "features": list(self.features),
+            "print": dict(self.print),
+            "components": [item.to_dict() for item in self.components],
+            "fits": dict(self.fits) if self.fits is not None else None,
+            "findings": [item.to_dict() for item in self.findings],
+            "sources": [item.to_dict() for item in self.sources],
+        }
+
+    @property
+    def research_sha256(self) -> str:
+        return _canonical_digest(self.to_dict())
+
+
+@dataclass(frozen=True)
+class DerivedWish:
+    """The researched constraints written back, naming the Wish they came from.
+
+    Routing decided which inventor got this Wish from its exact bytes, so the
+    routed record is never touched. This is a second record: the same words,
+    the researched constraints, and both identities side by side so the two can
+    never be mistaken for one another.
+    """
+
+    wish_sha256: str
+    wish: Wish
+
+    def __post_init__(self) -> None:
+        require_sha256(self.wish_sha256, "derived Wish routed wish_sha256")
+        if not isinstance(self.wish, Wish):
+            raise ContractError("DerivedWish requires a Wish")
+        self.wish.assert_valid()
+
+    @classmethod
+    def derive(cls, routed: Wish, constraints: Mapping[str, Any]) -> "DerivedWish":
+        """Copy the routed Wish's words and carry the researched constraints."""
+
+        if not isinstance(routed, Wish):
+            raise ContractError("DerivedWish.derive requires the routed Wish")
+        derived = Wish(
+            routed.schema_version,
+            routed.product_id,
+            routed.objective,
+            constraints,
+            routed.context,
+        )
+        return cls(wish_sha256(routed), derived)
+
+    def assert_derived_from(self, routed: Wish) -> None:
+        """Refuse a derived record whose words differ from the routed Wish."""
+
+        if not isinstance(routed, Wish):
+            raise ContractError("derived Wish must be checked against a Wish")
+        if wish_sha256(routed) != self.wish_sha256:
+            raise ContractError(
+                "derived Wish names a different routed Wish than the one routed"
+            )
+        if (
+            self.wish.schema_version != routed.schema_version
+            or self.wish.product_id != routed.product_id
+            or self.wish.objective != routed.objective
+            or dict(self.wish.context) != dict(routed.context)
+        ):
+            raise ContractError(
+                "derived Wish must carry the routed Wish's product id, "
+                "objective, and context unchanged"
+            )
+
+    @property
+    def derived_wish_sha256(self) -> str:
+        return wish_sha256(self.wish)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": 1,
+            "wish_sha256": self.wish_sha256,
+            "derived_wish_sha256": self.derived_wish_sha256,
+            "wish": self.wish.to_dict(),
+        }
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "DerivedWish":
+        record = _mapping(value, "derived Wish record", nonempty=True)
+        if set(record) != {
+            "schema_version",
+            "wish_sha256",
+            "derived_wish_sha256",
+            "wish",
+        }:
+            raise ContractError("derived Wish record bindings are malformed")
+        if record["schema_version"] != 1:
+            raise ContractError("derived Wish record schema_version must be 1")
+        payload = _mapping(record["wish"], "derived Wish", nonempty=True)
+        if set(payload) != {
+            "schema_version",
+            "product_id",
+            "objective",
+            "constraints",
+            "context",
+        }:
+            raise ContractError("derived Wish bindings are malformed")
+        derived = cls(
+            record["wish_sha256"],
+            Wish(
+                payload["schema_version"],
+                payload["product_id"],
+                payload["objective"],
+                payload["constraints"],
+                payload["context"],
+            ),
+        )
+        if derived.derived_wish_sha256 != record["derived_wish_sha256"]:
+            raise ContractError(
+                "derived Wish record names a hash its own Wish does not have"
+            )
+        return derived
+
 def _safe_concept_image(root: Path, value: Any, label: str) -> str:
     """Confine one concept image path to the sealed concept root."""
 
@@ -398,6 +841,8 @@ class ConceptImages:
     overall: Mapping[str, str]
     components: Mapping[str, str]
     round: int
+    research: Optional["WishResearch"] = None
+    derived_wish: Optional["DerivedWish"] = None
 
     def __post_init__(self) -> None:
         root = Path(self.root)
@@ -409,6 +854,14 @@ class ConceptImages:
             raise ContractError("ConceptImages requires an ArtifactManifest")
         if not isinstance(self.brief, ConceptBrief):
             raise ContractError("ConceptImages requires a ConceptBrief")
+        if not isinstance(self.research, WishResearch):
+            raise ContractError(
+                "ConceptImages requires the WishResearch its brief was derived from"
+            )
+        if not isinstance(self.derived_wish, DerivedWish):
+            raise ContractError(
+                "ConceptImages requires the DerivedWish the research wrote back"
+            )
         if type(self.round) is not int or self.round < 1:
             raise ContractError("ConceptImages round must be a positive integer")
         overall_value = self.overall
@@ -487,6 +940,33 @@ class ConceptImages:
             raise ContractError(
                 "concept descriptor must mark its images as concept art"
             )
+        research = descriptor.get("research")
+        assert isinstance(self.research, WishResearch)
+        if (
+            not isinstance(research, Mapping)
+            or research.get("research_sha256") != self.research.research_sha256
+        ):
+            raise ContractError(
+                "concept descriptor records different research than the brief "
+                "was derived from"
+            )
+        if research.get("valid_as_product_proof") is not False:
+            raise ContractError(
+                "concept descriptor must label its research as not valid as "
+                "product proof"
+            )
+        derived = descriptor.get("derived_wish")
+        assert isinstance(self.derived_wish, DerivedWish)
+        if not isinstance(derived, Mapping) or (
+            derived.get("wish_sha256"),
+            derived.get("derived_wish_sha256"),
+        ) != (
+            self.derived_wish.wish_sha256,
+            self.derived_wish.derived_wish_sha256,
+        ):
+            raise ContractError(
+                "concept descriptor records a different derived Wish"
+            )
         images = descriptor.get("images")
         expected = dict(overall)
         expected["components"] = dict(components)
@@ -503,6 +983,8 @@ class ConceptImages:
         overall: Mapping[str, str],
         components: Mapping[str, str],
         round_number: int,
+        research: Optional["WishResearch"] = None,
+        derived_wish: Optional["DerivedWish"] = None,
     ) -> "ConceptImages":
         resolved = Path(root).resolve(strict=True)
         return cls(
@@ -512,11 +994,30 @@ class ConceptImages:
             overall,
             components,
             round_number,
+            research,
+            derived_wish,
         )
 
     @property
     def concept_sha256(self) -> str:
         return self.manifest.artifact_sha256
+
+    @property
+    def research_sha256(self) -> str:
+        assert isinstance(self.research, WishResearch)
+        return self.research.research_sha256
+
+    @property
+    def wish_sha256(self) -> str:
+        """The routed Wish the research was done for, unchanged by it."""
+
+        assert isinstance(self.derived_wish, DerivedWish)
+        return self.derived_wish.wish_sha256
+
+    @property
+    def derived_wish_sha256(self) -> str:
+        assert isinstance(self.derived_wish, DerivedWish)
+        return self.derived_wish.derived_wish_sha256
 
     def paths(self) -> Dict[str, str]:
         """Every image in the set, keyed by overall role or component key."""
@@ -1253,15 +1754,23 @@ __all__ = [
     "CustomerReview",
     "DeliverContext",
     "Delivered",
+    "DerivedWish",
     "InstructionsContext",
     "Feedback",
     "Made",
     "MAX_CONCEPT_COMPONENTS",
+    "MAX_WISH_RESEARCH_FINDINGS",
+    "MAX_WISH_RESEARCH_SOURCES",
     "MakeContext",
     "Need",
     "PlaytestContext",
     "Playtested",
     "ProductInstructions",
+    "WISH_RESEARCH_FIELDS",
     "WaitingFor",
+    "WishResearch",
+    "WishResearchFinding",
+    "WishResearchSource",
     "WorkshopRun",
+    "wish_sha256",
 ]

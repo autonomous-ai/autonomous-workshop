@@ -30,6 +30,7 @@ from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.workshop import Workshop, WorkshopTools
 from tools.concept_fixture import FixtureConceptArtist, fixture_explode_inspector
+from tools.wish_research_fixture import FixtureWishResearcher
 
 
 CONFIG_SHA256 = "c" * 64
@@ -88,7 +89,11 @@ class ConceptPipelineTest(unittest.TestCase):
         )
 
     def concept_job(self):
-        return DefaultConcept(FixtureConceptArtist(), fixture_explode_inspector)
+        return DefaultConcept(
+            FixtureConceptArtist(),
+            fixture_explode_inspector,
+            wish_researcher=FixtureWishResearcher(),
+        )
 
     def make_job(self, context):
         self.seen.append(context)
@@ -300,7 +305,7 @@ class ConceptPipelineTest(unittest.TestCase):
         self.assertTrue(state.verify_event_chain(wish.product_id))
         self.assertEqual(state.get_product(wish.product_id)["stage"], "concept")
 
-    def test_default_concept_with_no_artist_parks_the_run(self):
+    def test_default_concept_with_no_capabilities_parks_the_run(self):
         wish = self.wish("no-artist")
         result = Workshop(
             self.inventor,
@@ -315,8 +320,84 @@ class ConceptPipelineTest(unittest.TestCase):
         self.assertEqual((result.status, result.job), ("waiting", "concept"))
         self.assertEqual(
             {need.capability for need in result.needs},
-            {"concept-images", "exploded-view-check"},
+            {"wish-research", "concept-images", "exploded-view-check"},
         )
+        self.assertTrue(all(need.job == "concept" for need in result.needs))
+
+    def test_no_researcher_parks_the_run_at_concept(self):
+        wish = self.wish("no-researcher")
+        called = []
+
+        def make(context):
+            called.append(context)
+            raise AssertionError("Make must not run without a researched brief")
+
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                concept=DefaultConcept(
+                    FixtureConceptArtist(), fixture_explode_inspector
+                ),
+                make=make,
+                playtest=self.passing_playtest,
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual(
+            (result.status, result.job, result.round), ("waiting", "concept", 1)
+        )
+        self.assertEqual(
+            [need.capability for need in result.needs], ["wish-research"]
+        )
+        self.assertIsNone(result.concept_sha256)
+        self.assertEqual(called, [])
+        state = Runtime(self.runtime / "workshop.sqlite3")
+        self.assertEqual(state.get_product(wish.product_id)["stage"], "concept")
+
+    def test_the_workshop_installs_its_shared_researcher(self):
+        wish = self.wish("shared-researcher")
+        researcher = FixtureWishResearcher()
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                concept=DefaultConcept(
+                    FixtureConceptArtist(), fixture_explode_inspector
+                ),
+                wish_researcher=researcher,
+                make=self.make_job,
+                playtest=self.passing_playtest,
+                instructions=DefaultInstructions(site_writer=self.site_writer),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual(result.status, "delivered")
+        self.assertEqual(len(researcher.requests), 1)
+
+    def test_a_refining_round_does_not_research_the_wish_again(self):
+        wish = self.wish("refined-once")
+        researcher = FixtureWishResearcher()
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(
+                concept=DefaultConcept(
+                    FixtureConceptArtist(),
+                    fixture_explode_inspector,
+                    wish_researcher=researcher,
+                ),
+                make=self.make_job,
+                playtest=self.second_round_playtest,
+                instructions=DefaultInstructions(site_writer=self.site_writer),
+                deliver=DefaultDeliver(self.fulfiller),
+            ),
+            runtime_root=self.runtime,
+        ).run(wish, playtest_rounds=3)
+        self.assertEqual((result.status, result.round), ("delivered", 2))
+        self.assertEqual(len(researcher.requests), 1)
+        self.assertEqual(researcher.requests[0].round, 1)
 
     # -- 5.3 ------------------------------------------------------------------
 

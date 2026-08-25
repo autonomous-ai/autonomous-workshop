@@ -81,6 +81,7 @@ from .jobs import (
     CustomerReview,
     DeliverContext,
     Delivered,
+    DerivedWish,
     InstructionsContext,
     Feedback,
     Made,
@@ -90,6 +91,9 @@ from .jobs import (
     Playtested,
     ProductInstructions,
     WaitingFor,
+    WishResearch,
+    WishResearchFinding,
+    WishResearchSource,
     WorkshopRun,
 )
 from .manager import (
@@ -132,10 +136,13 @@ from .concept import (
     ConceptArtist,
     ConceptImageRequest,
     DefaultConcept,
+    WishResearchRequest,
+    WishResearcher,
     concept_handoff_text,
 )
 from .concept_artist_openrouter import OpenRouterConceptArtist
 from .concept_explode_inspector import OpenAICompatibleExplodeInspector
+from .wish_researcher_openrouter import OpenAICompatibleWishResearcher
 from .env import load_dotenv
 from .workshop import (
     CUSTOMIZATION_LEVELS,
@@ -228,11 +235,18 @@ __all__ = [
     "ConceptContext",
     "ConceptImageRequest",
     "ConceptImages",
+    "DerivedWish",
     "ConceptJob",
     "ConceptProviderError",
     "concept_handoff_text",
     "OpenAICompatibleExplodeInspector",
+    "OpenAICompatibleWishResearcher",
     "OpenRouterConceptArtist",
+    "WishResearch",
+    "WishResearchFinding",
+    "WishResearchRequest",
+    "WishResearchSource",
+    "WishResearcher",
     "CUSTOMIZATION_LEVELS",
     "CustomerReview",
     "DefaultConcept",

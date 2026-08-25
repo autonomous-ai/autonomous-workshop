@@ -183,8 +183,27 @@ ada run --playtest-rounds 4 first-wish \
   "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-With no model, CAD worker, printer, or carrier connected, a run says exactly
-what it is waiting for. It never passes off a placeholder as a finished toy.
+With no wish researcher, image provider, model, CAD worker, printer, or carrier
+connected, a run says exactly what it is waiting for. It never passes off a
+placeholder as a finished toy. Concept alone can wait for three things —
+`wish-research`, `concept-images`, and `exploded-view-check` — and it waits
+rather than substituting default physical facts for research that did not
+happen.
+
+### Connecting the shared Concept capabilities
+
+Each adapter is configured entirely by its caller: no vendor is assumed, and
+every value is read through `load_dotenv` so a real environment variable always
+wins over one in `.env`.
+
+| Capability | Adapter | Environment |
+|---|---|---|
+| `wish-research` | `OpenAICompatibleWishResearcher.from_env()` | `WISH_RESEARCHER_BASE_URL`, `WISH_RESEARCHER_API_KEY`, `WISH_RESEARCHER_MODEL` |
+| `concept-images` | `OpenRouterConceptArtist.from_env()` | `OPENROUTER_API_KEY`, and optionally `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_API_BASE` |
+| `exploded-view-check` | `OpenAICompatibleExplodeInspector.from_env()` | `CONCEPT_EXPLODE_INSPECTOR_BASE_URL`, `CONCEPT_EXPLODE_INSPECTOR_API_KEY`, `CONCEPT_EXPLODE_INSPECTOR_MODEL` |
+
+None of them is wired into an inventor by the module that defines it. A Workshop
+that has not been given one keeps waiting truthfully for that capability.
 
 See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
