@@ -1873,6 +1873,12 @@ def configured_workshop_tools(
     waits truthfully at the external handoff. Explicit caller tools always win
     field by field.
 
+    Shared Playtest includes the pinned checkers provider and the narrow
+    primitive moving-machine verifier. Deployments install authoritative
+    science sources and private world consent/reference providers on
+    ``LaneAwarePlaytester`` field by field; Inventors still keep the shared
+    Playtest engine.
+
     ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible alias for
     the normal shared-worker default.  It must never strand an older direct
     profile with Invent alone while silently removing Make, Playtest, and

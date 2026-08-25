@@ -96,6 +96,50 @@ def make_action(title="Orbit Press", *, overlap=False):
             "sweep_degrees": 360,
             "minimum_aabb_clearance_mm": 1,
         },
+        "moving_machine_binding": {
+            "joint": {
+                "joint_id": "index-wheel-joint",
+                "kind": "rigid-revolute-z",
+                "moving_part_id": "index-wheel",
+                "support_part_ids": ["base"],
+                "obstacle_part_ids": ["marker"],
+                "axis_point_mm": [80.0, 80.0, 8.0],
+                "axis_direction": [0.0, 0.0, 1.0],
+                "start_deg": 0.0,
+                "end_deg": 360.0,
+                "steps": 72,
+            },
+            "tolerance_bindings": [
+                {
+                    "contract_index": 0,
+                    "moving_part_id": "index-wheel",
+                    "stationary_part_ids": ["marker"],
+                    "verification": "continuous-swept-envelope",
+                }
+            ],
+            "load_bindings": [
+                {
+                    "contract_index": 0,
+                    "loaded_part_id": "index-wheel",
+                    "support_part_ids": ["base"],
+                    "section_axis": "z",
+                    "verification_modes": ["bulk-compression", "direct-shear"],
+                }
+            ],
+            "failure_bindings": [
+                {
+                    "contract_index": 0,
+                    "part_ids": ["base", "index-wheel", "marker"],
+                    "load_case_indices": [0],
+                    "verification_modes": [
+                        "direct-shear",
+                        "continuous-clearance",
+                        "reverse-sweep",
+                        "stall-envelope",
+                    ],
+                }
+            ],
+        },
         "design_limitations": [
             "This MVP does not yet model the final axle or sliding fit.",
         ],
@@ -153,6 +197,7 @@ def game_action():
         "sweep_degrees": 1,
         "minimum_aabb_clearance_mm": 0,
     }
+    value.pop("moving_machine_binding")
     return value
 
 
@@ -292,6 +337,39 @@ class AgentMakeTest(unittest.TestCase):
                 "title": "Anniversary Orbit",
                 "summary": "A hand-driven orbital desk toy.",
                 "mechanical_handoff": ["Make the advance tactile and visible."],
+                "lane_contract": {
+                    "schema_version": 1,
+                    "lane": "moving-machines",
+                    "kinematic_model": {
+                        "input_motion": "A person turns the index wheel by hand.",
+                        "transmission": ["The rigid wheel turns directly about Z."],
+                        "output_motion": "The visible index completes one revolution.",
+                        "degrees_of_freedom": 1,
+                    },
+                    "tolerances_mm": [
+                        {
+                            "interface": "Wheel swept envelope beside the marker",
+                            "nominal_clearance_mm": 1.0,
+                            "tolerance_mm": 0.2,
+                        }
+                    ],
+                    "load_assumptions": [
+                        {
+                            "case": "A user stalls the wheel by hand.",
+                            "force_n": 8.0,
+                            "safety_factor": 2.0,
+                            "basis": "A bounded concept-stage hand-force assumption.",
+                        }
+                    ],
+                    "failure_modes": [
+                        {
+                            "mode": "Wheel shear or clearance stall",
+                            "cause": "The bounded hand load exceeds the section or clearance closes.",
+                            "effect": "The wheel stops or its primitive section shears.",
+                            "mitigation": "Preserve swept clearance and the checked shear section.",
+                        }
+                    ],
+                },
             },
             score=91,
             target_score=85,
@@ -389,7 +467,7 @@ class AgentMakeTest(unittest.TestCase):
         motion = json.loads(
             (made.artifact_root / "playtest" / "motion.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(motion["status"], "held")
+        self.assertEqual(motion["status"], "ready-for-shared-verifier")
         paths = {entry.path for entry in made.artifact_manifest.entries}
         self.assertIn("cad/design.json", paths)
         self.assertIn("validation/cad-build.json", paths)
@@ -403,6 +481,7 @@ class AgentMakeTest(unittest.TestCase):
         self.assertIn("playtest/mechanical.json", paths)
         self.assertIn("playtest/print.json", paths)
         self.assertIn("playtest/motion.json", paths)
+        self.assertIn("playtest/moving-machine-binding.json", paths)
         self.assertIn("assembled.stl", paths)
         self.assertIn("cad/product.stl", paths)
 

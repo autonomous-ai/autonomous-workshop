@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import os
@@ -87,14 +88,65 @@ class ToyWorkshopTest(unittest.TestCase):
             "solid toy\nendsolid toy\n", encoding="utf-8"
         )
         (artifact / "edition-rules.json").write_text(
-            '{"rules":["take one legal turn"]}\n', encoding="utf-8"
+            '{"known_game":"fixture classic","rules_reference":"https://example.org/fixture-rules","rules":["take one legal turn"]}\n',
+            encoding="utf-8",
         )
         (artifact / "source-model.json").write_text(
-            '{"relationship":"fixture model"}\n', encoding="utf-8"
+            json.dumps(
+                {
+                    "source_model": {
+                        "phenomenon": "fixture rhythm",
+                        "model": "one turn advances one beat",
+                        "source_ids": ["fixture-source"],
+                    },
+                    "simplifications": [
+                        {
+                            "simplification": "ignore drag",
+                            "reason": "bounded fixture",
+                            "disclosed_limit": "not a physical prediction",
+                        },
+                        {
+                            "simplification": "one beat per turn",
+                            "reason": "legible interaction",
+                            "disclosed_limit": "not continuous time",
+                        },
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
         (artifact / "personalization-map.json").write_text(
-            '{"feature":"fixture subject"}\n', encoding="utf-8"
+            json.dumps(
+                {
+                    "consented_references": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "subject": "fixture subject",
+                            "consent_or_rights_basis": "signed fixture authorization",
+                            "allowed_features": ["fixture feature"],
+                            "excluded_features": ["private address"],
+                        }
+                    ],
+                    "feature_to_form_map": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "reference_feature": "fixture feature",
+                            "physical_form": "fixture silhouette",
+                            "recognition_test": "feature remains recognizable",
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
+        (artifact / "role_a.step").write_text("STEP role a\n", encoding="utf-8")
+        (artifact / "role_a.stl").write_text("solid role_a\nendsolid role_a\n", encoding="utf-8")
+        (artifact / "role_b.step").write_text("STEP role b\n", encoding="utf-8")
+        (artifact / "role_b.stl").write_text("solid role_b\nendsolid role_b\n", encoding="utf-8")
         (artifact / "game-rules.json").write_text(
             '{"end":"finite","legal_actions":["play"]}\n', encoding="utf-8"
         )
@@ -371,6 +423,12 @@ class ToyWorkshopTest(unittest.TestCase):
                     "measurements": measurements,
                 }
             if capability == "classic-rules-test":
+                provider = {
+                    "name": "fixture-classic-provider",
+                    "version": "1.0.0",
+                    "config_sha256": "1" * 64,
+                    "method_class": "deterministic-reference-rules-simulation",
+                }
                 measurements = {
                     "seeded_games": 1,
                     "rule_conformance_cases": 3,
@@ -381,7 +439,16 @@ class ToyWorkshopTest(unittest.TestCase):
                 dependencies = {
                     "product:edition-rules.json": product_inventory[
                         "edition-rules.json"
-                    ]
+                    ],
+                    "product:role_a.step": product_inventory["role_a.step"],
+                    "product:role_a.stl": product_inventory["role_a.stl"],
+                    "product:role_b.step": product_inventory["role_b.step"],
+                    "product:role_b.stl": product_inventory["role_b.stl"],
+                }
+                rules_model = {
+                    "schema_version": 1,
+                    "game": "fixture classic",
+                    "rules": ["take one legal turn"],
                 }
                 reference, reference_sha256 = write_receipt(
                     capability,
@@ -389,15 +456,95 @@ class ToyWorkshopTest(unittest.TestCase):
                     "reference-rules",
                     measurements,
                     dependencies,
-                    {"ruleset": "fixture-reference", "rule_ids": [1, 2, 3]},
+                    {
+                        "provider": provider,
+                        "rules_model": rules_model,
+                        "rules_model_sha256": hashlib.sha256(
+                            json.dumps(
+                                rules_model,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode("utf-8")
+                        ).hexdigest(),
+                        "comparison": {
+                            "declaration_known_game": "fixture classic",
+                            "rules_reference": "https://example.org/fixture-rules",
+                            "no_rule_mutation_fields": True,
+                        },
+                        "conformance_cases": [
+                            {
+                                "case_id": "rule-1",
+                                "passed": True,
+                                "source": "fixture-reference",
+                            },
+                            {
+                                "case_id": "rule-2",
+                                "passed": True,
+                                "source": "fixture-reference",
+                            },
+                            {
+                                "case_id": "rule-3",
+                                "passed": True,
+                                "source": "fixture-reference",
+                            },
+                        ],
+                    },
                 )
+                geometry_a = {
+                    "shape": "cylinder",
+                    "size_mm": {"x": 20.0, "y": 20.0, "z": 6.0},
+                }
+                geometry_b = {
+                    "shape": "cylinder",
+                    "size_mm": {"x": 18.0, "y": 18.0, "z": 8.0},
+                }
                 traces, traces_sha256 = write_receipt(
                     capability,
                     "classic-rule-conformance-proof",
                     "game-traces",
                     measurements,
                     dependencies,
-                    {"games": [{"seed": 1, "completed": True}]},
+                    {
+                        "provider": provider,
+                        "games": [
+                            {"seed": 1, "completed": True, "rule_mismatches": 0}
+                        ],
+                        "role_cases": [
+                            {
+                                "part_id": "role-a",
+                                "geometry": geometry_a,
+                                "geometry_sha256": hashlib.sha256(
+                                    json.dumps(
+                                        geometry_a,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                    ).encode("utf-8")
+                                ).hexdigest(),
+                                "step_path": "role_a.step",
+                                "step_sha256": product_inventory["role_a.step"],
+                                "stl_path": "role_a.stl",
+                                "stl_sha256": product_inventory["role_a.stl"],
+                                "exact_body_bound": True,
+                            },
+                            {
+                                "part_id": "role-b",
+                                "geometry": geometry_b,
+                                "geometry_sha256": hashlib.sha256(
+                                    json.dumps(
+                                        geometry_b,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                    ).encode("utf-8")
+                                ).hexdigest(),
+                                "step_path": "role_b.step",
+                                "step_sha256": product_inventory["role_b.step"],
+                                "stl_path": "role_b.stl",
+                                "stl_sha256": product_inventory["role_b.stl"],
+                                "exact_body_bound": True,
+                            },
+                        ],
+                        "distinct_geometry_signatures": 2,
+                    },
                 )
                 return {
                     "schema_version": 1,
@@ -411,12 +558,65 @@ class ToyWorkshopTest(unittest.TestCase):
                             "edition-rules.json",
                             product_inventory["edition-rules.json"],
                         ),
+                        source(
+                            "edition-part-step",
+                            "product",
+                            "role_a.step",
+                            product_inventory["role_a.step"],
+                        ),
+                        source(
+                            "edition-part-stl",
+                            "product",
+                            "role_a.stl",
+                            product_inventory["role_a.stl"],
+                        ),
+                        source(
+                            "edition-part-step",
+                            "product",
+                            "role_b.step",
+                            product_inventory["role_b.step"],
+                        ),
+                        source(
+                            "edition-part-stl",
+                            "product",
+                            "role_b.stl",
+                            product_inventory["role_b.stl"],
+                        ),
                         source("reference-rules", "playtest", reference, reference_sha256),
                         source("game-traces", "playtest", traces, traces_sha256),
                     ],
                     "measurements": measurements,
                 }
             if capability == "science-test":
+                provider = {
+                    "name": "fixture-science-provider",
+                    "version": "1.0.0",
+                    "config_sha256": "2" * 64,
+                    "method_class": "source-bound-comparison",
+                }
+                source_bytes = (
+                    b"fixture rhythm\n"
+                    b"one turn advances one beat\n"
+                    b"ignore drag; not a physical prediction\n"
+                    b"one beat per turn; not continuous time"
+                )
+                source_model = {
+                    "phenomenon": "fixture rhythm",
+                    "model": "one turn advances one beat",
+                    "source_ids": ["fixture-source"],
+                }
+                simplifications = [
+                    {
+                        "simplification": "ignore drag",
+                        "reason": "bounded fixture",
+                        "disclosed_limit": "not a physical prediction",
+                    },
+                    {
+                        "simplification": "one beat per turn",
+                        "reason": "legible interaction",
+                        "disclosed_limit": "not continuous time",
+                    },
+                ]
                 measurements = {
                     "accuracy_cases": 3,
                     "accuracy_failures": 0,
@@ -436,7 +636,89 @@ class ToyWorkshopTest(unittest.TestCase):
                     "science-sources",
                     measurements,
                     dependencies,
-                    {"sources": ["fixture-source"], "checked_claim_ids": [1, 2, 3]},
+                    {
+                        "provider": provider,
+                        "source_model_sha256": hashlib.sha256(
+                            json.dumps(
+                                source_model,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode("utf-8")
+                        ).hexdigest(),
+                        "sources": [
+                            {
+                                "source_id": "fixture-source",
+                                "title": "Fixture science source",
+                                "publisher": "Fixture Observatory",
+                                "url": "https://example.org/fixture-science",
+                                "retrieved_at": "2026-08-25T00:00:00Z",
+                                "media_type": "text/plain",
+                                "content_sha256": hashlib.sha256(source_bytes).hexdigest(),
+                                "content_bytes": len(source_bytes),
+                                "content_encoding": "base64",
+                                "content_base64": base64.b64encode(source_bytes).decode("ascii"),
+                            }
+                        ],
+                        "accuracy_cases": [
+                            {
+                                "case_id": "phenomenon-1",
+                                "source_ids": ["fixture-source"],
+                                "product_field": "phenomenon",
+                                "expected": source_model["phenomenon"],
+                                "observed": source_model["phenomenon"],
+                                "source_excerpt": source_model["phenomenon"],
+                                "source_excerpt_sha256": hashlib.sha256(
+                                    source_model["phenomenon"].encode("utf-8")
+                                ).hexdigest(),
+                                "passed": True,
+                            },
+                            {
+                                "case_id": "model-1",
+                                "source_ids": ["fixture-source"],
+                                "product_field": "model",
+                                "expected": source_model["model"],
+                                "observed": source_model["model"],
+                                "source_excerpt": source_model["model"],
+                                "source_excerpt_sha256": hashlib.sha256(
+                                    source_model["model"].encode("utf-8")
+                                ).hexdigest(),
+                                "passed": True,
+                            },
+                            {
+                                "case_id": "model-2",
+                                "source_ids": ["fixture-source"],
+                                "product_field": "model",
+                                "expected": source_model["model"],
+                                "observed": source_model["model"],
+                                "source_excerpt": source_model["model"],
+                                "source_excerpt_sha256": hashlib.sha256(
+                                    source_model["model"].encode("utf-8")
+                                ).hexdigest(),
+                                "passed": True,
+                            },
+                        ],
+                        "simplification_checks": [
+                            {
+                                "simplification_sha256": hashlib.sha256(
+                                    json.dumps(
+                                        item,
+                                        sort_keys=True,
+                                        separators=(",", ":"),
+                                    ).encode("utf-8")
+                                ).hexdigest(),
+                                "source_ids": ["fixture-source"],
+                                "disclosed_limit_present": True,
+                                "source_supported": True,
+                                "source_excerpt": "%s; %s"
+                                % (item["simplification"], item["disclosed_limit"]),
+                                "source_excerpt_sha256": hashlib.sha256(
+                                    ("%s; %s" % (item["simplification"], item["disclosed_limit"])).encode("utf-8")
+                                ).hexdigest(),
+                                "passed": True,
+                            }
+                            for item in simplifications
+                        ],
+                    },
                 )
                 traces, traces_sha256 = write_receipt(
                     capability,
@@ -444,7 +726,17 @@ class ToyWorkshopTest(unittest.TestCase):
                     "comprehension-traces",
                     measurements,
                     dependencies,
-                    {"traces": [{"seed": 1, "understood": True}]},
+                    {
+                        "provider": provider,
+                        "traces": [
+                            {
+                                "seed": 1,
+                                "expected_concepts": ["rhythm"],
+                                "observed_concepts": ["rhythm", "beat"],
+                                "passed": True,
+                            }
+                        ],
+                    },
                 )
                 return {
                     "schema_version": 1,
@@ -466,6 +758,13 @@ class ToyWorkshopTest(unittest.TestCase):
                     "measurements": measurements,
                 }
             if capability == "world-test":
+                provider = {
+                    "name": "fixture-consent-reference-provider",
+                    "version": "1.0.0",
+                    "config_sha256": "3" * 64,
+                    "method_class": "private-reference-feature-comparison",
+                }
+                material_sha256 = hashlib.sha256(b"private fixture reference").hexdigest()
                 measurements = {
                     "consent_verified": True,
                     "personalization_features": 1,
@@ -484,7 +783,26 @@ class ToyWorkshopTest(unittest.TestCase):
                     "consent-record",
                     measurements,
                     dependencies,
-                    {"consented": True, "scope": ["fixture-subject"]},
+                    {
+                        "attestation": provider,
+                        "attestation_scope": "trusted-provider verification over private consent digests; raw bytes are intentionally not public-replayable",
+                        "records": [
+                            {
+                                "reference_id": "fixture-reference",
+                                "subject": "fixture subject",
+                                "rights_basis": "signed fixture authorization",
+                                "allowed_features": ["fixture feature"],
+                                "excluded_features": ["private address"],
+                                "verification_method": "signed-fixture-record",
+                                "verified_at": "2026-08-25T00:00:00Z",
+                                "consent_sha256": hashlib.sha256(
+                                    b"private fixture consent"
+                                ).hexdigest(),
+                                "consent_bytes": len(b"private fixture consent"),
+                            }
+                        ],
+                        "raw_consent_bytes_sealed": False,
+                    },
                 )
                 reference, reference_sha256 = write_receipt(
                     capability,
@@ -492,7 +810,20 @@ class ToyWorkshopTest(unittest.TestCase):
                     "reference-material",
                     measurements,
                     dependencies,
-                    {"subject": "fixture", "reference_ids": ["reference-a"]},
+                    {
+                        "attestation": provider,
+                        "attestation_scope": "trusted-provider verification over authorized private reference digests; raw bytes are intentionally not public-replayable",
+                        "references": [
+                            {
+                                "reference_id": "fixture-reference",
+                                "media_type": "image/jpeg",
+                                "content_sha256": material_sha256,
+                                "content_bytes": len(b"private fixture reference"),
+                                "private_bytes_sealed": False,
+                            }
+                        ],
+                        "raw_private_bytes_sealed": False,
+                    },
                 )
                 traces, traces_sha256 = write_receipt(
                     capability,
@@ -500,7 +831,21 @@ class ToyWorkshopTest(unittest.TestCase):
                     "likeness-traces",
                     measurements,
                     dependencies,
-                    {"traces": [{"recognized": True}]},
+                    {
+                        "attestation": provider,
+                        "cases": [
+                            {
+                                "reference_id": "fixture-reference",
+                                "reference_feature": "fixture feature",
+                                "recognition_test": "feature remains recognizable",
+                                "reference_sha256": material_sha256,
+                                "recognized": True,
+                                "consent_safe": True,
+                                "method_class": "vision-feature-comparison",
+                                "passed": True,
+                            }
+                        ],
+                    },
                 )
                 return {
                     "schema_version": 1,

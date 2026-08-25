@@ -1851,7 +1851,50 @@ def _validate_digital_check(
             or normalized_metrics["parts_sliced"] != len(receipt["parts"])
         ):
             raise ValueError("passed print-test lacks an exact pinned slicer-profile receipt")
-    if value["passed"] and capability == "mechanical-test":
+    moving_machine_check = value.get("checker") == "workshop-primitive-moving-machine"
+    if value["passed"] and capability == "mechanical-test" and moving_machine_check:
+        required_counts = (
+            "interference_cases",
+            "fit_cases",
+            "assembly_paths_tested",
+            "motion_cases",
+            "load_cases",
+            "failure_modes_tested",
+        )
+        required_zeroes = (
+            "forbidden_intersections",
+            "fit_failures",
+            "assembly_failures",
+            "motion_failures",
+            "load_failures",
+            "unresolved_critical_failures",
+        )
+        expected_sources = {
+            "assembled.step",
+            "cad/design.json",
+            "playtest/mechanical.json",
+            "playtest/moving-machine-binding.json",
+            "validation/cad-build.json",
+        }
+        if (
+            value["method_class"] != "deterministic-mechanical-verification"
+            or normalized_metrics.get("brep_valid") is not True
+            or any(
+                type(normalized_metrics.get(name)) is not int
+                or normalized_metrics[name] < 1
+                for name in required_counts
+            )
+            or any(
+                type(normalized_metrics.get(name)) is not int
+                or normalized_metrics[name] != 0
+                for name in required_zeroes
+            )
+            or set(source_refs) != expected_sources
+        ):
+            raise ValueError(
+                "passed moving mechanical-test lacks exact bound CAD/load measurements"
+            )
+    elif value["passed"] and capability == "mechanical-test":
         receipt = normalized_metrics.get("mechanical_receipt")
         receipt_sha256 = normalized_metrics.get("mechanical_receipt_sha256")
         receipt_measurements = (
@@ -1904,7 +1947,41 @@ def _validate_digital_check(
             )
         ):
             raise ValueError("passed mechanical-test lacks sealed tolerance/assembly/load evidence")
-    if value["passed"] and capability == "motion-test":
+    if value["passed"] and capability == "motion-test" and moving_machine_check:
+        expected_sources = {
+            "assembled.step",
+            "cad/design.json",
+            "playtest/mechanical.json",
+            "playtest/moving-machine-binding.json",
+            "validation/cad-build.json",
+        }
+        if (
+            value["method_class"] != "deterministic-kinematic-simulation"
+            or type(normalized_metrics.get("states_tested")) is not int
+            or normalized_metrics["states_tested"] < 2
+            or normalized_metrics.get("continuous_sweep") is not True
+            or any(
+                type(normalized_metrics.get(name)) is not int
+                or normalized_metrics[name] < 1
+                for name in (
+                    "tolerance_cases_tested",
+                    "load_cases_tested",
+                    "orientations_tested",
+                    "wear_cycles",
+                    "misuse_cases_tested",
+                )
+            )
+            or any(
+                type(normalized_metrics.get(name)) is not int
+                or normalized_metrics[name] != 0
+                for name in ("collisions", "stalls", "failures")
+            )
+            or set(source_refs) != expected_sources
+        ):
+            raise ValueError(
+                "passed moving motion-test lacks exact swept/load/wear measurements"
+            )
+    elif value["passed"] and capability == "motion-test":
         receipt_ref = normalized_metrics.get("motion_receipt_ref")
         receipt_sha256 = normalized_metrics.get("motion_receipt_sha256")
         if (
@@ -2260,6 +2337,11 @@ class LaneAwarePlaytester:
         evaluator: Optional[Any] = None,
         game_simulator: Optional[Any] = default_sealed_game_simulator,
         capability_checks: Optional[Mapping[str, Any]] = None,
+        lane_providers: Optional[Any] = None,
+        classic_provider: Optional[Any] = None,
+        science_provider: Optional[Any] = None,
+        world_provider: Optional[Any] = None,
+        moving_machine_verifier: Optional[Any] = None,
         goal: int = DEFAULT_PLAYTEST_GOAL,
         game_count: int = DEFAULT_GAME_COUNT,
     ) -> None:
@@ -2283,6 +2365,36 @@ class LaneAwarePlaytester:
         ):
             raise ValueError("Playtest capability_checks contains an unsupported adapter")
         self.capability_checks = checks
+        self._explicit_capability_checks = capability_checks is not None
+        self._explicit_capability_names = frozenset(
+            () if capability_checks is None else capability_checks
+        )
+        if lane_providers is not None and any(
+            provider is not None
+            for provider in (classic_provider, science_provider, world_provider)
+        ):
+            raise ValueError(
+                "install either lane_providers or individual lane providers, not both"
+            )
+        if lane_providers is None:
+            from .lane_playtest_providers import WorkshopLanePlaytestProviders
+
+            lane_providers = WorkshopLanePlaytestProviders(
+                classic_provider=classic_provider,
+                science_provider=science_provider,
+                world_provider=world_provider,
+            )
+        if not callable(getattr(lane_providers, "prepare", None)):
+            raise ValueError("lane_providers must provide prepare(context, capability)")
+        self.lane_providers = lane_providers
+        self._moving_verifier_explicit = moving_machine_verifier is not None
+        if moving_machine_verifier is None:
+            from .moving_machine import WorkshopMovingMachineVerifier
+
+            moving_machine_verifier = WorkshopMovingMachineVerifier()
+        if not callable(getattr(moving_machine_verifier, "run", None)):
+            raise ValueError("moving_machine_verifier must provide run()")
+        self.moving_machine_verifier = moving_machine_verifier
         self.goal = goal
         self.game_count = game_count
         self.evaluator_version = "%s+codex.%s" % (
@@ -2396,37 +2508,103 @@ class LaneAwarePlaytester:
         context.taste.assert_current()
         context.made.assert_current()
         capabilities = context.blueprint.required_capabilities("playtest")
-        unavailable_release_providers = {
-            "classic-rules-test": (
-                "The shared classic declaration lint has no independent reference-rules corpus, seeded conformance games, and role-legibility traces.",
-                "Connect a Workshop classic conformance provider that seals the reference rules and replayable traces; rules_unchanged=true is not proof.",
-            ),
-            "science-test": (
-                "The shared AI-player panel has no source-bound accuracy and comprehension-trace provider for this scientific model.",
-                "Connect a Workshop science verifier that seals the source model, cited source bytes, simplification checks, and comprehension traces.",
-            ),
-            "world-test": (
-                "The shared AI-player panel has no verified consent, reference-material, and likeness-trace provider for this tiny world.",
-                "Connect a Workshop likeness verifier that seals consent, exact authorized references, and recognition traces without exposing private material.",
-            ),
-        }
-        missing_release = tuple(
+        prepared_lane_releases: Dict[str, Any] = {}
+        digital_checks: Dict[str, Mapping[str, Any]] = {}
+        for capability in capabilities:
+            if capability not in {
+                "classic-rules-test",
+                "science-test",
+                "world-test",
+            }:
+                continue
+            prepared = self.lane_providers.prepare(context, capability)
+            if (
+                getattr(prepared, "capability", None) != capability
+                or getattr(prepared, "artifact_sha256", None)
+                != context.made.artifact_sha256
+                or not isinstance(getattr(prepared, "deterministic_check", None), Mapping)
+                or not callable(getattr(prepared, "seal", None))
+            ):
+                raise ContractError(
+                    "Workshop lane provider returned an invalid prepared release"
+                )
+            prepared_lane_releases[capability] = prepared
+            digital_checks[capability] = _validate_digital_check(
+                context, capability, prepared.deterministic_check
+            )
+
+        prepared_moving_release = None
+        explicit_moving_checks = {
             capability
-            for capability in capabilities
-            if capability in unavailable_release_providers
+            for capability in ("mechanical-test", "motion-test")
+            if capability in self._explicit_capability_names
+        }
+        use_shared_moving_verifier = (
+            context.blueprint.lane == "moving-machines"
+            and (
+                not explicit_moving_checks
+                or self._moving_verifier_explicit
+            )
         )
-        if missing_release:
-            raise WaitingFor(
-                *(
+        if use_shared_moving_verifier:
+            inventory = {
+                entry.path: entry.sha256
+                for entry in context.made.artifact_manifest.entries
+            }
+            required_moving_sources = {
+                "assembled.step",
+                "cad/design.json",
+                "playtest/mechanical.json",
+                "playtest/moving-machine-binding.json",
+                "validation/cad-build.json",
+            }
+            missing_moving_sources = sorted(required_moving_sources - set(inventory))
+            if missing_moving_sources:
+                raise WaitingFor(
                     Need(
                         "playtest",
-                        capability,
-                        unavailable_release_providers[capability][0],
-                        unavailable_release_providers[capability][1],
-                    )
-                    for capability in missing_release
+                        "mechanical-test",
+                        "The exact Make lacks the Workshop moving-machine sources: %s."
+                        % ", ".join(missing_moving_sources),
+                        "Repair or regenerate the Workshop-owned Make binding and rerun the shared verifier; the Inventor does not need to supply a CAD worker.",
+                    ),
+                    Need(
+                        "playtest",
+                        "motion-test",
+                        "The exact Make lacks the Workshop moving-machine sources: %s."
+                        % ", ".join(missing_moving_sources),
+                        "Repair or regenerate the Workshop-owned Make binding and rerun the shared verifier; the Inventor does not need to supply a motion worker.",
+                    ),
                 )
+            prepared_moving_release = self.moving_machine_verifier.run(
+                artifact_sha256=context.made.artifact_sha256,
+                product_root=context.made.artifact_root,
+                product_inventory=inventory,
             )
+            if (
+                not isinstance(
+                    getattr(prepared_moving_release, "mechanical_check", None),
+                    Mapping,
+                )
+                or not isinstance(
+                    getattr(prepared_moving_release, "motion_check", None), Mapping
+                )
+                or not callable(getattr(prepared_moving_release, "seal", None))
+            ):
+                raise ContractError(
+                    "Workshop moving-machine verifier returned an invalid prepared release"
+                )
+            for capability, check in (
+                ("mechanical-test", prepared_moving_release.mechanical_check),
+                ("motion-test", prepared_moving_release.motion_check),
+            ):
+                if capability in capabilities and (
+                    capability not in explicit_moving_checks
+                    or self._moving_verifier_explicit
+                ):
+                    digital_checks[capability] = _validate_digital_check(
+                        context, capability, check
+                    )
         if "game-simulation" in capabilities and self.game_simulator is None:
             raise _wait(
                 "game-simulation",
@@ -2441,7 +2619,8 @@ class LaneAwarePlaytester:
         missing_digital = tuple(
             capability
             for capability in required_digital
-            if capability not in self.capability_checks
+            if capability not in digital_checks
+            and capability not in self.capability_checks
         )
         if missing_digital:
             raise WaitingFor(
@@ -2457,8 +2636,9 @@ class LaneAwarePlaytester:
                     for capability in missing_digital
                 )
             )
-        digital_checks: Dict[str, Mapping[str, Any]] = {}
         for capability in required_digital:
+            if capability in digital_checks:
+                continue
             try:
                 raw_check = self.capability_checks[capability](context)
                 digital_checks[capability] = _validate_digital_check(
@@ -2482,30 +2662,89 @@ class LaneAwarePlaytester:
         if "game-simulation" in capabilities:
             game_bundle = self._run_game_simulation(context)
 
+        review_outcomes: Dict[str, Dict[str, Any]] = {}
+        for capability in model_capabilities:
+            review = reviews[capability]
+            digital = digital_checks.get(capability)
+            blocking = bool(review["hard_tensions"]) or any(
+                item["severity"] in ("improve", "block")
+                for item in review["findings"]
+            )
+            if digital is not None and not digital["passed"]:
+                blocking = True
+            score = _reward_score(
+                review["dimensions"], blocked=blocking, goal=self.goal
+            )
+            review_outcomes[capability] = {
+                "review": review,
+                "digital": digital,
+                "score": score,
+                "passed": score >= self.goal and not blocking,
+                "release_tensions": [],
+            }
+
+        # The narrow moving provider computes one coupled mechanical/motion
+        # release.  Do not write either receipt when either AI-player gate
+        # rejects the exact revision; both results stay failed and Make receives
+        # another improving round.
+        moving_capabilities = tuple(
+            capability
+            for capability in ("mechanical-test", "motion-test")
+            if capability in review_outcomes
+        )
+        moving_reviews_passed = bool(
+            prepared_moving_release is not None
+            and moving_capabilities
+            and all(review_outcomes[item]["passed"] for item in moving_capabilities)
+        )
+        if prepared_moving_release is not None and not moving_reviews_passed:
+            for capability in moving_capabilities:
+                outcome = review_outcomes[capability]
+                if outcome["passed"]:
+                    outcome["score"] = min(outcome["score"], self.goal - 1)
+                    outcome["passed"] = False
+                    outcome["release_tensions"].append(
+                        "The coupled moving-machine mechanical and motion release did not pass as one exact revision."
+                    )
+
         workspace = context.workspace
         workspace.mkdir(parents=True, exist_ok=True)
         if any(workspace.iterdir()):
             raise ContractError("Playtest workspace must be empty before evidence is sealed")
 
+        sealed_moving_release = None
+        if moving_reviews_passed:
+            sealed_moving_release = prepared_moving_release.seal(workspace)
+            if (
+                getattr(sealed_moving_release, "mechanical_proof", None) is None
+                or getattr(sealed_moving_release, "motion_proof", None) is None
+            ):
+                raise ContractError(
+                    "Workshop moving-machine release sealed without both proofs"
+                )
+
         evidence_records: Dict[str, Tuple[Mapping[str, Any], str, str, str]] = {}
         feedback: list[Feedback] = []
         for capability in model_capabilities:
-            review = reviews[capability]
+            outcome = review_outcomes[capability]
+            review = outcome["review"]
             dimensions = review["dimensions"]
-            digital = digital_checks.get(capability)
-            blocking = bool(review["hard_tensions"]) or any(
-                item["severity"] in ("improve", "block") for item in review["findings"]
-            )
-            if digital is not None and not digital["passed"]:
-                blocking = True
-            score = _reward_score(dimensions, blocked=blocking, goal=self.goal)
-            passed = score >= self.goal and not blocking
+            digital = outcome["digital"]
+            score = outcome["score"]
+            passed = outcome["passed"]
             evidence_ref = "results/%s.json" % capability
             release_proof = None
-            if (
+            if capability in prepared_lane_releases and passed:
+                release_proof = prepared_lane_releases[capability].seal(workspace)
+            elif sealed_moving_release is not None and capability == "mechanical-test":
+                release_proof = sealed_moving_release.mechanical_proof.to_dict()
+            elif sealed_moving_release is not None and capability == "motion-test":
+                release_proof = sealed_moving_release.motion_proof.to_dict()
+            elif (
                 capability == "mechanical-test"
                 and digital is not None
                 and digital["passed"]
+                and passed
             ):
                 release_proof = _seal_mechanical_release_proof(
                     context, workspace, digital
@@ -2527,7 +2766,8 @@ class LaneAwarePlaytester:
                     "goal": self.goal,
                     "passed": passed,
                     "dimensions": dimensions,
-                    "hard_tensions": review["hard_tensions"],
+                    "hard_tensions": list(review["hard_tensions"])
+                    + list(outcome["release_tensions"]),
                 },
             }
             if release_proof is not None:

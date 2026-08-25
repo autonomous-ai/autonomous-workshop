@@ -64,6 +64,31 @@ from .playtest_release import (
     ReleaseProofSource,
     playtest_release_needs,
 )
+from .lane_playtest_providers import (
+    ClassicEvidenceProvider,
+    PinnedCheckersRulesProvider,
+    PreparedLaneRelease,
+    ProviderIdentity,
+    PublicScienceSource,
+    ScienceAccuracyCase,
+    ScienceComprehensionTrace,
+    ScienceEvidenceProvider,
+    ScienceSimplificationCheck,
+    ScienceVerification,
+    WorkshopLanePlaytestProviders,
+    WorldConsentRecord,
+    WorldEvidenceProvider,
+    WorldLikenessCase,
+    WorldReferenceMaterial,
+    WorldVerification,
+)
+from .moving_machine import (
+    MOVING_MACHINE_BINDING_KIND,
+    MOVING_MACHINE_BINDING_VERSION,
+    MovingMachineVerification,
+    WorkshopMovingMachineVerifier,
+    workshop_pinned_wear_model,
+)
 from .reviews import ReviewAuthentication, ReviewAuthenticator, review_sha256
 from .sealed_draft import (
     CanonicalSlugDoor,
@@ -218,6 +243,27 @@ from .taste import (
 
 __all__ = [
     # Toy Workshop 0.5 canonical surface.
+    "ClassicEvidenceProvider",
+    "MOVING_MACHINE_BINDING_KIND",
+    "MOVING_MACHINE_BINDING_VERSION",
+    "MovingMachineVerification",
+    "PinnedCheckersRulesProvider",
+    "PreparedLaneRelease",
+    "ProviderIdentity",
+    "PublicScienceSource",
+    "ScienceAccuracyCase",
+    "ScienceComprehensionTrace",
+    "ScienceEvidenceProvider",
+    "ScienceSimplificationCheck",
+    "ScienceVerification",
+    "WorkshopLanePlaytestProviders",
+    "WorkshopMovingMachineVerifier",
+    "WorldConsentRecord",
+    "WorldEvidenceProvider",
+    "WorldLikenessCase",
+    "WorldReferenceMaterial",
+    "WorldVerification",
+    "workshop_pinned_wear_model",
     "Adapter",
     "AmbiguousEffectError",
     "Artifact",

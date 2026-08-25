@@ -108,6 +108,18 @@ class AgentPlaytestTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
+    def test_default_capability_registry_is_not_an_explicit_moving_override(self):
+        default = LaneAwarePlaytester(evaluator=FakeEvaluator({"reviews": []}))
+        partial = LaneAwarePlaytester(
+            evaluator=FakeEvaluator({"reviews": []}),
+            capability_checks={"print-test": lambda unused: {}},
+        )
+
+        self.assertEqual(default._explicit_capability_names, frozenset())
+        self.assertEqual(
+            partial._explicit_capability_names, frozenset({"print-test"})
+        )
+
     def context(self, lane, suffix="one"):
         artifact = self.root / ("artifact-" + suffix)
         artifact.mkdir()
@@ -174,11 +186,16 @@ class AgentPlaytestTest(unittest.TestCase):
     @staticmethod
     def digital_checks(context, *, failing=None):
         checks = {}
+        sealed_paths = {
+            entry.path for entry in context.made.artifact_manifest.entries
+        }
         for capability in context.blueprint.required_capabilities("playtest"):
             if capability not in DETERMINISTIC_CAPABILITIES:
                 continue
             source = "rules.md" if capability == "classic-rules-test" else (
-                "toy.stl" if capability == "print-test" else "toy.step"
+                ("toy.stl" if "toy.stl" in sealed_paths else "assembled.stl")
+                if capability == "print-test"
+                else ("toy.step" if "toy.step" in sealed_paths else "assembled.step")
             )
 
             def check(received, capability=capability, source=source):
@@ -394,7 +411,10 @@ class AgentPlaytestTest(unittest.TestCase):
             LaneAwarePlaytester(evaluator=evaluator, capability_checks={})(context)
         self.assertEqual(
             {need.capability for need in caught.exception.needs},
-            {"motion-test", "mechanical-test", "print-test"},
+            {"motion-test", "mechanical-test"},
+        )
+        self.assertTrue(
+            all("Workshop-owned" in need.instructions for need in caught.exception.needs)
         )
         self.assertEqual(evaluator.calls, [])
 
@@ -488,7 +508,6 @@ class AgentPlaytestTest(unittest.TestCase):
                 with self.assertRaises(WaitingFor) as caught:
                     LaneAwarePlaytester(
                         evaluator=evaluator,
-                        capability_checks=self.digital_checks(context),
                     )(context)
                 self.assertIn(
                     capability,
@@ -656,6 +675,306 @@ class AgentPlaytestTest(unittest.TestCase):
                     evaluator=FakeEvaluator(review_batch(model_capabilities))
                 )(playtest_context)
         self.assertEqual(caught.exception.needs[0].capability, "cad-skill-runtime")
+
+    def test_partial_print_override_keeps_shared_moving_make_and_playtest(self):
+        from inventor_workshop.moving_machine import WorkshopMovingMachineVerifier
+        from tests.test_agent_make import FakeCadBuilder, make_action
+        from tests.test_moving_machine import PassingMotionBuilder
+
+        wish = Wish.create(
+            "shared-orbit",
+            "A hand-turned anniversary orbit that moves on my desk",
+            constraints={"lane": "moving-machines"},
+        )
+        blueprint = ToyBlueprint.for_lane("moving-machines")
+        lane_contract = {
+            "schema_version": 1,
+            "lane": "moving-machines",
+            "kinematic_model": {
+                "input_motion": "A person turns the wheel by hand.",
+                "transmission": ["The rigid wheel turns directly about Z."],
+                "output_motion": "The visible wheel completes one revolution.",
+                "degrees_of_freedom": 1,
+            },
+            "tolerances_mm": [
+                {
+                    "interface": "Wheel swept envelope beside the marker",
+                    "nominal_clearance_mm": 1.0,
+                    "tolerance_mm": 0.2,
+                }
+            ],
+            "load_assumptions": [
+                {
+                    "case": "A user stalls the wheel by hand.",
+                    "force_n": 8.0,
+                    "safety_factor": 2.0,
+                    "basis": "A bounded concept-stage hand-force assumption.",
+                }
+            ],
+            "failure_modes": [
+                {
+                    "mode": "Wheel shear or clearance stall",
+                    "cause": "The bounded hand load exceeds the section or clearance closes.",
+                    "effect": "The wheel stalls or its primitive section shears.",
+                    "mitigation": "Preserve swept clearance and the checked shear section.",
+                }
+            ],
+        }
+        invented = Invented(
+            wish_sha256=json_sha256(wish.to_dict()),
+            taste_sha256=self.taste.sha256,
+            lane=blueprint.lane,
+            concept={
+                "title": "Shared Orbit",
+                "summary": "One bounded rigid orbit.",
+                "lane_contract": lane_contract,
+            },
+            score=92,
+            target_score=85,
+        )
+        made = CodexMaker(
+            creator=FakeEvaluator(make_action("Shared Orbit")),
+            evaluator=FakeEvaluator(make_verdict()),
+            cad_builder=FakeCadBuilder(),
+        )(
+            MakeContext(
+                wish,
+                self.taste,
+                blueprint,
+                invented,
+                1,
+                (self.root / "shared-moving-make").absolute(),
+                (),
+                2,
+                "bob",
+            )
+        )
+        context = PlaytestContext(
+            wish,
+            self.taste,
+            blueprint,
+            1,
+            made,
+            (self.root / "shared-moving-playtest").absolute(),
+            2,
+        )
+        def exact_print_check(received):
+            source = "assembled.stl"
+            inventory = {
+                entry.path: entry.sha256
+                for entry in received.made.artifact_manifest.entries
+            }
+            receipt = {
+                "schema_version": 1,
+                "slicer": "PrusaSlicer",
+                "slicer_version": "2.9.6",
+                "profiles": {
+                    "printer": {"name": "printer.ini", "origin": "test-pinned", "bytes": 10, "sha256": "1" * 64},
+                    "process": {"name": "process.ini", "origin": "test-pinned", "bytes": 11, "sha256": "2" * 64},
+                    "filament": {"name": "filament.ini", "origin": "test-pinned", "bytes": 12, "sha256": "3" * 64},
+                },
+                "parts": [
+                    {
+                        "input_ref": source,
+                        "input_sha256": inventory[source],
+                        "command": ["PrusaSlicer", "--export-gcode", source],
+                        "returncode": 0,
+                        "stdout": "sliced",
+                        "stderr": "",
+                        "gcode_bytes": 100,
+                        "gcode_sha256": "4" * 64,
+                        "gcode_metrics": {"estimated_print_time": "4m"},
+                    }
+                ],
+            }
+            return {
+                "artifact_sha256": received.made.artifact_sha256,
+                "capability": "print-test",
+                "passed": True,
+                "checker": "test-pinned-prusa",
+                "checker_version": "1.0.0",
+                "config_sha256": CHECK_CONFIG_SHA256,
+                "method_class": "deterministic-exact-slicer-profile",
+                "source_refs": [source],
+                "observations": ["Sliced the exact sealed assembly fixture."],
+                "metrics": {
+                    "profiles_checked": 3,
+                    "parts_sliced": 1,
+                    "slicer_errors": 0,
+                    "slicer_receipt": receipt,
+                    "slicer_receipt_sha256": hashlib.sha256(
+                        json.dumps(
+                            receipt,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        ).encode("utf-8")
+                    ).hexdigest(),
+                },
+                "findings": [],
+            }
+
+        capabilities = blueprint.required_capabilities("playtest")
+        result = LaneAwarePlaytester(
+            evaluator=FakeEvaluator(review_batch(capabilities)),
+            capability_checks={"print-test": exact_print_check},
+            moving_machine_verifier=WorkshopMovingMachineVerifier(
+                cad_builder=PassingMotionBuilder()
+            ),
+        )(context)
+
+        self.assertTrue(result.passed)
+        by_id = {item.playtest_id: item for item in result.evidence.results}
+        self.assertEqual(
+            by_id["motion-test"].evidence["deterministic_check"]["checker"],
+            "workshop-primitive-moving-machine",
+        )
+        self.assertIn("release_proof", by_id["mechanical-test"].evidence)
+        self.assertIn("release_proof", by_id["motion-test"].evidence)
+        self.assertTrue(
+            (context.workspace / "receipts" / "moving-machine-mechanical.json").is_file()
+        )
+
+        classic_wish = Wish.create(
+            "shared-checkers",
+            "Checkers pieces shaped by the five jobs in my studio",
+            constraints={"lane": "classics-made-yours"},
+        )
+        classic_blueprint = ToyBlueprint.for_lane("classics-made-yours")
+        classic_action = make_action("Five-Job Checkers")
+        classic_action["motion_spec"] = {
+            "enabled": False,
+            "moving_part_id": "",
+            "axis": "z",
+            "sweep_degrees": 1,
+            "minimum_aabb_clearance_mm": 0,
+        }
+        classic_action.pop("moving_machine_binding")
+        classic_action["classic_spec"] = {
+            "enabled": True,
+            "known_game": "checkers",
+            "rules_reference": "https://wcdf.net/rules/rules_of_checkers_english.pdf",
+            "rules_unchanged": True,
+        }
+        classic_invented = Invented(
+            wish_sha256=json_sha256(classic_wish.to_dict()),
+            taste_sha256=self.taste.sha256,
+            lane=classic_blueprint.lane,
+            concept={
+                "title": "Five-Job Checkers",
+                "summary": "Unchanged checkers with studio-shaped pieces.",
+                "lane_contract": {
+                    "schema_version": 1,
+                    "lane": "classics-made-yours",
+                    "known_game": "checkers",
+                    "rules_preserved": True,
+                    "rules_preservation": {
+                        "canonical_ruleset": "WCDF English draughts rules (2012)",
+                        "preserved_invariants": [
+                            "mandatory captures",
+                            "promotion on the far rank",
+                            "no legal move loses",
+                        ],
+                        "allowed_physical_changes": [
+                            "piece silhouettes and surface storytelling"
+                        ],
+                    },
+                    "personalization_map": [
+                        {
+                            "wish_detail": "the five studio jobs",
+                            "physical_feature": "distinct job-shaped piece bodies",
+                            "rules_effect": "none",
+                        }
+                    ],
+                },
+            },
+            score=93,
+            target_score=85,
+        )
+        classic_made = CodexMaker(
+            creator=FakeEvaluator(classic_action),
+            evaluator=FakeEvaluator(make_verdict()),
+            cad_builder=FakeCadBuilder(),
+        )(
+            MakeContext(
+                classic_wish,
+                self.taste,
+                classic_blueprint,
+                classic_invented,
+                1,
+                (self.root / "shared-classic-make").absolute(),
+                (),
+                2,
+                "alice",
+            )
+        )
+        classic_context = PlaytestContext(
+            classic_wish,
+            self.taste,
+            classic_blueprint,
+            1,
+            classic_made,
+            (self.root / "shared-classic-playtest").absolute(),
+            2,
+        )
+        classic_checks = self.digital_checks(classic_context)
+        classic_checks.pop("classic-rules-test")
+        classic_capabilities = classic_blueprint.required_capabilities("playtest")
+        classic_result = LaneAwarePlaytester(
+            evaluator=FakeEvaluator(review_batch(classic_capabilities)),
+            capability_checks=classic_checks,
+        )(classic_context)
+
+        self.assertTrue(classic_result.passed)
+        classic_by_id = {
+            item.playtest_id: item for item in classic_result.evidence.results
+        }
+        self.assertEqual(
+            classic_by_id["classic-rules-test"].evidence["deterministic_check"][
+                "checker"
+            ],
+            "workshop-pinned-checkers-conformance",
+        )
+        self.assertIn(
+            "release_proof",
+            classic_by_id["classic-rules-test"].evidence,
+        )
+        self.assertTrue(
+            (
+                classic_context.workspace
+                / "release"
+                / "classic-rules-test"
+                / "reference-rules.json"
+            ).is_file()
+        )
+
+        rejected_context = PlaytestContext(
+            classic_wish,
+            self.taste,
+            classic_blueprint,
+            1,
+            classic_made,
+            (self.root / "rejected-classic-playtest").absolute(),
+            2,
+        )
+        rejected_checks = self.digital_checks(rejected_context)
+        rejected_checks.pop("classic-rules-test")
+        rejected = LaneAwarePlaytester(
+            evaluator=FakeEvaluator(
+                review_batch(
+                    classic_capabilities, failing="classic-rules-test"
+                )
+            ),
+            capability_checks=rejected_checks,
+        )(rejected_context)
+        self.assertFalse(rejected.passed)
+        self.assertFalse(
+            (
+                rejected_context.workspace
+                / "release"
+                / "classic-rules-test"
+            ).exists()
+        )
 
 
 if __name__ == "__main__":

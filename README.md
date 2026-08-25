@@ -149,6 +149,20 @@ Choose `custom-playtest` only when the Inventor also needs genuinely different
 tests. Implement `playtest(context)` to return evidence and feedback; failed
 tests go back to Make. Custom Playtest always includes Custom Make.
 
+Infrastructure is not a custom Inventor. The shared Playtest already includes
+pinned checkers and primitive moving-machine providers. Install authoritative
+science sources or a private consent/reference vault field by field and keep
+the rest of the Workshop:
+
+```python
+from inventor_workshop.agent_playtest import LaneAwarePlaytester
+
+playtest = LaneAwarePlaytester(
+    science_provider=workshop_science_sources,
+    world_provider=workshop_consent_vault,
+)
+```
+
 A custom worker may change how a check runs, but never the Workshop release
 bar. Each required capability still needs exact, sealed evidence. Use the
 public proof types to bind its method, measurements, and source bytes to the

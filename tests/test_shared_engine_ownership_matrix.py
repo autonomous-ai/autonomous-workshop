@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import importlib.util
 import json
@@ -166,9 +167,57 @@ class DeterministicWorkshopFakes:
         files = {
             "toy.step": "ISO-10303-21; deterministic ownership fixture\n",
             "part_body.stl": "solid body\nendsolid body\n",
-            "edition-rules.json": '{"known_rules":["one legal turn"]}\n',
-            "source-model.json": '{"source":"deterministic science model"}\n',
-            "personalization-map.json": '{"feature":"consented fixture"}\n',
+            "edition-rules.json": '{"known_game":"fixture classic","rules_reference":"https://example.org/fixture-rules","known_rules":["one legal turn"]}\n',
+            "source-model.json": json.dumps(
+                {
+                    "source_model": {
+                        "phenomenon": "fixture motion",
+                        "model": "one action produces one observation",
+                        "source_ids": ["fixture-source"],
+                    },
+                    "simplifications": [
+                        {
+                            "simplification": "bounded state",
+                            "reason": "deterministic fixture",
+                            "disclosed_limit": "not physical evidence",
+                        },
+                        {
+                            "simplification": "one observation",
+                            "reason": "legible fixture",
+                            "disclosed_limit": "not continuous time",
+                        },
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            "personalization-map.json": json.dumps(
+                {
+                    "consented_references": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "subject": "fixture subject",
+                            "consent_or_rights_basis": "signed fixture authorization",
+                            "allowed_features": ["fixture feature"],
+                            "excluded_features": ["private address"],
+                        }
+                    ],
+                    "feature_to_form_map": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "reference_feature": "fixture feature",
+                            "physical_form": "fixture silhouette",
+                            "recognition_test": "feature remains recognizable",
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            "role_a.step": "STEP role a\n",
+            "role_a.stl": "solid role_a\nendsolid role_a\n",
+            "role_b.step": "STEP role b\n",
+            "role_b.stl": "solid role_b\nendsolid role_b\n",
             "game-rules.json": '{"end":"finite","legal_actions":["play"]}\n',
             "simulator.py": (
                 "def play(seed):\n"
@@ -423,6 +472,12 @@ class DeterministicWorkshopFakes:
 
         if capability == "classic-rules-test":
             proof_class = "classic-rule-conformance-proof"
+            provider = {
+                "name": "ownership-classic-provider",
+                "version": "1.0.0",
+                "config_sha256": "1" * 64,
+                "method_class": "deterministic-reference-rules-simulation",
+            }
             measurements = {
                 "seeded_games": 1,
                 "rule_conformance_cases": 3,
@@ -436,23 +491,79 @@ class DeterministicWorkshopFakes:
                 "edition-rules.json",
                 product_inventory["edition-rules.json"],
             )
+            role_sources = (
+                source("edition-part-step", "product", "role_a.step", product_inventory["role_a.step"]),
+                source("edition-part-stl", "product", "role_a.stl", product_inventory["role_a.stl"]),
+                source("edition-part-step", "product", "role_b.step", product_inventory["role_b.step"]),
+                source("edition-part-stl", "product", "role_b.stl", product_inventory["role_b.stl"]),
+            )
+            dependencies = (edition_source, *role_sources)
+            rules_model = {
+                "schema_version": 1,
+                "game": "fixture classic",
+                "rules": ["one legal turn"],
+            }
             reference, reference_sha256 = self._canonical_receipt(
                 context,
                 capability=capability,
                 proof_class=proof_class,
                 role="reference-rules",
-                dependencies=(edition_source,),
+                dependencies=dependencies,
                 measurements=measurements,
-                payload={"known_rules": ["one legal turn"]},
+                payload={
+                    "provider": provider,
+                    "rules_model": rules_model,
+                    "rules_model_sha256": hashlib.sha256(
+                        json.dumps(rules_model, sort_keys=True, separators=(",", ":")).encode("utf-8")
+                    ).hexdigest(),
+                    "comparison": {
+                        "declaration_known_game": "fixture classic",
+                        "rules_reference": "https://example.org/fixture-rules",
+                        "no_rule_mutation_fields": True,
+                    },
+                    "conformance_cases": [
+                        {"case_id": "rule-1", "passed": True, "source": "fixture"},
+                        {"case_id": "rule-2", "passed": True, "source": "fixture"},
+                        {"case_id": "rule-3", "passed": True, "source": "fixture"},
+                    ],
+                },
             )
+            geometry_a = {"shape": "cylinder", "size_mm": {"x": 20.0, "y": 20.0, "z": 6.0}}
+            geometry_b = {"shape": "cylinder", "size_mm": {"x": 18.0, "y": 18.0, "z": 8.0}}
             traces, traces_sha256 = self._canonical_receipt(
                 context,
                 capability=capability,
                 proof_class=proof_class,
                 role="game-traces",
-                dependencies=(edition_source,),
+                dependencies=dependencies,
                 measurements=measurements,
-                payload={"games": [{"seed": 1, "completed": True}]},
+                payload={
+                    "provider": provider,
+                    "games": [{"seed": 1, "completed": True, "rule_mismatches": 0}],
+                    "role_cases": [
+                        {
+                            "part_id": "role-a",
+                            "geometry": geometry_a,
+                            "geometry_sha256": hashlib.sha256(json.dumps(geometry_a, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
+                            "step_path": "role_a.step",
+                            "step_sha256": product_inventory["role_a.step"],
+                            "stl_path": "role_a.stl",
+                            "stl_sha256": product_inventory["role_a.stl"],
+                            "exact_body_bound": True,
+                        },
+                        {
+                            "part_id": "role-b",
+                            "geometry": geometry_b,
+                            "geometry_sha256": hashlib.sha256(json.dumps(geometry_b, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
+                            "step_path": "role_b.step",
+                            "step_sha256": product_inventory["role_b.step"],
+                            "stl_path": "role_b.stl",
+                            "stl_sha256": product_inventory["role_b.stl"],
+                            "exact_body_bound": True,
+                        },
+                    ],
+                    "distinct_geometry_signatures": 2,
+                },
             )
             return CapabilityReleaseProof(
                 capability,
@@ -460,6 +571,7 @@ class DeterministicWorkshopFakes:
                 proof_class,
                 (
                     edition_source,
+                    *role_sources,
                     source("reference-rules", "playtest", reference, reference_sha256),
                     source("game-traces", "playtest", traces, traces_sha256),
                 ),
@@ -468,6 +580,35 @@ class DeterministicWorkshopFakes:
 
         if capability == "science-test":
             proof_class = "source-bound-science-proof"
+            provider = {
+                "name": "ownership-science-provider",
+                "version": "1.0.0",
+                "config_sha256": "2" * 64,
+                "method_class": "source-bound-comparison",
+            }
+            source_bytes = (
+                b"fixture motion\n"
+                b"one action produces one observation\n"
+                b"bounded state; not physical evidence\n"
+                b"one observation; not continuous time"
+            )
+            source_model = {
+                "phenomenon": "fixture motion",
+                "model": "one action produces one observation",
+                "source_ids": ["fixture-source"],
+            }
+            simplifications = [
+                {
+                    "simplification": "bounded state",
+                    "reason": "deterministic fixture",
+                    "disclosed_limit": "not physical evidence",
+                },
+                {
+                    "simplification": "one observation",
+                    "reason": "legible fixture",
+                    "disclosed_limit": "not continuous time",
+                },
+            ]
             measurements = {
                 "accuracy_cases": 3,
                 "accuracy_failures": 0,
@@ -489,7 +630,41 @@ class DeterministicWorkshopFakes:
                 role="science-sources",
                 dependencies=(model_source,),
                 measurements=measurements,
-                payload={"sources": ["fixture-source"]},
+                payload={
+                    "provider": provider,
+                    "source_model_sha256": hashlib.sha256(json.dumps(source_model, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
+                    "sources": [
+                        {
+                            "source_id": "fixture-source",
+                            "title": "Ownership fixture source",
+                            "publisher": "Fixture Observatory",
+                            "url": "https://example.org/ownership-science",
+                            "retrieved_at": "2026-08-25T00:00:00Z",
+                            "media_type": "text/plain",
+                            "content_sha256": hashlib.sha256(source_bytes).hexdigest(),
+                            "content_bytes": len(source_bytes),
+                            "content_encoding": "base64",
+                            "content_base64": base64.b64encode(source_bytes).decode("ascii"),
+                        }
+                    ],
+                    "accuracy_cases": [
+                        {"case_id": "phenomenon-1", "source_ids": ["fixture-source"], "product_field": "phenomenon", "expected": source_model["phenomenon"], "observed": source_model["phenomenon"], "source_excerpt": source_model["phenomenon"], "source_excerpt_sha256": hashlib.sha256(source_model["phenomenon"].encode("utf-8")).hexdigest(), "passed": True},
+                        {"case_id": "model-1", "source_ids": ["fixture-source"], "product_field": "model", "expected": source_model["model"], "observed": source_model["model"], "source_excerpt": source_model["model"], "source_excerpt_sha256": hashlib.sha256(source_model["model"].encode("utf-8")).hexdigest(), "passed": True},
+                        {"case_id": "model-2", "source_ids": ["fixture-source"], "product_field": "model", "expected": source_model["model"], "observed": source_model["model"], "source_excerpt": source_model["model"], "source_excerpt_sha256": hashlib.sha256(source_model["model"].encode("utf-8")).hexdigest(), "passed": True},
+                    ],
+                    "simplification_checks": [
+                        {
+                            "simplification_sha256": hashlib.sha256(json.dumps(item, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
+                            "source_ids": ["fixture-source"],
+                            "disclosed_limit_present": True,
+                            "source_supported": True,
+                            "source_excerpt": "%s; %s" % (item["simplification"], item["disclosed_limit"]),
+                            "source_excerpt_sha256": hashlib.sha256(("%s; %s" % (item["simplification"], item["disclosed_limit"])).encode("utf-8")).hexdigest(),
+                            "passed": True,
+                        }
+                        for item in simplifications
+                    ],
+                },
             )
             traces, traces_sha256 = self._canonical_receipt(
                 context,
@@ -498,7 +673,17 @@ class DeterministicWorkshopFakes:
                 role="comprehension-traces",
                 dependencies=(model_source,),
                 measurements=measurements,
-                payload={"traces": [{"seed": 1, "understood": True}]},
+                payload={
+                    "provider": provider,
+                    "traces": [
+                        {
+                            "seed": 1,
+                            "expected_concepts": ["action"],
+                            "observed_concepts": ["action", "observation"],
+                            "passed": True,
+                        }
+                    ],
+                },
             )
             return CapabilityReleaseProof(
                 capability,
@@ -519,6 +704,13 @@ class DeterministicWorkshopFakes:
 
         if capability == "world-test":
             proof_class = "reference-bound-world-proof"
+            provider = {
+                "name": "ownership-consent-reference-provider",
+                "version": "1.0.0",
+                "config_sha256": "3" * 64,
+                "method_class": "private-reference-feature-comparison",
+            }
+            material_sha256 = hashlib.sha256(b"private ownership reference").hexdigest()
             measurements = {
                 "consent_verified": True,
                 "personalization_features": 1,
@@ -539,7 +731,24 @@ class DeterministicWorkshopFakes:
                 role="consent-record",
                 dependencies=(map_source,),
                 measurements=measurements,
-                payload={"consented": True, "basis": "deterministic fixture"},
+                payload={
+                    "attestation": provider,
+                    "attestation_scope": "trusted-provider verification over private consent digests; raw bytes are intentionally not public-replayable",
+                    "records": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "subject": "fixture subject",
+                            "rights_basis": "signed fixture authorization",
+                            "allowed_features": ["fixture feature"],
+                            "excluded_features": ["private address"],
+                            "verification_method": "signed-fixture-record",
+                            "verified_at": "2026-08-25T00:00:00Z",
+                            "consent_sha256": hashlib.sha256(b"private ownership consent").hexdigest(),
+                            "consent_bytes": len(b"private ownership consent"),
+                        }
+                    ],
+                    "raw_consent_bytes_sealed": False,
+                },
             )
             reference, reference_sha256 = self._canonical_receipt(
                 context,
@@ -548,7 +757,20 @@ class DeterministicWorkshopFakes:
                 role="reference-material",
                 dependencies=(map_source,),
                 measurements=measurements,
-                payload={"subject": "fixture", "authorized": True},
+                payload={
+                    "attestation": provider,
+                    "attestation_scope": "trusted-provider verification over authorized private reference digests; raw bytes are intentionally not public-replayable",
+                    "references": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "media_type": "image/jpeg",
+                            "content_sha256": material_sha256,
+                            "content_bytes": len(b"private ownership reference"),
+                            "private_bytes_sealed": False,
+                        }
+                    ],
+                    "raw_private_bytes_sealed": False,
+                },
             )
             traces, traces_sha256 = self._canonical_receipt(
                 context,
@@ -557,7 +779,21 @@ class DeterministicWorkshopFakes:
                 role="likeness-traces",
                 dependencies=(map_source,),
                 measurements=measurements,
-                payload={"recognized": True, "cases": 1},
+                payload={
+                    "attestation": provider,
+                    "cases": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "reference_feature": "fixture feature",
+                            "recognition_test": "feature remains recognizable",
+                            "reference_sha256": material_sha256,
+                            "recognized": True,
+                            "consent_safe": True,
+                            "method_class": "vision-feature-comparison",
+                            "passed": True,
+                        }
+                    ],
+                },
             )
             return CapabilityReleaseProof(
                 capability,

@@ -106,6 +106,131 @@ _PART_SCHEMA: Dict[str, Any] = {
     },
 }
 
+_MOVING_BINDING_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": [
+        "joint",
+        "tolerance_bindings",
+        "load_bindings",
+        "failure_bindings",
+    ],
+    "properties": {
+        "joint": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": [
+                "joint_id",
+                "kind",
+                "moving_part_id",
+                "support_part_ids",
+                "obstacle_part_ids",
+                "axis_point_mm",
+                "axis_direction",
+                "start_deg",
+                "end_deg",
+                "steps",
+            ],
+            "properties": {
+                "joint_id": {"type": "string"},
+                "kind": {"type": "string", "enum": ["rigid-revolute-z"]},
+                "moving_part_id": {"type": "string"},
+                "support_part_ids": {"type": "array", "items": {"type": "string"}},
+                "obstacle_part_ids": {"type": "array", "items": {"type": "string"}},
+                "axis_point_mm": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {"type": "number"},
+                },
+                "axis_direction": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {"type": "number"},
+                },
+                "start_deg": {"type": "number"},
+                "end_deg": {"type": "number"},
+                "steps": {"type": "integer", "minimum": 36, "maximum": 720},
+            },
+        },
+        "tolerance_bindings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "contract_index",
+                    "moving_part_id",
+                    "stationary_part_ids",
+                    "verification",
+                ],
+                "properties": {
+                    "contract_index": {"type": "integer", "minimum": 0},
+                    "moving_part_id": {"type": "string"},
+                    "stationary_part_ids": {"type": "array", "items": {"type": "string"}},
+                    "verification": {"type": "string", "enum": ["continuous-swept-envelope"]},
+                },
+            },
+        },
+        "load_bindings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "contract_index",
+                    "loaded_part_id",
+                    "support_part_ids",
+                    "section_axis",
+                    "verification_modes",
+                ],
+                "properties": {
+                    "contract_index": {"type": "integer", "minimum": 0},
+                    "loaded_part_id": {"type": "string"},
+                    "support_part_ids": {"type": "array", "items": {"type": "string"}},
+                    "section_axis": {"type": "string", "enum": ["z"]},
+                    "verification_modes": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["bulk-compression", "direct-shear"]},
+                    },
+                },
+            },
+        },
+        "failure_bindings": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "contract_index",
+                    "part_ids",
+                    "load_case_indices",
+                    "verification_modes",
+                ],
+                "properties": {
+                    "contract_index": {"type": "integer", "minimum": 0},
+                    "part_ids": {"type": "array", "items": {"type": "string"}},
+                    "load_case_indices": {"type": "array", "items": {"type": "integer", "minimum": 0}},
+                    "verification_modes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "bulk-compression",
+                                "direct-shear",
+                                "continuous-clearance",
+                                "reverse-sweep",
+                                "stall-envelope",
+                            ],
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
 _MAKE_SCHEMA: Dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
@@ -186,6 +311,7 @@ _MAKE_SCHEMA: Dict[str, Any] = {
                 "minimum_aabb_clearance_mm": {"type": "number", "minimum": 0, "maximum": 10},
             },
         },
+        "moving_machine_binding": _MOVING_BINDING_SCHEMA,
         "design_limitations": {"type": "array", "items": {"type": "string"}},
     },
 }
@@ -243,6 +369,203 @@ def _text(value: Any) -> bool:
 
 def _number(value: Any) -> bool:
     return type(value) in (int, float) and math.isfinite(float(value))
+
+
+def _valid_unique_part_ids(value: Any, part_ids: Sequence[str], *, nonempty: bool = True) -> bool:
+    return bool(
+        isinstance(value, list)
+        and (bool(value) or not nonempty)
+        and all(isinstance(item, str) and item in part_ids for item in value)
+        and len(value) == len(set(value))
+    )
+
+
+def _validate_moving_binding_action(
+    value: Any, part_ids: Sequence[str], motion: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """Validate the model-authored part/interface mapping before CAD can pass.
+
+    Invent owns the typed tolerance/load/failure records.  Make may choose how
+    those records bind to its exact primitive part ids, but it may not omit,
+    duplicate, or replace that mapping with prose.  Counts and contract indexes
+    are checked again against the sealed Invent contract in the reward
+    environment and once more after ``cad/design.json`` receives its final hash.
+    """
+
+    expected = {
+        "joint",
+        "tolerance_bindings",
+        "load_bindings",
+        "failure_bindings",
+    }
+    if not isinstance(value, Mapping) or set(value) != expected:
+        raise ValueError("moving-machine binding fields are incomplete")
+    joint = value.get("joint")
+    joint_keys = {
+        "joint_id",
+        "kind",
+        "moving_part_id",
+        "support_part_ids",
+        "obstacle_part_ids",
+        "axis_point_mm",
+        "axis_direction",
+        "start_deg",
+        "end_deg",
+        "steps",
+    }
+    moving_id = motion.get("moving_part_id")
+    if not isinstance(joint, Mapping) or set(joint) != joint_keys:
+        raise ValueError("moving-machine joint is incomplete")
+    supports = joint.get("support_part_ids")
+    obstacles = joint.get("obstacle_part_ids")
+    axis_point = joint.get("axis_point_mm")
+    if (
+        not isinstance(joint.get("joint_id"), str)
+        or _PART_ID.fullmatch(joint["joint_id"]) is None
+        or joint.get("kind") != "rigid-revolute-z"
+        or joint.get("moving_part_id") != moving_id
+        or not _valid_unique_part_ids(supports, part_ids)
+        or not _valid_unique_part_ids(obstacles, part_ids)
+        or set(supports) & set(obstacles)
+        or set(supports) | set(obstacles) != set(part_ids) - {moving_id}
+        or not isinstance(axis_point, list)
+        or len(axis_point) != 3
+        or not all(_number(item) for item in axis_point)
+        or joint.get("axis_direction") != [0.0, 0.0, 1.0]
+        or not _number(joint.get("start_deg"))
+        or float(joint["start_deg"]) != 0.0
+        or not _number(joint.get("end_deg"))
+        or float(joint["end_deg"]) != float(motion.get("sweep_degrees", -1))
+        or type(joint.get("steps")) is not int
+        or not 36 <= joint["steps"] <= 720
+    ):
+        raise ValueError("moving-machine joint does not bind the exact stationary parts")
+
+    tolerance_bindings = value.get("tolerance_bindings")
+    if not isinstance(tolerance_bindings, list) or not tolerance_bindings:
+        raise ValueError("moving-machine tolerance bindings are required")
+    for record in tolerance_bindings:
+        if (
+            not isinstance(record, Mapping)
+            or set(record)
+            != {
+                "contract_index",
+                "moving_part_id",
+                "stationary_part_ids",
+                "verification",
+            }
+            or type(record.get("contract_index")) is not int
+            or record["contract_index"] < 0
+            or record.get("moving_part_id") != moving_id
+            or not _valid_unique_part_ids(record.get("stationary_part_ids"), part_ids)
+            or not set(record["stationary_part_ids"]) <= set(obstacles)
+            or record.get("verification") != "continuous-swept-envelope"
+        ):
+            raise ValueError("moving-machine tolerance binding is invalid")
+
+    load_bindings = value.get("load_bindings")
+    if not isinstance(load_bindings, list) or not load_bindings:
+        raise ValueError("moving-machine load bindings are required")
+    load_modes = {"bulk-compression", "direct-shear"}
+    for record in load_bindings:
+        modes = record.get("verification_modes") if isinstance(record, Mapping) else None
+        loaded = record.get("loaded_part_id") if isinstance(record, Mapping) else None
+        if (
+            not isinstance(record, Mapping)
+            or set(record)
+            != {
+                "contract_index",
+                "loaded_part_id",
+                "support_part_ids",
+                "section_axis",
+                "verification_modes",
+            }
+            or type(record.get("contract_index")) is not int
+            or record["contract_index"] < 0
+            or loaded not in part_ids
+            or not _valid_unique_part_ids(record.get("support_part_ids"), part_ids)
+            or loaded in record["support_part_ids"]
+            or record.get("section_axis") != "z"
+            or not isinstance(modes, list)
+            or not modes
+            or len(modes) != len(set(modes))
+            or not set(modes) <= load_modes
+        ):
+            raise ValueError("moving-machine load binding is invalid")
+
+    failure_bindings = value.get("failure_bindings")
+    failure_modes = load_modes | {
+        "continuous-clearance",
+        "reverse-sweep",
+        "stall-envelope",
+    }
+    if not isinstance(failure_bindings, list) or not failure_bindings:
+        raise ValueError("moving-machine failure bindings are required")
+    for record in failure_bindings:
+        indexes = record.get("load_case_indices") if isinstance(record, Mapping) else None
+        modes = record.get("verification_modes") if isinstance(record, Mapping) else None
+        if (
+            not isinstance(record, Mapping)
+            or set(record)
+            != {
+                "contract_index",
+                "part_ids",
+                "load_case_indices",
+                "verification_modes",
+            }
+            or type(record.get("contract_index")) is not int
+            or record["contract_index"] < 0
+            or not _valid_unique_part_ids(record.get("part_ids"), part_ids)
+            or not isinstance(indexes, list)
+            or not indexes
+            or len(indexes) != len(set(indexes))
+            or not all(type(index) is int and 0 <= index < len(load_bindings) for index in indexes)
+            or not isinstance(modes, list)
+            or not modes
+            or len(modes) != len(set(modes))
+            or not set(modes) <= failure_modes
+        ):
+            raise ValueError("moving-machine failure binding is invalid")
+
+    return value
+
+
+def _moving_machine_binding_document(
+    action: Mapping[str, Any], lane_contract: Mapping[str, Any], design_sha256: str
+) -> Mapping[str, Any]:
+    """Build and replay the verifier's exact sealed binding envelope."""
+
+    from .moving_machine import (
+        MOVING_MACHINE_BINDING_KIND,
+        MOVING_MACHINE_BINDING_VERSION,
+        _part_by_id,
+        _validate_binding,
+        _validate_lane_contract,
+        workshop_pinned_wear_model,
+    )
+
+    contract = _validate_lane_contract(lane_contract)
+    parts = _part_by_id(action)
+    draft = _validate_moving_binding_action(
+        action.get("moving_machine_binding"), tuple(parts), action["motion_spec"]
+    )
+    envelope = {
+        "schema_version": MOVING_MACHINE_BINDING_VERSION,
+        "kind": MOVING_MACHINE_BINDING_KIND,
+        "cad_design_sha256": design_sha256,
+        "invent_lane_contract_sha256": json_sha256(contract),
+        **dict(draft),
+        "wear_model": workshop_pinned_wear_model(),
+        "misuse_cases": ["reverse-sweep", "stall-load-envelope"],
+    }
+    _validate_binding(
+        envelope,
+        design_sha256=design_sha256,
+        action=action,
+        contract=contract,
+        parts=parts,
+    )
+    return envelope
 
 
 def _validate_action(value: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -331,6 +654,12 @@ def _validate_action(value: Mapping[str, Any]) -> Mapping[str, Any]:
         ):
             raise ValueError
         if motion["enabled"] and motion["moving_part_id"] not in identifiers:
+            raise ValueError
+        if motion["enabled"]:
+            _validate_moving_binding_action(
+                value.get("moving_machine_binding"), identifiers, motion
+            )
+        elif "moving_machine_binding" in value:
             raise ValueError
         if game["enabled"] and (
             len(game["token_part_ids"]) != game["starting_tokens"]
@@ -1561,6 +1890,21 @@ class CodexMaker:
         ensure_available = getattr(self.cad_builder, "ensure_available", None)
         if callable(ensure_available):
             ensure_available()
+        moving_lane_contract: Optional[Mapping[str, Any]] = None
+        if context.blueprint.lane == "moving-machines":
+            candidate_contract = context.invented.concept.get("lane_contract")
+            if not isinstance(candidate_contract, Mapping):
+                raise _make_wait(
+                    "The moving-machine concept lacks its typed kinematic, tolerance, load, and failure contract.",
+                    "moving-machine-invent-contract",
+                )
+            try:
+                from .moving_machine import _validate_lane_contract
+
+                moving_lane_contract = _validate_lane_contract(candidate_contract)
+            except WaitingFor as exc:
+                reason = "; ".join(need.reason for need in exc.needs)
+                raise _make_wait(reason, "moving-machine-invent-contract") from exc
         inputs = {
             "wish": context.wish.to_dict(),
             "taste": context.taste.to_binding(),
@@ -1595,7 +1939,14 @@ class CodexMaker:
                 "Dimensions must be 2.4 to 120 mm. For a cylinder, x and y are the same diameter. "
                 "For invented-games, enable the finite take-away game_spec and list each physical "
                 "token part id exactly once. For moving-machines, enable one bounded z-axis "
-                "motion_spec whose conservative sampled clearance can be checked. For a known "
+                "motion_spec and supply moving_machine_binding. Name the exact centered joint, "
+                "partition every stationary CAD part into supports or obstacles, and map every "
+                "Invent tolerance, load, and failure record exactly once by zero-based contract "
+                "index to real part ids and supported deterministic checks. The Workshop injects "
+                "its pinned digital wear budget and reverse/stall misuse screens; do not invent "
+                "physical wear evidence. The Workshop will reject incomplete mappings and replay "
+                "the final binding from sealed bytes. "
+                "For a known "
                 "classic, identify the public rules reference and declare rules_unchanged. "
                 "The constrained primitive vocabulary is an honest MVP, so name what remains for "
                 "later detailed CAD. Use the exact Wish, complete Taste, selected Invent concept, "
@@ -1639,6 +1990,27 @@ class CodexMaker:
                     "The shared CAD environment returned an incomplete verification observation.",
                     "cad-skill-runtime",
                 )
+            if moving_lane_contract is not None:
+                binding_issues: List[str] = []
+                try:
+                    _moving_machine_binding_document(
+                        action, moving_lane_contract, "0" * 64
+                    )
+                except WaitingFor as exc:
+                    binding_issues.extend(need.reason for need in exc.needs)
+                except (ContractError, KeyError, TypeError, ValueError) as exc:
+                    binding_issues.append(
+                        "The moving-machine part/interface binding is invalid: %s"
+                        % exc
+                    )
+                if binding_issues:
+                    geometry = {
+                        **dict(geometry),
+                        "passed": False,
+                        "issues": list(geometry["issues"])
+                        + ["moving-machine binding: %s" % issue for issue in binding_issues],
+                    }
+                    cad_build = CadSkillBuild(cad_build.root, geometry)
             cad_builds[action_sha256] = cad_build
             prompt = (
                 "You are the independent design-review reward function for Autonomous Workshop "
@@ -1796,25 +2168,24 @@ class CodexMaker:
         _write_json(artifact / "wish.json", context.wish.to_dict())
         _write_json(artifact / "project.json", {"id": context.wish.product_id, "name": action["title"]})
         _write_json(artifact / "product.json", product)
-        _write_json(
-            artifact / "cad" / "design.json",
-            {
-                "schema_version": 2,
-                "kind": "workshop-step-first-parametric-design",
-                "generator": {"id": MAKE_GENERATOR_ID, "version": MAKE_GENERATOR_VERSION},
-                "formats": {
-                    "source": "build123d parametric Python",
-                    "step": "canonical and CAD-kernel validated",
-                    "stl": "exported from STEP and topology-inspected",
-                },
-                "wish_sha256": json_sha256(context.wish.to_dict()),
-                "taste_sha256": context.taste.sha256,
-                "blueprint_sha256": context.blueprint.sha256,
-                "invented_concept_sha256": context.invented.concept_sha256,
-                "action": dict(action),
-                "reward_loop": dict(reward_loop),
+        design_document = {
+            "schema_version": 2,
+            "kind": "workshop-step-first-parametric-design",
+            "generator": {"id": MAKE_GENERATOR_ID, "version": MAKE_GENERATOR_VERSION},
+            "formats": {
+                "source": "build123d parametric Python",
+                "step": "canonical and CAD-kernel validated",
+                "stl": "exported from STEP and topology-inspected",
             },
-        )
+            "wish_sha256": json_sha256(context.wish.to_dict()),
+            "taste_sha256": context.taste.sha256,
+            "blueprint_sha256": context.blueprint.sha256,
+            "invented_concept_sha256": context.invented.concept_sha256,
+            "action": dict(action),
+            "reward_loop": dict(reward_loop),
+        }
+        design_path = artifact / "cad" / "design.json"
+        _write_json(design_path, design_document)
         _write_json(artifact / "validation" / "cad-build.json", dict(geometry))
         assembled = (artifact / "cad" / "product.stl").read_bytes()
         assembled_step = (artifact / "cad" / "product.step").read_bytes()
@@ -1835,9 +2206,27 @@ class CodexMaker:
             sealed_lane_contract = None
             lane_contract_sha256 = None
         if context.blueprint.lane == "moving-machines":
+            if sealed_lane_contract is None:
+                raise _make_wait(
+                    "The goal-reaching moving-machine Make has no sealed Invent lane contract.",
+                    "moving-machine-invent-contract",
+                )
+            design_sha256 = hashlib.sha256(design_path.read_bytes()).hexdigest()
+            try:
+                moving_binding = _moving_machine_binding_document(
+                    action, sealed_lane_contract, design_sha256
+                )
+            except WaitingFor as exc:
+                reason = "; ".join(need.reason for need in exc.needs)
+                raise _make_wait(reason, "moving-machine-binding") from exc
+            moving_binding_path = artifact / "playtest" / "moving-machine-binding.json"
+            _write_json(moving_binding_path, moving_binding)
             load_model = {
-                "kind": "invent-moving-machine-contract-held",
-                "reason": "The constrained primitive Make action has no exact interface/load-path mapping from the Invent kinematic contract to individual CAD faces.",
+                "kind": "workshop-primitive-moving-machine-binding",
+                "binding_path": "playtest/moving-machine-binding.json",
+                "binding_sha256": hashlib.sha256(
+                    moving_binding_path.read_bytes()
+                ).hexdigest(),
                 "declared_load_assumptions": list(
                     sealed_lane_contract.get("load_assumptions", [])
                     if sealed_lane_contract is not None
@@ -1943,10 +2332,11 @@ class CodexMaker:
                 artifact / "playtest" / "motion.json",
                 {
                     "schema_version": 2,
-                    "kind": "workshop.motion-evidence-gap",
-                    "status": "held",
+                    "kind": "workshop.moving-machine-verification-declaration",
+                    "status": "ready-for-shared-verifier",
                     "declared_motion": dict(action["motion_spec"]),
-                    "reason": "static assembly interference does not prove a continuous sweep, loads, wear, or mechanism operation",
+                    "binding_path": "playtest/moving-machine-binding.json",
+                    "claim_scope": "Make declaration only; the shared moving-machine verifier must still replay the exact sweep, loads, wear budget, stalls, and misuse screens.",
                 },
             )
         if context.blueprint.lane == "classics-made-yours":
