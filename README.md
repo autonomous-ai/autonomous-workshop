@@ -93,37 +93,73 @@ Lives in `inventors/eve/`.
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
 
-## The Workshop Manager
+## How does the Workshop work?
+
+This is the floorplan of the Workshop: a Wish moves from the customer to the
+right inventor, through a set of scored improvement loops, and back to the
+customer as a finished toy.
 
 ```text
-one person's Wish
-        |
-        v
-every inventor's taste, one line each
-        |
-        v
-the few who might love it -> their taste, read in full
-        |
-        v
-Alice chosen, and told why
-Classics made yours · Taste only
-        |
-        v
-+--------------------------------------------------------+
-|                    SHARED WORKSHOP                     |
-|                                                        |
-| Wish -> Make <-> Playtest -> Instructions -> Deliver   |
-|               AI-agent feedback                       |
-+--------------------------------------------------------+
-        |
-        v
-the approved product -> customer Reviews
-                            |
-                            +-> a better revision of this toy
-                            `-> future Wishes and Makes
-
-Alice supplies taste. Workshop supplies the repeatable work.
+CUSTOMER
+   |
+   v
+WISH
+Customer makes a wish
+   |
+   v
+MATCH
+AI Workshop Manager matches the Wish with an Inventor
+   |
+   v
++--------------------------------------------------------------------+
+| AI INVENTOR                                                        |
+|                                                                    |
+| CONCEPT micro-loop                                                 |
+| research -> explore concepts -> score -> improve -> repeat          |
+|                                |                                   |
+|                                `-> target score reached             |
+|                                                                    |
+| MAKE micro-loop                                                    |
+| make the chosen concept -> score -> improve -> repeat               |
+|                            |                                       |
+|                            `-> target score reached                 |
++--------------------------------------------------------------------+
+   |
+   v
+PLAYTEST external loop
+AI Players play the toy, find issues, and suggest improvements
+   |
+   +-- issues and suggestions --------------------------> back to MAKE
+   |
+   `-- target score reached
+           |
+           v
++--------------------------------------------------------------------+
+| AI INVENTOR                                                        |
+|                                                                    |
+| INSTRUCTIONS micro-loop                                            |
+| publish the toy instruction page -> score -> improve -> repeat      |
+|                                        |                           |
+|                                        `-> target score reached     |
++--------------------------------------------------------------------+
+   |
+   v
+DELIVER
+Autonomous ships the toy to the customer
+   |
+   v
+REVIEWS external loop
+Customer leaves a review
+   |
+   `-> AI Inventor learns -> improve this toy and future Wishes
 ```
+
+Concept, Make, and Instructions each have their own reward function. The AI
+keeps working inside each micro-loop until it reaches the target score.
+Playtest is the outside AI-player loop: simulated use sends concrete issues and
+suggestions back to Make. Reviews is the outside human-player loop: experience
+with the delivered toy helps the inventor improve that toy and what it makes
+for future Wishes.
 
 The Manager is the front door. Nothing here runs all day looking for something
 to do — your wish is what starts it. For every wish it:
@@ -148,7 +184,8 @@ loves, what it refuses, when it should say no. It holds judgment, not machinery
 The Manager is ordinary, tested code. Deciding who gets a real person's wish
 stays in code you can read and check.
 
-The Manager is not a sixth job. It only decides who does the five.
+The Manager owns Match. It chooses the inventor and explains why; it does not
+design or make the toy.
 
 ## Five toys, one Workshop
 
