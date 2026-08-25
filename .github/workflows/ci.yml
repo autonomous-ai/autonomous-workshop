@@ -72,10 +72,12 @@ jobs:
           python -m pip install --no-deps "$RUNNER_TEMP/generated-inventors/inventors/ci-inventor"
           mkdir -p "$RUNNER_TEMP/away"
           cd "$RUNNER_TEMP/away"
-          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor doctor
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor profile
           test ! -e "$RUNNER_TEMP/ci-runtime"
-          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor make first-product
-          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor status
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor preview first-product "I wish for a tiny printable game"
+          test ! -e "$RUNNER_TEMP/ci-runtime"
+          CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" WORKSHOP_AGENT_WORKERS=disabled ci_inventor run --playtest-rounds 2 first-product "I wish for a tiny printable game"
+          test -f "$RUNNER_TEMP/ci-runtime/workshop.sqlite3"
       - name: installed wheel supports the no-root customer journey
         if: matrix.python-version == '3.13'
         run: python tests/installed_wheel_cli_acceptance.py
