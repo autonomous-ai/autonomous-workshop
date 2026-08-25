@@ -2,7 +2,7 @@
 
 ## `cad` and `step-parts`
 
-- Canonical snapshot: `peterat617/text-to-3d` at
+- Canonical snapshot: `autonomous-ai/autonomous-text-to-3d` at
   `40667dec4f1ae1ab630062964cb08085990b0d04` (2026-08-25).
 - The reviewed snapshot includes the complete MIT-licensed `cad` and
   `step-parts` trees, including the vendored `cadgen` 0.4.19 source, bought-part

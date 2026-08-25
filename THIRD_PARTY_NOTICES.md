@@ -6,8 +6,8 @@ required materials retain their own licenses.
 ## Peter's text-to-3D tools
 
 The `cad` and `step-parts` skills under `src/workshop/make/skills/` derive from
-[`peterat617/text-to-3d`](https://github.com/peterat617/text-to-3d). Their exact
-reviewed revisions and local adaptations are recorded in
+[`autonomous-ai/autonomous-text-to-3d`](https://github.com/autonomous-ai/autonomous-text-to-3d).
+Their exact reviewed revisions and local adaptations are recorded in
 `src/workshop/make/skills/PROVENANCE.md` and their installed byte identities in
 `src/workshop/make/skills/LOCK.json`.
 
