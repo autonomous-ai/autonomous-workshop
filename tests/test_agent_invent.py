@@ -1,11 +1,14 @@
+import copy
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.agent_invent import (
     CodexInventor,
@@ -21,12 +24,162 @@ from inventor_workshop.agent_invent import (
 from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import InventContext, WaitingFor
 from inventor_workshop.make import Wish
+from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
-def action(title):
+LANES = (
+    "classics-made-yours",
+    "invented-games",
+    "moving-machines",
+    "holdable-science",
+    "little-worlds",
+)
+
+
+def lane_contract(lane):
+    contracts = {
+        "classics-made-yours": {
+            "schema_version": 1,
+            "lane": "classics-made-yours",
+            "known_game": "Chess",
+            "rules_preserved": True,
+            "rules_preservation": {
+                "canonical_ruleset": "Standard chess without rule variants.",
+                "preserved_invariants": [
+                    "Alternating legal moves and standard checkmate remain unchanged."
+                ],
+                "allowed_physical_changes": [
+                    "Piece silhouettes, board graphics, materials, and storage may change."
+                ],
+            },
+            "personalization_map": [
+                {
+                    "wish_detail": "The customer's dog has a proud stance.",
+                    "physical_feature": "The knight receives that proud neck silhouette.",
+                    "rules_effect": "none",
+                }
+            ],
+        },
+        "invented-games": {
+            "schema_version": 1,
+            "lane": "invented-games",
+            "complete_rules": {
+                "setup": ["Each player places three trail markers on their edge."],
+                "turn_sequence": ["Move one walker, then rotate one trail tile."],
+                "legal_actions": ["Move to an adjacent unoccupied connected tile."],
+                "terminal_conditions": ["End immediately when one walker reaches the far edge."],
+                "scoring": ["The first walker to reach the far edge wins."],
+                "tie_breakers": ["If both arrive in one effect, fewer trail markers wins."],
+            },
+            "simulator_design": {
+                "state_variables": ["walker positions", "trail rotations", "active player"],
+                "legal_action_generator": "Enumerate adjacent connected empty destinations and legal rotations.",
+                "transition_model": "Apply the chosen move and rotation, then alternate the active player.",
+                "terminal_check": "Check far-edge arrival after every complete action.",
+                "score_calculation": "Return win, loss, or the defined marker-count tie break.",
+                "fixed_seed_strategy": "Derive every game seed from one recorded league seed and game index.",
+                "player_policies": [
+                    "optimizing",
+                    "social",
+                    "exploratory",
+                    "adversarial",
+                ],
+                "minimum_complete_games": 1_000,
+            },
+        },
+        "moving-machines": {
+            "schema_version": 1,
+            "lane": "moving-machines",
+            "kinematic_model": {
+                "input_motion": "A hand winds a spring-driven rotary input.",
+                "transmission": [
+                    "A reduction gear drives an eccentric crank.",
+                    "The crank drives paired leg linkages in opposing phase.",
+                ],
+                "output_motion": "Four feet produce an alternating forward walking gait.",
+                "degrees_of_freedom": 1,
+            },
+            "tolerances_mm": [
+                {
+                    "interface": "Printed crank pin inside the connecting rod",
+                    "nominal_clearance_mm": 0.3,
+                    "tolerance_mm": 0.1,
+                }
+            ],
+            "load_assumptions": [
+                {
+                    "case": "A user stalls one foot while the spring unwinds.",
+                    "force_n": 8.0,
+                    "safety_factor": 2.0,
+                    "basis": "A conservative concept-stage hand-force assumption for Make to verify.",
+                }
+            ],
+            "failure_modes": [
+                {
+                    "mode": "Crank pin shear",
+                    "cause": "A stalled foot concentrates spring load at the crank.",
+                    "effect": "The gait stops and a loose small part may result.",
+                    "mitigation": "Make sizes the pin, limits torque, and Playtest verifies the exact geometry.",
+                }
+            ],
+        },
+        "holdable-science": {
+            "schema_version": 1,
+            "lane": "holdable-science",
+            "source_model": {
+                "phenomenon": "Coupled periodic motion",
+                "model": "A bounded linkage maps rotary phase to visible periodic displacement.",
+                "source_ids": ["mechanism-source"],
+            },
+            "simplifications": [
+                {
+                    "simplification": "Friction and elastic deformation are omitted from the visible model.",
+                    "reason": "The first interaction teaches phase, not energy loss.",
+                    "disclosed_limit": "The object is qualitative and does not predict real-system amplitude.",
+                }
+            ],
+            "scale": {
+                "real_quantity": "One full phenomenon cycle",
+                "model_quantity": "One full handle rotation",
+                "scale_ratio": 1.0,
+                "units": "cycle per rotation",
+            },
+            "interaction": {
+                "user_action": "Turn the handle through one revolution.",
+                "observable_response": "Markers reveal their relative phase around the cycle.",
+                "teaching_point": "Equal frequency can coexist with different phase.",
+                "misuse_boundary": "It is not a calibrated measurement instrument.",
+            },
+        },
+        "little-worlds": {
+            "schema_version": 1,
+            "lane": "little-worlds",
+            "consented_references": [
+                {
+                    "reference_id": "customer-dog",
+                    "subject": "The customer's dog",
+                    "consent_or_rights_basis": "The customer supplied and authorized use of their own reference photos.",
+                    "allowed_features": ["proud neck posture", "curled tail"],
+                    "excluded_features": ["owner's face", "home address"],
+                }
+            ],
+            "feature_to_form_map": [
+                {
+                    "reference_id": "customer-dog",
+                    "reference_feature": "proud neck posture",
+                    "physical_form": "A raised head becomes the scene's central silhouette.",
+                    "recognition_test": "The pose remains recognizable without a nameplate or caption.",
+                }
+            ],
+        },
+    }
+    return contracts[lane]
+
+
+def action(title, lane="moving-machines"):
     return {
         "research": {
             "patterns": [
@@ -76,6 +229,7 @@ def action(title):
                 "Engineer a printable four-leg gait.",
                 "Keep the dog's silhouette recognizable around the mechanism.",
             ],
+            "lane_contract": lane_contract(lane),
             "research_source_ids": ["mechanism-source", "safety-source"],
         },
     }
@@ -177,12 +331,12 @@ class AgentInventTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def context(self):
+    def context(self, lane="moving-machines"):
         return InventContext(
             Wish.create("walking-dog", "A wind-up version of my dog that walks"),
             load_taste(self.inventor),
-            ToyBlueprint.for_lane("moving-machines"),
-            (self.root / "invent-workspace").absolute(),
+            ToyBlueprint.for_lane(lane),
+            (self.root / ("invent-workspace-" + lane)).absolute(),
         )
 
     def research(self, context=None):
@@ -241,7 +395,9 @@ class AgentInventTest(unittest.TestCase):
         self.assertEqual(len(invented.concept["reward_loop"]["steps"]), 2)
         self.assertIn("previous reward", creator.prompts[1][0])
         self.assertIn("never invent a URL", creator.prompts[0][0])
+        self.assertIn("selected.lane_contract is mandatory", creator.prompts[0][0])
         self.assertIn("Make and Playtest own those later", evaluator.prompts[0][0])
+        self.assertIn("lane_contract dimension", evaluator.prompts[0][0])
         self.assertEqual(
             invented.concept["evidence"]["research_source_ids"],
             ["mechanism-source", "safety-source"],
@@ -257,6 +413,119 @@ class AgentInventTest(unittest.TestCase):
         self.assertEqual(
             len(invented.concept["evidence"]["creator"]["config_sha256"]), 64
         )
+        self.assertEqual(
+            invented.concept["evidence"]["lane_contract_sha256"],
+            json_sha256(invented.concept["lane_contract"]),
+        )
+        self.assertEqual(invented.concept["evidence"]["schema_version"], 2)
+
+    def test_all_five_lanes_produce_a_typed_contract_bound_into_provenance(self):
+        observed_schema_lanes = set()
+        for lane in LANES:
+            with self.subTest(lane=lane):
+                context = self.context(lane)
+                creator = FakeCodex("gpt-5.6-terra", [action("Chosen " + lane, lane)])
+                evaluator = FakeCodex(
+                    "gpt-5.6-terra", [verdict(92, "Typed handoff is ready.")]
+                )
+                evaluator.reasoning_effort = "low"
+                invented = CodexInventor(
+                    creator=creator,
+                    evaluator=evaluator,
+                    research_provider=self.research,
+                )(context)
+
+                contract = invented.concept["lane_contract"]
+                self.assertEqual(contract["schema_version"], 1)
+                self.assertEqual(contract["lane"], lane)
+                self.assertEqual(
+                    invented.concept["evidence"]["lane_contract_schema_version"], 1
+                )
+                self.assertEqual(
+                    invented.concept["evidence"]["lane_contract_sha256"],
+                    json_sha256(contract),
+                )
+                self.assertIn(lane, creator.prompts[0][0])
+                self.assertIn(lane, evaluator.prompts[0][0])
+                schema = creator.prompts[0][1]
+                lane_schema = schema["properties"]["selected"]["properties"][
+                    "lane_contract"
+                ]
+                self.assertNotIn("oneOf", lane_schema)
+                self.assertFalse(lane_schema["additionalProperties"])
+                self.assertEqual(lane_schema["properties"]["lane"]["const"], lane)
+                observed_schema_lanes.add(lane)
+        self.assertEqual(observed_schema_lanes, set(LANES))
+
+    def test_each_lane_rejects_a_malformed_contract_before_reward_or_make(self):
+        malformed = {}
+        classic = lane_contract("classics-made-yours")
+        classic.pop("rules_preserved")
+        malformed["classics-made-yours"] = classic
+
+        invented_game = lane_contract("invented-games")
+        invented_game["simulator_design"]["minimum_complete_games"] = 999
+        malformed["invented-games"] = invented_game
+
+        machine = lane_contract("moving-machines")
+        machine["tolerances_mm"][0]["nominal_clearance_mm"] = -0.1
+        malformed["moving-machines"] = machine
+
+        science = lane_contract("holdable-science")
+        science["source_model"]["source_ids"] = ["fabricated-science-source"]
+        malformed["holdable-science"] = science
+
+        world = lane_contract("little-worlds")
+        world["feature_to_form_map"][0]["reference_feature"] = "home address"
+        malformed["little-worlds"] = world
+
+        for lane in LANES:
+            with self.subTest(lane=lane):
+                proposed = action("Malformed " + lane, lane)
+                proposed["selected"]["lane_contract"] = malformed[lane]
+                creator = FakeCodex("gpt-5.6-terra", [proposed])
+                evaluator = FakeCodex(
+                    "gpt-5.6-terra", [verdict(99, "Must not be evaluated.")]
+                )
+                evaluator.reasoning_effort = "low"
+                with self.assertRaises(WaitingFor) as caught:
+                    CodexInventor(
+                        creator=creator,
+                        evaluator=evaluator,
+                        research_provider=self.research,
+                    )(self.context(lane))
+                self.assertEqual(
+                    caught.exception.needs[0].capability,
+                    "codex-industrial-design",
+                )
+                self.assertEqual(evaluator.prompts, [])
+
+    def test_missing_or_wrong_lane_contract_stops_inside_invent(self):
+        missing = action("Missing contract")
+        missing["selected"].pop("lane_contract")
+        wrong = action("Wrong contract")
+        wrong["selected"]["lane_contract"] = lane_contract(
+            "classics-made-yours"
+        )
+
+        for label, proposed in (("missing", missing), ("wrong lane", wrong)):
+            with self.subTest(label=label):
+                creator = FakeCodex("gpt-5.6-terra", [copy.deepcopy(proposed)])
+                evaluator = FakeCodex(
+                    "gpt-5.6-terra", [verdict(99, "Must not be evaluated.")]
+                )
+                evaluator.reasoning_effort = "low"
+                with self.assertRaises(WaitingFor) as caught:
+                    CodexInventor(
+                        creator=creator,
+                        evaluator=evaluator,
+                        research_provider=self.research,
+                    )(self.context())
+                self.assertEqual(
+                    caught.exception.needs[0].capability,
+                    "codex-industrial-design",
+                )
+                self.assertEqual(evaluator.prompts, [])
 
     def test_workshop_advances_to_make_only_after_invent_passes(self):
         creator = FakeCodex("gpt-5.6-terra", [action("Trotter")])
@@ -267,12 +536,15 @@ class AgentInventTest(unittest.TestCase):
             evaluator=evaluator,
             research_provider=self.research,
         )
-        result = Workshop(
-            self.inventor,
-            "moving-machines",
-            tools=WorkshopTools(invent=worker),
-            runtime_root=self.root / "runtime",
-        ).run(self.context().wish, playtest_rounds=2)
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
+            result = Workshop(
+                self.inventor,
+                "moving-machines",
+                tools=WorkshopTools(invent=worker),
+                runtime_root=self.root / "runtime",
+            ).run(self.context().wish, playtest_rounds=2)
         self.assertEqual((result.status, result.job), ("waiting", "make"))
         self.assertEqual(result.needs[0].capability, "model-and-cad-maker")
         self.assertIsNotNone(result.invented)
