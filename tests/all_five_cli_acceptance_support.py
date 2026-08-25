@@ -1,7 +1,7 @@
 """Deterministic external boundaries for installed all-five orchestration.
 
 This module is copied next to an installed Workshop wheel and imported from a
-``.pth`` file.  It deliberately keeps the production Manager, profile process,
+``.pth`` file.  It deliberately keeps the production Manager-owned engine,
 shared stage workers, release policy, durable store, Instructions handoff, and
 Factory adapters in the path.  Only external boundaries are replaced:
 
@@ -358,30 +358,50 @@ def _lane_contract(lane: str):
         }
     if lane == "invented-games":
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "lane": lane,
-            "complete_rules": {
-                "setup": ["Put seven sparks in one shared supply."],
-                "turn_sequence": ["Players alternate taking sparks."],
-                "legal_actions": ["Take one, two, or three remaining sparks."],
-                "terminal_conditions": ["End when the shared supply is empty."],
-                "scoring": ["The player taking the final spark wins."],
-                "tie_breakers": ["The finite game has no ties."],
+            "game_protocol": {
+                "schema_version": 1,
+                "protocol": "workshop.resource-game.v1",
+                "players": 2,
+                "resources": [
+                    {"resource_id": "sparks", "label": "spark tokens", "initial": 7}
+                ],
+                "actions": [
+                    {
+                        "action_id": "take-one",
+                        "label": "Take one spark",
+                        "removals": [{"resource_id": "sparks", "count": 1}],
+                        "points": 0,
+                    },
+                    {
+                        "action_id": "take-two",
+                        "label": "Take two sparks",
+                        "removals": [{"resource_id": "sparks", "count": 2}],
+                        "points": 0,
+                    },
+                    {
+                        "action_id": "take-three",
+                        "label": "Take three sparks",
+                        "removals": [{"resource_id": "sparks", "count": 3}],
+                        "points": 0,
+                    },
+                ],
+                "ending": {
+                    "condition": "all-resources-empty",
+                    "winner": "next-actor",
+                    "score_tie_break": "last-actor",
+                },
             },
-            "simulator_design": {
-                "state_variables": ["sparks remaining", "active player"],
-                "legal_action_generator": "Enumerate one through three without exceeding the supply.",
-                "transition_model": "Subtract the action and alternate the active player.",
-                "terminal_check": "The state is terminal exactly when no sparks remain.",
-                "score_calculation": "Award the win to the player taking the final spark.",
-                "fixed_seed_strategy": "Derive each game seed from the sealed artifact and game index.",
+            "simulation_gate": {
+                "minimum_complete_games": 1_000,
+                "fixed_seed_strategy": "artifact-sha256-plus-index",
                 "player_policies": [
                     "optimizing",
                     "social",
                     "exploratory",
                     "adversarial",
                 ],
-                "minimum_complete_games": 1_000,
             },
         }
     if lane == "moving-machines":
@@ -568,12 +588,7 @@ def _base_make_action(title: str):
         },
         "game_spec": {
             "enabled": False,
-            "title": "not applicable",
-            "starting_tokens": 7,
-            "max_take": 3,
-            "last_take_wins": True,
-            "theme": "not applicable",
-            "token_part_ids": [],
+            "resource_part_ids": [],
         },
         "motion_spec": {
             "enabled": False,
@@ -671,15 +686,17 @@ def _make_action(lane: str):
         value["parts"] = parts
         value["game_spec"] = {
             "enabled": True,
-            "title": "Seven Sparks",
-            "starting_tokens": 7,
-            "max_take": 3,
-            "last_take_wins": True,
-            "theme": "Players coax the final spark from a shared constellation.",
-            "token_part_ids": [item["part_id"] for item in parts],
+            "resource_part_ids": [
+                {
+                    "resource_id": "sparks",
+                    "part_ids": [item["part_id"] for item in parts],
+                }
+            ],
         }
-        value["interaction"] = "Take one to three sparks and try to claim the last."
-        value["instructions"] = "Take one to three sparks. The player taking the last wins."
+        value["interaction"] = "Take one to three sparks and avoid taking the last."
+        value["instructions"] = (
+            "Take one to three sparks. The player forced to take the last loses."
+        )
     elif lane == "holdable-science":
         interaction = _lane_contract(lane)["interaction"]
         value["instructions"] = "%s %s" % (
@@ -1343,10 +1360,7 @@ def _observed_configured_tools(
         inventor_id=inventor_id,
         runtime_root=runtime_root,
     )
-    if (
-        "--assignment-stdin" in sys.argv
-        and inventor_id not in _OBSERVED_PROFILE_CONFIGURATIONS
-    ):
+    if inventor_id not in _OBSERVED_PROFILE_CONFIGURATIONS:
         observed = {
             name: (
                 None
@@ -1374,6 +1388,7 @@ def _observed_configured_tools(
             lane=LANE_BY_INVENTOR[inventor_id],
             composition="production-configured_workshop-tools",
             customization="taste-only",
+            execution="manager-owned",
             types=observed,
             make_cad_builder=type(selected.make.cad_builder).__name__,
             make_cad_command_runner=getattr(
@@ -1635,9 +1650,6 @@ FactoryAgentSession.__init__ = _session_init
 factory_agent.FactoryAgentSession.__init__ = _session_init
 
 
-# The production CLI intentionally redacts arbitrary child stderr.  The
-# acceptance boundary records it only in its private temporary log so failures
-# remain diagnosable without weakening the customer-facing error contract.
 import inventor_workshop.cli as _acceptance_cli
 
 _acceptance_cli._configured_world_reference_service = (
@@ -1647,22 +1659,6 @@ _acceptance_cli._configured_world_playtest_evidence = (
     _configured_world_playtest_evidence
 )
 
-_ORIGINAL_CHILD_RUNNER = _acceptance_cli._managed_child_run
-
-
-def _diagnostic_child_runner(*args, **kwargs):
-    completed = _ORIGINAL_CHILD_RUNNER(*args, **kwargs)
-    try:
-        result = json.loads(completed.stdout)
-    except (TypeError, ValueError):
-        result = {"unreadable_stdout": completed.stdout[-2_000:]}
-    _log(
-        "profile-result",
-        returncode=completed.returncode,
-        stderr=completed.stderr[-8_000:],
-        result=result,
-    )
-    return completed
-
-
-_acceptance_cli._run_inventor.__kwdefaults__["runner"] = _diagnostic_child_runner
+# Keep ``_run_inventor`` on its production default.  Replacing its ``runner``
+# keyword would deliberately select the legacy profile-subprocess compatibility
+# branch and would stop this acceptance from exercising Manager-owned execution.

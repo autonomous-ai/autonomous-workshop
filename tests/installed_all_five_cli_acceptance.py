@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exercise installed all-five orchestration with deterministic external boundaries.
 
-This proves packaging, Taste-based Manager protocol, profile subprocesses,
+This proves packaging, Taste-based routing, Manager-owned shared execution,
 Workshop-owned stage composition, release contracts, resumable Instructions,
 and synthetic Factory request/readback state. It does not call a live routing
 model, real CAD kernel/slicer, live Factory, or physical production.
@@ -245,15 +245,7 @@ def acceptance(repository, wheel):
             if (result["status"], result["job"]) != ("waiting", "deliver"):
                 raise AssertionError(
                     "%s site completion was confused with physical Deliver: %s"
-                    % (inventor_id, json.dumps(
-                        {
-                            "status": result.get("status"),
-                            "job": result.get("job"),
-                            "needs": result.get("needs"),
-                            "publication": result.get("publication"),
-                        },
-                        sort_keys=True,
-                    ))
+                    % (inventor_id, json.dumps(result, sort_keys=True))
                 )
             needs = {(item["job"], item["capability"]) for item in result["needs"]}
             if needs != {("deliver", "production-and-shipping")}:
@@ -273,14 +265,14 @@ def acceptance(repository, wheel):
             if result.get("page_url") != expected_url or publication.get("page_url") != expected_url:
                 raise AssertionError("Factory page URL is not exact")
             binding = result["manager_assignment"]
-            expected_handoff_version = 3 if inventor_id == "eve" else 2
-            if binding.get("schema_version") != expected_handoff_version:
+            if binding.get("schema_version") != 4:
                 raise AssertionError("Manager child result used the wrong exact Handoff")
             for name in (
                 "handoff_sha256",
                 "manifest_sha256",
                 "taste_sha256",
                 "implementation_sha256",
+                "publication_policy_sha256",
             ):
                 if not isinstance(binding.get(name), str) or len(binding[name]) != 64:
                     raise AssertionError("exact Handoff lacks %s" % name)
@@ -302,7 +294,14 @@ def acceptance(repository, wheel):
             if len(handoffs) != 1:
                 raise AssertionError("expected one saved exact Manager handoff")
             handoff = json.loads(handoffs[0].read_text(encoding="utf-8"))
-            if handoff["schema_version"] != 2:
+            if handoff["schema_version"] != 4:
+                raise AssertionError(
+                    "saved assignment is not publication-bound Handoff v4"
+                )
+            if (
+                handoff.get("world_inputs") is not None
+                or handoff.get("world_evidence") is not None
+            ):
                 raise AssertionError("saved assignment unexpectedly contains service data")
             for name in (
                 "inventor_id",
@@ -315,12 +314,13 @@ def acceptance(repository, wheel):
             ):
                 if handoff.get(name) != binding.get(name):
                     raise AssertionError("saved assignment identity differs at %s" % name)
-            if inventor_id != "eve" and handoff["handoff_sha256"] != binding["handoff_sha256"]:
-                raise AssertionError("saved Handoff v2 differs from child binding")
-            if inventor_id == "eve" and any(
-                name in handoff for name in ("world_inputs", "world_evidence")
+            if not isinstance(handoff.get("publication_policy"), dict):
+                raise AssertionError("saved Handoff v4 lacks publication policy")
+            if (
+                inventor_id != "eve"
+                and handoff["handoff_sha256"] != binding["handoff_sha256"]
             ):
-                raise AssertionError("saved assignment retained world service output")
+                raise AssertionError("saved Handoff v4 differs from final binding")
 
             database = runtime / "workshop.sqlite3"
             product, events, intent = _rows(database)
@@ -369,12 +369,13 @@ def acceptance(repository, wheel):
         ]
         tool_records = [item for item in records if item["event"] == "shared-tools"]
         if {item["inventor_id"] for item in tool_records} != set(CASES):
-            raise AssertionError("not every selected profile constructed shared workers")
+            raise AssertionError("not every selected Inventor used the shared Manager engine")
         for item in tool_records:
             if (
                 item["customization"] != "taste-only"
                 or item.get("composition")
                 != "production-configured_workshop-tools"
+                or item.get("execution") != "manager-owned"
             ):
                 raise AssertionError(
                     "acceptance did not observe production shared composition: %s"
@@ -387,7 +388,7 @@ def acceptance(repository, wheel):
                 "instructions": "RewardedInstructions",
                 "deliver": None,
             }:
-                raise AssertionError("a profile did not use the shared production stage types")
+                raise AssertionError("the Manager did not use the shared production stage types")
             if item.get("make_cad_builder") != "LockedCadSkillBuilder":
                 raise AssertionError("production Make did not retain its shared CAD builder")
             if item.get("make_cad_command_runner") != "_cad_command_runner":
@@ -397,10 +398,12 @@ def acceptance(repository, wheel):
             if item.get("playtest_moving_verifier") != "WorkshopMovingMachineVerifier":
                 raise AssertionError("production Playtest lost its shared moving verifier")
             argv = item["argv"]
-            if not ({"run", "resume"} & set(argv)) or "--assignment-stdin" not in argv:
-                raise AssertionError("shared workers did not run in the selected profile subprocess")
+            if "wish" not in argv or "--assignment-stdin" in argv:
+                raise AssertionError(
+                    "shared workers escaped the authoritative Manager-owned wish path"
+                )
         for inventor_id in CASES:
-            profile_pids = {
+            engine_pids = {
                 item["pid"]
                 for item in tool_records
                 if item["inventor_id"] == inventor_id
@@ -409,7 +412,7 @@ def acceptance(repository, wheel):
                 record.get("command_id")
                 for record in records
                 if record["event"] == "cad-command"
-                and record["pid"] in profile_pids
+                and record["pid"] in engine_pids
             }
             if not {
                 "runtime-probe",
@@ -426,7 +429,7 @@ def acceptance(repository, wheel):
                 record
                 for record in records
                 if record["event"] == "slicer-boundary"
-                and record["pid"] in profile_pids
+                and record["pid"] in engine_pids
             ]
             if not slicers or any(
                 record.get("checker") != "PrusaSlicerPrintCheck"
@@ -448,6 +451,11 @@ def acceptance(repository, wheel):
         }
         if set(manager_pids) != set(CASES):
             raise AssertionError("semantic Manager process identity is incomplete")
+        for item in tool_records:
+            if item["pid"] != manager_pids[item["inventor_id"]]:
+                raise AssertionError(
+                    "shared engine ran outside the semantic Manager process"
+                )
         for inventor_id in CASES:
             routed = [
                 item

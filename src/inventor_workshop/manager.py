@@ -1484,6 +1484,20 @@ class WorkshopManager:
         return create_assignment(self.route(wish), playtest_rounds=playtest_rounds)
 
 
+def register_workshop_engine(tools, *, provider_ids=None):
+    """Seal explicit shared providers as Manager/system-owned infrastructure.
+
+    Inventor profiles receive neither this registry nor a way to encode it in a
+    Wish or assignment handoff. Production composition and deterministic test
+    harnesses use this separate path when they must replace built-in shared
+    providers deliberately.
+    """
+
+    from .workshop import TrustedWorkshopEngine
+
+    return TrustedWorkshopEngine._register(tools, provider_ids)
+
+
 __all__ = [
     "CatalogPage",
     "FinalistContext",
@@ -1507,6 +1521,7 @@ __all__ = [
     "dispatch_assignment",
     "load_finalists",
     "retrieve_shortlist",
+    "register_workshop_engine",
     "select_inventor",
     "shortlist_all",
 ]

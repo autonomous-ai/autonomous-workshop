@@ -157,3 +157,11 @@ jobs:
           PYTHONWARNINGS: error
           PYTHONPATH: src
         run: python -m unittest discover -s tests -p 'test_service.py' -v
+      - name: verify real custom-contribution isolation
+        working-directory: .
+        env:
+          PYTHONPATH: src
+          WORKSHOP_REQUIRE_MACOS_ISOLATION_TEST: "1"
+        run: >-
+          python -m unittest -v
+          tests.test_contribution_rpc.ContributionRpcTest.test_real_macos_sandbox_blocks_inventor_state_write_read_and_network

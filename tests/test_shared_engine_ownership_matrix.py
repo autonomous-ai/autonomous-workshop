@@ -13,7 +13,16 @@ from inventor_workshop.agent_invent import (
 )
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
+from inventor_workshop.errors import ContractError
 from inventor_workshop.instructions import DefaultInstructions
+from inventor_workshop.invented_game import (
+    GAME_CONTRACT_PATH,
+    GAME_RULES_PATH,
+    GAME_SIMULATOR_PATH,
+    GAME_SIMULATOR_SOURCE,
+    canonical_json_bytes,
+    game_rules_document,
+)
 from inventor_workshop.jobs import (
     Delivered,
     Invented,
@@ -23,13 +32,14 @@ from inventor_workshop.jobs import (
     WaitingFor,
 )
 from inventor_workshop.make import Wish
+from inventor_workshop.manager import register_workshop_engine
 from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.playtest_release import (
     CapabilityReleaseProof,
     ReleaseProofSource,
 )
-from inventor_workshop.workshop import WorkshopTools
+from inventor_workshop.workshop import Workshop, WorkshopTools
 from inventor_workshop.world_reference_vault import (
     CONSENT_CLAIM_BOUNDARY,
     WorldReferenceScope,
@@ -43,6 +53,10 @@ from inventor_workshop.world_service import (
     WorldProviderIdentity,
 )
 from tests.delivery_support import fixture_delivery_evidence
+from tests.test_toy_workshop import (
+    fixture_game_contract,
+    fixture_game_release_documents,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -184,6 +198,8 @@ class DeterministicWorkshopFakes:
                     }
                 ],
             }
+        if self.lane == "invented-games":
+            concept["lane_contract"] = fixture_game_contract()
         return Invented(
             wish_sha256=self.wish_sha256,
             taste_sha256=self.taste_sha256,
@@ -348,6 +364,33 @@ class DeterministicWorkshopFakes:
         }
         for relative, payload in files.items():
             (artifact / relative).write_text(payload, encoding="utf-8")
+        if self.lane == "invented-games":
+            contract = context.invented.concept["lane_contract"]
+            contract_path = artifact / GAME_CONTRACT_PATH
+            contract_path.parent.mkdir(parents=True, exist_ok=True)
+            contract_path.write_bytes(canonical_json_bytes(contract))
+            rules = game_rules_document(
+                lane_contract=contract,
+                physical_binding={
+                    "enabled": True,
+                    "resource_part_ids": [
+                        {
+                            "resource_id": "beats",
+                            "part_ids": ["beat-%d" % index for index in range(1, 8)],
+                        }
+                    ],
+                },
+                title="Leo ownership fixture",
+                theme="A deterministic ownership-matrix rhythm game.",
+            )
+            (artifact / GAME_RULES_PATH).write_text(
+                json.dumps(rules, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            (artifact / GAME_SIMULATOR_PATH).write_text(
+                GAME_SIMULATOR_SOURCE,
+                encoding="utf-8",
+            )
         product = {
             "schema_version": 1,
             "kind": "workshop-ownership-fixture",
@@ -1028,43 +1071,20 @@ class DeterministicWorkshopFakes:
             )
 
         if capability == "game-simulation":
-            measurements = {
-                "requested_games": 1_000,
-                "completed_games": 1_000,
-                "balance_cases": 10,
-                "exploit_cases": 10,
-                "choice_cases": 10,
-                "flow_cases": 10,
-                "balance_failures": 0,
-                "exploits_found": 0,
-                "degenerate_choices": 0,
-                "flow_failures": 0,
-            }
-            games = [
-                {
-                    "seed": seed,
-                    "completed": True,
-                    "turns": 4,
-                    "player_styles": [
-                        "optimizing",
-                        "social",
-                        "exploratory",
-                        "adversarial",
-                    ],
-                    "issues": [],
-                }
-                for seed in range(1_000)
-            ]
+            measurements, trace_document, analysis_document = (
+                fixture_game_release_documents(
+                    artifact_sha256,
+                    fixture_game_contract(),
+                    product_inventory,
+                )
+            )
             traces, traces_sha256 = write_json(
                 "proof/game-traces.json",
-                {"artifact_sha256": artifact_sha256, "games": games},
+                trace_document,
             )
             analysis, analysis_sha256 = write_json(
                 "proof/game-analysis.json",
-                {
-                    "artifact_sha256": artifact_sha256,
-                    "measurements": measurements,
-                },
+                analysis_document,
             )
             return CapabilityReleaseProof(
                 capability,
@@ -1074,14 +1094,20 @@ class DeterministicWorkshopFakes:
                     source(
                         "simulator-source",
                         "product",
-                        "simulator.py",
-                        product_inventory["simulator.py"],
+                        GAME_SIMULATOR_PATH,
+                        product_inventory[GAME_SIMULATOR_PATH],
                     ),
                     source(
                         "game-rules",
                         "product",
-                        "game-rules.json",
-                        product_inventory["game-rules.json"],
+                        GAME_RULES_PATH,
+                        product_inventory[GAME_RULES_PATH],
+                    ),
+                    source(
+                        "invent-game-contract",
+                        "product",
+                        GAME_CONTRACT_PATH,
+                        product_inventory[GAME_CONTRACT_PATH],
                     ),
                     source("game-traces", "playtest", traces, traces_sha256),
                     source("game-analysis", "playtest", analysis, analysis_sha256),
@@ -1350,7 +1376,7 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
                     inventor_id, lane, wish, "all-shared-" + inventor_id
                 )
                 workshop = profile.build_workshop(
-                    tools=fixture.tools(),
+                    trusted_engine=register_workshop_engine(fixture.tools()),
                     runtime_root=runtime_root,
                     max_rounds=1,
                     **(
@@ -1368,7 +1394,7 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
                         wish, result.artifact_sha256, world_inputs
                     )
                     workshop = profile.build_workshop(
-                        tools=fixture.tools(),
+                        trusted_engine=register_workshop_engine(fixture.tools()),
                         runtime_root=runtime_root,
                         max_rounds=1,
                         world_inputs=world_inputs,
@@ -1384,65 +1410,33 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
                 self.assertIsNotNone(result.delivery)
                 self.assert_exact_matrix(fixture)
 
-    def test_explicit_overrides_replace_only_the_named_seam(self):
-        bob_wish = self.exact_wish("bob", "matrix-bob-custom-make")
-        bob, bob_fixture, bob_runtime = self.fixture_for(
-            "bob", "moving-machines", bob_wish, "bob-custom-make"
-        )
-        bob_custom_calls = []
-
-        def bob_custom_make(context):
-            bob_custom_calls.append("make")
-            return bob_fixture.make(context)
-
-        bob_workshop = bob.build_workshop(
-            tools=bob_fixture.tools(),
-            make=bob_custom_make,
-            runtime_root=bob_runtime,
-            max_rounds=1,
-        )
-        bob_result = bob_workshop.run(bob_wish, playtest_rounds=1)
-        self.assertEqual(bob_result.status, "delivered")
-        self.assertEqual(bob_workshop.customization_level, "custom-make")
-        self.assertIs(bob_workshop.make_job, bob_custom_make)
-        self.assertIs(bob_workshop.invent_job.__self__, bob_fixture)
-        self.assertIs(bob_workshop.playtest_job.__self__, bob_fixture)
-        self.assertIs(bob_workshop.instructions_job.__self__, bob_fixture)
-        self.assertIs(bob_workshop.deliver_job.__self__, bob_fixture)
-        self.assertEqual(bob_custom_calls, ["make"])
-        self.assert_exact_matrix(bob_fixture)
-
-        leo_wish = self.exact_wish("leo", "matrix-leo-custom-playtest")
-        leo, leo_fixture, leo_runtime = self.fixture_for(
-            "leo", "invented-games", leo_wish, "leo-custom-playtest"
-        )
-        leo_custom_calls = []
-
-        def leo_custom_make(context):
-            leo_custom_calls.append("make")
-            return leo_fixture.make(context)
-
-        def leo_custom_playtest(context):
-            leo_custom_calls.append("playtest")
-            return leo_fixture.playtest(context)
-
-        leo_workshop = leo.build_workshop(
-            tools=leo_fixture.tools(),
-            make=leo_custom_make,
-            playtest=leo_custom_playtest,
-            runtime_root=leo_runtime,
-            max_rounds=1,
-        )
-        leo_result = leo_workshop.run(leo_wish, playtest_rounds=1)
-        self.assertEqual(leo_result.status, "delivered")
-        self.assertEqual(leo_workshop.customization_level, "custom-playtest")
-        self.assertIs(leo_workshop.make_job, leo_custom_make)
-        self.assertIs(leo_workshop.playtest_job, leo_custom_playtest)
-        self.assertIs(leo_workshop.invent_job.__self__, leo_fixture)
-        self.assertIs(leo_workshop.instructions_job.__self__, leo_fixture)
-        self.assertIs(leo_workshop.deliver_job.__self__, leo_fixture)
-        self.assertEqual(leo_custom_calls, ["make", "playtest"])
-        self.assert_exact_matrix(leo_fixture)
+    def test_built_in_taste_only_profiles_reject_undeclared_substitution(self):
+        for inventor_id, lane in CANONICAL_PROFILES.items():
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                root = ROOT / "inventors" / inventor_id
+                runtime = self.root / ("hostile-" + inventor_id)
+                forbidden = lambda context: context
+                with self.assertRaisesRegex(
+                    ContractError, "do not match its declared taste-only level"
+                ):
+                    Workshop(
+                        root,
+                        lane,
+                        make=forbidden,
+                        runtime_root=runtime,
+                    )
+                with self.assertRaisesRegex(
+                    ContractError,
+                    "manifested Inventors cannot supply raw WorkshopTools",
+                ):
+                    Workshop(
+                        root,
+                        lane,
+                        tools=WorkshopTools(invent=forbidden),
+                        runtime_root=runtime,
+                    )
+                self.assertNotIn("tools", profile.build_workshop.__annotations__)
 
     def test_missing_external_provider_waits_on_a_shared_capability(self):
         wish = self.exact_wish("alice", "matrix-shared-site-wait")
@@ -1455,7 +1449,9 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
             return DefaultInstructions()(context)
 
         workshop = profile.build_workshop(
-            tools=fixture.tools(instructions=shared_instructions_without_site_provider),
+            trusted_engine=register_workshop_engine(
+                fixture.tools(instructions=shared_instructions_without_site_provider)
+            ),
             runtime_root=runtime_root,
             max_rounds=1,
         )

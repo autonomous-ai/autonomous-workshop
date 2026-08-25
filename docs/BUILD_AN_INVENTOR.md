@@ -158,12 +158,10 @@ connection, runs its smoke tests, and atomically joins it to the Manager's
 catalog. The source file is never modified. `workshop wish` records the exact
 Manager assignment so `workshop status <wish-id>` and `workshop resume
 <wish-id>` can continue the exact saved stage. That assignment pins the selected
-manifest, `TASTE.md`, implementation bytes, and entrypoint. The hidden
-continuation travels over the same content-bound stdin handoff; `run.py` cannot
-invoke it directly and never receives Factory credentials or publication
-authority. The generated
-`run.py` remains a developer check; installing the package bundles the same
-exact identity.
+manifest, `TASTE.md`, implementation bytes, and entrypoint. The Manager—not
+`run.py` or the profile—executes the shared Workshop and owns credentials and
+publication authority. The generated `run.py` remains a developer check;
+installing the package bundles the same exact identity.
 
 The only other required choice is one [plaything category](#1-choose-one-plaything-category).
 `taste-only` is the default, so Workshop supplies Invent, Make/CAD, Playtest,
@@ -252,49 +250,32 @@ finalist Taste changes after routing, the assignment is stale and must be made
 again; it may not silently change who the Wish was assigned to midway through
 a run.
 
-## 5. Connect the profile to Workshop
+## 5. Let the Manager run the Workshop
 
-A taste-only profile is intentionally small:
+A taste-only Inventor contributes no executable production hook. Its manifest
+declares one lane and `taste-only`; its exact `TASTE.md` supplies the creative
+constitution. The Manager selects it, constructs the shared Invent, Make,
+Playtest, Instructions, and Deliver workers, and owns the durable run.
 
-```python
-from pathlib import Path
+The generated profile and `run.py` are local identity and developer checks.
+The authoritative `workshop wish` path never imports or spawns them to run the
+Workshop, so a profile cannot replace common stages, read Factory credentials,
+or grant itself publication authority.
 
-from inventor_workshop import Wish, Workshop, WorkshopTools
+For `custom-make` and `custom-playtest`, the scaffold adds a root `hook.py`.
+The Manager invokes that entry point for exactly one declared stage, passes one
+typed context, and accepts only a bounded, content-addressed result that it
+reopens and validates. It never hands the worker Invent, Instructions, Deliver,
+orchestration, credentials, or the publication decision. A custom Playtest
+result still faces the same Workshop-owned release policy as the shared one.
+Production custom hooks require a verified deny-default OS isolation adapter.
+The built-in macOS adapter denies network access and allows reads and writes
+only for the exact stage; unsupported hosts return a typed
+`contribution-os-isolation` Need rather than running custom Python unsandboxed.
 
-
-INVENTOR_ROOT = Path(__file__).resolve().parent
-CATEGORY = "moving-machines"  # choose one of the five category IDs
-
-
-def create_wish(product_id: str, objective: str) -> Wish:
-    return Wish.create(
-        product_id,
-        objective,
-        constraints={"category": CATEGORY, "audience": "grown-ups-14-plus"},
-    )
-
-
-def build_workshop(shared_tools: WorkshopTools) -> Workshop:
-    return Workshop(
-        INVENTOR_ROOT,
-        CATEGORY,
-        tools=shared_tools,
-        runtime_root=(INVENTOR_ROOT / ".workshop").resolve(),
-    )
-```
-
-`WorkshopTools` is configured once by the Workshop operator. It contains the
-shared Invent, Make, Playtest, Instructions, and Deliver implementations. A
-profile must not embed shared credentials or quietly fall back to a developer's
-personal account.
-
-Before running, `Workshop.preview(wish)` can show the exact Wish-, Taste-, and
-category-bound brief without starting work.
-
-The application dispatches the Manager's typed assignment to the selected
-profile once. A profile should not rediscover the roster, reroute the Wish,
-poll for more work, or create its own scheduler. Reassignment is an explicit
-new Manager decision with a new assignment identity.
+Reassignment is an explicit new Manager decision with a new assignment
+identity. An Inventor folder must not rediscover the roster, route Wishes, poll
+for work, or create its own scheduler.
 
 ## 6. Customize Make only when necessary
 
@@ -332,17 +313,10 @@ Feedback from a failed Playtest arrives in the next `MakeContext`. Make a new
 revision in the new round workspace; never overwrite the revision that
 produced the evidence.
 
-Install a custom Make while retaining shared Playtest:
-
-```python
-workshop = Workshop(
-    INVENTOR_ROOT,
-    CATEGORY,
-    tools=shared_tools,
-    make=make,
-    runtime_root=(INVENTOR_ROOT / ".workshop").resolve(),
-)
-```
+Create the Inventor with `--level custom-make`; the scaffold declares the
+override and generates the stage-only `hook.py`. Do not instantiate a private
+`Workshop` or inject `WorkshopTools` from the Inventor profile. Shared Playtest
+is selected automatically after the Manager validates the custom `Made`.
 
 ## 7. Customize Playtest only for real niche expertise
 
@@ -526,11 +500,13 @@ resumed = workshop.resume_instructions(wish)
 ```
 
 The customer CLI uses `workshop resume <wish-id>` for every supported saved
-stage. Invent restarts only its self-improving loop; Make reuses the accepted
-Invented record; Playtest reuses the exact Made checkpoint; Instructions uses
-the approved Make and Playtest checkpoint above. An unexpired worker lease
-blocks a second continuation, and older state without the required checkpoint
-fails with an actionable explanation.
+stage. Shared Invent, Make, and pre-seal Instructions continue after their last
+content-addressed reward step without rerunning accepted creator or evaluator
+work. Playtest reuses the exact Made checkpoint but restarts an incomplete
+simulation. Once Instructions is sealed, resume performs only authenticated
+Factory reconciliation. An unexpired worker lease blocks a second continuation,
+and older state without the required checkpoint fails with an actionable
+explanation.
 
 Workshop verifies the original Wish, Taste, blueprint, round allowance, Make,
 Playtest evidence, event chain, and Instructions manifest, then calls only the

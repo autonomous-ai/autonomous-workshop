@@ -12,15 +12,25 @@ from inventor_workshop.agent_playtest import (
     DETERMINISTIC_CAPABILITIES,
     GAME_STYLES,
     LaneAwarePlaytester,
+    default_sealed_game_simulator,
 )
 from inventor_workshop.agent_make import CodexMaker
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.jobs import Invented, Made, MakeContext, PlaytestContext, WaitingFor
+from inventor_workshop.invented_game import (
+    GAME_CONTRACT_PATH,
+    GAME_RULES_PATH,
+    GAME_SIMULATOR_PATH,
+    GAME_SIMULATOR_SOURCE,
+    canonical_json_bytes,
+    game_rules_document,
+)
 from inventor_workshop.make import Wish
 from inventor_workshop.playtest_release import playtest_release_needs
 from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
+from tests.test_agent_make import executable_game_contract
 
 
 CHECK_CONFIG_SHA256 = "d" * 64
@@ -123,6 +133,34 @@ class AgentPlaytestTest(unittest.TestCase):
     def context(self, lane, suffix="one"):
         artifact = self.root / ("artifact-" + suffix)
         artifact.mkdir()
+        contract = executable_game_contract()
+        (artifact / "game").mkdir()
+        (artifact / GAME_CONTRACT_PATH).write_bytes(canonical_json_bytes(contract))
+        (artifact / GAME_RULES_PATH).write_text(
+            json.dumps(
+                game_rules_document(
+                    lane_contract=contract,
+                    physical_binding={
+                        "enabled": True,
+                        "resource_part_ids": [
+                            {
+                                "resource_id": "sparks",
+                                "part_ids": ["spark-%d" % index for index in range(1, 8)],
+                            }
+                        ],
+                    },
+                    title="Seven Steps",
+                    theme="A compact challenge.",
+                ),
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (artifact / GAME_SIMULATOR_PATH).write_text(
+            GAME_SIMULATOR_SOURCE, encoding="utf-8"
+        )
         (artifact / "rules.md").write_text(
             "Every legal turn advances one marker. The first to seven wins.\n",
             encoding="utf-8",
@@ -367,42 +405,7 @@ class AgentPlaytestTest(unittest.TestCase):
 
     @staticmethod
     def simulator(context, plan):
-        source_sha256 = {
-            entry.path: entry.sha256 for entry in context.made.artifact_manifest.entries
-        }["simulator.py"]
-        games = []
-        # This loop is the executable simulation boundary in the fixture: it
-        # produces exactly one independently seeded trace for every plan item.
-        for game in plan["games"]:
-            seed = game["seed"]
-            winner = (game["index"] // 4) % 2
-            games.append(
-                {
-                    "index": game["index"],
-                    "seed": seed,
-                    "player_styles": game["player_styles"],
-                    "completed": True,
-                    "turns": 7 + seed % 19,
-                    "outcome": json.dumps(
-                        {
-                            "winner": winner,
-                            "winner_style": game["player_styles"][winner],
-                        },
-                        sort_keys=True,
-                        separators=(",", ":"),
-                    ),
-                    "issues": [],
-                }
-            )
-        return {
-            "protocol": plan["protocol"],
-            "artifact_sha256": context.made.artifact_sha256,
-            "simulator": "seven-steps-simulator",
-            "simulator_version": "1.0.0",
-            "source_path": "simulator.py",
-            "source_sha256": source_sha256,
-            "games": games,
-        }
+        return default_sealed_game_simulator(context, plan)
 
     def test_lane_policy_requires_real_digital_adapters_before_model_review(self):
         context = self.context("moving-machines")
@@ -574,7 +577,7 @@ class AgentPlaytestTest(unittest.TestCase):
         self.assertEqual(caught.exception.needs[0].capability, "game-simulation")
 
     def test_default_playtest_waits_when_locked_cad_runtime_is_absent(self):
-        from tests.test_agent_make import FakeCadBuilder
+        from tests.test_agent_make import FakeCadBuilder, executable_game_contract
 
         wish = Wish.create("default-seven", "A seven-token strategy game for my studio")
         blueprint = ToyBlueprint.for_lane("invented-games")
@@ -582,7 +585,11 @@ class AgentPlaytestTest(unittest.TestCase):
             wish_sha256=json_sha256(wish.to_dict()),
             taste_sha256=self.taste.sha256,
             lane=blueprint.lane,
-            concept={"title": "Seven Sparks", "summary": "A finite take-away game."},
+            concept={
+                "title": "Seven Sparks",
+                "summary": "A finite take-away game.",
+                "lane_contract": executable_game_contract(),
+            },
             score=91,
             target_score=85,
         )
@@ -608,7 +615,7 @@ class AgentPlaytestTest(unittest.TestCase):
             "interaction": "Take one to three sparks and try to claim the last.",
             "mechanical_principle": "Seven separate tactile counters form a finite shared state.",
             "assembly": ["Place all seven sparks in the shared supply."],
-            "instructions": "Take one to three sparks. The player taking the last wins.",
+            "instructions": "Take one to three sparks. The player after the final taker wins.",
             "parts": parts,
             "classic_spec": {
                 "enabled": False,
@@ -618,12 +625,12 @@ class AgentPlaytestTest(unittest.TestCase):
             },
             "game_spec": {
                 "enabled": True,
-                "title": "Seven Sparks",
-                "starting_tokens": 7,
-                "max_take": 3,
-                "last_take_wins": True,
-                "theme": "Seven sparks from the first studio.",
-                "token_part_ids": [part["part_id"] for part in parts],
+                "resource_part_ids": [
+                    {
+                        "resource_id": "sparks",
+                        "part_ids": [part["part_id"] for part in parts],
+                    }
+                ],
             },
             "motion_spec": {
                 "enabled": False,

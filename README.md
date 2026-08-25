@@ -90,7 +90,9 @@ uv run workshop wish \
 The Workshop prints the Wish ID immediately, chooses an Inventor, and keeps the
 exact words. It invents, makes, Playtests, and prepares the verified Factory
 page. The page goes public by default; add `--draft` when the Wish should stay
-private. This does not claim the physical toy was printed or delivered.
+private. Factory may also list a public page at its platform-estimated price;
+that is a storefront effect, not proof that the toy was printed, packed, or
+delivered.
 
 The command prints the exact `workshop status <wish-id>` tracker. If a provider
 is missing or a worker stops, `workshop resume <wish-id>` continues the saved
@@ -137,7 +139,10 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 Choose `custom-make` only when the Inventor needs a genuinely different way to
 turn the shared Invent concept and Playtest feedback into parts. Implement the
 generated `make(context)` hook; the Workshop still supplies Invent, Playtest,
-Instructions, and Deliver.
+Instructions, and Deliver. The Manager invokes that hook for one Make only—it
+does not import or run the Inventor profile as the Workshop orchestrator. It
+runs custom code only behind a verified OS isolation adapter; without one, the
+stage waits instead of falling back to same-user execution.
 
 The checked-in showcase Make follows this pattern:
 
@@ -155,7 +160,10 @@ See the [complete Make adapter](tools/build_showcase_products.py#L1619-L1631).
 
 Choose `custom-playtest` only when the Inventor also needs genuinely different
 tests. Implement `playtest(context)` to return evidence and feedback; failed
-tests go back to Make. Custom Playtest always includes Custom Make.
+tests go back to Make. Custom Playtest always includes Custom Make. The hook
+receives only its typed stage context and returns a content-addressed result;
+credentials, publication authority, and the other Workshop stages stay with
+the Manager.
 
 Infrastructure is not a custom Inventor. The shared Playtest already includes
 pinned checkers and moving-machine providers. Independent science sources and

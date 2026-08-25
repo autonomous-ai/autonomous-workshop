@@ -34,6 +34,7 @@ from inventor_workshop.world_service import (
     WorldInventReference,
     WorldProviderIdentity,
 )
+from tests.test_invented_game import game_contract as executable_game_contract
 
 
 LANES = (
@@ -69,33 +70,7 @@ def lane_contract(lane):
                 }
             ],
         },
-        "invented-games": {
-            "schema_version": 1,
-            "lane": "invented-games",
-            "complete_rules": {
-                "setup": ["Each player places three trail markers on their edge."],
-                "turn_sequence": ["Move one walker, then rotate one trail tile."],
-                "legal_actions": ["Move to an adjacent unoccupied connected tile."],
-                "terminal_conditions": ["End immediately when one walker reaches the far edge."],
-                "scoring": ["The first walker to reach the far edge wins."],
-                "tie_breakers": ["If both arrive in one effect, fewer trail markers wins."],
-            },
-            "simulator_design": {
-                "state_variables": ["walker positions", "trail rotations", "active player"],
-                "legal_action_generator": "Enumerate adjacent connected empty destinations and legal rotations.",
-                "transition_model": "Apply the chosen move and rotation, then alternate the active player.",
-                "terminal_check": "Check far-edge arrival after every complete action.",
-                "score_calculation": "Return win, loss, or the defined marker-count tie break.",
-                "fixed_seed_strategy": "Derive every game seed from one recorded league seed and game index.",
-                "player_policies": [
-                    "optimizing",
-                    "social",
-                    "exploratory",
-                    "adversarial",
-                ],
-                "minimum_complete_games": 1_000,
-            },
-        },
+        "invented-games": executable_game_contract(),
         "moving-machines": {
             "schema_version": 1,
             "lane": "moving-machines",
@@ -518,10 +493,14 @@ class AgentInventTest(unittest.TestCase):
                 )(context)
 
                 contract = invented.concept["lane_contract"]
-                self.assertEqual(contract["schema_version"], 1)
+                self.assertEqual(
+                    contract["schema_version"],
+                    2 if lane == "invented-games" else 1,
+                )
                 self.assertEqual(contract["lane"], lane)
                 self.assertEqual(
-                    invented.concept["evidence"]["lane_contract_schema_version"], 1
+                    invented.concept["evidence"]["lane_contract_schema_version"],
+                    2 if lane == "invented-games" else 1,
                 )
                 self.assertEqual(
                     invented.concept["evidence"]["lane_contract_sha256"],
@@ -540,6 +519,11 @@ class AgentInventTest(unittest.TestCase):
                 self.assertIn(lane, creator.prompts[0][0])
                 self.assertIn(lane, evaluator.prompts[0][0])
                 schema = creator.prompts[0][1]
+                self.assertNotIn(
+                    '"uniqueItems"',
+                    json.dumps(schema, sort_keys=True),
+                    "Codex structured outputs reject the uniqueItems keyword; runtime validation owns uniqueness",
+                )
                 lane_schema = schema["properties"]["selected"]["properties"][
                     "lane_contract"
                 ]
@@ -549,6 +533,88 @@ class AgentInventTest(unittest.TestCase):
                 observed_schema_lanes.add(lane)
         self.assertEqual(observed_schema_lanes, set(LANES))
 
+    def test_game_reward_loop_repairs_deterministic_outcome_coverage_before_make(self):
+        weak = action("Weak Last Spark", "invented-games")
+        weak_contract = weak["selected"]["lane_contract"]
+        weak_contract["game_protocol"] = {
+            "schema_version": 1,
+            "protocol": "workshop.resource-game.v1",
+            "players": 2,
+            "resources": [
+                {"resource_id": "sparks", "label": "spark stones", "initial": 4}
+            ],
+            "actions": [
+                {
+                    "action_id": "take-one",
+                    "label": "Take one",
+                    "removals": [{"resource_id": "sparks", "count": 1}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-two",
+                    "label": "Take two",
+                    "removals": [{"resource_id": "sparks", "count": 2}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-three",
+                    "label": "Take three",
+                    "removals": [{"resource_id": "sparks", "count": 3}],
+                    "points": 0,
+                },
+            ],
+            "ending": {
+                "condition": "all-resources-empty",
+                "winner": "last-actor",
+                "score_tie_break": "last-actor",
+            },
+        }
+        revised = copy.deepcopy(weak)
+        revised["selected"]["title"] = "Afterglow"
+        revised["selected"]["lane_contract"]["game_protocol"]["ending"][
+            "winner"
+        ] = "next-actor"
+        creator = FakeCodex("gpt-5.6-terra", [weak, revised])
+        evaluator = FakeCodex(
+            "gpt-5.6-luna",
+            [
+                verdict(99, "The prose looks ready."),
+                verdict(99, "The revised executable rules are ready."),
+            ],
+        )
+        evaluator.reasoning_effort = "low"
+
+        invented = CodexInventor(
+            creator=creator,
+            evaluator=evaluator,
+            research_provider=self.research,
+            goal=85,
+            max_steps=3,
+        )(self.context("invented-games"))
+
+        steps = invented.concept["reward_loop"]["steps"]
+        self.assertEqual(len(steps), 2)
+        self.assertFalse(steps[0]["reward"]["passed"])
+        self.assertTrue(
+            any(
+                "Pinned game qualification" in tension
+                for tension in steps[0]["reward"]["hard_tensions"]
+            )
+        )
+        self.assertEqual(
+            invented.concept["lane_contract"]["game_protocol"]["ending"][
+                "winner"
+            ],
+            "next-actor",
+        )
+        qualification = invented.concept["evidence"]["game_qualification"]
+        self.assertTrue(qualification["passed"])
+        self.assertEqual(
+            qualification["lane_contract_sha256"],
+            invented.concept["evidence"]["lane_contract_sha256"],
+        )
+        self.assertIn("deterministic_game_qualification", evaluator.prompts[0][0])
+
     def test_each_lane_rejects_a_malformed_contract_before_reward_or_make(self):
         malformed = {}
         classic = lane_contract("classics-made-yours")
@@ -556,7 +622,7 @@ class AgentInventTest(unittest.TestCase):
         malformed["classics-made-yours"] = classic
 
         invented_game = lane_contract("invented-games")
-        invented_game["simulator_design"]["minimum_complete_games"] = 999
+        invented_game["simulation_gate"]["minimum_complete_games"] = 999
         malformed["invented-games"] = invented_game
 
         machine = lane_contract("moving-machines")
@@ -955,6 +1021,54 @@ class AgentInventTest(unittest.TestCase):
         self.assertFalse(invented.passed)
         self.assertEqual(invented.score, 84)
         self.assertFalse(invented.concept["reward_loop"]["reached_goal"])
+
+    def test_durable_invent_cost_cap_is_typed_and_never_lowers_the_goal(self):
+        original = self.context()
+        context = InventContext(
+            original.wish,
+            original.taste,
+            original.blueprint,
+            original.workspace,
+            original.world_inputs,
+            (self.root / "durable-invent-cost-cap").absolute(),
+        )
+        creator = FakeCodex(
+            "gpt-5.6-terra", [action("Attempt one"), action("Attempt two")]
+        )
+        evaluator = FakeCodex(
+            "gpt-5.6-luna",
+            [
+                verdict(74, "Improve the first concept."),
+                verdict(76, "Improve the second concept."),
+            ],
+        )
+        evaluator.reasoning_effort = "low"
+
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=self.research,
+                goal=85,
+                max_steps=1,
+                max_total_steps=2,
+            )(context)
+
+        self.assertEqual(
+            caught.exception.needs[0].capability,
+            "industrial-design-cost-cap",
+        )
+        records = sorted(
+            (context.reward_journal / "steps").glob("[0-9]*.json")
+        )
+        self.assertEqual(len(records), 2)
+        self.assertTrue(
+            all(
+                json.loads(path.read_text(encoding="utf-8"))["reward"]["goal"]
+                == 85
+                for path in records
+            )
+        )
 
     def test_concept_model_cannot_fabricate_a_citation(self):
         fabricated = action("Citation laundering")

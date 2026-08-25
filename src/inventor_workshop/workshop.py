@@ -11,7 +11,7 @@ mutating shipped bytes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -82,6 +82,8 @@ InstructionsJob = Callable[[InstructionsContext], ProductInstructions]
 DeliverJob = Callable[[DeliverContext], Delivered]
 
 CUSTOMIZATION_LEVELS = ("taste-only", "custom-make", "custom-playtest")
+_WORKSHOP_TOOL_NAMES = ("invent", "make", "playtest", "instructions", "deliver")
+_TRUSTED_ENGINE_SEAL = object()
 _INSTRUCTIONS_CHECKPOINT = "instructions-checkpoint.json"
 _CHECKPOINT_SCHEMA_VERSION = 1
 _CHECKPOINT_DIRECTORY = "checkpoints"
@@ -1328,6 +1330,141 @@ class WorkshopTools:
             _callable_or_none(value, label)
 
 
+def _provider_identity(provider: Any) -> str:
+    """Return a stable diagnostic id for one explicitly trusted provider."""
+
+    if provider is None:
+        raise ContractError("absent Workshop providers do not have identities")
+    target = provider if isinstance(provider, type) else type(provider)
+    if hasattr(provider, "__module__") and hasattr(provider, "__qualname__"):
+        target = provider
+    module = getattr(target, "__module__", None)
+    qualname = getattr(target, "__qualname__", None)
+    if (
+        not isinstance(module, str)
+        or not module
+        or not isinstance(qualname, str)
+        or not qualname
+    ):
+        raise ContractError(
+            "trusted Workshop providers require an explicit provider id"
+        )
+    return "%s.%s" % (module, qualname)
+
+
+@dataclass(frozen=True, init=False)
+class TrustedWorkshopEngine:
+    """Manager-owned provider registry accepted across an Inventor boundary.
+
+    ``WorkshopTools`` is deliberately easy to construct and therefore carries
+    no authority by itself. A manifested third-party Inventor may never use a
+    raw ``WorkshopTools`` value to replace Workshop-owned stages. The Manager
+    creates this sealed registry through
+    :func:`inventor_workshop.manager.register_workshop_engine` when production
+    composition or a test harness needs explicit providers.
+
+    This is a same-process authority boundary, not a Python sandbox. Inventor
+    contributions are normally executed in their bounded child process and do
+    not receive a registry value from the Manager handoff.
+    """
+
+    tools: WorkshopTools
+    provider_ids: Tuple[Tuple[str, str], ...]
+    registry_sha256: str
+    _seal: object = field(repr=False, compare=False)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        del args, kwargs
+        raise ContractError(
+            "TrustedWorkshopEngine must be created by the Workshop Manager registry"
+        )
+
+    @classmethod
+    def _register(
+        cls,
+        tools: WorkshopTools,
+        provider_ids: Optional[Mapping[str, str]] = None,
+    ) -> "TrustedWorkshopEngine":
+        if not isinstance(tools, WorkshopTools):
+            raise ContractError(
+                "trusted Workshop engine registration requires WorkshopTools"
+            )
+        present = {
+            name
+            for name in _WORKSHOP_TOOL_NAMES
+            if getattr(tools, name) is not None
+        }
+        if provider_ids is None:
+            identities = {
+                name: _provider_identity(getattr(tools, name))
+                for name in sorted(present)
+            }
+        else:
+            if not isinstance(provider_ids, Mapping) or set(provider_ids) != present:
+                raise ContractError(
+                    "trusted Workshop provider ids must identify every installed tool exactly"
+                )
+            identities = {}
+            for name in sorted(present):
+                value = provider_ids[name]
+                if (
+                    not isinstance(value, str)
+                    or not value.strip()
+                    or value != value.strip()
+                    or len(value) > 500
+                    or any(
+                        character.isspace()
+                        or ord(character) < 33
+                        or ord(character) == 127
+                        for character in value
+                    )
+                ):
+                    raise ContractError(
+                        "trusted Workshop provider ids must be bounded single tokens"
+                    )
+                identities[name] = value
+        pairs = tuple(sorted(identities.items()))
+        digest = hashlib.sha256(
+            _canonical_json({"schema_version": 1, "providers": dict(pairs)})
+        ).hexdigest()
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "tools", tools)
+        object.__setattr__(instance, "provider_ids", pairs)
+        object.__setattr__(instance, "registry_sha256", digest)
+        object.__setattr__(instance, "_seal", _TRUSTED_ENGINE_SEAL)
+        return instance
+
+    def _assert_trusted(self) -> None:
+        if self._seal is not _TRUSTED_ENGINE_SEAL:
+            raise ContractError("Workshop engine registry authority is invalid")
+        expected = hashlib.sha256(
+            _canonical_json(
+                {"schema_version": 1, "providers": dict(self.provider_ids)}
+            )
+        ).hexdigest()
+        if expected != self.registry_sha256:
+            raise ContractError("Workshop engine registry identity changed")
+
+
+def _declared_customization_level(root: Path) -> Optional[str]:
+    """Read the only contribution authority recognized for manifested roots."""
+
+    manifest_path = root / "inventor.json"
+    if not (manifest_path.exists() or manifest_path.is_symlink()):
+        return None
+    manifest = load_manifest(manifest_path)
+    declared = tuple(
+        capability
+        for capability in manifest.capabilities
+        if capability in CUSTOMIZATION_LEVELS
+    )
+    if len(declared) != 1:
+        raise ContractError(
+            "inventor manifest must declare exactly one Workshop contribution level"
+        )
+    return declared[0]
+
+
 def _missing_invent(context: InventContext) -> Invented:
     del context
     raise WaitingFor(
@@ -1383,6 +1520,7 @@ class Workshop:
         *,
         inventor_id: Optional[str] = None,
         tools: Optional[WorkshopTools] = None,
+        trusted_engine: Optional[TrustedWorkshopEngine] = None,
         make: Optional[MakeJob] = None,
         playtest: Optional[PlaytestJob] = None,
         review_authenticator: Optional[ReviewAuthenticator] = None,
@@ -1416,6 +1554,20 @@ class Workshop:
 
         self.inventor_root = root
         self.inventor_id = _resolve_inventor_id(root, inventor_id)
+        declared_level = _declared_customization_level(root)
+        inferred_level = (
+            "custom-playtest"
+            if playtest is not None
+            else "custom-make"
+            if make is not None
+            else "taste-only"
+        )
+        if declared_level is not None and declared_level != inferred_level:
+            raise ContractError(
+                "inventor contribution hooks do not match its declared %s level"
+                % declared_level
+            )
+        self.customization_level = declared_level or inferred_level
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
         if self.blueprint.lane == "little-worlds":
@@ -1439,19 +1591,30 @@ class Workshop:
             )
         self.world_inputs = world_inputs
         self.world_evidence = world_evidence
-        requested_tools = tools or WorkshopTools()
-        if not isinstance(requested_tools, WorkshopTools):
+        if tools is not None and trusted_engine is not None:
+            raise ContractError(
+                "choose raw local tools or a trusted Manager engine registry, not both"
+            )
+        if tools is not None and not isinstance(tools, WorkshopTools):
             raise ContractError("Workshop tools must be a WorkshopTools value")
-        # Constructor-level Make/Playtest hooks are inventor overrides. Include
-        # them in the field-by-field merge so the shared engine fills only the
-        # other stages and never instantiates an unrelated replacement.
-        requested_tools = WorkshopTools(
-            invent=requested_tools.invent,
-            make=make or requested_tools.make,
-            playtest=playtest or requested_tools.playtest,
-            instructions=requested_tools.instructions,
-            deliver=requested_tools.deliver,
-        )
+        if declared_level is not None and tools is not None:
+            raise ContractError(
+                "manifested Inventors cannot supply raw WorkshopTools; "
+                "shared providers require a trusted Manager engine registry"
+            )
+        if trusted_engine is not None:
+            if not isinstance(trusted_engine, TrustedWorkshopEngine):
+                raise ContractError(
+                    "Workshop trusted_engine must be a Manager engine registry"
+                )
+            trusted_engine._assert_trusted()
+            requested_tools = trusted_engine.tools
+            self.engine_registry_sha256 = trusted_engine.registry_sha256
+            self.engine_provider_ids = dict(trusted_engine.provider_ids)
+        else:
+            requested_tools = tools or WorkshopTools()
+            self.engine_registry_sha256 = None
+            self.engine_provider_ids = {}
         from .agent_invent import configured_workshop_tools
 
         selected_tools = configured_workshop_tools(
@@ -1472,12 +1635,6 @@ class Workshop:
         self.review_authenticator = review_authenticator
         self.runtime_root = selected_runtime
         self.max_rounds = max_rounds
-        if playtest is not None:
-            self.customization_level = "custom-playtest"
-        elif make is not None:
-            self.customization_level = "custom-make"
-        else:
-            self.customization_level = "taste-only"
 
     @property
     def lane(self) -> str:
@@ -2229,8 +2386,8 @@ class Workshop:
         """Continue from the first incomplete Make or Playtest stage.
 
         Accepted prior stages are reconstructed by ``resume`` before entering
-        here. A restarted stage begins from its first reward step in a fresh
-        attempt workspace; this does not claim mid-loop continuation.
+        here. Shared Make continues from its last sealed reward step in a fresh
+        attempt workspace. Playtest still restarts its incomplete simulation.
         """
 
         made = resumed_made
@@ -2256,6 +2413,7 @@ class Workshop:
                     feedback,
                     selected_rounds,
                     self.inventor_id,
+                    (run_root / "reward-loops" / ("make-r%03d" % round_number)).absolute(),
                 )
                 lease.assert_current()
                 try:
@@ -2523,6 +2681,7 @@ class Workshop:
                 checkpoint_path,
                 checkpoint_sha256,
             ),
+            (run_root / "reward-loops" / "instructions").absolute(),
         )
         lease.assert_current()
         try:
@@ -2556,10 +2715,11 @@ class Workshop:
     def resume(self, wish: Wish) -> WorkshopRun:
         """Continue the first incomplete Workshop stage from exact durable state.
 
-        Resume never reruns an accepted prior stage. It restarts only the
-        incomplete Invent, Make, or Playtest reward loop in a fresh workspace.
-        Instructions keeps its separate sealed-page reconciliation. Stopped and
-        physically effectful Deliver states deliberately fail closed.
+        Resume never reruns an accepted prior stage. Shared Invent, Make, and
+        pre-seal Instructions continue after their last sealed reward transition
+        in a fresh execution workspace. Playtest currently restarts its incomplete
+        loop. Sealed Instructions keeps its separate page reconciliation. Stopped
+        and physically effectful Deliver states deliberately fail closed.
         """
 
         if not isinstance(wish, Wish):
@@ -2644,6 +2804,7 @@ class Workshop:
                     self.blueprint,
                     invent_workspace,
                     self.world_inputs,
+                    (run_root / "reward-loops" / "invent").absolute(),
                 )
                 lease.assert_current()
                 try:
@@ -3129,6 +3290,7 @@ class Workshop:
                 instructions_workspace,
                 lease.token,
                 seal_callback,
+                (run_root / "reward-loops" / "instructions").absolute(),
             )
             lease.assert_current()
             try:
@@ -3229,6 +3391,7 @@ class Workshop:
                 self.blueprint,
                 invent_workspace,
                 self.world_inputs,
+                (run_root / "reward-loops" / "invent").absolute(),
             )
             try:
                 self._require_world_invent_inputs(wish)
@@ -3326,6 +3489,7 @@ __all__ = [
     "InventJob",
     "MakeJob",
     "PlaytestJob",
+    "TrustedWorkshopEngine",
     "Workshop",
     "WorkshopTools",
     "offline_workbench",

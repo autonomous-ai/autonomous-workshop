@@ -128,12 +128,7 @@ class WorkshopMovingMachineVerifierTest(unittest.TestCase):
             },
             "game_spec": {
                 "enabled": False,
-                "title": "not a game",
-                "starting_tokens": 7,
-                "max_take": 2,
-                "last_take_wins": True,
-                "theme": "not applicable",
-                "token_part_ids": [],
+                "resource_part_ids": [],
             },
             "motion_spec": {
                 "enabled": True,

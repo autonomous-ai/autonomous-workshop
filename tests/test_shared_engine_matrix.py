@@ -7,8 +7,10 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.errors import ContractError
+from inventor_workshop.manager import register_workshop_engine
 from inventor_workshop.scaffold import scaffold_inventor
-from inventor_workshop.workshop import WorkshopTools
+from inventor_workshop.workshop import Workshop, WorkshopTools
 
 ROOT = Path(__file__).resolve().parents[1]
 INVENTOR_IDS = ("alice", "bob", "eve", "ivy", "leo")
@@ -115,7 +117,7 @@ class SharedEngineMatrixTest(unittest.TestCase):
                     self.assert_stage_bindings(workshop, self.shared)
                     self.assertEqual(workshop.customization_level, "taste-only")
 
-    def test_explicit_component_set_wins_for_every_inventor(self):
+    def test_trusted_manager_component_set_wins_for_every_inventor(self):
         custom = {
             stage: _Worker("explicit-%s" % stage)
             for _, stage in COMMON_STAGE_FIELDS
@@ -126,40 +128,27 @@ class SharedEngineMatrixTest(unittest.TestCase):
             for inventor_id in INVENTOR_IDS:
                 with self.subTest(inventor_id=inventor_id):
                     workshop = load_profile(inventor_id).build_workshop(
-                        tools=tools,
+                        trusted_engine=register_workshop_engine(tools),
                         runtime_root=runtime_base / inventor_id,
                     )
                     self.assert_stage_bindings(workshop, custom)
 
-    def test_profile_level_custom_make_and_playtest_override_shared_workers(self):
-        custom_make = _Worker("bob-custom-make")
-        custom_leo_make = _Worker("leo-custom-make")
-        custom_leo_playtest = _Worker("leo-custom-playtest")
+    def test_built_in_taste_only_profiles_cannot_claim_custom_seams(self):
+        forbidden = _Worker("undeclared-custom-make")
         with tempfile.TemporaryDirectory() as temporary, self.shared_engine():
             runtime_base = Path(temporary).resolve()
-            bob = load_profile("bob").build_workshop(
-                make=custom_make,
-                runtime_root=runtime_base / "bob",
-            )
-            leo = load_profile("leo").build_workshop(
-                make=custom_leo_make,
-                playtest=custom_leo_playtest,
-                runtime_root=runtime_base / "leo",
-            )
-
-        self.assertIs(bob.invent_job, self.shared["invent"])
-        self.assertIs(bob.make_job, custom_make)
-        self.assertIs(bob.playtest_job, self.shared["playtest"])
-        self.assertIs(bob.instructions_job, self.shared["instructions"])
-        self.assertIs(bob.deliver_job, self.shared["deliver"])
-        self.assertEqual(bob.customization_level, "custom-make")
-
-        self.assertIs(leo.invent_job, self.shared["invent"])
-        self.assertIs(leo.make_job, custom_leo_make)
-        self.assertIs(leo.playtest_job, custom_leo_playtest)
-        self.assertIs(leo.instructions_job, self.shared["instructions"])
-        self.assertIs(leo.deliver_job, self.shared["deliver"])
-        self.assertEqual(leo.customization_level, "custom-playtest")
+            for inventor_id in INVENTOR_IDS:
+                root = ROOT / "inventors" / inventor_id
+                lane = load_profile(inventor_id).LANE
+                with self.subTest(inventor_id=inventor_id), self.assertRaisesRegex(
+                    ContractError, "do not match its declared taste-only level"
+                ):
+                    Workshop(
+                        root,
+                        lane,
+                        make=forbidden,
+                        runtime_root=runtime_base / inventor_id,
+                    )
 
     def test_new_inventor_scaffolds_only_replace_the_declared_seams(self):
         cases = (

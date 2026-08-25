@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Leo's canonical invented-games Workshop profile.
-
-The Workshop's shared Make/CAD and AI Playtest workers are Leo's defaults. A
-caller may supply real custom Make and Playtest implementations explicitly.
-"""
+"""Leo's thin, taste-only invented-games Workshop profile."""
 
 from __future__ import annotations
 
@@ -14,12 +10,11 @@ from pathlib import Path
 from typing import Optional
 
 from inventor_workshop.make import Wish, generate_wish_id
-from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.handoff import (
     bind_manager_assignment_result,
     read_manager_assignment,
 )
-from inventor_workshop.workshop import Workshop, WorkshopTools
+from inventor_workshop.workshop import TrustedWorkshopEngine, Workshop
 
 
 INVENTOR_ROOT = Path(__file__).resolve().parent
@@ -28,11 +23,11 @@ PROFILE = {
     "schema_version": 1,
     "inventor_id": "leo",
     "lane": LANE,
-    "customization": "taste-only; optional custom Make + Playtest",
+    "customization": "taste-only",
     "workshop_level": "taste-only",
     "invent": "Workshop shared Invent",
-    "make": "Workshop shared Make/CAD by default; optional Leo override",
-    "playtest": "Workshop shared AI Playtest by default; optional Leo override",
+    "make": "Workshop shared Make/CAD",
+    "playtest": "Workshop shared AI Playtest",
     "release_gate": "1,000 seeded AI games across four player styles",
 }
 
@@ -47,24 +42,17 @@ def create_wish(product_id: str, objective: str) -> Wish:
 
 def build_workshop(
     *,
-    tools: Optional[WorkshopTools] = None,
-    make=None,
-    playtest=None,
+    trusted_engine: Optional[TrustedWorkshopEngine] = None,
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
-    """Use shared stages unless explicit tools or Leo overrides are supplied."""
+    """Use Workshop-owned stages, with an optional Manager engine registry."""
 
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
-    selected_tools = configured_workshop_tools(
-        tools, inventor_id="leo", runtime_root=selected_runtime
-    )
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=selected_tools,
-        make=make,
-        playtest=playtest,
+        trusted_engine=trusted_engine,
         runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
@@ -76,7 +64,7 @@ def describe() -> dict:
         **PROFILE,
         "taste_sha256": workshop.taste.sha256,
         "blueprint_sha256": workshop.blueprint.sha256,
-        "adapter_status": "shared Workshop workers",
+        "adapter_status": "shared Workshop engine",
     }
 
 

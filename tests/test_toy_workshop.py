@@ -26,6 +26,20 @@ from inventor_workshop.jobs import (
     Playtested,
     WaitingFor,
 )
+from inventor_workshop.invented_game import (
+    GAME_ANALYSIS_CRITERIA,
+    GAME_CONTRACT_PATH,
+    GAME_RULES_PATH,
+    GAME_SIMULATOR_ID,
+    GAME_SIMULATOR_PATH,
+    GAME_SIMULATOR_SOURCE,
+    GAME_SIMULATOR_VERSION,
+    canonical_json_bytes,
+    game_simulation_plan,
+    game_trace_analysis,
+    game_rules_document,
+    simulate_game_protocol,
+)
 from inventor_workshop.make import Wish
 from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
@@ -49,6 +63,116 @@ from tests.delivery_support import fixture_delivery_evidence
 
 
 CONFIG_SHA256 = "c" * 64
+
+
+def fixture_game_contract():
+    return {
+        "schema_version": 2,
+        "lane": "invented-games",
+        "game_protocol": {
+            "schema_version": 1,
+            "protocol": "workshop.resource-game.v1",
+            "players": 2,
+            "resources": [
+                {"resource_id": "beats", "label": "beat tokens", "initial": 7}
+            ],
+            "actions": [
+                {
+                    "action_id": "take-one",
+                    "label": "Take one beat",
+                    "removals": [{"resource_id": "beats", "count": 1}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-two",
+                    "label": "Take two beats",
+                    "removals": [{"resource_id": "beats", "count": 2}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-three",
+                    "label": "Take three beats",
+                    "removals": [{"resource_id": "beats", "count": 3}],
+                    "points": 0,
+                },
+            ],
+            "ending": {
+                "condition": "all-resources-empty",
+                "winner": "next-actor",
+                "score_tie_break": "last-actor",
+            },
+        },
+        "simulation_gate": {
+            "minimum_complete_games": 1_000,
+            "fixed_seed_strategy": "artifact-sha256-plus-index",
+            "player_policies": [
+                "optimizing",
+                "social",
+                "exploratory",
+                "adversarial",
+            ],
+        },
+    }
+
+
+def fixture_game_release_documents(
+    artifact_sha256, contract, product_inventory
+):
+    """Build only the exact core-replayable game proof fixture."""
+
+    plan = game_simulation_plan(artifact_sha256, 1_000)
+    games = []
+    for request in plan["games"]:
+        raw = simulate_game_protocol(contract["game_protocol"], request)
+        games.append(
+            {
+                **raw,
+                "outcome": json.dumps(
+                    raw["outcome"], sort_keys=True, separators=(",", ":")
+                ),
+            }
+        )
+    recomputed = game_trace_analysis(
+        contract["game_protocol"], games, requested_games=1_000
+    )
+    protocol_sha256 = json_sha256(contract["game_protocol"])
+    provenance = {
+        "simulator": GAME_SIMULATOR_ID,
+        "simulator_version": GAME_SIMULATOR_VERSION,
+        "source_path": GAME_SIMULATOR_PATH,
+        "source_sha256": product_inventory[GAME_SIMULATOR_PATH],
+        "contract_path": GAME_CONTRACT_PATH,
+        "contract_sha256": product_inventory[GAME_CONTRACT_PATH],
+        "rules_path": GAME_RULES_PATH,
+        "rules_sha256": product_inventory[GAME_RULES_PATH],
+        "game_protocol_sha256": protocol_sha256,
+    }
+    trace_document = {
+        "schema_version": 1,
+        "kind": "workshop-seeded-game-traces",
+        "artifact_sha256": artifact_sha256,
+        "plan_sha256": json_sha256(plan),
+        "provenance": provenance,
+        "games": games,
+    }
+    analysis_document = {
+        "schema_version": 1,
+        "kind": "workshop-seeded-game-release-analysis",
+        "artifact_sha256": artifact_sha256,
+        "protocol_binding": {
+            "contract_path": GAME_CONTRACT_PATH,
+            "contract_sha256": product_inventory[GAME_CONTRACT_PATH],
+            "rules_path": GAME_RULES_PATH,
+            "rules_sha256": product_inventory[GAME_RULES_PATH],
+            "game_protocol_sha256": protocol_sha256,
+        },
+        "criteria": dict(GAME_ANALYSIS_CRITERIA),
+        "seat_wins": recomputed["seat_wins"],
+        "style_wins": recomputed["style_wins"],
+        "forced_turns": recomputed["forced_turns"],
+        "measurements": recomputed["measurements"],
+    }
+    return recomputed["measurements"], trace_document, analysis_document
 
 
 class ToyWorkshopTest(unittest.TestCase):
@@ -80,14 +204,17 @@ class ToyWorkshopTest(unittest.TestCase):
                 separators=(",", ":"),
             ).encode("utf-8")
         ).hexdigest()
+        concept = {
+            "title": "Rhythm Top concept",
+            "summary": "A pocket top whose changing rhythm invites another spin.",
+        }
+        if context.blueprint.lane == "invented-games":
+            concept["lane_contract"] = fixture_game_contract()
         return Invented(
             wish_sha256=wish_sha256,
             taste_sha256=context.taste.sha256,
             lane=context.blueprint.lane,
-            concept={
-                "title": "Rhythm Top concept",
-                "summary": "A pocket top whose changing rhythm invites another spin.",
-            },
+            concept=concept,
             score=92,
             target_score=90,
         )
@@ -382,6 +509,35 @@ class ToyWorkshopTest(unittest.TestCase):
             "def play(seed):\n    return {'completed': True, 'seed': seed}\n",
             encoding="utf-8",
         )
+        if context.blueprint.lane == "invented-games":
+            contract = context.invented.concept["lane_contract"]
+            contract_path = artifact / GAME_CONTRACT_PATH
+            contract_path.parent.mkdir(parents=True, exist_ok=True)
+            contract_path.write_bytes(canonical_json_bytes(contract))
+            rules = game_rules_document(
+                lane_contract=contract,
+                physical_binding={
+                    "enabled": True,
+                    "resource_part_ids": [
+                        {
+                            "resource_id": "beats",
+                            "part_ids": ["beat-%d" % index for index in range(1, 8)],
+                        }
+                    ],
+                },
+                title="Rhythm Top",
+                theme="A pocket rhythm game.",
+            )
+            rules_path = artifact / GAME_RULES_PATH
+            rules_path.write_text(
+                json.dumps(rules, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            simulator_path = artifact / GAME_SIMULATOR_PATH
+            simulator_path.write_text(
+                GAME_SIMULATOR_SOURCE,
+                encoding="utf-8",
+            )
         product = {
             "schema_version": 1,
             "kind": "workshop-fixture-product",
@@ -1287,43 +1443,20 @@ class ToyWorkshopTest(unittest.TestCase):
                     "measurements": measurements,
                 }
             if capability == "game-simulation":
-                measurements = {
-                    "requested_games": 1_000,
-                    "completed_games": 1_000,
-                    "balance_cases": 10,
-                    "exploit_cases": 10,
-                    "choice_cases": 10,
-                    "flow_cases": 10,
-                    "balance_failures": 0,
-                    "exploits_found": 0,
-                    "degenerate_choices": 0,
-                    "flow_failures": 0,
-                }
-                games = [
-                    {
-                        "seed": seed,
-                        "completed": True,
-                        "turns": 4,
-                        "player_styles": [
-                            "optimizing",
-                            "social",
-                            "exploratory",
-                            "adversarial",
-                        ],
-                        "issues": [],
-                    }
-                    for seed in range(1_000)
-                ]
+                measurements, trace_document, analysis_document = (
+                    fixture_game_release_documents(
+                        artifact_sha256,
+                        fixture_game_contract(),
+                        product_inventory,
+                    )
+                )
                 traces, traces_sha256 = write_json(
                     "game-traces.json",
-                    {"artifact_sha256": artifact_sha256, "games": games},
+                    trace_document,
                 )
                 analysis, analysis_sha256 = write_json(
                     "game-analysis.json",
-                    {
-                        "artifact_sha256": artifact_sha256,
-                        "measurements": measurements,
-                    },
+                    analysis_document,
                 )
                 return {
                     "schema_version": 1,
@@ -1334,14 +1467,20 @@ class ToyWorkshopTest(unittest.TestCase):
                         source(
                             "simulator-source",
                             "product",
-                            "simulator.py",
-                            product_inventory["simulator.py"],
+                            GAME_SIMULATOR_PATH,
+                            product_inventory[GAME_SIMULATOR_PATH],
                         ),
                         source(
                             "game-rules",
                             "product",
-                            "game-rules.json",
-                            product_inventory["game-rules.json"],
+                            GAME_RULES_PATH,
+                            product_inventory[GAME_RULES_PATH],
+                        ),
+                        source(
+                            "invent-game-contract",
+                            "product",
+                            GAME_CONTRACT_PATH,
+                            product_inventory[GAME_CONTRACT_PATH],
                         ),
                         source("game-traces", "playtest", traces, traces_sha256),
                         source("game-analysis", "playtest", analysis, analysis_sha256),

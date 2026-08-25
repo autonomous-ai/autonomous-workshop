@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
@@ -20,13 +21,15 @@ from .instructions import (
 )
 from .jobs import InstructionsContext, Need, ProductInstructions, WaitingFor
 from .models import Receipt
-from .reward_loop import RewardSignal, run_reward_loop
+from .reward_loop import RewardLoopBinding, RewardSignal, json_sha256, run_reward_loop
 
 
 DEFAULT_INSTRUCTIONS_CREATOR_MODEL = "gpt-5.6-terra"
 DEFAULT_INSTRUCTIONS_REWARD_MODEL = "gpt-5.6-luna"
 DEFAULT_INSTRUCTIONS_GOAL = 90
 DEFAULT_INSTRUCTIONS_STEPS = 3
+DEFAULT_INSTRUCTIONS_TOTAL_STEPS = 12
+DEFAULT_INSTRUCTIONS_MAX_ELAPSED_SECONDS = 60 * 60
 MINIMUM_INSTRUCTIONS_DIMENSION = 75
 _CREATOR_PROMPT_VERSION = "1.0.0"
 _REWARD_PROMPT_VERSION = "1.0.0"
@@ -155,6 +158,8 @@ class RewardedInstructions:
         evaluator: Optional[Any] = None,
         goal: int = DEFAULT_INSTRUCTIONS_GOAL,
         max_steps: int = DEFAULT_INSTRUCTIONS_STEPS,
+        max_total_steps: Optional[int] = None,
+        max_elapsed_seconds: int = DEFAULT_INSTRUCTIONS_MAX_ELAPSED_SECONDS,
     ) -> None:
         if site_writer is not None and not callable(site_writer):
             raise ContractError("Instructions site writer must be callable")
@@ -176,8 +181,46 @@ class RewardedInstructions:
             raise ContractError("Instructions goal must be an integer from 1 to 100")
         if type(max_steps) is not int or not 1 <= max_steps <= 20:
             raise ContractError("Instructions max_steps must be from 1 to 20")
+        selected_total_steps = (
+            max(max_steps, DEFAULT_INSTRUCTIONS_TOTAL_STEPS)
+            if max_total_steps is None
+            else max_total_steps
+        )
+        if (
+            type(selected_total_steps) is not int
+            or not max_steps <= selected_total_steps <= 1_000
+        ):
+            raise ContractError(
+                "Instructions max_total_steps must cover one batch and be at most 1,000"
+            )
+        if (
+            type(max_elapsed_seconds) is not int
+            or not 1 <= max_elapsed_seconds <= 60 * 60
+        ):
+            raise ContractError(
+                "Instructions max_elapsed_seconds must be an integer up to 60 minutes"
+            )
         self.goal = goal
         self.max_steps = max_steps
+        self.max_total_steps = selected_total_steps
+        self.max_elapsed_seconds = max_elapsed_seconds
+        self.creator_version = "%s+codex.%s" % (
+            _CREATOR_PROMPT_VERSION,
+            self.creator.cli_version,
+        )
+        self.creator_config_sha256 = _config_sha256(
+            {
+                "prompt_version": _CREATOR_PROMPT_VERSION,
+                "model": self.creator.model,
+                "reasoning_effort": self.creator.reasoning_effort,
+                "schema": _INSTRUCTIONS_SCHEMA,
+                "reward_loop_policy": {
+                    "max_steps_per_batch": self.max_steps,
+                    "max_total_steps": self.max_total_steps,
+                    "max_elapsed_seconds": self.max_elapsed_seconds,
+                },
+            }
+        )
         self.evaluator_version = "%s+codex.%s" % (
             _REWARD_PROMPT_VERSION,
             self.evaluator.cli_version,
@@ -233,9 +276,14 @@ class RewardedInstructions:
             "blueprint": context.blueprint.to_dict(),
             "product": dict(context.made.product),
             "product_artifact_sha256": context.made.artifact_sha256,
+            "made_manifest": context.made.artifact_manifest.to_dict(),
             "playtest_evidence_artifact_sha256": (
                 context.playtested.evidence.evidence_artifact_sha256
             ),
+            "playtest": context.playtested.evidence.to_dict(),
+            "playtest_feedback": [
+                item.to_dict() for item in context.playtested.feedback
+            ],
             "claims": evidence_claims(context),
         }
 
@@ -246,6 +294,24 @@ class RewardedInstructions:
             "previous_action": None,
             "previous_reward": None,
         }
+        durable_binding = (
+            RewardLoopBinding(
+                loop_id="instructions",
+                inputs_sha256=json_sha256(inputs),
+                initial_state_sha256=json_sha256(initial_state),
+                goal=self.goal,
+                max_steps=self.max_steps,
+                max_total_steps=self.max_total_steps,
+                creator_identity="codex-instructions-policy",
+                creator_version=self.creator_version,
+                creator_config_sha256=self.creator_config_sha256,
+                evaluator_identity="codex-instructions-reward",
+                evaluator_version=self.evaluator_version,
+                evaluator_config_sha256=self.reward_config_sha256,
+            )
+            if context.reward_journal is not None
+            else None
+        )
 
         def observe(state, step):
             return {
@@ -369,14 +435,48 @@ class RewardedInstructions:
                 reward,
             )
 
-        result = run_reward_loop(
-            initial_state,
-            observe=observe,
-            act=act,
-            environment=environment,
-            goal=self.goal,
-            max_steps=self.max_steps,
-        )
+        loop_started = time.monotonic()
+        while True:
+            result = run_reward_loop(
+                initial_state,
+                observe=observe,
+                act=act,
+                environment=environment,
+                goal=self.goal,
+                max_steps=self.max_steps,
+                journal_path=context.reward_journal,
+                binding=durable_binding,
+            )
+            if result.reached_goal or context.reward_journal is None:
+                break
+            if len(result.steps) >= self.max_total_steps:
+                raise _waiting(
+                    "instructions-cost-cap",
+                    "Instructions preserved %d complete reward steps but did not reach the fixed target before the explicit %d-step cost cap."
+                    % (len(result.steps), self.max_total_steps),
+                    "Review the sealed actions and rewards. Continuing requires a separately authorized new Workshop revision with a new explicit cost policy; never edit this journal or lower its target score.",
+                )
+            if time.monotonic() - loop_started >= self.max_elapsed_seconds:
+                raise _waiting(
+                    "instructions-time-cap",
+                    "Instructions preserved its complete reward steps but reached the explicit %d-second execution cap before its fixed target."
+                    % self.max_elapsed_seconds,
+                    "Resume the same exact Instructions loop; the Workshop will continue after its last sealed reward step without lowering the goal.",
+                )
+            if len(result.steps) >= 3:
+                tail = result.steps[-3:]
+                if (
+                    len({item.action_sha256 for item in tail}) == 1
+                    and len(
+                        {json_sha256(item.reward.to_dict()) for item in tail}
+                    )
+                    == 1
+                ):
+                    raise _waiting(
+                        "instructions-reward-plateau",
+                        "Instructions preserved three identical complete actions and independent rewards without reaching its fixed target.",
+                        "Inspect the exact sealed feedback and repair the shared creator or evaluator before resuming; never lower the target score.",
+                    )
         if not result.reached_goal:
             raise _waiting(
                 "instructions-target-score",
@@ -605,8 +705,10 @@ class RewardedInstructions:
 __all__ = [
     "DEFAULT_INSTRUCTIONS_CREATOR_MODEL",
     "DEFAULT_INSTRUCTIONS_GOAL",
+    "DEFAULT_INSTRUCTIONS_MAX_ELAPSED_SECONDS",
     "DEFAULT_INSTRUCTIONS_REWARD_MODEL",
     "DEFAULT_INSTRUCTIONS_STEPS",
+    "DEFAULT_INSTRUCTIONS_TOTAL_STEPS",
     "INSTRUCTIONS_REWARD_WEIGHTS",
     "RewardedInstructions",
 ]

@@ -5,7 +5,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.agent_invent import CodexInventor
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.codex_runtime import CodexInvocationError
 from inventor_workshop.errors import ContractError, LeaseBusy, StateConflict
 from inventor_workshop.instructions import DefaultInstructions, _write_manifest_once
 from inventor_workshop.jobs import Feedback, InventContext, Need, WaitingFor
@@ -13,6 +15,7 @@ from inventor_workshop.lease_guard import LeaseGuard
 from inventor_workshop.make import Wish
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from tests import test_agent_invent as invent_fixture
 from tests import test_toy_workshop as toy_fixture
 
 
@@ -104,6 +107,156 @@ class WorkshopResumeTest(unittest.TestCase):
         self.assertEqual(calls, {"invent": 2, "make": 1})
         self.assertNotEqual(workspaces[0], workspaces[1])
         self.assertTrue(all("attempts" in path.parts for path in workspaces))
+
+    def test_invent_missed_batch_automatically_continues_to_target(self):
+        runtime = self.root / "invent-reward-resume-runtime"
+        wish = Wish.create(
+            "invent-reward-resume",
+            "A wind-up version of my dog that walks",
+        )
+        research_fixture = invent_fixture.AgentInventTest(methodName="runTest")
+        research_calls = []
+
+        def research(context):
+            research_calls.append(context.workspace)
+            return research_fixture.research(context)
+
+        creator = invent_fixture.FakeCodex(
+            "gpt-5.6-terra",
+            [
+                invent_fixture.action("First sealed dog"),
+                invent_fixture.action("Improved sealed dog"),
+            ],
+        )
+        evaluator = invent_fixture.FakeCodex(
+            "gpt-5.6-luna",
+            [
+                invent_fixture.verdict(
+                    74, "Make the gait specific to this dog."
+                ),
+                invent_fixture.verdict(91, "Ready for Make."),
+            ],
+        )
+        evaluator.reasoning_effort = "low"
+        invent = CodexInventor(
+            creator=creator,
+            evaluator=evaluator,
+            research_provider=research,
+            goal=85,
+            max_steps=1,
+        )
+        tools = WorkshopTools(
+            invent=invent,
+            make=self.fixture.make_job,
+            playtest=self.fixture.passing_playtest,
+            instructions=DefaultInstructions(),
+        )
+
+        result = self.workshop(runtime, tools=tools).run(wish, playtest_rounds=1)
+
+        self.assertEqual((result.status, result.job), ("waiting", "instructions"))
+        self.assertEqual(len(research_calls), 1)
+        self.assertEqual(len(creator.prompts), 2)
+        self.assertEqual(len(evaluator.prompts), 2)
+        second_batch_prompt = creator.prompts[1][0]
+        self.assertIn("First sealed dog", second_batch_prompt)
+        self.assertIn("Make the gait specific to this dog.", second_batch_prompt)
+        journal = runtime / "runs" / wish.product_id / "reward-loops" / "invent"
+        records = sorted((journal / "steps").glob("[0-9]*.json"))
+        self.assertEqual(len(records), 2)
+        self.assertEqual(
+            [json.loads(path.read_text(encoding="utf-8"))["step"] for path in records],
+            [1, 2],
+        )
+
+    def test_invent_worker_failure_resumes_after_exact_sealed_prefix(self):
+        runtime = self.root / "invent-reward-crash-runtime"
+        wish = Wish.create(
+            "invent-reward-crash",
+            "A wind-up version of my dog that walks",
+        )
+        research_fixture = invent_fixture.AgentInventTest(methodName="runTest")
+        research_calls = []
+
+        def research(context):
+            research_calls.append(context.workspace)
+            return research_fixture.research(context)
+
+        class CreatorThatStopsAfterOne(invent_fixture.FakeCodex):
+            def invoke(self, *, prompt, schema, workspace):
+                if self.prompts:
+                    self.prompts.append((prompt, schema, workspace))
+                    raise CodexInvocationError("fixture worker interruption")
+                return super().invoke(
+                    prompt=prompt, schema=schema, workspace=workspace
+                )
+
+        first_creator = CreatorThatStopsAfterOne(
+            "gpt-5.6-terra", [invent_fixture.action("Sealed before interruption")]
+        )
+        first_evaluator = invent_fixture.FakeCodex(
+            "gpt-5.6-luna",
+            [invent_fixture.verdict(74, "Keep improving this exact concept.")],
+        )
+        first_evaluator.reasoning_effort = "low"
+        first_tools = WorkshopTools(
+            invent=CodexInventor(
+                creator=first_creator,
+                evaluator=first_evaluator,
+                research_provider=research,
+                goal=85,
+                max_steps=1,
+            ),
+            make=self.fixture.make_job,
+            playtest=self.fixture.passing_playtest,
+            instructions=DefaultInstructions(),
+        )
+
+        interrupted = self.workshop(runtime, tools=first_tools).run(
+            wish, playtest_rounds=1
+        )
+        self.assertEqual((interrupted.status, interrupted.job), ("waiting", "invent"))
+        self.assertEqual(
+            interrupted.needs[0].capability, "codex-industrial-design"
+        )
+
+        def forbidden_research(context):
+            del context
+            raise AssertionError("sealed research must not be fetched on resume")
+
+        resumed_creator = invent_fixture.FakeCodex(
+            "gpt-5.6-terra", [invent_fixture.action("Recovered concept")]
+        )
+        resumed_evaluator = invent_fixture.FakeCodex(
+            "gpt-5.6-luna", [invent_fixture.verdict(91, "Ready for Make.")]
+        )
+        resumed_evaluator.reasoning_effort = "low"
+        resumed_tools = WorkshopTools(
+            invent=CodexInventor(
+                creator=resumed_creator,
+                evaluator=resumed_evaluator,
+                research_provider=forbidden_research,
+                goal=85,
+                max_steps=1,
+            ),
+            make=self.fixture.make_job,
+            playtest=self.fixture.passing_playtest,
+            instructions=DefaultInstructions(),
+        )
+
+        resumed = self.workshop(runtime, tools=resumed_tools).resume(wish)
+
+        self.assertEqual((resumed.status, resumed.job), ("waiting", "instructions"))
+        self.assertEqual(len(research_calls), 1)
+        self.assertEqual(len(first_evaluator.prompts), 1)
+        self.assertEqual(len(resumed_creator.prompts), 1)
+        self.assertEqual(len(resumed_evaluator.prompts), 1)
+        self.assertIn("Sealed before interruption", resumed_creator.prompts[0][0])
+        self.assertIn(
+            "Keep improving this exact concept.", resumed_creator.prompts[0][0]
+        )
+        journal = runtime / "runs" / wish.product_id / "reward-loops" / "invent"
+        self.assertEqual(len(list((journal / "steps").glob("[0-9]*.json"))), 2)
 
     def test_custom_make_resume_keeps_invent_and_exact_later_feedback(self):
         calls = {"invent": 0, "make": 0}

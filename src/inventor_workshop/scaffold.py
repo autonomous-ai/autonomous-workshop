@@ -124,6 +124,31 @@ def playtest(context: PlaytestContext) -> Playtested:
 '''
 
 
+def _rpc_hook_source(level: str, package: str) -> Optional[str]:
+    """Return the stage-only child executable for declared custom seams."""
+
+    if level == "taste-only":
+        return None
+    imports = "from %s.inventor import make" % package
+    arguments = "make=make"
+    if level == "custom-playtest":
+        imports += ", playtest"
+        arguments += ", playtest=playtest"
+    return '''"""Bounded custom contribution worker; not the Workshop orchestrator."""
+
+from pathlib import Path
+
+from inventor_workshop.contribution_rpc import contribution_hook_main
+{imports}
+
+
+if __name__ == "__main__":
+    raise SystemExit(
+        contribution_hook_main(Path(__file__).resolve().parent, {arguments})
+    )
+'''.format(imports=imports, arguments=arguments)
+
+
 def _files(
     inventor_id: str,
     name: str,
@@ -183,7 +208,7 @@ def _files(
     }[level]
     hook_step = {
         "taste-only": (
-            "2. Use the operator-configured shared `WorkshopTools`; do not copy Invent, "
+            "2. Use the Workshop-owned shared engine; do not copy Invent, "
             "Make, or Playtest machinery into this folder."
         ),
         "custom-make": (
@@ -206,6 +231,21 @@ def _files(
             "from .inventor import playtest as CUSTOM_PLAYTEST"
         ),
     }[level]
+    identity_files = ["inventor.json", "TASTE.md", "run.py"]
+    if level != "taste-only":
+        identity_files.append("hook.py")
+    identity_files_source = "(" + ", ".join(
+        json.dumps(filename) for filename in identity_files
+    ) + ")"
+    packaged_contribution = ""
+    if level != "taste-only":
+        packaged_contribution = '''
+        contribution = project / "src" / "{package}"
+        shutil.copytree(
+            contribution,
+            destination / "contribution_src" / "{package}",
+        )
+'''.format(package=package)
 
     generated_taste = """---
 name: {name_header}
@@ -330,7 +370,7 @@ dependencies = ["inventor-workshop>=0.5,<0.6"]
 [tool.setuptools.packages.find]
 where = ["src"]
 """.format(inventor_id=inventor_id, package=package),
-        "MANIFEST.in": "include inventor.json TASTE.md run.py\n",
+        "MANIFEST.in": "include %s\n" % " ".join(identity_files),
         "run.py": """\"\"\"Run this Inventor directly from a checkout or installed identity.\"\"\"
 
 from pathlib import Path
@@ -364,12 +404,18 @@ class build_py(_build_py):
         if destination.exists():
             shutil.rmtree(destination)
         destination.mkdir(parents=True)
-        for filename in ("inventor.json", "TASTE.md", "run.py"):
+        for filename in {identity_files_source}:
             shutil.copy2(project / filename, destination / filename)
+{packaged_contribution}
 
 
 setup(cmdclass={{"build_py": build_py}})
-""".format(package=package, inventor_id=inventor_id),
+""".format(
+            package=package,
+            inventor_id=inventor_id,
+            identity_files_source=identity_files_source,
+            packaged_contribution=packaged_contribution,
+        ),
         "src/{package}/__init__.py".format(package=package): (
             repr("%s: a %s inventor built on the shared Toy Workshop." % (name, lane))
             + "\n"
@@ -382,8 +428,7 @@ import sysconfig
 from pathlib import Path
 from typing import Optional
 
-from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop, WorkshopTools
-from inventor_workshop.agent_invent import configured_workshop_tools
+from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop
 from inventor_workshop.handoff import (
     bind_manager_assignment_result,
     read_manager_assignment,
@@ -439,7 +484,6 @@ def create_wish(product_id: str, objective: str) -> Wish:
 
 def build_workshop(
     *,
-    tools: Optional[WorkshopTools] = None,
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
     world_inputs=None,
@@ -449,11 +493,6 @@ def build_workshop(
     return Workshop(
         inventor_root(),
         LANE,
-        tools=configured_workshop_tools(
-            tools,
-            inventor_id=INVENTOR_ID,
-            runtime_root=selected_runtime,
-        ),
         make=CUSTOM_MAKE,
         playtest=CUSTOM_PLAYTEST,
         runtime_root=selected_runtime,
@@ -582,7 +621,7 @@ from io import StringIO
 from pathlib import Path
 from unittest import mock
 
-from inventor_workshop import WORKSHOP_JOBS, Workshop, WorkshopTools, load_taste
+from inventor_workshop import WORKSHOP_JOBS, Workshop, load_taste
 from {package}.__main__ import (
     build_workshop,
     create_wish,
@@ -593,7 +632,7 @@ from {package}.__main__ import (
 
 class SmokeTest(unittest.TestCase):
     def test_profile_is_a_thin_workshop_configuration(self):
-        workshop = build_workshop(tools=WorkshopTools())
+        workshop = build_workshop()
         self.assertIsInstance(workshop, Workshop)
         self.assertEqual(workshop.lane, {lane_literal})
         self.assertEqual(workshop.customization_level, {level_literal})
@@ -664,6 +703,7 @@ if __name__ == "__main__":
     hook = _hook_source(level)
     if hook is not None:
         files["src/{package}/inventor.py".format(package=package)] = hook
+        files["hook.py"] = _rpc_hook_source(level, package)
     return files
 
 

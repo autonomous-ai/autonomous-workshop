@@ -117,10 +117,12 @@ class ScaffoldTest(unittest.TestCase):
             package = destination / "src/word_games"
             self.assertTrue((package / "__main__.py").is_file())
             self.assertFalse((package / "inventor.py").exists())
+            self.assertFalse((destination / "hook.py").exists())
             self.assertFalse((package / "workflow.py").exists())
             entrypoint = (package / "__main__.py").read_text(encoding="utf-8")
             self.assertIn("Workshop", entrypoint)
-            self.assertIn("WorkshopTools", entrypoint)
+            self.assertNotIn("WorkshopTools", entrypoint)
+            self.assertNotIn("configured_workshop_tools", entrypoint)
 
             taste = (destination / "TASTE.md").read_text(encoding="utf-8")
             self.assertIn("creative constitution", taste)
@@ -482,12 +484,28 @@ class ScaffoldTest(unittest.TestCase):
                     self.assertNotIn("wish", manifest.capabilities)
                     hook = destination / "src" / inventor_id.replace("-", "_") / "inventor.py"
                     self.assertEqual(hook.exists(), has_make)
+                    rpc_hook = destination / "hook.py"
+                    self.assertEqual(rpc_hook.exists(), has_make)
                     if hook.exists():
                         source = hook.read_text(encoding="utf-8")
                         self.assertIn("def make(", source)
                         self.assertEqual("def playtest(" in source, has_playtest)
                         self.assertIn("WaitingFor", source)
                         self.assertIn("context.playtest_rounds", source)
+                        rpc_source = rpc_hook.read_text(encoding="utf-8")
+                        self.assertIn("contribution_hook_main", rpc_source)
+                        self.assertIn("make=make", rpc_source)
+                        self.assertEqual(
+                            "playtest=playtest" in rpc_source, has_playtest
+                        )
+                        self.assertNotIn("Workshop(", rpc_source)
+                        self.assertIn(
+                            "hook.py",
+                            (destination / "MANIFEST.in").read_text(encoding="utf-8"),
+                        )
+                        setup = (destination / "setup.py").read_text(encoding="utf-8")
+                        self.assertIn('destination / "contribution_src"', setup)
+                        self.assertIn('"hook.py"', setup)
                     for source in sorted(destination.rglob("*.py")):
                         compile(source.read_text(encoding="utf-8"), str(source), "exec")
 
@@ -521,6 +539,51 @@ class ScaffoldTest(unittest.TestCase):
                     )
                     need = json.loads(run.stdout)["needs"][0]["capability"]
                     self.assertEqual(need, "industrial-design")
+
+    def test_custom_package_identity_carries_the_bounded_hook_and_exact_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            destination = scaffold_inventor(
+                root / "source",
+                "packed-custom",
+                "Packed Custom",
+                "custom playful motion",
+                lane="moving-machines",
+                level="custom-playtest",
+            )
+            build_lib = root / "build-lib"
+            identity = build_lib / "packed_custom/_identity/packed-custom"
+            identity.mkdir(parents=True)
+            for filename in ("inventor.json", "TASTE.md", "run.py", "hook.py"):
+                shutil.copy2(destination / filename, identity / filename)
+            shutil.copytree(
+                destination / "src/packed_custom",
+                identity / "contribution_src/packed_custom",
+            )
+            setup_source = (destination / "setup.py").read_text(encoding="utf-8")
+            compile(setup_source, str(destination / "setup.py"), "exec")
+            self.assertIn(
+                'for filename in ("inventor.json", "TASTE.md", "run.py", "hook.py")',
+                setup_source,
+            )
+            self.assertIn('destination / "contribution_src"', setup_source)
+            self.assertTrue((identity / "hook.py").is_file())
+            self.assertEqual(
+                (identity / "hook.py").read_bytes(),
+                (destination / "hook.py").read_bytes(),
+            )
+            packaged_source = (
+                identity / "contribution_src/packed_custom/inventor.py"
+            )
+            self.assertTrue(packaged_source.is_file())
+            self.assertEqual(
+                packaged_source.read_bytes(),
+                (destination / "src/packed_custom/inventor.py").read_bytes(),
+            )
+            self.assertEqual(
+                tuple(load_manifest(identity / "inventor.json").capabilities),
+                ("moving-machines", "custom-playtest"),
+            )
 
     def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -630,6 +693,97 @@ class ScaffoldTest(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(observed.stdout.strip(), "My exact wish")
+
+    def test_manifested_taste_only_profile_cannot_inject_shared_stage_tools(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = scaffold_inventor(
+                Path(temporary),
+                "hostile-tools",
+                "Hostile Tools",
+                "attempted shared-stage substitution",
+                lane="moving-machines",
+                level="taste-only",
+            )
+            marker = destination / "invent-ran"
+            hostile = destination / "hostile_profile.py"
+            hostile.write_text(
+                "from pathlib import Path\n"
+                "from inventor_workshop import Workshop, WorkshopTools\n"
+                "root = Path(__file__).resolve().parent\n"
+                "def stolen_invent(context):\n"
+                "    del context\n"
+                "    (root / 'invent-ran').write_text('bad', encoding='utf-8')\n"
+                "Workshop(root, 'moving-machines', "
+                "tools=WorkshopTools(invent=stolen_invent), "
+                "runtime_root=root / '.workshop')\n",
+                encoding="utf-8",
+            )
+            observed = subprocess.run(
+                [sys.executable, str(hostile)],
+                cwd=destination,
+                env=self.environment(destination),
+                check=False,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            self.assertNotEqual(observed.returncode, 0)
+            self.assertIn(
+                "manifested Inventors cannot supply raw WorkshopTools",
+                observed.stderr,
+            )
+            self.assertFalse(marker.exists())
+
+    def test_manifest_contribution_level_is_the_only_custom_seam_authority(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            taste_only = scaffold_inventor(
+                root,
+                "hostile-hooks",
+                "Hostile Hooks",
+                "attempted undeclared hooks",
+                lane="moving-machines",
+                level="taste-only",
+            )
+            from inventor_workshop.workshop import Workshop
+
+            forbidden = mock.Mock(name="undeclared-make")
+            with self.assertRaisesRegex(
+                ContractError, "do not match its declared taste-only level"
+            ):
+                Workshop(
+                    taste_only,
+                    "moving-machines",
+                    make=forbidden,
+                    runtime_root=taste_only / ".workshop-hostile",
+                )
+            forbidden.assert_not_called()
+
+            custom_make = scaffold_inventor(
+                root,
+                "declared-make",
+                "Declared Make",
+                "one declared Make seam",
+                lane="moving-machines",
+                level="custom-make",
+            )
+            with self.assertRaisesRegex(
+                ContractError, "do not match its declared custom-make level"
+            ):
+                Workshop(
+                    custom_make,
+                    "moving-machines",
+                    runtime_root=custom_make / ".workshop-missing-hook",
+                )
+            with self.assertRaisesRegex(
+                ContractError, "custom Playtest requires custom Make"
+            ):
+                Workshop(
+                    custom_make,
+                    "moving-machines",
+                    playtest=forbidden,
+                    runtime_root=custom_make / ".workshop-playtest-only",
+                )
 
     def test_generated_profile_supports_the_structured_manager_handoff(self):
         with tempfile.TemporaryDirectory() as temporary:

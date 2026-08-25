@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, Mapping, Optional
 
 from .errors import ContractError
+from .codex_runtime import structured_call_hardening_args
 from .execution_env import codex_subprocess_environment
 from .jobs import Need, WaitingFor
 from .manager import (
@@ -191,6 +192,7 @@ class CodexSemanticManager:
                     "--ephemeral",
                     "--ignore-rules",
                     "--skip-git-repo-check",
+                    *structured_call_hardening_args(),
                     "--sandbox",
                     "read-only",
                     "--color",

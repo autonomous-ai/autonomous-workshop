@@ -25,6 +25,24 @@ from .cad import inspect_stl_topology
 from .codex_runtime import CodexInvocationError, CodexStructuredRunner
 from .errors import ContractError
 from .execution_env import minimal_tool_environment
+from .invented_game import (
+    GAME_ANALYSIS_CRITERIA,
+    GAME_CONTRACT_PATH,
+    GAME_MAXIMUM_COMPLETE_GAMES,
+    GAME_MINIMUM_COMPLETE_GAMES,
+    GAME_RULES_PATH,
+    GAME_SIMULATOR_ID,
+    GAME_SIMULATOR_PATH,
+    GAME_SIMULATOR_SOURCE,
+    GAME_SIMULATOR_VERSION,
+    GAME_STYLES as EXECUTABLE_GAME_STYLES,
+    canonical_json_bytes as _canonical_game_contract_bytes,
+    game_simulation_plan,
+    game_trace_analysis,
+    json_sha256 as _game_json_sha256,
+    simulate_game_protocol,
+    validate_game_lane_contract,
+)
 from .jobs import Feedback, Need, PlaytestContext, Playtested, WaitingFor
 from .models import PlaytestResult, require_exact_version, require_sha256
 from .playtest import Playtest
@@ -32,8 +50,8 @@ from .playtest import Playtest
 
 DEFAULT_PLAYTEST_MODEL = "gpt-5.6-terra"
 DEFAULT_PLAYTEST_GOAL = 85
-DEFAULT_GAME_COUNT = 1_000
-GAME_STYLES = ("optimizing", "social", "exploratory", "adversarial")
+DEFAULT_GAME_COUNT = GAME_MINIMUM_COMPLETE_GAMES
+GAME_STYLES = EXECUTABLE_GAME_STYLES
 PLAYER_ROLES = (
     "optimizing-player",
     "first-time-player",
@@ -583,12 +601,14 @@ class WorkshopMechanicalVerifier:
         material = plan.get("material_model")
         lane_contract = plan.get("invent_lane_contract")
         load_model = plan.get("load_model")
+        expected_lane_contract_version = 2 if lane == "invented-games" else 1
         if (
             plan.get("schema_version") != 2
             or plan.get("supported_geometry") != "rigid-box-cylinder-primitives"
             or plan.get("dimension_tolerance_mm") != _MECHANICAL_TOLERANCE_MM
             or not isinstance(lane_contract, Mapping)
-            or lane_contract.get("schema_version") != 1
+            or lane_contract.get("schema_version")
+            != expected_lane_contract_version
             or lane_contract.get("lane") != lane
             or plan.get("invent_lane_contract_sha256") != _sha256(lane_contract)
             or not isinstance(path, Mapping)
@@ -1526,24 +1546,30 @@ def default_sealed_game_simulator(
     contract; an aggregate count can never stand in for those traces.
     """
 
-    # Import lazily so Playtest does not make the Make implementation a module
-    # initialization dependency.
-    from .agent_make import _FINITE_GAME_SIMULATOR
-
-    source_path = "game/simulate.py"
-    rules_path = "game/rules.json"
+    source_path = GAME_SIMULATOR_PATH
+    rules_path = GAME_RULES_PATH
+    contract_path = GAME_CONTRACT_PATH
     source, source_sha256 = _sealed_entry(context, source_path)
-    _sealed_entry(context, rules_path)
+    unused_rules_file, rules_sha256 = _sealed_entry(context, rules_path)
+    contract_file, contract_sha256 = _sealed_entry(context, contract_path)
+    del unused_rules_file
     source_bytes = source.read_bytes()
-    if source_bytes != _FINITE_GAME_SIMULATOR.encode("utf-8"):
+    if source_bytes != GAME_SIMULATOR_SOURCE.encode("utf-8"):
         raise ValueError("sealed simulator source differs from the pinned Workshop template")
+    contract = _sealed_json(context, contract_path)
+    validate_game_lane_contract(contract)
+    if contract_file.read_bytes() != _canonical_game_contract_bytes(contract):
+        raise ValueError("sealed Invent game contract is not in its canonical accepted form")
     rules = _sealed_json(context, rules_path)
     if (
-        rules.get("protocol") != "workshop-finite-game-v1"
-        or rules.get("kind") != "deterministic-two-player-take-away"
-        or not isinstance(rules.get("game_spec"), Mapping)
+        rules.get("kind") != "workshop-executable-invented-game"
+        or rules.get("invent_lane_contract")
+        != {"path": contract_path, "sha256": contract_sha256}
+        or rules.get("game_protocol") != contract["game_protocol"]
+        or rules.get("game_protocol_sha256")
+        != _game_json_sha256(contract["game_protocol"])
     ):
-        raise ValueError("sealed game rules do not match the simulator protocol")
+        raise ValueError("sealed game rules do not match the exact Invent protocol")
 
     with tempfile.TemporaryDirectory(prefix="workshop-game-simulation-") as temporary:
         control = Path(temporary)
@@ -1596,15 +1622,26 @@ def default_sealed_game_simulator(
         or raw.get("base_seed") != plan["base_seed"]
         or raw.get("source_path") != source_path
         or not isinstance(simulator, Mapping)
-        or simulator.get("id") != "workshop-finite-take-away"
-        or simulator.get("version") != "1.0.0"
+        or simulator.get("id") != GAME_SIMULATOR_ID
+        or simulator.get("version") != GAME_SIMULATOR_VERSION
+        or raw.get("contract_path") != contract_path
+        or raw.get("contract_sha256") != contract_sha256
+        or raw.get("game_protocol_sha256")
+        != _game_json_sha256(contract["game_protocol"])
         or not isinstance(games, list)
     ):
         raise ValueError("pinned game simulator output provenance is incomplete")
 
     normalized_games = []
     for game in games:
-        if not isinstance(game, Mapping) or not isinstance(game.get("issues"), list):
+        action_trace = game.get("action_trace") if isinstance(game, Mapping) else None
+        if (
+            not isinstance(game, Mapping)
+            or not isinstance(game.get("issues"), list)
+            or not isinstance(action_trace, list)
+            or len(action_trace) != game.get("turns")
+            or game.get("action_trace_sha256") != _sha256(action_trace)
+        ):
             raise ValueError("pinned game simulator returned an invalid trace")
         issue_findings = []
         for issue in game["issues"]:
@@ -1629,6 +1666,8 @@ def default_sealed_game_simulator(
                 "player_styles": game.get("player_styles"),
                 "completed": game.get("completed"),
                 "turns": game.get("turns"),
+                "action_trace": list(action_trace),
+                "action_trace_sha256": game.get("action_trace_sha256"),
                 "outcome": (
                     json.dumps(outcome, sort_keys=True, separators=(",", ":"))
                     if outcome is not None
@@ -1645,6 +1684,11 @@ def default_sealed_game_simulator(
         "simulator_version": simulator["version"],
         "source_path": source_path,
         "source_sha256": source_sha256,
+        "contract_path": contract_path,
+        "contract_sha256": contract_sha256,
+        "rules_path": rules_path,
+        "rules_sha256": rules_sha256,
+        "game_protocol_sha256": _game_json_sha256(contract["game_protocol"]),
         "games": normalized_games,
     }
 
@@ -2096,58 +2140,29 @@ def _seal_game_release_proof(
 
     from .playtest_release import CapabilityReleaseProof, ReleaseProofSource
 
-    completed = sum(1 for game in games if game["completed"])
-    seat_wins = {0: 0, 1: 0}
-    style_wins = {style: 0 for style in GAME_STYLES}
-    adversarial_games = 0
-    total_turns = 0
-    issue_count = 0
-    for game in games:
-        total_turns += int(game["turns"])
-        issue_count += len(game["issues"])
-        if "adversarial" in game["player_styles"]:
-            adversarial_games += 1
-        try:
-            outcome = json.loads(game["outcome"])
-        except (TypeError, ValueError, json.JSONDecodeError):
-            outcome = None
-        if isinstance(outcome, Mapping):
-            winner = outcome.get("winner")
-            winner_style = outcome.get("winner_style")
-            if winner in seat_wins:
-                seat_wins[winner] += 1
-            if winner_style in style_wins:
-                style_wins[winner_style] += 1
-    balance_failure = int(
-        completed != requested_games
-        or any(wins == 0 for wins in seat_wins.values())
-        or any(wins == 0 for wins in style_wins.values())
+    contract = _sealed_json(context, GAME_CONTRACT_PATH)
+    analysis = game_trace_analysis(
+        contract["game_protocol"],
+        games,
+        requested_games=requested_games,
     )
-    measurements = {
-        "requested_games": requested_games,
-        "completed_games": completed,
-        "balance_cases": len(GAME_STYLES),
-        "balance_failures": balance_failure,
-        "exploit_cases": adversarial_games,
-        "exploits_found": issue_count,
-        "choice_cases": total_turns,
-        "degenerate_choices": sum(1 for game in games if game["turns"] < 1),
-        "flow_cases": requested_games,
-        "flow_failures": requested_games - completed,
-    }
+    measurements = analysis["measurements"]
     analysis_ref = "analysis/game-simulation.json"
     analysis_document = {
         "schema_version": 1,
         "kind": "workshop-seeded-game-release-analysis",
         "artifact_sha256": context.made.artifact_sha256,
-        "criteria": {
-            "balance": "Both seats and all four fixed player styles must win at least one seeded game; this is coverage, not a human-fun or perfect-fairness claim.",
-            "exploits": "Every game containing the adversarial policy is an exploit case; any simulator issue is a failure.",
-            "choices": "Every executed legal turn is a choice case; zero-turn games are degenerate.",
-            "flow": "Every requested seed must terminate with no issue.",
+        "protocol_binding": {
+            "contract_path": provenance.get("contract_path"),
+            "contract_sha256": provenance.get("contract_sha256"),
+            "rules_path": provenance.get("rules_path"),
+            "rules_sha256": provenance.get("rules_sha256"),
+            "game_protocol_sha256": provenance.get("game_protocol_sha256"),
         },
-        "seat_wins": {str(key): value for key, value in seat_wins.items()},
-        "style_wins": style_wins,
+        "criteria": dict(GAME_ANALYSIS_CRITERIA),
+        "seat_wins": analysis["seat_wins"],
+        "style_wins": analysis["style_wins"],
+        "forced_turns": analysis["forced_turns"],
         "measurements": measurements,
     }
     analysis_sha256 = _write_json_once(
@@ -2157,22 +2172,14 @@ def _seal_game_release_proof(
         entry.path: entry.sha256 for entry in context.made.artifact_manifest.entries
     }
     simulator_ref = provenance["source_path"]
-    rules_candidates = tuple(
-        path
-        for path in product_inventory
-        if Path(path).suffix.casefold() == ".json"
-        and "rules" in Path(path).stem.casefold()
-    )
-    rules_ref = (
-        "game/rules.json"
-        if "game/rules.json" in rules_candidates
-        else sorted(rules_candidates)[0]
-        if rules_candidates
-        else ""
-    )
+    rules_ref = provenance.get("rules_path")
+    contract_ref = provenance.get("contract_path")
     if (
         product_inventory.get(simulator_ref) != provenance.get("source_sha256")
-        or rules_ref not in product_inventory
+        or not isinstance(rules_ref, str)
+        or product_inventory.get(rules_ref) != provenance.get("rules_sha256")
+        or not isinstance(contract_ref, str)
+        or product_inventory.get(contract_ref) != provenance.get("contract_sha256")
     ):
         raise ContractError("game release proof sources are not exact sealed Make bytes")
     proof = CapabilityReleaseProof(
@@ -2193,6 +2200,12 @@ def _seal_game_release_proof(
                 product_inventory[rules_ref],
             ),
             ReleaseProofSource(
+                "invent-game-contract",
+                "product",
+                contract_ref,
+                product_inventory[contract_ref],
+            ),
+            ReleaseProofSource(
                 "game-traces", "playtest", trace_ref, trace_sha256
             ),
             ReleaseProofSource(
@@ -2205,27 +2218,7 @@ def _seal_game_release_proof(
 
 
 def _game_plan(artifact_sha256: str, game_count: int) -> Mapping[str, Any]:
-    base_seed = int(artifact_sha256[:8], 16) % (2**31 - game_count)
-    pairings = (
-        ("optimizing", "social"),
-        ("exploratory", "adversarial"),
-        ("optimizing", "adversarial"),
-        ("social", "exploratory"),
-    )
-    return {
-        "protocol": "workshop-seeded-games-v1",
-        "artifact_sha256": artifact_sha256,
-        "requested_games": game_count,
-        "base_seed": base_seed,
-        "games": [
-            {
-                "index": index,
-                "seed": base_seed + index,
-                "player_styles": list(pairings[index % len(pairings)]),
-            }
-            for index in range(game_count)
-        ],
-    }
+    return game_simulation_plan(artifact_sha256, game_count)
 
 
 def _validate_game_simulation(
@@ -2238,9 +2231,9 @@ def _validate_game_simulation(
     if (
         value.get("protocol") != plan["protocol"]
         or value.get("artifact_sha256") != context.made.artifact_sha256
-        or not _text(value.get("simulator"))
-        or not _text(value.get("simulator_version"))
-        or not _text(value.get("source_path"))
+        or value.get("simulator") != GAME_SIMULATOR_ID
+        or value.get("simulator_version") != GAME_SIMULATOR_VERSION
+        or value.get("source_path") != GAME_SIMULATOR_PATH
     ):
         raise ValueError("simulator provenance is incomplete")
     require_exact_version(value["simulator_version"], "game simulator version")
@@ -2248,8 +2241,28 @@ def _validate_game_simulation(
         entry.path: entry.sha256 for entry in context.made.artifact_manifest.entries
     }
     source_path = value["source_path"]
-    if inventory.get(source_path) != value.get("source_sha256"):
+    source_file, source_sha256 = _sealed_entry(context, GAME_SIMULATOR_PATH)
+    if (
+        inventory.get(source_path) != value.get("source_sha256")
+        or value.get("source_sha256") != source_sha256
+        or source_file.read_bytes() != GAME_SIMULATOR_SOURCE.encode("utf-8")
+    ):
         raise ValueError("simulator source is not sealed in the exact Make")
+    contract_path = value.get("contract_path")
+    rules_path = value.get("rules_path")
+    if (
+        contract_path != GAME_CONTRACT_PATH
+        or inventory.get(contract_path) != value.get("contract_sha256")
+        or rules_path != GAME_RULES_PATH
+        or inventory.get(rules_path) != value.get("rules_sha256")
+    ):
+        raise ValueError("simulator rules are not sealed in the exact Make")
+    contract = _sealed_json(context, contract_path)
+    validate_game_lane_contract(contract)
+    if value.get("game_protocol_sha256") != _game_json_sha256(
+        contract["game_protocol"]
+    ):
+        raise ValueError("simulator protocol hash does not match Invent")
     games = value.get("games")
     expected_games = plan["games"]
     if not isinstance(games, list) or len(games) != len(expected_games):
@@ -2267,10 +2280,29 @@ def _validate_game_simulation(
             or not isinstance(game.get("completed"), bool)
             or type(game.get("turns")) is not int
             or game["turns"] < 0
+            or not isinstance(game.get("action_trace"), list)
+            or len(game["action_trace"]) != game["turns"]
+            or game.get("action_trace_sha256") != _sha256(game["action_trace"])
             or not _text(game.get("outcome"))
             or not isinstance(game.get("issues"), list)
         ):
             raise ValueError("game trace does not match its seeded plan")
+        expected_result = simulate_game_protocol(
+            contract["game_protocol"], expected
+        )
+        try:
+            observed_outcome = json.loads(game["outcome"])
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError("game trace outcome is not replayable") from exc
+        if (
+            game["completed"] != expected_result["completed"]
+            or game["turns"] != expected_result["turns"]
+            or game["action_trace"] != expected_result["action_trace"]
+            or observed_outcome != expected_result["outcome"]
+            or game["issues"]
+            or expected_result["issues"]
+        ):
+            raise ValueError("game trace differs from the exact pinned simulator")
         game_issues = [_validate_finding(item) for item in game["issues"]]
         normalized.append(
             {
@@ -2279,6 +2311,8 @@ def _validate_game_simulation(
                 "player_styles": list(game["player_styles"]),
                 "completed": game["completed"],
                 "turns": game["turns"],
+                "action_trace": list(game["action_trace"]),
+                "action_trace_sha256": game["action_trace_sha256"],
                 "outcome": game["outcome"],
                 "issues": game_issues,
             }
@@ -2290,6 +2324,11 @@ def _validate_game_simulation(
         "simulator_version": value["simulator_version"],
         "source_path": source_path,
         "source_sha256": value["source_sha256"],
+        "contract_path": contract_path,
+        "contract_sha256": value["contract_sha256"],
+        "rules_path": rules_path,
+        "rules_sha256": value["rules_sha256"],
+        "game_protocol_sha256": value["game_protocol_sha256"],
     }
     return provenance, normalized, issues
 
@@ -2347,8 +2386,15 @@ class LaneAwarePlaytester:
     ) -> None:
         if type(goal) is not int or not 1 <= goal <= 100:
             raise ValueError("Playtest goal must be an integer from 1 to 100")
-        if type(game_count) is not int or game_count < DEFAULT_GAME_COUNT:
-            raise ValueError("invented-game Playtest requires at least 1,000 games")
+        if (
+            type(game_count) is not int
+            or not DEFAULT_GAME_COUNT
+            <= game_count
+            <= GAME_MAXIMUM_COMPLETE_GAMES
+        ):
+            raise ValueError(
+                "invented-game Playtest requires 1,000 to 5,000 games"
+            )
         self.evaluator = evaluator or CodexStructuredRunner(
             model=os.environ.get("WORKSHOP_PLAYTEST_MODEL", DEFAULT_PLAYTEST_MODEL),
             reasoning_effort="low",
@@ -2857,9 +2903,6 @@ class LaneAwarePlaytester:
                         "evidence_refs": [trace_ref, analysis_ref],
                     }
                 ]
-            style_coverage = set(
-                style for game in games for style in game["player_styles"]
-            )
             block_count = sum(
                 1 for finding in findings if finding["severity"] in ("improve", "block")
             )
@@ -2867,7 +2910,12 @@ class LaneAwarePlaytester:
                 "completion": completed * 100 // self.game_count,
                 "termination": completed * 100 // self.game_count,
                 "seed_coverage": 100,
-                "style_coverage": 100 if set(GAME_STYLES) <= style_coverage else 0,
+                "outcome_coverage": (
+                    100 if release_measurements["balance_failures"] == 0 else 0
+                ),
+                "strategy_coverage": (
+                    100 if release_measurements["choice_cases"] > 0 else 0
+                ),
                 "exploit_resistance": max(0, 100 - block_count * 20),
             }
             game_score = sum(game_dimensions.values()) // len(game_dimensions)

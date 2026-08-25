@@ -73,6 +73,14 @@ after delivery: customer Reviews -> a future revision of this toy
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
+Invent, Make, and Instructions each keep an append-only, content-addressed
+reward journal. Every complete observation, action, next state, independent
+reward, goal, and worker identity is sealed before the next improvement step.
+The shared engine keeps taking bounded batches toward the fixed goal; a crash
+continues after the last complete step rather than paying for it again. Explicit
+time, total-step, and repeated-result caps return a typed Need—they never lower
+the target or turn an unfinished loop into a pass.
+
 `Taste` guides the jobs; it is not a job of its own. Research, rules writing,
 rendering, slicing, simulation, repair, printing, and carrier integration are
 tasks inside the six jobs, not extra lifecycle concepts. After Deliver,
@@ -84,8 +92,9 @@ already shipped.
 The owner-facing transition from private draft to public page is deliberately
 outside those six jobs. Calling `workshop wish` authorizes that separately
 verified transition by default; `--draft` keeps the page private for review.
-This does not delay Instructions or Deliver, claim physical fulfillment, or
-introduce a seventh job.
+Factory may also list a public page at its platform-estimated price. That
+storefront effect does not delay Instructions or Deliver, prove physical
+fulfillment, or introduce a seventh job.
 
 ## The Workshop Manager
 
@@ -223,6 +232,13 @@ not magic built into a profile. If a model, CAD worker, AI simulator, image
 renderer, printer, or carrier connection is unavailable, its owning job
 returns a typed `WaitingFor` result. Missing capability is never converted
 into success.
+
+Shared model calls are structured, tool-free decisions rather than coding
+sessions. The Workshop ignores personal Codex configuration, disables shell,
+browser, plugin, skill, and multi-agent tools, inherits no shell environment,
+and runs in an empty control directory instead of the product workspace. Only
+the bounded observation in the prompt and the requested response schema cross
+that boundary; an incompatible CLI fails closed.
 
 ## Job contracts
 
@@ -364,9 +380,11 @@ art direction, limitations, and exact inventor credit. The prompt is input to Fa
 creator-authored page output.
 
 Instructions stops there and advances to Deliver. It neither makes the page
-public nor requires an active listing. An owner may review the draft and make
-it public later through a separate, explicit action outside the six-job
-pipeline.
+public nor requires an active listing. The customer CLI performs the separate
+owner-controlled action outside the six-job pipeline: public by the policy
+sealed with a new Wish, private with `--draft`, or a later monotonic
+`workshop resume --publish` upgrade. A saved draft never becomes public merely
+because a bare resume gained credentials.
 
 This is a fail-closed boundary across every shared Shop entry point, including
 the low-level compatibility APIs: a caller cannot attach an import thumbnail,
@@ -384,14 +402,19 @@ reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
 separate handoff, not a silently retried Workshop side effect.
 
 The Manager-facing `workshop resume <wish-id>` command also continues Invent,
-Make, and Playtest from their exact durable boundaries. It sends the original
-content-bound assignment to the already selected Inventor over stdin, accepts
-only stdout that matches the verified event chain, and withholds Factory
-credentials from that child. The saved assignment also pins the Inventor's
-manifest, Taste, implementation bytes, and entrypoint; all four are rechecked
-before and after child execution. A current product lease prevents overlapping
-workers. Legacy assignments or Playtest state without an exact Made checkpoint
-remain read-only rather than silently executing changed code or rerunning Make.
+Make, and Playtest from their exact durable boundaries. The Manager executes
+the shared Workshop itself; a Taste-only profile is never imported or spawned.
+When an Inventor explicitly declares custom Make or Playtest, the Manager may
+invoke only that one typed hook and reconstruct its content-addressed result
+before the common release policy runs. Factory credentials and publication
+authority never enter that worker. Custom code starts only through a verified
+deny-default OS isolation adapter; an unsupported host waits before launching
+it. The saved assignment pins the Inventor's
+manifest, Taste, implementation bytes, and entrypoint, and those identities are
+rechecked around every custom hook. A current product lease prevents
+overlapping workers. Legacy assignments or state without an exact checkpoint
+remain read-only rather than silently executing changed code or repeating an
+accepted stage.
 
 Images must depict the product actually approved. Concept art can guide Make,
 but it cannot masquerade as a render or photograph of printable geometry. Copy

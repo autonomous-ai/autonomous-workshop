@@ -31,6 +31,21 @@ from .agent_invent import (
 )
 from .artifacts import MAX_FILE_BYTES, build_artifact_manifest
 from .errors import ContractError
+from .invented_game import (
+    GAME_ANALYSIS_CRITERIA,
+    GAME_CONTRACT_PATH,
+    GAME_RULES_PATH,
+    GAME_SIMULATOR_ID,
+    GAME_SIMULATOR_PATH,
+    GAME_SIMULATOR_SOURCE,
+    GAME_SIMULATOR_VERSION,
+    canonical_json_bytes as _canonical_game_contract_bytes,
+    game_simulation_plan,
+    game_trace_analysis,
+    json_sha256 as _game_json_sha256,
+    simulate_game_protocol,
+    validate_game_lane_contract,
+)
 from .jobs import Made, Need, Playtested
 from .make import Wish
 from .models import (
@@ -59,7 +74,6 @@ _RELEASE_PROOF_CLASSES = {
     "game-simulation": "seeded-game-analysis-proof",
 }
 _PROOF_CAPABILITIES = frozenset(_RELEASE_PROOF_CLASSES)
-_GAME_STYLES = frozenset(("optimizing", "social", "exploratory", "adversarial"))
 _RELEASE_RECEIPT_KIND = "workshop.capability-release-receipt"
 _RECEIPT_ROLES = {
     "mechanical-test": frozenset(("mechanical-receipt",)),
@@ -1885,15 +1899,145 @@ def _validate_game(
 ) -> None:
     simulator = _one_role(proof, "simulator-source", scope="product")
     rules = _one_role(proof, "game-rules", scope="product")
+    contract_source = _one_role(
+        proof, "invent-game-contract", scope="product"
+    )
     traces = _one_role(proof, "game-traces", scope="playtest")
     analysis = _one_role(proof, "game-analysis", scope="playtest")
-    if Path(simulator.path).suffix.casefold() != ".py":
-        raise ContractError("game simulator source must be sealed Python")
-    _load_json_file(product_root, rules, "game rules")
+    simulator_bytes = _load_source_bytes(
+        product_root, simulator, "game simulator source"
+    )
+    if (
+        simulator.path != GAME_SIMULATOR_PATH
+        or simulator_bytes != GAME_SIMULATOR_SOURCE.encode("utf-8")
+    ):
+        raise ContractError("game simulator source is not the pinned Workshop interpreter")
+    rules_document = _load_json_file(product_root, rules, "game rules")
+    contract = _load_json_file(
+        product_root, contract_source, "invented-game Invent contract"
+    )
+    validate_game_lane_contract(contract)
+    if (
+        contract_source.path != GAME_CONTRACT_PATH
+        or (product_root / contract_source.path).read_bytes()
+        != _canonical_game_contract_bytes(contract)
+        or rules.path != GAME_RULES_PATH
+        or rules_document.get("kind") != "workshop-executable-invented-game"
+        or rules_document.get("invent_lane_contract")
+        != {"path": contract_source.path, "sha256": contract_source.sha256}
+        or rules_document.get("game_protocol") != contract["game_protocol"]
+        or rules_document.get("game_protocol_sha256")
+        != _game_json_sha256(contract["game_protocol"])
+        or rules_document.get("simulator")
+        != {
+            "path": GAME_SIMULATOR_PATH,
+            "id": GAME_SIMULATOR_ID,
+            "version": GAME_SIMULATOR_VERSION,
+        }
+    ):
+        raise ContractError("game proof is not byte-bound to the accepted Invent rules")
     trace_document = _load_json_file(evidence_root, traces, "game traces")
     analysis_document = _load_json_file(evidence_root, analysis, "game analysis")
     measurements = proof.measurements
     requested = _int_measurement(measurements, "requested_games", minimum=1_000)
+    plan = game_simulation_plan(proof.artifact_sha256, requested)
+    if (
+        not isinstance(trace_document, Mapping)
+        or set(trace_document)
+        != {
+            "schema_version",
+            "kind",
+            "artifact_sha256",
+            "plan_sha256",
+            "provenance",
+            "games",
+        }
+        or trace_document.get("schema_version") != 1
+        or trace_document.get("kind") != "workshop-seeded-game-traces"
+        or trace_document.get("artifact_sha256") != proof.artifact_sha256
+        or trace_document.get("plan_sha256") != _game_json_sha256(plan)
+        or not isinstance(trace_document.get("games"), list)
+        or len(trace_document["games"]) != requested
+    ):
+        raise ContractError("game trace document is not bound to every requested game")
+    trace_provenance = trace_document.get("provenance")
+    if (
+        not isinstance(trace_provenance, Mapping)
+        or dict(trace_provenance)
+        != {
+            "simulator": GAME_SIMULATOR_ID,
+            "simulator_version": GAME_SIMULATOR_VERSION,
+            "source_path": GAME_SIMULATOR_PATH,
+            "source_sha256": simulator.sha256,
+            "contract_path": contract_source.path,
+            "contract_sha256": contract_source.sha256,
+            "rules_path": rules.path,
+            "rules_sha256": rules.sha256,
+            "game_protocol_sha256": _game_json_sha256(
+                contract["game_protocol"]
+            ),
+        }
+    ):
+        raise ContractError("game traces are not bound to the exact Invent rules")
+    replayed_games = []
+    for expected_request, game in zip(plan["games"], trace_document["games"]):
+        if (
+            not isinstance(game, Mapping)
+            or set(game)
+            != {
+                "index",
+                "seed",
+                "player_styles",
+                "completed",
+                "turns",
+                "action_trace",
+                "action_trace_sha256",
+                "outcome",
+                "issues",
+            }
+            or game.get("index") != expected_request["index"]
+            or game.get("seed") != expected_request["seed"]
+            or game.get("player_styles") != expected_request["player_styles"]
+            or type(game.get("turns")) is not int
+            or game["turns"] < 1
+            or not isinstance(game.get("action_trace"), list)
+            or len(game["action_trace"]) != game["turns"]
+            or game.get("action_trace_sha256")
+            != _json_sha256(game["action_trace"])
+            or not isinstance(game.get("player_styles"), list)
+            or not isinstance(game.get("issues"), list)
+            or game["issues"]
+        ):
+            raise ContractError("game proof contains an incomplete or invalid trace")
+        try:
+            observed_outcome = json.loads(game.get("outcome", ""))
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ContractError("game proof outcome is not replayable JSON") from exc
+        expected_game = simulate_game_protocol(
+            contract["game_protocol"], expected_request
+        )
+        if (
+            game.get("completed") is not True
+            or expected_game["completed"] is not True
+            or game["turns"] != expected_game["turns"]
+            or game["action_trace"] != expected_game["action_trace"]
+            or game["action_trace_sha256"]
+            != expected_game["action_trace_sha256"]
+            or observed_outcome != expected_game["outcome"]
+            or expected_game["issues"]
+        ):
+            raise ContractError(
+                "game proof differs from the exact artifact-derived seeded replay"
+            )
+        replayed_games.append({**dict(game), "outcome": observed_outcome})
+    recomputed = game_trace_analysis(
+        contract["game_protocol"],
+        replayed_games,
+        requested_games=requested,
+    )
+    recomputed_measurements = recomputed["measurements"]
+    if dict(measurements) != recomputed_measurements:
+        raise ContractError("game measurements do not match exact replayed traces")
     completed = _int_measurement(measurements, "completed_games", minimum=1_000)
     if completed != requested:
         raise ContractError("game proof must complete every requested game")
@@ -1907,36 +2051,36 @@ def _validate_game(
     ):
         _int_measurement(measurements, name, minimum=0, maximum=0)
     if (
-        not isinstance(trace_document, Mapping)
-        or trace_document.get("artifact_sha256") != proof.artifact_sha256
-        or not isinstance(trace_document.get("games"), list)
-        or len(trace_document["games"]) != requested
-    ):
-        raise ContractError("game trace document is not bound to every requested game")
-    seen_seeds = set()
-    observed_styles = set()
-    for game in trace_document["games"]:
-        if (
-            not isinstance(game, Mapping)
-            or type(game.get("seed")) is not int
-            or game["seed"] in seen_seeds
-            or game.get("completed") is not True
-            or type(game.get("turns")) is not int
-            or game["turns"] < 1
-            or not isinstance(game.get("player_styles"), list)
-            or not game["player_styles"]
-            or not isinstance(game.get("issues"), list)
-            or game["issues"]
-        ):
-            raise ContractError("game proof contains an incomplete or invalid trace")
-        seen_seeds.add(game["seed"])
-        observed_styles.update(game["player_styles"])
-    if not _GAME_STYLES <= observed_styles:
-        raise ContractError("game proof lacks all four player styles")
-    if (
         not isinstance(analysis_document, Mapping)
+        or set(analysis_document)
+        != {
+            "schema_version",
+            "kind",
+            "artifact_sha256",
+            "protocol_binding",
+            "criteria",
+            "seat_wins",
+            "style_wins",
+            "forced_turns",
+            "measurements",
+        }
+        or analysis_document.get("schema_version") != 1
+        or analysis_document.get("kind")
+        != "workshop-seeded-game-release-analysis"
         or analysis_document.get("artifact_sha256") != proof.artifact_sha256
-        or analysis_document.get("measurements") != dict(measurements)
+        or analysis_document.get("criteria") != GAME_ANALYSIS_CRITERIA
+        or analysis_document.get("seat_wins") != recomputed["seat_wins"]
+        or analysis_document.get("style_wins") != recomputed["style_wins"]
+        or analysis_document.get("forced_turns") != recomputed["forced_turns"]
+        or analysis_document.get("measurements") != recomputed_measurements
+        or analysis_document.get("protocol_binding")
+        != {
+            "contract_path": contract_source.path,
+            "contract_sha256": contract_source.sha256,
+            "rules_path": rules.path,
+            "rules_sha256": rules.sha256,
+            "game_protocol_sha256": _game_json_sha256(contract["game_protocol"]),
+        }
     ):
         raise ContractError("game analysis is not bound to the measured release proof")
 

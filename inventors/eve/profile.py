@@ -10,12 +10,11 @@ from pathlib import Path
 from typing import Optional
 
 from inventor_workshop.make import Wish, generate_wish_id
-from inventor_workshop.agent_invent import configured_workshop_tools
 from inventor_workshop.handoff import (
     bind_manager_assignment_result,
     read_manager_assignment,
 )
-from inventor_workshop.workshop import Workshop, WorkshopTools
+from inventor_workshop.workshop import TrustedWorkshopEngine, Workshop
 
 
 INVENTOR_ROOT = Path(__file__).resolve().parent
@@ -43,21 +42,19 @@ def create_wish(product_id: str, objective: str) -> Wish:
 
 def build_workshop(
     *,
-    tools: Optional[WorkshopTools] = None,
+    trusted_engine: Optional[TrustedWorkshopEngine] = None,
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
     world_inputs=None,
     world_evidence=None,
 ) -> Workshop:
-    """Use shared Workshop stages; explicit ``WorkshopTools`` values win."""
+    """Use Workshop-owned stages, with an optional Manager engine registry."""
 
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=configured_workshop_tools(
-            tools, inventor_id="eve", runtime_root=selected_runtime
-        ),
+        trusted_engine=trusted_engine,
         runtime_root=selected_runtime,
         max_rounds=max_rounds,
         world_inputs=world_inputs,

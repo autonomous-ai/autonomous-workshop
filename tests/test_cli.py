@@ -33,10 +33,12 @@ from inventor_workshop.handoff import (
 )
 from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import AmbiguousEffectError, WorkshopError
+from inventor_workshop.jobs import Need, WaitingFor
 from inventor_workshop.manager import (
     TasteFit,
     create_shortlist,
     discover_inventor_catalog,
+    register_workshop_engine,
 )
 from inventor_workshop.make import Wish
 from inventor_workshop.models import Receipt
@@ -283,11 +285,13 @@ class CliTest(unittest.TestCase):
             inventor_root,
             "moving-machines",
             inventor_id=inventor_id,
-            tools=WorkshopTools(
-                invent=ToyWorkshopTest.invent_job,
-                make=ToyWorkshopTest.make_job,
-                playtest=ToyWorkshopTest.passing_playtest,
-                instructions=instructions,
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(
+                    invent=ToyWorkshopTest.invent_job,
+                    make=ToyWorkshopTest.make_job,
+                    playtest=ToyWorkshopTest.passing_playtest,
+                    instructions=instructions,
+                )
             ),
             runtime_root=inventor_root / ".workshop",
         )
@@ -346,7 +350,7 @@ class CliTest(unittest.TestCase):
             inventor_root,
             "little-worlds",
             inventor_id=inventor_id,
-            tools=tools,
+            trusted_engine=register_workshop_engine(tools),
             runtime_root=runtime_root,
             world_inputs=inputs,
         ).run(wish, playtest_rounds=4)
@@ -359,7 +363,7 @@ class CliTest(unittest.TestCase):
             inventor_root,
             "little-worlds",
             inventor_id=inventor_id,
-            tools=tools,
+            trusted_engine=register_workshop_engine(tools),
             runtime_root=runtime_root,
             world_inputs=inputs,
             world_evidence=evidence,
@@ -1282,8 +1286,14 @@ class CliTest(unittest.TestCase):
         self.assertEqual(receipt["result"]["status"], "waiting")
         self.assertEqual(publish.call_count, 1)
         self.assertIn("Wish:", progress.getvalue())
+        self.assertIn("Matched with Bob.", progress.getvalue())
+        self.assertIn(
+            "Why: Bob turns a playful movement into a real mechanism.",
+            progress.getvalue(),
+        )
         self.assertIn("Track: workshop status", progress.getvalue())
-        self.assertIn("will be public", progress.getvalue())
+        self.assertIn("may list it for sale", progress.getvalue())
+        self.assertIn("physical Deliver is separate", progress.getvalue())
         self.assertIn("up to 60 minutes", progress.getvalue())
         self.assertNotIn("Wish:", output.getvalue().splitlines()[0])
 
@@ -1296,6 +1306,9 @@ class CliTest(unittest.TestCase):
         )
         help_text = subcommands.choices["wish"].format_help()
         self.assertIn("public", help_text)
+        self.assertIn("platform-estimated", help_text)
+        self.assertIn("price", help_text)
+        self.assertIn("physical Deliver", help_text)
         self.assertIn("--draft", help_text)
         self.assertIn("--strict", help_text)
         self.assertIn("progress goes to stderr", help_text)
@@ -1621,7 +1634,8 @@ class CliTest(unittest.TestCase):
             runtime.release_lease("wish-one", lease)
 
             receipt = _status_receipt(root, "wish-one")
-            self.assertNotIn("resume", receipt)
+            self.assertEqual(receipt["resume"]["status"], "unavailable")
+            self.assertIn("checkpoint", receipt["resume"]["reason"])
             output = StringIO()
             with redirect_stdout(output):
                 result = main(
@@ -1703,7 +1717,8 @@ class CliTest(unittest.TestCase):
             )
 
             status = _status_receipt(root, assignment.wish.product_id)
-            self.assertNotIn("resume", status)
+            self.assertEqual(status["resume"]["status"], "unavailable")
+            self.assertIn("legacy Manager assignment", status["resume"]["reason"])
             stderr = StringIO()
             with mock.patch(
                 "inventor_workshop.cli._resume_inventor"
@@ -1734,7 +1749,8 @@ class CliTest(unittest.TestCase):
             )
 
             status = _status_receipt(root, assignment.wish.product_id)
-            self.assertNotIn("resume", status)
+            self.assertEqual(status["resume"]["status"], "unavailable")
+            self.assertIn("implementation", status["resume"]["reason"])
             stderr = StringIO()
             with mock.patch(
                 "inventor_workshop.cli._resume_inventor"
@@ -1769,7 +1785,8 @@ class CliTest(unittest.TestCase):
                         0,
                     )
                 status = json.loads(output.getvalue())
-                self.assertNotIn("resume", status)
+                self.assertEqual(status["resume"]["status"], "unavailable")
+                self.assertIn("another Workshop worker", status["resume"]["reason"])
                 self.assertEqual(status["worker"]["status"], "active")
 
                 output = StringIO()
@@ -2061,12 +2078,68 @@ class CliTest(unittest.TestCase):
             },
             clear=True,
         ), mock.patch("inventor_workshop.cli.subprocess.run", side_effect=runner), mock.patch(
-            "inventor_workshop.cli.importlib.util.find_spec", return_value=object()
+            "inventor_workshop.agent_make.LockedCadSkillBuilder.ensure_available",
+            return_value={"cad": "a" * 64, "product-to-cad": "b" * 64},
         ), redirect_stdout(StringIO()):
-            self.assertEqual(main(("doctor", "--root", str(root))), 0)
+            self.assertEqual(main(("doctor", "--root", str(root))), 1)
         self.assertEqual(observed["codex"]["OPENAI_API_KEY"], "codex-secret")
         self.assertNotIn("OPENAI_API_KEY", observed["slicer"])
         self.assertNotIn("FACTORY_PASSWORD", observed["slicer"])
+
+    def test_doctor_rejects_model_override_and_reports_missing_delivery(self):
+        root = Path(__file__).resolve().parents[1]
+        output = StringIO()
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "WORKSHOP_CODEX_BIN": "/definitely/missing/codex",
+                "WORKSHOP_INVENT_MODEL": "gpt-5.6-sol",
+            },
+            clear=True,
+        ), redirect_stdout(output):
+            self.assertEqual(main(("doctor", "--root", str(root), "--json")), 1)
+        receipt = json.loads(output.getvalue())
+        policy = next(
+            item for item in receipt["checks"] if item["name"] == "model-policy"
+        )
+        delivery = next(
+            item
+            for item in receipt["checks"]
+            if item["name"] == "physical-delivery"
+        )
+        self.assertEqual(policy["status"], "needs-attention")
+        self.assertIn("WORKSHOP_INVENT_MODEL", policy["next"])
+        self.assertEqual(delivery["status"], "needs-attention")
+        self.assertIn("QA", delivery["detail"])
+
+    def test_doctor_uses_the_exact_configured_cad_runtime_probe(self):
+        root = Path(__file__).resolve().parents[1]
+        output = StringIO()
+        with mock.patch.dict(
+            "os.environ",
+            {"WORKSHOP_CAD_PYTHON": "/definitely/missing/cad-python"},
+            clear=True,
+        ), mock.patch(
+            "inventor_workshop.agent_make.LockedCadSkillBuilder.ensure_available",
+            side_effect=WaitingFor(
+                Need(
+                    "make",
+                    "cad-skill-runtime",
+                    "configured CAD runtime is unavailable",
+                    "repair the configured CAD runtime",
+                )
+            ),
+        ) as ensure_available, redirect_stdout(output):
+            self.assertEqual(
+                main(("doctor", "--root", str(root), "--json")), 1
+            )
+        receipt = json.loads(output.getvalue())
+        cad = next(
+            item for item in receipt["checks"] if item["name"] == "cad-runtime"
+        )
+        self.assertEqual(cad["status"], "needs-attention")
+        self.assertIn("WORKSHOP_CAD_PYTHON", cad["next"])
+        ensure_available.assert_called_once_with()
 
     def test_inventor_timeout_is_actionable_and_has_no_subprocess_traceback(self):
         def timeout(command, **kwargs):

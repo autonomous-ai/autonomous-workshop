@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
@@ -25,8 +26,17 @@ from .attribution import attribute_product_description
 from .codex_runtime import CodexInvocationError, CodexStructuredRunner
 from .errors import ContractError
 from .execution_env import minimal_tool_environment
+from .invented_game import (
+    GAME_CONTRACT_PATH,
+    GAME_SIMULATOR_SOURCE as _FINITE_GAME_SIMULATOR,
+    canonical_json_bytes as _canonical_game_contract_bytes,
+    game_rules_document as _game_rules_document,
+    game_rules_markdown as _game_rules_markdown_v2,
+    validate_game_lane_contract,
+    validate_physical_binding,
+)
 from .jobs import Made, MakeContext, Need, WaitingFor
-from .reward_loop import RewardSignal, json_sha256, run_reward_loop
+from .reward_loop import RewardLoopBinding, RewardSignal, json_sha256, run_reward_loop
 from .skills import discover_skills, resolve_skills_root
 
 
@@ -34,6 +44,8 @@ DEFAULT_MAKE_MODEL = "gpt-5.6-terra"
 DEFAULT_MAKE_REWARD_MODEL = "gpt-5.6-luna"
 DEFAULT_MAKE_GOAL = 85
 DEFAULT_MAKE_STEPS = 3
+DEFAULT_MAKE_TOTAL_STEPS = 12
+DEFAULT_MAKE_MAX_ELAPSED_SECONDS = 60 * 60
 MAKE_GENERATOR_ID = "workshop-locked-step-cad"
 MAKE_GENERATOR_VERSION = "2.0.0"
 _MAKE_PROMPT_VERSION = "1.0.0"
@@ -274,23 +286,25 @@ _MAKE_SCHEMA: Dict[str, Any] = {
         "game_spec": {
             "type": "object",
             "additionalProperties": False,
-            "required": [
-                "enabled",
-                "title",
-                "starting_tokens",
-                "max_take",
-                "last_take_wins",
-                "theme",
-                "token_part_ids",
-            ],
+            "required": ["enabled", "resource_part_ids"],
             "properties": {
                 "enabled": {"type": "boolean"},
-                "title": {"type": "string"},
-                "starting_tokens": {"type": "integer", "minimum": 7, "maximum": 10},
-                "max_take": {"type": "integer", "minimum": 2, "maximum": 4},
-                "last_take_wins": {"type": "boolean"},
-                "theme": {"type": "string"},
-                "token_part_ids": {"type": "array", "items": {"type": "string"}},
+                "resource_part_ids": {
+                    "type": "array",
+                    "maxItems": 4,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["resource_id", "part_ids"],
+                        "properties": {
+                            "resource_id": {"type": "string"},
+                            "part_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                            },
+                        },
+                    },
+                },
             },
         },
         "motion_spec": {
@@ -631,18 +645,10 @@ def _validate_action(value: Mapping[str, Any]) -> Mapping[str, Any]:
             or not _text(classic["known_game"])
             or not _text(classic["rules_reference"])
             or type(classic["rules_unchanged"]) is not bool
-            or set(game) != {"enabled", "title", "starting_tokens", "max_take", "last_take_wins", "theme", "token_part_ids"}
+            or set(game) != {"enabled", "resource_part_ids"}
             or type(game["enabled"]) is not bool
-            or not _text(game["title"])
-            or type(game["starting_tokens"]) is not int
-            or not 7 <= game["starting_tokens"] <= 10
-            or type(game["max_take"]) is not int
-            or not 2 <= game["max_take"] <= 4
-            or game["starting_tokens"] <= game["max_take"]
-            or type(game["last_take_wins"]) is not bool
-            or not _text(game["theme"])
-            or not isinstance(game["token_part_ids"], list)
-            or not all(isinstance(item, str) for item in game["token_part_ids"])
+            or not isinstance(game["resource_part_ids"], list)
+            or len(game["resource_part_ids"]) > 4
             or set(motion) != {"enabled", "moving_part_id", "axis", "sweep_degrees", "minimum_aabb_clearance_mm"}
             or type(motion["enabled"]) is not bool
             or not isinstance(motion["moving_part_id"], str)
@@ -661,12 +667,15 @@ def _validate_action(value: Mapping[str, Any]) -> Mapping[str, Any]:
             )
         elif "moving_machine_binding" in value:
             raise ValueError
-        if game["enabled"] and (
-            len(game["token_part_ids"]) != game["starting_tokens"]
-            or len(set(game["token_part_ids"])) != len(game["token_part_ids"])
-            or not set(game["token_part_ids"]) <= set(identifiers)
-        ):
-            raise ValueError
+        for resource_binding in game["resource_part_ids"]:
+            if (
+                not isinstance(resource_binding, Mapping)
+                or set(resource_binding) != {"resource_id", "part_ids"}
+                or not isinstance(resource_binding["resource_id"], str)
+                or not isinstance(resource_binding["part_ids"], list)
+                or not all(isinstance(item, str) for item in resource_binding["part_ids"])
+            ):
+                raise ValueError
     except (KeyError, TypeError, ValueError) as exc:
         raise _make_wait("The Make agent returned an invalid parametric design action.") from exc
     return value
@@ -1620,6 +1629,8 @@ def _lane_declaration_issues(action: Mapping[str, Any], lane: Optional[str]) -> 
         issues.append("invented-games Make requires an enabled finite game_spec")
     if lane != "invented-games" and action["game_spec"]["enabled"]:
         issues.append("game_spec may be enabled only for the invented-games lane")
+    if lane != "invented-games" and action["game_spec"]["resource_part_ids"]:
+        issues.append("game resource bindings may be declared only for invented-games")
     if lane == "moving-machines" and not action["motion_spec"]["enabled"]:
         issues.append("moving-machines Make requires an enabled motion_spec")
     if lane != "moving-machines" and action["motion_spec"]["enabled"]:
@@ -1810,187 +1821,6 @@ def _science_research_document(context: MakeContext) -> Mapping[str, Any]:
     }
 
 
-_FINITE_GAME_SIMULATOR = r'''#!/usr/bin/env python3
-"""Deterministic simulator for the sealed Workshop finite take-away game."""
-
-import argparse
-import json
-from pathlib import Path
-
-PROTOCOL = "workshop-seeded-games-v1"
-SIMULATOR = {"id": "workshop-finite-take-away", "version": "1.0.0"}
-STYLES = {"optimizing", "social", "exploratory", "adversarial"}
-
-
-class StableRng:
-    def __init__(self, seed):
-        self.state = seed & ((1 << 64) - 1)
-
-    def randint(self, low, high):
-        self.state = (
-            6364136223846793005 * self.state + 1442695040888963407
-        ) & ((1 << 64) - 1)
-        return low + self.state % (high - low + 1)
-
-
-def choose(style, remaining, maximum, rng):
-    legal_maximum = min(maximum, remaining)
-    if style == "social":
-        return 1
-    if style == "exploratory":
-        return rng.randint(1, legal_maximum)
-    if style == "adversarial":
-        return legal_maximum
-    target = remaining % (maximum + 1)
-    return target if 1 <= target <= legal_maximum else legal_maximum
-
-
-def play(spec, request):
-    styles = request["player_styles"]
-    rng = StableRng(request["seed"])
-    remaining = spec["starting_tokens"]
-    turn = 0
-    issues = []
-    winner = None
-    while remaining > 0 and turn <= spec["starting_tokens"]:
-        player = turn % 2
-        taken = choose(styles[player], remaining, spec["max_take"], rng)
-        if not 1 <= taken <= min(spec["max_take"], remaining):
-            issues.append("illegal_action")
-            break
-        remaining -= taken
-        if remaining == 0:
-            winner = player if spec["last_take_wins"] else 1 - player
-            turn += 1
-            break
-        turn += 1
-    completed = winner is not None and not issues
-    if not completed and not issues:
-        issues.append("termination_bound_exceeded")
-    return {
-        "index": request["index"],
-        "seed": request["seed"],
-        "player_styles": styles,
-        "completed": completed,
-        "turns": turn,
-        "outcome": None if winner is None else {
-            "winner": winner,
-            "winner_style": styles[winner],
-            "tokens_remaining": remaining,
-        },
-        "issues": issues,
-    }
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--request", required=True)
-    parser.add_argument("--output", required=True)
-    args = parser.parse_args()
-    request = json.loads(Path(args.request).read_text(encoding="utf-8"))
-    rules = json.loads((Path(__file__).resolve().parent / "rules.json").read_text(encoding="utf-8"))
-    games = request.get("games")
-    if (
-        request.get("protocol") != PROTOCOL
-        or type(request.get("requested_games")) is not int
-        or not 1 <= request["requested_games"] <= 5000
-        or not isinstance(games, list)
-        or len(games) != request["requested_games"]
-    ):
-        raise SystemExit("invalid simulation request")
-    seen = set()
-    for game in games:
-        if (
-            not isinstance(game, dict)
-            or set(game) != {"index", "seed", "player_styles"}
-            or type(game["index"]) is not int
-            or game["index"] in seen
-            or type(game["seed"]) is not int
-            or not isinstance(game["player_styles"], list)
-            or len(game["player_styles"]) != 2
-            or any(style not in STYLES for style in game["player_styles"])
-        ):
-            raise SystemExit("invalid game request")
-        seen.add(game["index"])
-    results = [play(rules["game_spec"], game) for game in games]
-    output = {
-        "protocol": PROTOCOL,
-        "simulator": SIMULATOR,
-        "source_path": "game/simulate.py",
-        "requested_games": request["requested_games"],
-        "base_seed": request.get("base_seed"),
-        "games": results,
-        "completed_games": sum(1 for game in results if game["completed"]),
-        "issues": sorted({issue for game in results for issue in game["issues"]}),
-    }
-    Path(args.output).write_text(
-        json.dumps(output, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-
-
-if __name__ == "__main__":
-    main()
-'''
-
-
-def _game_rules(action: Mapping[str, Any]) -> Dict[str, Any]:
-    spec = action["game_spec"]
-    return {
-        "schema_version": 1,
-        "protocol": "workshop-finite-game-v1",
-        "kind": "deterministic-two-player-take-away",
-        "title": spec["title"],
-        "theme": spec["theme"],
-        "players": 2,
-        "game_spec": dict(spec),
-        "setup": "Put all %d tokens in one shared supply." % spec["starting_tokens"],
-        "legal_actions": "On your turn, take between 1 and %d tokens, never more than remain." % spec["max_take"],
-        "turn_order": "Players alternate; player 0 takes the first turn.",
-        "end_condition": "The game ends immediately when the shared supply reaches zero.",
-        "winner": (
-            "The player who takes the final token wins."
-            if spec["last_take_wins"]
-            else "The player forced to take the final token loses."
-        ),
-        "ties": "There are no ties.",
-        "termination_bound_turns": spec["starting_tokens"],
-        "simulator": {"path": "game/simulate.py", "id": "workshop-finite-take-away", "version": "1.0.0"},
-    }
-
-
-def _game_rules_markdown(rules: Mapping[str, Any]) -> str:
-    return "\n".join(
-        (
-            "# %s" % rules["title"],
-            "",
-            str(rules["theme"]),
-            "",
-            "## Players",
-            "",
-            "Two players.",
-            "",
-            "## Setup",
-            "",
-            str(rules["setup"]),
-            "",
-            "## Your turn",
-            "",
-            str(rules["legal_actions"]),
-            "",
-            "## End and winner",
-            "",
-            str(rules["end_condition"]),
-            str(rules["winner"]),
-            str(rules["ties"]),
-            "",
-            "## Evidence boundary",
-            "",
-            "The included simulator can prove termination and rule execution for seeded AI games. It cannot prove human enjoyment, physical component quality, or customer experience.",
-            "",
-        )
-    )
-
-
 class CodexMaker:
     """Mechanical/3D-design policy plus deterministic geometry environment."""
 
@@ -2002,6 +1832,8 @@ class CodexMaker:
         cad_builder: Optional[Any] = None,
         goal: int = DEFAULT_MAKE_GOAL,
         max_steps: int = DEFAULT_MAKE_STEPS,
+        max_total_steps: Optional[int] = None,
+        max_elapsed_seconds: int = DEFAULT_MAKE_MAX_ELAPSED_SECONDS,
     ) -> None:
         self.creator = creator or CodexStructuredRunner(
             model=os.environ.get("WORKSHOP_MAKE_MODEL", DEFAULT_MAKE_MODEL),
@@ -2012,8 +1844,54 @@ class CodexMaker:
             reasoning_effort="low",
         )
         self.cad_builder = cad_builder or LockedCadSkillBuilder()
+        if type(goal) is not int or not 1 <= goal <= 100:
+            raise ContractError("Make goal must be an integer from 1 to 100")
+        if type(max_steps) is not int or not 1 <= max_steps <= 20:
+            raise ContractError("Make max_steps must be an integer from 1 to 20")
+        selected_total_steps = (
+            max(max_steps, DEFAULT_MAKE_TOTAL_STEPS)
+            if max_total_steps is None
+            else max_total_steps
+        )
+        if (
+            type(selected_total_steps) is not int
+            or not max_steps <= selected_total_steps <= 1_000
+        ):
+            raise ContractError(
+                "Make max_total_steps must cover one batch and be at most 1,000"
+            )
+        if (
+            type(max_elapsed_seconds) is not int
+            or not 1 <= max_elapsed_seconds <= 60 * 60
+        ):
+            raise ContractError(
+                "Make max_elapsed_seconds must be an integer up to 60 minutes"
+            )
         self.goal = goal
         self.max_steps = max_steps
+        self.max_total_steps = selected_total_steps
+        self.max_elapsed_seconds = max_elapsed_seconds
+        self.creator_version = "%s+codex.%s" % (
+            _MAKE_PROMPT_VERSION,
+            self.creator.cli_version,
+        )
+        self.creator_config_sha256 = _config_sha256(
+            {
+                "prompt_version": _MAKE_PROMPT_VERSION,
+                "model": self.creator.model,
+                "reasoning_effort": self.creator.reasoning_effort,
+                "schema": _MAKE_SCHEMA,
+                "generator": {
+                    "id": MAKE_GENERATOR_ID,
+                    "version": MAKE_GENERATOR_VERSION,
+                },
+                "reward_loop_policy": {
+                    "max_steps_per_batch": self.max_steps,
+                    "max_total_steps": self.max_total_steps,
+                    "max_elapsed_seconds": self.max_elapsed_seconds,
+                },
+            }
+        )
         self.evaluator_version = "%s+codex.%s" % (
             _REWARD_PROMPT_VERSION,
             self.evaluator.cli_version,
@@ -2056,9 +1934,37 @@ class CodexMaker:
         if not callable(getattr(self.cad_builder, "build", None)):
             raise ContractError("CodexMaker requires a CAD builder with build()")
         ensure_available = getattr(self.cad_builder, "ensure_available", None)
+        cad_environment: Mapping[str, Any] = {
+            "builder": "%s.%s"
+            % (
+                type(self.cad_builder).__module__,
+                type(self.cad_builder).__qualname__,
+            ),
+            "generator_id": MAKE_GENERATOR_ID,
+            "generator_version": MAKE_GENERATOR_VERSION,
+        }
         if callable(ensure_available):
-            ensure_available()
+            availability = ensure_available()
+            if not isinstance(availability, Mapping):
+                raise ContractError(
+                    "Make CAD environment must return exact availability bindings"
+                )
+            cad_environment = {
+                **cad_environment,
+                "availability": dict(availability),
+            }
         moving_lane_contract: Optional[Mapping[str, Any]] = None
+        game_lane_contract: Optional[Mapping[str, Any]] = None
+        if context.blueprint.lane == "invented-games":
+            candidate_contract = context.invented.concept.get("lane_contract")
+            try:
+                game_lane_contract = validate_game_lane_contract(candidate_contract)
+            except ContractError as exc:
+                raise _make_wait(
+                    "The invented-game concept lacks one valid executable Workshop rules contract: %s"
+                    % exc,
+                    "invented-game-protocol",
+                ) from exc
         if context.blueprint.lane == "moving-machines":
             candidate_contract = context.invented.concept.get("lane_contract")
             if not isinstance(candidate_contract, Mapping):
@@ -2080,8 +1986,40 @@ class CodexMaker:
             "invented": context.invented.to_dict(),
             "playtest_feedback": [item.to_dict() for item in context.feedback],
             "round": context.round,
+            "playtest_rounds": context.playtest_rounds,
+            "inventor_id": context.inventor_id,
         }
         initial_state = {"inputs": inputs, "previous_action": None, "previous_reward": None}
+        loop_creator_config_sha256 = _config_sha256(
+            {
+                "creator_config_sha256": self.creator_config_sha256,
+                "cad_environment": cad_environment,
+            }
+        )
+        loop_reward_config_sha256 = _config_sha256(
+            {
+                "reward_config_sha256": self.reward_config_sha256,
+                "cad_environment": cad_environment,
+            }
+        )
+        durable_binding = (
+            RewardLoopBinding(
+                loop_id="make",
+                inputs_sha256=json_sha256(inputs),
+                initial_state_sha256=json_sha256(initial_state),
+                goal=self.goal,
+                max_steps=self.max_steps,
+                max_total_steps=self.max_total_steps,
+                creator_identity="codex-make-policy+locked-step-cad",
+                creator_version=self.creator_version,
+                creator_config_sha256=loop_creator_config_sha256,
+                evaluator_identity="codex-make-reward+locked-step-cad",
+                evaluator_version=self.evaluator_version,
+                evaluator_config_sha256=loop_reward_config_sha256,
+            )
+            if context.reward_journal is not None
+            else None
+        )
         cad_builds: Dict[str, CadSkillBuild] = {}
 
         def observe(state, step):
@@ -2105,8 +2043,11 @@ class CodexMaker:
                 "non-overlapping position on a 220 x 220 mm print plate and a separate bounded "
                 "assembled-presentation position. Keep at least 0.8 mm between print positions. "
                 "Dimensions must be 2.4 to 120 mm. For a cylinder, x and y are the same diameter. "
-                "For invented-games, enable the finite take-away game_spec and list each physical "
-                "token part id exactly once. For moving-machines, enable one bounded z-axis "
+                "For invented-games, do not invent or rewrite rules in Make. The accepted Invent "
+                "lane_contract.game_protocol is the only game. Enable game_spec and bind every "
+                "resource_id to exactly its declared number of unique printable part ids; those "
+                "parts physically express the rules that the Workshop will interpret byte for byte. "
+                "For moving-machines, enable one bounded z-axis "
                 "motion_spec and supply moving_machine_binding. Name the exact centered joint, "
                 "partition every stationary CAD part into supports or obstacles, and map every "
                 "Invent tolerance, load, and failure record exactly once by zero-based contract "
@@ -2136,13 +2077,7 @@ class CodexMaker:
                 ) from exc
             return _validate_action(action)
 
-        def environment(state, action, step):
-            action_sha256 = json_sha256(action)
-            attempt_root = (
-                context.workspace
-                / "cad-attempts"
-                / ("%02d-%s" % (step, action_sha256[:12]))
-            )
+        def build_cad(action, attempt_root):
             cad_build = self.cad_builder.build(
                 action, lane=context.blueprint.lane, root=attempt_root
             )
@@ -2183,6 +2118,35 @@ class CodexMaker:
                         + ["moving-machine binding: %s" % issue for issue in binding_issues],
                     }
                     cad_build = CadSkillBuild(cad_build.root, geometry)
+            if game_lane_contract is not None:
+                binding_issues: List[str] = []
+                try:
+                    validate_physical_binding(
+                        action["game_spec"],
+                        lane_contract=game_lane_contract,
+                        part_ids=tuple(part["part_id"] for part in action["parts"]),
+                    )
+                except (ContractError, KeyError, TypeError, ValueError) as exc:
+                    binding_issues.append(str(exc))
+                if binding_issues:
+                    geometry = {
+                        **dict(geometry),
+                        "passed": False,
+                        "issues": list(geometry["issues"])
+                        + ["invented-game binding: %s" % issue for issue in binding_issues],
+                    }
+                    cad_build = CadSkillBuild(cad_build.root, geometry)
+            return cad_build
+
+        def environment(state, action, step):
+            action_sha256 = json_sha256(action)
+            attempt_root = (
+                context.workspace
+                / "cad-attempts"
+                / ("%02d-%s" % (step, action_sha256[:12]))
+            )
+            cad_build = build_cad(action, attempt_root)
+            geometry = cad_build.observation
             cad_builds[action_sha256] = cad_build
             prompt = (
                 "You are the independent design-review reward function for Autonomous Workshop "
@@ -2238,32 +2202,83 @@ class CodexMaker:
                 list(feedback) + list(geometry["issues"]),
                 "codex-make-reward+locked-step-cad",
                 self.evaluator_version,
-                self.reward_config_sha256,
+                loop_reward_config_sha256,
                 hard_tensions,
             )
             return {
                 "inputs": state["inputs"],
                 "previous_action": action,
                 "previous_reward": reward.to_dict(),
+                "cad_observation": dict(geometry),
             }, reward
 
-        result = run_reward_loop(
-            initial_state,
-            observe=observe,
-            act=act,
-            environment=environment,
-            goal=self.goal,
-            max_steps=self.max_steps,
-        )
+        loop_started = time.monotonic()
+        while True:
+            result = run_reward_loop(
+                initial_state,
+                observe=observe,
+                act=act,
+                environment=environment,
+                goal=self.goal,
+                max_steps=self.max_steps,
+                journal_path=context.reward_journal,
+                binding=durable_binding,
+            )
+            if result.reached_goal or context.reward_journal is None:
+                break
+            if len(result.steps) >= self.max_total_steps:
+                raise _make_wait(
+                    "Make preserved %d complete reward steps but did not reach the fixed target before the explicit %d-step cost cap. A separately authorized new Workshop revision and cost policy is required; never edit the journal or lower its target."
+                    % (len(result.steps), self.max_total_steps),
+                    "mechanical-design-cost-cap",
+                )
+            if time.monotonic() - loop_started >= self.max_elapsed_seconds:
+                raise _make_wait(
+                    "Make preserved its complete reward steps but reached the explicit %d-second execution cap before its fixed target."
+                    % self.max_elapsed_seconds,
+                    "mechanical-design-time-cap",
+                )
+            if len(result.steps) >= 3:
+                tail = result.steps[-3:]
+                if (
+                    len({item.action_sha256 for item in tail}) == 1
+                    and len(
+                        {json_sha256(item.reward.to_dict()) for item in tail}
+                    )
+                    == 1
+                ):
+                    raise _make_wait(
+                        "Make preserved three identical complete actions and independent rewards without reaching its fixed target.",
+                        "mechanical-design-reward-plateau",
+                    )
         if not result.reached_goal:
             raise _make_wait(
                 "The mechanical design exhausted its current attempt budget before reaching the fixed reward goal.",
                 "mechanical-design-target-score",
             )
         final_action = result.final_action
+        sealed_cad_observation = result.final_state.get("cad_observation")
+        if not isinstance(sealed_cad_observation, Mapping):
+            raise ContractError(
+                "goal-reaching Make reward step has no exact CAD observation"
+            )
         final_build = cad_builds.get(json_sha256(final_action))
         if final_build is None:
-            raise ContractError("goal-reaching Make action has no exact CAD build")
+            # A process may stop after the action, CAD observation, and reward
+            # are durably sealed but before the artifact tree is materialized.
+            # Rebuild only those exact action bytes, then require byte-for-byte
+            # equality with the sealed observation; creator and evaluator do
+            # not run again.
+            final_build = build_cad(
+                final_action,
+                context.workspace
+                / "cad-replay"
+                / ("%06d-%s" % (result.steps[-1].step, json_sha256(final_action)[:12])),
+            )
+        if dict(final_build.observation) != dict(sealed_cad_observation):
+            raise ContractError(
+                "replayed goal-reaching CAD differs from its sealed reward observation"
+            )
         geometry = final_build.observation
         if not geometry["passed"]:
             raise ContractError("goal-reaching Make action no longer passes locked CAD checks")
@@ -2547,10 +2562,33 @@ class CodexMaker:
                 },
             )
         if context.blueprint.lane == "invented-games":
-            rules = _game_rules(action)
+            if sealed_lane_contract is None:
+                raise _make_wait(
+                    "The goal-reaching invented-game Make has no sealed executable Invent rules contract.",
+                    "invented-game-protocol",
+                )
+            try:
+                physical_binding = validate_physical_binding(
+                    action["game_spec"],
+                    lane_contract=sealed_lane_contract,
+                    part_ids=tuple(part["part_id"] for part in action["parts"]),
+                )
+                rules = _game_rules_document(
+                    lane_contract=sealed_lane_contract,
+                    physical_binding=physical_binding,
+                    title=action["title"],
+                    theme=action["summary"],
+                )
+            except ContractError as exc:
+                raise _make_wait(str(exc), "invented-game-protocol") from exc
+            contract_path = artifact / GAME_CONTRACT_PATH
+            contract_path.parent.mkdir(parents=True, exist_ok=True)
+            contract_path.write_bytes(
+                _canonical_game_contract_bytes(sealed_lane_contract)
+            )
             _write_json(artifact / "game" / "rules.json", rules)
             (artifact / "game" / "RULES.md").write_text(
-                _game_rules_markdown(rules), encoding="utf-8"
+                _game_rules_markdown_v2(rules), encoding="utf-8"
             )
             simulator_path = artifact / "game" / "simulate.py"
             simulator_path.write_text(_FINITE_GAME_SIMULATOR, encoding="utf-8")
@@ -2575,9 +2613,11 @@ __all__ = [
     "CadSkillBuild",
     "CodexMaker",
     "DEFAULT_MAKE_GOAL",
+    "DEFAULT_MAKE_MAX_ELAPSED_SECONDS",
     "DEFAULT_MAKE_MODEL",
     "DEFAULT_MAKE_REWARD_MODEL",
     "DEFAULT_MAKE_STEPS",
+    "DEFAULT_MAKE_TOTAL_STEPS",
     "MAKE_GENERATOR_ID",
     "MAKE_GENERATOR_VERSION",
     "LockedCadSkillBuilder",

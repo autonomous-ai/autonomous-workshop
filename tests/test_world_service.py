@@ -11,6 +11,7 @@ from inventor_workshop.errors import ContractError
 from inventor_workshop.handoff import ManagerAssignmentHandoff
 from inventor_workshop.jobs import Invented, Need, WaitingFor
 from inventor_workshop.make import Wish
+from inventor_workshop.manager import register_workshop_engine
 from inventor_workshop.world_reference_vault import (
     LOCAL_STORAGE_SECURITY_BOUNDARY,
     WorldReferenceDescriptor,
@@ -217,7 +218,9 @@ class WorldServiceTest(unittest.TestCase):
                 Path("inventors/eve"),
                 "little-worlds",
                 inventor_id="eve",
-                tools=WorkshopTools(invent=invent),
+                trusted_engine=register_workshop_engine(
+                    WorkshopTools(invent=invent)
+                ),
                 runtime_root=Path(temporary).resolve(),
             )
             result = workshop.run(self.wish)
@@ -259,7 +262,9 @@ class WorldServiceTest(unittest.TestCase):
                 Path("inventors/eve"),
                 "little-worlds",
                 inventor_id="eve",
-                tools=WorkshopTools(invent=invent, make=missing_make),
+                trusted_engine=register_workshop_engine(
+                    WorkshopTools(invent=invent, make=missing_make)
+                ),
                 runtime_root=Path(temporary).resolve(),
                 world_inputs=bundle,
             )

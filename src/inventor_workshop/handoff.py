@@ -21,6 +21,7 @@ from .world_service import WorldInventInputs, WorldPlaytestEvidence
 
 
 HANDOFF_KIND = "autonomous-workshop-manager-assignment"
+PUBLICATION_POLICY_KIND = "autonomous-workshop-publication-policy"
 MAX_HANDOFF_BYTES = 1_000_000
 RESULT_BINDING_FIELD = "manager_assignment"
 
@@ -116,6 +117,91 @@ def _copy_mapping(value: Mapping[str, Any], label: str) -> Dict[str, Any]:
 
 
 @dataclass(frozen=True)
+class PublicationPolicy:
+    """One Manager-owned, monotonic authorization for Factory visibility."""
+
+    visibility: str
+    authorization: str
+    schema_version: int = 1
+    kind: str = PUBLICATION_POLICY_KIND
+    policy_sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ContractError("publication policy schema_version must be 1")
+        if self.kind != PUBLICATION_POLICY_KIND:
+            raise ContractError("publication policy kind is invalid")
+        if self.visibility not in ("draft", "public"):
+            raise ContractError("publication policy visibility must be draft or public")
+        if self.authorization not in (
+            "wish",
+            "explicit-resume-publish",
+            "legacy-fail-safe",
+        ):
+            raise ContractError("publication policy authorization is invalid")
+        if self.authorization == "explicit-resume-publish" and self.visibility != "public":
+            raise ContractError("explicit resume publication must authorize public visibility")
+        if self.authorization == "legacy-fail-safe" and self.visibility != "draft":
+            raise ContractError("legacy publication policy must fail safe to draft")
+        object.__setattr__(self, "policy_sha256", _sha256(self._identity_dict()))
+
+    def _identity_dict(self) -> Dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "kind": self.kind,
+            "visibility": self.visibility,
+            "authorization": self.authorization,
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        payload = self._identity_dict()
+        payload["policy_sha256"] = self.policy_sha256
+        return payload
+
+    @classmethod
+    def from_dict(cls, value: Mapping[str, Any]) -> "PublicationPolicy":
+        payload = _copy_mapping(value, "publication policy")
+        if set(payload) != {
+            "schema_version",
+            "kind",
+            "visibility",
+            "authorization",
+            "policy_sha256",
+        }:
+            raise ContractError("publication policy fields are invalid")
+        policy = cls(
+            visibility=payload["visibility"],
+            authorization=payload["authorization"],
+            schema_version=payload["schema_version"],
+            kind=payload["kind"],
+        )
+        if payload["policy_sha256"] != policy.policy_sha256:
+            raise ContractError("publication policy identity is inconsistent")
+        return policy
+
+    @classmethod
+    def for_wish(cls, *, publish: bool) -> "PublicationPolicy":
+        if type(publish) is not bool:
+            raise ContractError("Wish publication choice must be boolean")
+        return cls(
+            visibility="public" if publish else "draft",
+            authorization="wish",
+        )
+
+    @classmethod
+    def legacy_fail_safe(cls) -> "PublicationPolicy":
+        return cls(visibility="draft", authorization="legacy-fail-safe")
+
+    def authorize_public(self) -> "PublicationPolicy":
+        if self.visibility == "public":
+            return self
+        return PublicationPolicy(
+            visibility="public",
+            authorization="explicit-resume-publish",
+        )
+
+
+@dataclass(frozen=True)
 class ManagerAssignmentHandoff:
     """The minimum exact assignment identity an Inventor needs to execute."""
 
@@ -132,12 +218,15 @@ class ManagerAssignmentHandoff:
     world_evidence: Optional[WorldPlaytestEvidence] = None
     schema_version: int = 1
     kind: str = HANDOFF_KIND
+    publication_policy: Optional[PublicationPolicy] = None
     wish_sha256: str = field(init=False)
     handoff_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
-            raise ContractError("Manager assignment handoff schema_version must be 1, 2, or 3")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3, 4):
+            raise ContractError(
+                "Manager assignment handoff schema_version must be 1, 2, 3, or 4"
+            )
         if self.kind != HANDOFF_KIND:
             raise ContractError("Manager assignment handoff kind is invalid")
         if not isinstance(self.wish, Wish):
@@ -167,6 +256,8 @@ class ManagerAssignmentHandoff:
                 )
             if self.world_inputs is not None or self.world_evidence is not None:
                 raise ContractError("legacy Manager handoff cannot carry world inputs")
+            if self.publication_policy is not None:
+                raise ContractError("legacy Manager handoff cannot carry publication policy")
             entrypoint: Tuple[str, ...] = ()
         else:
             require_sha256(
@@ -182,6 +273,10 @@ class ManagerAssignmentHandoff:
                 self.world_inputs is not None or self.world_evidence is not None
             ):
                 raise ContractError("v2 Manager handoff cannot carry world inputs")
+            if self.schema_version in (2, 3) and self.publication_policy is not None:
+                raise ContractError(
+                    "legacy Manager handoff cannot carry publication policy"
+                )
             if self.schema_version == 3:
                 if not isinstance(self.world_inputs, WorldInventInputs):
                     raise ContractError("v3 Manager handoff requires typed world inputs")
@@ -190,6 +285,20 @@ class ManagerAssignmentHandoff:
                     self.world_evidence, WorldPlaytestEvidence
                 ):
                     raise ContractError("v3 Manager handoff world evidence is untyped")
+            if self.schema_version == 4:
+                if not isinstance(self.publication_policy, PublicationPolicy):
+                    raise ContractError("v4 Manager handoff requires publication policy")
+                if self.world_inputs is not None:
+                    if not isinstance(self.world_inputs, WorldInventInputs):
+                        raise ContractError("v4 Manager handoff world inputs are untyped")
+                    self.world_inputs.assert_wish(self.wish)
+                if self.world_evidence is not None:
+                    if self.world_inputs is None:
+                        raise ContractError(
+                            "v4 Manager handoff world evidence requires world inputs"
+                        )
+                    if not isinstance(self.world_evidence, WorldPlaytestEvidence):
+                        raise ContractError("v4 Manager handoff world evidence is untyped")
         object.__setattr__(self, "entrypoint", entrypoint)
         object.__setattr__(self, "wish_sha256", _sha256(self.wish.to_dict()))
         object.__setattr__(self, "handoff_sha256", _sha256(self._identity_dict()))
@@ -205,7 +314,7 @@ class ManagerAssignmentHandoff:
             "decision_sha256": self.decision_sha256,
             "assignment_sha256": self.assignment_sha256,
         }
-        if self.schema_version in (2, 3):
+        if self.schema_version in (2, 3, 4):
             payload.update(
                 {
                     "manifest_sha256": self.manifest_sha256,
@@ -219,6 +328,23 @@ class ManagerAssignmentHandoff:
             payload.update(
                 {
                     "world_inputs": self.world_inputs.to_dict(),
+                    "world_evidence": (
+                        self.world_evidence.to_dict()
+                        if self.world_evidence is not None
+                        else None
+                    ),
+                }
+            )
+        if self.schema_version == 4:
+            assert self.publication_policy is not None
+            payload.update(
+                {
+                    "publication_policy": self.publication_policy.to_dict(),
+                    "world_inputs": (
+                        self.world_inputs.to_dict()
+                        if self.world_inputs is not None
+                        else None
+                    ),
                     "world_evidence": (
                         self.world_evidence.to_dict()
                         if self.world_evidence is not None
@@ -245,7 +371,7 @@ class ManagerAssignmentHandoff:
             "assignment_sha256": self.assignment_sha256,
             "handoff_sha256": self.handoff_sha256,
         }
-        if self.schema_version in (2, 3):
+        if self.schema_version in (2, 3, 4):
             payload.update(
                 {
                     "manifest_sha256": self.manifest_sha256,
@@ -266,13 +392,30 @@ class ManagerAssignmentHandoff:
                     ),
                 }
             )
+        if self.schema_version == 4:
+            assert self.publication_policy is not None
+            payload.update(
+                {
+                    "publication_policy_sha256": self.publication_policy.policy_sha256,
+                    "world_inputs_sha256": (
+                        self.world_inputs.binding_sha256
+                        if self.world_inputs is not None
+                        else None
+                    ),
+                    "world_evidence_sha256": (
+                        self.world_evidence.evidence_sha256
+                        if self.world_evidence is not None
+                        else None
+                    ),
+                }
+            )
         return payload
 
     @property
     def has_exact_inventor_identity(self) -> bool:
         """Whether this handoff can prove which contribution code may execute."""
 
-        return self.schema_version in (2, 3)
+        return self.schema_version in (2, 3, 4)
 
     def require_exact_inventor_identity(self) -> None:
         """Reject legacy handoffs at contribution-code execution boundaries."""
@@ -354,8 +497,13 @@ class ManagerAssignmentHandoff:
             raise ContractError("Manager assignment contains stale inventor identity")
         world_inputs = getattr(assignment, "world_inputs", None)
         world_evidence = getattr(assignment, "world_evidence", None)
+        publication_policy = getattr(assignment, "publication_policy", None)
         if world_evidence is not None and world_inputs is None:
             raise ContractError("Manager assignment world evidence has no Invent inputs")
+        if publication_policy is not None and not isinstance(
+            publication_policy, PublicationPolicy
+        ):
+            raise ContractError("Manager assignment publication policy is untyped")
         handoff = cls(
             wish=wish,
             inventor_id=inventor_id,
@@ -368,7 +516,14 @@ class ManagerAssignmentHandoff:
             entrypoint=entrypoint,
             world_inputs=world_inputs,
             world_evidence=world_evidence,
-            schema_version=3 if world_inputs is not None else 2,
+            publication_policy=publication_policy,
+            schema_version=(
+                4
+                if publication_policy is not None
+                else 3
+                if world_inputs is not None
+                else 2
+            ),
         )
         handoff.assert_inventor_current(card)
         return handoff
@@ -390,7 +545,7 @@ class ManagerAssignmentHandoff:
             "assignment_sha256",
             "handoff_sha256",
         }
-        if version in (2, 3):
+        if version in (2, 3, 4):
             expected_keys |= {
                 "manifest_sha256",
                 "taste_sha256",
@@ -399,6 +554,12 @@ class ManagerAssignmentHandoff:
             }
         if version == 3:
             expected_keys |= {"world_inputs", "world_evidence"}
+        if version == 4:
+            expected_keys |= {
+                "publication_policy",
+                "world_inputs",
+                "world_evidence",
+            }
         if set(payload) != expected_keys:
             raise ContractError("Manager assignment handoff fields are invalid")
         wish_value = payload["wish"]
@@ -417,15 +578,21 @@ class ManagerAssignmentHandoff:
             constraints=wish_value["constraints"],
             context=wish_value["context"],
         )
+        raw_world_inputs = payload.get("world_inputs")
         world_inputs = (
-            WorldInventInputs.from_dict(payload["world_inputs"])
-            if version == 3
+            WorldInventInputs.from_dict(raw_world_inputs)
+            if version in (3, 4) and raw_world_inputs is not None
             else None
         )
         raw_world_evidence = payload.get("world_evidence")
         world_evidence = (
             WorldPlaytestEvidence.from_dict(raw_world_evidence)
-            if version == 3 and raw_world_evidence is not None
+            if version in (3, 4) and raw_world_evidence is not None
+            else None
+        )
+        publication_policy = (
+            PublicationPolicy.from_dict(payload["publication_policy"])
+            if version == 4
             else None
         )
         handoff = cls(
@@ -440,6 +607,7 @@ class ManagerAssignmentHandoff:
             entrypoint=payload.get("entrypoint", ()),
             world_inputs=world_inputs,
             world_evidence=world_evidence,
+            publication_policy=publication_policy,
             schema_version=payload["schema_version"],
             kind=payload["kind"],
         )
@@ -517,8 +685,10 @@ def validate_manager_assignment_result(
 __all__ = [
     "HANDOFF_KIND",
     "MAX_HANDOFF_BYTES",
+    "PUBLICATION_POLICY_KIND",
     "RESULT_BINDING_FIELD",
     "ManagerAssignmentHandoff",
+    "PublicationPolicy",
     "bind_manager_assignment_result",
     "read_manager_assignment",
     "validate_manager_assignment_result",

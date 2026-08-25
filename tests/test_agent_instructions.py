@@ -6,6 +6,7 @@ from pathlib import Path
 
 from inventor_workshop.agent_instructions import RewardedInstructions
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.codex_runtime import CodexInvocationError
 from inventor_workshop.errors import AmbiguousEffectError
 from inventor_workshop.jobs import InstructionsContext, Made, Playtested, WaitingFor
 from inventor_workshop.make import Wish
@@ -140,6 +141,19 @@ class RewardedInstructionsTest(unittest.TestCase):
             self.root / name,
         )
 
+    def durable_context(self, name="instructions"):
+        return InstructionsContext(
+            self.wish,
+            self.taste,
+            self.blueprint,
+            self.made,
+            self.playtested,
+            self.root / name,
+            reward_journal=(
+                self.root / "reward-journals" / name
+            ).absolute(),
+        )
+
     @staticmethod
     def site_writer(context, sealed_root, sealed_manifest):
         del sealed_root
@@ -212,6 +226,97 @@ class RewardedInstructionsTest(unittest.TestCase):
         self.assertIn("## What's in the box", manual)
         self.assertIn("## Care and safety", manual)
         self.assertTrue(instructions.site_receipt.is_verified_draft)
+
+    def test_durable_instructions_automatically_runs_later_batch_to_goal(self):
+        worker, creator, evaluator = self.worker(
+            [action("First sealed manual."), action("Improved sealed manual.")],
+            [
+                verdict(82, "Make the opening more specific."),
+                verdict(94, "Ready."),
+            ],
+            max_steps=1,
+        )
+        context = self.durable_context("automatic-batch")
+
+        instructions = worker(context)
+
+        self.assertTrue(instructions.site_receipt.is_verified_draft)
+        self.assertEqual(len(creator.prompts), 2)
+        self.assertEqual(len(evaluator.prompts), 2)
+        self.assertIn("First sealed manual.", creator.prompts[1][0])
+        self.assertIn("Make the opening more specific.", creator.prompts[1][0])
+        records = sorted(
+            (context.reward_journal / "steps").glob("[0-9]*.json")
+        )
+        self.assertEqual(len(records), 2)
+        binding = json.loads(
+            (context.reward_journal / "binding.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            binding["binding"]["creator"]["identity"],
+            "codex-instructions-policy",
+        )
+        self.assertEqual(
+            binding["binding"]["evaluator"]["identity"],
+            "codex-instructions-reward",
+        )
+        self.assertIn("made_manifest", binding["initial_state"]["inputs"])
+        self.assertIn("playtest", binding["initial_state"]["inputs"])
+
+    def test_durable_instructions_worker_interruption_resumes_sealed_step(self):
+        class CreatorThatStopsAfterOne(FakeCodex):
+            def invoke(self, *, prompt, schema, workspace):
+                if self.prompts:
+                    self.prompts.append((prompt, schema, workspace))
+                    raise CodexInvocationError("fixture interruption")
+                return super().invoke(
+                    prompt=prompt, schema=schema, workspace=workspace
+                )
+
+        first_creator = CreatorThatStopsAfterOne(
+            "gpt-5.6-terra", [action("Sealed before interruption.")]
+        )
+        first_evaluator = FakeCodex(
+            "gpt-5.6-luna",
+            [verdict(82, "Continue improving this exact manual.")],
+        )
+        first_evaluator.reasoning_effort = "low"
+        first_worker = RewardedInstructions(
+            self.site_writer,
+            creator=first_creator,
+            evaluator=first_evaluator,
+            max_steps=1,
+        )
+        context = self.durable_context("interrupted")
+
+        with self.assertRaises(WaitingFor) as interrupted:
+            first_worker(context)
+        self.assertEqual(
+            interrupted.exception.needs[0].capability,
+            "codex-instructions",
+        )
+        self.assertFalse(context.workspace.exists())
+
+        resumed_worker, resumed_creator, resumed_evaluator = self.worker(
+            [action("Recovered exact manual.")],
+            [verdict(94, "Ready.")],
+            max_steps=1,
+        )
+        instructions = resumed_worker(context)
+
+        self.assertTrue(instructions.site_receipt.is_verified_draft)
+        self.assertEqual(len(first_evaluator.prompts), 1)
+        self.assertEqual(len(resumed_creator.prompts), 1)
+        self.assertEqual(len(resumed_evaluator.prompts), 1)
+        self.assertIn("Sealed before interruption.", resumed_creator.prompts[0][0])
+        self.assertIn(
+            "Continue improving this exact manual.",
+            resumed_creator.prompts[0][0],
+        )
+        self.assertEqual(
+            len(list((context.reward_journal / "steps").glob("[0-9]*.json"))),
+            2,
+        )
 
     def test_goal_exhaustion_never_lowers_goal_or_seals_a_partial_manual(self):
         worker, _, _ = self.worker(

@@ -17,6 +17,51 @@ from .execution_env import codex_subprocess_environment
 
 ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
 
+# Structured Workshop calls are classifiers/generators, not coding-agent
+# sessions.  Every required byte is serialized into the prompt, so none of
+# these calls needs a shell, a browser, plugins, skills, or access to the
+# product workspace.  Keep this list explicit and use ``--strict-config`` so
+# an incompatible Codex CLI fails closed instead of silently restoring a tool.
+_DISABLED_STRUCTURED_CALL_FEATURES = (
+    "apps",
+    "browser_use",
+    "browser_use_external",
+    "browser_use_full_cdp_access",
+    "code_mode_host",
+    "computer_use",
+    "goals",
+    "hooks",
+    "image_generation",
+    "in_app_browser",
+    "multi_agent",
+    "plugins",
+    "remote_plugin",
+    "shell_snapshot",
+    "shell_tool",
+    "skill_search",
+    "tool_suggest",
+    "unified_exec",
+    "view_image",
+    "workspace_dependencies",
+)
+
+
+def structured_call_hardening_args() -> tuple[str, ...]:
+    """Return the fail-closed, tool-free Codex CLI boundary."""
+
+    arguments = ["--ignore-user-config", "--strict-config"]
+    for feature in _DISABLED_STRUCTURED_CALL_FEATURES:
+        arguments.extend(("--disable", feature))
+    arguments.extend(
+        (
+            "--config",
+            "shell_environment_policy.inherit=none",
+            "--config",
+            "shell_environment_policy.ignore_default_excludes=false",
+        )
+    )
+    return tuple(arguments)
+
 
 class CodexInvocationError(RuntimeError):
     pass
@@ -81,14 +126,18 @@ class CodexStructuredRunner:
                 schema_path.write_text(
                     json.dumps(schema, sort_keys=True), encoding="utf-8"
                 )
-                cwd = Path(workspace).resolve() if workspace is not None else control_root
-                cwd.mkdir(parents=True, exist_ok=True)
+                # The API keeps ``workspace`` for worker compatibility, but a
+                # structured call never receives filesystem access to it.  Its
+                # complete observation is already present in ``prompt``.
+                del workspace
+                cwd = control_root
                 command = [
                     self.binary,
                     "exec",
                     "--ephemeral",
                     "--ignore-rules",
                     "--skip-git-repo-check",
+                    *structured_call_hardening_args(),
                     "--sandbox",
                     "read-only",
                     "--color",
@@ -130,4 +179,5 @@ __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
     "CodexInvocationError",
     "CodexStructuredRunner",
+    "structured_call_hardening_args",
 ]

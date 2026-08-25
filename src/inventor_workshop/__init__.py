@@ -154,6 +154,7 @@ from .manager import (
     dispatch_assignment,
     discover_inventor_catalog,
     load_finalists,
+    register_workshop_engine,
     retrieve_shortlist,
     select_inventor,
     shortlist_all,
@@ -172,6 +173,7 @@ from .workshop import (
     CUSTOMIZATION_LEVELS,
     InstructionsJob,
     InventJob,
+    TrustedWorkshopEngine,
     Workshop,
     WorkshopTools,
 )
@@ -226,7 +228,14 @@ from .ports import (
 from .send import DEFAULT_SHOP_API, HttpResponse, Sender, ShopDoor
 from .shop import ShopInstructionsWriter
 from .runtime import Runtime
-from .reward_loop import RewardLoopResult, RewardSignal, RewardStep, run_reward_loop
+from .reward_loop import (
+    RewardLoopBinding,
+    RewardLoopJournal,
+    RewardLoopResult,
+    RewardSignal,
+    RewardStep,
+    run_reward_loop,
+)
 from .launch import DEFAULT_PORTAL_API, Launchpad, Portal, inspect_publish_packet
 from .schemas import discover_schemas, resolve_schemas_root
 from .scaffold import create_inventor
@@ -378,6 +387,8 @@ __all__ = [
     "ReleaseProofSource",
     "ReviewsPolicy",
     "RewardLoopResult",
+    "RewardLoopBinding",
+    "RewardLoopJournal",
     "RewardSignal",
     "RewardStep",
     "Receipt",
@@ -396,6 +407,7 @@ __all__ = [
     "TasteFit",
     "TasteJudge",
     "TasteJudgeRequired",
+    "TrustedWorkshopEngine",
     "WorkshopManager",
     "TOY_TASKS",
     "ToyBlueprint",
@@ -436,6 +448,7 @@ __all__ = [
     "publish_sealed_draft",
     "resolve_schemas_root",
     "retrieve_shortlist",
+    "register_workshop_engine",
     "run_game",
     "run_league",
     "run_reward_loop",

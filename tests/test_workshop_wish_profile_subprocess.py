@@ -8,15 +8,12 @@ from io import StringIO
 from pathlib import Path
 from unittest import mock
 
-from inventor_workshop.cli import (
-    _inventor_process_environment,
-    main,
-)
+from inventor_workshop.cli import main
 from inventor_workshop.manager import TasteFit, create_shortlist
 
 
 class WorkshopWishProfileSubprocessTest(unittest.TestCase):
-    def test_wish_runs_the_selected_profile_and_waits_on_shared_research(self):
+    def test_wish_uses_manager_engine_without_profile_and_waits_on_shared_research(self):
         repository = Path(__file__).resolve().parents[1]
         canonical_profile = repository / "inventors" / "alice"
 
@@ -53,67 +50,33 @@ class WorkshopWishProfileSubprocessTest(unittest.TestCase):
             for name in ("TASTE.md", "inventor.json", "profile.py"):
                 shutil.copy2(canonical_profile / name, copied_profile / name)
 
-            hook_root = temporary_root / "python-hooks"
-            hook_root.mkdir()
             marker = temporary_root / "shared-research-called.json"
-            (hook_root / "sitecustomize.py").write_text(
-                """\
-import json
-import os
-from pathlib import Path
-
-from inventor_workshop.agent_invent import (
-    InventResearchUnavailable,
-    PublicHTTPResearchProvider,
-)
-
-
-def _offline_research(self, context):
-    marker = Path(os.environ["WORKSHOP_TEST_RESEARCH_MARKER"])
-    marker.write_text(
-        json.dumps(
-            {
-                "lane": context.blueprint.lane,
-                "taste_sha256": context.taste.sha256,
-                "wish": context.wish.to_dict(),
-            },
-            sort_keys=True,
-        ),
-        encoding="utf-8",
-    )
-    raise InventResearchUnavailable("deterministic offline research boundary")
-
-
-PublicHTTPResearchProvider.__call__ = _offline_research
-""",
+            profile_marker = temporary_root / "profile-executed"
+            (copied_profile / "profile.py").write_text(
+                "from pathlib import Path\n"
+                "Path(%r).write_text('profile must not execute')\n"
+                % str(profile_marker),
                 encoding="utf-8",
             )
-            fake_codex = hook_root / "fake-codex"
-            fake_codex.write_text(
-                """#!/usr/bin/env python3
-import sys
 
-if sys.argv[1:] == ["--version"]:
-    print("codex 1.0.0")
-    raise SystemExit(0)
-raise SystemExit(97)
-""",
-                encoding="utf-8",
-            )
-            fake_codex.chmod(0o700)
+            def offline_research(provider, context):
+                del provider
+                marker.write_text(
+                    json.dumps(
+                        {
+                            "lane": context.blueprint.lane,
+                            "taste_sha256": context.taste.sha256,
+                            "wish": context.wish.to_dict(),
+                        },
+                        sort_keys=True,
+                    ),
+                    encoding="utf-8",
+                )
+                from inventor_workshop.agent_invent import InventResearchUnavailable
 
-            def child_environment(inventor_id):
-                environment = dict(_inventor_process_environment(inventor_id))
-                environment.pop("FACTORY_USERNAME", None)
-                environment.pop("FACTORY_PASSWORD", None)
-                environment["WORKSHOP_CODEX_BIN"] = str(fake_codex)
-                environment["WORKSHOP_TEST_RESEARCH_MARKER"] = str(marker)
-                python_paths = [str(hook_root), str(repository / "src")]
-                inherited = environment.get("PYTHONPATH")
-                if inherited:
-                    python_paths.append(inherited)
-                environment["PYTHONPATH"] = os.pathsep.join(python_paths)
-                return environment
+                raise InventResearchUnavailable(
+                    "deterministic offline research boundary"
+                )
 
             output = StringIO()
             objective = "a moonlit chess set shaped by Linh's mountain memories"
@@ -121,8 +84,10 @@ raise SystemExit(97)
                 "inventor_workshop.cli.CodexSemanticManager",
                 return_value=FakeSemanticManager(),
             ), mock.patch(
-                "inventor_workshop.cli._inventor_process_environment",
-                side_effect=child_environment,
+                "inventor_workshop.agent_invent.PublicHTTPResearchProvider.__call__",
+                new=offline_research,
+            ), mock.patch.dict(
+                os.environ, {"WORKSHOP_AGENT_WORKERS": "codex"}, clear=False
             ), redirect_stdout(output):
                 exit_code = main(
                     (
@@ -157,6 +122,7 @@ raise SystemExit(97)
                 result["manager_assignment"]["decision_sha256"],
                 receipt["match"]["decision_sha256"],
             )
+            self.assertFalse(profile_marker.exists())
 
             observed = json.loads(marker.read_text(encoding="utf-8"))
             self.assertEqual(observed["wish"], receipt["wish"])

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -29,6 +28,7 @@ from ._package_data import (
 )
 from .artifacts import MAX_PACK_BYTES
 from .clockwork import Clockwork
+from .codex_runtime import ALLOWED_WORKSHOP_MODELS
 from .contribution import check_target, manifests_for_target
 from .errors import AmbiguousEffectError, EffectError, WorkshopError
 from .factory_agent import (
@@ -40,6 +40,7 @@ from .factory_agent import (
 from .handoff import (
     MAX_HANDOFF_BYTES,
     ManagerAssignmentHandoff,
+    PublicationPolicy,
     validate_manager_assignment_result,
 )
 from .instructions import sealed_instructions_manifest
@@ -59,7 +60,12 @@ from .manifest import (
 )
 from .models import Receipt, utc_now
 from .pack import pack_artifact, plan_pack, seal_artifact
-from .manager import WorkshopManager, discover_inventor_catalog
+from .pending_wish import PendingWish, PendingWishStore
+from .manager import (
+    WorkshopManager,
+    discover_inventor_catalog,
+    register_workshop_engine,
+)
 from .semantic_manager import CodexSemanticManager
 from .scaffold import (
     create_inventor,
@@ -192,7 +198,10 @@ def _catalog_roots(
     """Resolve catalog state lazily, materializing only an installed command run."""
 
     if requested is not None:
-        return (Path(requested).resolve(),)
+        explicit = Path(requested)
+        if explicit.is_symlink():
+            raise WorkshopError("Workshop catalog root must not be a symlink")
+        return (explicit.resolve(),)
     source = _source_workshop_root()
     if source is not None:
         return (source,)
@@ -885,14 +894,15 @@ def _resume_factory_instructions(
         del context
         raise WorkshopError("Instructions resume attempted an earlier Workshop stage")
 
+    resume_tools = WorkshopTools(
+        invent=unavailable,
+        make=unavailable,
+        playtest=unavailable,
+        instructions=instructions,
+    )
     workshop_kwargs = {
         "inventor_id": inventor_id,
-        "tools": WorkshopTools(
-            invent=unavailable,
-            make=unavailable,
-            playtest=unavailable,
-            instructions=instructions,
-        ),
+        "trusted_engine": register_workshop_engine(resume_tools),
         "runtime_root": runtime_root,
     }
     if lane == "little-worlds":
@@ -936,6 +946,17 @@ def _run_inventor(
 ) -> Mapping[str, Any]:
     if action not in ("run", "resume"):
         raise WorkshopError("Inventor process action must be run or resume")
+    if runner is _managed_child_run:
+        # The authoritative CLI executes every common stage in the trusted
+        # Manager process. A manifested Inventor contributes inert Taste data;
+        # its profile.py is never imported or spawned. Custom contribution
+        # levels fail closed until their narrow stage-only RPC is available.
+        from .manager_execution import execute_manager_workshop
+
+        if not callable(state_validator):
+            raise WorkshopError("Workshop state validator must be callable")
+        bound = execute_manager_workshop(assignment, action=action)
+        return state_validator(assignment, bound)
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     command = list(assignment.entrypoint)
     if command[0] in ("python", "python3"):
@@ -1197,7 +1218,7 @@ def _read_saved_handoff(path: Path, inventor_id: str) -> ManagerAssignmentHandof
 
 
 def _save_manager_assignment(assignment: Any) -> Path:
-    """Durably save the exact one-shot handoff before launching contribution code."""
+    """Atomically and durably seal one exact handoff before child execution."""
 
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     card_root = Path(assignment.decision.selected.card.root)
@@ -1223,43 +1244,275 @@ def _save_manager_assignment(assignment: Any) -> Path:
         )
         + "\n"
     ).encode("utf-8")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    if not 1 <= len(source) <= MAX_HANDOFF_BYTES:
+        raise WorkshopError("Manager assignment handoff is empty or too large")
     try:
-        descriptor = os.open(str(path), flags, 0o600)
-    except FileExistsError:
-        existing = _read_saved_handoff(path, handoff.inventor_id)
-        if existing.to_dict() != handoff.to_dict():
-            raise WorkshopError(
-                "this Wish id is already bound to a different Manager assignment"
-            )
-        return path
+        expected_directory = assignment_root.lstat()
     except OSError as exc:
-        raise WorkshopError("cannot save the exact Manager assignment") from exc
-    try:
-        written = 0
-        while written < len(source):
-            written += os.write(descriptor, source[written:])
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        raise WorkshopError("cannot inspect Manager assignment storage") from exc
+    if not stat.S_ISDIR(expected_directory.st_mode) or stat.S_ISLNK(
+        expected_directory.st_mode
+    ):
+        raise WorkshopError("Manager assignment storage must be a regular directory")
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
     try:
         directory_descriptor = os.open(str(assignment_root), directory_flags)
-        try:
-            os.fsync(directory_descriptor)
-        finally:
-            os.close(directory_descriptor)
     except OSError as exc:
-        raise WorkshopError("cannot durably seal the Manager assignment") from exc
+        raise WorkshopError("cannot safely open Manager assignment storage") from exc
+    opened_directory = os.fstat(directory_descriptor)
+    if (opened_directory.st_dev, opened_directory.st_ino) != (
+        expected_directory.st_dev,
+        expected_directory.st_ino,
+    ):
+        os.close(directory_descriptor)
+        raise WorkshopError("Manager assignment storage changed while opening")
+    temporary_name = ".%s-%s.tmp" % (path.name, secrets.token_hex(8))
+    temporary_created = False
+    try:
+        flags = (
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        try:
+            descriptor = os.open(
+                temporary_name,
+                flags,
+                0o600,
+                dir_fd=directory_descriptor,
+            )
+        except OSError as exc:
+            raise WorkshopError("cannot stage the exact Manager assignment") from exc
+        temporary_created = True
+        try:
+            os.fchmod(descriptor, 0o600)
+            written = 0
+            while written < len(source):
+                count = os.write(descriptor, source[written:])
+                if count <= 0:  # pragma: no cover - defensive short-write guard
+                    raise WorkshopError("cannot completely stage Manager assignment")
+                written += count
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        try:
+            os.link(
+                temporary_name,
+                path.name,
+                src_dir_fd=directory_descriptor,
+                dst_dir_fd=directory_descriptor,
+                follow_symlinks=False,
+            )
+        except FileExistsError:
+            os.unlink(temporary_name, dir_fd=directory_descriptor)
+            temporary_created = False
+            os.fsync(directory_descriptor)
+            existing = _read_saved_handoff(path, handoff.inventor_id)
+            if existing.to_dict() != handoff.to_dict():
+                raise WorkshopError(
+                    "this Wish id is already bound to a different Manager assignment"
+                )
+        except OSError as exc:
+            raise WorkshopError("cannot atomically seal Manager assignment") from exc
+        else:
+            # The final name appears only after all bytes are fsynced.  A crash
+            # can therefore leave either no assignment (retry Match) or the
+            # complete assignment, never a partial authoritative record.
+            os.fsync(directory_descriptor)
+            os.unlink(temporary_name, dir_fd=directory_descriptor)
+            temporary_created = False
+            os.fsync(directory_descriptor)
+        current_directory = assignment_root.lstat()
+        if (
+            not stat.S_ISDIR(current_directory.st_mode)
+            or (current_directory.st_dev, current_directory.st_ino)
+            != (opened_directory.st_dev, opened_directory.st_ino)
+        ):
+            raise WorkshopError("Manager assignment storage changed while sealing")
+    finally:
+        if temporary_created:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_descriptor)
+                os.fsync(directory_descriptor)
+            except OSError:
+                pass
+        os.close(directory_descriptor)
     return path
+
+
+def _assignment_with_publication_policy(
+    assignment: Any, policy: PublicationPolicy
+) -> Any:
+    """Attach Manager policy without changing the routed assignment identity."""
+
+    if not isinstance(policy, PublicationPolicy):
+        raise WorkshopError("Manager publication policy is not typed")
+    values = {
+        "wish": assignment.wish,
+        "inventor_id": assignment.inventor_id,
+        "playtest_rounds": assignment.playtest_rounds,
+        "assignment_sha256": assignment.assignment_sha256,
+        "entrypoint": tuple(assignment.entrypoint),
+        "assert_current": assignment.assert_current,
+        "decision": assignment.decision,
+        "publication_policy": policy,
+    }
+    world_inputs = getattr(assignment, "world_inputs", None)
+    world_evidence = getattr(assignment, "world_evidence", None)
+    if world_inputs is not None:
+        values["world_inputs"] = world_inputs
+        values["world_evidence"] = world_evidence
+    return SimpleNamespace(**values)
+
+
+def _replace_manager_assignment_publication_policy(
+    assignment: Any,
+    saved: ManagerAssignmentHandoff,
+    policy: PublicationPolicy,
+) -> ManagerAssignmentHandoff:
+    """Atomically seal a monotonic draft-to-public Manager authorization."""
+
+    if not isinstance(saved, ManagerAssignmentHandoff):
+        raise WorkshopError("saved Manager assignment is missing")
+    current = saved.publication_policy or PublicationPolicy.legacy_fail_safe()
+    if current.visibility == "public":
+        if policy.visibility != "public":
+            raise WorkshopError("a public Wish cannot be downgraded to draft")
+        return saved
+    if (
+        policy.visibility != "public"
+        or policy.authorization != "explicit-resume-publish"
+    ):
+        raise WorkshopError(
+            "a saved draft can become public only through explicit --publish"
+        )
+    replacement = ManagerAssignmentHandoff(
+        wish=saved.wish,
+        inventor_id=saved.inventor_id,
+        playtest_rounds=saved.playtest_rounds,
+        decision_sha256=saved.decision_sha256,
+        assignment_sha256=saved.assignment_sha256,
+        manifest_sha256=saved.manifest_sha256,
+        taste_sha256=saved.taste_sha256,
+        implementation_sha256=saved.implementation_sha256,
+        entrypoint=saved.entrypoint,
+        world_inputs=saved.world_inputs,
+        world_evidence=saved.world_evidence,
+        publication_policy=policy,
+        schema_version=4,
+    )
+    replacement.assert_inventor_current(assignment.decision.selected.card)
+    card_root = Path(assignment.decision.selected.card.root)
+    path = _assignment_file(card_root, saved.wish.product_id)
+    if _read_saved_handoff(path, saved.inventor_id).to_dict() != saved.to_dict():
+        raise WorkshopError(
+            "saved Manager assignment changed before publication authorization"
+        )
+    source = (
+        json.dumps(
+            replacement.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    if len(source) > MAX_HANDOFF_BYTES:
+        raise WorkshopError("updated Manager assignment is too large")
+    assignment_root = path.parent
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_descriptor = os.open(str(assignment_root), directory_flags)
+    except OSError as exc:
+        raise WorkshopError("cannot safely open Manager assignment storage") from exc
+    temporary_name = ".%s.publication-%s" % (path.name, secrets.token_hex(8))
+    temporary_created = False
+    try:
+        expected = os.stat(
+            path.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        if not stat.S_ISREG(expected.st_mode):
+            raise WorkshopError("saved Manager assignment must be a regular file")
+        descriptor = os.open(
+            temporary_name,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=directory_descriptor,
+        )
+        temporary_created = True
+        try:
+            written = 0
+            while written < len(source):
+                written += os.write(descriptor, source[written:])
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        before_replace = os.stat(
+            path.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        if (
+            before_replace.st_dev,
+            before_replace.st_ino,
+            before_replace.st_size,
+            before_replace.st_mtime_ns,
+        ) != (
+            expected.st_dev,
+            expected.st_ino,
+            expected.st_size,
+            expected.st_mtime_ns,
+        ):
+            raise WorkshopError(
+                "saved Manager assignment changed during publication authorization"
+            )
+        os.replace(
+            temporary_name,
+            path.name,
+            src_dir_fd=directory_descriptor,
+            dst_dir_fd=directory_descriptor,
+        )
+        temporary_created = False
+        os.fsync(directory_descriptor)
+    except OSError as exc:
+        raise WorkshopError(
+            "cannot durably update Manager publication authorization"
+        ) from exc
+    finally:
+        if temporary_created:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_descriptor)
+            except OSError:
+                pass
+        os.close(directory_descriptor)
+    verified = _read_saved_handoff(path, saved.inventor_id)
+    if verified.to_dict() != replacement.to_dict():
+        raise WorkshopError("Manager publication authorization did not persist exactly")
+    return verified
 
 
 def _find_durable_wish(
     root: Path, product_id: str, *, allow_missing: bool = False
 ) -> Optional[Mapping[str, Any]]:
-    """Locate one product in Inventor-owned durable stores without mutation."""
+    """Locate one Manager Wish or Inventor product without mutation."""
 
     catalog = discover_inventor_catalog(root)
+    pending_store = PendingWishStore(catalog.collection)
+    pending = pending_store.load(product_id, allow_missing=True)
     matches = []
     for card in catalog.cards:
         assignment_path = _assignment_file(card.root, product_id)
@@ -1318,6 +1571,19 @@ def _find_durable_wish(
                 "handoff": handoff,
             }
         )
+    if not matches and pending is not None:
+        pending.assert_catalog_current(catalog)
+        return {
+            "card": None,
+            "database": None,
+            "runtime": None,
+            "product": None,
+            "events": (),
+            "latest": None,
+            "handoff": None,
+            "pending": pending,
+            "pending_store": pending_store,
+        }
     if not matches:
         if allow_missing:
             return None
@@ -1330,7 +1596,42 @@ def _find_durable_wish(
             "Wish %r exists in more than one Inventor store; resolve the duplicate before continuing"
             % product_id
         )
-    return matches[0]
+    located = matches[0]
+    if pending is not None:
+        # Once Match has sealed an assignment, that assignment is authoritative
+        # even if the catalog later changes.  The stale pending record must still
+        # agree byte-for-byte on every input it bound before Match.
+        handoff = located.get("handoff")
+        if not isinstance(handoff, ManagerAssignmentHandoff):
+            raise WorkshopError(
+                "a Manager pending Wish has Inventor state but no exact assignment"
+            )
+        if pending.catalog_collection != catalog.collection:
+            raise WorkshopError("Manager pending Wish belongs to a different catalog root")
+        if pending.wish.to_dict() != handoff.wish.to_dict():
+            raise WorkshopError("Manager pending Wish differs from the saved assignment")
+        if pending.playtest_rounds != handoff.playtest_rounds:
+            raise WorkshopError("Manager pending Wish rounds differ from the saved assignment")
+        saved_policy = handoff.publication_policy
+        policy_matches = (
+            isinstance(saved_policy, PublicationPolicy)
+            and pending.publication_policy.to_dict() == saved_policy.to_dict()
+        )
+        legitimate_assignment_upgrade = (
+            isinstance(saved_policy, PublicationPolicy)
+            and pending.publication_policy.visibility == "draft"
+            and saved_policy.visibility == "public"
+            and saved_policy.authorization == "explicit-resume-publish"
+        )
+        if not (policy_matches or legitimate_assignment_upgrade):
+            raise WorkshopError(
+                "Manager pending Wish publication policy differs from the saved assignment"
+            )
+    return {
+        **located,
+        "pending": pending,
+        "pending_store": pending_store,
+    }
 
 
 def _root_for_durable_wish(
@@ -1838,7 +2139,46 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
     located = _find_durable_wish(root, product_id)
     if located is None:  # ``allow_missing`` is false; keeps type narrowing explicit.
         raise WorkshopError("saved Wish disappeared while reading status")
+    pending = located.get("pending")
+    if (
+        isinstance(pending, PendingWish)
+        and located.get("handoff") is None
+        and located.get("product") is None
+    ):
+        return {
+            "schema_version": 1,
+            "catalog_root": str(Path(root).resolve()),
+            "product_id": product_id,
+            "status": "matching",
+            "job": "match",
+            "round": None,
+            "inventor_id": None,
+            "inventor_name": None,
+            "artifact_sha256": None,
+            "updated_at": None,
+            "wish": pending.wish.to_dict(),
+            "needs": [],
+            "event_chain": "not-started",
+            "publication_policy": pending.publication_policy.to_dict(),
+            "catalog": {
+                "collection": str(pending.catalog_collection),
+                "catalog_sha256": pending.catalog_sha256,
+                "total": pending.catalog_total,
+            },
+            "resume": {
+                "status": "available",
+                "kind": "match",
+                "command": _resume_command(product_id, root),
+            },
+        }
     card = located["card"]
+    saved_handoff = located.get("handoff")
+    publication_policy = (
+        saved_handoff.publication_policy
+        if isinstance(saved_handoff, ManagerAssignmentHandoff)
+        and saved_handoff.publication_policy is not None
+        else PublicationPolicy.legacy_fail_safe()
+    )
     product = located["product"]
     latest = located["latest"]
     if product is None:
@@ -1859,13 +2199,20 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
             "wish": handoff.wish.to_dict(),
             "needs": [],
             "event_chain": "not-started",
+            "publication_policy": publication_policy.to_dict(),
         }
-        available, kind, _ = _resume_availability(located)
+        available, kind, reason = _resume_availability(located)
         if available:
             receipt["resume"] = {
                 "status": "available",
                 "kind": kind,
                 "command": _resume_command(product_id, root),
+            }
+        else:
+            receipt["resume"] = {
+                "status": "unavailable",
+                "kind": kind,
+                "reason": reason,
             }
         return receipt
     payload = latest.get("payload")
@@ -1910,6 +2257,7 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
         "wish": dict(wish),
         "needs": needs,
         "event_chain": "valid",
+        "publication_policy": publication_policy.to_dict(),
     }
     active = located["runtime"].active_lease(product_id)
     if active is not None:
@@ -1974,12 +2322,18 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
             ),
             "page_url": page.details.get("page_url"),
         }
-    available, kind, _ = _resume_availability(located, receipt.get("page"))
+    available, kind, reason = _resume_availability(located, receipt.get("page"))
     if available:
         receipt["resume"] = {
             "status": "available",
             "kind": kind,
             "command": _resume_command(product_id, root),
+        }
+    else:
+        receipt["resume"] = {
+            "status": "unavailable",
+            "kind": kind,
+            "reason": reason,
         }
     return receipt
 
@@ -2209,15 +2563,129 @@ def _waiting_receipt(wish: Wish, waiting: WaitingFor) -> Mapping[str, Any]:
     }
 
 
+def _pending_match_waiting_receipt(
+    pending: PendingWish, waiting: WaitingFor, root: Path
+) -> Mapping[str, Any]:
+    """One retryable Match wait, bound to the already-printed Wish id."""
+
+    return {
+        **_waiting_receipt(pending.wish, waiting),
+        "job": "match",
+        "durable_status": "matching",
+        "publication_policy": pending.publication_policy.to_dict(),
+        "next_command": _resume_command(pending.wish.product_id, root),
+    }
+
+
+def _match_pending_wish(root: Path, pending: PendingWish) -> Any:
+    """Run semantic Match against exactly the catalog saved before the model call."""
+
+    catalog = discover_inventor_catalog(root)
+    pending.assert_catalog_current(catalog)
+    semantic = CodexSemanticManager()
+    manager = WorkshopManager(
+        catalog_provider=lambda: catalog,
+        retriever=semantic.retrieve,
+        judge=semantic.judge,
+        judge_identity=semantic.judge_identity,
+        judge_version=semantic.judge_version,
+        judge_config_sha256=semantic.judge_config_sha256,
+    )
+    assignment = manager.assign(
+        pending.wish, playtest_rounds=pending.playtest_rounds
+    )
+    # Manager assignment construction binds the full Wish and catalog digest;
+    # verify those public properties before adding publication authorization.
+    try:
+        assigned_wish = assignment.wish
+        routing = assignment.decision.context.routing
+        assigned_catalog = routing.catalog
+        assert_current = assignment.assert_current
+    except AttributeError as exc:
+        raise WorkshopError("Match returned a malformed typed assignment") from exc
+    if not isinstance(assigned_wish, Wish) or not callable(assert_current):
+        raise WorkshopError("Match returned a malformed typed assignment")
+    if assigned_wish.to_dict() != pending.wish.to_dict():
+        raise WorkshopError("Match returned an assignment for a different Wish")
+    if (
+        getattr(assigned_catalog, "collection", None) != pending.catalog_collection
+        or getattr(assigned_catalog, "catalog_sha256", None)
+        != pending.catalog_sha256
+    ):
+        raise WorkshopError("Match returned an assignment from a different catalog")
+    assert_current()
+    return _assignment_with_publication_policy(
+        assignment, pending.publication_policy
+    )
+
+
+def _start_matched_assignment(
+    assignment: Any,
+    root: Path,
+    publication_policy: PublicationPolicy,
+    *,
+    progress: Any,
+    allow_same_user_local_vault: bool = False,
+) -> Mapping[str, Any]:
+    """Run a newly sealed assignment while retaining Match's exact Why."""
+
+    assignment = _prepare_assignment_world_inputs(
+        assignment,
+        allow_same_user_local_vault=allow_same_user_local_vault,
+    )
+    print(
+        "Matched with %s." % assignment.decision.selected.card.name,
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Why: %s" % assignment.decision.fit.explanation,
+        file=progress,
+        flush=True,
+    )
+    print(
+        "Inventing, making, and playtesting (up to 60 minutes). "
+        "Use Track in another terminal for durable status.",
+        file=progress,
+        flush=True,
+    )
+    result = _run_inventor(assignment)
+    assignment, result = _continue_world_playtest_as_manager(assignment, result)
+    result = _continue_instructions_as_manager(
+        assignment,
+        result,
+        root,
+        publication_policy=publication_policy,
+    )
+    if publication_policy.visibility == "public":
+        result = {
+            **result,
+            "publication": _publish_inventor_draft(assignment, result),
+        }
+    decision = assignment.decision
+    return {
+        "schema_version": 1,
+        "status": result.get("status", "started"),
+        "wish": assignment.wish.to_dict(),
+        "match": {
+            "inventor_id": assignment.inventor_id,
+            "name": decision.selected.card.name,
+            "score": decision.fit.score,
+            "explanation": decision.fit.explanation,
+            "decision_sha256": decision.decision_sha256,
+        },
+        "assignment_sha256": assignment.assignment_sha256,
+        "publication_policy": publication_policy.to_dict(),
+        "result": result,
+    }
+
+
 def _status_command(product_id: str, root: Path) -> str:
     return _shell_command("workshop", "status", product_id, "--root", Path(root))
 
 
-def _resume_command(product_id: str, root: Path, *, draft: bool = False) -> str:
-    parts = ["workshop", "resume", product_id, "--root", Path(root)]
-    if draft:
-        parts.append("--draft")
-    return _shell_command(*parts)
+def _resume_command(product_id: str, root: Path) -> str:
+    return _shell_command("workshop", "resume", product_id, "--root", Path(root))
 
 
 def _wish_command(objective: str, root: Path, *, draft: bool = False) -> str:
@@ -2281,11 +2749,16 @@ def _print_wish_receipt(
             resume = durable.get("resume")
             if isinstance(resume, Mapping) and resume.get("status") == "available":
                 print("Resume: %s" % resume["command"])
+            elif isinstance(resume, Mapping) and resume.get("status") == "unavailable":
+                print("Resume: unavailable — %s" % resume["reason"])
 
 
 def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
     print("Wish: %s" % receipt["product_id"])
-    print("Inventor: %s" % receipt["inventor_name"])
+    if receipt.get("status") == "matching" and receipt.get("inventor_name") is None:
+        print("Inventor: matching your Wish")
+    else:
+        print("Inventor: %s" % receipt["inventor_name"])
     print(
         "Status: %s at %s%s"
         % (
@@ -2316,6 +2789,8 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
     resume = receipt.get("resume")
     if isinstance(resume, Mapping) and resume.get("status") == "available":
         print("Resume: %s" % resume["command"])
+    elif isinstance(resume, Mapping) and resume.get("status") == "unavailable":
+        print("Resume: unavailable — %s" % resume["reason"])
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -2324,7 +2799,10 @@ def _status(args: argparse.Namespace) -> int:
         products: dict[str, Path] = {}
         for root in roots:
             catalog = discover_inventor_catalog(root)
-            product_ids = []
+            product_ids = [
+                record.wish.product_id
+                for record in PendingWishStore(catalog.collection).list()
+            ]
             for card in catalog.cards:
                 assignment_root = (
                     Path(card.root) / ".workshop" / _ASSIGNMENT_DIRECTORY
@@ -2373,7 +2851,7 @@ def _status(args: argparse.Namespace) -> int:
                     "%-38s %-12s %-14s %s"
                     % (
                         item["product_id"],
-                        item["inventor_id"],
+                        item["inventor_id"] or "matching",
                         "%s/%s" % (item["job"], item["status"]),
                         item.get("updated_at") or "",
                     )
@@ -2413,7 +2891,7 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
     def assert_current() -> None:
         handoff.assert_inventor_current(card)
 
-    assignment = SimpleNamespace(
+    assignment_values = dict(
         wish=handoff.wish,
         inventor_id=handoff.inventor_id,
         playtest_rounds=handoff.playtest_rounds,
@@ -2425,6 +2903,9 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
             selected=SimpleNamespace(card=card, taste=taste),
         ),
     )
+    if handoff.publication_policy is not None:
+        assignment_values["publication_policy"] = handoff.publication_policy
+    assignment = SimpleNamespace(**assignment_values)
     return assignment, located
 
 
@@ -2441,7 +2922,7 @@ def _world_assignment_view(
         world_evidence, WorldPlaytestEvidence
     ):
         raise WorkshopError("configured world evidence is not typed")
-    return SimpleNamespace(
+    values = dict(
         wish=assignment.wish,
         inventor_id=assignment.inventor_id,
         playtest_rounds=assignment.playtest_rounds,
@@ -2452,6 +2933,10 @@ def _world_assignment_view(
         world_inputs=world_inputs,
         world_evidence=world_evidence,
     )
+    publication_policy = getattr(assignment, "publication_policy", None)
+    if publication_policy is not None:
+        values["publication_policy"] = publication_policy
+    return SimpleNamespace(**values)
 
 
 def _prepare_assignment_world_inputs(
@@ -2702,8 +3187,11 @@ def _factory_authentication_wait(
     root: Path,
     prior: Mapping[str, Any],
     *,
-    publish: bool,
+    publication_policy: PublicationPolicy,
 ) -> Mapping[str, Any]:
+    if not isinstance(publication_policy, PublicationPolicy):
+        raise WorkshopError("Manager publication policy is not typed")
+    visibility = publication_policy.visibility
     return {
         **dict(prior),
         "product_id": assignment.wish.product_id,
@@ -2717,12 +3205,10 @@ def _factory_authentication_wait(
                 "reason": "This Manager process has no Factory credential for the matched Inventor.",
                 "instructions": (
                     "Set FACTORY_PASSWORD in the trusted Manager environment, then run: "
-                    + _resume_command(
-                        assignment.wish.product_id,
-                        root,
-                        draft=not publish,
-                    )
-                    + ". The value is never passed to Inventor code or printed."
+                    + _resume_command(assignment.wish.product_id, root)
+                    + ". This Wish will inherit its saved %s policy. The value is "
+                    "never passed to Inventor code or printed."
+                    % visibility
                 ),
             }
         ],
@@ -2737,21 +3223,169 @@ def _continue_instructions_as_manager(
     result: Mapping[str, Any],
     root: Path,
     *,
-    publish: bool,
+    publication_policy: PublicationPolicy,
 ) -> Mapping[str, Any]:
     if not _is_site_wait(result):
         return dict(result)
     if _factory_credential_environment(assignment.inventor_id) is None:
         return _factory_authentication_wait(
-            assignment, root, result, publish=publish
+            assignment,
+            root,
+            result,
+            publication_policy=publication_policy,
         )
     return _resume_factory_instructions(assignment, result)
 
 
+def _resolve_resume_publication_policy(
+    assignment: Any,
+    located: Mapping[str, Any],
+    requested_publish: Optional[bool],
+) -> tuple[Any, Mapping[str, Any], PublicationPolicy, Optional[Mapping[str, str]]]:
+    """Inherit saved visibility, or durably authorize one explicit upgrade."""
+
+    if requested_publish is not None and type(requested_publish) is not bool:
+        raise WorkshopError("resume publication choice is malformed")
+    saved = located.get("handoff")
+    if not isinstance(saved, ManagerAssignmentHandoff):
+        raise WorkshopError("this Wish has no exact saved Manager assignment")
+    current = saved.publication_policy or PublicationPolicy.legacy_fail_safe()
+    if requested_publish is False:
+        if current.visibility == "public":
+            raise WorkshopError(
+                "this Wish already authorizes public visibility; --draft cannot "
+                "downgrade it or make an already-public page private"
+            )
+        return assignment, located, current, None
+    if requested_publish is not True or current.visibility == "public":
+        return assignment, located, current, None
+    upgraded = current.authorize_public()
+    replacement = _replace_manager_assignment_publication_policy(
+        assignment, saved, upgraded
+    )
+    enhanced = _assignment_with_publication_policy(assignment, upgraded)
+    rebound = {**dict(located), "handoff": replacement}
+    return (
+        enhanced,
+        rebound,
+        upgraded,
+        {
+            "from": "draft",
+            "to": "public",
+            "authorization": "explicit-resume-publish",
+            "effect": (
+                "the exact verified Factory page may now become visible to anyone"
+            ),
+        },
+    )
+
+
+def _resume_pending_match(
+    args: argparse.Namespace,
+    root: Path,
+    initial: PendingWish,
+) -> int:
+    """Retry Match for the exact pre-Match Wish id, then start its assignment."""
+
+    progress = sys.stderr if args.json else sys.stdout
+    store = PendingWishStore(initial.catalog_collection)
+    assignment = None
+    receipt = None
+    policy_change = None
+    assignment_won_race = False
+    with store.lock(initial.wish.product_id):
+        located = _find_durable_wish(root, initial.wish.product_id)
+        if isinstance(located.get("handoff"), ManagerAssignmentHandoff):
+            # Another retry completed Match while this process waited for the
+            # lock.  The exact sealed assignment is authoritative.
+            assignment_won_race = True
+        else:
+            current = located.get("pending")
+            if not isinstance(current, PendingWish):
+                raise WorkshopError("saved pending Wish disappeared before Match resume")
+            if args.publish is False and current.publication_policy.visibility == "public":
+                raise WorkshopError(
+                    "this Wish already authorizes public visibility; --draft cannot "
+                    "downgrade it or make an already-public page private"
+                )
+            if args.publish is True and current.publication_policy.visibility == "draft":
+                upgraded = current.publication_policy.authorize_public()
+                replacement = current.with_publication_policy(upgraded)
+                store.replace(current, replacement)
+                current = replacement
+                policy_change = {
+                    "from": "draft",
+                    "to": "public",
+                    "authorization": "explicit-resume-publish",
+                    "effect": (
+                        "the exact verified Factory page may now become visible to anyone"
+                    ),
+                }
+                print(
+                    "Publication: this saved draft is now authorized to become public; "
+                    "the exact verified Factory page may become visible to anyone.",
+                    file=progress,
+                    flush=True,
+                )
+            print(
+                "Matching your saved Wish with an Inventor...",
+                file=progress,
+                flush=True,
+            )
+            try:
+                assignment = _match_pending_wish(root, current)
+            except WaitingFor as waiting:
+                receipt = _pending_match_waiting_receipt(current, waiting, root)
+            else:
+                observed = store.load(current.wish.product_id)
+                if not isinstance(observed, PendingWish) or (
+                    observed.record_sha256 != current.record_sha256
+                ):
+                    raise WorkshopError("Manager pending Wish changed during Match resume")
+                _save_manager_assignment(assignment)
+    if assignment_won_race:
+        return _resume(args)
+    if assignment is not None:
+        receipt = _start_matched_assignment(
+            assignment,
+            root,
+            assignment.publication_policy,
+            progress=progress,
+            allow_same_user_local_vault=args.allow_same_user_local_vault,
+        )
+    if receipt is None:  # pragma: no cover - Match has exactly two typed outcomes
+        raise WorkshopError("Match resume produced no durable outcome")
+    if policy_change is not None:
+        receipt = {**receipt, "publication_policy_change": policy_change}
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_wish_receipt(
+            receipt,
+            root=root,
+            show_match=assignment is not None,
+        )
+    return 0
+
+
 def _resume(args: argparse.Namespace) -> int:
     roots = _catalog_roots(args.root, include_retained=args.root is None)
-    selected_root, _ = _root_for_durable_wish(roots, args.product_id)
+    selected_root, initial = _root_for_durable_wish(roots, args.product_id)
+    pending = initial.get("pending")
+    if isinstance(pending, PendingWish) and initial.get("handoff") is None:
+        return _resume_pending_match(args, selected_root, pending)
     assignment, located = _resume_assignment(selected_root, args.product_id)
+    assignment, located, publication_policy, policy_change = (
+        _resolve_resume_publication_policy(assignment, located, args.publish)
+    )
+    if policy_change is not None:
+        progress = sys.stderr if args.json else sys.stdout
+        print(
+            "Publication: this saved draft is now authorized to become public; "
+            "the exact verified Factory page may become visible to anyone.",
+            file=progress,
+            flush=True,
+        )
     assignment = _prepare_assignment_world_inputs(
         assignment,
         allow_same_user_local_vault=args.allow_same_user_local_vault,
@@ -2835,7 +3469,7 @@ def _resume(args: argparse.Namespace) -> int:
             assignment,
             waiting,
             selected_root,
-            publish=args.publish,
+            publication_policy=publication_policy,
         )
     elif kind == "assigned":
         result = _run_inventor(assignment, continuing=True)
@@ -2843,7 +3477,7 @@ def _resume(args: argparse.Namespace) -> int:
             assignment,
             result,
             selected_root,
-            publish=args.publish,
+            publication_policy=publication_policy,
         )
     elif kind == "wish":
         result = _resume_inventor(assignment)
@@ -2851,7 +3485,7 @@ def _resume(args: argparse.Namespace) -> int:
             assignment,
             result,
             selected_root,
-            publish=args.publish,
+            publication_policy=publication_policy,
         )
     else:
         result = _resume_inventor(assignment)
@@ -2859,7 +3493,7 @@ def _resume(args: argparse.Namespace) -> int:
             assignment,
             result,
             selected_root,
-            publish=args.publish,
+            publication_policy=publication_policy,
         )
     assignment, result = _continue_world_playtest_as_manager(
         assignment, result
@@ -2868,9 +3502,11 @@ def _resume(args: argparse.Namespace) -> int:
         assignment,
         result,
         selected_root,
-        publish=args.publish,
+        publication_policy=publication_policy,
     )
-    if args.publish and isinstance(result.get("page_url"), str):
+    if publication_policy.visibility == "public" and isinstance(
+        result.get("page_url"), str
+    ):
         result = {
             **result,
             "publication": _publish_inventor_draft(assignment, result),
@@ -2884,8 +3520,11 @@ def _resume(args: argparse.Namespace) -> int:
             "name": assignment.decision.selected.card.name,
             "explanation": "Resuming the exact saved Manager assignment.",
         },
+        "publication_policy": publication_policy.to_dict(),
         "result": result,
     }
+    if policy_change is not None:
+        receipt["publication_policy_change"] = dict(policy_change)
     if args.json:
         print(json.dumps(receipt, indent=2, sort_keys=True))
     else:
@@ -2954,6 +3593,7 @@ def _doctor(args: argparse.Namespace) -> int:
                     ),
                 }
             )
+
         elif completed.returncode != 0:
             checks.append(
                 {
@@ -2972,7 +3612,53 @@ def _doctor(args: argparse.Namespace) -> int:
                 }
             )
 
-    cad_ready = importlib.util.find_spec("build123d") is not None
+    model_variables = (
+        "WORKSHOP_MANAGER_MODEL",
+        "WORKSHOP_INVENT_MODEL",
+        "WORKSHOP_REWARD_MODEL",
+        "WORKSHOP_MAKE_MODEL",
+        "WORKSHOP_MAKE_REWARD_MODEL",
+        "WORKSHOP_PLAYTEST_MODEL",
+        "WORKSHOP_INSTRUCTIONS_MODEL",
+        "WORKSHOP_INSTRUCTIONS_REWARD_MODEL",
+    )
+    invalid_model_overrides = tuple(
+        name
+        for name in model_variables
+        if os.environ.get(name) is not None
+        and os.environ[name] not in ALLOWED_WORKSHOP_MODELS
+    )
+    checks.append(
+        {
+            "name": "model-policy",
+            "status": (
+                "needs-attention" if invalid_model_overrides else "ready"
+            ),
+            "detail": (
+                "One or more Workshop model overrides are not permitted."
+                if invalid_model_overrides
+                else "Every configured Workshop model is Terra or Luna."
+            ),
+            **(
+                {}
+                if not invalid_model_overrides
+                else {
+                    "next": (
+                        "Set %s to gpt-5.6-terra or gpt-5.6-luna."
+                        % ", ".join(invalid_model_overrides)
+                    )
+                }
+            ),
+        }
+    )
+
+    try:
+        from .agent_make import LockedCadSkillBuilder
+
+        LockedCadSkillBuilder().ensure_available()
+        cad_ready = True
+    except (WaitingFor, WorkshopError, OSError, ValueError):
+        cad_ready = False
     checks.append(
         {
             "name": "cad-runtime",
@@ -2985,7 +3671,12 @@ def _doctor(args: argparse.Namespace) -> int:
             **(
                 {}
                 if cad_ready
-                else {"next": "Install the Workshop with its locked runtime dependencies."}
+                else {
+                    "next": (
+                        "Install the Workshop with its locked runtime dependencies, "
+                        "or point WORKSHOP_CAD_PYTHON at that exact Python runtime."
+                    )
+                }
             ),
         }
     )
@@ -3055,6 +3746,20 @@ def _doctor(args: argparse.Namespace) -> int:
                 else {
                     "next": "Set FACTORY_PASSWORD only in the trusted Manager environment; never commit it."
                 }
+            ),
+        }
+    )
+    checks.append(
+        {
+            "name": "physical-delivery",
+            "status": "needs-attention",
+            "detail": (
+                "No Workshop production, hands-on QA, packing, and carrier "
+                "provider is configured."
+            ),
+            "next": (
+                "Connect a Manager-owned Deliver provider before treating a public "
+                "Factory listing as fulfillable."
             ),
         }
     )
@@ -3199,84 +3904,73 @@ def _wish(args: argparse.Namespace) -> int:
         context={"source": "workshop-cli"},
     )
     progress = sys.stderr if args.json else sys.stdout
+    publication_policy = PublicationPolicy.for_wish(publish=args.publish)
+    catalog = discover_inventor_catalog(root)
+    pending = PendingWish.create(
+        wish,
+        publication_policy,
+        catalog,
+        playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS,
+    )
+    pending_store = PendingWishStore(catalog.collection)
+    # This fsynced record is the point at which the id becomes customer-visible.
+    # No semantic Manager object exists, and therefore no model can be called,
+    # until the exact Wish, policy, and catalog identity are durable.
+    pending_store.save(pending)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
-        "Page: will be public after exact verification (--draft keeps it private)."
+        "Page: after exact verification Factory will make it public and may list "
+        "it for sale; physical Deliver is separate (--draft keeps it private)."
         if args.publish
         else "Page: will remain a private authenticated draft.",
         file=progress,
         flush=True,
     )
-    print("Matching your Wish with an Inventor...", file=progress, flush=True)
-    semantic = CodexSemanticManager()
-    manager = WorkshopManager(
-        root=root,
-        retriever=semantic.retrieve,
-        judge=semantic.judge,
-        judge_identity=semantic.judge_identity,
-        judge_version=semantic.judge_version,
-        judge_config_sha256=semantic.judge_config_sha256,
+    print(
+        "Track: %s" % _status_command(wish.product_id, root),
+        file=progress,
+        flush=True,
     )
-    try:
-        assignment = manager.assign(
-            wish, playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS
-        )
-    except WaitingFor as waiting:
-        receipt = {
-            **_waiting_receipt(wish, waiting),
-            "next_command": _wish_command(
-                wish.objective, root, draft=not args.publish
-            ),
-        }
-        showed_match = False
-    else:
-        _save_manager_assignment(assignment)
-        assignment = _prepare_assignment_world_inputs(
+    print("Matching your Wish with an Inventor...", file=progress, flush=True)
+    assignment = None
+    receipt = None
+    showed_match = False
+    with pending_store.lock(wish.product_id):
+        current = pending_store.load(wish.product_id)
+        if not isinstance(current, PendingWish) or (
+            current.record_sha256 != pending.record_sha256
+        ):
+            raise WorkshopError("Manager pending Wish changed before Match")
+        # An id collision or a non-cooperating writer cannot cause assignment
+        # fan-out: recheck the whole catalog while holding the per-Wish lock.
+        located = _find_durable_wish(root, wish.product_id)
+        if located.get("handoff") is not None:
+            raise WorkshopError("this Wish id already has a Manager assignment")
+        try:
+            assignment = _match_pending_wish(root, current)
+        except WaitingFor as waiting:
+            receipt = _pending_match_waiting_receipt(current, waiting, root)
+        else:
+            # Revalidate the immutable pre-Match bytes after the model returns,
+            # then fsync the one selected Inventor handoff before launching it.
+            observed = pending_store.load(wish.product_id)
+            if not isinstance(observed, PendingWish) or (
+                observed.record_sha256 != current.record_sha256
+            ):
+                raise WorkshopError("Manager pending Wish changed during Match")
+            _save_manager_assignment(assignment)
+    if assignment is not None:
+        # Keep Invent/Make outside the Match lock so read-only status and a later
+        # exact resume are never blocked by a long-running child.
+        receipt = _start_matched_assignment(
             assignment,
-            allow_same_user_local_vault=False,
+            root,
+            publication_policy,
+            progress=progress,
         )
-        print(
-            "Matched with %s." % assignment.decision.selected.card.name,
-            file=progress,
-            flush=True,
-        )
-        print(
-            "Track: %s" % _status_command(wish.product_id, root),
-            file=progress,
-            flush=True,
-        )
-        print(
-            "Inventing, making, and playtesting (up to 60 minutes). "
-            "Use Track in another terminal for durable status.",
-            file=progress,
-            flush=True,
-        )
-        result = _run_inventor(assignment)
-        assignment, result = _continue_world_playtest_as_manager(
-            assignment, result
-        )
-        result = _resume_factory_instructions(assignment, result)
-        if args.publish:
-            result = {
-                **result,
-                "publication": _publish_inventor_draft(assignment, result),
-            }
-        decision = assignment.decision
-        receipt = {
-            "schema_version": 1,
-            "status": result.get("status", "started"),
-            "wish": wish.to_dict(),
-            "match": {
-                "inventor_id": assignment.inventor_id,
-                "name": decision.selected.card.name,
-                "score": decision.fit.score,
-                "explanation": decision.fit.explanation,
-                "decision_sha256": decision.decision_sha256,
-            },
-            "assignment_sha256": assignment.assignment_sha256,
-            "result": result,
-        }
         showed_match = True
+    if receipt is None:  # pragma: no cover - Match has exactly two typed outcomes
+        raise WorkshopError("Match produced no durable outcome")
     if args.json:
         print(json.dumps(receipt, indent=2, sort_keys=True))
     else:
@@ -3572,8 +4266,9 @@ def parser() -> argparse.ArgumentParser:
         dest="publish",
         action="store_true",
         help=(
-            "make the exact authenticated Instructions page public (default; "
-            "kept for explicit scripts)"
+            "make the exact authenticated Instructions page public (default); "
+            "Factory may also list it at a platform-estimated price, which is not "
+            "proof that physical Deliver is configured"
         ),
     )
     publication.add_argument(
@@ -3588,9 +4283,9 @@ def parser() -> argparse.ArgumentParser:
         "status",
         help="inspect the durable status of one Wish",
         description=(
-            "Find a Wish in the Inventors' durable event stores and verify its event "
-            "chain. This command does not change Wish records and never calls a model "
-            "or Factory."
+            "Find a Manager-owned Wish while it is matching, or its exact Inventor "
+            "assignment and durable event chain afterward. This command does not "
+            "change Wish records and never calls a model or Factory."
         ),
     )
     status.add_argument(
@@ -3611,11 +4306,14 @@ def parser() -> argparse.ArgumentParser:
         "resume",
         help="continue an exact saved Workshop stage",
         description=(
-            "Continue the exact Manager assignment saved by 'workshop wish'. Invent "
-            "restarts from the Wish boundary; Make reuses the accepted Invented record; "
-            "Playtest reuses the exact Made checkpoint; Instructions reuses its approved "
-            "Make and Playtest checkpoint. Completed stages are never rerun. Legacy runs "
-            "without the required checkpoint fail with a concrete next action."
+            "Retry Match for the same id when a Wish is still matching, or continue the "
+            "exact Manager assignment saved afterward. Invent restarts from the Wish "
+            "boundary; Make reuses the accepted Invented record; Playtest reuses the "
+            "exact Made checkpoint; Instructions reuses its approved Make and Playtest "
+            "checkpoint. Completed stages are never rerun. Legacy runs without the "
+            "required checkpoint fail with a concrete next action. A bare resume "
+            "inherits the Wish's saved draft/public policy; only explicit --publish can "
+            "upgrade a saved draft."
         ),
     )
     resume.add_argument("product_id", help="saved Wish id")
@@ -3639,15 +4337,21 @@ def parser() -> argparse.ArgumentParser:
         "--publish",
         dest="publish",
         action="store_true",
-        help="make the verified page public (default)",
+        help=(
+            "explicitly and durably upgrade a saved draft to public; the exact "
+            "verified Factory page may become visible to anyone"
+        ),
     )
     resume_publication.add_argument(
         "--draft",
         dest="publish",
         action="store_false",
-        help="create/reconcile the authenticated draft without making it public",
+        help=(
+            "confirm draft-only visibility; cannot downgrade a Wish that already "
+            "authorizes public visibility"
+        ),
     )
-    resume.set_defaults(handler=_resume, publish=True)
+    resume.set_defaults(handler=_resume, publish=None)
 
     references = subcommands.add_parser(
         "references",
@@ -3760,9 +4464,10 @@ def parser() -> argparse.ArgumentParser:
         "doctor",
         help="check prerequisites without exposing credential values",
         description=(
-            "Check the Inventor catalog, Codex sign-in, shared CAD/printability "
-            "runtime, and whether Factory authentication is present. No model, "
-            "product import, publication, or delivery action is performed."
+            "Check the Inventor catalog, Codex sign-in and model policy, shared "
+            "CAD/printability runtime, Factory authentication, and physical Deliver "
+            "readiness. No model, product import, publication, or delivery action is "
+            "performed."
         ),
     )
     doctor.add_argument(

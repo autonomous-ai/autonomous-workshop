@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.agent_make import (
@@ -96,12 +97,7 @@ def make_action(title="Orbit Press", *, overlap=False):
         },
         "game_spec": {
             "enabled": False,
-            "title": "not applicable",
-            "starting_tokens": 7,
-            "max_take": 3,
-            "last_take_wins": True,
-            "theme": "not applicable",
-            "token_part_ids": [],
+            "resource_part_ids": [],
         },
         "motion_spec": {
             "enabled": True,
@@ -175,6 +171,56 @@ def verdict(score, feedback="Ready for digital Make."):
     }
 
 
+def executable_game_contract():
+    return {
+        "schema_version": 2,
+        "lane": "invented-games",
+        "game_protocol": {
+            "schema_version": 1,
+            "protocol": "workshop.resource-game.v1",
+            "players": 2,
+            "resources": [
+                {"resource_id": "sparks", "label": "spark tokens", "initial": 7}
+            ],
+            "actions": [
+                {
+                    "action_id": "take-one",
+                    "label": "Take one spark",
+                    "removals": [{"resource_id": "sparks", "count": 1}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-two",
+                    "label": "Take two sparks",
+                    "removals": [{"resource_id": "sparks", "count": 2}],
+                    "points": 0,
+                },
+                {
+                    "action_id": "take-three",
+                    "label": "Take three sparks",
+                    "removals": [{"resource_id": "sparks", "count": 3}],
+                    "points": 0,
+                },
+            ],
+            "ending": {
+                "condition": "all-resources-empty",
+                "winner": "next-actor",
+                "score_tie_break": "last-actor",
+            },
+        },
+        "simulation_gate": {
+            "minimum_complete_games": 1_000,
+            "fixed_seed_strategy": "artifact-sha256-plus-index",
+            "player_policies": [
+                "optimizing",
+                "social",
+                "exploratory",
+                "adversarial",
+            ],
+        },
+    }
+
+
 def game_action():
     value = make_action("Seven Sparks")
     parts = []
@@ -197,12 +243,12 @@ def game_action():
     value["parts"] = parts
     value["game_spec"] = {
         "enabled": True,
-        "title": "Seven Sparks",
-        "starting_tokens": 7,
-        "max_take": 3,
-        "last_take_wins": True,
-        "theme": "Players coax the final spark from a shared constellation.",
-        "token_part_ids": [part["part_id"] for part in parts],
+        "resource_part_ids": [
+            {
+                "resource_id": "sparks",
+                "part_ids": [part["part_id"] for part in parts],
+            }
+        ],
     }
     value["motion_spec"] = {
         "enabled": False,
@@ -405,6 +451,26 @@ class AgentMakeTest(unittest.TestCase):
             inventor_id,
         )
 
+    def durable_context(
+        self,
+        workspace="make",
+        *,
+        journal="make-reward-journal",
+        inventor_id="bob",
+    ):
+        return MakeContext(
+            self.wish,
+            self.taste,
+            self.blueprint,
+            self.invented,
+            1,
+            (self.root / workspace).absolute(),
+            (),
+            2,
+            inventor_id,
+            (self.root / journal).absolute(),
+        )
+
     def game_context(self, workspace="game-make"):
         wish = Wish.create(
             "seven-sparks",
@@ -417,7 +483,11 @@ class AgentMakeTest(unittest.TestCase):
             wish_sha256=json_sha256(wish.to_dict()),
             taste_sha256=self.taste.sha256,
             lane=blueprint.lane,
-            concept={"title": "Seven Sparks", "summary": "A finite shared-supply strategy game."},
+            concept={
+                "title": "Seven Sparks",
+                "summary": "A finite shared-supply strategy game.",
+                "lane_contract": executable_game_contract(),
+            },
             score=90,
             target_score=85,
         )
@@ -590,6 +660,7 @@ class AgentMakeTest(unittest.TestCase):
                 ],
             },
         )
+
         for part_id in ("base", "index-wheel", "marker"):
             stem = "part_" + part_id.replace("-", "_")
             self.assertTrue((made.artifact_root / "cad" / (stem + ".step.py")).is_file())
@@ -629,6 +700,90 @@ class AgentMakeTest(unittest.TestCase):
         self.assertIn("playtest/moving-machine-binding.json", paths)
         self.assertIn("assembled.stl", paths)
         self.assertIn("cad/product.stl", paths)
+
+    def test_durable_make_automatically_runs_later_batch_to_goal(self):
+        worker, creator, evaluator = self.worker(
+            [make_action("First sealed Make"), make_action("Improved sealed Make")],
+            [
+                verdict(72, "Tie the mechanism more closely to the Wish."),
+                verdict(92),
+            ],
+            max_steps=1,
+        )
+        context = self.durable_context("automatic-make")
+
+        made = worker(context)
+
+        self.assertEqual(made.product["title"], "Improved sealed Make")
+        self.assertEqual(len(creator.prompts), 2)
+        self.assertEqual(len(evaluator.prompts), 2)
+        self.assertIn("First sealed Make", creator.prompts[1][0])
+        self.assertIn(
+            "Tie the mechanism more closely to the Wish.", creator.prompts[1][0]
+        )
+        records = sorted(
+            (context.reward_journal / "steps").glob("[0-9]*.json")
+        )
+        self.assertEqual(len(records), 2)
+        self.assertIn(
+            "cad_observation",
+            json.loads(records[-1].read_text(encoding="utf-8"))["next_state"],
+        )
+        binding = json.loads(
+            (context.reward_journal / "binding.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            binding["binding"]["creator"]["identity"],
+            "codex-make-policy+locked-step-cad",
+        )
+        self.assertEqual(
+            binding["binding"]["evaluator"]["identity"],
+            "codex-make-reward+locked-step-cad",
+        )
+        self.assertEqual(
+            binding["initial_state"]["inputs"]["inventor_id"], "bob"
+        )
+
+    def test_durable_make_crash_after_pass_reuses_models_and_replays_exact_cad(self):
+        build_titles = []
+
+        class CountingCadBuilder(FakeCadBuilder):
+            def build(self, action, *, lane, root):
+                build_titles.append(action["title"])
+                return super().build(action, lane=lane, root=root)
+
+        first_worker, first_creator, first_evaluator = self.worker(
+            [make_action("Crash-sealed Make")],
+            [verdict(92)],
+            max_steps=1,
+            cad_builder=CountingCadBuilder(),
+        )
+        first_context = self.durable_context("make-before-crash")
+        with mock.patch.object(
+            CodexMaker,
+            "_materialize",
+            side_effect=RuntimeError("fixture crash after sealed reward"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "fixture crash"):
+                first_worker(first_context)
+
+        resumed_worker, resumed_creator, resumed_evaluator = self.worker(
+            [],
+            [],
+            max_steps=1,
+            cad_builder=CountingCadBuilder(),
+        )
+        resumed_context = self.durable_context(
+            "make-after-crash", journal="make-reward-journal"
+        )
+        made = resumed_worker(resumed_context)
+
+        self.assertEqual(made.product["title"], "Crash-sealed Make")
+        self.assertEqual(len(first_creator.prompts), 1)
+        self.assertEqual(len(first_evaluator.prompts), 1)
+        self.assertEqual(len(resumed_creator.prompts), 0)
+        self.assertEqual(len(resumed_evaluator.prompts), 0)
+        self.assertEqual(build_titles, ["Crash-sealed Make", "Crash-sealed Make"])
 
     def test_shared_make_requires_at_least_two_mechanical_parts(self):
         self.assertEqual(_MAKE_SCHEMA["properties"]["parts"]["minItems"], 2)
@@ -705,7 +860,7 @@ class AgentMakeTest(unittest.TestCase):
         output_path = self.root / "simulation-output.json"
         styles = ["optimizing", "social", "exploratory", "adversarial"]
         request = {
-            "protocol": "workshop-seeded-games-v1",
+            "protocol": "workshop-seeded-games-v2",
             "artifact_sha256": made.artifact_sha256,
             "requested_games": 1000,
             "base_seed": 260825,
@@ -741,7 +896,14 @@ class AgentMakeTest(unittest.TestCase):
             (made.artifact_root / "game" / "rules.json").read_text(encoding="utf-8")
         )
         self.assertEqual(rules["termination_bound_turns"], 7)
-        self.assertIn("There are no ties", (made.artifact_root / "game" / "RULES.md").read_text(encoding="utf-8"))
+        self.assertEqual(
+            rules["game_protocol"],
+            executable_game_contract()["game_protocol"],
+        )
+        self.assertIn(
+            "The player after the one who empties the final resource wins",
+            (made.artifact_root / "game" / "RULES.md").read_text(encoding="utf-8"),
+        )
 
     def test_science_make_seals_invent_research_for_the_default_playtest_provider(self):
         context = self.science_context()

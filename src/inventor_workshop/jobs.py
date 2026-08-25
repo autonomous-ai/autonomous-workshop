@@ -159,6 +159,7 @@ class InventContext:
     blueprint: ToyBlueprint
     workspace: Path
     world_inputs: Optional[WorldInventInputs] = None
+    reward_journal: Optional[Path] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -169,6 +170,11 @@ class InventContext:
         if not root.is_absolute():
             raise ContractError("InventContext workspace must be absolute")
         object.__setattr__(self, "workspace", root)
+        if self.reward_journal is not None:
+            journal = Path(self.reward_journal)
+            if not journal.is_absolute():
+                raise ContractError("Invent reward_journal must be absolute")
+            object.__setattr__(self, "reward_journal", journal)
         if self.blueprint.lane == "little-worlds":
             if self.world_inputs is not None:
                 if not isinstance(self.world_inputs, WorldInventInputs):
@@ -263,6 +269,7 @@ class MakeContext:
     feedback: Sequence[Feedback] = field(default_factory=tuple)
     playtest_rounds: int = 1
     inventor_id: Optional[str] = None
+    reward_journal: Optional[Path] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -294,6 +301,11 @@ class MakeContext:
         root = Path(self.workspace)
         if not root.is_absolute():
             raise ContractError("MakeContext workspace must be absolute")
+        if self.reward_journal is not None:
+            journal = Path(self.reward_journal)
+            if not journal.is_absolute():
+                raise ContractError("Make reward_journal must be absolute")
+            object.__setattr__(self, "reward_journal", journal)
         feedback = tuple(self.feedback)
         if not all(isinstance(item, Feedback) for item in feedback):
             raise ContractError("MakeContext feedback must use Feedback records")
@@ -434,6 +446,7 @@ class InstructionsContext:
     seal_callback: Optional[Callable[[Path, ArtifactManifest], None]] = field(
         default=None, repr=False, compare=False
     )
+    reward_journal: Optional[Path] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -462,6 +475,11 @@ class InstructionsContext:
             raise ContractError("InstructionsContext lease token is malformed")
         if self.seal_callback is not None and not callable(self.seal_callback):
             raise ContractError("InstructionsContext seal_callback must be callable")
+        if self.reward_journal is not None:
+            journal = Path(self.reward_journal)
+            if not journal.is_absolute():
+                raise ContractError("Instructions reward_journal must be absolute")
+            object.__setattr__(self, "reward_journal", journal)
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 

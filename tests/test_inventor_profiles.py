@@ -13,7 +13,10 @@ from unittest import mock
 from inventor_workshop.handoff import ManagerAssignmentHandoff
 from inventor_workshop.jobs import Invented, Made
 from inventor_workshop.make import Wish
-from inventor_workshop.manager import discover_inventor_catalog
+from inventor_workshop.manager import (
+    discover_inventor_catalog,
+    register_workshop_engine,
+)
 from inventor_workshop.manifest import load_manifest
 from inventor_workshop.taste import load_taste
 from inventor_workshop.workshop import Workshop, WorkshopTools
@@ -131,7 +134,9 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             with self.subTest(inventor_id=inventor_id):
                 profile = load_profile(inventor_id)
                 workshop = profile.build_workshop(
-                    tools=WorkshopTools(invent=invent_fixture)
+                    trusted_engine=register_workshop_engine(
+                        WorkshopTools(invent=invent_fixture)
+                    )
                 )
                 self.assertIs(workshop.invent_job, invent_fixture)
                 self.assertEqual(workshop.customization_level, "taste-only")
@@ -339,8 +344,12 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             for profile in (leo, bob):
                 with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
                     workshop = profile.build_workshop(
-                        tools=WorkshopTools(invent=invent_fixture),
-                        make=make_fixture,
+                        trusted_engine=register_workshop_engine(
+                            WorkshopTools(
+                                invent=invent_fixture,
+                                make=make_fixture,
+                            )
+                        ),
                         runtime_root=Path(temporary),
                     )
                     wish = profile.create_wish(
@@ -361,8 +370,9 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
         ):
             workshop = leo.build_workshop(
-                tools=WorkshopTools(invent=invent_fixture),
-                make=make_fixture,
+                trusted_engine=register_workshop_engine(
+                    WorkshopTools(invent=invent_fixture, make=make_fixture)
+                ),
                 runtime_root=Path(temporary),
             )
             wish = leo.create_wish(
@@ -374,29 +384,27 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             list(workshop.blueprint.required_capabilities("playtest")),
         )
 
-    def test_bob_uses_shared_make_by_default_and_explicit_override_wins(self):
+    def test_bob_uses_shared_make_and_rejects_undeclared_override(self):
         bob = load_profile("bob")
 
         def shared_make(context):
             return make_fixture(context)
 
-        def custom_make(context):
-            return make_fixture(context)
-
-        shared = bob.build_workshop(tools=WorkshopTools(make=shared_make))
-        overridden = bob.build_workshop(
-            tools=WorkshopTools(make=shared_make), make=custom_make
+        shared = bob.build_workshop(
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(make=shared_make)
+            )
         )
         defaulted = bob.build_workshop()
 
         self.assertIs(shared.make_job, shared_make)
         self.assertEqual(shared.customization_level, "taste-only")
-        self.assertIs(overridden.make_job, custom_make)
-        self.assertEqual(overridden.customization_level, "custom-make")
+        with self.assertRaises(TypeError):
+            bob.build_workshop(make=shared_make)
         self.assertIsNotNone(defaulted.make_job)
         self.assertEqual(defaulted.customization_level, "taste-only")
 
-    def test_leo_uses_both_shared_workers_by_default_and_overrides_are_opt_in(self):
+    def test_leo_uses_both_shared_workers_and_exposes_no_override_seam(self):
         leo = load_profile("leo")
 
         def shared_make(context):
@@ -406,29 +414,18 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             del context
             raise AssertionError("selection test does not execute Playtest")
 
-        def custom_make(context):
-            return make_fixture(context)
-
-        def custom_playtest(context):
-            del context
-            raise AssertionError("selection test does not execute Playtest")
-
         shared = leo.build_workshop(
-            tools=WorkshopTools(make=shared_make, playtest=shared_playtest)
-        )
-        overridden = leo.build_workshop(
-            tools=WorkshopTools(make=shared_make, playtest=shared_playtest),
-            make=custom_make,
-            playtest=custom_playtest,
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(make=shared_make, playtest=shared_playtest)
+            )
         )
         defaulted = leo.build_workshop()
 
         self.assertIs(shared.make_job, shared_make)
         self.assertIs(shared.playtest_job, shared_playtest)
         self.assertEqual(shared.customization_level, "taste-only")
-        self.assertIs(overridden.make_job, custom_make)
-        self.assertIs(overridden.playtest_job, custom_playtest)
-        self.assertEqual(overridden.customization_level, "custom-playtest")
+        with self.assertRaises(TypeError):
+            leo.build_workshop(make=shared_make, playtest=shared_playtest)
         self.assertIsNotNone(defaulted.make_job)
         self.assertIsNotNone(defaulted.playtest_job)
         self.assertEqual(defaulted.customization_level, "taste-only")
@@ -444,10 +441,14 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             raise AssertionError("selection test does not execute Playtest")
 
         shared_make_only = leo.build_workshop(
-            tools=WorkshopTools(make=shared_make)
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(make=shared_make)
+            )
         )
         shared_playtest_only = leo.build_workshop(
-            tools=WorkshopTools(playtest=shared_playtest)
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(playtest=shared_playtest)
+            )
         )
 
         self.assertIs(shared_make_only.make_job, shared_make)
