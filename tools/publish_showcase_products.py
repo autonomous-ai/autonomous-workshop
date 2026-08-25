@@ -13,8 +13,8 @@ absent from this tool.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
-import importlib.util
 import json
 import os
 import sys
@@ -32,7 +32,129 @@ for import_root in (SRC_ROOT, TOOLS_ROOT):
     if str(import_root) not in sys.path:
         sys.path.insert(0, str(import_root))
 
-import build_showcase_products as showcase
+
+@dataclass(frozen=True)
+class _ShowcaseSpec:
+    inventor_id: str
+    inventor_name: str
+    slug: str
+    title: str
+    lane: str
+    objective: str
+    summary: str
+    description: str
+    extension_level: str
+    playtest_rounds: int
+    factory_brief: str
+    story: Mapping[str, Any]
+    art_direction: Mapping[str, Any]
+    design: Mapping[str, Any]
+    limitations: Sequence[str]
+
+
+class _ShowcaseContract:
+    """Dependency-free view of the literals sealed by the showcase builder."""
+
+    def __init__(
+        self,
+        builder_path: Path,
+        constants: Mapping[str, Any],
+        specs: Sequence[_ShowcaseSpec],
+    ) -> None:
+        self.__file__ = str(builder_path)
+        for name, value in constants.items():
+            setattr(self, name, value)
+        self.SPECS = tuple(specs)
+
+    def _selected_specs(self, values: Sequence[str]) -> tuple[_ShowcaseSpec, ...]:
+        if not values:
+            return self.SPECS
+        wanted = {value.casefold() for value in values}
+        selected = tuple(
+            item
+            for item in self.SPECS
+            if item.inventor_id in wanted or item.slug.casefold() in wanted
+        )
+        missing = wanted - {
+            value
+            for item in selected
+            for value in (item.inventor_id, item.slug.casefold())
+        }
+        if missing:
+            raise SystemExit(
+                "unknown showcase selection: %s" % ", ".join(sorted(missing))
+            )
+        return selected
+
+
+def _literal_showcase_contract(builder_path: Path) -> _ShowcaseContract:
+    """Read the builder's static contract without importing its CAD runtime.
+
+    Publication never generates geometry. It consumes content-addressed files
+    and separately verifies the exact builder source hash recorded in their
+    seals. Only literal declarations are accepted here; no builder code is
+    executed and no fallback geometry is possible.
+    """
+
+    if builder_path.is_symlink() or not builder_path.is_file():
+        raise RuntimeError("showcase builder must be a regular source file")
+    try:
+        tree = ast.parse(builder_path.read_text(encoding="utf-8"), str(builder_path))
+    except (OSError, UnicodeError, SyntaxError) as exc:
+        raise RuntimeError("showcase builder contract cannot be read") from exc
+    assignments: dict[str, ast.AST] = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            if isinstance(target, ast.Name):
+                assignments[target.id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if node.value is not None:
+                assignments[node.target.id] = node.value
+
+    constant_names = (
+        "BUILDER_ID",
+        "PLAYTEST_ID",
+        "EVALUATOR_VERSION",
+        "BED_MM",
+        "SIMULATION_GAMES",
+        "SIMULATION_SEED",
+    )
+    try:
+        constants = {
+            name: ast.literal_eval(assignments[name]) for name in constant_names
+        }
+        raw_specs = assignments["SPECS"]
+    except (KeyError, ValueError, TypeError, SyntaxError) as exc:
+        raise RuntimeError("showcase builder contract must use static literals") from exc
+    if not isinstance(raw_specs, (ast.Tuple, ast.List)):
+        raise RuntimeError("showcase SPECS must be a static sequence")
+
+    specs = []
+    for item in raw_specs.elts:
+        if (
+            not isinstance(item, ast.Call)
+            or not isinstance(item.func, ast.Name)
+            or item.func.id != "ProductSpec"
+            or item.keywords
+        ):
+            raise RuntimeError("showcase SPECS may contain only literal ProductSpec calls")
+        try:
+            values = [ast.literal_eval(value) for value in item.args]
+            spec = _ShowcaseSpec(*values)
+        except (ValueError, TypeError, SyntaxError) as exc:
+            raise RuntimeError("showcase ProductSpec must contain only literals") from exc
+        specs.append(spec)
+    if (
+        len(specs) != 5
+        or len({spec.inventor_id for spec in specs}) != len(specs)
+        or len({spec.slug for spec in specs}) != len(specs)
+    ):
+        raise RuntimeError("showcase contract must identify five unique products")
+    return _ShowcaseContract(builder_path, constants, specs)
+
+
+showcase = _literal_showcase_contract(TOOLS_ROOT / "build_showcase_products.py")
 
 from inventor_workshop.artifacts import (
     ArtifactEntry,
@@ -62,6 +184,19 @@ from inventor_workshop.toys import ToyBlueprint
 
 
 _RECONSTRUCTED_OBSERVED_AT = "1970-01-01T00:00:00+00:00"
+
+# These hashes identify the five immutable schema-v1 showcase runs built before
+# the current Workshop blueprints gained their shared-engine contract fields.
+# This compatibility table is used only by `_load_sealed_showcase` for importing
+# those exact checked-in bundles as private Factory drafts. It is not a release
+# waiver and is never consulted by the current Workshop runner.
+_LEGACY_PRIVATE_DRAFT_BLUEPRINT_SHA256 = {
+    ("alice", "five-job-checkers"): "3b74057c2d747be170b6e0febbe4223a1fda0ddd1f2d4c1d6f7b3630f8e9a108",
+    ("bob", "comet-geneva"): "8edc5b2d1c3e8ed2d1e513151a70fac2ddce7fe1a0d72924bd31eadfffe1b117",
+    ("eve", "rackhaven-night-shift"): "da4952c5ae0c78ce82134e7c17c2018c11d130a8cf9e043677e7bc824cfb7c1e",
+    ("ivy", "montauk-tide-orrery"): "5df739e59f227d3271001ef795cfa41edc6e065c9bba9f99fcf3b7ba9898260f",
+    ("leo", "counterorbit"): "bc28c3590ee202c21de2ba21b556c02df61b58b7649dc80317249c8a7080138a",
+}
 
 
 def _canonical(value: Any) -> bytes:
@@ -152,22 +287,6 @@ def _typed_manifest(root: Path, path: Path, label: str) -> ArtifactManifest:
     return manifest
 
 
-def _load_profile(repo_root: Path, inventor_id: str) -> Any:
-    path = repo_root / "inventors" / inventor_id / "profile.py"
-    if path.is_symlink() or not path.is_file():
-        raise ContractError("showcase inventor profile is missing: %s" % path)
-    name = "showcase_publish_%s_%s" % (
-        inventor_id,
-        hashlib.sha256(str(path).encode("utf-8")).hexdigest()[:12],
-    )
-    module_spec = importlib.util.spec_from_file_location(name, path)
-    if module_spec is None or module_spec.loader is None:
-        raise ContractError("cannot load showcase inventor profile: %s" % path)
-    module = importlib.util.module_from_spec(module_spec)
-    module_spec.loader.exec_module(module)
-    return module
-
-
 def _config_sha256(playtest_id: str) -> str:
     return _sha256_bytes(
         _canonical(
@@ -199,6 +318,7 @@ class SealedShowcase:
     wish: Wish
     taste: Taste
     blueprint: ToyBlueprint
+    historical_blueprint_sha256: str
     made: Made
     playtested: Playtested
     artifact_manifest: ArtifactManifest
@@ -221,6 +341,14 @@ class SealedShowcase:
 def _load_sealed_showcase(
     spec: Any, *, repo_root: Path = REPO_ROOT
 ) -> SealedShowcase:
+    """Verify one pinned schema-v1 showcase for private-draft import only.
+
+    This is intentionally not a compatibility path for arbitrary historical
+    or current Workshop runs. The five builder specs, source hash, legacy
+    blueprint hashes, manifests, current Taste, and current required Playtest
+    capability ids all remain independently bound below.
+    """
+
     repo_root = Path(repo_root).resolve(strict=True)
     bundle = (
         repo_root / "inventors" / spec.inventor_id / "toys" / spec.slug
@@ -244,9 +372,17 @@ def _load_sealed_showcase(
 
     run = run_receipt.get("run")
     shared = run_receipt.get("shared_adapters")
+    expected_legacy_blueprint_sha256 = (
+        _LEGACY_PRIVATE_DRAFT_BLUEPRINT_SHA256.get(
+            (spec.inventor_id, spec.slug)
+        )
+    )
     if (
-        run_receipt.get("schema_version") != 1
+        expected_legacy_blueprint_sha256 is None
+        or run_receipt.get("schema_version") != 1
         or run_receipt.get("kind") != "showcase-workshop-run"
+        or run_receipt.get("blueprint_sha256")
+        != expected_legacy_blueprint_sha256
         or not isinstance(run, Mapping)
         or run.get("product_id") != spec.slug
         or run.get("status") != "waiting"
@@ -270,18 +406,16 @@ def _load_sealed_showcase(
     if run.get("job") == "instructions":
         if run_receipt.get("site_receipt") is not None or run.get("page_url") is not None:
             raise ContractError("Instructions wait must not claim a verified site draft")
-    elif not isinstance(run_receipt.get("site_receipt"), Mapping) or not run.get("page_url"):
-        raise ContractError("Deliver wait must preserve its verified private draft")
+    else:
+        site_receipt = run_receipt.get("site_receipt")
+        if (
+            not isinstance(site_receipt, Mapping)
+            or not run.get("page_url")
+            or site_receipt.get("status") != "draft"
+            or site_receipt.get("published_history_id") is not None
+        ):
+            raise ContractError("Deliver wait must preserve its verified private draft")
 
-    profile = _load_profile(repo_root, spec.inventor_id)
-    profile_record = getattr(profile, "PROFILE", None)
-    if (
-        not isinstance(profile_record, Mapping)
-        or profile_record.get("inventor_id") != spec.inventor_id
-        or profile_record.get("lane") != spec.lane
-        or profile_record.get("workshop_level") != spec.extension_level
-    ):
-        raise ContractError("inventor profile does not match the showcase spec")
     stored_wish = run_receipt.get("wish")
     if not isinstance(stored_wish, Mapping):
         raise ContractError("Workshop run is missing its typed Wish")
@@ -289,9 +423,14 @@ def _load_sealed_showcase(
         wish = Wish(**dict(stored_wish))
     except TypeError as exc:
         raise ContractError("Workshop run Wish contains unknown fields") from exc
-    expected_wish = profile.create_wish(spec.slug, spec.objective)
-    if not isinstance(expected_wish, Wish) or expected_wish.to_dict() != wish.to_dict():
-        raise ContractError("checked-in Wish no longer matches the inventor profile")
+    if (
+        wish.product_id != spec.slug
+        or wish.objective != spec.objective
+        or wish.constraints
+        != {"audience": "grown-ups-14-plus", "lane": spec.lane}
+        or wish.context != {"inventor_id": spec.inventor_id}
+    ):
+        raise ContractError("checked-in Wish no longer matches the showcase spec")
 
     taste = load_taste(repo_root / "inventors" / spec.inventor_id)
     blueprint = ToyBlueprint.for_lane(spec.lane)
@@ -299,12 +438,15 @@ def _load_sealed_showcase(
     if (
         taste.name != spec.inventor_name
         or run_receipt.get("taste_sha256") != taste.sha256
-        or run_receipt.get("blueprint_sha256") != blueprint.sha256
-        or not isinstance(inventor, Mapping)
-        or inventor.get("id") != spec.inventor_id
-        or inventor.get("name") != spec.inventor_name
+        or inventor
+        != {
+            "extension_level": spec.extension_level,
+            "id": spec.inventor_id,
+            "name": spec.inventor_name,
+            "profile": "inventors/%s/profile.py" % spec.inventor_id,
+        }
     ):
-        raise ContractError("Taste, blueprint, or inventor binding changed")
+        raise ContractError("Taste or historical inventor provenance changed")
 
     if project != {"id": spec.slug, "name": spec.title}:
         raise ContractError("Factory project marker does not identify this showcase")
@@ -314,6 +456,7 @@ def _load_sealed_showcase(
         product.get("product_id") != spec.slug
         or product.get("slug") != spec.slug
         or product.get("title") != spec.title
+        or product.get("lane") != spec.lane
         or product.get("summary") != spec.summary
         or product.get("description")
         != attribute_product_description(spec.description, spec.inventor_name)
@@ -508,6 +651,7 @@ def _load_sealed_showcase(
         wish,
         taste,
         blueprint,
+        expected_legacy_blueprint_sha256,
         made,
         playtested,
         artifact_manifest,
@@ -573,7 +717,10 @@ def _publication_metadata(sealed: SealedShowcase, repo_root: Path) -> Mapping[st
         "lane": sealed.spec.lane,
         "wish": sealed.wish.to_dict(),
         "taste_sha256": sealed.taste.sha256,
-        "blueprint_sha256": sealed.blueprint.sha256,
+        # Preserve the source run's exact schema-v1 provenance. The current
+        # blueprint is used only to enforce today's Playtest capability ids.
+        "blueprint_sha256": sealed.historical_blueprint_sha256,
+        "current_capability_blueprint_sha256": sealed.blueprint.sha256,
         "artifact_sha256": sealed.artifact_manifest.artifact_sha256,
         "evidence_sha256": sealed.evidence_manifest.artifact_sha256,
         "instructions_sha256": sealed.instructions_manifest.artifact_sha256,

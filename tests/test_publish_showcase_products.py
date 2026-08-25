@@ -19,6 +19,14 @@ from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 from tools import publish_showcase_products as publisher
 
+try:
+    import build_showcase_products as showcase_builder
+except SystemExit as exc:
+    showcase_builder = None
+    _SHOWCASE_BUILDER_IMPORT_ERROR = str(exc)
+else:
+    _SHOWCASE_BUILDER_IMPORT_ERROR = ""
+
 
 def _multipart(headers, body):
     content_type = headers["Content-Type"]
@@ -182,31 +190,14 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         before = _sealed_bytes(self.bundle)
         transport = ShowcaseShopTransport(self.spec.slug, "owner-1")
 
-        with mock.patch.object(
-            publisher.showcase,
-            "showcase_make",
-            side_effect=AssertionError("publisher must not rerun Make"),
-        ), mock.patch.object(
-            publisher.showcase,
-            "showcase_playtest",
-            side_effect=AssertionError("publisher must not rerun Playtest"),
-        ), mock.patch.object(
-            publisher.showcase,
-            "_run_counterorbit_simulator",
-            side_effect=AssertionError("publisher must not rerun the simulator"),
-        ), mock.patch.object(
-            publisher.showcase,
-            "_verify_bundle",
-            side_effect=AssertionError("publisher must consume seals, not rebuild evidence"),
-        ):
-            first = publisher.publish_one(
-                self.spec,
-                token="test-token",
-                owner_id="owner-1",
-                repo_root=self.repo,
-                state_root=self.state_root,
-                transport=transport,
-            )
+        first = publisher.publish_one(
+            self.spec,
+            token="test-token",
+            owner_id="owner-1",
+            repo_root=self.repo,
+            state_root=self.state_root,
+            transport=transport,
+        )
 
         self.assertEqual(first["status"], "draft-created")
         self.assertEqual(first["enrichment_status"], "pending")
@@ -411,6 +402,19 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         )
         self.assertTrue(database.is_file())
         store = InventorStore(database)
+        publication_metadata = store.get_product(self.spec.slug)["metadata"]
+        self.assertEqual(
+            publication_metadata["blueprint_sha256"],
+            "3b74057c2d747be170b6e0febbe4223a1fda0ddd1f2d4c1d6f7b3630f8e9a108",
+        )
+        self.assertEqual(
+            publication_metadata["current_capability_blueprint_sha256"],
+            ToyBlueprint.for_lane(self.spec.lane).sha256,
+        )
+        self.assertNotEqual(
+            publication_metadata["blueprint_sha256"],
+            publication_metadata["current_capability_blueprint_sha256"],
+        )
         self.assertEqual(len(store.events(self.spec.slug)), 1)
         self.assertEqual(
             store.latest_publish_intent(self.spec.slug)["state"], "succeeded"
@@ -422,37 +426,9 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             0,
         )
 
-    def test_normal_showcase_make_mapping_survives_configured_shop_writer(self):
-        wish = publisher.showcase._load_profile("alice").create_wish(
-            self.spec.slug, self.spec.objective
-        )
-        taste = load_taste(publisher.REPO_ROOT / "inventors" / "alice")
-        wish_sha256 = hashlib.sha256(
-            json.dumps(
-                wish.to_dict(), sort_keys=True, separators=(",", ":")
-            ).encode("utf-8")
-        ).hexdigest()
-        made = publisher.showcase.showcase_make(
-            MakeContext(
-                wish,
-                taste,
-                ToyBlueprint.for_lane(self.spec.lane),
-                Invented(
-                    wish_sha256,
-                    taste.sha256,
-                    self.spec.lane,
-                    {
-                        "title": self.spec.title,
-                        "summary": "The reviewed showcase industrial-design concept.",
-                    },
-                    100,
-                    90,
-                ),
-                1,
-                (self.root / "normal-make").resolve(),
-                playtest_rounds=self.spec.playtest_rounds,
-            )
-        )
+    def _assert_mapping_survives_configured_shop_writer(
+        self, made, wish, taste, workspace_name
+    ):
         self.assertEqual(
             made.product,
             json.loads((made.artifact_root / "product.json").read_text()),
@@ -461,7 +437,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         self.assertEqual(made.product["factory_brief"], self.spec.factory_brief)
         self.assertEqual(made.product["art_direction"], self.spec.art_direction)
         self.assertEqual(made.product["design"], self.spec.design)
-        instructions = self.root / "normal-instructions"
+        instructions = self.root / (workspace_name + "-instructions")
         instructions.mkdir()
         (instructions / "INSTRUCTIONS.md").write_text(
             "# Five-Job Checkers\n\nUse the known rules.\n", encoding="utf-8"
@@ -491,7 +467,7 @@ class PublishShowcaseProductsTest(unittest.TestCase):
         instructions_manifest = build_artifact_manifest(
             instructions, created_at="content-addressed"
         )
-        store = InventorStore(self.root / "normal-writer.sqlite3")
+        store = InventorStore(self.root / (workspace_name + "-writer.sqlite3"))
         store.register_product(
             self.spec.slug, "instructions", artifact_sha256=made.artifact_sha256
         )
@@ -525,24 +501,100 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             receipt.details["primary_model_path"], "five-job-checkers.stl"
         )
 
-    def test_all_five_checked_in_bundles_reconstruct_without_running_jobs(self):
-        with mock.patch.object(
-            publisher.showcase,
-            "showcase_make",
-            side_effect=AssertionError("publisher must not rerun Make"),
-        ), mock.patch.object(
-            publisher.showcase,
-            "showcase_playtest",
-            side_effect=AssertionError("publisher must not rerun Playtest"),
-        ), mock.patch.object(
-            publisher.showcase,
-            "_run_counterorbit_simulator",
-            side_effect=AssertionError("publisher must not rerun the simulator"),
+    def test_checked_in_showcase_mapping_survives_configured_shop_writer(self):
+        sealed = publisher._load_sealed_showcase(self.spec)
+        self._assert_mapping_survives_configured_shop_writer(
+            sealed.made,
+            sealed.wish,
+            sealed.taste,
+            "checked-in",
+        )
+
+    @unittest.skipIf(
+        showcase_builder is None,
+        _SHOWCASE_BUILDER_IMPORT_ERROR or "real showcase CAD runtime unavailable",
+    )
+    def test_normal_showcase_make_mapping_survives_configured_shop_writer(self):
+        wish = showcase_builder._load_profile("alice").create_wish(
+            self.spec.slug, self.spec.objective
+        )
+        taste = load_taste(publisher.REPO_ROOT / "inventors" / "alice")
+        wish_sha256 = hashlib.sha256(
+            json.dumps(
+                wish.to_dict(), sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
+        made = showcase_builder.showcase_make(
+            MakeContext(
+                wish,
+                taste,
+                ToyBlueprint.for_lane(self.spec.lane),
+                Invented(
+                    wish_sha256,
+                    taste.sha256,
+                    self.spec.lane,
+                    {
+                        "title": self.spec.title,
+                        "summary": "The reviewed showcase industrial-design concept.",
+                    },
+                    100,
+                    90,
+                ),
+                1,
+                (self.root / "normal-make").resolve(),
+                playtest_rounds=self.spec.playtest_rounds,
+            )
+        )
+        self._assert_mapping_survives_configured_shop_writer(
+            made, wish, taste, "normal"
+        )
+
+    def test_sealed_publisher_has_no_geometry_generation_surface(self):
+        self.assertFalse(hasattr(publisher.showcase, "showcase_make"))
+        self.assertFalse(hasattr(publisher.showcase, "showcase_playtest"))
+        self.assertFalse(hasattr(publisher.showcase, "_verify_bundle"))
+        if showcase_builder is None:
+            self.assertIn(
+                "no fixture geometry will be substituted",
+                _SHOWCASE_BUILDER_IMPORT_ERROR,
+            )
+
+    def test_unknown_legacy_blueprint_hash_is_rejected(self):
+        receipt_path = self.bundle / "workshop-run.json"
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        receipt["blueprint_sha256"] = "f" * 64
+        receipt_path.write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            ContractError,
+            "checked-in Workshop receipt no longer binds this sealed bundle",
         ):
-            sealed = [
-                publisher._load_sealed_showcase(spec)
-                for spec in publisher.showcase.SPECS
-            ]
+            publisher._load_sealed_showcase(self.spec, repo_root=self.repo)
+
+    def test_current_inventor_profile_is_never_executed_for_legacy_import(self):
+        marker = self.root / "profile-executed"
+        profile_path = self.repo / "inventors" / "alice" / "profile.py"
+        profile_path.write_text(
+            "from pathlib import Path\n"
+            "Path(%r).write_text('executed', encoding='utf-8')\n"
+            "raise RuntimeError('publisher executed the current profile')\n"
+            % str(marker),
+            encoding="utf-8",
+        )
+
+        sealed = publisher._load_sealed_showcase(self.spec, repo_root=self.repo)
+
+        self.assertEqual(sealed.spec.slug, self.spec.slug)
+        self.assertFalse(marker.exists())
+
+    def test_all_five_checked_in_bundles_reconstruct_without_running_jobs(self):
+        sealed = [
+            publisher._load_sealed_showcase(spec)
+            for spec in publisher.showcase.SPECS
+        ]
 
         self.assertEqual(
             [item.spec.inventor_id for item in sealed],
