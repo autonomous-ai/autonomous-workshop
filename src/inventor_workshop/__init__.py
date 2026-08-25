@@ -12,7 +12,13 @@ from .artifacts import (
     build_publish_packet,
 )
 from .attribution import attribute_product_description
-from .agent_invent import CodexInventor
+from .agent_invent import (
+    CodexInventor,
+    InventResearch,
+    InventResearchProvider,
+    InventResearchSource,
+    InventResearchUnavailable,
+)
 from .cad import (
     CadReleaseBundle,
     KernelBodyObservation,
@@ -224,6 +230,10 @@ __all__ = [
     "InventContext",
     "Invented",
     "InventJob",
+    "InventResearch",
+    "InventResearchProvider",
+    "InventResearchSource",
+    "InventResearchUnavailable",
     "EffectError",
     "ExecutableGame",
     "Feedback",

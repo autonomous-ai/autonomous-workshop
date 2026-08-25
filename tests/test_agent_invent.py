@@ -1,9 +1,25 @@
+import hashlib
+import json
 import tempfile
 import unittest
+import urllib.error
+import urllib.parse
+import urllib.request
 from pathlib import Path
 
-from inventor_workshop.agent_invent import CodexInventor
-from inventor_workshop.jobs import InventContext
+from inventor_workshop.agent_invent import (
+    CodexInventor,
+    InventResearch,
+    InventResearchSource,
+    InventResearchUnavailable,
+    PublicHTTPResearchProvider,
+    PublicResearchHTTPRequest,
+    PublicResearchHTTPResponse,
+    REWARD_WEIGHTS,
+    configured_workshop_tools,
+)
+from inventor_workshop.errors import ContractError
+from inventor_workshop.jobs import InventContext, WaitingFor
 from inventor_workshop.make import Wish
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
@@ -13,8 +29,18 @@ from inventor_workshop.workshop import Workshop, WorkshopTools
 def action(title):
     return {
         "research": {
-            "patterns": ["Wind-up walkers convert stored energy into a gait."],
-            "opportunities": ["Let the dog's recognizable posture drive the gait."],
+            "patterns": [
+                {
+                    "statement": "Wind-up walkers turn stored energy into repeated motion.",
+                    "source_ids": ["mechanism-source"],
+                }
+            ],
+            "opportunities": [
+                {
+                    "statement": "Keep accessible moving parts away from pinch hazards.",
+                    "source_ids": ["safety-source"],
+                }
+            ],
             "assumptions": ["The customer will later provide visual references."],
         },
         "directions": [
@@ -50,20 +76,14 @@ def action(title):
                 "Engineer a printable four-leg gait.",
                 "Keep the dog's silhouette recognizable around the mechanism.",
             ],
+            "research_source_ids": ["mechanism-source", "safety-source"],
         },
     }
 
 
 def verdict(score, feedback):
     return {
-        "dimensions": {
-            "wish_fit": score,
-            "taste_fit": score,
-            "originality": score,
-            "play": score,
-            "industrial_design": score,
-            "make_feasibility": score,
-        },
+        "dimensions": {dimension: score for dimension in REWARD_WEIGHTS},
         "feedback": [feedback],
         "hard_tensions": [],
         "assessment": feedback,
@@ -82,6 +102,60 @@ class FakeCodex:
     def invoke(self, *, prompt, schema, workspace):
         self.prompts.append((prompt, schema, workspace))
         return self.outputs.pop(0)
+
+
+class FakeResearchHTTP:
+    def __init__(self, *, mediawiki=None, cpsc=None):
+        self.requests = []
+        self.mediawiki = mediawiki
+        self.cpsc = cpsc
+
+    def __call__(self, request):
+        self.requests.append(request)
+        host = urllib.parse.urlsplit(request.url).hostname
+        if host == "en.wikipedia.org":
+            if self.mediawiki is not None:
+                return self.mediawiki(request)
+            body = json.dumps(
+                {
+                    "query": {
+                        "pages": [
+                            {
+                                "pageid": 101,
+                                "title": "Automaton",
+                                "extract": (
+                                    "An automaton is a self-operating machine designed to follow "
+                                    "a predetermined sequence of operations through a mechanism."
+                                ),
+                            },
+                            {
+                                "pageid": 202,
+                                "title": "Mechanical toy",
+                                "extract": (
+                                    "Mechanical toys use mechanisms to create repeatable movement "
+                                    "and invite observation through physical interaction."
+                                ),
+                            },
+                        ]
+                    }
+                }
+            ).encode("utf-8")
+            return PublicResearchHTTPResponse(
+                request.url, 200, "application/json; charset=utf-8", body
+            )
+        if host in ("www.cpsc.gov", "cpsc.gov"):
+            if self.cpsc is not None:
+                return self.cpsc(request)
+            body = (
+                "<html><head><title>Toys | CPSC.gov</title></head><body><main>"
+                "<p>Toy safety requires attention to age guidance and product hazards.</p>"
+                "<p>Keep toys with small parts away from young children because they can "
+                "present a choking hazard.</p></main></body></html>"
+            ).encode("utf-8")
+            return PublicResearchHTTPResponse(
+                request.url, 200, "text/html; charset=utf-8", body
+            )
+        raise AssertionError("unexpected research host %r" % host)
 
 
 class AgentInventTest(unittest.TestCase):
@@ -111,6 +185,42 @@ class AgentInventTest(unittest.TestCase):
             (self.root / "invent-workspace").absolute(),
         )
 
+    def research(self, context=None):
+        context = context or self.context()
+        return InventResearch(
+            wish_sha256=hashlib.sha256(
+                json.dumps(
+                    context.wish.to_dict(), sort_keys=True, separators=(",", ":")
+                ).encode("utf-8")
+            ).hexdigest(),
+            taste_sha256=context.taste.sha256,
+            blueprint_sha256=context.blueprint.sha256,
+            lane=context.blueprint.lane,
+            provider="fixture-retriever",
+            provider_version="1.2.3",
+            provider_config_sha256="f" * 64,
+            sources=(
+                InventResearchSource(
+                    "mechanism-source",
+                    "Mechanism reference",
+                    "Fixture Engineering Archive",
+                    "https://example.com/mechanisms/wind-up",
+                    "2026-08-25T00:00:00+00:00",
+                    "A wound spring can release energy through a constrained repeated motion.",
+                    ("prior-art", "use-context", "mechanism"),
+                ),
+                InventResearchSource(
+                    "safety-source",
+                    "Moving-part safety reference",
+                    "Fixture Safety Office",
+                    "https://example.com/safety/moving-parts",
+                    "2026-08-25T00:00:00+00:00",
+                    "Accessible moving parts require a deliberate pinch-hazard review.",
+                    ("safety",),
+                ),
+            ),
+        )
+
     def test_inventor_improves_until_the_independent_reward_reaches_goal(self):
         creator = FakeCodex("gpt-5.6-terra", [action("First dog"), action("Trotter")])
         evaluator = FakeCodex(
@@ -121,6 +231,7 @@ class AgentInventTest(unittest.TestCase):
         invented = CodexInventor(
             creator=creator,
             evaluator=evaluator,
+            research_provider=self.research,
             goal=85,
             max_steps=3,
         )(self.context())
@@ -129,13 +240,33 @@ class AgentInventTest(unittest.TestCase):
         self.assertEqual(invented.concept["title"], "Trotter")
         self.assertEqual(len(invented.concept["reward_loop"]["steps"]), 2)
         self.assertIn("previous reward", creator.prompts[1][0])
+        self.assertIn("never invent a URL", creator.prompts[0][0])
         self.assertIn("Make and Playtest own those later", evaluator.prompts[0][0])
+        self.assertEqual(
+            invented.concept["evidence"]["research_source_ids"],
+            ["mechanism-source", "safety-source"],
+        )
+        self.assertEqual(
+            invented.concept["research_evidence"]["provider"],
+            "fixture-retriever",
+        )
+        self.assertEqual(
+            invented.concept["evidence"]["creator"]["identity"],
+            "codex-invent-policy",
+        )
+        self.assertEqual(
+            len(invented.concept["evidence"]["creator"]["config_sha256"]), 64
+        )
 
     def test_workshop_advances_to_make_only_after_invent_passes(self):
         creator = FakeCodex("gpt-5.6-terra", [action("Trotter")])
         evaluator = FakeCodex("gpt-5.6-terra", [verdict(92, "Ready for Make.")])
         evaluator.reasoning_effort = "low"
-        worker = CodexInventor(creator=creator, evaluator=evaluator)
+        worker = CodexInventor(
+            creator=creator,
+            evaluator=evaluator,
+            research_provider=self.research,
+        )
         result = Workshop(
             self.inventor,
             "moving-machines",
@@ -147,6 +278,237 @@ class AgentInventTest(unittest.TestCase):
         self.assertIsNotNone(result.invented)
         self.assertEqual(result.invented.concept["title"], "Trotter")
         self.assertEqual(result.to_dict()["invented"]["score"], 92)
+
+    def test_missing_research_provider_fails_closed_before_concept_generation(self):
+        creator = FakeCodex("gpt-5.6-terra", [action("Should not run")])
+        evaluator = FakeCodex("gpt-5.6-terra", [verdict(99, "Should not run")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=None,
+            )(self.context())
+        self.assertEqual(
+            [need.capability for need in caught.exception.needs],
+            ["source-backed-design-research"],
+        )
+        self.assertEqual(creator.prompts, [])
+        self.assertEqual(evaluator.prompts, [])
+
+    def test_safe_default_provider_fetches_and_hashes_real_response_evidence(self):
+        context = InventContext(
+            Wish.create(
+                "private-walker",
+                "Build Dr. Vinkent Nguyen a wind-up portrait of Moonbeam, our family dog.",
+                context={"customer_name": "Vinkent Nguyen"},
+            ),
+            load_taste(self.inventor),
+            ToyBlueprint.for_lane("moving-machines"),
+            (self.root / "private-research").absolute(),
+        )
+        transport = FakeResearchHTTP()
+        provider = PublicHTTPResearchProvider(transport=transport)
+        research = provider(context)
+
+        research.assert_context(context)
+        self.assertEqual(research.provider, "workshop-public-http-research")
+        self.assertEqual(
+            [source.source_id for source in research.sources],
+            ["wikipedia-101", "wikipedia-202", "cpsc-toy-safety"],
+        )
+        self.assertEqual(
+            research.sources[0].evidence_sha256,
+            hashlib.sha256(research.sources[0].evidence.encode("utf-8")).hexdigest(),
+        )
+        self.assertIn("small parts", research.sources[-1].evidence)
+        self.assertEqual(len(transport.requests), 2)
+        for request in transport.requests:
+            requested = urllib.parse.unquote(request.url).casefold()
+            self.assertNotIn("vinkent", requested)
+            self.assertNotIn("nguyen", requested)
+            self.assertNotIn("moonbeam", requested)
+            self.assertNotIn("customer_name", requested)
+            self.assertLessEqual(request.timeout_seconds, 8.0)
+            self.assertLessEqual(request.max_bytes, 512 * 1024)
+        query = urllib.parse.parse_qs(
+            urllib.parse.urlsplit(transport.requests[0].url).query
+        )["gsrsearch"][0]
+        self.assertEqual(
+            query, "mechanical toy automaton mechanism kinetic design"
+        )
+
+    def test_public_provider_rejects_untrusted_or_unusable_http_results(self):
+        cases = {
+            "off-allowlist redirect": lambda request: PublicResearchHTTPResponse(
+                "https://evil.example/collect", 200, "application/json", b"{}"
+            ),
+            "wrong content type": lambda request: PublicResearchHTTPResponse(
+                request.url, 200, "text/html", b"<html>not JSON</html>"
+            ),
+            "non-success status": lambda request: PublicResearchHTTPResponse(
+                request.url, 503, "application/json", b'{"error":"busy"}'
+            ),
+            "oversize": lambda request: PublicResearchHTTPResponse(
+                request.url,
+                200,
+                "application/json",
+                b"x" * (request.max_bytes + 1),
+            ),
+            "no results": lambda request: PublicResearchHTTPResponse(
+                request.url,
+                200,
+                "application/json",
+                b'{"query":{"pages":[]}}',
+            ),
+        }
+        for label, mediawiki in cases.items():
+            with self.subTest(label=label):
+                provider = PublicHTTPResearchProvider(
+                    transport=FakeResearchHTTP(mediawiki=mediawiki)
+                )
+                with self.assertRaises(InventResearchUnavailable):
+                    provider(self.context())
+
+        provider = PublicHTTPResearchProvider(
+            transport=FakeResearchHTTP(
+                cpsc=lambda request: PublicResearchHTTPResponse(
+                    "https://evil.example/collect",
+                    200,
+                    "text/html",
+                    b"<html><body>Toy safety evidence that is long enough.</body></html>",
+                )
+            )
+        )
+        with self.assertRaises(InventResearchUnavailable):
+            provider(self.context())
+
+    def test_redirect_handler_blocks_before_following_an_untrusted_host(self):
+        from inventor_workshop.agent_invent import _AllowlistedRedirectHandler
+
+        handler = _AllowlistedRedirectHandler(("en.wikipedia.org",))
+        request = urllib.request.Request(
+            "https://en.wikipedia.org/w/api.php?action=query"
+        )
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            handler.redirect_request(
+                request,
+                None,
+                302,
+                "Found",
+                {},
+                "https://evil.example/collect",
+            )
+        caught.exception.close()
+
+    def test_public_request_rejects_userinfo_controls_and_non_https_urls(self):
+        for url in (
+            "https://user:secret@en.wikipedia.org/w/api.php",
+            "https://en.wikipedia.org/w/api.php\nignored",
+            "http://en.wikipedia.org/w/api.php",
+        ):
+            with self.subTest(url=url), self.assertRaises(
+                InventResearchUnavailable
+            ):
+                PublicResearchHTTPRequest(
+                    url,
+                    ("en.wikipedia.org",),
+                    ("application/json",),
+                    1024,
+                    1.0,
+                )
+
+    def test_unavailable_research_provider_returns_a_typed_wait(self):
+        def unavailable(context):
+            del context
+            raise InventResearchUnavailable("retrieval service offline")
+
+        creator = FakeCodex("gpt-5.6-terra", [action("Should not run")])
+        evaluator = FakeCodex("gpt-5.6-terra", [verdict(99, "Should not run")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=unavailable,
+            )(self.context())
+        self.assertEqual(
+            caught.exception.needs[0].capability,
+            "source-backed-design-research",
+        )
+        self.assertEqual(creator.prompts, [])
+
+    def test_hard_tension_prevents_a_high_numeric_score_from_passing(self):
+        blocked = verdict(99, "The idea violates Taste.")
+        blocked["hard_tensions"] = ["The core interaction is outside this lane."]
+        creator = FakeCodex("gpt-5.6-terra", [action("Wrong lane")])
+        evaluator = FakeCodex("gpt-5.6-terra", [blocked])
+        evaluator.reasoning_effort = "low"
+        invented = CodexInventor(
+            creator=creator,
+            evaluator=evaluator,
+            research_provider=self.research,
+            goal=85,
+            max_steps=1,
+        )(self.context())
+        self.assertFalse(invented.passed)
+        self.assertEqual(invented.score, 84)
+        self.assertFalse(invented.concept["reward_loop"]["reached_goal"])
+
+    def test_concept_model_cannot_fabricate_a_citation(self):
+        fabricated = action("Citation laundering")
+        fabricated["research"]["patterns"][0]["source_ids"] = ["invented-source"]
+        creator = FakeCodex("gpt-5.6-terra", [fabricated])
+        evaluator = FakeCodex("gpt-5.6-terra", [verdict(99, "Should not score")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=self.research,
+            )(self.context())
+        self.assertEqual(caught.exception.needs[0].capability, "codex-industrial-design")
+        self.assertEqual(evaluator.prompts, [])
+
+    def test_research_is_bound_to_the_exact_wish_taste_and_lane(self):
+        wrong = self.research()
+
+        def stale_provider(context):
+            return InventResearch(
+                wish_sha256="0" * 64,
+                taste_sha256=wrong.taste_sha256,
+                blueprint_sha256=wrong.blueprint_sha256,
+                lane=wrong.lane,
+                provider=wrong.provider,
+                provider_version=wrong.provider_version,
+                provider_config_sha256=wrong.provider_config_sha256,
+                sources=wrong.sources,
+            )
+
+        creator = FakeCodex("gpt-5.6-terra", [action("Should not run")])
+        evaluator = FakeCodex("gpt-5.6-terra", [verdict(99, "Should not run")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=stale_provider,
+            )(self.context())
+        self.assertEqual(creator.prompts, [])
+
+    def test_explicit_custom_invent_overrides_the_shared_default(self):
+        def custom(context):
+            return context
+
+        tools = configured_workshop_tools(WorkshopTools(invent=custom))
+        self.assertIs(tools.invent, custom)
+
+    def test_shared_invent_is_installed_for_a_taste_only_inventor(self):
+        tools = configured_workshop_tools(WorkshopTools())
+        self.assertIsInstance(tools.invent, CodexInventor)
+        self.assertIsInstance(
+            tools.invent.research_provider, PublicHTTPResearchProvider
+        )
 
 
 if __name__ == "__main__":
