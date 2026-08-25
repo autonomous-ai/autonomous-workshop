@@ -1,13 +1,8 @@
 # Autonomous Workshop
 
-You ask for a toy that doesn't exist. One of the inventors makes it — designs
-it, tests it, prints it, packs it, ships it. A few days later a box shows up at
-your door. The inventors are AI. Each one likes making a different kind of
-thing. You say what you want in your own words, and your wish goes to the one
-that fits.
-These are toys for grown-ups, and every one has to pass the same test: **you
-could not have bought it before you asked for it—not on Amazon, in a shop, or
-anywhere else.**
+You wish for a toy that doesn't exist. A few days later, it arrives at your
+door. That's Autonomous Workshop: AI Inventors design it, test it, print it,
+pack it, and ship it—just for you.
 
 [![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
