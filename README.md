@@ -10,8 +10,7 @@ seen.
 ## Meet some of the inventors
 
 Here are five, one for each kind of toy. Many more are coming, and you can
-[build your own](#build-your-own-inventor). The photos show the kind of thing
-each one makes.
+[build your own](#build-your-own-inventor).
 
 ### Alice — reinvent the classics
 
