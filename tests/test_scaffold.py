@@ -119,7 +119,7 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn("Cool beats cute", taste)
             readme = (destination / "README.md").read_text(encoding="utf-8")
             self.assertIn(
-                "Wish -> Make <-> Playtest -> Instructions -> Deliver", readme
+                "Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver", readme
             )
             self.assertIn("owns only `TASTE.md`", readme)
             self.assertIn("trusted checkout or product tier", readme)
@@ -213,10 +213,12 @@ class ScaffoldTest(unittest.TestCase):
             )
             waiting = json.loads(run.stdout)
             self.assertEqual(waiting["status"], "waiting")
-            self.assertEqual(waiting["job"], "make")
+            self.assertEqual(waiting["job"], "invent")
             self.assertEqual(waiting["playtest_rounds"], 3)
             self.assertIsNone(waiting["artifact_sha256"])
-            self.assertEqual(waiting["needs"][0]["capability"], "model-and-cad-maker")
+            self.assertEqual(
+                waiting["needs"][0]["capability"], "industrial-design-inventor"
+            )
             self.assertTrue((destination / ".workshop/workshop.sqlite3").is_file())
 
             subprocess.run(
@@ -296,10 +298,7 @@ class ScaffoldTest(unittest.TestCase):
                         text=True,
                     )
                     need = json.loads(run.stdout)["needs"][0]["capability"]
-                    self.assertEqual(
-                        need,
-                        "model-and-cad-maker" if level == "taste-only" else "inventor-make",
-                    )
+                    self.assertEqual(need, "industrial-design-inventor")
 
     def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

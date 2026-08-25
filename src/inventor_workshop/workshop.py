@@ -1,10 +1,12 @@
 """The Toy Workshop pipeline and its three inventor customization levels.
 
-An inventor supplies Taste and may replace Make, or Make and Playtest. The
-Workshop always owns the loop, exact artifact identity, Instructions, Deliver, and
-truthful waiting for capabilities that are not present. Playtest is AI-agent
-simulation. Customer Reviews arrive asynchronously after Deliver and become
-learning for a future Make without mutating shipped bytes.
+An inventor supplies Taste and may replace Make, or Make and Playtest. Invent is
+the industrial-design stage that selects a concept; Make is the mechanical and
+3D-design stage that engineers it. The Workshop always owns the loops, exact
+artifact identity, Instructions, Deliver, and truthful waiting for capabilities
+that are not present. Playtest is AI-agent simulation. Customer Reviews arrive
+asynchronously after Deliver and become learning for a future Make without
+mutating shipped bytes.
 """
 
 from __future__ import annotations
@@ -40,6 +42,8 @@ from .jobs import (
     DeliverContext,
     Delivered,
     InstructionsContext,
+    InventContext,
+    Invented,
     Made,
     MakeContext,
     Need,
@@ -57,6 +61,7 @@ from .taste import load_taste
 from .toys import ToyBlueprint, playful_make_request
 
 
+InventJob = Callable[[InventContext], Invented]
 MakeJob = Callable[[MakeContext], Made]
 PlaytestJob = Callable[[PlaytestContext], Playtested]
 InstructionsJob = Callable[[InstructionsContext], ProductInstructions]
@@ -705,6 +710,7 @@ def _rebuild_checkpoint_results(
 class WorkshopTools:
     """Shared capabilities installed once for every inventor in one Workshop."""
 
+    invent: Optional[InventJob] = None
     make: Optional[MakeJob] = None
     playtest: Optional[PlaytestJob] = None
     instructions: Optional[InstructionsJob] = None
@@ -712,12 +718,25 @@ class WorkshopTools:
 
     def __post_init__(self) -> None:
         for value, label in (
+            (self.invent, "Workshop Invent"),
             (self.make, "Workshop Make"),
             (self.playtest, "Workshop Playtest"),
             (self.instructions, "Workshop Instructions"),
             (self.deliver, "Workshop Deliver"),
         ):
             _callable_or_none(value, label)
+
+
+def _missing_invent(context: InventContext) -> Invented:
+    del context
+    raise WaitingFor(
+        Need(
+            "invent",
+            "industrial-design-inventor",
+            "This Workshop has no configured concept and industrial-design worker.",
+            "Connect an Invent worker that researches directions, chooses one concept, and returns an Invented record after its reward target is reached.",
+        )
+    )
 
 
 def _missing_make(context: MakeContext) -> Made:
@@ -748,7 +767,7 @@ def _missing_playtest(context: PlaytestContext) -> Playtested:
 
 
 class Workshop:
-    """Run one inventor through Wish -> Make <-> Playtest -> Instructions -> Deliver.
+    """Run Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver.
 
     With neither override, the inventor authors only ``TASTE.md``. A Make override
     creates the middle level. Make plus Playtest creates the maximum level.
@@ -794,6 +813,7 @@ class Workshop:
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
         self.tools = selected_tools
+        self.invent_job: InventJob = selected_tools.invent or _missing_invent
         self.make_job: MakeJob = make or selected_tools.make or _missing_make
         self.playtest_job: PlaytestJob = (
             playtest or selected_tools.playtest or _missing_playtest
@@ -925,7 +945,8 @@ class Workshop:
         product = runtime.get_product(product_id)
         source = product["stage"]
         legal = {
-            "wish": ("make",),
+            "wish": ("invent",),
+            "invent": ("invent", "make"),
             "make": ("make", "playtest"),
             "playtest": ("playtest", "make", "instructions"),
             "instructions": ("instructions", "deliver"),
@@ -1328,9 +1349,63 @@ class Workshop:
             self._advance(
                 runtime,
                 wish.product_id,
-                "make",
+                "invent",
                 artifact_sha256=None,
                 payload={"status": "working", "round": 1},
+                lease_token=lease,
+            )
+
+            invent_workspace = (run_root / "invent").absolute()
+            invent_context = InventContext(
+                wish,
+                self.taste,
+                self.blueprint,
+                invent_workspace,
+            )
+            try:
+                invented = self.invent_job(invent_context)
+            except WaitingFor as waiting:
+                return self._wait(
+                    runtime,
+                    wish,
+                    "invent",
+                    1,
+                    waiting,
+                    lease,
+                    selected_rounds,
+                )
+            if not isinstance(invented, Invented):
+                raise ContractError("Invent must return Invented")
+            invented.assert_context(invent_context)
+            if not invented.passed:
+                return self._wait(
+                    runtime,
+                    wish,
+                    "invent",
+                    1,
+                    WaitingFor(
+                        Need(
+                            "invent",
+                            "industrial-design-target-score",
+                            "The chosen concept has not reached its Invent reward target.",
+                            "Continue the self-improving Invent loop, then return an Invented record at or above its target score.",
+                        )
+                    ),
+                    lease,
+                    selected_rounds,
+                )
+            self._advance(
+                runtime,
+                wish.product_id,
+                "make",
+                artifact_sha256=None,
+                payload={
+                    "status": "working",
+                    "round": 1,
+                    "concept_sha256": invented.concept_sha256,
+                    "invent_score": invented.score,
+                    "invent_target_score": invented.target_score,
+                },
                 lease_token=lease,
             )
 
@@ -1345,6 +1420,7 @@ class Workshop:
                     wish,
                     self.taste,
                     self.blueprint,
+                    invented,
                     round_number,
                     make_workspace,
                     feedback,
@@ -1536,7 +1612,7 @@ class Workshop:
 
 
 # Compatibility imports for callers that used this module as the old offline
-# demo location. They are not part of the five-job design.
+# demo location. They are not part of the six-job design.
 from .offline import (  # noqa: E402,F401
     OfflineInspector,
     OfflineMaker,
@@ -1551,6 +1627,7 @@ __all__ = [
     "CUSTOMIZATION_LEVELS",
     "DeliverJob",
     "InstructionsJob",
+    "InventJob",
     "MakeJob",
     "PlaytestJob",
     "Workshop",

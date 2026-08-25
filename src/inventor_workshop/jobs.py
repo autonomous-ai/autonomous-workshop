@@ -1,7 +1,8 @@
-"""Strict inputs and outputs for the five Toy Workshop jobs."""
+"""Strict inputs and outputs for the six Toy Workshop jobs."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import urllib.parse
 from dataclasses import dataclass, field
@@ -82,7 +83,7 @@ class Need:
 
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
-            raise ContractError("need job must name one of the five Workshop jobs")
+            raise ContractError("need job must name one of the six Workshop jobs")
         _text(self.capability, "need capability", 200)
         _text(self.reason, "need reason")
         _text(self.instructions, "need instructions")
@@ -147,10 +148,103 @@ class Feedback:
 
 
 @dataclass(frozen=True)
+class InventContext:
+    """Exact inputs for concept exploration and industrial design."""
+
+    wish: Wish
+    taste: Taste
+    blueprint: ToyBlueprint
+    workspace: Path
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
+            raise ContractError("InventContext requires a Wish and Taste")
+        if not isinstance(self.blueprint, ToyBlueprint):
+            raise ContractError("InventContext requires a ToyBlueprint")
+        root = Path(self.workspace)
+        if not root.is_absolute():
+            raise ContractError("InventContext workspace must be absolute")
+        object.__setattr__(self, "workspace", root)
+        self.wish.assert_valid()
+        self.taste.assert_current()
+
+
+@dataclass(frozen=True)
+class Invented:
+    """One chosen industrial-design concept that has reached its reward target."""
+
+    wish_sha256: str
+    taste_sha256: str
+    lane: str
+    concept: Mapping[str, Any]
+    score: int
+    target_score: int
+    concept_sha256: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        require_sha256(self.wish_sha256, "Invented Wish sha256")
+        require_sha256(self.taste_sha256, "Invented Taste sha256")
+        if self.lane not in PLAYTHING_LANES:
+            raise ContractError("Invented lane must be a Workshop plaything lane")
+        concept = _mapping(self.concept, "Invented concept", nonempty=True)
+        for key in ("title", "summary"):
+            _text(concept.get(key), "Invented concept %s" % key, 2_000)
+        if type(self.score) is not int or not 0 <= self.score <= 100:
+            raise ContractError("Invented score must be an integer from 0 to 100")
+        if type(self.target_score) is not int or not 1 <= self.target_score <= 100:
+            raise ContractError("Invented target_score must be an integer from 1 to 100")
+        object.__setattr__(self, "concept", concept)
+        encoded = json.dumps(
+            concept,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+        object.__setattr__(self, "concept_sha256", hashlib.sha256(encoded).hexdigest())
+
+    @property
+    def passed(self) -> bool:
+        return self.score >= self.target_score
+
+    def assert_context(self, context: InventContext) -> None:
+        if not isinstance(context, InventContext):
+            raise ContractError("Invented requires an InventContext")
+        wish_sha256 = hashlib.sha256(
+            json.dumps(
+                context.wish.to_dict(),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        if (
+            self.wish_sha256 != wish_sha256
+            or self.taste_sha256 != context.taste.sha256
+            or self.lane != context.blueprint.lane
+        ):
+            raise ContractError("Invented concept belongs to different Workshop inputs")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "wish_sha256": self.wish_sha256,
+            "taste_sha256": self.taste_sha256,
+            "lane": self.lane,
+            "concept": dict(self.concept),
+            "concept_sha256": self.concept_sha256,
+            "score": self.score,
+            "target_score": self.target_score,
+            "passed": self.passed,
+        }
+
+
+@dataclass(frozen=True)
 class MakeContext:
     wish: Wish
     taste: Taste
     blueprint: ToyBlueprint
+    invented: Invented
     round: int
     workspace: Path
     feedback: Sequence[Feedback] = field(default_factory=tuple)
@@ -161,6 +255,13 @@ class MakeContext:
             raise ContractError("MakeContext requires a Wish and Taste")
         if not isinstance(self.blueprint, ToyBlueprint):
             raise ContractError("MakeContext requires a ToyBlueprint")
+        if not isinstance(self.invented, Invented):
+            raise ContractError("MakeContext requires an Invented concept")
+        self.invented.assert_context(
+            InventContext(self.wish, self.taste, self.blueprint, self.workspace)
+        )
+        if not self.invented.passed:
+            raise ContractError("Make cannot begin before Invent reaches its target score")
         if type(self.round) is not int or self.round < 1:
             raise ContractError("MakeContext round must be a positive integer")
         if (
@@ -779,6 +880,8 @@ __all__ = [
     "DeliverContext",
     "Delivered",
     "InstructionsContext",
+    "InventContext",
+    "Invented",
     "Feedback",
     "Made",
     "MakeContext",

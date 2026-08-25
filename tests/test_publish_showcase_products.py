@@ -12,7 +12,7 @@ from unittest import mock
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.errors import ContractError, StateConflict
-from inventor_workshop.jobs import MakeContext
+from inventor_workshop.jobs import Invented, MakeContext
 from inventor_workshop.shop import HttpResponse, ShopDoor, ShopInstructionsWriter
 from inventor_workshop.store import InventorStore
 from inventor_workshop.taste import load_taste
@@ -427,11 +427,27 @@ class PublishShowcaseProductsTest(unittest.TestCase):
             self.spec.slug, self.spec.objective
         )
         taste = load_taste(publisher.REPO_ROOT / "inventors" / "alice")
+        wish_sha256 = hashlib.sha256(
+            json.dumps(
+                wish.to_dict(), sort_keys=True, separators=(",", ":")
+            ).encode("utf-8")
+        ).hexdigest()
         made = publisher.showcase.showcase_make(
             MakeContext(
                 wish,
                 taste,
                 ToyBlueprint.for_lane(self.spec.lane),
+                Invented(
+                    wish_sha256,
+                    taste.sha256,
+                    self.spec.lane,
+                    {
+                        "title": self.spec.title,
+                        "summary": "The reviewed showcase industrial-design concept.",
+                    },
+                    100,
+                    90,
+                ),
                 1,
                 (self.root / "normal-make").resolve(),
                 playtest_rounds=self.spec.playtest_rounds,

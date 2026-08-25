@@ -15,10 +15,10 @@ from inventor_workshop.toys import (
 
 
 class ToyBlueprintTest(unittest.TestCase):
-    def test_first_workshop_has_exactly_five_jobs_and_five_plaything_lanes(self):
+    def test_workshop_has_six_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS,
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "invent", "make", "playtest", "instructions", "deliver"),
         )
         self.assertEqual(
             PLAYTHING_LANES,
@@ -43,12 +43,12 @@ class ToyBlueprintTest(unittest.TestCase):
         science = ToyBlueprint.for_lane("holdable-science")
         worlds = ToyBlueprint.for_lane("little-worlds")
 
-        self.assertIn("make.classic", {task.key for task in classics.tasks})
+        self.assertIn("invent.classic", {task.key for task in classics.tasks})
         self.assertIn("playtest.classic", {task.key for task in classics.tasks})
-        self.assertNotIn("make.rules", {task.key for task in classics.tasks})
+        self.assertNotIn("invent.rules", {task.key for task in classics.tasks})
 
         game_keys = {task.key for task in games.tasks}
-        self.assertIn("make.rules", game_keys)
+        self.assertIn("invent.rules", game_keys)
         self.assertIn("playtest.game", game_keys)
         self.assertNotIn("playtest.human-table", game_keys)
         self.assertNotIn("playtest.people", game_keys)
@@ -57,11 +57,11 @@ class ToyBlueprintTest(unittest.TestCase):
             games.to_dict()["post_delivery_reviews"]["feeds"], "future-make"
         )
 
-        self.assertIn("make.motion", {task.key for task in machines.tasks})
+        self.assertIn("invent.motion", {task.key for task in machines.tasks})
         self.assertIn("playtest.motion", {task.key for task in machines.tasks})
-        self.assertIn("make.science", {task.key for task in science.tasks})
+        self.assertIn("invent.science", {task.key for task in science.tasks})
         self.assertIn("playtest.science", {task.key for task in science.tasks})
-        self.assertIn("make.world", {task.key for task in worlds.tasks})
+        self.assertIn("invent.world", {task.key for task in worlds.tasks})
         self.assertIn("playtest.likeness", {task.key for task in worlds.tasks})
 
     def test_default_make_request_turns_utility_into_play(self):
@@ -94,7 +94,7 @@ class ToyBlueprintTest(unittest.TestCase):
         with self.assertRaises(ContractError):
             ToyBlueprint.for_lane("organizer")
 
-    def test_reviews_policy_cannot_become_a_sixth_job_or_rewrite_delivery(self):
+    def test_reviews_policy_cannot_become_a_creation_job_or_rewrite_delivery(self):
         with self.assertRaisesRegex(ContractError, "preserve the delivered revision"):
             ReviewsPolicy(feeds="make", mutates_delivered_revision=True)
 

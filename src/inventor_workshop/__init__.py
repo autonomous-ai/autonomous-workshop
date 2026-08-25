@@ -38,6 +38,7 @@ from .make import (
     ProductForge,
     Wish,
     Workbench,
+    generate_wish_id,
 )
 from .doors import (
     CadDoor,
@@ -77,6 +78,8 @@ from .jobs import (
     DeliverContext,
     Delivered,
     InstructionsContext,
+    InventContext,
+    Invented,
     Feedback,
     Made,
     MakeContext,
@@ -123,7 +126,13 @@ from .toys import (
     ToyTask,
     playful_make_request,
 )
-from .workshop import CUSTOMIZATION_LEVELS, InstructionsJob, Workshop, WorkshopTools
+from .workshop import (
+    CUSTOMIZATION_LEVELS,
+    InstructionsJob,
+    InventJob,
+    Workshop,
+    WorkshopTools,
+)
 from .errors import (
     AmbiguousEffectError,
     AmbiguousSendError,
@@ -209,6 +218,9 @@ __all__ = [
     "InstructionsContext",
     "InstructionsJob",
     "InstructionsSiteWriter",
+    "InventContext",
+    "Invented",
+    "InventJob",
     "EffectError",
     "ExecutableGame",
     "Feedback",
@@ -282,6 +294,7 @@ __all__ = [
     "discover_schemas",
     "discover_skills",
     "fingerprint_skill_tree",
+    "generate_wish_id",
     "fits_bed_envelope",
     "inspect_artifact",
     "inspect_stl_path",

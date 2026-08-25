@@ -262,7 +262,7 @@ No generic, off-the-shelf prints.
 **Lane promise:** {lane_guidance}
 
 ```text
-Wish -> Make <-> Playtest -> Instructions -> Deliver
+Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
           ^          |
           + feedback +
 ```
@@ -354,6 +354,7 @@ from pathlib import Path
 from typing import Optional
 
 from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop, WorkshopTools
+from inventor_workshop.make import generate_wish_id
 
 {custom_import}
 
@@ -457,9 +458,14 @@ def main(argv=None) -> int:
             parser.error("--playtest-rounds belongs to run, not profile")
         result = describe()
     else:
-        if not args.product_id or not args.objective:
-            parser.error("%s requires product_id and a quoted Wish" % args.command)
-        wish = create_wish(args.product_id, args.objective)
+        if not args.product_id:
+            parser.error("%s requires a quoted Wish" % args.command)
+        product_id, objective = (
+            (generate_wish_id(), args.product_id)
+            if args.objective is None
+            else (args.product_id, args.objective)
+        )
+        wish = create_wish(product_id, objective)
         if args.command == "wish":
             if args.playtest_rounds is not None:
                 parser.error("--playtest-rounds belongs to run, not the Wish")
@@ -513,7 +519,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(workshop.customization_level, {level_literal})
         self.assertEqual(
             tuple(WORKSHOP_JOBS),
-            ("wish", "make", "playtest", "instructions", "deliver"),
+            ("wish", "invent", "make", "playtest", "instructions", "deliver"),
         )
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
@@ -546,7 +552,7 @@ class SmokeTest(unittest.TestCase):
                     )
                 result = json.loads(output.getvalue())
                 self.assertEqual(result["status"], "waiting")
-                self.assertEqual(result["job"], "make")
+                self.assertEqual(result["job"], "invent")
                 self.assertEqual(result["playtest_rounds"], 2)
                 self.assertIsNone(result["artifact_sha256"])
                 self.assertTrue(result["needs"])

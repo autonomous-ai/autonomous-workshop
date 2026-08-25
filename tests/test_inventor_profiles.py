@@ -1,13 +1,15 @@
+import hashlib
 import importlib.util
 import io
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from inventor_workshop.jobs import Made
-from inventor_workshop.workshop import Workshop
+from inventor_workshop.jobs import Invented, Made
+from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +41,23 @@ def make_fixture(context):
     )
 
 
+def invent_fixture(context):
+    wish_sha256 = hashlib.sha256(
+        json.dumps(
+            context.wish.to_dict(), sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    return Invented(
+        wish_sha256,
+        context.taste.sha256,
+        context.blueprint.lane,
+        {
+            "title": "Fixture concept",
+            "summary": "A chosen industrial-design direction for contract tests.",
+        },
+        95,
+        90,
+    )
 class CanonicalInventorProfileTest(unittest.TestCase):
     def test_five_profiles_select_the_five_plaything_lanes_and_three_levels(self):
         expected = {
@@ -76,15 +95,8 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(preview["taste"]["sha256"], workshop.taste.sha256)
                 self.assertEqual(preview["blueprint"]["lane"], workshop.lane)
 
-    def test_unconfigured_profiles_wait_at_their_real_make_boundary(self):
-        expected_need = {
-            "alice": "model-and-cad-maker",
-            "bob": "bob-moving-machine-make",
-            "eve": "model-and-cad-maker",
-            "ivy": "model-and-cad-maker",
-            "leo": "leo-custom-make-adapter",
-        }
-        for inventor_id, capability in expected_need.items():
+    def test_unconfigured_profiles_wait_at_their_real_invent_boundary(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
             with self.subTest(inventor_id=inventor_id), tempfile.TemporaryDirectory() as temporary:
                 profile = load_profile(inventor_id)
                 workshop = profile.build_workshop(runtime_root=Path(temporary))
@@ -94,9 +106,12 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 )
                 result = workshop.run(wish, playtest_rounds=3)
                 self.assertEqual(result.status, "waiting")
-                self.assertEqual(result.job, "make")
+                self.assertEqual(result.job, "invent")
                 self.assertEqual(result.playtest_rounds, 3)
-                self.assertEqual([need.capability for need in result.needs], [capability])
+                self.assertEqual(
+                    [need.capability for need in result.needs],
+                    ["industrial-design-inventor"],
+                )
 
     def test_profile_cli_passes_the_checked_playtest_allowance_to_workshop(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
@@ -120,6 +135,33 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                         0,
                     )
                 self.assertEqual(workshop.run.call_args.kwargs, {"playtest_rounds": 7})
+
+    def test_direct_inventor_cli_generates_the_product_id(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                workshop = mock.Mock()
+                workshop.run.return_value.to_dict.return_value = {"status": "waiting"}
+                with mock.patch.object(
+                    profile, "build_workshop", return_value=workshop
+                ), redirect_stdout(io.StringIO()):
+                    self.assertEqual(
+                        profile.main(
+                            (
+                                "run",
+                                "I wish for a toy without naming its folder first.",
+                            )
+                        ),
+                        0,
+                    )
+                wish = workshop.run.call_args.args[0]
+                self.assertRegex(
+                    wish.product_id, r"^wish-\d{8}-\d{6}-[0-9a-f]{8}$"
+                )
+                self.assertEqual(
+                    wish.objective,
+                    "I wish for a toy without naming its folder first.",
+                )
 
     def test_playtest_allowance_is_not_accepted_as_wish_text(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
@@ -145,6 +187,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         ):
             with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
                 workshop = profile.build_workshop(
+                    tools=WorkshopTools(invent=invent_fixture),
                     make=make_fixture,
                     runtime_root=Path(temporary),
                 )
@@ -161,6 +204,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
         leo = load_profile("leo")
         with tempfile.TemporaryDirectory() as temporary:
             workshop = leo.build_workshop(
+                tools=WorkshopTools(invent=invent_fixture),
                 make=make_fixture,
                 runtime_root=Path(temporary),
             )

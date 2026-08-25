@@ -1,4 +1,5 @@
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +12,7 @@ from inventor_workshop.jobs import (
     CustomerReview,
     Delivered,
     Feedback,
+    Invented,
     Made,
     Need,
     Playtested,
@@ -45,6 +47,27 @@ class ToyWorkshopTest(unittest.TestCase):
 
     def tearDown(self):
         self.temporary.cleanup()
+
+    @staticmethod
+    def invent_job(context):
+        wish_sha256 = hashlib.sha256(
+            json.dumps(
+                context.wish.to_dict(),
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        return Invented(
+            wish_sha256=wish_sha256,
+            taste_sha256=context.taste.sha256,
+            lane=context.blueprint.lane,
+            concept={
+                "title": "Rhythm Top concept",
+                "summary": "A pocket top whose changing rhythm invites another spin.",
+            },
+            score=92,
+            target_score=90,
+        )
 
     @staticmethod
     def make_job(context):
@@ -194,6 +217,7 @@ class ToyWorkshopTest(unittest.TestCase):
 
     def complete_tools(self, playtest=None):
         return WorkshopTools(
+            invent=self.invent_job,
             make=self.make_job,
             playtest=playtest or self.playtest_job,
             instructions=DefaultInstructions(site_writer=self.site_writer),
@@ -219,6 +243,7 @@ class ToyWorkshopTest(unittest.TestCase):
             transitions,
             [
                 "wish",
+                "invent",
                 "make",
                 "playtest",
                 "make",
@@ -249,6 +274,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(),
@@ -264,6 +290,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(site_writer=counted_site),
@@ -311,6 +338,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(site_writer=waiting_site),
@@ -334,6 +362,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
                 instructions=DefaultInstructions(site_writer=successful_site),
@@ -364,6 +393,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(site_writer=waiting_site),
@@ -389,6 +419,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(site_writer=forbidden_site),
@@ -453,6 +484,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 playtest=self.passing_playtest,
                 instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
@@ -464,6 +496,7 @@ class ToyWorkshopTest(unittest.TestCase):
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
+                invent=self.invent_job,
                 instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
@@ -491,6 +524,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "little-worlds",
+            tools=WorkshopTools(invent=self.invent_job),
             runtime_root=self.runtime,
         )
         result = workshop.run(
@@ -504,6 +538,40 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertTrue(state.verify_event_chain("tiny-friend"))
         self.assertIsNone(state.get_product("tiny-friend")["artifact_sha256"])
         self.assertEqual(state.get_product("tiny-friend")["metadata"]["playtest_rounds"], 2)
+
+    def test_invent_must_reach_its_reward_target_before_make(self):
+        make_calls = 0
+
+        def unfinished_invent(context):
+            complete = self.invent_job(context)
+            return Invented(
+                complete.wish_sha256,
+                complete.taste_sha256,
+                complete.lane,
+                complete.concept,
+                84,
+                90,
+            )
+
+        def forbidden_make(context):
+            nonlocal make_calls
+            make_calls += 1
+            return self.make_job(context)
+
+        result = Workshop(
+            self.inventor,
+            "moving-machines",
+            tools=WorkshopTools(invent=unfinished_invent, make=forbidden_make),
+            runtime_root=self.root / "unfinished-invent-runtime",
+        ).run(
+            Wish.create("unfinished-concept", "A machine with an unresolved shape"),
+            playtest_rounds=2,
+        )
+        self.assertEqual((result.status, result.job), ("waiting", "invent"))
+        self.assertEqual(
+            result.needs[0].capability, "industrial-design-target-score"
+        )
+        self.assertEqual(make_calls, 0)
 
     def test_each_wish_can_buy_a_different_bounded_round_allowance(self):
         two_rounds = Workshop(
@@ -561,6 +629,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
+            tools=WorkshopTools(invent=self.invent_job),
             make=self.make_job,
             playtest=incomplete_playtest,
             runtime_root=self.root / "incomplete-policy-runtime",
@@ -587,6 +656,7 @@ class ToyWorkshopTest(unittest.TestCase):
         workshop = Workshop(
             self.inventor,
             "moving-machines",
+            tools=WorkshopTools(invent=self.invent_job),
             make=self.make_job,
             playtest=non_ai_playtest,
             runtime_root=self.root / "non-ai-playtest-runtime",
@@ -605,6 +675,7 @@ class ToyWorkshopTest(unittest.TestCase):
         invalid = Workshop(
             self.inventor,
             "invented-games",
+            tools=WorkshopTools(invent=self.invent_job),
             make=self.make_job,
             playtest=self.passing_playtest,
             runtime_root=self.root / "invalid-invented-runtime",

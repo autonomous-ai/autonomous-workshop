@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from inventor_workshop.make import Wish
+from inventor_workshop.make import Wish, generate_wish_id
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -75,9 +75,14 @@ def main(argv=None) -> int:
             parser.error("--playtest-rounds belongs to run, not profile")
         result = describe()
     else:
-        if not args.product_id or not args.objective:
-            parser.error("%s requires product_id and a quoted objective" % args.command)
-        wish = create_wish(args.product_id, args.objective)
+        if not args.product_id:
+            parser.error("%s requires a quoted Wish" % args.command)
+        product_id, objective = (
+            (generate_wish_id(), args.product_id)
+            if args.objective is None
+            else (args.product_id, args.objective)
+        )
+        wish = create_wish(product_id, objective)
         workshop = build_workshop()
         if args.command == "wish":
             if args.playtest_rounds is not None:

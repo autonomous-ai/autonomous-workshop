@@ -75,28 +75,36 @@ shared Workshop loops are not enough.
 
 ### Quick start
 
-Requires Python 3.9 or newer.
+Requires Python 3.9 or newer and a signed-in Codex CLI.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e .
 
-workshop create inventor ada \
+uv run workshop wish \
+  "I wish for a wind-up version of my dog that walks across my desk"
+```
+
+That is the customer path. The Workshop creates the ID, uses a small Manager
+model to match the Wish against the Inventors' descriptions, explains the
+choice, and hands the exact words to the chosen Inventor.
+
+To add an Inventor:
+
+```bash
+uv run workshop create inventor ada \
   --name Ada \
   --description "Choose Ada for hand-cranked creatures; not static models or games." \
   --lane moving-machines \
   --level taste-only \
   --root .
 
-python -m pip install -e inventors/ada
-ada run --playtest-rounds 4 first-wish \
+uv run --project inventors/ada ada run \
   "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-The run stops when the toy passes or uses all four Playtest rounds.
+The ID is automatic here too. A run continues while its real workers are
+connected and reports the exact capability it needs when one is missing.
 
 ### Custom `TASTE.md`
 
@@ -165,6 +173,7 @@ workshop check inventors --run
 python tools/verify_skill_locks.py
 python tools/verify_snapshot_locks.py
 python tools/scan_secrets.py
+python tools/evaluate_wish_routing.py
 git diff --check
 ```
 

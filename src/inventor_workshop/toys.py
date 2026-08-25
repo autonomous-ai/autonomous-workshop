@@ -1,7 +1,7 @@
-"""The opinionated first Workshop: Wish-shaped playthings for grown-ups.
+"""The opinionated Workshop: Wish-shaped playthings for grown-ups.
 
 The five lanes are crafts, not extra pipeline stages. Every inventor implements
-the same five creation jobs: Wish, Make, AI Playtest, Instructions, and Deliver.
+the same six creation jobs: Wish, Invent, Make, AI Playtest, Instructions, and Deliver.
 Customer Reviews follow Deliver as a shared feedback stream. Reviews improve a
 future revision of the same toy and future Wishes; they never rewrite what was
 already delivered.
@@ -21,6 +21,7 @@ from .taste import Taste
 
 WORKSHOP_JOBS: Tuple[str, ...] = (
     "wish",
+    "invent",
     "make",
     "playtest",
     "instructions",
@@ -50,7 +51,7 @@ class ToyTask:
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
             raise ContractError(
-                "toy task job must be Wish, Make, Playtest, Instructions, or Deliver"
+                "toy task job must be Wish, Invent, Make, Playtest, Instructions, or Deliver"
             )
         for label, value in (
             ("key", self.key),
@@ -90,61 +91,61 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "wish-intake",
     ),
     ToyTask(
-        "make.discover",
-        "make",
+        "invent.discover",
+        "invent",
         "Research prior art, safety boundaries, context, and the opportunity.",
         "Cited research and three genuinely different directions.",
         "research",
     ),
     ToyTask(
-        "make.choose",
-        "make",
+        "invent.choose",
+        "invent",
         "Choose one direction with a signature decision, mechanism, or reveal.",
         "A decision record bound to rejected alternatives and Taste.",
         "invention",
     ),
     ToyTask(
-        "make.unique",
-        "make",
+        "invent.unique",
+        "invent",
         "Make the Wish structural; do not decorate something already on a shelf.",
         "A trace from Wish details to rules, geometry, mechanism, or composition.",
         "wish-shaped-design",
     ),
     ToyTask(
-        "make.classic",
-        "make",
+        "invent.classic",
+        "invent",
         "Preserve the known game's rules while inventing its physical edition for this Wish.",
         "Known-rule reference and a complete mapping from roles and information to parts.",
         "classic-edition-design",
         ("classics-made-yours",),
     ),
     ToyTask(
-        "make.rules",
-        "make",
+        "invent.rules",
+        "invent",
         "Write complete executable rules and AI-player models for a game that did not exist.",
         "Setup, legal actions, end condition, scoring, ties, and simulator source.",
         "game-design",
         ("invented-games",),
     ),
     ToyTask(
-        "make.motion",
-        "make",
+        "invent.motion",
+        "invent",
         "Design a mechanism whose motion is the delightful idea, not an afterthought.",
         "Kinematic model, tolerances, load assumptions, and failure modes.",
         "kinetic-design",
         ("moving-machines",),
     ),
     ToyTask(
-        "make.science",
-        "make",
+        "invent.science",
+        "invent",
         "Turn a scientific or mathematical relationship into something hands can understand.",
         "Source model, stated simplifications, scale choices, and learning interaction.",
         "science-design",
         ("holdable-science",),
     ),
     ToyTask(
-        "make.world",
-        "make",
+        "invent.world",
+        "invent",
         "Make the recipient's real subject into a coherent tiny world rather than a generic miniature.",
         "Consented references and a feature-to-form personalization map.",
         "world-design",
