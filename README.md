@@ -103,17 +103,52 @@ Edit `inventors/ada/TASTE.md` to define what Ada loves, avoids, notices, and
 makes differently from anyone else. If the shared Make and Playtest fit, stop
 here: `taste-only` needs no custom code.
 
+- [Alice](inventors/alice/TASTE.md) — personal heirloom editions of known games
+- [Leo](inventors/leo/TASTE.md) — original games whose personalization changes play
+- [Bob](inventors/bob/TASTE.md) — kinetic machines where the mechanism is the spectacle
+- [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
+- [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
+
 ### Custom Make
 
 Choose `custom-make` when the Inventor needs its own way to turn a Wish and
 Playtest feedback into parts. Implement the generated `make(context)` hook; the
 Workshop still supplies Playtest, Instructions, and Deliver.
 
+The checked-in showcase Make follows this pattern:
+
+```python
+def showcase_make(context):
+    spec = next(item for item in SPECS if item.slug == context.wish.product_id)
+    artifact = _build_artifact(spec, context)
+    product = json.loads((artifact / "product.json").read_text())
+    return Made.from_root(artifact, product)
+```
+
+See the [complete Make adapter](tools/build_showcase_products.py#L1619-L1631).
+
 ### Custom Playtest
 
 Choose `custom-playtest` when the Inventor also needs its own way to test what
 it makes. Implement `playtest(context)` to return evidence and feedback; failed
 tests go back to Make. Custom Playtest always includes Custom Make.
+
+A Playtest runs its checks, seals their evidence, and binds every result to the
+exact Make:
+
+```python
+def showcase_playtest(context):
+    evidence_root = context.workspace.absolute()
+    results = run_checks(context.made, evidence_root)
+    evidence = build_artifact_manifest(evidence_root, created_at="content-addressed")
+    return Playtested(Playtest(
+        context.made.artifact_manifest,
+        results,
+        evidence_manifest=evidence,
+    ))
+```
+
+See the [complete Playtest adapter](tools/build_showcase_products.py#L1697-L1903).
 
 Full contracts and examples: [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
