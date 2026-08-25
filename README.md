@@ -92,9 +92,10 @@ exact words. It invents, makes, Playtests, and prepares the verified Factory
 page. The page goes public by default; add `--draft` when the Wish should stay
 private. This does not claim the physical toy was printed or delivered.
 
-The command prints the exact `workshop status <wish-id>` continuation. If a
-provider is missing, the run waits with one concrete next action instead of
-starting over or pretending it passed.
+The command prints the exact `workshop status <wish-id>` tracker. If a provider
+is missing or a worker stops, `workshop resume <wish-id>` continues the saved
+stage without rerunning completed work. Legacy runs without the required exact
+checkpoint stay read-only and say why instead of guessing or pretending.
 
 To add an Inventor from one existing `TASTE.md`:
 

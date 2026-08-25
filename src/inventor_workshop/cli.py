@@ -11,6 +11,7 @@ import re
 import secrets
 import shlex
 import shutil
+import signal
 import sqlite3
 import stat
 import subprocess
@@ -41,7 +42,8 @@ from .handoff import (
     ManagerAssignmentHandoff,
     validate_manager_assignment_result,
 )
-from .jobs import Delivered, Invented, Need, WaitingFor, WorkshopRun
+from .instructions import sealed_instructions_manifest
+from .jobs import Delivered, Feedback, Invented, Need, WaitingFor, WorkshopRun
 from .execution_env import codex_subprocess_environment, minimal_tool_environment
 from .agent_instructions import (
     DEFAULT_INSTRUCTIONS_CREATOR_MODEL,
@@ -55,7 +57,7 @@ from .manifest import (
     load_manifest,
     validate_entrypoints,
 )
-from .models import Receipt
+from .models import Receipt, utc_now
 from .pack import pack_artifact, plan_pack, seal_artifact
 from .manager import WorkshopManager, discover_inventor_catalog
 from .semantic_manager import CodexSemanticManager
@@ -70,7 +72,17 @@ from .store import InventorStore
 from .shop import ShopDoor
 from .taste import load_taste, load_taste_header
 from .toys import PLAYTHING_LANES, ToyBlueprint
-from .workshop import CUSTOMIZATION_LEVELS, Workshop, WorkshopTools
+from .workshop import (
+    CUSTOMIZATION_LEVELS,
+    Workshop,
+    WorkshopTools,
+    _playtest_policy_needs,
+    _read_instructions_checkpoint,
+    _read_stage_checkpoint,
+    _rebuild_checkpoint_results,
+    _rebuild_made_value,
+    _rebuild_playtested_value,
+)
 
 
 DEFAULT_WISH_PLAYTEST_ROUNDS = 4
@@ -205,11 +217,49 @@ class _ReadOnlyWorkshopStore:
 
     def __init__(self, database: Path) -> None:
         requested = Path(database)
-        if requested.is_symlink() or not requested.is_file():
+        runtime_root = requested.parent
+        if runtime_root.is_symlink() or not runtime_root.is_dir():
+            raise WorkshopError(
+                "Workshop status runtime must be a regular directory"
+            )
+        try:
+            runtime_stat = runtime_root.lstat()
+            database_stat = requested.lstat()
+        except OSError as exc:
+            raise WorkshopError("Workshop status database is missing") from exc
+        if not stat.S_ISDIR(runtime_stat.st_mode):
+            raise WorkshopError(
+                "Workshop status runtime must be a regular directory"
+            )
+        if not stat.S_ISREG(database_stat.st_mode):
             raise WorkshopError("Workshop status database must be a regular file")
+        resolved_runtime = runtime_root.resolve(strict=True)
         self.database = requested.resolve(strict=True)
+        if self.database.parent != resolved_runtime:
+            raise WorkshopError("Workshop status database escapes its runtime")
+        self._runtime_identity = (runtime_stat.st_dev, runtime_stat.st_ino)
+        self._database_identity = (database_stat.st_dev, database_stat.st_ino)
+
+    def _assert_current_path(self) -> None:
+        try:
+            runtime_stat = self.database.parent.lstat()
+            database_stat = self.database.lstat()
+        except OSError as exc:
+            raise WorkshopError(
+                "Workshop status database changed while opening"
+            ) from exc
+        if (
+            stat.S_ISLNK(runtime_stat.st_mode)
+            or stat.S_ISLNK(database_stat.st_mode)
+            or (runtime_stat.st_dev, runtime_stat.st_ino)
+            != self._runtime_identity
+            or (database_stat.st_dev, database_stat.st_ino)
+            != self._database_identity
+        ):
+            raise WorkshopError("Workshop status database changed while opening")
 
     def _connect(self) -> sqlite3.Connection:
+        self._assert_current_path()
         connection = sqlite3.connect(
             self.database.as_uri() + "?mode=ro",
             uri=True,
@@ -217,6 +267,11 @@ class _ReadOnlyWorkshopStore:
         )
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only=ON")
+        try:
+            self._assert_current_path()
+        except Exception:
+            connection.close()
+            raise
         return connection
 
     @classmethod
@@ -263,6 +318,21 @@ class _ReadOnlyWorkshopStore:
         finally:
             connection.close()
         return tuple(self._row(row) for row in rows)
+
+    def active_lease(self, product_id: str) -> Optional[Mapping[str, str]]:
+        """Observe an unexpired product lease without deleting stale rows."""
+
+        connection = self._connect()
+        try:
+            row = connection.execute(
+                "SELECT holder, expires_at FROM leases WHERE product_id=?",
+                (product_id,),
+            ).fetchone()
+        finally:
+            connection.close()
+        if row is None or row["expires_at"] <= utc_now():
+            return None
+        return {"holder": row["holder"], "expires_at": row["expires_at"]}
 
     def latest_publish_intent(self, product_id: str) -> Optional[Mapping[str, Any]]:
         connection = self._connect()
@@ -463,6 +533,9 @@ def _validate_child_workshop_state(
 ) -> Mapping[str, Any]:
     """Derive the child result from the trusted event chain, never stdout claims."""
 
+    assert_current = getattr(assignment, "assert_current", None)
+    if callable(assert_current):
+        assert_current()
     card = assignment.decision.selected.card
     lane, level = _manifest_workshop_shape(card)
     database = Path(card.root) / ".workshop" / "workshop.sqlite3"
@@ -594,6 +667,8 @@ def _validate_child_workshop_state(
         raise WorkshopError(
             "selected Inventor stdout differs from its durable Workshop state"
         )
+    if callable(assert_current):
+        assert_current()
     return {**trusted, "manager_assignment": child_result["manager_assignment"]}
 
 
@@ -608,6 +683,54 @@ class _ResumeOnlyStructuredRunner:
     def invoke(self, **kwargs):  # pragma: no cover - a resume invariant
         del kwargs
         raise WorkshopError("sealed Instructions resume attempted to rerun AI")
+
+
+def _managed_child_run(
+    command: Sequence[str],
+    *,
+    cwd: str,
+    env: Mapping[str, str],
+    input: str,
+    capture_output: bool,
+    text: bool,
+    timeout: float,
+    check: bool,
+) -> subprocess.CompletedProcess:
+    """Run one Inventor and reap its complete descendant process group."""
+
+    if not capture_output or not text or check:
+        raise WorkshopError("managed Inventor subprocess options are invalid")
+    process = subprocess.Popen(
+        list(command),
+        cwd=cwd,
+        env=dict(env),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = process.communicate(input=input, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except (AttributeError, ProcessLookupError, PermissionError):
+            process.terminate()
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except (AttributeError, ProcessLookupError, PermissionError):
+                process.kill()
+            stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(
+            list(command), timeout, output=stdout, stderr=stderr
+        ) from exc
+    return subprocess.CompletedProcess(
+        list(command), process.returncode, stdout=stdout, stderr=stderr
+    )
 
 
 def _resume_factory_instructions(
@@ -716,14 +839,18 @@ def _resume_factory_instructions(
 def _run_inventor(
     assignment,
     *,
-    runner: Any = subprocess.run,
+    action: str = "run",
+    continuing: bool = False,
+    runner: Any = _managed_child_run,
     state_validator: Any = _validate_child_workshop_state,
 ) -> Mapping[str, Any]:
+    if action not in ("run", "resume"):
+        raise WorkshopError("Inventor process action must be run or resume")
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     command = list(assignment.entrypoint)
     if command[0] in ("python", "python3"):
         command[0] = sys.executable
-    command.extend(("run", "--assignment-stdin"))
+    command.extend((action, "--assignment-stdin"))
     inventor_id = assignment.decision.selected.card.inventor_id
     try:
         completed = runner(
@@ -743,29 +870,84 @@ def _run_inventor(
         )
     except subprocess.TimeoutExpired as exc:
         root = Path(assignment.decision.selected.card.root).parent
+        if action == "resume" or continuing:
+            raise WorkshopError(
+                "the resumed Inventor did not finish within 60 minutes; do not "
+                "start another worker yet. Inspect the exact durable run with: %s. "
+                "After the active lease expires, continue it with: %s"
+                % (
+                    _status_command(assignment.wish.product_id, root),
+                    _resume_command(assignment.wish.product_id, root),
+                )
+            ) from exc
         raise WorkshopError(
-            "the selected Inventor did not finish within 60 minutes; its exact "
-            "assignment is saved, but this stage cannot resume automatically. "
-            "Inspect it with: %s. If that process stopped, start a new Wish with: %s"
+            "the selected Inventor did not finish within 60 minutes and may still "
+            "own the Wish lease. Do not create a duplicate Wish. Inspect the exact "
+            "saved run with: %s. If the worker stopped, wait for its lease to expire, "
+            "then continue the same Wish with: %s"
             % (
                 _status_command(assignment.wish.product_id, root),
-                _wish_command(assignment.wish.objective, root),
+                _resume_command(assignment.wish.product_id, root),
             )
         ) from exc
     except (OSError, subprocess.SubprocessError) as exc:
         root = Path(assignment.decision.selected.card.root).parent
+        if action == "resume" or continuing:
+            raise WorkshopError(
+                "the selected Inventor continuation could not run; no unverified "
+                "result was accepted. Inspect it with: %s, then retry the exact "
+                "Wish with: %s"
+                % (
+                    _status_command(assignment.wish.product_id, root),
+                    _resume_command(assignment.wish.product_id, root),
+                )
+            ) from exc
         raise WorkshopError(
             "the selected Inventor process could not run; its exact assignment is "
-            "saved, but no work is running. Inspect it with: %s. Retry as a new "
-            "Wish with: %s"
+            "saved, but no verified result was accepted. Do not create a duplicate "
+            "Wish. Inspect the same Wish with: %s, then continue it with: %s"
             % (
                 _status_command(assignment.wish.product_id, root),
-                _wish_command(assignment.wish.objective, root),
+                _resume_command(assignment.wish.product_id, root),
             )
         ) from exc
     if completed.returncode != 0:
+        root = Path(assignment.decision.selected.card.root).parent
+        if action == "resume" or continuing:
+            database = (
+                Path(assignment.decision.selected.card.root)
+                / ".workshop"
+                / "workshop.sqlite3"
+            )
+            active = (
+                _ReadOnlyWorkshopStore(database).active_lease(
+                    assignment.wish.product_id
+                )
+                if database.is_file() and not database.is_symlink()
+                else None
+            )
+            if active is not None:
+                raise WorkshopError(
+                    "another Workshop worker owns this Wish until %s; wait, then "
+                    "inspect it with: %s"
+                    % (
+                        active["expires_at"],
+                        _status_command(assignment.wish.product_id, root),
+                    )
+                )
+            raise WorkshopError(
+                "the selected Inventor could not continue this exact checkpoint; "
+                "the durable run was not upgraded from child output. Inspect it "
+                "with: %s" % _status_command(assignment.wish.product_id, root)
+            )
         raise WorkshopError(
-            "the selected Inventor stopped before returning a Workshop result"
+            "the selected Inventor stopped before returning a verified Workshop "
+            "result. Do not create a duplicate Wish. Inspect the same Wish with: "
+            "%s, then continue it with: %s"
+            % (
+                _status_command(assignment.wish.product_id, root),
+                _resume_command(assignment.wish.product_id, root),
+            )
         )
     try:
         payload = json.loads(completed.stdout)
@@ -783,7 +965,28 @@ def _run_inventor(
         ) from exc
     if not callable(state_validator):
         raise WorkshopError("Workshop child state validator must be callable")
-    return state_validator(assignment, bound)
+    trusted = state_validator(assignment, bound)
+    assert_current = getattr(assignment, "assert_current", None)
+    if callable(assert_current):
+        assert_current()
+    return trusted
+
+
+def _resume_inventor(
+    assignment,
+    *,
+    runner: Any = _managed_child_run,
+    state_validator: Any = _validate_child_workshop_state,
+) -> Mapping[str, Any]:
+    """Continue one sealed Manager assignment in its selected Inventor child."""
+
+    return _run_inventor(
+        assignment,
+        action="resume",
+        continuing=True,
+        runner=runner,
+        state_validator=state_validator,
+    )
 
 
 def _assignment_file(card_root: Path, product_id: str) -> Path:
@@ -794,38 +997,104 @@ def _assignment_file(card_root: Path, product_id: str) -> Path:
 def _read_saved_handoff(path: Path, inventor_id: str) -> ManagerAssignmentHandoff:
     """Read one bounded, non-symlink Manager handoff used only for resume."""
 
+    requested = Path(path)
+    runtime_root = requested.parent.parent
+    if runtime_root.is_symlink() or not runtime_root.is_dir():
+        raise WorkshopError("Manager assignment runtime must be a regular directory")
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
     try:
-        expected = path.lstat()
-    except FileNotFoundError:
-        raise WorkshopError("this Wish has no saved Manager assignment")
-    if path.is_symlink() or not stat.S_ISREG(expected.st_mode):
-        raise WorkshopError("saved Manager assignment must be a regular file")
-    if not 1 <= expected.st_size <= MAX_HANDOFF_BYTES:
-        raise WorkshopError("saved Manager assignment is empty or too large")
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-    try:
-        descriptor = os.open(str(path), flags)
+        runtime_descriptor = os.open(str(runtime_root), directory_flags)
     except OSError as exc:
-        raise WorkshopError("cannot safely read the saved Manager assignment") from exc
+        raise WorkshopError("cannot safely open Manager assignment runtime") from exc
     try:
-        opened = os.fstat(descriptor)
-        if not stat.S_ISREG(opened.st_mode) or (
-            opened.st_dev,
-            opened.st_ino,
-        ) != (expected.st_dev, expected.st_ino):
-            raise WorkshopError("saved Manager assignment changed while opening")
-        source = os.read(descriptor, MAX_HANDOFF_BYTES + 1)
-        if len(source) > MAX_HANDOFF_BYTES or os.read(descriptor, 1):
-            raise WorkshopError("saved Manager assignment is too large")
-        after = os.fstat(descriptor)
-        if (
-            after.st_size != opened.st_size
-            or after.st_mtime_ns != opened.st_mtime_ns
-            or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
-        ):
-            raise WorkshopError("saved Manager assignment changed while reading")
+        try:
+            expected_directory = os.stat(
+                requested.parent.name,
+                dir_fd=runtime_descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            raise WorkshopError("this Wish has no saved Manager assignment")
+        if not stat.S_ISDIR(expected_directory.st_mode):
+            raise WorkshopError(
+                "Manager assignment storage must be a regular directory"
+            )
+        try:
+            assignment_descriptor = os.open(
+                requested.parent.name,
+                directory_flags,
+                dir_fd=runtime_descriptor,
+            )
+        except OSError as exc:
+            raise WorkshopError(
+                "cannot safely open Manager assignment storage"
+            ) from exc
+        try:
+            opened_directory = os.fstat(assignment_descriptor)
+            if (
+                opened_directory.st_dev,
+                opened_directory.st_ino,
+            ) != (expected_directory.st_dev, expected_directory.st_ino):
+                raise WorkshopError(
+                    "Manager assignment storage changed while opening"
+                )
+            try:
+                expected = os.stat(
+                    requested.name,
+                    dir_fd=assignment_descriptor,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                raise WorkshopError("this Wish has no saved Manager assignment")
+            if not stat.S_ISREG(expected.st_mode):
+                raise WorkshopError(
+                    "saved Manager assignment must be a regular file"
+                )
+            if not 1 <= expected.st_size <= MAX_HANDOFF_BYTES:
+                raise WorkshopError("saved Manager assignment is empty or too large")
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+            try:
+                descriptor = os.open(
+                    requested.name,
+                    flags,
+                    dir_fd=assignment_descriptor,
+                )
+            except OSError as exc:
+                raise WorkshopError(
+                    "cannot safely read the saved Manager assignment"
+                ) from exc
+            try:
+                opened = os.fstat(descriptor)
+                if not stat.S_ISREG(opened.st_mode) or (
+                    opened.st_dev,
+                    opened.st_ino,
+                ) != (expected.st_dev, expected.st_ino):
+                    raise WorkshopError(
+                        "saved Manager assignment changed while opening"
+                    )
+                source = os.read(descriptor, MAX_HANDOFF_BYTES + 1)
+                if len(source) > MAX_HANDOFF_BYTES or os.read(descriptor, 1):
+                    raise WorkshopError("saved Manager assignment is too large")
+                after = os.fstat(descriptor)
+                if (
+                    after.st_size != opened.st_size
+                    or after.st_mtime_ns != opened.st_mtime_ns
+                    or (after.st_dev, after.st_ino)
+                    != (opened.st_dev, opened.st_ino)
+                ):
+                    raise WorkshopError(
+                        "saved Manager assignment changed while reading"
+                    )
+            finally:
+                os.close(descriptor)
+        finally:
+            os.close(assignment_descriptor)
     finally:
-        os.close(descriptor)
+        os.close(runtime_descriptor)
     try:
         value = json.loads(source.decode("utf-8"))
     except (UnicodeError, json.JSONDecodeError) as exc:
@@ -998,6 +1267,462 @@ def _root_for_durable_wish(
     return matches[0]
 
 
+def _valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _has_persisted_invented(events: Sequence[Mapping[str, Any]]) -> bool:
+    for event in reversed(events):
+        payload = event.get("payload")
+        if (
+            event.get("from_stage") != "invent"
+            or event.get("to_stage") != "make"
+            or not isinstance(payload, Mapping)
+            or "invented" not in payload
+        ):
+            continue
+        try:
+            _invented_from_event(payload["invented"])
+        except (TypeError, WorkshopError):
+            return False
+        return True
+    return False
+
+
+def _has_persisted_make_feedback(
+    events: Sequence[Mapping[str, Any]], round_number: Any
+) -> bool:
+    if round_number == 1:
+        return True
+    if type(round_number) is not int or round_number < 2:
+        return False
+    for event in reversed(events):
+        payload = event.get("payload")
+        if (
+            event.get("from_stage") != "playtest"
+            or event.get("to_stage") != "make"
+            or not isinstance(payload, Mapping)
+            or payload.get("round") != round_number
+        ):
+            continue
+        values = payload.get("feedback")
+        if not isinstance(values, list) or not values:
+            return False
+        try:
+            feedback = tuple(Feedback(**dict(value)) for value in values)
+        except (TypeError, WorkshopError):
+            return False
+        return all(item.severity in ("improve", "block") for item in feedback)
+    return False
+
+
+def _resume_binding_problem(located: Mapping[str, Any]) -> Optional[str]:
+    """Fail before a child effect when saved Manager and Workshop identities drift."""
+
+    handoff = located.get("handoff")
+    card = located.get("card")
+    if not isinstance(handoff, ManagerAssignmentHandoff) or card is None:
+        return "this durable product has no exact saved Manager assignment"
+    if handoff.inventor_id != getattr(card, "inventor_id", None):
+        return "the saved Manager assignment selected a different Inventor"
+    if not handoff.has_exact_inventor_identity:
+        return (
+            "this legacy Manager assignment did not save the selected Inventor "
+            "implementation identity, so contribution code cannot resume safely"
+        )
+    try:
+        handoff.assert_inventor_current(card)
+        lane, level = _manifest_workshop_shape(card)
+        taste = load_taste(card.root)
+    except (OSError, WorkshopError, ValueError) as exc:
+        return "the selected Inventor identity changed: %s" % exc
+    product = located.get("product")
+    if product is None:
+        return None
+    metadata = product.get("metadata")
+    expected = {
+        "wish": handoff.wish.to_dict(),
+        "inventor_id": handoff.inventor_id,
+        "taste_sha256": taste.sha256,
+        "blueprint_sha256": ToyBlueprint.for_lane(lane).sha256,
+        "lane": lane,
+        "customization_level": level,
+        "playtest_rounds": handoff.playtest_rounds,
+    }
+    if metadata != expected:
+        return (
+            "durable Workshop bindings differ from the exact saved Manager assignment, "
+            "Inventor identity, Taste, lane, customization, or Playtest allowance"
+        )
+    return None
+
+
+def _accepted_invented_record(
+    located: Mapping[str, Any]
+) -> tuple[Optional[Mapping[str, Any]], Optional[Invented]]:
+    metadata = located.get("product", {}).get("metadata")
+    if not isinstance(metadata, Mapping):
+        return None, None
+    for event in reversed(located.get("events", ())):
+        payload = event.get("payload")
+        if (
+            event.get("from_stage") != "invent"
+            or event.get("to_stage") != "make"
+            or not isinstance(payload, Mapping)
+            or "invented" not in payload
+        ):
+            continue
+        try:
+            invented = _invented_from_event(payload["invented"])
+        except (TypeError, WorkshopError):
+            return event, None
+        wish = metadata.get("wish")
+        expected_wish_sha256 = (
+            hashlib.sha256(
+                json.dumps(
+                    wish,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                ).encode("utf-8")
+            ).hexdigest()
+            if isinstance(wish, Mapping)
+            else None
+        )
+        if (
+            not invented.passed
+            or invented.wish_sha256 != expected_wish_sha256
+            or invented.taste_sha256 != metadata.get("taste_sha256")
+            or invented.lane != metadata.get("lane")
+            or payload.get("round") != 1
+            or payload.get("concept_sha256") != invented.concept_sha256
+            or payload.get("invent_score") != invented.score
+            or payload.get("invent_target_score") != invented.target_score
+        ):
+            return event, None
+        return event, invented
+    return None, None
+
+
+def _exact_playtest_checkpoint_problem(
+    located: Mapping[str, Any], run_root: Path, latest_payload: Mapping[str, Any]
+) -> Optional[str]:
+    round_number = latest_payload.get("round")
+    made_event = next(
+        (
+            event
+            for event in reversed(located.get("events", ()))
+            if event.get("from_stage") == "make"
+            and event.get("to_stage") == "playtest"
+            and isinstance(event.get("payload"), Mapping)
+            and event["payload"].get("round") == round_number
+        ),
+        None,
+    )
+    if made_event is None:
+        return "Playtest has no authoritative Make-to-Playtest checkpoint event"
+    made_event_payload = made_event["payload"]
+    expected_refs = {
+        key: made_event_payload.get(key)
+        for key in (
+            "made_checkpoint_path",
+            "made_checkpoint_sha256",
+            "made_checkpoint_round",
+        )
+    }
+    if {key: latest_payload.get(key) for key in expected_refs} != expected_refs:
+        return "latest Playtest state cites a different Made checkpoint"
+    try:
+        checkpoint, made_digest = _read_stage_checkpoint(
+            run_root, made_event, "made"
+        )
+        metadata = located["product"]["metadata"]
+        expected_keys = set(metadata) | {
+            "product_id",
+            "round",
+            "invented",
+            "input_feedback",
+            "made",
+        }
+        # ``wish`` already lives in metadata; checkpoint bindings add product_id.
+        if set(checkpoint) != expected_keys:
+            return "Made checkpoint payload shape is not exact"
+        if any(checkpoint.get(key) != value for key, value in metadata.items()):
+            return "Made checkpoint bindings differ from the durable Workshop"
+        if (
+            checkpoint.get("product_id") != located["product"]["id"]
+            or checkpoint.get("round") != round_number
+        ):
+            return "Made checkpoint belongs to a different Wish or round"
+        _, accepted = _accepted_invented_record(located)
+        if accepted is None or checkpoint.get("invented") != accepted.to_dict():
+            return "Made checkpoint cites a different Invented record"
+        made = _rebuild_made_value(run_root, checkpoint.get("made"))
+        made.assert_current()
+        if (
+            made_event.get("artifact_sha256") != made.artifact_sha256
+            or made_event_payload.get("artifact_sha256") != made.artifact_sha256
+            or located["product"].get("artifact_sha256")
+            != made.artifact_sha256
+        ):
+            return "Made checkpoint differs from the Playtest artifact identity"
+        if "playtested_checkpoint_sha256" in latest_payload:
+            completed, completed_digest = _read_stage_checkpoint(
+                run_root, located["latest"], "playtested"
+            )
+            expected_completed_keys = set(metadata) | {
+                "product_id",
+                "round",
+                "made_checkpoint_sha256",
+                "made",
+                "playtested",
+            }
+            if set(completed) != expected_completed_keys:
+                return "Playtested checkpoint payload shape is not exact"
+            if any(completed.get(key) != value for key, value in metadata.items()):
+                return "Playtested checkpoint bindings differ from the durable Workshop"
+            if (
+                completed.get("product_id") != located["product"]["id"]
+                or completed.get("round") != round_number
+                or completed.get("made_checkpoint_sha256") != made_digest
+                or completed_digest
+                != latest_payload.get("playtested_checkpoint_sha256")
+            ):
+                return "Playtested checkpoint identity is inconsistent"
+            completed_made = _rebuild_made_value(
+                run_root, completed.get("made")
+            )
+            completed_made.assert_current()
+            if (
+                completed_made.artifact_manifest.to_dict()
+                != made.artifact_manifest.to_dict()
+                or completed_made.product != made.product
+            ):
+                return "Playtested checkpoint contains different Made bytes"
+            _rebuild_playtested_value(
+                run_root, completed.get("playtested"), completed_made
+            )
+    except (KeyError, OSError, TypeError, ValueError, WorkshopError) as exc:
+        return "the exact Playtest checkpoint is unavailable: %s" % exc
+    return None
+
+
+def _exact_instructions_checkpoint_problem(
+    located: Mapping[str, Any], run_root: Path, latest_payload: Mapping[str, Any]
+) -> Optional[str]:
+    try:
+        latest = located["latest"]
+        checkpoint, checkpoint_digest = _read_instructions_checkpoint(
+            run_root, latest
+        )
+        metadata = located["product"]["metadata"]
+        expected_keys = set(metadata) | {
+            "product_id",
+            "round",
+            "made",
+            "playtested",
+        }
+        if set(checkpoint) != expected_keys:
+            return "Instructions checkpoint payload shape is not exact"
+        if any(checkpoint.get(key) != value for key, value in metadata.items()):
+            return "Instructions checkpoint bindings differ from the durable Workshop"
+        round_number = latest_payload.get("round")
+        if (
+            checkpoint.get("product_id") != located["product"]["id"]
+            or checkpoint.get("round") != round_number
+            or latest_payload.get("resume_checkpoint_sha256")
+            != checkpoint_digest
+        ):
+            return "Instructions checkpoint identity is inconsistent"
+        approval = next(
+            (
+                event
+                for event in reversed(located.get("events", ()))
+                if event.get("from_stage") == "playtest"
+                and event.get("to_stage") == "instructions"
+                and isinstance(event.get("payload"), Mapping)
+                and event["payload"].get("resume_checkpoint_sha256")
+                == checkpoint_digest
+            ),
+            None,
+        )
+        if approval is None:
+            return "Instructions checkpoint has no approved Playtest event"
+        made, playtested, evidence_root = _rebuild_checkpoint_results(
+            run_root, checkpoint
+        )
+        made.assert_current()
+        blueprint = ToyBlueprint.for_lane(metadata["lane"])
+        if not playtested.passed or _playtest_policy_needs(
+            blueprint, made, playtested, evidence_root
+        ):
+            return "Instructions checkpoint no longer satisfies Playtest policy"
+        if (
+            located["product"].get("artifact_sha256") != made.artifact_sha256
+            or latest.get("artifact_sha256") != made.artifact_sha256
+            or approval.get("artifact_sha256") != made.artifact_sha256
+            or approval["payload"].get("round") != round_number
+            or approval["payload"].get("evidence_artifact_sha256")
+            != playtested.evidence.evidence_artifact_sha256
+        ):
+            return "Instructions checkpoint identifies different Make or Playtest bytes"
+    except (KeyError, OSError, TypeError, ValueError, WorkshopError) as exc:
+        return "the exact Instructions checkpoint is unavailable: %s" % exc
+    return None
+
+
+def _resume_availability(
+    located: Mapping[str, Any], page: Optional[Mapping[str, Any]] = None
+) -> tuple[bool, str, str]:
+    """Decide whether durable state supports an exact, non-overlapping resume."""
+
+    product = located.get("product")
+    runtime = located.get("runtime")
+    binding_problem = _resume_binding_problem(located)
+    if binding_problem is not None:
+        return False, "identity-drift", binding_problem
+    if product is None:
+        if isinstance(located.get("handoff"), ManagerAssignmentHandoff):
+            return (
+                True,
+                "assigned",
+                "the exact saved Manager assignment can start its selected Inventor",
+            )
+        return (
+            False,
+            "not-started",
+            "the selected Inventor has not created durable Workshop state yet",
+        )
+    if runtime is None or not callable(getattr(runtime, "active_lease", None)):
+        return False, "malformed", "the durable Workshop store is unavailable"
+    active = runtime.active_lease(product["id"])
+    if active is not None:
+        return (
+            False,
+            "active-worker",
+            "another Workshop worker owns this Wish until %s; wait and check status before resuming"
+            % active["expires_at"],
+        )
+    stage = product.get("stage")
+    if stage == "wish":
+        return (
+            True,
+            "wish",
+            "the registered Wish can restart before Invent without changing identity",
+        )
+    if (
+        stage != "instructions"
+        and isinstance(page, Mapping)
+        and page.get("status") in ("draft", "unknown")
+    ):
+        return True, "factory-page", "the exact Factory page can be continued"
+
+    card = located.get("card")
+    card_root = getattr(card, "root", None)
+    run_root = (
+        Path(card_root) / ".workshop" / "runs" / product["id"]
+        if card_root is not None
+        else None
+    )
+    if (
+        run_root is None
+        or run_root.is_symlink()
+        or not run_root.is_dir()
+    ):
+        return (
+            False,
+            "missing-workspace",
+            "the exact Workshop run workspace is missing or unsafe; this saved state cannot continue",
+        )
+
+    latest = located.get("latest")
+    payload = latest.get("payload") if isinstance(latest, Mapping) else None
+    if not isinstance(payload, Mapping):
+        return False, "malformed", "the latest Workshop checkpoint is malformed"
+    status = payload.get("status")
+    if status not in ("working", "waiting"):
+        return (
+            False,
+            "terminal",
+            "this Workshop run is terminal and has no stage to continue",
+        )
+    if stage == "invent":
+        return True, "invent", "Invent can restart from its exact saved boundary"
+    if stage == "make":
+        events = located.get("events", ())
+        _, accepted = _accepted_invented_record(located)
+        if accepted is not None and _has_persisted_make_feedback(
+            events, payload.get("round")
+        ):
+            return True, "make", "Make can restart from its accepted Invented record"
+        return (
+            False,
+            "legacy-make",
+            "this legacy Make state has no full accepted Invented record; start a new Wish instead of guessing it",
+        )
+    if stage == "playtest":
+        if (
+            isinstance(payload.get("made_checkpoint_path"), str)
+            and bool(payload["made_checkpoint_path"])
+            and _valid_sha256(payload.get("made_checkpoint_sha256"))
+            and payload.get("made_checkpoint_round") == payload.get("round")
+        ):
+            checkpoint_problem = _exact_playtest_checkpoint_problem(
+                located, run_root.resolve(strict=True), payload
+            )
+            if checkpoint_problem is not None:
+                return False, "invalid-playtest-checkpoint", checkpoint_problem
+            return True, "playtest", "Playtest can restart from its exact Made checkpoint"
+        return (
+            False,
+            "legacy-playtest",
+            "this legacy Playtest state has no exact Made checkpoint; start a new Wish instead of rerunning Make implicitly",
+        )
+    if stage == "instructions":
+        modern_checkpoint = (
+            isinstance(payload.get("instructions_checkpoint_path"), str)
+            and bool(payload["instructions_checkpoint_path"])
+            and _valid_sha256(payload.get("instructions_checkpoint_sha256"))
+            and payload.get("instructions_checkpoint_round")
+            == payload.get("round")
+            and payload.get("resume_checkpoint_sha256")
+            == payload.get("instructions_checkpoint_sha256")
+        )
+        legacy_waiting_checkpoint = (
+            status == "waiting"
+            and _valid_sha256(payload.get("resume_checkpoint_sha256"))
+            and payload.get("instructions_checkpoint_path") is None
+        )
+        if status in ("working", "waiting") and (
+            modern_checkpoint or legacy_waiting_checkpoint
+        ):
+            checkpoint_problem = _exact_instructions_checkpoint_problem(
+                located, run_root.resolve(strict=True), payload
+            )
+            if checkpoint_problem is not None:
+                return False, "invalid-instructions-checkpoint", checkpoint_problem
+            return (
+                True,
+                "instructions",
+                "Instructions can continue from its approved Make and Playtest checkpoint",
+            )
+        return (
+            False,
+            "legacy-instructions",
+            "Instructions has no exact waiting checkpoint that can be continued safely",
+        )
+    return (
+        False,
+        "unsupported-stage",
+        "%s is not a resumable Workshop stage" % stage,
+    )
+
+
 def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
     located = _find_durable_wish(root, product_id)
     if located is None:  # ``allow_missing`` is false; keeps type narrowing explicit.
@@ -1009,7 +1734,7 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
         handoff = located.get("handoff")
         if not isinstance(handoff, ManagerAssignmentHandoff):
             raise WorkshopError("saved Wish has no durable state or Manager assignment")
-        return {
+        receipt = {
             "schema_version": 1,
             "catalog_root": str(Path(root).resolve()),
             "product_id": product_id,
@@ -1024,6 +1749,14 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
             "needs": [],
             "event_chain": "not-started",
         }
+        available, kind, _ = _resume_availability(located)
+        if available:
+            receipt["resume"] = {
+                "status": "available",
+                "kind": kind,
+                "command": _resume_command(product_id, root),
+            }
+        return receipt
     payload = latest.get("payload")
     if not isinstance(payload, Mapping):
         raise WorkshopError("latest Workshop event payload is malformed")
@@ -1040,7 +1773,16 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
     wish = metadata.get("wish")
     if not isinstance(wish, Mapping) or wish.get("product_id") != product_id:
         raise WorkshopError("saved Wish metadata has a different identity")
-    status = payload.get("status", "working")
+    if "status" in payload:
+        status = payload["status"]
+    elif (
+        product.get("stage") == "wish"
+        and latest.get("kind") == "registered"
+        and latest.get("to_stage") == "wish"
+    ):
+        status = "working"
+    else:
+        raise WorkshopError("latest Workshop transition has no explicit status")
     if status not in ("working", "waiting", "stopped", "delivered"):
         raise WorkshopError("latest Workshop status is malformed")
     receipt = {
@@ -1058,6 +1800,12 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
         "needs": needs,
         "event_chain": "valid",
     }
+    active = located["runtime"].active_lease(product_id)
+    if active is not None:
+        receipt["worker"] = {
+            "status": "active",
+            "expires_at": active["expires_at"],
+        }
     intent = _ReadOnlyWorkshopStore(located["database"]).latest_publish_intent(
         product_id
     )
@@ -1073,6 +1821,22 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
             ),
             None,
         )
+        if instructions_sha256 is None:
+            instructions_root = (
+                Path(card.root)
+                / ".workshop"
+                / "runs"
+                / product_id
+                / "instructions"
+            )
+            try:
+                instructions_sha256 = sealed_instructions_manifest(
+                    instructions_root
+                ).artifact_sha256
+            except WorkshopError as exc:
+                raise WorkshopError(
+                    "saved Factory draft has no exact sealed Instructions identity"
+                ) from exc
         try:
             page = Receipt.from_dict(raw_receipt)
             page.assert_artifact(product.get("artifact_sha256"))
@@ -1098,6 +1862,13 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
                 else "draft"
             ),
             "page_url": page.details.get("page_url"),
+        }
+    available, kind, _ = _resume_availability(located, receipt.get("page"))
+    if available:
+        receipt["resume"] = {
+            "status": "available",
+            "kind": kind,
+            "command": _resume_command(product_id, root),
         }
     return receipt
 
@@ -1394,11 +2165,11 @@ def _print_wish_receipt(
             print("Page: waiting — %s" % publication["reason"])
     if root is not None and match is not None:
         print("Saved: %s" % _status_command(wish["product_id"], root))
-        if result.get("status") == "waiting" and result.get("job") == "instructions":
-            print("Resume: %s" % _resume_command(wish["product_id"], root))
-        elif result.get("status") == "waiting":
-            print("Resume: unavailable for this stage; the saved command is status only.")
-            print("Restart: %s" % _wish_command(wish["objective"], root))
+        if result.get("status") == "waiting":
+            durable = _status_receipt(root, wish["product_id"])
+            resume = durable.get("resume")
+            if isinstance(resume, Mapping) and resume.get("status") == "available":
+                print("Resume: %s" % resume["command"])
 
 
 def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
@@ -1427,17 +2198,13 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
         }.get(page.get("status"), "Page")
         if page.get("page_url"):
             print("%s: %s" % (label, page["page_url"]))
+    worker = receipt.get("worker")
+    if isinstance(worker, Mapping) and worker.get("status") == "active":
+        print("Worker: active until %s" % worker["expires_at"])
     print("Event chain: %s" % receipt["event_chain"])
-    if receipt.get("status") == "waiting" and receipt.get("job") == "instructions":
-        print("Resume: %s" % _resume_command(receipt["product_id"], root))
-    elif receipt.get("status") in ("assigned", "working", "waiting"):
-        print("Resume: unavailable for this stage; status does not restart its worker.")
-        objective = receipt.get("wish", {}).get("objective")
-        if isinstance(objective, str) and objective:
-            print(
-                "If the original process stopped, restart as a new Wish: %s"
-                % _wish_command(objective, root)
-            )
+    resume = receipt.get("resume")
+    if isinstance(resume, Mapping) and resume.get("status") == "available":
+        print("Resume: %s" % resume["command"])
 
 
 def _status(args: argparse.Namespace) -> int:
@@ -1520,20 +2287,28 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
     )
     if handoff.wish.product_id != product_id:
         raise WorkshopError("saved Manager assignment belongs to another Wish")
-    if located["product"] is None:
-        raise WorkshopError(
-            "the Inventor has not created durable state yet; wait a moment and check status again"
-        )
-    metadata = located["product"].get("metadata")
-    if not isinstance(metadata, Mapping) or metadata.get("wish") != handoff.wish.to_dict():
-        raise WorkshopError("saved Manager assignment differs from durable Wish state")
+    handoff.require_exact_inventor_identity()
+    handoff.assert_inventor_current(card)
+    if located["product"] is not None:
+        metadata = located["product"].get("metadata")
+        if (
+            not isinstance(metadata, Mapping)
+            or metadata.get("wish") != handoff.wish.to_dict()
+        ):
+            raise WorkshopError(
+                "saved Manager assignment differs from durable Wish state"
+            )
     taste = load_taste(card.root)
+    def assert_current() -> None:
+        handoff.assert_inventor_current(card)
+
     assignment = SimpleNamespace(
         wish=handoff.wish,
         inventor_id=handoff.inventor_id,
         playtest_rounds=handoff.playtest_rounds,
         assignment_sha256=handoff.assignment_sha256,
-        entrypoint=tuple(card.entrypoint),
+        entrypoint=tuple(handoff.entrypoint),
+        assert_current=assert_current,
         decision=SimpleNamespace(
             decision_sha256=handoff.decision_sha256,
             selected=SimpleNamespace(card=card, taste=taste),
@@ -1542,80 +2317,147 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
     return assignment, located
 
 
+def _is_site_wait(result: Mapping[str, Any]) -> bool:
+    needs = result.get("needs")
+    return (
+        result.get("status") == "waiting"
+        and result.get("job") == "instructions"
+        and isinstance(needs, list)
+        and any(
+            isinstance(need, Mapping)
+            and need.get("capability") in ("site-page", "site-reconciliation")
+            for need in needs
+        )
+    )
+
+
+def _factory_authentication_wait(
+    assignment: Any,
+    root: Path,
+    prior: Mapping[str, Any],
+    *,
+    publish: bool,
+) -> Mapping[str, Any]:
+    return {
+        **dict(prior),
+        "product_id": assignment.wish.product_id,
+        "status": "waiting",
+        "job": "instructions",
+        "playtest_rounds": assignment.playtest_rounds,
+        "needs": [
+            {
+                "job": "instructions",
+                "capability": "factory-authentication",
+                "reason": "This Manager process has no Factory credential for the matched Inventor.",
+                "instructions": (
+                    "Set FACTORY_PASSWORD in the trusted Manager environment, then run: "
+                    + _resume_command(
+                        assignment.wish.product_id,
+                        root,
+                        draft=not publish,
+                    )
+                    + ". The value is never passed to Inventor code or printed."
+                ),
+            }
+        ],
+        "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+            assignment
+        ).result_binding(),
+    }
+
+
+def _continue_instructions_as_manager(
+    assignment: Any,
+    result: Mapping[str, Any],
+    root: Path,
+    *,
+    publish: bool,
+) -> Mapping[str, Any]:
+    if not _is_site_wait(result):
+        return dict(result)
+    if _factory_credential_environment(assignment.inventor_id) is None:
+        return _factory_authentication_wait(
+            assignment, root, result, publish=publish
+        )
+    return _resume_factory_instructions(assignment, result)
+
+
 def _resume(args: argparse.Namespace) -> int:
     roots = _catalog_roots(args.root, include_retained=args.root is None)
     selected_root, _ = _root_for_durable_wish(roots, args.product_id)
     assignment, located = _resume_assignment(selected_root, args.product_id)
     status = _status_receipt(selected_root, args.product_id)
     needs = status.get("needs", [])
-    site_wait = (
-        status.get("status") == "waiting"
-        and status.get("job") == "instructions"
-        and any(
-            need.get("capability") in ("site-page", "site-reconciliation")
-            for need in needs
-        )
+    available, kind, unavailable_reason = _resume_availability(
+        located, status.get("page")
     )
     result: Mapping[str, Any]
-    if site_wait:
-        if _factory_credential_environment(assignment.inventor_id) is None:
-            result = {
-                "product_id": args.product_id,
-                "status": "waiting",
-                "job": "instructions",
-                "needs": [
-                    {
-                        "job": "instructions",
-                        "capability": "factory-authentication",
-                        "reason": "This Manager process has no Factory credential for the matched Inventor.",
-                        "instructions": (
-                            "Set FACTORY_PASSWORD in the trusted Manager environment, then run: "
-                            + _resume_command(
-                                args.product_id,
-                                selected_root,
-                                draft=not args.publish,
-                            )
-                            + ". The value is never passed to Inventor code or printed."
-                        ),
-                    }
-                ],
-                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
-                    assignment
-                ).result_binding(),
-            }
-        else:
-            waiting = {
-                "status": "waiting",
-                "job": "instructions",
-                "needs": needs,
-                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
-                    assignment
-                ).result_binding(),
-            }
-            result = _resume_factory_instructions(assignment, waiting)
-    else:
+    if not available:
+        result = {
+            "product_id": args.product_id,
+            "status": status["status"],
+            "job": status["job"],
+            "needs": needs,
+            "resume": "not-available",
+            "reason": unavailable_reason,
+        }
+    elif kind == "factory-page":
         page = status.get("page")
-        if not isinstance(page, Mapping) or page.get("status") != "draft":
-            result = {
-                "product_id": args.product_id,
-                "status": status["status"],
-                "job": status["job"],
-                "needs": needs,
-                "resume": "not-available",
-                "reason": (
-                    "Only an exact sealed Instructions handoff can currently resume safely; "
-                    "the durable run was not changed."
-                ),
-            }
-        else:
-            result = {
-                "product_id": args.product_id,
-                "status": status["status"],
-                "job": status["job"],
-                "artifact_sha256": status.get("artifact_sha256"),
-                "page_url": page.get("page_url"),
-                "needs": needs,
-            }
+        if not isinstance(page, Mapping):  # availability already proved this
+            raise WorkshopError("resumable Factory page state disappeared")
+        result = {
+            "product_id": args.product_id,
+            "status": status["status"],
+            "job": status["job"],
+            "artifact_sha256": status.get("artifact_sha256"),
+            "page_url": page.get("page_url"),
+            "needs": needs,
+        }
+    elif kind == "instructions" and _is_site_wait(
+        {
+            "status": status.get("status"),
+            "job": status.get("job"),
+            "needs": needs,
+        }
+    ):
+        waiting = {
+            "status": "waiting",
+            "job": "instructions",
+            "needs": needs,
+            "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                assignment
+            ).result_binding(),
+        }
+        result = _continue_instructions_as_manager(
+            assignment,
+            waiting,
+            selected_root,
+            publish=args.publish,
+        )
+    elif kind == "assigned":
+        result = _run_inventor(assignment, continuing=True)
+        result = _continue_instructions_as_manager(
+            assignment,
+            result,
+            selected_root,
+            publish=args.publish,
+        )
+    elif kind == "wish":
+        result = _resume_inventor(assignment)
+        result = _continue_instructions_as_manager(
+            assignment,
+            result,
+            selected_root,
+            publish=args.publish,
+        )
+    else:
+        result = _resume_inventor(assignment)
+        result = _continue_instructions_as_manager(
+            assignment,
+            result,
+            selected_root,
+            publish=args.publish,
+        )
     if args.publish and isinstance(result.get("page_url"), str):
         result = {
             **result,
@@ -2238,11 +3080,13 @@ def parser() -> argparse.ArgumentParser:
 
     resume = subcommands.add_parser(
         "resume",
-        help="continue an exact sealed Instructions handoff",
+        help="continue an exact saved Workshop stage",
         description=(
-            "Resume only the exact, artifact-bound Instructions handoff saved by "
-            "'workshop wish'. Invent, Make, or Playtest waits are reported without "
-            "mutation because those stages do not yet have a safe generic resume."
+            "Continue the exact Manager assignment saved by 'workshop wish'. Invent "
+            "restarts from the Wish boundary; Make reuses the accepted Invented record; "
+            "Playtest reuses the exact Made checkpoint; Instructions reuses its approved "
+            "Make and Playtest checkpoint. Completed stages are never rerun. Legacy runs "
+            "without the required checkpoint fail with a concrete next action."
         ),
     )
     resume.add_argument("product_id", help="saved Wish id")

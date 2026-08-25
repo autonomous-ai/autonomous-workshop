@@ -31,6 +31,7 @@ JUDGE_PROVENANCE = {
     "judge_version": "model-and-policy-2026-08-23",
     "judge_config_sha256": "e" * 64,
 }
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def taste_source(name, description, body):
@@ -477,6 +478,61 @@ class WorkshopManagerTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ManifestError, "implementation changed"):
             dispatch_assignment(assignment, mock.Mock())
+
+    def test_runtime_and_toy_outputs_do_not_change_contribution_identity(self):
+        root = self.collection / "game-maker"
+        before = manager_module._implementation_sha256(root)
+        generated = root / ".workshop" / "runs" / "wish-one" / "generated.py"
+        generated.parent.mkdir(parents=True)
+        generated.write_text("# generated CAD worker output\n", encoding="utf-8")
+        self.assertEqual(manager_module._implementation_sha256(root), before)
+
+        toy = root / "toys" / "wish-one" / "generated" / "product.json"
+        toy.parent.mkdir(parents=True)
+        toy.write_text('{"generated": true}\n', encoding="utf-8")
+        self.assertEqual(manager_module._implementation_sha256(root), before)
+
+        (root / "profile.py").write_text(
+            "def run():\n    return 'changed source'\n", encoding="utf-8"
+        )
+        self.assertNotEqual(manager_module._implementation_sha256(root), before)
+
+    def test_nested_config_and_prompt_bytes_change_contribution_identity(self):
+        root = self.collection / "game-maker"
+        config = root / "config" / "default.json"
+        prompt = root / "prompts" / "reward.md"
+        config.parent.mkdir()
+        prompt.parent.mkdir()
+        config.write_text('{"model":"luna"}\n', encoding="utf-8")
+        prompt.write_text("Score the exact product.\n", encoding="utf-8")
+        before = manager_module._implementation_sha256(root)
+
+        config.write_text('{"model":"terra"}\n', encoding="utf-8")
+        after_config = manager_module._implementation_sha256(root)
+        self.assertNotEqual(after_config, before)
+
+        prompt.write_text("Lower the reward threshold.\n", encoding="utf-8")
+        self.assertNotEqual(
+            manager_module._implementation_sha256(root), after_config
+        )
+
+    def test_symlink_in_inventor_owned_contribution_fails_closed(self):
+        root = self.collection / "game-maker"
+        (root / "linked-profile.py").symlink_to("profile.py")
+        with self.assertRaisesRegex(ManifestError, "must not contain symlinks"):
+            manager_module._implementation_sha256(root)
+
+    def test_canonical_bob_shared_skill_links_remain_outside_his_contribution(self):
+        wish = Wish.create(
+            "canonical-bob-fingerprint",
+            "A small moving machine that rewards curiosity.",
+        )
+        context = WorkshopManager(REPOSITORY_ROOT).prepare(wish)
+        shortlist = make_shortlist(context, ("bob",))
+        finalists = load_finalists(context, shortlist)
+
+        self.assertEqual(tuple(item.inventor_id for item in finalists.finalists), ("bob",))
+        self.assertEqual(len(finalists.finalists[0].implementation_sha256), 64)
 
     def test_catalog_or_finalist_staleness_is_detected_at_the_relevant_boundary(self):
         context = self.context()

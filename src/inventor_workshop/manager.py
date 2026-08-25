@@ -34,11 +34,25 @@ MAX_IMPLEMENTATION_FILES = 5_000
 MAX_IMPLEMENTATION_FILE_BYTES = 8 * 1024 * 1024
 MAX_IMPLEMENTATION_BYTES = 64 * 1024 * 1024
 _ROUTABLE_STATUSES = frozenset(("active", "experimental"))
-_IMPLEMENTATION_SUFFIXES = frozenset((".py", ".sh", ".toml"))
-_IMPLEMENTATION_NAMES = frozenset(("requirements.txt", "setup.cfg"))
-_IMPLEMENTATION_IGNORES = frozenset(
-    (".git", ".pytest_cache", "__pycache__", "docs", "test", "tests")
+_IMPLEMENTATION_TOP_LEVEL_IGNORES = frozenset(
+    (
+        ".git",
+        ".pytest_cache",
+        ".workshop",
+        "__pycache__",
+        "build",
+        "dist",
+        # These are shared Workshop dependencies, not inventor-owned
+        # contribution files. Shared engine/skill release provenance must bind
+        # their versions separately instead of following links out of this root.
+        "skills",
+        # Checked-in and generated product bundles are outputs of contribution
+        # code. Creating another toy must not rewrite the Inventor assignment.
+        "toys",
+    )
 )
+_IMPLEMENTATION_CACHE_DIRECTORIES = frozenset((".pytest_cache", "__pycache__"))
+_IMPLEMENTATION_PACKAGING_SUFFIXES = (".egg-info", ".dist-info")
 
 
 def _text(value: Any, label: str, maximum: int = 10_000) -> str:
@@ -121,10 +135,10 @@ def _inspect_regular(
     return observed
 
 
-def _read_regular_bytes(
+def _read_regular_snapshot(
     path: Path, label: str, maximum: int, *, allow_empty: bool = False
-) -> bytes:
-    """Read a bounded regular file without following a raced final symlink."""
+) -> Tuple[bytes, os.stat_result]:
+    """Read a bounded regular file and return the exact opened-file metadata."""
 
     expected = _inspect_regular(path, label, maximum, allow_empty=allow_empty)
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
@@ -156,9 +170,20 @@ def _read_regular_bytes(
             or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
         ):
             raise ManifestError("%s changed while reading: %s" % (label, path))
-        return b"".join(chunks)
+        return b"".join(chunks), opened
     finally:
         os.close(descriptor)
+
+
+def _read_regular_bytes(
+    path: Path, label: str, maximum: int, *, allow_empty: bool = False
+) -> bytes:
+    """Read a bounded regular file without following a raced final symlink."""
+
+    source, _ = _read_regular_snapshot(
+        path, label, maximum, allow_empty=allow_empty
+    )
+    return source
 
 
 def _load_manifest_snapshot(path: Path) -> Tuple[InventorManifest, str]:
@@ -172,52 +197,129 @@ def _load_manifest_snapshot(path: Path) -> Tuple[InventorManifest, str]:
     return InventorManifest.parse(raw, path), hashlib.sha256(source).hexdigest()
 
 
+def _ignored_implementation_directory(relative: Path) -> bool:
+    if not relative.parts:
+        return False
+    if len(relative.parts) == 1 and relative.name in _IMPLEMENTATION_TOP_LEVEL_IGNORES:
+        return True
+    return (
+        relative.name in _IMPLEMENTATION_CACHE_DIRECTORIES
+        or relative.name.endswith(_IMPLEMENTATION_PACKAGING_SUFFIXES)
+    )
+
+
 def _implementation_sha256(root: Path) -> str:
-    """Fingerprint bounded local implementation files for a shortlisted inventor."""
+    """Fingerprint every bounded inventor-owned contribution file.
+
+    Generated Workshop state, product bundles, packaging output, caches, and
+    shared Workshop skill links are explicitly outside this identity. Everything
+    else—including prompts, configs, assets, tests, and documentation—is bound.
+    """
 
     records = []
     total = 0
+    requested = Path(root)
+    if requested.is_symlink() or not requested.is_dir():
+        raise ManifestError(
+            "inventor implementation root must be a regular directory: %s" % requested
+        )
     try:
-        paths = sorted(root.rglob("*"), key=lambda item: item.as_posix())
+        implementation_root = requested.resolve(strict=True)
     except OSError as exc:
-        raise ManifestError("cannot enumerate inventor implementation %s: %s" % (root, exc)) from exc
-    for path in paths:
-        relative = path.relative_to(root)
-        if any(part in _IMPLEMENTATION_IGNORES for part in relative.parts[:-1]):
-            continue
-        if path.is_dir():
-            continue
-        if path.name not in _IMPLEMENTATION_NAMES and path.suffix not in _IMPLEMENTATION_SUFFIXES:
-            continue
-        if path.is_symlink():
-            raise ManifestError("inventor implementation must not contain code symlinks: %s" % path)
-        source = _read_regular_bytes(
-            path,
-            "inventor implementation file",
-            MAX_IMPLEMENTATION_FILE_BYTES,
-            allow_empty=True,
-        )
-        total += len(source)
-        if total > MAX_IMPLEMENTATION_BYTES:
+        raise ManifestError(
+            "cannot resolve inventor implementation %s: %s" % (requested, exc)
+        ) from exc
+    try:
+        def walk_error(error: OSError) -> None:
             raise ManifestError(
-                "inventor implementation exceeds %d bytes: %s"
-                % (MAX_IMPLEMENTATION_BYTES, root)
-            )
-        records.append(
-            {
-                "path": relative.as_posix(),
-                "sha256": hashlib.sha256(source).hexdigest(),
-                "executable": bool(path.stat().st_mode & stat.S_IXUSR),
-            }
+                "cannot enumerate inventor contribution %s: %s"
+                % (implementation_root, error)
+            ) from error
+
+        walker = os.walk(
+            implementation_root,
+            topdown=True,
+            onerror=walk_error,
+            followlinks=False,
         )
-        if len(records) > MAX_IMPLEMENTATION_FILES:
-            raise ManifestError(
-                "inventor implementation exceeds %d files: %s"
-                % (MAX_IMPLEMENTATION_FILES, root)
-            )
+        for current_value, directory_names, file_names in walker:
+            current = Path(current_value)
+            relative_parent = current.relative_to(implementation_root)
+            kept_directories = []
+            for name in sorted(directory_names):
+                relative = relative_parent / name
+                if _ignored_implementation_directory(relative):
+                    continue
+                candidate = current / name
+                try:
+                    metadata = candidate.lstat()
+                except OSError as exc:
+                    raise ManifestError(
+                        "cannot inspect inventor contribution directory %s: %s"
+                        % (candidate, exc)
+                    ) from exc
+                if stat.S_ISLNK(metadata.st_mode):
+                    raise ManifestError(
+                        "inventor contribution must not contain symlinks: %s"
+                        % candidate
+                    )
+                if not stat.S_ISDIR(metadata.st_mode):
+                    raise ManifestError(
+                        "inventor contribution tree contains an unsafe directory: %s"
+                        % candidate
+                    )
+                kept_directories.append(name)
+            directory_names[:] = kept_directories
+
+            for name in sorted(file_names):
+                path = current / name
+                relative = path.relative_to(implementation_root)
+                try:
+                    listed = path.lstat()
+                except OSError as exc:
+                    raise ManifestError(
+                        "cannot inspect inventor contribution file %s: %s"
+                        % (path, exc)
+                    ) from exc
+                if stat.S_ISLNK(listed.st_mode):
+                    raise ManifestError(
+                        "inventor contribution must not contain symlinks: %s" % path
+                    )
+                source, metadata = _read_regular_snapshot(
+                    path,
+                    "inventor contribution file",
+                    MAX_IMPLEMENTATION_FILE_BYTES,
+                    allow_empty=True,
+                )
+                total += len(source)
+                if total > MAX_IMPLEMENTATION_BYTES:
+                    raise ManifestError(
+                        "inventor contribution exceeds %d bytes: %s"
+                        % (MAX_IMPLEMENTATION_BYTES, implementation_root)
+                    )
+                records.append(
+                    {
+                        "path": relative.as_posix(),
+                        "sha256": hashlib.sha256(source).hexdigest(),
+                        "executable": bool(metadata.st_mode & stat.S_IXUSR),
+                    }
+                )
+                if len(records) > MAX_IMPLEMENTATION_FILES:
+                    raise ManifestError(
+                        "inventor contribution exceeds %d files: %s"
+                        % (MAX_IMPLEMENTATION_FILES, implementation_root)
+                    )
+    except OSError as exc:
+        raise ManifestError(
+            "cannot enumerate inventor contribution %s: %s"
+            % (implementation_root, exc)
+        ) from exc
     if not records:
-        raise ManifestError("inventor implementation has no bounded source files: %s" % root)
-    return _sha256_json({"schema_version": 1, "files": records})
+        raise ManifestError(
+            "inventor contribution has no bounded regular files: %s"
+            % implementation_root
+        )
+    return _sha256_json({"schema_version": 2, "files": records})
 
 
 def _paired_inventor_directories(collection: Path) -> Tuple[Path, ...]:

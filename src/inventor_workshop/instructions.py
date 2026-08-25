@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-import tempfile
+import secrets
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence
 
 from .artifacts import ArtifactEntry, ArtifactManifest, build_artifact_manifest
@@ -72,30 +72,73 @@ def _write_manifest_once(root: Path, manifest: ArtifactManifest) -> None:
     """Durably seal Instructions before any externally visible site effect."""
 
     path = _manifest_path(root)
-    if path.exists() or path.is_symlink():
-        raise ContractError("Instructions manifest seal already exists")
-    payload = json.dumps(
-        manifest.to_dict(), indent=2, sort_keys=True, ensure_ascii=False
-    ) + "\n"
-    descriptor, temporary = tempfile.mkstemp(
-        prefix=".%s." % path.name, dir=str(path.parent)
+    payload = (
+        json.dumps(
+            manifest.to_dict(), indent=2, sort_keys=True, ensure_ascii=False
+        )
+        + "\n"
+    ).encode("utf-8")
+    parent_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
     )
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(payload)
-            handle.flush()
-            os.fsync(handle.fileno())
-        # link(2) gives the seal create-if-absent semantics that replace(2)
-        # cannot: another process can never replace an existing identity.
+        directory = os.open(path.parent, parent_flags)
+    except OSError as exc:
+        raise ContractError("Instructions manifest directory is unsafe") from exc
+    temporary = None
+    try:
         try:
-            os.link(temporary, path)
-        except FileExistsError as exc:
-            raise ContractError("Instructions manifest seal already exists") from exc
-    finally:
-        try:
-            os.unlink(temporary)
+            os.stat(path.name, dir_fd=directory, follow_symlinks=False)
         except FileNotFoundError:
             pass
+        else:
+            raise ContractError("Instructions manifest seal already exists")
+        for _ in range(100):
+            temporary = ".%s.%s" % (path.name, secrets.token_hex(8))
+            try:
+                descriptor = os.open(
+                    temporary,
+                    os.O_WRONLY
+                    | os.O_CREAT
+                    | os.O_EXCL
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    0o600,
+                    dir_fd=directory,
+                )
+                break
+            except FileExistsError:
+                temporary = None
+        else:
+            raise ContractError("cannot reserve Instructions manifest seal")
+        try:
+            view = memoryview(payload)
+            while view:
+                written = os.write(descriptor, view)
+                view = view[written:]
+            os.fchmod(descriptor, 0o600)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        try:
+            os.link(
+                temporary,
+                path.name,
+                src_dir_fd=directory,
+                dst_dir_fd=directory,
+                follow_symlinks=False,
+            )
+        except FileExistsError as exc:
+            raise ContractError("Instructions manifest seal already exists") from exc
+        os.fsync(directory)
+    finally:
+        if temporary is not None:
+            try:
+                os.unlink(temporary, dir_fd=directory)
+            except FileNotFoundError:
+                pass
+        os.close(directory)
 
 
 def sealed_instructions_manifest(root: Path) -> ArtifactManifest:
@@ -279,6 +322,7 @@ class DefaultInstructions:
         (root / "INSTRUCTIONS.md").write_text(markdown, encoding="utf-8")
         manifest = build_artifact_manifest(root, created_at="content-addressed")
         _write_manifest_once(root, manifest)
+        context.bind_seal(root, manifest)
         context.assert_current()
         site_receipt = self._write_site(context, root, manifest)
         return ProductInstructions.from_root(

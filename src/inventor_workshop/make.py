@@ -109,8 +109,12 @@ class Wish:
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ContractError("wish schema_version must be 1")
         _bounded_text(self.product_id, "wish product_id", MAX_PRODUCT_ID_CHARS)
-        if any(character in "/\\" for character in self.product_id):
-            raise ContractError("wish product_id must not contain path separators")
+        if self.product_id in {".", ".."} or any(
+            character in "/\\" for character in self.product_id
+        ):
+            raise ContractError(
+                "wish product_id must not be a dot segment or contain path separators"
+            )
         _bounded_text(
             self.objective,
             "wish objective",

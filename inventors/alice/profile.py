@@ -76,7 +76,9 @@ def describe() -> dict:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", nargs="?", default="profile", choices=("profile", "wish", "preview", "run")
+        "command", nargs="?", default="profile",
+        choices=("profile", "wish", "preview", "run", "resume"),
+        metavar="{profile,wish,preview,run}",
     )
     parser.add_argument("product_id", nargs="?")
     parser.add_argument("objective", nargs="?")
@@ -85,19 +87,29 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     if args.assignment_stdin:
         if (
-            args.command != "run"
+            args.command not in ("run", "resume")
             or args.product_id is not None
             or args.objective is not None
             or args.playtest_rounds is not None
         ):
-            parser.error("--assignment-stdin is an internal run-only handoff")
+            parser.error("--assignment-stdin is an internal Manager handoff")
         handoff = read_manager_assignment(sys.stdin, expected_inventor_id="alice")
-        result = bind_manager_assignment_result(
-            build_workshop().run(
+        handoff.assert_inventor_current(INVENTOR_ROOT)
+        workshop = build_workshop()
+        resumed = (
+            workshop.resume(handoff.wish)
+            if args.command == "resume"
+            else workshop.run(
                 handoff.wish, playtest_rounds=handoff.playtest_rounds
-            ).to_dict(),
+            )
+        )
+        handoff.assert_inventor_current(INVENTOR_ROOT)
+        result = bind_manager_assignment_result(
+            resumed.to_dict(),
             handoff,
         )
+    elif args.command == "resume":
+        parser.error("resume is an internal Manager-only action")
     elif args.command == "profile":
         if args.playtest_rounds is not None:
             parser.error("--playtest-rounds belongs to run, not profile")

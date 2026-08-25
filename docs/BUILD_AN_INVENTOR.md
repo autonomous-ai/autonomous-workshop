@@ -156,7 +156,12 @@ uv run workshop wish --root . \
 The creator copies `TASTE.md` byte for byte, validates it, adds the thin runtime
 connection, runs its smoke tests, and atomically joins it to the Manager's
 catalog. The source file is never modified. `workshop wish` records the exact
-Manager assignment so status and continuation stay available. The generated
+Manager assignment so `workshop status <wish-id>` and `workshop resume
+<wish-id>` can continue the exact saved stage. That assignment pins the selected
+manifest, `TASTE.md`, implementation bytes, and entrypoint. The hidden
+continuation travels over the same content-bound stdin handoff; `run.py` cannot
+invoke it directly and never receives Factory credentials or publication
+authority. The generated
 `run.py` remains a developer check; installing the package bundles the same
 exact identity.
 
@@ -519,6 +524,13 @@ If a run waits here, resume the exact sealed work instead of starting over:
 ```python
 resumed = workshop.resume_instructions(wish)
 ```
+
+The customer CLI uses `workshop resume <wish-id>` for every supported saved
+stage. Invent restarts only its self-improving loop; Make reuses the accepted
+Invented record; Playtest reuses the exact Made checkpoint; Instructions uses
+the approved Make and Playtest checkpoint above. An unexpired worker lease
+blocks a second continuation, and older state without the required checkpoint
+fails with an actionable explanation.
 
 Workshop verifies the original Wish, Taste, blueprint, round allowance, Make,
 Playtest evidence, event chain, and Instructions manifest, then calls only the

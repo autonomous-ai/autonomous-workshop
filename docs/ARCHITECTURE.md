@@ -383,6 +383,16 @@ exact bytes and retries only the idempotent model-handoff writer. It never
 reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
 separate handoff, not a silently retried Workshop side effect.
 
+The Manager-facing `workshop resume <wish-id>` command also continues Invent,
+Make, and Playtest from their exact durable boundaries. It sends the original
+content-bound assignment to the already selected Inventor over stdin, accepts
+only stdout that matches the verified event chain, and withholds Factory
+credentials from that child. The saved assignment also pins the Inventor's
+manifest, Taste, implementation bytes, and entrypoint; all four are rechecked
+before and after child execution. A current product lease prevents overlapping
+workers. Legacy assignments or Playtest state without an exact Made checkpoint
+remain read-only rather than silently executing changed code or rerunning Make.
+
 Images must depict the product actually approved. Concept art can guide Make,
 but it cannot masquerade as a render or photograph of printable geometry. Copy
 must preserve evidence qualifiers: simulation remains simulation; a digital

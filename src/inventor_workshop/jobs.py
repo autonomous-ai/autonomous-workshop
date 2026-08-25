@@ -8,7 +8,7 @@ import re
 import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Tuple
 
 from .artifacts import ArtifactManifest, build_artifact_manifest
 from .delivery_evidence import validate_delivery_evidence_chain
@@ -403,6 +403,9 @@ class InstructionsContext:
     playtested: Playtested
     workspace: Path
     lease_token: Optional[str] = field(default=None, repr=False, compare=False)
+    seal_callback: Optional[Callable[[Path, ArtifactManifest], None]] = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -429,6 +432,8 @@ class InstructionsContext:
             or any(ord(character) < 33 or ord(character) == 127 for character in self.lease_token)
         ):
             raise ContractError("InstructionsContext lease token is malformed")
+        if self.seal_callback is not None and not callable(self.seal_callback):
+            raise ContractError("InstructionsContext seal_callback must be callable")
         object.__setattr__(self, "workspace", root)
         self.assert_current()
 
@@ -437,6 +442,23 @@ class InstructionsContext:
 
         self.made.assert_current()
         self.playtested.assert_artifact(self.made.artifact_sha256)
+
+    def bind_seal(self, root: Path, manifest: ArtifactManifest) -> None:
+        """Bind sealed Instructions before any externally visible handoff."""
+
+        sealed_root = Path(root)
+        if sealed_root != self.workspace or not isinstance(manifest, ArtifactManifest):
+            raise ContractError(
+                "Instructions seal must describe this exact context workspace"
+            )
+        current = build_artifact_manifest(
+            sealed_root, created_at=manifest.created_at
+        )
+        if current.to_dict() != manifest.to_dict():
+            raise ContractError("Instructions seal bytes changed before binding")
+        self.assert_current()
+        if self.seal_callback is not None:
+            self.seal_callback(sealed_root, manifest)
 
 
 @dataclass(frozen=True)

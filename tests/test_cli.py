@@ -1,6 +1,9 @@
 import json
+import os
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
@@ -13,9 +16,11 @@ from inventor_workshop.cli import (
     _ReadOnlyWorkshopStore,
     _default_workshop_root,
     _inventor_process_environment,
+    _managed_child_run,
     _publish_inventor_draft,
     _promote_factory_intent,
     _resume_factory_instructions,
+    _resume_inventor,
     _run_inventor,
     _save_manager_assignment,
     _status_receipt,
@@ -26,6 +31,7 @@ from inventor_workshop.handoff import (
     ManagerAssignmentHandoff,
     bind_manager_assignment_result,
 )
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import AmbiguousEffectError, WorkshopError
 from inventor_workshop.manager import (
     TasteFit,
@@ -37,20 +43,70 @@ from inventor_workshop.models import Receipt
 from inventor_workshop.runtime import Runtime
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
+from inventor_workshop.workshop import Workshop, WorkshopTools
+from tests.test_toy_workshop import ToyWorkshopTest
 
 
 class CliTest(unittest.TestCase):
     @staticmethod
-    def resume_assignment(root, inventor_id, wish):
+    def inventor_identity(
+        root: Path,
+        inventor_id: str,
+        *,
+        lane: str = "moving-machines",
+        level: str = "taste-only",
+    ):
+        root = Path(root)
+        if root.name != inventor_id:
+            raise AssertionError("fixture inventor folder must match its id")
+        root.mkdir(parents=True, exist_ok=True)
+        taste_path = root / "TASTE.md"
+        if not taste_path.exists():
+            taste_path.write_text(
+                "---\n"
+                "name: Fixture %s\n" % inventor_id.replace("-", " ").title()
+                + "description: Exact fixture identity for CLI tests.\n"
+                "---\n"
+                "# Fixture Taste\n\n"
+                "Prefer one surprising, mechanically legible interaction.\n",
+                encoding="utf-8",
+            )
+        manifest_path = root / "inventor.json"
+        if not manifest_path.exists():
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 5,
+                        "id": inventor_id,
+                        "status": "active",
+                        "entrypoint": ["python3", "profile.py"],
+                        "capabilities": [lane, level],
+                        "checks": [],
+                        "source": {"kind": "local"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+        profile_path = root / "profile.py"
+        if not profile_path.exists():
+            profile_path.write_text("# exact CLI fixture profile\n", encoding="utf-8")
+        card = discover_inventor_catalog(root.parent).card(inventor_id)
+        return card, load_taste(root)
+
+    @staticmethod
+    def resume_assignment(root, inventor_id, wish, *, playtest_rounds=4):
+        card, taste = CliTest.inventor_identity(root, inventor_id)
         return SimpleNamespace(
             wish=wish,
             inventor_id=inventor_id,
-            playtest_rounds=4,
+            playtest_rounds=playtest_rounds,
             assignment_sha256="a" * 64,
+            entrypoint=tuple(card.entrypoint),
             decision=SimpleNamespace(
                 decision_sha256="d" * 64,
                 selected=SimpleNamespace(
-                    card=SimpleNamespace(inventor_id=inventor_id, root=root)
+                    card=card,
+                    taste=taste,
                 ),
             ),
         )
@@ -64,6 +120,11 @@ class CliTest(unittest.TestCase):
         capability: str = "model-and-cad-maker",
         artifact_sha256=None,
         instructions_sha256=None,
+        resume_checkpoint_sha256=None,
+        state_status="waiting",
+        transition=True,
+        assignment_rounds=4,
+        metadata_rounds=None,
     ):
         inventor_id = "mira"
         inventor_root = root / "inventors" / inventor_id
@@ -101,8 +162,9 @@ class CliTest(unittest.TestCase):
         assignment = SimpleNamespace(
             wish=wish,
             inventor_id=inventor_id,
-            playtest_rounds=4,
+            playtest_rounds=assignment_rounds,
             assignment_sha256="a" * 64,
+            entrypoint=tuple(card.entrypoint),
             decision=SimpleNamespace(
                 decision_sha256="d" * 64,
                 selected=SimpleNamespace(card=card, taste=taste),
@@ -110,6 +172,9 @@ class CliTest(unittest.TestCase):
         )
         _save_manager_assignment(assignment)
         runtime = Runtime(inventor_root / ".workshop" / "workshop.sqlite3")
+        (
+            inventor_root / ".workshop" / "runs" / product_id
+        ).mkdir(parents=True)
         runtime.register_product(
             product_id,
             "wish",
@@ -122,39 +187,127 @@ class CliTest(unittest.TestCase):
                 ).sha256,
                 "lane": "moving-machines",
                 "customization_level": "taste-only",
-                "playtest_rounds": 4,
+                "playtest_rounds": (
+                    assignment_rounds
+                    if metadata_rounds is None
+                    else metadata_rounds
+                ),
             },
         )
         lease = runtime.acquire_lease(product_id, "fixture")
         product = runtime.get_product(product_id)
-        payload = {
-            "status": "waiting",
-            "round": 1,
-            "needs": [
+        payload = {"status": state_status, "round": 1}
+        if state_status == "waiting":
+            payload["needs"] = [
                 {
                     "job": stage,
                     "capability": capability,
                     "reason": "The shared provider is not connected.",
                     "instructions": "Connect the shared provider, then continue this exact Wish.",
                 }
-            ],
-        }
+            ]
         if instructions_sha256 is not None:
             payload["instructions_sha256"] = instructions_sha256
-        runtime._transition(
-            product_id,
-            "wish",
-            stage,
-            product["revision"],
-            artifact_sha256,
-            payload,
-            lease,
-        )
+        if resume_checkpoint_sha256 is not None:
+            payload["resume_checkpoint_sha256"] = resume_checkpoint_sha256
+        if transition:
+            runtime._transition(
+                product_id,
+                "wish",
+                stage,
+                product["revision"],
+                artifact_sha256,
+                payload,
+                lease,
+            )
         runtime.release_lease(product_id, lease)
         return assignment, runtime, inventor_root
 
     @staticmethod
-    def factory_receipt(status="draft"):
+    def durable_modern_instructions_fixture(root: Path, *, working: bool):
+        """Build a real content-addressed Instructions boundary for CLI tests."""
+
+        inventor_id = "mira"
+        inventor_root = root / "inventors" / inventor_id
+        inventor_root.mkdir(parents=True)
+        (inventor_root / "TASTE.md").write_text(
+            "---\n"
+            "name: Mira\n"
+            "description: Kinetic desk toys, but not board games.\n"
+            "---\n"
+            "# Mira's Taste\n\n"
+            "Make one surprising motion feel inevitable.\n",
+            encoding="utf-8",
+        )
+        (inventor_root / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 5,
+                    "id": inventor_id,
+                    "status": "active",
+                    "entrypoint": ["python3", "profile.py"],
+                    "capabilities": ["moving-machines", "taste-only"],
+                    "checks": [],
+                    "source": {"kind": "local"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (inventor_root / "profile.py").write_text(
+            "# fixture profile\n", encoding="utf-8"
+        )
+        card = discover_inventor_catalog(root).card(inventor_id)
+        taste = load_taste(inventor_root)
+        wish = Wish.create("wish-one", "A tiny moon that rolls")
+        assignment = SimpleNamespace(
+            wish=wish,
+            inventor_id=inventor_id,
+            playtest_rounds=4,
+            assignment_sha256="a" * 64,
+            entrypoint=tuple(card.entrypoint),
+            decision=SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(card=card, taste=taste),
+            ),
+        )
+        _save_manager_assignment(assignment)
+
+        def killed_before_instructions_output(context):
+            del context
+            raise RuntimeError("fixture killed at Instructions")
+
+        instructions = (
+            killed_before_instructions_output if working else DefaultInstructions()
+        )
+        workshop = Workshop(
+            inventor_root,
+            "moving-machines",
+            inventor_id=inventor_id,
+            tools=WorkshopTools(
+                invent=ToyWorkshopTest.invent_job,
+                make=ToyWorkshopTest.make_job,
+                playtest=ToyWorkshopTest.passing_playtest,
+                instructions=instructions,
+            ),
+            runtime_root=inventor_root / ".workshop",
+        )
+        if working:
+            with unittest.TestCase().assertRaisesRegex(
+                RuntimeError, "fixture killed at Instructions"
+            ):
+                workshop.run(wish, playtest_rounds=4)
+        else:
+            result = workshop.run(wish, playtest_rounds=4)
+            if (result.status, result.job) != ("waiting", "instructions"):
+                raise AssertionError("fixture did not stop at Instructions")
+        return (
+            assignment,
+            Runtime(inventor_root / ".workshop" / "workshop.sqlite3"),
+            inventor_root,
+        )
+
+    @staticmethod
+    def factory_receipt(status="draft", artifact_sha256="f" * 64):
         history = "history-one"
         receipt = Receipt.from_design(
             {
@@ -178,7 +331,7 @@ class CliTest(unittest.TestCase):
                 ),
             },
             "a" * 64,
-            "f" * 64,
+            artifact_sha256,
         )
         value = receipt.to_dict()
         value["details"] = {
@@ -191,27 +344,14 @@ class CliTest(unittest.TestCase):
 
     def test_selected_inventor_receives_no_factory_or_unrelated_secrets(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "factory-resume-inventor"
-            root.mkdir()
+            root = Path(temporary) / "eve"
             wish = Wish.create(
                 "wish-one",
                 "A tiny world",
                 constraints={"size": {"maximum_mm": 88}, "colors": ["red", "blue"]},
                 context={"source": "test", "customer": {"locale": "vi-VN"}},
             )
-            assignment = SimpleNamespace(
-                entrypoint=("python3", "profile.py"),
-                wish=wish,
-                inventor_id="eve",
-                playtest_rounds=4,
-                assignment_sha256="a" * 64,
-                decision=SimpleNamespace(
-                    decision_sha256="d" * 64,
-                    selected=SimpleNamespace(
-                        card=SimpleNamespace(inventor_id="eve", root=root)
-                    )
-                ),
-            )
+            assignment = self.resume_assignment(root, "eve", wish)
             observed = {}
 
             def runner(command, **kwargs):
@@ -262,27 +402,99 @@ class CliTest(unittest.TestCase):
             self.assertEqual(handed_off["decision_sha256"], "d" * 64)
             self.assertEqual(handed_off["assignment_sha256"], "a" * 64)
 
+    def test_resume_uses_the_same_exact_sanitized_manager_handoff(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "ivy"
+            wish = Wish.create("wish-resume", "Keep this exact resumed Wish")
+            assignment = self.resume_assignment(
+                root, "ivy", wish, playtest_rounds=6
+            )
+            observed = {}
+
+            def runner(command, **kwargs):
+                observed["command"] = command
+                observed.update(kwargs)
+                handoff = ManagerAssignmentHandoff.from_dict(
+                    json.loads(kwargs["input"]), expected_inventor_id="ivy"
+                )
+                payload = bind_manager_assignment_result(
+                    {
+                        "product_id": wish.product_id,
+                        "status": "waiting",
+                        "playtest_rounds": 6,
+                    },
+                    handoff,
+                )
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(payload)
+                )
+
+            with mock.patch.dict(
+                "os.environ",
+                {
+                    "FACTORY_PASSWORD": "parent-only",
+                    "OPENAI_API_KEY": "codex-runtime",
+                },
+                clear=True,
+            ):
+                result = _resume_inventor(
+                    assignment,
+                    runner=runner,
+                    state_validator=lambda selected, payload: payload,
+                )
+
+            self.assertEqual(result["status"], "waiting")
+            self.assertEqual(observed["command"][-2:], ["resume", "--assignment-stdin"])
+            self.assertNotIn(wish.product_id, observed["command"])
+            self.assertNotIn(wish.objective, observed["command"])
+            self.assertNotIn("FACTORY_PASSWORD", observed["env"])
+            self.assertEqual(observed["env"]["OPENAI_API_KEY"], "codex-runtime")
+            self.assertEqual(
+                ManagerAssignmentHandoff.from_dict(
+                    json.loads(observed["input"]), expected_inventor_id="ivy"
+                ).wish.to_dict(),
+                wish.to_dict(),
+            )
+
+    def test_managed_child_timeout_cancels_descendant_processes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            marker = Path(temporary) / "orphan-wrote-after-timeout"
+            grandchild = (
+                "import pathlib,time; time.sleep(0.5); "
+                "pathlib.Path(%r).write_text('orphan')" % str(marker)
+            )
+            parent = (
+                "import subprocess,sys,time; "
+                "subprocess.Popen([sys.executable, '-c', %r]); "
+                "time.sleep(30)" % grandchild
+            )
+            with self.assertRaises(subprocess.TimeoutExpired):
+                _managed_child_run(
+                    (sys.executable, "-c", parent),
+                    cwd=temporary,
+                    env={"PATH": os.environ.get("PATH", "")},
+                    input="",
+                    capture_output=True,
+                    text=True,
+                    timeout=0.1,
+                    check=False,
+                )
+            time.sleep(0.7)
+            self.assertFalse(marker.exists())
+
     def test_selected_inventor_result_must_match_the_exact_assignment(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "unknown-level-inventor"
-            root.mkdir()
-            assignment = SimpleNamespace(
-                entrypoint=("python3", "profile.py"),
-                wish=Wish.create(
+            root = Path(temporary) / "alice"
+            assignment = self.resume_assignment(
+                root,
+                "alice",
+                Wish.create(
                     "wish-one",
                     "Keep all of this",
                     constraints={"must": ["one", "two"]},
                     context={"source": "manager"},
                 ),
-                inventor_id="alice",
                 playtest_rounds=3,
-                assignment_sha256="a" * 64,
-                decision=SimpleNamespace(
-                    decision_sha256="d" * 64,
-                    selected=SimpleNamespace(
-                        card=SimpleNamespace(inventor_id="alice", root=root)
-                    ),
-                ),
             )
 
             def drifted_runner(command, **kwargs):
@@ -330,6 +542,9 @@ class CliTest(unittest.TestCase):
                     }
                 ),
                 encoding="utf-8",
+            )
+            (root / "profile.py").write_text(
+                "# exact malicious CLI fixture profile\n", encoding="utf-8"
             )
             wish = Wish.create("wish-one", "A tiny impossible world")
             taste = load_taste(root)
@@ -1115,6 +1330,28 @@ class CliTest(unittest.TestCase):
             self.assertEqual(listing["count"], 1)
             self.assertEqual(listing["wishes"][0]["product_id"], "wish-one")
 
+    def test_status_never_follows_runtime_or_assignment_parent_symlinks(self):
+        for replaced_parent in ("runtime", "assignments"):
+            with self.subTest(replaced_parent=replaced_parent), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                _, _, inventor_root = self.durable_wait_fixture(root)
+                runtime_root = inventor_root / ".workshop"
+                target = (
+                    runtime_root
+                    if replaced_parent == "runtime"
+                    else runtime_root / "manager-assignments"
+                )
+                moved = target.with_name(target.name + "-real")
+                target.rename(moved)
+                target.symlink_to(moved, target_is_directory=True)
+                error = StringIO()
+                with redirect_stderr(error):
+                    result = main(
+                        ("status", "wish-one", "--root", str(root), "--json")
+                    )
+                self.assertEqual(result, 2)
+                self.assertIn("regular directory", error.getvalue())
+
     def test_status_lists_assignment_even_before_the_child_registers_state(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -1132,7 +1369,325 @@ class CliTest(unittest.TestCase):
                 receipt["wishes"][0]["product_id"], assignment.wish.product_id
             )
 
-    def test_resume_rejects_non_instructions_wait_without_mutating_it(self):
+    def test_resume_saved_assignment_retries_run_with_the_same_wish(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, inventor_root = self.durable_wait_fixture(root)
+            (inventor_root / ".workshop" / "workshop.sqlite3").unlink()
+            output = StringIO()
+            resumed = {
+                "product_id": "wish-one",
+                "status": "waiting",
+                "job": "invent",
+                "needs": [],
+                "playtest_rounds": 4,
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+            with mock.patch(
+                "inventor_workshop.cli._run_inventor", return_value=resumed
+            ) as child, mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as resumed_child, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(result, 0)
+            called_assignment = child.call_args.args[0]
+            self.assertEqual(
+                called_assignment.wish.to_dict(), assignment.wish.to_dict()
+            )
+            self.assertTrue(child.call_args.kwargs["continuing"])
+            resumed_child.assert_not_called()
+
+    def test_resume_registered_wish_dispatches_hidden_resume_not_run(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _ = self.durable_wait_fixture(
+                root, transition=False
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(
+                    main(("status", "wish-one", "--root", str(root), "--json")),
+                    0,
+                )
+            status = json.loads(output.getvalue())
+            self.assertEqual(status["resume"]["kind"], "wish")
+
+            resumed = {
+                "product_id": "wish-one",
+                "status": "waiting",
+                "job": "invent",
+                "needs": [],
+                "playtest_rounds": 4,
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._resume_inventor", return_value=resumed
+            ) as child, mock.patch(
+                "inventor_workshop.cli._run_inventor"
+            ) as run_child, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(
+                child.call_args.args[0].wish.to_dict(), assignment.wish.to_dict()
+            )
+            run_child.assert_not_called()
+
+    def test_working_instructions_checkpoint_resumes_in_credential_free_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _ = self.durable_modern_instructions_fixture(
+                root, working=True
+            )
+            resumed = {
+                "product_id": "wish-one",
+                "status": "waiting",
+                "job": "instructions",
+                "needs": [],
+                "playtest_rounds": 4,
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+            output = StringIO()
+            with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
+                "inventor_workshop.cli._resume_inventor", return_value=resumed
+            ) as child, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(result, 0)
+            self.assertEqual(json.loads(output.getvalue())["result"]["job"], "instructions")
+            child.assert_called_once()
+
+    def test_status_does_not_advertise_a_missing_instructions_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_wait_fixture(
+                root,
+                stage="instructions",
+                state_status="working",
+                artifact_sha256="f" * 64,
+                resume_checkpoint_sha256="d" * 64,
+            )
+            runtime = Runtime(root / "inventors/mira/.workshop/workshop.sqlite3")
+            product = runtime.get_product("wish-one")
+            lease = runtime.acquire_lease("wish-one", "fixture-modernize")
+            runtime._transition(
+                "wish-one",
+                "instructions",
+                "instructions",
+                product["revision"],
+                "f" * 64,
+                {
+                    "status": "working",
+                    "round": 1,
+                    "resume_checkpoint_sha256": "d" * 64,
+                    "instructions_checkpoint_path": (
+                        "checkpoints/instructions-r001-%s.json" % ("d" * 64)
+                    ),
+                    "instructions_checkpoint_sha256": "d" * 64,
+                    "instructions_checkpoint_round": 1,
+                },
+                lease,
+            )
+            runtime.release_lease("wish-one", lease)
+
+            receipt = _status_receipt(root, "wish-one")
+            self.assertNotIn("resume", receipt)
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(result, 1)
+            resumed = json.loads(output.getvalue())["result"]
+            self.assertEqual(resumed["resume"], "not-available")
+            self.assertIn("checkpoint", resumed["reason"])
+
+    def test_status_and_resume_continue_an_exact_invent_checkpoint(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _ = self.durable_wait_fixture(
+                root,
+                stage="invent",
+                capability="industrial-design",
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(
+                    main(("status", "wish-one", "--root", str(root), "--json")),
+                    0,
+                )
+            status = json.loads(output.getvalue())
+            self.assertEqual(status["resume"]["kind"], "invent")
+            self.assertIn("workshop resume wish-one", status["resume"]["command"])
+
+            resumed = {
+                "product_id": "wish-one",
+                "status": "waiting",
+                "job": "make",
+                "round": 1,
+                "artifact_sha256": None,
+                "instructions_sha256": None,
+                "page_url": None,
+                "invented": None,
+                "needs": [],
+                "delivery": None,
+                "playtest_rounds": 4,
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._resume_inventor", return_value=resumed
+            ) as child, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(result, 0)
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["result"]["job"], "make")
+            self.assertEqual(
+                child.call_args.args[0].wish.to_dict(), assignment.wish.to_dict()
+            )
+
+    def test_legacy_assignment_never_executes_inventor_code_on_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, inventor_root = self.durable_wait_fixture(
+                root,
+                stage="invent",
+                capability="industrial-design",
+            )
+            legacy = ManagerAssignmentHandoff(
+                wish=assignment.wish,
+                inventor_id=assignment.inventor_id,
+                playtest_rounds=assignment.playtest_rounds,
+                decision_sha256=assignment.decision.decision_sha256,
+                assignment_sha256=assignment.assignment_sha256,
+            )
+            assignment_path = next(
+                (inventor_root / ".workshop/manager-assignments").glob("*.json")
+            )
+            assignment_path.write_text(
+                json.dumps(legacy.to_dict(), sort_keys=True), encoding="utf-8"
+            )
+
+            status = _status_receipt(root, assignment.wish.product_id)
+            self.assertNotIn("resume", status)
+            stderr = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as child, redirect_stderr(stderr):
+                result = main(
+                    (
+                        "resume",
+                        assignment.wish.product_id,
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+            self.assertEqual(result, 2)
+            self.assertIn("legacy Manager assignment", stderr.getvalue())
+            child.assert_not_called()
+
+    def test_changed_inventor_implementation_blocks_resume_before_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, inventor_root = self.durable_wait_fixture(
+                root,
+                stage="invent",
+                capability="industrial-design",
+            )
+            (inventor_root / "profile.py").write_text(
+                "# changed after the exact Manager assignment\n", encoding="utf-8"
+            )
+
+            status = _status_receipt(root, assignment.wish.product_id)
+            self.assertNotIn("resume", status)
+            stderr = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as child, redirect_stderr(stderr):
+                result = main(
+                    (
+                        "resume",
+                        assignment.wish.product_id,
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+            self.assertEqual(result, 2)
+            self.assertIn("implementation", stderr.getvalue())
+            child.assert_not_called()
+
+    def test_active_worker_hides_resume_and_returns_an_actionable_wait(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, runtime, _ = self.durable_wait_fixture(
+                root,
+                stage="invent",
+                capability="industrial-design",
+            )
+            lease = runtime.acquire_lease("wish-one", "still-running", ttl_seconds=300)
+            try:
+                output = StringIO()
+                with redirect_stdout(output):
+                    self.assertEqual(
+                        main(("status", "wish-one", "--root", str(root), "--json")),
+                        0,
+                    )
+                status = json.loads(output.getvalue())
+                self.assertNotIn("resume", status)
+                self.assertEqual(status["worker"]["status"], "active")
+
+                output = StringIO()
+                with mock.patch("inventor_workshop.cli._resume_inventor") as child, redirect_stdout(output):
+                    result = main(
+                        ("resume", "wish-one", "--root", str(root), "--json")
+                    )
+                receipt = json.loads(output.getvalue())
+                self.assertEqual(result, 1)
+                self.assertEqual(receipt["result"]["resume"], "not-available")
+                self.assertIn("another Workshop worker", receipt["result"]["reason"])
+                child.assert_not_called()
+            finally:
+                runtime.release_lease("wish-one", lease)
+
+    def test_resume_rejects_assignment_round_drift_before_child_effects(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_wait_fixture(
+                root,
+                stage="invent",
+                capability="industrial-design",
+                assignment_rounds=4,
+                metadata_rounds=5,
+            )
+            output = StringIO()
+            with mock.patch("inventor_workshop.cli._resume_inventor") as child, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 1)
+            self.assertEqual(receipt["result"]["resume"], "not-available")
+            self.assertIn("Playtest allowance", receipt["result"]["reason"])
+            child.assert_not_called()
+
+    def test_resume_rejects_legacy_make_without_invented_record(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             _, runtime, _ = self.durable_wait_fixture(root)
@@ -1145,17 +1700,14 @@ class CliTest(unittest.TestCase):
             receipt = json.loads(output.getvalue())
             self.assertEqual(result, 1)
             self.assertEqual(receipt["result"]["resume"], "not-available")
-            self.assertIn("Instructions", receipt["result"]["reason"])
+            self.assertIn("legacy Make", receipt["result"]["reason"])
             self.assertEqual(runtime.events("wish-one"), before)
 
     def test_resume_instructions_without_factory_secret_is_actionable_and_safe(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            self.durable_wait_fixture(
-                root,
-                stage="instructions",
-                capability="site-page",
-                artifact_sha256="f" * 64,
+            self.durable_modern_instructions_fixture(
+                root, working=False
             )
             output = StringIO()
             with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
@@ -1232,30 +1784,48 @@ class CliTest(unittest.TestCase):
         self.assertNotIn("FACTORY_PASSWORD", observed["slicer"])
 
     def test_inventor_timeout_is_actionable_and_has_no_subprocess_traceback(self):
-        assignment = SimpleNamespace(
-            entrypoint=("python3", "profile.py"),
-            wish=Wish.create("wish-timeout", "A patient moon"),
-            inventor_id="mira",
-            playtest_rounds=4,
-            assignment_sha256="a" * 64,
-            decision=SimpleNamespace(
-                decision_sha256="d" * 64,
-                selected=SimpleNamespace(
-                    card=SimpleNamespace(
-                        inventor_id="mira",
-                        root=Path("/tmp/inventors/mira"),
-                    )
-                ),
-            ),
-        )
-
         def timeout(command, **kwargs):
             raise subprocess.TimeoutExpired(command, kwargs["timeout"])
 
-        with self.assertRaisesRegex(
-            WorkshopError, "60 minutes.*workshop status wish-timeout"
-        ):
-            _run_inventor(assignment, runner=timeout)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "mira"
+            assignment = self.resume_assignment(
+                root,
+                "mira",
+                Wish.create("wish-timeout", "A patient moon"),
+            )
+            with self.assertRaisesRegex(
+                WorkshopError, "60 minutes.*workshop status wish-timeout"
+            ) as failure:
+                _run_inventor(assignment, runner=timeout)
+            self.assertIn("workshop resume wish-timeout", str(failure.exception))
+            self.assertIn("Do not create a duplicate Wish", str(failure.exception))
+            self.assertNotIn("workshop wish", str(failure.exception))
+
+    def test_initial_child_launch_and_nonzero_failures_continue_the_same_wish(self):
+        def cannot_launch(command, **kwargs):
+            del command, kwargs
+            raise OSError("fixture exec failure")
+
+        def stopped(command, **kwargs):
+            del kwargs
+            return subprocess.CompletedProcess(command, 7, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _ = self.durable_wait_fixture(
+                root, product_id="wish-child-failed", transition=False
+            )
+            for runner in (cannot_launch, stopped):
+                with self.subTest(runner=runner.__name__), self.assertRaises(
+                    WorkshopError
+                ) as failure:
+                    _run_inventor(assignment, runner=runner)
+                message = str(failure.exception)
+                self.assertIn("Do not create a duplicate Wish", message)
+                self.assertIn("workshop status wish-child-failed", message)
+                self.assertIn("workshop resume wish-child-failed", message)
+                self.assertNotIn("workshop wish ", message)
 
     def test_status_fails_closed_on_a_page_for_different_product_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1300,6 +1870,42 @@ class CliTest(unittest.TestCase):
                     WorkshopError, "different product bytes"
                 ):
                     _status_receipt(root, "wish-one")
+
+    def test_status_recovers_draft_import_crash_from_sealed_instructions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_modern_instructions_fixture(
+                root, working=False
+            )
+            product = Runtime(
+                root / "inventors/mira/.workshop/workshop.sqlite3"
+            ).get_product("wish-one")
+            draft = self.factory_receipt(
+                "draft", artifact_sha256=product["artifact_sha256"]
+            )
+            store = mock.Mock()
+            store.latest_publish_intent.return_value = {
+                "state": "succeeded",
+                "receipt": draft.to_dict(),
+            }
+            calls = 0
+            read_only = _ReadOnlyWorkshopStore
+
+            def projection(database):
+                nonlocal calls
+                calls += 1
+                return read_only(database) if calls == 1 else store
+
+            with mock.patch(
+                "inventor_workshop.cli._ReadOnlyWorkshopStore",
+                side_effect=projection,
+            ), mock.patch(
+                "inventor_workshop.cli.sealed_instructions_manifest",
+                return_value=SimpleNamespace(artifact_sha256="b" * 64),
+            ):
+                receipt = _status_receipt(root, "wish-one")
+            self.assertEqual(receipt["page"]["status"], "draft")
+            self.assertEqual(receipt["resume"]["kind"], "instructions")
 
     def test_source_version_matches_project_metadata(self):
         project = Path(__file__).resolve().parents[1] / "pyproject.toml"

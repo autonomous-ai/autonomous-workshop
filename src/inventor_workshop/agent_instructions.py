@@ -548,6 +548,7 @@ class RewardedInstructions:
         )
         manifest = build_artifact_manifest(root, created_at="content-addressed")
         _write_manifest_once(root, manifest)
+        context.bind_seal(root, manifest)
         context.assert_current()
         receipt = self._write_site(context, root, manifest)
         return ProductInstructions.from_root(

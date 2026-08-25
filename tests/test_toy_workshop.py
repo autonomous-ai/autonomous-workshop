@@ -1093,6 +1093,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 "make",
                 "playtest",
                 "instructions",
+                "instructions",
                 "deliver",
                 "deliver",
             ],
@@ -1878,14 +1879,14 @@ class ToyWorkshopTest(unittest.TestCase):
             runtime_root=self.root / "resume-proof-runtime",
         ).run(wish, playtest_rounds=1)
         self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
-        receipt = (
-            self.root
-            / "resume-proof-runtime"
-            / "runs"
-            / wish.product_id
-            / "round-001"
-            / "playtest"
-            / "mechanical-receipt.json"
+        receipt = next(
+            (
+                self.root
+                / "resume-proof-runtime"
+                / "runs"
+                / wish.product_id
+                / "attempts"
+            ).glob("playtest-r001-*/workspace/mechanical-receipt.json")
         )
         receipt.write_text('{"computed":false}\n', encoding="utf-8")
         with self.assertRaisesRegex(ContractError, "evidence bytes changed"):

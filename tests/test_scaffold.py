@@ -645,7 +645,10 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn("--assignment-stdin", source)
             self.assertIn("read_manager_assignment", source)
             self.assertIn("bind_manager_assignment_result", source)
+            self.assertEqual(source.count("handoff.assert_inventor_current"), 2)
             self.assertIn("expected_inventor_id=INVENTOR_ID", source)
+            self.assertIn('workshop.resume(handoff.wish)', source)
+            self.assertIn("resume is an internal Manager-only action", source)
             compile(source, str(destination / "src/handoff_toys/__main__.py"), "exec")
 
     def test_generated_identity_resolves_from_target_like_package_data(self):

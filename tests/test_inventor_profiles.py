@@ -7,12 +7,15 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from inventor_workshop.handoff import ManagerAssignmentHandoff
 from inventor_workshop.jobs import Invented, Made
 from inventor_workshop.make import Wish
+from inventor_workshop.manager import discover_inventor_catalog
 from inventor_workshop.manifest import load_manifest
+from inventor_workshop.taste import load_taste
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -28,6 +31,25 @@ def load_profile(inventor_id):
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def exact_manager_handoff(inventor_id, wish, playtest_rounds):
+    card = discover_inventor_catalog(ROOT).card(inventor_id)
+    assignment = SimpleNamespace(
+        wish=wish,
+        inventor_id=inventor_id,
+        playtest_rounds=playtest_rounds,
+        assignment_sha256="a" * 64,
+        entrypoint=tuple(card.entrypoint),
+        decision=SimpleNamespace(
+            decision_sha256="d" * 64,
+            selected=SimpleNamespace(
+                card=card,
+                taste=load_taste(card.root),
+            ),
+        ),
+    )
+    return ManagerAssignmentHandoff.from_assignment(assignment)
 
 
 def make_fixture(context):
@@ -188,13 +210,7 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                         "customer": {"locale": "vi-VN"},
                     },
                 )
-                handoff = ManagerAssignmentHandoff(
-                    wish=exact_wish,
-                    inventor_id=inventor_id,
-                    playtest_rounds=9,
-                    decision_sha256="d" * 64,
-                    assignment_sha256="a" * 64,
-                )
+                handoff = exact_manager_handoff(inventor_id, exact_wish, 9)
                 workshop = mock.Mock()
                 workshop.run.return_value.to_dict.return_value = {
                     "product_id": exact_wish.product_id,
@@ -222,6 +238,51 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(
                     result["manager_assignment"], handoff.result_binding()
                 )
+
+    def test_every_profile_resumes_only_the_exact_manager_assignment(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                exact_wish = Wish.create(
+                    "resume-%s" % inventor_id,
+                    "Resume only these exact saved words.",
+                    context={"source": "workshop-cli"},
+                )
+                handoff = exact_manager_handoff(inventor_id, exact_wish, 8)
+                workshop = mock.Mock()
+                workshop.resume.return_value.to_dict.return_value = {
+                    "product_id": exact_wish.product_id,
+                    "status": "waiting",
+                    "playtest_rounds": 8,
+                }
+                output = io.StringIO()
+                with mock.patch.object(
+                    profile, "build_workshop", return_value=workshop
+                ), mock.patch.object(
+                    profile.sys,
+                    "stdin",
+                    io.StringIO(json.dumps(handoff.to_dict())),
+                ), redirect_stdout(output):
+                    self.assertEqual(
+                        profile.main(("resume", "--assignment-stdin")), 0
+                    )
+
+                self.assertEqual(
+                    workshop.resume.call_args.args[0].to_dict(),
+                    exact_wish.to_dict(),
+                )
+                workshop.run.assert_not_called()
+                result = json.loads(output.getvalue())
+                self.assertEqual(
+                    result["manager_assignment"], handoff.result_binding()
+                )
+
+    def test_direct_profile_resume_has_no_manager_or_publication_authority(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    profile.main(("resume", "wish-one"))
 
     def test_direct_inventor_cli_generates_the_product_id(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
