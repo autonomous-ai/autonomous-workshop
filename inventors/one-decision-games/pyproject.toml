@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inventor-one-decision-games"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = ["inventor-workshop>=0.5,<0.6"]
+
+[project.scripts]
+one_decision_games = "one_decision_games.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

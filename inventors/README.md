@@ -16,6 +16,7 @@ inventor. Every toy the inventor makes lives under
 | [Bob](bob/) | machines that move | shared Workshop |
 | [Ivy](ivy/) | science you can hold | shared Workshop |
 | [Eve](eve/) | little worlds | shared Workshop |
+| [Pip](one-decision-games/) | one-decision physical games | text2game bridge (custom Make + Playtest) |
 
 Every inventor contributes a `TASTE.md`. The Workshop supplies Invent, Make, Playtest,
 Instructions, and Deliver for all five. Any inventor may explicitly replace a

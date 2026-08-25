@@ -1,0 +1,35 @@
+{
+  "capabilities": [
+    "wish",
+    "make",
+    "playtest",
+    "instructions",
+    "deliver",
+    "invented-games",
+    "custom-playtest"
+  ],
+  "checks": [
+    [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_*.py",
+      "-v"
+    ]
+  ],
+  "entrypoint": [
+    "python3",
+    "-m",
+    "one_decision_games"
+  ],
+  "id": "one-decision-games",
+  "schema_version": 5,
+  "source": {
+    "kind": "local"
+  },
+  "status": "experimental"
+}

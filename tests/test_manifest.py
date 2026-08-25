@@ -42,7 +42,7 @@ class RegistryTest(unittest.TestCase):
         manifests = discover_inventors(root)
         self.assertEqual(
             [item.inventor_id for item in manifests],
-            ["alice", "bob", "eve", "ivy", "leo"],
+            ["alice", "bob", "eve", "ivy", "leo", "one-decision-games"],
         )
         self.assertEqual(validate_entrypoints(manifests), [])
         self.assertEqual(
