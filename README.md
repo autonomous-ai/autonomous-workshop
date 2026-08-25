@@ -193,30 +193,6 @@ stays in code you can read and check.
 The Manager owns Match. It chooses the inventor and explains why; it does not
 design or make the toy.
 
-## Five toys, one Workshop
-
-Each built-in inventor made one checked-in toy through the shared Workshop
-Make and Playtest contracts. Together they exercise all five initial lanes,
-all three extension levels, and different Playtest allowances.
-
-| Inventor | Toy | Extension | Playtest allowance | Truthful result |
-|---|---|---|---:|---|
-| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 rounds | Instructions: authenticated draft needed |
-| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 rounds | Instructions: authenticated draft needed |
-| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 rounds | Instructions: authenticated draft needed |
-| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
-| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
-
-Every bundle contains an exact-geometry render, CAD source, STEP and STL
-files, content-addressed manifests, complete AI Playtest evidence, the in-box
-guide, a structured product brief, and the Workshop run receipt. All five
-pass Playtest. Their page bundles are sealed; these checked-in runs wait in
-Instructions because no Workshop site credential is present to create and
-authenticate their private model drafts. Factory—not the inventor—owns later
-marketing images and page copy. Printing and shipping happen later in
-Deliver. Afterward, an owner may review a draft and make it public outside the
-five-job pipeline. Customer experience is collected after delivery as Reviews.
-
 ## The five jobs
 
 Every toy goes through the same five steps:
