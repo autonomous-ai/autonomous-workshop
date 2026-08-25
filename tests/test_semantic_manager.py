@@ -193,9 +193,26 @@ class SemanticManagerTest(unittest.TestCase):
         )
         self.assertEqual(len(receipt["selected"]["taste_sha256"]), 64)
 
-    def test_shortlist_must_contain_multiple_known_distinct_candidates(self):
+    def test_shortlist_may_name_one_real_fit_but_rejects_duplicate_or_unknown_ids(self):
+        runner = StructuredRunner(
+            [
+                {
+                    "inventor_ids": ["bob"],
+                    "rationale": "Bob alone plausibly fits the requested motion.",
+                },
+                judge_result,
+            ]
+        )
+        _, manager = self.semantic_manager(runner)
+        assignment = manager.assign(self.wish(), playtest_rounds=4)
+        self.assertEqual(assignment.inventor_id, "bob")
+        self.assertEqual(
+            assignment.decision.context.shortlist.inventor_ids,
+            ("bob",),
+        )
+        self.assertIn("Do not pad the shortlist", runner.calls[0]["prompt"])
+
         invalid_outputs = (
-            {"inventor_ids": ["bob"], "rationale": "Premature winner."},
             {
                 "inventor_ids": ["bob", "bob"],
                 "rationale": "Duplicate finalist.",

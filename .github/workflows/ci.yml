@@ -68,8 +68,8 @@ jobs:
           workshop skills list
           workshop schemas list
           mkdir -p "$RUNNER_TEMP/generated-inventors"
-          workshop new ci-inventor --name CI --niche "offline printable tests" --root "$RUNNER_TEMP/generated-inventors"
-          python -m pip install --no-deps "$RUNNER_TEMP/generated-inventors/ci-inventor"
+          workshop create inventor ci-inventor --name CI --description "offline printable tests" --lane invented-games --root "$RUNNER_TEMP/generated-inventors"
+          python -m pip install --no-deps "$RUNNER_TEMP/generated-inventors/inventors/ci-inventor"
           mkdir -p "$RUNNER_TEMP/away"
           cd "$RUNNER_TEMP/away"
           CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor doctor

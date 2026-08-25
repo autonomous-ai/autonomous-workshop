@@ -7,7 +7,7 @@ name = "autonomous-alice"
 version = "0.1.0"
 description = "A durable multi-agent inventor for original physical board games"
 requires-python = ">=3.11"
-dependencies = ["inventor-workshop==0.4.0"]
+dependencies = ["inventor-workshop==0.5.0"]
 
 [project.scripts]
 alice = "alice.cli:main"

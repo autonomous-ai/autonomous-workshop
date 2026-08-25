@@ -256,7 +256,7 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertIn("unittest discover", self.text)
 
     def test_python_matrix_covers_runtime_and_future(self):
-        self.assertIn("3.9", self.text)   # the Mac's system python (runtime)
+        self.assertIn("3.11", self.text)  # Workshop's supported minimum runtime
         self.assertIn("3.12", self.text)
 
     def test_mock_agents_forced(self):
