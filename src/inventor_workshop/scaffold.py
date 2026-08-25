@@ -530,10 +530,16 @@ class SmokeTest(unittest.TestCase):
         profile = load_taste(Path(__file__).resolve().parents[1])
         self.assertIn("creative constitution", profile.content)
 
-    def test_preview_is_read_only_and_run_waits_truthfully(self):
+    def test_preview_is_read_only_and_an_explicitly_disabled_engine_waits_truthfully(self):
         with tempfile.TemporaryDirectory() as temporary:
             runtime = Path(temporary) / "workshop"
-            with mock.patch.dict(os.environ, {{"{env}_RUNTIME": str(runtime)}}):
+            with mock.patch.dict(
+                os.environ,
+                {{
+                    "{env}_RUNTIME": str(runtime),
+                    "WORKSHOP_AGENT_WORKERS": "disabled",
+                }},
+            ):
                 output = StringIO()
                 with redirect_stdout(output):
                     self.assertEqual(

@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -95,23 +96,26 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 self.assertEqual(preview["taste"]["sha256"], workshop.taste.sha256)
                 self.assertEqual(preview["blueprint"]["lane"], workshop.lane)
 
-    def test_unconfigured_profiles_wait_at_their_real_invent_boundary(self):
-        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
-            with self.subTest(inventor_id=inventor_id), tempfile.TemporaryDirectory() as temporary:
-                profile = load_profile(inventor_id)
-                workshop = profile.build_workshop(runtime_root=Path(temporary))
-                wish = profile.create_wish(
-                    "%s-wait" % inventor_id,
-                    "I wish for a truthful first Workshop run.",
-                )
-                result = workshop.run(wish, playtest_rounds=3)
-                self.assertEqual(result.status, "waiting")
-                self.assertEqual(result.job, "invent")
-                self.assertEqual(result.playtest_rounds, 3)
-                self.assertEqual(
-                    [need.capability for need in result.needs],
-                    ["industrial-design-inventor"],
-                )
+    def test_explicitly_disabled_profiles_wait_at_their_real_invent_boundary(self):
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
+            for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+                with self.subTest(inventor_id=inventor_id), tempfile.TemporaryDirectory() as temporary:
+                    profile = load_profile(inventor_id)
+                    workshop = profile.build_workshop(runtime_root=Path(temporary))
+                    wish = profile.create_wish(
+                        "%s-wait" % inventor_id,
+                        "I wish for a truthful first Workshop run.",
+                    )
+                    result = workshop.run(wish, playtest_rounds=3)
+                    self.assertEqual(result.status, "waiting")
+                    self.assertEqual(result.job, "invent")
+                    self.assertEqual(result.playtest_rounds, 3)
+                    self.assertEqual(
+                        [need.capability for need in result.needs],
+                        ["industrial-design-inventor"],
+                    )
 
     def test_profile_cli_passes_the_checked_playtest_allowance_to_workshop(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
@@ -181,28 +185,33 @@ class CanonicalInventorProfileTest(unittest.TestCase):
     def test_bob_and_leo_wait_for_the_same_shared_playtest_service(self):
         leo = load_profile("leo")
         bob = load_profile("bob")
-        for profile in (leo, bob):
-            with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
-                workshop = profile.build_workshop(
-                    tools=WorkshopTools(invent=invent_fixture),
-                    make=make_fixture,
-                    runtime_root=Path(temporary),
-                )
-                wish = profile.create_wish(
-                    "%s-playtest" % profile.PROFILE["inventor_id"],
-                    "I wish to reach the correct Playtest owner.",
-                )
-                result = workshop.run(wish, playtest_rounds=2)
-                self.assertEqual(result.job, "playtest")
-                self.assertEqual(result.status, "waiting")
-                self.assertEqual(
-                    [need.capability for need in result.needs],
-                    list(workshop.blueprint.required_capabilities("playtest")),
-                )
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
+            for profile in (leo, bob):
+                with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
+                    workshop = profile.build_workshop(
+                        tools=WorkshopTools(invent=invent_fixture),
+                        make=make_fixture,
+                        runtime_root=Path(temporary),
+                    )
+                    wish = profile.create_wish(
+                        "%s-playtest" % profile.PROFILE["inventor_id"],
+                        "I wish to reach the correct Playtest owner.",
+                    )
+                    result = workshop.run(wish, playtest_rounds=2)
+                    self.assertEqual(result.job, "playtest")
+                    self.assertEqual(result.status, "waiting")
+                    self.assertEqual(
+                        [need.capability for need in result.needs],
+                        list(workshop.blueprint.required_capabilities("playtest")),
+                    )
 
     def test_leo_waits_for_shared_ai_playtest_when_it_is_not_installed(self):
         leo = load_profile("leo")
-        with tempfile.TemporaryDirectory() as temporary:
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
             workshop = leo.build_workshop(
                 tools=WorkshopTools(invent=invent_fixture),
                 make=make_fixture,

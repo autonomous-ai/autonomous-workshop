@@ -12,9 +12,29 @@ from inventor_workshop.workshop import WorkshopTools
 class ConfiguredWorkshopToolsTest(unittest.TestCase):
     def test_disabled_configuration_preserves_an_explicit_tool_set(self):
         explicit = WorkshopTools(make=mock.Mock(), deliver=mock.Mock())
-        with mock.patch.dict(os.environ, {}, clear=True):
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+        ):
             selected = configured_workshop_tools(explicit)
         self.assertIs(selected, explicit)
+
+    def test_shared_workers_are_on_by_default_without_an_environment_switch(self):
+        invented = mock.Mock()
+        made = mock.Mock()
+        playtested = mock.Mock()
+        with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
+            "inventor_workshop.agent_invent.CodexInventor", return_value=invented
+        ), mock.patch(
+            "inventor_workshop.agent_make.CodexMaker", return_value=made
+        ), mock.patch(
+            "inventor_workshop.agent_playtest.LaneAwarePlaytester",
+            return_value=playtested,
+        ):
+            selected = configured_workshop_tools()
+        self.assertIs(selected.invent, invented)
+        self.assertIs(selected.make, made)
+        self.assertIs(selected.playtest, playtested)
+        self.assertIsNone(selected.instructions)
 
     def test_legacy_switch_adds_only_missing_invent(self):
         explicit_make = mock.Mock()
@@ -192,11 +212,14 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
                 )
 
     def test_rejects_an_untyped_existing_value(self):
-        with mock.patch.dict(os.environ, {}, clear=True), self.assertRaisesRegex(
-            ContractError,
-            "WorkshopTools",
-        ):
+        with self.assertRaisesRegex(ContractError, "WorkshopTools"):
             configured_workshop_tools(object())
+
+    def test_rejects_an_unknown_worker_mode(self):
+        with mock.patch.dict(
+            os.environ, {"WORKSHOP_AGENT_WORKERS": "sometimes"}, clear=True
+        ), self.assertRaisesRegex(ContractError, "codex, disabled, or unset"):
+            configured_workshop_tools()
 
 
 if __name__ == "__main__":

@@ -22,6 +22,10 @@ class ScaffoldTest(unittest.TestCase):
         environment["PYTHONPATH"] = os.pathsep.join(
             (str(core_src), str(destination / "src"))
         )
+        # Scaffold subprocess tests exercise truthful missing-capability paths,
+        # not live AI workers. Production profiles inherit the shared engine
+        # when this explicit diagnostic switch is absent.
+        environment["WORKSHOP_AGENT_WORKERS"] = "disabled"
         return environment
 
     def test_scaffold_has_exactly_five_physical_magic_lanes(self):

@@ -350,11 +350,13 @@ def configured_workshop_tools(
 ):
     """Merge the opt-in shared Codex workers into one Workshop tool set.
 
-    ``WORKSHOP_AGENT_WORKERS=codex`` installs the Workshop-owned Invent, Make,
-    and Playtest workers.  Instructions is installed only when the selected
-    inventor's exact Factory username/password pair is present; without that
-    pair, Workshop's normal fail-closed Instructions adapter remains in charge.
-    Explicit caller tools always win field by field.
+    The Workshop-owned Invent, Make, and Playtest workers are the default.
+    ``WORKSHOP_AGENT_WORKERS=disabled`` is an explicit diagnostic escape hatch;
+    normal Inventors never need an environment switch to receive the engine.
+    Instructions is installed only when the selected inventor's exact Factory
+    username/password pair is present; otherwise the shared truthful
+    Instructions wait remains in charge. Explicit caller tools always win field
+    by field.
 
     ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible Invent-only
     switch.  It never enables the other workers or Factory authentication.
@@ -365,8 +367,16 @@ def configured_workshop_tools(
     if existing is not None and not isinstance(existing, WorkshopTools):
         raise ContractError("configured Workshop tools must be a WorkshopTools value")
     selected = existing or WorkshopTools()
-    full_workers = os.environ.get("WORKSHOP_AGENT_WORKERS") == "codex"
-    legacy_invent = os.environ.get("WORKSHOP_INVENT_WORKER") == "codex"
+    worker_mode = os.environ.get("WORKSHOP_AGENT_WORKERS")
+    if worker_mode not in (None, "codex", "disabled"):
+        raise ContractError(
+            "WORKSHOP_AGENT_WORKERS must be codex, disabled, or unset"
+        )
+    legacy_invent = (
+        worker_mode is None
+        and os.environ.get("WORKSHOP_INVENT_WORKER") == "codex"
+    )
+    full_workers = worker_mode != "disabled" and not legacy_invent
     if not full_workers and not legacy_invent:
         return selected
 
