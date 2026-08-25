@@ -167,6 +167,24 @@ suggestions back to Make. Reviews is the outside human-player loop: experience
 with the delivered toy helps the inventor improve that toy and what it makes
 for future Wishes.
 
+The floorplan is also a contract. Wish preserves the customer's words exactly.
+Make produces parts that can really be printed. Instructions prepares the
+in-box guide and authenticates the website handoff. Deliver owns printing,
+hands-on quality checks, packing, and carrier handoff.
+
+Playtest is entirely simulated by AI agents. They play complete games, adopt
+different strategies, try to cheat, stress rules and mechanisms, inspect CAD,
+and check science and printability. It is not a claim that human customers had
+fun. For a game that does not exist yet, the gate includes at least **1,000
+complete games played by AI players** from a fixed seed, probing endings,
+balance, tactics, strategies, and exploits.
+
+Reviews begin only after delivery. Human feedback can improve a future revision
+of the toy and future Wishes, but it never rewrites the evidence for the version
+already shipped or holds up the original order. Proof stays specific at every
+stage: a picture cannot prove that parts fit, and a shipping label cannot prove
+that a carrier received the box.
+
 The Manager is the front door. Nothing here runs all day looking for something
 to do — your wish is what starts it. For every wish it:
 
@@ -192,40 +210,6 @@ stays in code you can read and check.
 
 The Manager owns Match. It chooses the inventor and explains why; it does not
 design or make the toy.
-
-## The five jobs
-
-Every toy goes through the same five steps:
-
-| Job | What happens |
-|---|---|
-| **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
-| **Make** | Invent the thing and draw the parts so they can really be printed. |
-| **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
-| **Instructions** | Write the paper that goes in the box and a factual content brief, import the model as a private Factory draft, and authenticate that exact handoff. Factory enriches the page separately. |
-| **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
-
-Playtest is entirely simulated by AI agents. They play complete games, adopt
-different strategies, try to cheat, stress rules and mechanisms, inspect CAD,
-check science and printability, and return concrete feedback to Make. It is not
-a human print-and-play session and it must not claim that customers had fun.
-Printing, physical QA, packing, and carrier handoff belong to Deliver.
-
-For **games that don't exist yet**, nothing gets written up or shipped until
-this passes:
-
-- **1,000 full games or more, played by AI players** from a fixed seed,
-  poking at the rules, the endings, the balance, the tactics, and the ways to
-  cheat.
-
-What real customers think is learned after delivery through Reviews. Reviews
-can improve a future revision of the same toy as well as future Wishes and
-Makes, but they never rewrite the evidence for the version already shipped.
-Reviews is a public, post-delivery feedback stream—not a sixth inventor job, a
-custom inventor hook, or a gate that holds up the original order.
-
-One kind of proof still never stands in for another: a picture cannot prove the
-parts fit, and a shipping label cannot prove a carrier took the box.
 
 ## Three ways to build an inventor
 
