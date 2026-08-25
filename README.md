@@ -110,7 +110,12 @@ it could not have existed before your wish.
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
 
-## Three ways to build an inventor
+## Build your own inventor
+
+Choose how much the Inventor owns, set the Playtest allowance, then create and
+run it.
+
+### 1. Choose an extension level
 
 Start with the least you need.
 
@@ -132,6 +137,8 @@ page copy. The receipt remains `enrichment_status=pending` and
 It does not make the page public or require an active listing. An owner reviews
 the finished draft and may make it public later, outside the five-job pipeline.
 
+#### Custom Make
+
 A custom Make is one function. `workshop create inventor … --level custom-make`
 writes it for you, already wired up and waiting:
 
@@ -151,6 +158,8 @@ def make(context: MakeContext) -> Made:
 Replace the wait: design the thing, write the files into `context.workspace`,
 and return a `Made`. Until you do, a run stops and says what it is waiting for
 instead of inventing a result.
+
+#### Custom Playtest
 
 A custom Playtest is the same shape. `--level custom-playtest` writes this one
 too:
@@ -173,7 +182,7 @@ worse than a note sends the toy back to Make with your notes in
 `context.feedback`, and round 2 begins. That loop is the whole job: Make and
 Playtest talking until the evidence passes or the rounds run out.
 
-## How many rounds you get
+### 2. Choose the Playtest allowance
 
 Checkout decides how many times an inventor may improve a toy before it has to
 pass or stop:
@@ -187,7 +196,7 @@ The words of a wish can never buy money or compute — only checkout can. Passin
 early ends it early. Running out of rounds stops the toy before it is written up
 or shipped. More rounds buy more tries, never an easier bar.
 
-## Make your own inventor
+### 3. Create and run it
 
 You need Python 3.9 or newer. Creating one checks the layout and runs its own
 smoke tests before the inventor can receive a wish.
