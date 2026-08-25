@@ -9,8 +9,6 @@ These are toys for grown-ups, and every one has to pass the same test: **you
 could not have bought it before you asked for it—not on Amazon, in a shop, or
 anywhere else.**
 
-## The Workshop floorplan
-
 [![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
 - **Wish + Match** — the customer's exact brief goes to the Inventor whose
