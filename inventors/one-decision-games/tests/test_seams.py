@@ -147,6 +147,92 @@ class SeamTest(unittest.TestCase):
             run = self.run_workshop(temporary, pipeline)
             self.assertNotIn(run.job, ("make", "playtest"))
 
+    def test_failed_gate_feeds_back_and_waits_for_a_revision(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            pipeline = temporary / "pipeline"
+            pipeline.mkdir()
+            fixture = write_fixture_run(pipeline)
+            (fixture / "gate.json").write_text(
+                json.dumps({"parts": {"tile.stl": {"watertight": False, "bodies": 2}}}),
+                encoding="utf-8",
+            )
+            run = self.run_workshop(temporary, pipeline)
+            self.assertEqual(run.status, "waiting")
+            self.assertEqual(run.job, "make")
+            self.assertEqual(run.needs[0].capability, "text2game-revision")
+
+    def test_referee_residue_is_recorded_but_does_not_fail_the_round(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            pipeline = temporary / "pipeline"
+            pipeline.mkdir()
+            fixture = write_fixture_run(pipeline)
+            phase1 = json.loads((fixture / "phase1.json").read_text(encoding="utf-8"))
+            phase1["critic_high"] = 2
+            phase1["referee_clean"] = False
+            (fixture / "phase1.json").write_text(json.dumps(phase1), encoding="utf-8")
+            run = self.run_workshop(temporary, pipeline)
+            self.assertEqual(run.status, "waiting")
+            self.assertEqual(run.job, "playtest")
+            self.assertEqual(
+                [need.capability for need in run.needs], ["game-simulation"]
+            )
+
+    def test_make_imports_the_curated_product_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            temporary = Path(temporary)
+            pipeline = temporary / "pipeline"
+            pipeline.mkdir()
+            write_fixture_run(pipeline)
+            run = self.run_workshop(temporary, pipeline)
+            self.assertTrue(run.artifact_sha256)
+            runtime = temporary / "runtime"
+            for expected in (
+                "rules/rulebook.md",
+                "rules/gdd.md",
+                "cad/assembled.step",
+                "source/parts/tile.py",
+                "mesh/tile.stl",
+                "assembly/parts_index.json",
+            ):
+                name = Path(expected).name
+                matches = [
+                    path
+                    for path in runtime.rglob(name)
+                    if path.parts[-len(Path(expected).parts) - 1] == "artifact"
+                ]
+                self.assertTrue(matches, "artifact is missing %s" % expected)
+
+
+class VerdictTest(unittest.TestCase):
+    def test_referee_without_a_kept_round_fails(self):
+        from one_decision_games.text2game_bridge import referee_verdict
+
+        passed, evidence = referee_verdict({"referee_missing": False, "kept_round": None})
+        self.assertFalse(passed)
+        self.assertEqual(evidence["evidence_class"], "ai-simulation")
+
+    def test_unsliced_part_fails_the_print_test(self):
+        from one_decision_games.text2game_bridge import slice_verdict
+
+        passed, evidence = slice_verdict(
+            {"parts": [{"part": "tile", "grams_each": None, "seconds_each": None}]}
+        )
+        self.assertFalse(passed)
+        self.assertEqual(evidence["parts_sliced"], 0)
+
+    def test_high_fit_violation_fails_the_mechanical_test(self):
+        from one_decision_games.text2game_bridge import gate_verdict
+
+        passed, evidence, fit_high = gate_verdict(
+            {"parts": {"tile.stl": {"watertight": True, "bodies": 1}}},
+            [{"severity": "high", "code": "too-loose", "pair": ["a", "b"]}],
+        )
+        self.assertFalse(passed)
+        self.assertEqual(len(fit_high), 1)
+        self.assertEqual(evidence["fit_high"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
