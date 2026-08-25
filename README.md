@@ -69,94 +69,12 @@ one works the same whether there are five of them or a thousand.
 
 ## Build your own inventor
 
-Choose how much the Inventor owns, set the Playtest allowance, then create and
-run it.
+Every Inventor begins with Taste. Add its own Make or Playtest only when the
+shared Workshop loops are not enough.
 
-### 1. Choose an extension level
+### Quick start
 
-Start with the least you need.
-
-| Inventor brings | Workshop supplies |
-|---|---|
-| **`TASTE.md`** | Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **`TASTE.md` + Custom Make** | Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **`TASTE.md` + Custom Make + Custom Playtest** | The improvement loop around Make and Playtest, Instructions, Deliver, storage, files, and connections |
-
-The CLI calls these levels `taste-only`, `custom-make`, and `custom-playtest`.
-
-Custom Playtest requires Custom Make. Instructions and Deliver are always
-shared. Instructions creates the in-box guide and factual content brief,
-preserves the terminal `By <Inventor>.` attribution, puts a model-only handoff
-in Factory as a private draft, and records authenticated draft readback before
-Deliver can begin. It uploads no local marketing images and writes no final
-page copy. The receipt remains `enrichment_status=pending` and
-`page_ready=false` until a separate Factory content pipeline proves otherwise.
-It does not make the page public or require an active listing. An owner reviews
-the finished draft and may make it public later, outside the five-job pipeline.
-
-#### Custom Make
-
-A custom Make is one function. `workshop create inventor … --level custom-make`
-writes it for you, already wired up and waiting:
-
-```python
-from inventor_workshop import Made, MakeContext, Need, WaitingFor
-
-
-def make(context: MakeContext) -> Made:
-    # context.wish   — the person's words, unchanged
-    # context.taste  — this inventor's TASTE.md
-    # context.feedback — what Playtest said last round, empty on round 1
-    # context.workspace — an empty folder to write parts into
-    raise WaitingFor(Need("make", "inventor-make", "not connected yet",
-                          "Return a Made record bound to exact artifact bytes."))
-```
-
-Replace the wait: design the thing, write the files into `context.workspace`,
-and return a `Made`. Until you do, a run stops and says what it is waiting for
-instead of inventing a result.
-
-#### Custom Playtest
-
-A custom Playtest is the same shape. `--level custom-playtest` writes this one
-too:
-
-```python
-from inventor_workshop import Playtested, PlaytestContext, Need, WaitingFor
-
-
-def playtest(context: PlaytestContext) -> Playtested:
-    # context.made — the exact revision to test, bytes and all
-    # everything else is the same as Make
-    raise WaitingFor(Need("playtest", "inventor-playtest", "not connected yet",
-                          "Return Playtested evidence for the exact Make."))
-```
-
-Test the thing and return `Playtested`: the evidence, tied to the exact bytes
-you were handed, plus a list of `Feedback` — a code, an area, a severity
-(`note`, `improve`, or `block`), what you found, and what to change. Anything
-worse than a note sends the toy back to Make with your notes in
-`context.feedback`, and round 2 begins. That loop is the whole job: Make and
-Playtest talking until the evidence passes or the rounds run out.
-
-### 2. Choose the Playtest allowance
-
-Checkout decides how many times an inventor may improve a toy before it has to
-pass or stop:
-
-```python
-quick = workshop.run(wish, playtest_rounds=2)
-deep = workshop.run(wish, playtest_rounds=10)
-```
-
-The words of a wish can never buy money or compute — only checkout can. Passing
-early ends it early. Running out of rounds stops the toy before it is written up
-or shipped. More rounds buy more tries, never an easier bar.
-
-### 3. Create and run it
-
-You need Python 3.9 or newer. Creating one checks the layout and runs its own
-smoke tests before the inventor can receive a wish.
+Requires Python 3.9 or newer.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -167,26 +85,37 @@ python -m pip install -e .
 
 workshop create inventor ada \
   --name Ada \
-  --description "Choose Ada for Wish-shaped hand-cranked creatures; not static models, tabletop rules, or science explainers." \
+  --description "Choose Ada for hand-cranked creatures; not static models or games." \
   --lane moving-machines \
-  --level custom-make \
+  --level taste-only \
   --root .
-```
 
-The other kinds are `classics-made-yours`, `invented-games`,
-`holdable-science`, and `little-worlds`. Write a `TASTE.md` nobody could mistake
-for another inventor's, then add only the custom parts it really needs.
-
-```bash
 python -m pip install -e inventors/ada
 ada run --playtest-rounds 4 first-wish \
   "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-With no model, CAD worker, printer, or carrier connected, a run says exactly
-what it is waiting for. It never passes off a placeholder as a finished toy.
+The run stops when the toy passes or uses all four Playtest rounds.
 
-See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
+### Custom `TASTE.md`
+
+Edit `inventors/ada/TASTE.md` to define what Ada loves, avoids, notices, and
+makes differently from anyone else. If the shared Make and Playtest fit, stop
+here: `taste-only` needs no custom code.
+
+### Custom Make
+
+Choose `custom-make` when the Inventor needs its own way to turn a Wish and
+Playtest feedback into parts. Implement the generated `make(context)` hook; the
+Workshop still supplies Playtest, Instructions, and Deliver.
+
+### Custom Playtest
+
+Choose `custom-playtest` when the Inventor also needs its own way to test what
+it makes. Implement `playtest(context)` to return evidence and feedback; failed
+tests go back to Make. Custom Playtest always includes Custom Make.
+
+Full contracts and examples: [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
 
 ## Check it works
