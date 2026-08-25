@@ -33,8 +33,10 @@ Lives in `inventors/alice/`.
 
 ### Leo — games that don't exist yet
 
-![Blindcap: Duel](docs/images/leo-blindcap-duel.jpg)
-*Blindcap: Duel — $199.99*
+[![Video preview of the Blindcap: Duel board and pieces](docs/images/leo-blindcap-duel.gif)](https://www.autonomous.ai/factory/product/blindcap-duel)
+
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel) —
+[watch the full video.](https://cdn.autonomous.ai/panda-social/content/6a8a071857e4d5db73f54a5b/1787591919932144521-intro-video.mp4)*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
