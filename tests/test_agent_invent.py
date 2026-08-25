@@ -132,26 +132,26 @@ def lane_contract(lane):
             "source_model": {
                 "phenomenon": "Coupled periodic motion",
                 "model": "A bounded linkage maps rotary phase to visible periodic displacement.",
-                "source_ids": ["mechanism-source"],
+                "source_ids": ["mechanism-source", "science-mapping"],
             },
             "simplifications": [
                 {
-                    "simplification": "Friction and elastic deformation are omitted from the visible model.",
-                    "reason": "The first interaction teaches phase, not energy loss.",
-                    "disclosed_limit": "The object is qualitative and does not predict real-system amplitude.",
+                    "simplification": "The model presents one exact, cited source statement and does not claim unmodeled behavior.",
+                    "reason": "One observable relationship keeps the first interaction legible.",
+                    "disclosed_limit": "It is a qualitative teaching model, not a measurement or prediction instrument.",
                 }
             ],
             "scale": {
-                "real_quantity": "One full phenomenon cycle",
-                "model_quantity": "One full handle rotation",
+                "real_quantity": "one represented relationship",
+                "model_quantity": "one complete interaction",
                 "scale_ratio": 1.0,
-                "units": "cycle per rotation",
+                "units": "represented relationships per interaction",
             },
             "interaction": {
                 "user_action": "Turn the handle through one revolution.",
                 "observable_response": "Markers reveal their relative phase around the cycle.",
-                "teaching_point": "Equal frequency can coexist with different phase.",
-                "misuse_boundary": "It is not a calibrated measurement instrument.",
+                "teaching_point": "Coupled periodic motion",
+                "misuse_boundary": "It is a qualitative teaching model, not a measurement or prediction instrument.",
             },
         },
         "little-worlds": {
@@ -180,6 +180,9 @@ def lane_contract(lane):
 
 
 def action(title, lane="moving-machines"):
+    selected_source_ids = ["mechanism-source", "safety-source"]
+    if lane == "holdable-science":
+        selected_source_ids.append("science-mapping")
     return {
         "research": {
             "patterns": [
@@ -230,7 +233,7 @@ def action(title, lane="moving-machines"):
                 "Keep the dog's silhouette recognizable around the mechanism.",
             ],
             "lane_contract": lane_contract(lane),
-            "research_source_ids": ["mechanism-source", "safety-source"],
+            "research_source_ids": selected_source_ids,
         },
     }
 
@@ -331,9 +334,14 @@ class AgentInventTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def context(self, lane="moving-machines"):
+    def context(self, lane="moving-machines", objective=None):
+        objective = objective or (
+            "A hand-sized toy that makes coupled periodic motion visible"
+            if lane == "holdable-science"
+            else "A wind-up version of my dog that walks"
+        )
         return InventContext(
-            Wish.create("walking-dog", "A wind-up version of my dog that walks"),
+            Wish.create("walking-dog", objective),
             load_taste(self.inventor),
             ToyBlueprint.for_lane(lane),
             (self.root / ("invent-workspace-" + lane)).absolute(),
@@ -341,6 +349,55 @@ class AgentInventTest(unittest.TestCase):
 
     def research(self, context=None):
         context = context or self.context()
+        mechanism_evidence = (
+            "Coupled periodic motion. A bounded linkage maps rotary phase to "
+            "visible periodic displacement."
+            if context.blueprint.lane == "holdable-science"
+            else "A wound spring can release energy through a constrained repeated motion."
+        )
+        sources = [
+            InventResearchSource(
+                "mechanism-source",
+                "Mechanism reference",
+                "Fixture Engineering Archive",
+                "https://example.com/mechanisms/wind-up",
+                "2026-08-25T00:00:00+00:00",
+                mechanism_evidence,
+                ("prior-art", "use-context", "mechanism", "science"),
+            ),
+            InventResearchSource(
+                "safety-source",
+                "Moving-part safety reference",
+                "Fixture Safety Office",
+                "https://example.com/safety/moving-parts",
+                "2026-08-25T00:00:00+00:00",
+                "Accessible moving parts require a deliberate pinch-hazard review.",
+                ("safety",),
+            ),
+        ]
+        if context.blueprint.lane == "holdable-science":
+            scale = json.dumps(
+                lane_contract("holdable-science")["scale"],
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            simplification = lane_contract("holdable-science")["simplifications"][0]
+            sources.append(
+                InventResearchSource(
+                    "science-mapping",
+                    "Qualitative science mapping",
+                    "Autonomous Workshop fixture",
+                    "https://example.com/science/mapping",
+                    "2026-08-25T00:00:00+00:00",
+                    "%s\n%s %s"
+                    % (
+                        scale,
+                        simplification["simplification"],
+                        simplification["disclosed_limit"],
+                    ),
+                    ("science", "use-context"),
+                )
+            )
         return InventResearch(
             wish_sha256=hashlib.sha256(
                 json.dumps(
@@ -353,26 +410,7 @@ class AgentInventTest(unittest.TestCase):
             provider="fixture-retriever",
             provider_version="1.2.3",
             provider_config_sha256="f" * 64,
-            sources=(
-                InventResearchSource(
-                    "mechanism-source",
-                    "Mechanism reference",
-                    "Fixture Engineering Archive",
-                    "https://example.com/mechanisms/wind-up",
-                    "2026-08-25T00:00:00+00:00",
-                    "A wound spring can release energy through a constrained repeated motion.",
-                    ("prior-art", "use-context", "mechanism"),
-                ),
-                InventResearchSource(
-                    "safety-source",
-                    "Moving-part safety reference",
-                    "Fixture Safety Office",
-                    "https://example.com/safety/moving-parts",
-                    "2026-08-25T00:00:00+00:00",
-                    "Accessible moving parts require a deliberate pinch-hazard review.",
-                    ("safety",),
-                ),
-            ),
+            sources=tuple(sources),
         )
 
     def test_inventor_improves_until_the_independent_reward_reaches_goal(self):
@@ -445,6 +483,16 @@ class AgentInventTest(unittest.TestCase):
                     invented.concept["evidence"]["lane_contract_sha256"],
                     json_sha256(contract),
                 )
+                if lane == "holdable-science":
+                    relevance = invented.concept["evidence"][
+                        "science_source_relevance"
+                    ]
+                    self.assertTrue(relevance["passed"])
+                    self.assertEqual(relevance["unmatched_terms"], [])
+                    self.assertEqual(
+                        relevance["wish_terms"],
+                        ["coupled", "periodic"],
+                    )
                 self.assertIn(lane, creator.prompts[0][0])
                 self.assertIn(lane, evaluator.prompts[0][0])
                 schema = creator.prompts[0][1]
@@ -654,6 +702,143 @@ class AgentInventTest(unittest.TestCase):
         )
         with self.assertRaises(InventResearchUnavailable):
             provider(self.context())
+
+    def test_public_provider_adds_a_pinned_mapping_only_for_science(self):
+        provider = PublicHTTPResearchProvider(transport=FakeResearchHTTP())
+        science = provider(self.context("holdable-science"))
+        moving = provider(self.context("moving-machines"))
+
+        mapping = next(
+            source
+            for source in science.sources
+            if source.source_id == "workshop-qualitative-science-map"
+        )
+        self.assertIn('"scale_ratio":1.0', mapping.evidence)
+        self.assertIn("not a measurement or prediction instrument", mapping.evidence)
+        self.assertNotIn(
+            "workshop-qualitative-science-map", moving.source_ids
+        )
+        science_sources = [
+            source
+            for source in science.sources
+            if source.source_id.startswith("wikipedia-")
+        ]
+        self.assertTrue(science_sources)
+        self.assertTrue(all("science" in source.topics for source in science_sources))
+
+    def test_science_contract_rejects_a_paraphrase_before_reward(self):
+        proposed = action("Paraphrased science", "holdable-science")
+        proposed["selected"]["lane_contract"]["source_model"]["model"] = (
+            "The linkage approximately visualizes phase."
+        )
+        creator = FakeCodex("gpt-5.6-terra", [proposed])
+        evaluator = FakeCodex("gpt-5.6-luna", [verdict(99, "Must not score")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=self.research,
+            )(self.context("holdable-science"))
+        self.assertEqual(
+            caught.exception.needs[0].capability, "codex-industrial-design"
+        )
+        self.assertEqual(evaluator.prompts, [])
+
+    def test_workshop_authored_source_cannot_be_relabelled_as_science_authority(self):
+        context = self.context("holdable-science")
+        contract = lane_contract("holdable-science")
+        simplification = contract["simplifications"][0]
+        self_evidence = "\n".join(
+            (
+                contract["source_model"]["phenomenon"],
+                contract["source_model"]["model"],
+                json.dumps(
+                    contract["scale"], sort_keys=True, separators=(",", ":")
+                ),
+                "%s %s"
+                % (
+                    simplification["simplification"],
+                    simplification["disclosed_limit"],
+                ),
+            )
+        )
+        self_source = InventResearchSource(
+            "workshop-relabeled-map",
+            "Relabelled Workshop mapping",
+            "Autonomous Workshop",
+            "https://github.com/autonomous-ai/autonomous-workshop/blob/main/docs/SCIENCE_PROOF_BOUNDARY.md",
+            "2026-08-25T00:00:00+00:00",
+            self_evidence,
+            ("prior-art", "use-context", "science"),
+        )
+        safety = InventResearchSource(
+            "safety-source",
+            "Safety source",
+            "Fixture Safety Office",
+            "https://example.com/safety/toys",
+            "2026-08-25T00:00:00+00:00",
+            "Accessible parts require an explicit hazard review.",
+            ("safety",),
+        )
+        research = InventResearch(
+            json_sha256(context.wish.to_dict()),
+            context.taste.sha256,
+            context.blueprint.sha256,
+            context.blueprint.lane,
+            "fixture-self-source-provider",
+            "1.0.0",
+            "a" * 64,
+            (self_source, safety),
+        )
+        proposed = action("Relabelled authority", "holdable-science")
+        proposed["research"]["patterns"][0]["source_ids"] = [
+            self_source.source_id
+        ]
+        proposed["selected"]["research_source_ids"] = [
+            self_source.source_id,
+            safety.source_id,
+        ]
+        proposed["selected"]["lane_contract"]["source_model"]["source_ids"] = [
+            self_source.source_id
+        ]
+        creator = FakeCodex("gpt-5.6-terra", [proposed])
+        evaluator = FakeCodex("gpt-5.6-luna", [verdict(99, "Must not score")])
+        evaluator.reasoning_effort = "low"
+
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=lambda unused_context: research,
+            )(context)
+
+        self.assertEqual(
+            caught.exception.needs[0].capability, "codex-industrial-design"
+        )
+        self.assertEqual(evaluator.prompts, [])
+
+    def test_science_contract_waits_when_exact_sources_are_unrelated_to_wish(self):
+        creator = FakeCodex(
+            "gpt-5.6-terra", [action("Unrelated science", "holdable-science")]
+        )
+        evaluator = FakeCodex("gpt-5.6-luna", [verdict(99, "Must not score")])
+        evaluator.reasoning_effort = "low"
+        with self.assertRaises(WaitingFor) as caught:
+            CodexInventor(
+                creator=creator,
+                evaluator=evaluator,
+                research_provider=self.research,
+            )(
+                self.context(
+                    "holdable-science",
+                    "A tactile model of ocean tides and lunar gravity",
+                )
+            )
+        self.assertEqual(
+            caught.exception.needs[0].capability, "science-source-relevance"
+        )
+        self.assertEqual(evaluator.prompts, [])
 
     def test_redirect_handler_blocks_before_following_an_untrusted_host(self):
         from inventor_workshop.agent_invent import _AllowlistedRedirectHandler

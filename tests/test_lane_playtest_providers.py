@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
+from inventor_workshop.agent_invent import InventResearch, InventResearchSource
 from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import Made, PlaytestContext, Playtested, WaitingFor
 from inventor_workshop.lane_playtest_providers import (
@@ -58,9 +59,99 @@ class LanePlaytestProvidersTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def context(self, lane, contract, *, suffix, distinct_roles=True):
+    def context(
+        self,
+        lane,
+        contract,
+        *,
+        suffix,
+        distinct_roles=True,
+        objective=None,
+        science_sources=(),
+        science_product_text=None,
+    ):
         artifact = self.root / ("artifact-" + suffix)
         artifact.mkdir()
+        if objective is None:
+            objective = "Make this exact thing playful"
+            if lane == "holdable-science":
+                objective = "A holdable toy about %s" % contract[
+                    "source_model"
+                ]["phenomenon"]
+        wish = Wish.create("wish-" + suffix, objective)
+        _write_json(artifact / "wish.json", wish.to_dict())
+        product = {
+            "schema_version": 1,
+            "kind": "workshop-step-first-parametric-prototype",
+            "product_id": wish.product_id,
+            "title": "Exact Lane Toy",
+            "summary": "A source-bound provider fixture.",
+            "description": "Exact fixture copy.",
+            "instructions": "Use this exact source-bound fixture.",
+            "lane": lane,
+            "wish": wish.to_dict(),
+        }
+        science_binding = None
+        invented_concept_sha256 = "c" * 64
+        if lane == "holdable-science":
+            interaction = contract.get("interaction", {})
+            product["instructions"] = science_product_text or "%s %s" % (
+                interaction.get("teaching_point", "missing teaching point"),
+                interaction.get("misuse_boundary", "missing misuse boundary"),
+            )
+        if lane == "holdable-science" and science_sources:
+            research_sources = tuple(
+                InventResearchSource(
+                    source.source_id,
+                    source.title,
+                    source.publisher,
+                    source.url,
+                    source.retrieved_at,
+                    source.content.decode("utf-8"),
+                    ("prior-art", "use-context", "science"),
+                )
+                for source in science_sources
+            ) + (
+                InventResearchSource(
+                    "fixture-safety",
+                    "Fixture toy safety",
+                    "Fixture Safety Office",
+                    "https://example.org/toy-safety",
+                    "2026-08-25T00:00:00Z",
+                    "Toy safety requires an explicit bounded hazard review.",
+                    ("safety",),
+                ),
+            )
+            research = InventResearch(
+                json_sha256(wish.to_dict()),
+                self.taste.sha256,
+                ToyBlueprint.for_lane(lane).sha256,
+                lane,
+                "fixture-invent-research",
+                "1.0.0",
+                "f" * 64,
+                research_sources,
+            )
+            research_document = {
+                "schema_version": 1,
+                "kind": "workshop.sealed-invent-science-research",
+                "wish_sha256": json_sha256(wish.to_dict()),
+                "taste_sha256": self.taste.sha256,
+                "blueprint_sha256": ToyBlueprint.for_lane(lane).sha256,
+                "invented_concept_sha256": invented_concept_sha256,
+                "research_sha256": research.research_sha256,
+                "content_scope": "Exact provider-observed fixture excerpts.",
+                "research": research.to_dict(),
+            }
+            research_path = artifact / "playtest" / "invent-research.json"
+            _write_json(research_path, research_document)
+            science_binding = {
+                "path": "playtest/invent-research.json",
+                "file_sha256": hashlib.sha256(research_path.read_bytes()).hexdigest(),
+                "research_sha256": research.research_sha256,
+                "invented_concept_sha256": invented_concept_sha256,
+            }
+        _write_json(artifact / "product.json", product)
         _write_json(
             artifact / "playtest" / "mechanical.json",
             {
@@ -69,6 +160,7 @@ class LanePlaytestProvidersTest(unittest.TestCase):
                 "digital_test_plan": {
                     "invent_lane_contract": contract,
                     "invent_lane_contract_sha256": json_sha256(contract),
+                    "invent_science_research": science_binding,
                 },
             },
         )
@@ -77,6 +169,7 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             {
                 "schema_version": 2,
                 "kind": "workshop-step-first-parametric-design",
+                "invented_concept_sha256": invented_concept_sha256,
                 "action": {
                     "parts": [
                         {
@@ -122,14 +215,10 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             )
         made = Made.from_root(
             artifact,
-            {
-                "title": "Exact Lane Toy",
-                "summary": "A source-bound provider fixture.",
-                "lane": lane,
-            },
+            product,
         )
         return PlaytestContext(
-            Wish.create("wish-" + suffix, "Make this exact thing playful"),
+            wish,
             self.taste,
             ToyBlueprint.for_lane(lane),
             1,
@@ -311,17 +400,16 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             "interaction": {
                 "user_action": "Turn the wheel.",
                 "observable_response": "Markers realign.",
-                "teaching_point": "Ratios create repeating alignment.",
-                "misuse_boundary": "Not an ephemeris.",
+                "teaching_point": "Orbital resonance",
+                "misuse_boundary": "The model diverges at high speed.",
             },
         }
-        context = self.context("holdable-science", contract, suffix="science")
         scale_excerpt = canonical_science_scale(contract["scale"])
         simplification_excerpt = (
             "Ignore air resistance. The model diverges at high speed."
         )
         public_bytes = (
-            "A ratio of periods reveals repeated alignment.\n"
+            "Orbital resonance.\nA ratio of periods reveals repeated alignment.\n"
             + scale_excerpt
             + "\n"
             + simplification_excerpt
@@ -334,6 +422,12 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             "2026-08-25T00:00:00Z",
             public_bytes,
         )
+        context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science",
+            science_sources=(source,),
+        )
         verification = ScienceVerification(
             ProviderIdentity(
                 "workshop-science-source-checker",
@@ -343,6 +437,14 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             ),
             (source,),
             (
+                ScienceAccuracyCase(
+                    "orbital-resonance",
+                    ("nasa-orbits",),
+                    "phenomenon",
+                    "Orbital resonance",
+                    "Orbital resonance",
+                    "Orbital resonance",
+                ),
                 ScienceAccuracyCase(
                     "period-ratio",
                     ("nasa-orbits",),
@@ -372,8 +474,8 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             (
                 ScienceComprehensionTrace(
                     7,
-                    ("ratio", "repeating alignment"),
-                    ("ratio", "repeating alignment", "period"),
+                    ("Orbital resonance", "The model diverges at high speed."),
+                    ("Orbital resonance", "The model diverges at high speed."),
                 ),
             ),
         )
@@ -391,9 +493,91 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             hashlib.sha256(base64.b64decode(source_payload["content_base64"])).hexdigest(),
             source_payload["content_sha256"],
         )
+        serialized_receipts = json.dumps(prepared.receipt_payloads, sort_keys=True)
+        self.assertNotIn("comprehension", serialized_receipts)
+        self.assertIn("deterministic-product-text-coverage", serialized_receipts)
         self.assert_core_accepts_capability(context, "science-test", prepared)
+
+        substituted_source = PublicScienceSource(
+            source.source_id,
+            source.title,
+            source.publisher,
+            source.url,
+            source.retrieved_at,
+            source.content + b"\nprovider-authored substitute bytes",
+        )
+        substituted_verification = ScienceVerification(
+            verification.identity,
+            (substituted_source,),
+            verification.accuracy_cases,
+            verification.simplification_checks,
+            verification.content_coverage_traces,
+        )
+        substituted_context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science-provider-substitution",
+            science_sources=(source,),
+        )
+        with self.assertRaises(WaitingFor):
+            WorkshopLanePlaytestProviders(
+                science_provider=lambda unused_context, unused_model: (
+                    substituted_verification
+                )
+            ).prepare(substituted_context, "science-test")
+
+        dishonest_copy_context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science-dishonest-copy",
+            science_sources=(source,),
+            science_product_text="Turn the wheel and inspect the markers.",
+        )
+        with self.assertRaises(WaitingFor):
+            providers.prepare(dishonest_copy_context, "science-test")
+
+        unrelated_context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science-unrelated-wish",
+            objective="A tactile model of ocean tides and lunar gravity",
+            science_sources=(source,),
+        )
+        with self.assertRaises(WaitingFor) as caught:
+            providers.prepare(unrelated_context, "science-test")
+        self.assertEqual(caught.exception.needs[0].capability, "science-test")
+
+        relevance_context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science-relevance-tamper",
+            science_sources=(source,),
+        )
+        relevance_prepared = WorkshopLanePlaytestProviders(
+            science_provider=lambda unused_context, unused_model: verification
+        ).prepare(relevance_context, "science-test")
+
+        def forge_relevance(root, proof):
+            def mutate(document):
+                document["payload"]["wish_source_relevance"][
+                    "matched_terms"
+                ] = ["fabricated-topic"]
+
+            self.rewrite_receipt(root, proof, "science-sources", mutate)
+
+        relevance_needs = self.release_needs(
+            relevance_context,
+            "science-test",
+            relevance_prepared,
+            tamper=forge_relevance,
+        )
+        self.assertIn("science-test", {item.capability for item in relevance_needs})
+
         scale_context = self.context(
-            "holdable-science", contract, suffix="science-scale-mismatch"
+            "holdable-science",
+            contract,
+            suffix="science-scale-mismatch",
+            science_sources=(source,),
         )
         scale_prepared = WorkshopLanePlaytestProviders(
             science_provider=lambda unused_context, unused_model: verification
@@ -442,11 +626,10 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             "interaction": {
                 "user_action": "turn",
                 "observable_response": "align",
-                "teaching_point": "period",
-                "misuse_boundary": "not predictive",
+                "teaching_point": "orbital period",
+                "misuse_boundary": "Additional bodies perturb the result.",
             },
         }
-        context = self.context("holdable-science", contract, suffix="science-tamper")
         source = PublicScienceSource(
             "public-orbit-source",
             "Orbit source",
@@ -454,9 +637,16 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             "https://example.org/orbits",
             "2026-08-25T00:00:00Z",
             (
-                b"period depends on orbit size\n"
-                b"Use a two-body approximation. Additional bodies perturb the result."
+                b"orbital period\nperiod depends on orbit size\n"
+                + canonical_science_scale(contract["scale"]).encode("utf-8")
+                + b"\nUse a two-body approximation. Additional bodies perturb the result."
             ),
+        )
+        context = self.context(
+            "holdable-science",
+            contract,
+            suffix="science-tamper",
+            science_sources=(source,),
         )
         verification = ScienceVerification(
             ProviderIdentity(
@@ -468,12 +658,28 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             (source,),
             (
                 ScienceAccuracyCase(
+                    "orbital-period-phenomenon",
+                    ("public-orbit-source",),
+                    "phenomenon",
+                    "orbital period",
+                    "orbital period",
+                    "orbital period",
+                ),
+                ScienceAccuracyCase(
                     "orbit-period",
                     ("public-orbit-source",),
                     "model",
                     "period depends on orbit size",
                     "period depends on orbit size",
                     "period depends on orbit size",
+                ),
+                ScienceAccuracyCase(
+                    "orbital-period-scale",
+                    ("public-orbit-source",),
+                    "scale",
+                    canonical_science_scale(contract["scale"]),
+                    canonical_science_scale(contract["scale"]),
+                    canonical_science_scale(contract["scale"]),
                 ),
             ),
             (
@@ -485,7 +691,13 @@ class LanePlaytestProvidersTest(unittest.TestCase):
                     "Use a two-body approximation. Additional bodies perturb the result.",
                 ),
             ),
-            (ScienceComprehensionTrace(1, ("period",), ("period",)),),
+            (
+                ScienceComprehensionTrace(
+                    1,
+                    ("orbital period", "Additional bodies perturb the result."),
+                    ("orbital period", "Additional bodies perturb the result."),
+                ),
+            ),
         )
         prepared = WorkshopLanePlaytestProviders(
             science_provider=lambda unused_context, unused_model: verification
@@ -493,7 +705,10 @@ class LanePlaytestProvidersTest(unittest.TestCase):
 
         def tamper(root, proof):
             def mutate(document):
-                unrelated = b"unrelated but internally hash-consistent public bytes"
+                # Keep every cited excerpt and recompute every local hash.  The
+                # common core must still reject bytes that differ from sealed
+                # Invent research; excerpt self-consistency is insufficient.
+                unrelated = source.content + b"\nforged provider appendix"
                 source_record = document["payload"]["sources"][0]
                 source_record["content_base64"] = base64.b64encode(unrelated).decode(
                     "ascii"

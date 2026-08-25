@@ -23,9 +23,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
+from .agent_invent import (
+    InventResearch,
+    InventResearchSource,
+    _independent_science_authority_source,
+    _science_relevance_record,
+)
 from .artifacts import MAX_FILE_BYTES, build_artifact_manifest
 from .errors import ContractError
 from .jobs import Made, Need, Playtested
+from .make import Wish
 from .models import (
     MAX_EVIDENCE_JSON_BYTES,
     PlaytestResult,
@@ -57,7 +64,9 @@ _RECEIPT_ROLES = {
     "print-test": frozenset(("slicer-receipt",)),
     "motion-test": frozenset(("motion-receipt",)),
     "classic-rules-test": frozenset(("reference-rules", "game-traces")),
-    "science-test": frozenset(("science-sources", "comprehension-traces")),
+    "science-test": frozenset(
+        ("science-sources", "content-coverage-traces")
+    ),
     "world-test": frozenset(
         ("consent-record", "reference-material", "likeness-traces")
     ),
@@ -512,15 +521,20 @@ def _validate_classic(proof: CapabilityReleaseProof) -> None:
 
 def _validate_science(proof: CapabilityReleaseProof) -> None:
     _one_role(proof, "source-model", scope="product")
+    _one_role(proof, "wish-context", scope="product")
+    _one_role(proof, "product-copy", scope="product")
+    _one_role(proof, "invent-research", scope="product")
     _one_role(proof, "science-sources", scope="playtest")
-    _one_role(proof, "comprehension-traces", scope="playtest")
+    _one_role(proof, "content-coverage-traces", scope="playtest")
     measurements = proof.measurements
     _int_measurement(measurements, "accuracy_cases", minimum=1)
     _int_measurement(measurements, "accuracy_failures", minimum=0, maximum=0)
     _int_measurement(measurements, "simplifications_checked", minimum=1)
     _int_measurement(measurements, "dishonest_simplifications", minimum=0, maximum=0)
-    _int_measurement(measurements, "comprehension_traces", minimum=1)
-    _int_measurement(measurements, "comprehension_failures", minimum=0, maximum=0)
+    _int_measurement(measurements, "content_coverage_traces", minimum=1)
+    _int_measurement(
+        measurements, "content_coverage_failures", minimum=0, maximum=0
+    )
 
 
 def _validate_world(proof: CapabilityReleaseProof) -> None:
@@ -863,20 +877,205 @@ def _science_contract(
     return source_model, simplifications, scale
 
 
+def _sealed_science_research(
+    proof: CapabilityReleaseProof,
+    product_root: Path,
+    mechanical: Mapping[str, Any],
+    wish: Wish,
+) -> Tuple[Mapping[str, Any], Dict[str, InventResearchSource], str]:
+    """Replay Make's exact binding to provider-observed Invent research."""
+
+    research_source = _one_role(proof, "invent-research", scope="product")
+    document = _product_json_for_role(
+        proof, product_root, "invent-research", "sealed Invent science research"
+    )
+    plan = mechanical.get("digital_test_plan")
+    binding = (
+        plan.get("invent_science_research") if isinstance(plan, Mapping) else None
+    )
+    if binding is None:
+        # Engine-neutral custom Make workers may publish the same exact binding
+        # directly in their source-model document.
+        binding = mechanical.get("invent_science_research")
+    if not isinstance(binding, Mapping) or set(binding) != {
+        "path",
+        "file_sha256",
+        "research_sha256",
+        "invented_concept_sha256",
+    }:
+        raise ContractError("science Make lacks its exact Invent research binding")
+    if (
+        binding.get("path") != research_source.path
+        or binding.get("path") != "playtest/invent-research.json"
+        or binding.get("file_sha256") != research_source.sha256
+    ):
+        raise ContractError("science Make research file binding is invalid")
+    if set(document) != {
+        "schema_version",
+        "kind",
+        "wish_sha256",
+        "taste_sha256",
+        "blueprint_sha256",
+        "invented_concept_sha256",
+        "research_sha256",
+        "content_scope",
+        "research",
+    }:
+        raise ContractError("sealed Invent science research wrapper is incomplete")
+    research = document.get("research")
+    expected_research_fields = {
+        "schema_version",
+        "wish_sha256",
+        "taste_sha256",
+        "blueprint_sha256",
+        "lane",
+        "provider",
+        "provider_version",
+        "provider_config_sha256",
+        "sources",
+        "research_sha256",
+    }
+    if (
+        document.get("schema_version") != 1
+        or document.get("kind") != "workshop.sealed-invent-science-research"
+        or document.get("wish_sha256") != _json_sha256(wish.to_dict())
+        or document.get("invented_concept_sha256")
+        != binding.get("invented_concept_sha256")
+        or document.get("research_sha256") != binding.get("research_sha256")
+        or not isinstance(research, Mapping)
+        or set(research) != expected_research_fields
+        or research.get("schema_version") != 1
+        or research.get("lane") != "holdable-science"
+        or research.get("wish_sha256") != document.get("wish_sha256")
+        or research.get("taste_sha256") != document.get("taste_sha256")
+        or research.get("blueprint_sha256") != document.get("blueprint_sha256")
+        or research.get("research_sha256") != document.get("research_sha256")
+    ):
+        raise ContractError("sealed Invent science research belongs to other inputs")
+    require_sha256(document.get("taste_sha256"), "science research Taste sha256")
+    require_sha256(
+        document.get("blueprint_sha256"), "science research blueprint sha256"
+    )
+    _nonempty_text(research.get("provider"), "science research provider")
+    require_exact_version(
+        research.get("provider_version"), "science research provider version"
+    )
+    require_sha256(
+        research.get("provider_config_sha256"),
+        "science research provider config sha256",
+    )
+    research_identity = {
+        key: research[key]
+        for key in expected_research_fields - {"research_sha256"}
+    }
+    if _json_sha256(research_identity) != research.get("research_sha256"):
+        raise ContractError("sealed Invent science research identity is invalid")
+    raw_sources = research.get("sources")
+    if not isinstance(raw_sources, list) or not raw_sources or len(raw_sources) > 20:
+        raise ContractError("sealed Invent science research sources are incomplete")
+    sources_by_id: Dict[str, InventResearchSource] = {}
+    for raw in raw_sources:
+        if not isinstance(raw, Mapping):
+            raise ContractError("sealed Invent science source is untyped")
+        try:
+            source = InventResearchSource(
+                raw["source_id"],
+                raw["title"],
+                raw["publisher"],
+                raw["url"],
+                raw["retrieved_at"],
+                raw["evidence"],
+                raw["topics"],
+            )
+        except (ContractError, KeyError, TypeError, ValueError) as exc:
+            raise ContractError("sealed Invent science source is invalid") from exc
+        if source.to_dict() != dict(raw) or source.source_id in sources_by_id:
+            raise ContractError("sealed Invent science source identity is invalid")
+        sources_by_id[source.source_id] = source
+    try:
+        typed_research = InventResearch(
+            research["wish_sha256"],
+            research["taste_sha256"],
+            research["blueprint_sha256"],
+            research["lane"],
+            research["provider"],
+            research["provider_version"],
+            research["provider_config_sha256"],
+            tuple(sources_by_id.values()),
+            research["schema_version"],
+        )
+    except (ContractError, KeyError, TypeError, ValueError) as exc:
+        raise ContractError("sealed Invent science research is invalid") from exc
+    if typed_research.to_dict() != dict(research):
+        raise ContractError("sealed Invent science research identity is invalid")
+    return research, sources_by_id, research_source.sha256
+
+
 def _validate_science_receipt_semantics(
     proof: CapabilityReleaseProof,
     receipts: Mapping[str, Mapping[str, Any]],
     product_root: Path,
 ) -> None:
     source_payload = _receipt_payload(receipts, "science-sources")
-    trace_payload = _receipt_payload(receipts, "comprehension-traces")
+    trace_payload = _receipt_payload(receipts, "content-coverage-traces")
     provider = _provider_identity(source_payload.get("provider"), "science")
-    if _provider_identity(trace_payload.get("provider"), "science traces") != provider:
+    if (
+        _provider_identity(trace_payload.get("provider"), "science coverage")
+        != provider
+    ):
         raise ContractError("science receipts name different providers")
     product_document = _product_json_for_role(
         proof, product_root, "source-model", "science source model"
     )
     source_model, simplifications, scale = _science_contract(product_document)
+    wish_document = _product_json_for_role(
+        proof, product_root, "wish-context", "science Wish context"
+    )
+    if not isinstance(wish_document, Mapping) or set(wish_document) != {
+        "schema_version",
+        "product_id",
+        "objective",
+        "constraints",
+        "context",
+    }:
+        raise ContractError("science Wish context is incomplete")
+    try:
+        wish = Wish(
+            wish_document.get("schema_version"),
+            wish_document.get("product_id"),
+            wish_document.get("objective"),
+            wish_document.get("constraints"),
+            wish_document.get("context"),
+        )
+    except (ContractError, TypeError, ValueError) as exc:
+        raise ContractError("science Wish context is invalid") from exc
+    wish_objective = wish.objective
+    research, sealed_sources_by_id, research_file_sha256 = (
+        _sealed_science_research(
+            proof,
+            product_root,
+            product_document,
+            wish,
+        )
+    )
+    if set(source_payload) != {
+        "provider",
+        "source_model_sha256",
+        "sources",
+        "accuracy_cases",
+        "simplification_checks",
+        "wish_source_relevance",
+        "invent_research_file_sha256",
+        "invent_research_sha256",
+    }:
+        raise ContractError("science source receipt payload is incomplete")
+    if (
+        source_payload.get("invent_research_file_sha256")
+        != research_file_sha256
+        or source_payload.get("invent_research_sha256")
+        != research.get("research_sha256")
+    ):
+        raise ContractError("science receipt belongs to other Invent research")
     if source_payload.get("source_model_sha256") != _json_sha256(source_model):
         raise ContractError("science receipt belongs to another source model")
     required_ids = source_model.get("source_ids")
@@ -888,6 +1087,8 @@ def _validate_science_receipt_semantics(
     ):
         raise ContractError("science source model lacks unique source ids")
     required_ids_set = set(required_ids)
+    if not required_ids_set <= set(sealed_sources_by_id):
+        raise ContractError("science Invent research omits a contract source")
 
     sources = source_payload.get("sources")
     if not isinstance(sources, list) or not sources:
@@ -932,16 +1133,48 @@ def _validate_science_receipt_semantics(
             or hashlib.sha256(content).hexdigest() != source.get("content_sha256")
         ):
             raise ContractError("science source is not exact public evidence")
+        sealed = sealed_sources_by_id[source_id]
+        if (
+            source.get("title") != sealed.title
+            or source.get("publisher") != sealed.publisher
+            or source.get("url") != sealed.url
+            or source.get("retrieved_at") != sealed.retrieved_at
+            or source.get("media_type") != "text/plain"
+            or content != sealed.evidence.encode("utf-8")
+        ):
+            raise ContractError(
+                "science receipt replaced sealed Invent source bytes or metadata"
+            )
         require_utc_timestamp(source.get("retrieved_at"), "science source retrieved_at")
         observed_ids.add(source_id)
         source_bytes_by_id[source_id] = content
     if observed_ids != required_ids_set:
         raise ContractError("science receipt omits a source named by Invent")
+    authority_evidence = {
+        source_id: sealed_sources_by_id[source_id].evidence
+        for source_id in required_ids
+        if _independent_science_authority_source(sealed_sources_by_id[source_id])
+    }
+    if not authority_evidence:
+        raise ContractError("science proof lacks independent authority bytes")
+    expected_relevance = _science_relevance_record(
+        wish_objective,
+        source_model,
+        authority_evidence,
+    )
+    if (
+        source_payload.get("wish_source_relevance") != expected_relevance
+        or expected_relevance.get("passed") is not True
+    ):
+        raise ContractError(
+            "science receipt does not replay Wish-specific authority relevance"
+        )
 
     accuracy = source_payload.get("accuracy_cases")
     if not isinstance(accuracy, list) or not accuracy:
         raise ContractError("science receipt lacks accuracy comparison cases")
     accuracy_ids = set()
+    accuracy_fields = set()
     accuracy_failures = 0
     for case in accuracy:
         if not isinstance(case, Mapping) or set(case) != {
@@ -979,6 +1212,7 @@ def _validate_science_receipt_semantics(
             or not isinstance(case_sources, list)
             or not case_sources
             or not set(case_sources) <= required_ids_set
+            or field in accuracy_fields
             or not isinstance(excerpt, str)
             or not excerpt
             or case.get("source_excerpt_sha256")
@@ -987,11 +1221,18 @@ def _validate_science_receipt_semantics(
                 excerpt.encode("utf-8") in source_bytes_by_id[source_id]
                 for source_id in case_sources
             )
+            or (
+                field in ("phenomenon", "model")
+                and not any(source_id in authority_evidence for source_id in case_sources)
+            )
             or case.get("passed") is not passed
         ):
             raise ContractError("science accuracy case is not product/source-bound")
         accuracy_ids.add(case_id)
+        accuracy_fields.add(field)
         accuracy_failures += not passed
+    if accuracy_fields != {"phenomenon", "model", "scale"}:
+        raise ContractError("science proof does not cover every contract field")
 
     checks = source_payload.get("simplification_checks")
     if not isinstance(checks, list) or not checks:
@@ -1048,22 +1289,66 @@ def _validate_science_receipt_semantics(
     if observed_hashes != expected_hashes:
         raise ContractError("science receipt omits an exact simplification")
 
+    if trace_payload.get("measurement_kind") != (
+        "deterministic-product-text-coverage"
+    ):
+        raise ContractError("science coverage receipt overstates its measurement")
+    product_copy = _product_json_for_role(
+        proof, product_root, "product-copy", "science product copy"
+    )
+    plan = product_document.get("digital_test_plan")
+    lane_contract = (
+        plan.get("invent_lane_contract") if isinstance(plan, Mapping) else None
+    )
+    interaction = (
+        lane_contract.get("interaction")
+        if isinstance(lane_contract, Mapping)
+        else product_document.get("interaction")
+    )
+    if (
+        not isinstance(interaction, Mapping)
+        or product_copy.get("product_id") != wish.product_id
+        or product_copy.get("wish") != wish.to_dict()
+    ):
+        raise ContractError("science product copy belongs to another Wish or contract")
+    required_product_text = [
+        interaction.get("teaching_point"),
+        interaction.get("misuse_boundary"),
+    ]
+    if not all(
+        isinstance(item, str) and item and len(item) <= 300
+        for item in required_product_text
+    ):
+        raise ContractError("science required product text is invalid")
+    product_text = "\n".join(
+        value
+        for value in (
+            product_copy.get("instructions"),
+            product_copy.get("summary"),
+            product_copy.get("description"),
+        )
+        if isinstance(value, str)
+    )
+    recovered_product_text = [
+        item for item in required_product_text if item in product_text
+    ]
     traces = trace_payload.get("traces")
-    if not isinstance(traces, list) or not traces:
-        raise ContractError("science receipt lacks comprehension traces")
+    if not isinstance(traces, list) or len(traces) != 1:
+        raise ContractError("science receipt lacks product-text coverage traces")
     seeds = set()
-    comprehension_failures = 0
+    content_coverage_failures = 0
     for trace in traces:
         if not isinstance(trace, Mapping) or set(trace) != {
             "seed",
-            "expected_concepts",
-            "observed_concepts",
+            "measurement_kind",
+            "required_text",
+            "recovered_text",
             "passed",
         }:
-            raise ContractError("science comprehension trace is incomplete")
+            raise ContractError("science content-coverage trace is incomplete")
         seed = trace.get("seed")
-        expected = trace.get("expected_concepts")
-        observed = trace.get("observed_concepts")
+        expected = trace.get("required_text")
+        observed = trace.get("recovered_text")
         passed = isinstance(expected, list) and isinstance(observed, list) and bool(expected) and set(
             expected
         ) <= set(observed)
@@ -1071,25 +1356,30 @@ def _validate_science_receipt_semantics(
             type(seed) is not int
             or seed < 0
             or seed in seeds
+            or trace.get("measurement_kind")
+            != "deterministic-product-text-coverage"
             or not isinstance(expected, list)
             or not all(isinstance(item, str) and item for item in expected)
             or len(expected) != len(set(expected))
             or not isinstance(observed, list)
             or not all(isinstance(item, str) and item for item in observed)
             or len(observed) != len(set(observed))
+            or expected != required_product_text
+            or observed != recovered_product_text
             or trace.get("passed") is not passed
         ):
-            raise ContractError("science comprehension trace is not replayable")
+            raise ContractError("science content-coverage trace is not replayable")
         seeds.add(seed)
-        comprehension_failures += not passed
+        content_coverage_failures += not passed
     measurements = proof.measurements
     if (
         measurements.get("accuracy_cases") != len(accuracy)
         or measurements.get("accuracy_failures") != accuracy_failures
         or measurements.get("simplifications_checked") != len(checks)
         or measurements.get("dishonest_simplifications") != dishonest
-        or measurements.get("comprehension_traces") != len(traces)
-        or measurements.get("comprehension_failures") != comprehension_failures
+        or measurements.get("content_coverage_traces") != len(traces)
+        or measurements.get("content_coverage_failures")
+        != content_coverage_failures
     ):
         raise ContractError("science measurements do not match replayed source cases")
 
@@ -1564,7 +1854,7 @@ def _need(capability: str) -> Need:
         "print-test": "an exact slicer receipt for every sealed printable part and pinned profiles",
         "motion-test": "kinematic evidence across tolerances, orientations, loads, wear, stalls, and misuse",
         "classic-rules-test": "reference-bound rule conformance and seeded classic-game traces",
-        "science-test": "source-bound accuracy, simplification, and comprehension evidence",
+        "science-test": "Wish-relevant source-bound accuracy, simplification, and deterministic product-text coverage evidence",
         "world-test": "consent-, reference-, and personalization-bound likeness evidence",
         "game-simulation": "1,000 complete seeded traces plus balance, exploit, choice, and flow analysis",
         "agent-playtest": "artifact-bound evidence from at least two distinct AI-player roles",

@@ -1642,6 +1642,174 @@ def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     )
 
 
+def _factory_occurrence_sidecar(
+    artifact_root: Path, action: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """Describe every exact printable occurrence in the assembled STEP.
+
+    ``cad/product.step.py`` adds each action part exactly once, in action order.
+    Factory treats every other sealed STL as production inventory, so multipart
+    shared Makes must publish the matching occurrence family next to the
+    promoted ``assembled.step``.  Paths stay artifact-root relative; Factory
+    rewrites them into its transport-only ``<slug>_parts`` directory later.
+    """
+
+    parts = action.get("parts")
+    if not isinstance(parts, list) or len(parts) < 2:
+        raise ContractError(
+            "shared multipart Make requires at least two exact part occurrences"
+        )
+    occurrences = []
+    seen = set()
+    for part in parts:
+        part_id = part.get("part_id") if isinstance(part, Mapping) else None
+        if (
+            not isinstance(part_id, str)
+            or _PART_ID.fullmatch(part_id) is None
+            or part_id in seen
+        ):
+            raise ContractError("shared Make occurrence part ids are invalid")
+        seen.add(part_id)
+        relative = "cad/part_%s.stl" % part_id.replace("-", "_")
+        path = artifact_root / "cad" / ("part_%s.stl" % part_id.replace("-", "_"))
+        if path.is_symlink() or not path.is_file() or path.stat().st_size <= 0:
+            raise ContractError(
+                "shared Make occurrence sidecar references a missing printable part"
+            )
+        occurrences.append({"name": part_id, "stlPath": relative})
+    return {
+        "schemaVersion": 1,
+        "entryKind": "assembly",
+        "primaryPose": "assembled",
+        "parts": occurrences,
+    }
+
+
+def _science_research_document(context: MakeContext) -> Mapping[str, Any]:
+    """Validate and bind Invent's exact science research into the Made artifact."""
+
+    research = context.invented.concept.get("research_evidence")
+    concept_evidence = context.invented.concept.get("evidence")
+    lane_contract = context.invented.concept.get("lane_contract")
+    source_model = (
+        lane_contract.get("source_model") if isinstance(lane_contract, Mapping) else None
+    )
+    if (
+        not isinstance(research, Mapping)
+        or not isinstance(concept_evidence, Mapping)
+        or not isinstance(source_model, Mapping)
+    ):
+        raise _make_wait(
+            "The science concept lacks its exact source-bound Invent research.",
+            "science-research-binding",
+        )
+    expected_research_fields = {
+        "schema_version",
+        "wish_sha256",
+        "taste_sha256",
+        "blueprint_sha256",
+        "lane",
+        "provider",
+        "provider_version",
+        "provider_config_sha256",
+        "sources",
+        "research_sha256",
+    }
+    sources = research.get("sources")
+    if (
+        set(research) != expected_research_fields
+        or research.get("schema_version") != 1
+        or research.get("wish_sha256") != json_sha256(context.wish.to_dict())
+        or research.get("taste_sha256") != context.taste.sha256
+        or research.get("blueprint_sha256") != context.blueprint.sha256
+        or research.get("lane") != "holdable-science"
+        or not isinstance(sources, list)
+        or not sources
+        or len(sources) > 20
+    ):
+        raise _make_wait(
+            "The science Invent research is not bound to these exact Workshop inputs.",
+            "science-research-binding",
+        )
+    research_identity = {
+        key: research[key] for key in expected_research_fields - {"research_sha256"}
+    }
+    if (
+        research.get("research_sha256") != json_sha256(research_identity)
+        or concept_evidence.get("research_sha256") != research.get("research_sha256")
+    ):
+        raise _make_wait(
+            "The science Invent research digest is invalid.",
+            "science-research-binding",
+        )
+
+    expected_source_fields = {
+        "source_id",
+        "title",
+        "publisher",
+        "url",
+        "retrieved_at",
+        "evidence",
+        "evidence_sha256",
+        "topics",
+        "source_sha256",
+    }
+    source_ids = []
+    for source in sources:
+        if not isinstance(source, Mapping) or set(source) != expected_source_fields:
+            raise _make_wait(
+                "The science Invent research contains an untyped source record.",
+                "science-research-binding",
+            )
+        evidence = source.get("evidence")
+        source_id = source.get("source_id")
+        source_identity = {
+            key: source[key] for key in expected_source_fields - {"source_sha256"}
+        }
+        if (
+            not isinstance(source_id, str)
+            or not source_id
+            or source_id in source_ids
+            or not isinstance(evidence, str)
+            or not evidence
+            or source.get("evidence_sha256")
+            != hashlib.sha256(evidence.encode("utf-8")).hexdigest()
+            or source.get("source_sha256") != json_sha256(source_identity)
+        ):
+            raise _make_wait(
+                "The science Invent research contains invalid or duplicate source bytes.",
+                "science-research-binding",
+            )
+        source_ids.append(source_id)
+    required_ids = source_model.get("source_ids")
+    selected_ids = concept_evidence.get("research_source_ids")
+    if (
+        not isinstance(required_ids, list)
+        or not required_ids
+        or not set(required_ids) <= set(source_ids)
+        or not isinstance(selected_ids, list)
+        or not set(required_ids) <= set(selected_ids)
+    ):
+        raise _make_wait(
+            "The science Invent contract is not covered by its selected exact sources.",
+            "science-research-binding",
+        )
+    return {
+        "schema_version": 1,
+        "kind": "workshop.sealed-invent-science-research",
+        "wish_sha256": json_sha256(context.wish.to_dict()),
+        "taste_sha256": context.taste.sha256,
+        "blueprint_sha256": context.blueprint.sha256,
+        "invented_concept_sha256": context.invented.concept_sha256,
+        "research_sha256": research["research_sha256"],
+        "content_scope": (
+            "Exact provider-observed excerpts and pinned deterministic mappings; "
+            "not a claim that the full remote response was retained."
+        ),
+        "research": dict(research),
+    }
+
+
 _FINITE_GAME_SIMULATOR = r'''#!/usr/bin/env python3
 """Deterministic simulator for the sealed Workshop finite take-away game."""
 
@@ -1948,6 +2116,10 @@ class CodexMaker:
                 "the final binding from sealed bytes. "
                 "For a known "
                 "classic, identify the public rules reference and declare rules_unchanged. "
+                "For holdable-science, copy the Invent lane contract's exact teaching_point "
+                "and misuse_boundary verbatim into instructions. The deterministic science "
+                "gate treats exact recovery from the product text as coverage; paraphrase is "
+                "not source-bound evidence. "
                 "The constrained primitive vocabulary is an honest MVP, so name what remains for "
                 "later detailed CAD. Use the exact Wish, complete Taste, selected Invent concept, "
                 "and any prior Playtest feedback. On later attempts, improve the action from the "
@@ -2192,6 +2364,10 @@ class CodexMaker:
         print_plate = (artifact / "cad" / "print_plate.stl").read_bytes()
         (artifact / "assembled.stl").write_bytes(assembled)
         (artifact / "assembled.step").write_bytes(assembled_step)
+        _write_json(
+            artifact / "assembled.step.json",
+            _factory_occurrence_sidecar(artifact, action),
+        )
         assembled_sha256 = hashlib.sha256(assembled).hexdigest()
         assembled_step_sha256 = hashlib.sha256(assembled_step).hexdigest()
         print_plate_sha256 = hashlib.sha256(print_plate).hexdigest()
@@ -2205,6 +2381,26 @@ class CodexMaker:
             # Playtest must wait rather than invent loads or failure modes.
             sealed_lane_contract = None
             lane_contract_sha256 = None
+        science_research_binding: Optional[Mapping[str, Any]] = None
+        if context.blueprint.lane == "holdable-science":
+            if sealed_lane_contract is None:
+                raise _make_wait(
+                    "The science Make has no sealed Invent lane contract.",
+                    "science-research-binding",
+                )
+            science_research_path = artifact / "playtest" / "invent-research.json"
+            _write_json(science_research_path, _science_research_document(context))
+            science_research_document = json.loads(
+                science_research_path.read_text(encoding="utf-8")
+            )
+            science_research_binding = {
+                "path": "playtest/invent-research.json",
+                "file_sha256": hashlib.sha256(
+                    science_research_path.read_bytes()
+                ).hexdigest(),
+                "research_sha256": science_research_document["research_sha256"],
+                "invented_concept_sha256": context.invented.concept_sha256,
+            }
         if context.blueprint.lane == "moving-machines":
             if sealed_lane_contract is None:
                 raise _make_wait(
@@ -2271,6 +2467,7 @@ class CodexMaker:
                     "dimension_tolerance_mm": _MECHANICAL_TOLERANCE_MM,
                     "invent_lane_contract": sealed_lane_contract,
                     "invent_lane_contract_sha256": lane_contract_sha256,
+                    "invent_science_research": science_research_binding,
                     "assembly_path": {
                         "kind": "vertical-rigid-body-disassembly-reversed-for-assembly",
                         "minimum_steps": 12,

@@ -6,6 +6,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from inventor_workshop.agent_invent import (
+    InventResearch,
+    InventResearchSource,
+    _science_relevance_record,
+)
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
 from inventor_workshop.instructions import DefaultInstructions
@@ -164,9 +169,86 @@ class DeterministicWorkshopFakes:
         )
         artifact = context.workspace / "artifact"
         artifact.mkdir(parents=True)
+        science_scale = {
+            "real_quantity": "one observation",
+            "model_quantity": "one action",
+            "scale_ratio": 1,
+            "units": "observations per action",
+        }
+        science_interaction = {
+            "user_action": "Move the fixture once.",
+            "observable_response": "Watch one observation appear.",
+            "teaching_point": "fixture motion",
+            "misuse_boundary": "not physical evidence",
+        }
+        canonical_scale = json.dumps(
+            science_scale, sort_keys=True, separators=(",", ":")
+        )
+        science_source_bytes = (
+            "fixture motion\n"
+            "one action produces one observation\n"
+            + canonical_scale
+            + "\nbounded state; not physical evidence\n"
+            "one observation; not continuous time"
+        ).encode("utf-8")
+        science_binding = None
+        if self.lane == "holdable-science":
+            research = InventResearch(
+                self.wish_sha256,
+                self.taste_sha256,
+                context.blueprint.sha256,
+                self.lane,
+                "ownership-invent-science",
+                "1.0.0",
+                "7" * 64,
+                (
+                    InventResearchSource(
+                        "fixture-source",
+                        "Ownership fixture source",
+                        "Fixture Observatory",
+                        "https://example.org/ownership-science",
+                        "2026-08-25T00:00:00Z",
+                        science_source_bytes.decode("utf-8"),
+                        ("prior-art", "use-context", "science"),
+                    ),
+                    InventResearchSource(
+                        "fixture-safety",
+                        "Ownership fixture safety",
+                        "Fixture Safety Office",
+                        "https://example.org/ownership-safety",
+                        "2026-08-25T00:00:00Z",
+                        "Toy safety requires an explicit bounded hazard review.",
+                        ("safety",),
+                    ),
+                ),
+            )
+            research_document = {
+                "schema_version": 1,
+                "kind": "workshop.sealed-invent-science-research",
+                "wish_sha256": research.wish_sha256,
+                "taste_sha256": research.taste_sha256,
+                "blueprint_sha256": research.blueprint_sha256,
+                "invented_concept_sha256": context.invented.concept_sha256,
+                "research_sha256": research.research_sha256,
+                "content_scope": "Exact provider-observed ownership fixture excerpts.",
+                "research": research.to_dict(),
+            }
+            research_path = artifact / "playtest" / "invent-research.json"
+            research_path.parent.mkdir(parents=True, exist_ok=True)
+            research_path.write_text(
+                json.dumps(research_document, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            science_binding = {
+                "path": "playtest/invent-research.json",
+                "file_sha256": hashlib.sha256(research_path.read_bytes()).hexdigest(),
+                "research_sha256": research.research_sha256,
+                "invented_concept_sha256": context.invented.concept_sha256,
+            }
         files = {
             "toy.step": "ISO-10303-21; deterministic ownership fixture\n",
             "part_body.stl": "solid body\nendsolid body\n",
+            "wish.json": json.dumps(context.wish.to_dict(), sort_keys=True) + "\n",
             "edition-rules.json": '{"known_game":"fixture classic","rules_reference":"https://example.org/fixture-rules","known_rules":["one legal turn"]}\n',
             "source-model.json": json.dumps(
                 {
@@ -187,6 +269,9 @@ class DeterministicWorkshopFakes:
                             "disclosed_limit": "not continuous time",
                         },
                     ],
+                    "scale": science_scale,
+                    "interaction": science_interaction,
+                    "invent_science_research": science_binding,
                 },
                 sort_keys=True,
             )
@@ -226,20 +311,30 @@ class DeterministicWorkshopFakes:
         }
         for relative, payload in files.items():
             (artifact / relative).write_text(payload, encoding="utf-8")
-        return Made.from_root(
-            artifact,
-            {
-                "title": "%s ownership fixture" % self.inventor_id.title(),
-                "summary": "A deterministic product from the shared mechanical-design worker.",
-                "lane": self.lane,
-                "inventor_id": self.inventor_id,
-                "wish_sha256": self.wish_sha256,
-                "taste_sha256": self.taste_sha256,
-                "instructions": "Use the exact deterministic fixture as described.",
-                "components": ["one fixture body"],
-                "limitations": ["Contract fixture; not human-use evidence."],
-            },
+        product = {
+            "schema_version": 1,
+            "kind": "workshop-ownership-fixture",
+            "product_id": context.wish.product_id,
+            "title": "%s ownership fixture" % self.inventor_id.title(),
+            "summary": "A deterministic product from the shared mechanical-design worker.",
+            "description": "An exact shared-stage ownership fixture.",
+            "lane": self.lane,
+            "inventor_id": self.inventor_id,
+            "wish_sha256": self.wish_sha256,
+            "taste_sha256": self.taste_sha256,
+            "wish": context.wish.to_dict(),
+            "instructions": (
+                "fixture motion; not physical evidence"
+                if self.lane == "holdable-science"
+                else "Use the exact deterministic fixture as described."
+            ),
+            "components": ["one fixture body"],
+            "limitations": ["Contract fixture; not human-use evidence."],
+        }
+        (artifact / "product.json").write_text(
+            json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
         )
+        return Made.from_root(artifact, product)
 
     @staticmethod
     def _write_json(root, relative, value):
@@ -589,6 +684,17 @@ class DeterministicWorkshopFakes:
             source_bytes = (
                 b"fixture motion\n"
                 b"one action produces one observation\n"
+                + json.dumps(
+                    {
+                        "real_quantity": "one observation",
+                        "model_quantity": "one action",
+                        "scale_ratio": 1,
+                        "units": "observations per action",
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                + b"\n"
                 b"bounded state; not physical evidence\n"
                 b"one observation; not continuous time"
             )
@@ -609,13 +715,28 @@ class DeterministicWorkshopFakes:
                     "disclosed_limit": "not continuous time",
                 },
             ]
+            scale = {
+                "real_quantity": "one observation",
+                "model_quantity": "one action",
+                "scale_ratio": 1,
+                "units": "observations per action",
+            }
+            canonical_scale = json.dumps(
+                scale, sort_keys=True, separators=(",", ":")
+            )
+            research_path = "playtest/invent-research.json"
+            research_document = json.loads(
+                (context.made.artifact_root / research_path).read_text(
+                    encoding="utf-8"
+                )
+            )
             measurements = {
                 "accuracy_cases": 3,
                 "accuracy_failures": 0,
                 "simplifications_checked": 2,
                 "dishonest_simplifications": 0,
-                "comprehension_traces": 1,
-                "comprehension_failures": 0,
+                "content_coverage_traces": 1,
+                "content_coverage_failures": 0,
             }
             model_source = source(
                 "source-model",
@@ -623,16 +744,36 @@ class DeterministicWorkshopFakes:
                 "source-model.json",
                 product_inventory["source-model.json"],
             )
+            wish_source = source(
+                "wish-context",
+                "product",
+                "wish.json",
+                product_inventory["wish.json"],
+            )
+            product_source = source(
+                "product-copy",
+                "product",
+                "product.json",
+                product_inventory["product.json"],
+            )
+            research_source = source(
+                "invent-research",
+                "product",
+                research_path,
+                product_inventory[research_path],
+            )
             sources, sources_sha256 = self._canonical_receipt(
                 context,
                 capability=capability,
                 proof_class=proof_class,
                 role="science-sources",
-                dependencies=(model_source,),
+                dependencies=(model_source, wish_source, product_source, research_source),
                 measurements=measurements,
                 payload={
                     "provider": provider,
                     "source_model_sha256": hashlib.sha256(json.dumps(source_model, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
+                    "invent_research_file_sha256": product_inventory[research_path],
+                    "invent_research_sha256": research_document["research_sha256"],
                     "sources": [
                         {
                             "source_id": "fixture-source",
@@ -650,7 +791,7 @@ class DeterministicWorkshopFakes:
                     "accuracy_cases": [
                         {"case_id": "phenomenon-1", "source_ids": ["fixture-source"], "product_field": "phenomenon", "expected": source_model["phenomenon"], "observed": source_model["phenomenon"], "source_excerpt": source_model["phenomenon"], "source_excerpt_sha256": hashlib.sha256(source_model["phenomenon"].encode("utf-8")).hexdigest(), "passed": True},
                         {"case_id": "model-1", "source_ids": ["fixture-source"], "product_field": "model", "expected": source_model["model"], "observed": source_model["model"], "source_excerpt": source_model["model"], "source_excerpt_sha256": hashlib.sha256(source_model["model"].encode("utf-8")).hexdigest(), "passed": True},
-                        {"case_id": "model-2", "source_ids": ["fixture-source"], "product_field": "model", "expected": source_model["model"], "observed": source_model["model"], "source_excerpt": source_model["model"], "source_excerpt_sha256": hashlib.sha256(source_model["model"].encode("utf-8")).hexdigest(), "passed": True},
+                        {"case_id": "scale-1", "source_ids": ["fixture-source"], "product_field": "scale", "expected": canonical_scale, "observed": canonical_scale, "source_excerpt": canonical_scale, "source_excerpt_sha256": hashlib.sha256(canonical_scale.encode("utf-8")).hexdigest(), "passed": True},
                     ],
                     "simplification_checks": [
                         {
@@ -664,22 +805,29 @@ class DeterministicWorkshopFakes:
                         }
                         for item in simplifications
                     ],
+                    "wish_source_relevance": _science_relevance_record(
+                        context.wish.objective,
+                        source_model,
+                        {"fixture-source": source_bytes.decode("utf-8")},
+                    ),
                 },
             )
             traces, traces_sha256 = self._canonical_receipt(
                 context,
                 capability=capability,
                 proof_class=proof_class,
-                role="comprehension-traces",
-                dependencies=(model_source,),
+                role="content-coverage-traces",
+                dependencies=(model_source, wish_source, product_source, research_source),
                 measurements=measurements,
                 payload={
                     "provider": provider,
+                    "measurement_kind": "deterministic-product-text-coverage",
                     "traces": [
                         {
                             "seed": 1,
-                            "expected_concepts": ["action"],
-                            "observed_concepts": ["action", "observation"],
+                            "measurement_kind": "deterministic-product-text-coverage",
+                            "required_text": ["fixture motion", "not physical evidence"],
+                            "recovered_text": ["fixture motion", "not physical evidence"],
                             "passed": True,
                         }
                     ],
@@ -691,9 +839,12 @@ class DeterministicWorkshopFakes:
                 proof_class,
                 (
                     model_source,
+                    wish_source,
+                    product_source,
+                    research_source,
                     source("science-sources", "playtest", sources, sources_sha256),
                     source(
-                        "comprehension-traces",
+                        "content-coverage-traces",
                         "playtest",
                         traces,
                         traces_sha256,
@@ -985,9 +1136,15 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
 
     @staticmethod
     def exact_wish(inventor_id, product_id):
+        objective = "I wish for a pocket toy\nthat keeps the midnight-blue hinge exactly."
+        if inventor_id == "ivy":
+            objective = (
+                "I wish for a pocket fixture-motion toy\n"
+                "that keeps the midnight-blue hinge exactly."
+            )
         return Wish.create(
             product_id,
-            "I wish for a pocket toy\nthat keeps the midnight-blue hinge exactly.",
+            objective,
             constraints={
                 "maximum_mm": [90, 70, 25],
                 "must_keep": ["hinge", "midnight blue"],

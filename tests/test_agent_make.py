@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import subprocess
@@ -6,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.agent_make import (
     MAKE_GENERATOR_ID,
     MAKE_GENERATOR_VERSION,
@@ -15,9 +17,21 @@ from inventor_workshop.agent_make import (
     _MAKE_SCHEMA,
     _validate_action,
 )
+from inventor_workshop.agent_invent import InventResearch, InventResearchSource
 from inventor_workshop.errors import ArtifactError
-from inventor_workshop.jobs import InventContext, Invented, MakeContext, WaitingFor
+from inventor_workshop.jobs import (
+    InventContext,
+    Invented,
+    MakeContext,
+    PlaytestContext,
+    Playtested,
+    WaitingFor,
+)
+from inventor_workshop.lane_playtest_providers import WorkshopLanePlaytestProviders
 from inventor_workshop.make import Wish
+from inventor_workshop.models import PlaytestResult
+from inventor_workshop.playtest import Playtest
+from inventor_workshop.playtest_release import playtest_release_needs
 from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.sealed_draft import _load_artifact_contract
 from inventor_workshop.taste import load_taste
@@ -419,6 +433,115 @@ class AgentMakeTest(unittest.TestCase):
             "leo",
         )
 
+    def science_context(self, workspace="science-make"):
+        wish = Wish.create(
+            "phase-window",
+            "A hand-sized toy that makes coupled periodic motion visible",
+            constraints={"lane": "holdable-science"},
+            context={"inventor_id": "ivy"},
+        )
+        blueprint = ToyBlueprint.for_lane("holdable-science")
+        scale = {
+            "real_quantity": "one represented relationship",
+            "model_quantity": "one complete interaction",
+            "scale_ratio": 1.0,
+            "units": "represented relationships per interaction",
+        }
+        simplification = {
+            "simplification": "The model presents one exact, cited source statement and does not claim unmodeled behavior.",
+            "reason": "One observable relationship keeps the first interaction legible.",
+            "disclosed_limit": "It is a qualitative teaching model, not a measurement or prediction instrument.",
+        }
+        primary = InventResearchSource(
+            "periodic-source",
+            "Periodic motion fixture",
+            "Fixture Science Archive",
+            "https://example.com/science/periodic-motion",
+            "2026-08-25T00:00:00Z",
+            "Coupled periodic motion. A bounded linkage maps rotary phase to visible periodic displacement.",
+            ("prior-art", "use-context", "science"),
+        )
+        mapping = InventResearchSource(
+            "science-mapping",
+            "Qualitative model boundary",
+            "Autonomous Workshop fixture",
+            "https://example.com/science/qualitative-mapping",
+            "2026-08-25T00:00:00Z",
+            "%s\n%s %s"
+            % (
+                json.dumps(scale, sort_keys=True, separators=(",", ":")),
+                simplification["simplification"],
+                simplification["disclosed_limit"],
+            ),
+            ("science", "use-context"),
+        )
+        safety = InventResearchSource(
+            "safety-source",
+            "Toy safety fixture",
+            "Fixture Safety Office",
+            "https://example.com/safety/toys",
+            "2026-08-25T00:00:00Z",
+            "Toy safety requires an explicit hazard review.",
+            ("safety",),
+        )
+        research = InventResearch(
+            wish_sha256=json_sha256(wish.to_dict()),
+            taste_sha256=self.taste.sha256,
+            blueprint_sha256=blueprint.sha256,
+            lane=blueprint.lane,
+            provider="fixture-science-research",
+            provider_version="1.0.0",
+            provider_config_sha256="a" * 64,
+            sources=(primary, mapping, safety),
+        )
+        contract = {
+            "schema_version": 1,
+            "lane": "holdable-science",
+            "source_model": {
+                "phenomenon": "Coupled periodic motion",
+                "model": "A bounded linkage maps rotary phase to visible periodic displacement.",
+                "source_ids": ["periodic-source", "science-mapping"],
+            },
+            "simplifications": [simplification],
+            "scale": scale,
+            "interaction": {
+                "user_action": "Turn the wheel once.",
+                "observable_response": "Two markers reveal their relative phase.",
+                "teaching_point": "Coupled periodic motion",
+                "misuse_boundary": simplification["disclosed_limit"],
+            },
+        }
+        concept = {
+            "title": "Phase Window",
+            "summary": "A tactile window onto periodic relationships.",
+            "mechanical_handoff": ["Make two phase markers legible."],
+            "lane_contract": contract,
+            "research_evidence": research.to_dict(),
+            "evidence": {
+                "research_sha256": research.research_sha256,
+                "research_source_ids": ["periodic-source", "science-mapping"],
+            },
+        }
+        invented = Invented(
+            wish_sha256=json_sha256(wish.to_dict()),
+            taste_sha256=self.taste.sha256,
+            lane=blueprint.lane,
+            concept=concept,
+            score=90,
+            target_score=85,
+        )
+        return MakeContext(
+            wish,
+            self.taste,
+            blueprint,
+            invented,
+            1,
+            (self.root / workspace).absolute(),
+            (),
+            2,
+            "ivy",
+        )
+
     def worker(self, actions, verdicts, **kwargs):
         creator = FakeCodex("gpt-5.6-terra", actions)
         evaluator = FakeCodex("gpt-5.6-luna", verdicts)
@@ -445,6 +568,27 @@ class AgentMakeTest(unittest.TestCase):
         self.assertEqual(
             (made.artifact_root / "assembled.step").read_bytes(),
             (made.artifact_root / "cad" / "product.step").read_bytes(),
+        )
+        occurrence_sidecar = json.loads(
+            (made.artifact_root / "assembled.step.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            occurrence_sidecar,
+            {
+                "schemaVersion": 1,
+                "entryKind": "assembly",
+                "primaryPose": "assembled",
+                "parts": [
+                    {"name": "base", "stlPath": "cad/part_base.stl"},
+                    {
+                        "name": "index-wheel",
+                        "stlPath": "cad/part_index_wheel.stl",
+                    },
+                    {"name": "marker", "stlPath": "cad/part_marker.stl"},
+                ],
+            },
         )
         for part_id in ("base", "index-wheel", "marker"):
             stem = "part_" + part_id.replace("-", "_")
@@ -477,6 +621,7 @@ class AgentMakeTest(unittest.TestCase):
         self.assertIn("cad/print_plate.step", paths)
         self.assertIn("cad/print_plate.stl", paths)
         self.assertIn("assembled.step", paths)
+        self.assertIn("assembled.step.json", paths)
         self.assertIn("cad/FORMAT-LIMITATIONS.md", paths)
         self.assertIn("playtest/mechanical.json", paths)
         self.assertIn("playtest/print.json", paths)
@@ -597,6 +742,132 @@ class AgentMakeTest(unittest.TestCase):
         )
         self.assertEqual(rules["termination_bound_turns"], 7)
         self.assertIn("There are no ties", (made.artifact_root / "game" / "RULES.md").read_text(encoding="utf-8"))
+
+    def test_science_make_seals_invent_research_for_the_default_playtest_provider(self):
+        context = self.science_context()
+        action = make_action("Phase Window")
+        action["motion_spec"] = {
+            "enabled": False,
+            "moving_part_id": "",
+            "axis": "z",
+            "sweep_degrees": 1,
+            "minimum_aabb_clearance_mm": 0,
+        }
+        action.pop("moving_machine_binding")
+        science_contract = context.invented.concept["lane_contract"]
+        action["instructions"] = "%s %s" % (
+            science_contract["interaction"]["teaching_point"],
+            science_contract["interaction"]["misuse_boundary"],
+        )
+        worker, creator, unused_evaluator = self.worker([action], [verdict(95)])
+        made = worker(context)
+
+        self.assertIn("exact teaching_point", creator.prompts[0][0])
+        paths = {entry.path for entry in made.artifact_manifest.entries}
+        self.assertIn("playtest/invent-research.json", paths)
+        mechanical = json.loads(
+            (made.artifact_root / "playtest" / "mechanical.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        binding = mechanical["digital_test_plan"]["invent_science_research"]
+        research_path = made.artifact_root / binding["path"]
+        self.assertEqual(
+            hashlib.sha256(research_path.read_bytes()).hexdigest(),
+            binding["file_sha256"],
+        )
+        playtest_context = PlaytestContext(
+            context.wish,
+            context.taste,
+            context.blueprint,
+            1,
+            made,
+            (self.root / "science-playtest").absolute(),
+            2,
+        )
+        prepared = WorkshopLanePlaytestProviders().prepare(
+            playtest_context, "science-test"
+        )
+        self.assertTrue(prepared.passed)
+        self.assertEqual(prepared.measurements["accuracy_cases"], 3)
+        self.assertEqual(prepared.measurements["content_coverage_failures"], 0)
+        self.assertIn(
+            "invent-research", {source.role for source in prepared.product_sources}
+        )
+        evidence_root = playtest_context.workspace
+        evidence_root.mkdir()
+        proof = prepared.seal(evidence_root)
+        evidence = {
+            "schema_version": 1,
+            "kind": "workshop-ai-player-review",
+            "evidence_class": "ai-simulation",
+            "human_playtest": False,
+            "artifact_sha256": made.artifact_sha256,
+            "agent_roles": ["independent-player", "adversarial-player"],
+            "release_proof": proof,
+        }
+        result_ref = "results/science-test.json"
+        result_payload = (
+            json.dumps(evidence, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        result_path = evidence_root / result_ref
+        result_path.parent.mkdir()
+        result_path.write_bytes(result_payload)
+        result = PlaytestResult.create(
+            "science-test",
+            True,
+            made.artifact_sha256,
+            evidence,
+            prepared.provider.name,
+            prepared.provider.version,
+            prepared.provider.config_sha256,
+            result_ref,
+            hashlib.sha256(result_payload).hexdigest(),
+        )
+        playtested = Playtested(
+            Playtest(
+                made.artifact_manifest,
+                (result,),
+                evidence_manifest=build_artifact_manifest(
+                    evidence_root, created_at="content-addressed"
+                ),
+            )
+        )
+        needs = playtest_release_needs(
+            context.blueprint, made, playtested, evidence_root
+        )
+        self.assertNotIn("science-test", {need.capability for need in needs})
+
+    def test_default_science_provider_fails_closed_without_exact_product_text(self):
+        context = self.science_context("science-make-missing-text")
+        action = make_action("Phase Window")
+        action["motion_spec"] = {
+            "enabled": False,
+            "moving_part_id": "",
+            "axis": "z",
+            "sweep_degrees": 1,
+            "minimum_aabb_clearance_mm": 0,
+        }
+        action.pop("moving_machine_binding")
+        action["instructions"] = "Turn the wheel and observe the markers."
+        worker, unused_creator, unused_evaluator = self.worker(
+            [action], [verdict(95)]
+        )
+        made = worker(context)
+        prepared = WorkshopLanePlaytestProviders().prepare(
+            PlaytestContext(
+                context.wish,
+                context.taste,
+                context.blueprint,
+                1,
+                made,
+                (self.root / "science-playtest-missing-text").absolute(),
+                2,
+            ),
+            "science-test",
+        )
+        self.assertFalse(prepared.passed)
+        self.assertEqual(prepared.measurements["content_coverage_failures"], 1)
 
 
 if __name__ == "__main__":

@@ -7,6 +7,11 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.agent_invent import (
+    InventResearch,
+    InventResearchSource,
+    _science_relevance_record,
+)
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
 from inventor_workshop.instructions import DefaultInstructions
@@ -87,30 +92,121 @@ class ToyWorkshopTest(unittest.TestCase):
         (artifact / "part_toy.stl").write_text(
             "solid toy\nendsolid toy\n", encoding="utf-8"
         )
+        (artifact / "wish.json").write_text(
+            json.dumps(context.wish.to_dict(), sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
         (artifact / "edition-rules.json").write_text(
             '{"known_game":"fixture classic","rules_reference":"https://example.org/fixture-rules","rules":["take one legal turn"]}\n',
             encoding="utf-8",
         )
+        science_source_model = {
+            "phenomenon": "fixture rhythm",
+            "model": "one turn advances one beat",
+            "source_ids": ["fixture-source"],
+        }
+        science_simplifications = [
+            {
+                "simplification": "ignore drag",
+                "reason": "bounded fixture",
+                "disclosed_limit": "not a physical prediction",
+            },
+            {
+                "simplification": "one beat per turn",
+                "reason": "legible interaction",
+                "disclosed_limit": "not continuous time",
+            },
+        ]
+        science_scale = {
+            "real_quantity": "one beat",
+            "model_quantity": "one turn",
+            "scale_ratio": 1,
+            "units": "beats per turn",
+        }
+        science_interaction = {
+            "user_action": "Spin the top.",
+            "observable_response": "Watch one turn advance one beat.",
+            "teaching_point": "fixture rhythm",
+            "misuse_boundary": "not a physical prediction",
+        }
+        canonical_scale = json.dumps(
+            science_scale, sort_keys=True, separators=(",", ":")
+        )
+        science_source_bytes = (
+            "fixture rhythm\n"
+            "one turn advances one beat\n"
+            + canonical_scale
+            + "\nignore drag; not a physical prediction\n"
+            "one beat per turn; not continuous time"
+        ).encode("utf-8")
+        science_binding = None
+        if context.blueprint.lane == "holdable-science":
+            research = InventResearch(
+                hashlib.sha256(
+                    json.dumps(
+                        context.wish.to_dict(),
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                ).hexdigest(),
+                context.taste.sha256,
+                context.blueprint.sha256,
+                context.blueprint.lane,
+                "fixture-invent-science",
+                "1.0.0",
+                "7" * 64,
+                (
+                    InventResearchSource(
+                        "fixture-source",
+                        "Fixture science source",
+                        "Fixture Observatory",
+                        "https://example.org/fixture-science",
+                        "2026-08-25T00:00:00Z",
+                        science_source_bytes.decode("utf-8"),
+                        ("prior-art", "use-context", "science"),
+                    ),
+                    InventResearchSource(
+                        "fixture-safety",
+                        "Fixture toy safety",
+                        "Fixture Safety Office",
+                        "https://example.org/fixture-safety",
+                        "2026-08-25T00:00:00Z",
+                        "Toy safety requires an explicit bounded hazard review.",
+                        ("safety",),
+                    ),
+                ),
+            )
+            research_document = {
+                "schema_version": 1,
+                "kind": "workshop.sealed-invent-science-research",
+                "wish_sha256": research.wish_sha256,
+                "taste_sha256": research.taste_sha256,
+                "blueprint_sha256": research.blueprint_sha256,
+                "invented_concept_sha256": context.invented.concept_sha256,
+                "research_sha256": research.research_sha256,
+                "content_scope": "Exact provider-observed fixture excerpts.",
+                "research": research.to_dict(),
+            }
+            research_path = artifact / "playtest" / "invent-research.json"
+            research_path.parent.mkdir(parents=True, exist_ok=True)
+            research_path.write_text(
+                json.dumps(research_document, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            science_binding = {
+                "path": "playtest/invent-research.json",
+                "file_sha256": hashlib.sha256(research_path.read_bytes()).hexdigest(),
+                "research_sha256": research.research_sha256,
+                "invented_concept_sha256": context.invented.concept_sha256,
+            }
         (artifact / "source-model.json").write_text(
             json.dumps(
                 {
-                    "source_model": {
-                        "phenomenon": "fixture rhythm",
-                        "model": "one turn advances one beat",
-                        "source_ids": ["fixture-source"],
-                    },
-                    "simplifications": [
-                        {
-                            "simplification": "ignore drag",
-                            "reason": "bounded fixture",
-                            "disclosed_limit": "not a physical prediction",
-                        },
-                        {
-                            "simplification": "one beat per turn",
-                            "reason": "legible interaction",
-                            "disclosed_limit": "not continuous time",
-                        },
-                    ],
+                    "source_model": science_source_model,
+                    "simplifications": science_simplifications,
+                    "scale": science_scale,
+                    "interaction": science_interaction,
+                    "invent_science_research": science_binding,
                 },
                 sort_keys=True,
             )
@@ -154,17 +250,27 @@ class ToyWorkshopTest(unittest.TestCase):
             "def play(seed):\n    return {'completed': True, 'seed': seed}\n",
             encoding="utf-8",
         )
-        return Made.from_root(
-            artifact,
-            {
-                "title": "Rhythm Top",
-                "summary": "A pocket top that reveals a changing beat.",
-                "lane": context.blueprint.lane,
-                "instructions": "Spin, listen, and try to repeat the rhythm.",
-                "components": ["one spinning top"],
-                "limitations": ["Fixture evidence is not a physical print."],
-            },
+        product = {
+            "schema_version": 1,
+            "kind": "workshop-fixture-product",
+            "product_id": context.wish.product_id,
+            "title": "Rhythm Top",
+            "summary": "A pocket top that reveals a changing beat.",
+            "description": "A source-bound fixture rhythm toy.",
+            "lane": context.blueprint.lane,
+            "wish": context.wish.to_dict(),
+            "instructions": (
+                "fixture rhythm; not a physical prediction"
+                if context.blueprint.lane == "holdable-science"
+                else "Spin, listen, and try to repeat the rhythm."
+            ),
+            "components": ["one spinning top"],
+            "limitations": ["Fixture evidence is not a physical print."],
+        }
+        (artifact / "product.json").write_text(
+            json.dumps(product, sort_keys=True) + "\n", encoding="utf-8"
         )
+        return Made.from_root(artifact, product)
 
     @staticmethod
     def _playtest(
@@ -597,6 +703,17 @@ class ToyWorkshopTest(unittest.TestCase):
                 source_bytes = (
                     b"fixture rhythm\n"
                     b"one turn advances one beat\n"
+                    + json.dumps(
+                        {
+                            "real_quantity": "one beat",
+                            "model_quantity": "one turn",
+                            "scale_ratio": 1,
+                            "units": "beats per turn",
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode("utf-8")
+                    + b"\n"
                     b"ignore drag; not a physical prediction\n"
                     b"one beat per turn; not continuous time"
                 )
@@ -617,18 +734,36 @@ class ToyWorkshopTest(unittest.TestCase):
                         "disclosed_limit": "not continuous time",
                     },
                 ]
+                scale = {
+                    "real_quantity": "one beat",
+                    "model_quantity": "one turn",
+                    "scale_ratio": 1,
+                    "units": "beats per turn",
+                }
+                canonical_scale = json.dumps(
+                    scale, sort_keys=True, separators=(",", ":")
+                )
+                research_path = "playtest/invent-research.json"
+                research_document = json.loads(
+                    (context.made.artifact_root / research_path).read_text(
+                        encoding="utf-8"
+                    )
+                )
                 measurements = {
                     "accuracy_cases": 3,
                     "accuracy_failures": 0,
                     "simplifications_checked": 2,
                     "dishonest_simplifications": 0,
-                    "comprehension_traces": 1,
-                    "comprehension_failures": 0,
+                    "content_coverage_traces": 1,
+                    "content_coverage_failures": 0,
                 }
                 dependencies = {
                     "product:source-model.json": product_inventory[
                         "source-model.json"
-                    ]
+                    ],
+                    "product:wish.json": product_inventory["wish.json"],
+                    "product:product.json": product_inventory["product.json"],
+                    "product:%s" % research_path: product_inventory[research_path],
                 }
                 sources, sources_sha256 = write_receipt(
                     capability,
@@ -645,6 +780,12 @@ class ToyWorkshopTest(unittest.TestCase):
                                 separators=(",", ":"),
                             ).encode("utf-8")
                         ).hexdigest(),
+                        "invent_research_file_sha256": product_inventory[
+                            research_path
+                        ],
+                        "invent_research_sha256": research_document[
+                            "research_sha256"
+                        ],
                         "sources": [
                             {
                                 "source_id": "fixture-source",
@@ -685,14 +826,14 @@ class ToyWorkshopTest(unittest.TestCase):
                                 "passed": True,
                             },
                             {
-                                "case_id": "model-2",
+                                "case_id": "scale-1",
                                 "source_ids": ["fixture-source"],
-                                "product_field": "model",
-                                "expected": source_model["model"],
-                                "observed": source_model["model"],
-                                "source_excerpt": source_model["model"],
+                                "product_field": "scale",
+                                "expected": canonical_scale,
+                                "observed": canonical_scale,
+                                "source_excerpt": canonical_scale,
                                 "source_excerpt_sha256": hashlib.sha256(
-                                    source_model["model"].encode("utf-8")
+                                    canonical_scale.encode("utf-8")
                                 ).hexdigest(),
                                 "passed": True,
                             },
@@ -718,21 +859,34 @@ class ToyWorkshopTest(unittest.TestCase):
                             }
                             for item in simplifications
                         ],
+                        "wish_source_relevance": _science_relevance_record(
+                            context.wish.objective,
+                            source_model,
+                            {"fixture-source": source_bytes.decode("utf-8")},
+                        ),
                     },
                 )
                 traces, traces_sha256 = write_receipt(
                     capability,
                     "source-bound-science-proof",
-                    "comprehension-traces",
+                    "content-coverage-traces",
                     measurements,
                     dependencies,
                     {
                         "provider": provider,
+                        "measurement_kind": "deterministic-product-text-coverage",
                         "traces": [
                             {
                                 "seed": 1,
-                                "expected_concepts": ["rhythm"],
-                                "observed_concepts": ["rhythm", "beat"],
+                                "measurement_kind": "deterministic-product-text-coverage",
+                                "required_text": [
+                                    "fixture rhythm",
+                                    "not a physical prediction",
+                                ],
+                                "recovered_text": [
+                                    "fixture rhythm",
+                                    "not a physical prediction",
+                                ],
                                 "passed": True,
                             }
                         ],
@@ -750,9 +904,30 @@ class ToyWorkshopTest(unittest.TestCase):
                             "source-model.json",
                             product_inventory["source-model.json"],
                         ),
+                        source(
+                            "wish-context",
+                            "product",
+                            "wish.json",
+                            product_inventory["wish.json"],
+                        ),
+                        source(
+                            "product-copy",
+                            "product",
+                            "product.json",
+                            product_inventory["product.json"],
+                        ),
+                        source(
+                            "invent-research",
+                            "product",
+                            research_path,
+                            product_inventory[research_path],
+                        ),
                         source("science-sources", "playtest", sources, sources_sha256),
                         source(
-                            "comprehension-traces", "playtest", traces, traces_sha256
+                            "content-coverage-traces",
+                            "playtest",
+                            traces,
+                            traces_sha256,
                         ),
                     ],
                     "measurements": measurements,
@@ -1253,6 +1428,10 @@ class ToyWorkshopTest(unittest.TestCase):
         ).events(wish.product_id)[-1]["payload"]
         self.assertEqual(len(waiting_payload["resume_checkpoint_sha256"]), 64)
         self.assertEqual(len(waiting_payload["instructions_sha256"]), 64)
+        self.assertEqual(
+            first.instructions_sha256,
+            waiting_payload["instructions_sha256"],
+        )
 
         def successful_site(context, root, manifest):
             calls["site"] += 1
@@ -1272,6 +1451,8 @@ class ToyWorkshopTest(unittest.TestCase):
         ).resume_instructions(wish)
         self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
         self.assertEqual(resumed.artifact_sha256, first.artifact_sha256)
+        self.assertIsNotNone(first.invented)
+        self.assertEqual(resumed.invented, first.invented)
         self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 2})
 
     def test_resume_rejects_changed_sealed_instructions_before_site_effect(self):
@@ -1695,7 +1876,14 @@ class ToyWorkshopTest(unittest.TestCase):
                     playtest=valid_playtest,
                     runtime_root=self.root / (lane + "-valid-custom-runtime"),
                 ).run(
-                    Wish.create(lane + "-valid-custom", "Use exact custom evidence"),
+                    Wish.create(
+                        lane + "-valid-custom",
+                        (
+                            "Use exact fixture rhythm evidence"
+                            if lane == "holdable-science"
+                            else "Use exact custom evidence"
+                        ),
+                    ),
                     playtest_rounds=1,
                 )
                 self.assertEqual((result.status, result.job), ("delivered", "deliver"))

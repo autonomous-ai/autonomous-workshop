@@ -32,6 +32,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Protocol, Sequence, Tuple
 
+from .agent_invent import (
+    _SCIENCE_RELEVANCE_ALGORITHM,
+    _SCIENCE_RELEVANCE_STOPWORDS_SHA256,
+    InventResearch,
+    InventResearchSource,
+    _independent_science_authority_source,
+    _science_relevance_record,
+)
 from .errors import ContractError
 from .jobs import Need, PlaytestContext, WaitingFor
 from .models import (
@@ -55,7 +63,7 @@ _PROOF_CLASSES = {
 }
 _RECEIPT_ROLES = {
     "classic-rules-test": ("reference-rules", "game-traces"),
-    "science-test": ("science-sources", "comprehension-traces"),
+    "science-test": ("science-sources", "content-coverage-traces"),
     "world-test": ("consent-record", "reference-material", "likeness-traces"),
 }
 _SOURCE_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -364,38 +372,50 @@ class ScienceSimplificationCheck:
 
 
 @dataclass(frozen=True)
-class ScienceComprehensionTrace:
+class ScienceContentCoverageTrace:
+    """Exact required product text recovered from sealed product copy.
+
+    This is a release copy/coverage measurement.  It is not evidence that an
+    AI player—or a human—understood or learned the scientific idea.
+    """
+
     seed: int
-    expected_concepts: Sequence[str]
-    observed_concepts: Sequence[str]
+    required_text: Sequence[str]
+    recovered_text: Sequence[str]
 
     def __post_init__(self) -> None:
         if type(self.seed) is not int or self.seed < 0:
-            raise ContractError("science comprehension seed must be non-negative")
-        expected = tuple(self.expected_concepts)
-        observed = tuple(self.observed_concepts)
+            raise ContractError("science content-coverage seed must be non-negative")
+        expected = tuple(self.required_text)
+        observed = tuple(self.recovered_text)
         if (
             not expected
             or len(expected) != len(set(expected))
             or len(observed) != len(set(observed))
         ):
-            raise ContractError("science comprehension concepts are invalid")
+            raise ContractError("science content-coverage text is invalid")
         for item in expected + observed:
-            _bounded_text(item, "science comprehension concept", 300)
-        object.__setattr__(self, "expected_concepts", expected)
-        object.__setattr__(self, "observed_concepts", observed)
+            _bounded_text(item, "science content-coverage text", 300)
+        object.__setattr__(self, "required_text", expected)
+        object.__setattr__(self, "recovered_text", observed)
 
     @property
     def passed(self) -> bool:
-        return set(self.expected_concepts) <= set(self.observed_concepts)
+        return set(self.required_text) <= set(self.recovered_text)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "seed": self.seed,
-            "expected_concepts": list(self.expected_concepts),
-            "observed_concepts": list(self.observed_concepts),
+            "measurement_kind": "deterministic-product-text-coverage",
+            "required_text": list(self.required_text),
+            "recovered_text": list(self.recovered_text),
             "passed": self.passed,
         }
+
+
+# Compatibility import only.  The receipt schema and release measurements use
+# the honest ScienceContentCoverageTrace name.
+ScienceComprehensionTrace = ScienceContentCoverageTrace
 
 
 @dataclass(frozen=True)
@@ -404,14 +424,18 @@ class ScienceVerification:
     sources: Sequence[PublicScienceSource]
     accuracy_cases: Sequence[ScienceAccuracyCase]
     simplification_checks: Sequence[ScienceSimplificationCheck]
-    comprehension_traces: Sequence[ScienceComprehensionTrace]
+    content_coverage_traces: Sequence[ScienceContentCoverageTrace]
 
     def __post_init__(self) -> None:
         for label, values, expected_type in (
             ("science sources", self.sources, PublicScienceSource),
             ("science accuracy cases", self.accuracy_cases, ScienceAccuracyCase),
             ("science simplification checks", self.simplification_checks, ScienceSimplificationCheck),
-            ("science comprehension traces", self.comprehension_traces, ScienceComprehensionTrace),
+            (
+                "science content coverage traces",
+                self.content_coverage_traces,
+                ScienceContentCoverageTrace,
+            ),
         ):
             selected = tuple(values)
             if not selected or not all(isinstance(item, expected_type) for item in selected):
@@ -427,10 +451,16 @@ class ScienceVerification:
             self.simplification_checks
         ):
             raise ContractError("science simplification checks must be unique")
-        if len({item.seed for item in self.comprehension_traces}) != len(
-            self.comprehension_traces
+        if len({item.seed for item in self.content_coverage_traces}) != len(
+            self.content_coverage_traces
         ):
-            raise ContractError("science comprehension seeds must be unique")
+            raise ContractError("science content-coverage seeds must be unique")
+
+    @property
+    def comprehension_traces(self) -> Sequence[ScienceContentCoverageTrace]:
+        """Deprecated compatibility view; not a comprehension claim."""
+
+        return self.content_coverage_traces
 
 
 class ScienceEvidenceProvider(Protocol):
@@ -438,6 +468,318 @@ class ScienceEvidenceProvider(Protocol):
         self, context: PlaytestContext, source_model: Mapping[str, Any]
     ) -> ScienceVerification:
         ...
+
+
+class SealedInventScienceEvidenceProvider:
+    """Replay the exact research excerpts sealed by shared Invent and Make.
+
+    This provider performs no network lookup and asks no language model for a
+    truth verdict.  Scientific strings must be byte-for-byte excerpts captured
+    during Invent; scale and simplification strings must likewise be present in
+    those sealed bytes (which may include the Workshop's pinned qualitative
+    mapping).  Its final trace is deterministic product-text coverage, never
+    comprehension or a human-learning claim.
+    """
+
+    identity = ProviderIdentity(
+        "workshop-sealed-invent-science",
+        "1.1.0",
+        json_sha256(
+            {
+                "algorithm": "sealed-invent-excerpt-replay-v2",
+                "accuracy_fields": ["phenomenon", "model", "scale"],
+                "simplification": "exact-same-source-excerpt",
+                "content_coverage": "exact-product-text-recovery",
+                "wish_relevance_algorithm": _SCIENCE_RELEVANCE_ALGORITHM,
+                "wish_relevance_stopwords_sha256": (
+                    _SCIENCE_RELEVANCE_STOPWORDS_SHA256
+                ),
+                "network": False,
+                "model_opinion": False,
+            }
+        ),
+        "deterministic-sealed-source-replay",
+    )
+
+    @staticmethod
+    def _bound_research(
+        context: PlaytestContext,
+    ) -> Tuple[Mapping[str, Any], str]:
+        mechanical, unused_mechanical_sha = _sealed_json(
+            context, "playtest/mechanical.json"
+        )
+        del unused_mechanical_sha
+        plan = mechanical.get("digital_test_plan")
+        binding = (
+            plan.get("invent_science_research") if isinstance(plan, Mapping) else None
+        )
+        if not isinstance(binding, Mapping) or set(binding) != {
+            "path",
+            "file_sha256",
+            "research_sha256",
+            "invented_concept_sha256",
+        }:
+            raise ContractError("Make lacks its sealed Invent science research binding")
+        if binding.get("path") != "playtest/invent-research.json":
+            raise ContractError("Make science research binding path is invalid")
+        document, file_sha256 = _sealed_json(context, binding["path"])
+        if file_sha256 != binding.get("file_sha256"):
+            raise ContractError("Make science research file digest is invalid")
+        if set(document) != {
+            "schema_version",
+            "kind",
+            "wish_sha256",
+            "taste_sha256",
+            "blueprint_sha256",
+            "invented_concept_sha256",
+            "research_sha256",
+            "content_scope",
+            "research",
+        }:
+            raise ContractError("sealed Invent science research wrapper is incomplete")
+        research = document.get("research")
+        expected_research_fields = {
+            "schema_version",
+            "wish_sha256",
+            "taste_sha256",
+            "blueprint_sha256",
+            "lane",
+            "provider",
+            "provider_version",
+            "provider_config_sha256",
+            "sources",
+            "research_sha256",
+        }
+        if (
+            document.get("schema_version") != 1
+            or document.get("kind") != "workshop.sealed-invent-science-research"
+            or document.get("wish_sha256") != json_sha256(context.wish.to_dict())
+            or document.get("taste_sha256") != context.taste.sha256
+            or document.get("blueprint_sha256") != context.blueprint.sha256
+            or document.get("invented_concept_sha256")
+            != binding.get("invented_concept_sha256")
+            or document.get("research_sha256") != binding.get("research_sha256")
+            or not isinstance(research, Mapping)
+            or set(research) != expected_research_fields
+            or research.get("lane") != "holdable-science"
+            or research.get("wish_sha256") != document.get("wish_sha256")
+            or research.get("taste_sha256") != document.get("taste_sha256")
+            or research.get("blueprint_sha256") != document.get("blueprint_sha256")
+            or research.get("research_sha256") != document.get("research_sha256")
+        ):
+            raise ContractError("sealed Invent science research belongs to other inputs")
+        research_identity = {
+            key: research[key]
+            for key in expected_research_fields - {"research_sha256"}
+        }
+        if json_sha256(research_identity) != research.get("research_sha256"):
+            raise ContractError("sealed Invent science research identity is invalid")
+        raw_sources = research.get("sources")
+        if not isinstance(raw_sources, list):
+            raise ContractError("sealed Invent science research sources are invalid")
+        try:
+            typed_sources = tuple(
+                InventResearchSource(
+                    raw["source_id"],
+                    raw["title"],
+                    raw["publisher"],
+                    raw["url"],
+                    raw["retrieved_at"],
+                    raw["evidence"],
+                    raw["topics"],
+                )
+                for raw in raw_sources
+            )
+            typed_research = InventResearch(
+                research["wish_sha256"],
+                research["taste_sha256"],
+                research["blueprint_sha256"],
+                research["lane"],
+                research["provider"],
+                research["provider_version"],
+                research["provider_config_sha256"],
+                typed_sources,
+                research["schema_version"],
+            )
+        except (ContractError, KeyError, TypeError, ValueError) as exc:
+            raise ContractError("sealed Invent science research is invalid") from exc
+        if typed_research.to_dict() != dict(research):
+            raise ContractError("sealed Invent science research identity is invalid")
+        design, unused_design_sha = _sealed_json(context, "cad/design.json")
+        del unused_design_sha
+        if design.get("invented_concept_sha256") != document.get(
+            "invented_concept_sha256"
+        ):
+            raise ContractError("sealed Invent science research belongs to another concept")
+        return research, file_sha256
+
+    def __call__(
+        self, context: PlaytestContext, source_model: Mapping[str, Any]
+    ) -> ScienceVerification:
+        research, unused_file_sha256 = self._bound_research(context)
+        del unused_file_sha256
+        raw_sources = research.get("sources")
+        required_ids = source_model.get("source_ids")
+        if (
+            not isinstance(raw_sources, list)
+            or not raw_sources
+            or not isinstance(required_ids, list)
+            or not required_ids
+            or len(required_ids) != len(set(required_ids))
+        ):
+            raise ContractError("science research or source model is incomplete")
+        expected_source_fields = {
+            "source_id",
+            "title",
+            "publisher",
+            "url",
+            "retrieved_at",
+            "evidence",
+            "evidence_sha256",
+            "topics",
+            "source_sha256",
+        }
+        sources_by_id: Dict[str, PublicScienceSource] = {}
+        for raw in raw_sources:
+            if not isinstance(raw, Mapping) or set(raw) != expected_source_fields:
+                raise ContractError("sealed Invent science source is untyped")
+            evidence = raw.get("evidence")
+            source_id = raw.get("source_id")
+            source_identity = {
+                key: raw[key] for key in expected_source_fields - {"source_sha256"}
+            }
+            if (
+                not isinstance(evidence, str)
+                or not evidence
+                or not isinstance(source_id, str)
+                or source_id in sources_by_id
+                or raw.get("evidence_sha256")
+                != hashlib.sha256(evidence.encode("utf-8")).hexdigest()
+                or raw.get("source_sha256") != json_sha256(source_identity)
+            ):
+                raise ContractError("sealed Invent science source digest is invalid")
+            if source_id not in required_ids:
+                continue
+            sources_by_id[source_id] = PublicScienceSource(
+                source_id,
+                raw.get("title"),
+                raw.get("publisher"),
+                raw.get("url"),
+                raw.get("retrieved_at"),
+                evidence.encode("utf-8"),
+                "text/plain",
+            )
+        if set(sources_by_id) != set(required_ids):
+            raise ContractError("sealed Invent research omits a science contract source")
+
+        def exact_source_ids(text: str) -> Tuple[str, ...]:
+            encoded = text.encode("utf-8")
+            return tuple(
+                source_id
+                for source_id in required_ids
+                if encoded in sources_by_id[source_id].content
+            )
+
+        contract, unused_contract_sha = _lane_contract(context)
+        del unused_contract_sha
+        scale = contract.get("scale")
+        simplifications = contract.get("simplifications")
+        interaction = contract.get("interaction")
+        if (
+            not isinstance(scale, Mapping)
+            or not isinstance(simplifications, list)
+            or not simplifications
+            or not isinstance(interaction, Mapping)
+        ):
+            raise ContractError("science contract lacks scale, simplification, or interaction")
+        actual_fields = {
+            "phenomenon": source_model.get("phenomenon"),
+            "model": source_model.get("model"),
+            "scale": canonical_science_scale(scale),
+        }
+        accuracy_cases = []
+        for field, observed in actual_fields.items():
+            if not isinstance(observed, str) or not observed:
+                raise ContractError("science contract field is not exact text")
+            source_ids = exact_source_ids(observed)
+            if not source_ids:
+                raise ContractError("science contract field lacks exact captured bytes")
+            accuracy_cases.append(
+                ScienceAccuracyCase(
+                    "%s-exact" % field,
+                    source_ids,
+                    field,
+                    observed,
+                    observed,
+                    observed,
+                )
+            )
+
+        simplification_checks = []
+        for simplification in simplifications:
+            if not isinstance(simplification, Mapping):
+                raise ContractError("science simplification is not an exact record")
+            claim = simplification.get("simplification")
+            limit = simplification.get("disclosed_limit")
+            if not isinstance(claim, str) or not isinstance(limit, str):
+                raise ContractError("science simplification text is missing")
+            matches = []
+            excerpt = None
+            for source_id in required_ids:
+                try:
+                    decoded = sources_by_id[source_id].content.decode("utf-8")
+                except UnicodeError as exc:
+                    raise ContractError("Invent science excerpt must be UTF-8") from exc
+                if claim in decoded and limit in decoded:
+                    matches.append(source_id)
+                    excerpt = decoded
+            if not matches or excerpt is None:
+                raise ContractError("science simplification lacks exact shared source bytes")
+            simplification_checks.append(
+                ScienceSimplificationCheck(
+                    json_sha256(simplification),
+                    tuple(matches),
+                    True,
+                    True,
+                    excerpt,
+                )
+            )
+
+        product, unused_product_sha = _sealed_json(context, "product.json")
+        del unused_product_sha
+        product_text = "\n".join(
+            value
+            for value in (
+                product.get("instructions"),
+                product.get("summary"),
+                product.get("description"),
+            )
+            if isinstance(value, str)
+        )
+        required_text = (
+            interaction.get("teaching_point"),
+            interaction.get("misuse_boundary"),
+        )
+        if not all(
+            isinstance(item, str) and item and len(item) <= 300
+            for item in required_text
+        ):
+            raise ContractError("science content-coverage text is not bounded exact text")
+        recovered_text = tuple(
+            item for item in required_text if item in product_text
+        )
+        trace = ScienceContentCoverageTrace(
+            int(context.made.artifact_sha256[:8], 16),
+            required_text,
+            recovered_text,
+        )
+        return ScienceVerification(
+            self.identity,
+            tuple(sources_by_id[source_id] for source_id in required_ids),
+            tuple(accuracy_cases),
+            tuple(simplification_checks),
+            (trace,),
+        )
 
 
 @dataclass(frozen=True)
@@ -1089,8 +1431,10 @@ class WorkshopLanePlaytestProviders:
     """Workshop-owned registry for lane release adapters.
 
     ``science_provider`` and ``world_provider`` are infrastructure inputs, not
-    Inventor hooks.  They may be backed by a source service, a consent vault, or
-    deterministic test doubles.  Their absence produces typed Playtest Needs.
+    Inventor hooks.  Science defaults to deterministic replay of the exact
+    research excerpts sealed by shared Invent and Make.  Explicit providers may
+    replace that adapter.  World evidence still requires a consent vault or an
+    explicit deterministic test double; its absence produces a typed Need.
     """
 
     def __init__(
@@ -1105,7 +1449,11 @@ class WorkshopLanePlaytestProviders:
             if classic_provider is None
             else classic_provider
         )
-        self.science_provider = science_provider
+        self.science_provider = (
+            SealedInventScienceEvidenceProvider()
+            if science_provider is None
+            else science_provider
+        )
         self.world_provider = world_provider
 
     def prepare(
@@ -1142,16 +1490,19 @@ class WorkshopLanePlaytestProviders:
                     "Repair or reconnect the Workshop classic provider; include exact public rules, seeded conformance traces, and CAD-bound physical-role cases.",
                 ) from exc
         if capability == "science-test":
-            return self._prepare_science(context)
+            try:
+                return self._prepare_science(context)
+            except WaitingFor:
+                raise
+            except Exception as exc:
+                raise _need(
+                    "science-test",
+                    "The shared science provider could not replay a complete exact source chain for this Make.",
+                    "Resume with the same Wish after shared Invent and Make have sealed the exact research excerpts, contract, and product text. Connect an explicit Workshop-managed provider only for evidence the default adapter cannot prove.",
+                ) from exc
         return self._prepare_world(context)
 
     def _prepare_science(self, context: PlaytestContext) -> PreparedLaneRelease:
-        if self.science_provider is None:
-            raise _need(
-                "science-test",
-                "The shared science adapter has no independent authoritative source input for this exact model.",
-                "Connect a Workshop-managed ScienceEvidenceProvider with exact public source bytes, source-bound comparison cases, simplification checks, and comprehension traces. The Inventor does not need to replace Playtest.",
-            )
         contract, contract_sha = _lane_contract(context)
         source_model = contract.get("source_model")
         simplifications = contract.get("simplifications")
@@ -1163,6 +1514,35 @@ class WorkshopLanePlaytestProviders:
         ):
             raise ContractError("science Invent contract is incomplete")
         try:
+            sealed_research, research_file_sha256 = (
+                SealedInventScienceEvidenceProvider._bound_research(context)
+            )
+            raw_research_sources = sealed_research.get("sources")
+            if not isinstance(raw_research_sources, list):
+                raise ContractError("sealed Invent science sources are incomplete")
+            sealed_sources_by_id: Dict[str, InventResearchSource] = {}
+            for raw in raw_research_sources:
+                if not isinstance(raw, Mapping):
+                    raise ContractError("sealed Invent science source is untyped")
+                try:
+                    source = InventResearchSource(
+                        raw["source_id"],
+                        raw["title"],
+                        raw["publisher"],
+                        raw["url"],
+                        raw["retrieved_at"],
+                        raw["evidence"],
+                        raw["topics"],
+                    )
+                except (ContractError, KeyError, TypeError, ValueError) as exc:
+                    raise ContractError(
+                        "sealed Invent science source is invalid"
+                    ) from exc
+                if source.to_dict() != dict(raw) or source.source_id in sealed_sources_by_id:
+                    raise ContractError(
+                        "sealed Invent science source identity is invalid"
+                    )
+                sealed_sources_by_id[source.source_id] = source
             verification = self.science_provider(context, source_model)
             if not isinstance(verification, ScienceVerification):
                 raise ContractError("science provider returned an untyped result")
@@ -1172,11 +1552,49 @@ class WorkshopLanePlaytestProviders:
             sources_by_id = {item.source_id: item for item in verification.sources}
             if set(sources_by_id) != required_source_ids:
                 raise ContractError("science provider sources do not match the Invent source model")
+            if not required_source_ids <= set(sealed_sources_by_id):
+                raise ContractError(
+                    "science provider cites sources absent from sealed Invent research"
+                )
+            for source_id in sorted(required_source_ids):
+                observed = sources_by_id[source_id]
+                sealed = sealed_sources_by_id[source_id]
+                if (
+                    observed.title != sealed.title
+                    or observed.publisher != sealed.publisher
+                    or observed.url != sealed.url
+                    or observed.retrieved_at != sealed.retrieved_at
+                    or observed.media_type != "text/plain"
+                    or observed.content != sealed.evidence.encode("utf-8")
+                ):
+                    raise ContractError(
+                        "science provider replaced sealed Invent source bytes or metadata"
+                    )
             if any(
                 not set(case.source_ids) <= required_source_ids
                 for case in verification.accuracy_cases
             ):
                 raise ContractError("science accuracy case cites an unknown source")
+            authority_evidence = {}
+            for source_id in sorted(required_source_ids):
+                sealed = sealed_sources_by_id[source_id]
+                if not _independent_science_authority_source(sealed):
+                    continue
+                try:
+                    authority_evidence[source_id] = sealed.evidence
+                except UnicodeError as exc:
+                    raise ContractError(
+                        "science authority evidence must be exact UTF-8 text"
+                    ) from exc
+            relevance = _science_relevance_record(
+                context.wish.objective,
+                source_model,
+                authority_evidence,
+            )
+            if not relevance["passed"]:
+                raise ContractError(
+                    "science authority bytes are not relevant to every distinctive Wish term"
+                )
             actual_fields = {
                 "phenomenon": source_model.get("phenomenon"),
                 "model": source_model.get("model"),
@@ -1233,57 +1651,121 @@ class WorkshopLanePlaytestProviders:
                     raise ContractError(
                         "science simplification check is not replayable from cited source bytes"
                     )
+            product, product_file_sha256 = _sealed_json(context, "product.json")
+            interaction = contract.get("interaction")
+            if not isinstance(interaction, Mapping):
+                raise ContractError("science Invent interaction is incomplete")
+            required_product_text = (
+                interaction.get("teaching_point"),
+                interaction.get("misuse_boundary"),
+            )
+            if not all(
+                isinstance(item, str) and item and len(item) <= 300
+                for item in required_product_text
+            ):
+                raise ContractError("science required product text is invalid")
+            product_text = "\n".join(
+                value
+                for value in (
+                    product.get("instructions"),
+                    product.get("summary"),
+                    product.get("description"),
+                )
+                if isinstance(value, str)
+            )
+            recovered_product_text = tuple(
+                item for item in required_product_text if item in product_text
+            )
+            if len(verification.content_coverage_traces) != 1:
+                raise ContractError(
+                    "science provider must return one deterministic product-text trace"
+                )
+            coverage = verification.content_coverage_traces[0]
+            if (
+                tuple(coverage.required_text) != required_product_text
+                or tuple(coverage.recovered_text) != recovered_product_text
+            ):
+                raise ContractError(
+                    "science provider product-text coverage is not replayable"
+                )
         except WaitingFor:
             raise
         except Exception as exc:
             raise _need(
                 "science-test",
                 "The shared science provider did not return complete source-bound evidence for these exact Invent bytes.",
-                "Repair or reconnect the Workshop science source provider; include every cited source, every simplification, accuracy comparisons, and replayable comprehension traces.",
+                "Repair or reconnect the Workshop-managed science source provider; include Wish-relevant cited authority bytes, every simplification, accuracy comparisons, and deterministic product-text coverage.",
             ) from exc
         accuracy_failures = sum(not item.passed for item in verification.accuracy_cases)
         dishonest = sum(not item.passed for item in verification.simplification_checks)
-        comprehension_failures = sum(
-            not item.passed for item in verification.comprehension_traces
+        content_coverage_failures = sum(
+            not item.passed for item in verification.content_coverage_traces
         )
         measurements = {
             "accuracy_cases": len(verification.accuracy_cases),
             "accuracy_failures": accuracy_failures,
             "simplifications_checked": len(verification.simplification_checks),
             "dishonest_simplifications": dishonest,
-            "comprehension_traces": len(verification.comprehension_traces),
-            "comprehension_failures": comprehension_failures,
+            "content_coverage_traces": len(
+                verification.content_coverage_traces
+            ),
+            "content_coverage_failures": content_coverage_failures,
         }
-        source = ReleaseProofSource(
-            "source-model", "product", "playtest/mechanical.json", contract_sha
-        )
+        wish_document, wish_file_sha256 = _sealed_json(context, "wish.json")
+        if wish_document != context.wish.to_dict():
+            raise ContractError("sealed science Wish differs from the Playtest context")
+        product_sources = [
+            ReleaseProofSource(
+                "source-model", "product", "playtest/mechanical.json", contract_sha
+            ),
+            ReleaseProofSource(
+                "wish-context", "product", "wish.json", wish_file_sha256
+            ),
+            ReleaseProofSource(
+                "product-copy", "product", "product.json", product_file_sha256
+            ),
+            ReleaseProofSource(
+                "invent-research",
+                "product",
+                "playtest/invent-research.json",
+                research_file_sha256,
+            ),
+        ]
+        science_sources_payload = {
+            "provider": verification.identity.to_dict(),
+            "source_model_sha256": json_sha256(source_model),
+            "sources": [item.receipt_dict() for item in verification.sources],
+            "accuracy_cases": [item.to_dict() for item in verification.accuracy_cases],
+            "simplification_checks": [
+                item.to_dict() for item in verification.simplification_checks
+            ],
+            "wish_source_relevance": relevance,
+            "invent_research_file_sha256": research_file_sha256,
+            "invent_research_sha256": sealed_research["research_sha256"],
+        }
         return PreparedLaneRelease(
             "science-test",
             context.made.artifact_sha256,
             verification.identity,
-            (source,),
+            tuple(product_sources),
             measurements,
             {
                 "science-sources": {
-                    "provider": verification.identity.to_dict(),
-                    "source_model_sha256": json_sha256(source_model),
-                    "sources": [item.receipt_dict() for item in verification.sources],
-                    "accuracy_cases": [item.to_dict() for item in verification.accuracy_cases],
-                    "simplification_checks": [
-                        item.to_dict() for item in verification.simplification_checks
-                    ],
+                    **science_sources_payload,
                 },
-                "comprehension-traces": {
+                "content-coverage-traces": {
                     "provider": verification.identity.to_dict(),
+                    "measurement_kind": "deterministic-product-text-coverage",
                     "traces": [
-                        item.to_dict() for item in verification.comprehension_traces
+                        item.to_dict()
+                        for item in verification.content_coverage_traces
                     ]
                 },
             },
-            accuracy_failures == dishonest == comprehension_failures == 0,
+            accuracy_failures == dishonest == content_coverage_failures == 0,
             (
-                "Compared the exact Invent source model and every simplification with independent public source bytes.",
-                "Scored comprehension traces against explicit expected concepts; a model's opinion alone is not proof.",
+                "Compared the exact Invent source model and every simplification with captured public-source excerpts or pinned deterministic mapping bytes.",
+                "Replayed Wish-to-source relevance and exact required product-text coverage; neither measurement is a comprehension or human-learning claim.",
             ),
         )
 
@@ -1416,8 +1898,10 @@ __all__ = [
     "ProviderIdentity",
     "PublicScienceSource",
     "ScienceAccuracyCase",
+    "ScienceContentCoverageTrace",
     "ScienceComprehensionTrace",
     "ScienceEvidenceProvider",
+    "SealedInventScienceEvidenceProvider",
     "ScienceSimplificationCheck",
     "ScienceVerification",
     "WorkshopLanePlaytestProviders",

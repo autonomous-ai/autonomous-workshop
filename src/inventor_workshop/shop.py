@@ -1299,6 +1299,14 @@ def _build_model_handoff_pack(
                 )
             ):
                 continue
+            # Factory accepts exactly one canonical occurrence-family sidecar.
+            # CAD tools may keep additional STEP metadata/sidecars under their
+            # source directories; they remain sealed in Made but are not part
+            # of this transport-only Factory packet.
+            if occurrence_transport is not None and entry.path.casefold().endswith(
+                ".step.json"
+            ):
+                continue
             if relative.suffix.casefold() == ".stl" and entry.path not in (
                 primary_path.as_posix(),
                 sealed_primary_path.as_posix(),

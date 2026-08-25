@@ -1555,13 +1555,16 @@ class Workshop:
             payload=wait_payload,
             lease_token=lease_token,
         )
+        returned_instructions_sha256 = instructions_sha256
+        if job == "instructions" and "instructions_sha256" in wait_payload:
+            returned_instructions_sha256 = wait_payload["instructions_sha256"]
         return WorkshopRun(
             wish.product_id,
             "waiting",
             job,
             round_number,
             artifact_sha256,
-            instructions_sha256,
+            returned_instructions_sha256,
             waiting.needs,
             playtest_rounds=playtest_rounds,
             page_url=page_url,
@@ -2710,6 +2713,7 @@ class Workshop:
             made, playtested, evidence_root = _rebuild_checkpoint_results(
                 run_root, checkpoint
             )
+            invented = self._accepted_invented(events, wish, run_root)
             if not playtested.passed or _playtest_policy_needs(
                 self.blueprint, made, playtested, evidence_root
             ):
@@ -2847,6 +2851,7 @@ class Workshop:
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                     instructions_workspace=instructions_workspace,
+                    invented=invented,
                 )
             self.taste.assert_current()
             return self._finish_instructions(
@@ -2858,6 +2863,7 @@ class Workshop:
                 selected_rounds,
                 lease,
                 instructions_workspace,
+                invented,
             )
         finally:
             lease.__exit__(*sys.exc_info())

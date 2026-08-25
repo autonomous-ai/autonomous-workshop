@@ -585,6 +585,23 @@ class InstructionsSiteTest(unittest.TestCase):
         sidecar.write_text(
             json.dumps(sidecar_payload, sort_keys=True) + "\n", encoding="utf-8"
         )
+        # CAD tooling may retain its own source-side occurrence metadata. Made
+        # keeps it, but Factory's transport contract permits only the one
+        # canonical sibling sidecar generated below.
+        (cad / "product.step.json").write_text(
+            json.dumps(
+                {
+                    **sidecar_payload,
+                    "parts": [
+                        {"name": "body", "stlPath": "cad/parts/body.stl"},
+                        {"name": "cap", "stlPath": "cad/parts/cap.stl"},
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         made = Made.from_root(self.made.artifact_root, self.made.product)
         context = InstructionsSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
@@ -630,6 +647,7 @@ class InstructionsSiteTest(unittest.TestCase):
             self.assertNotIn("cad/reference.stl", names)
             self.assertNotIn("cad/parts/body.stl", names)
             self.assertNotIn("cad/parts/cap.stl", names)
+            self.assertNotIn("cad/product.step.json", names)
             self.assertNotIn("assembled.step", names)
             self.assertNotIn("assembled.step.json", names)
             self.assertEqual(archive.read("verified-toy.step"), step.read_bytes())
