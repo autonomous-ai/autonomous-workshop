@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1920" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 2080" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
   <desc id="description">A vertical journey through the Workshop from Wish and Match to Invent, Make, Playtest, Instructions, Deliver, and Reviews. Invent, Make, and Instructions have self-improving loops. AI Players send problems back to Make, and customer Reviews inspire the next revision and future Wishes.</desc>
 
@@ -44,7 +44,7 @@
     </style>
   </defs>
 
-  <rect width="1000" height="1920" rx="28" fill="#f5f2ec"/>
+  <rect width="1000" height="2080" rx="28" fill="#f5f2ec"/>
 
   <text x="50" y="65" class="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</text>
 
@@ -68,27 +68,27 @@
   </g>
 
   <!-- Main vertical journey -->
-  <path class="flow" d="M 500 280 V 320"/>
-  <path class="flow" d="M 500 430 V 470"/>
-  <path class="flow" d="M 500 610 V 730"/>
-  <path class="flow" d="M 500 870 V 990"/>
-  <path class="flow" d="M 500 1130 V 1250"/>
-  <path class="flow" d="M 500 1390 V 1510"/>
-  <path class="flow" d="M 500 1620 V 1740"/>
+  <path class="flow" d="M 500 280 V 400"/>
+  <path class="flow" d="M 500 510 V 630"/>
+  <path class="flow" d="M 500 770 V 890"/>
+  <path class="flow" d="M 500 1030 V 1150"/>
+  <path class="flow" d="M 500 1290 V 1410"/>
+  <path class="flow" d="M 500 1550 V 1670"/>
+  <path class="flow" d="M 500 1780 V 1900"/>
 
   <!-- External feedback lanes -->
-  <path class="feedback-ai" d="M 220 1060 H 116 C 92 1060, 80 1046, 80 1024 V 826 C 80 806, 94 800, 116 800 H 218"/>
-  <path class="feedback-human" d="M 780 1795 H 884 C 912 1795, 925 1777, 925 1754 V 562 C 925 542, 910 540, 884 540 H 782"/>
+  <path class="feedback-ai" transform="translate(0 160)" d="M 220 1060 H 116 C 92 1060, 80 1046, 80 1024 V 826 C 80 806, 94 800, 116 800 H 218"/>
+  <path class="feedback-human" transform="translate(0 160)" d="M 780 1795 H 884 C 912 1795, 925 1777, 925 1754 V 562 C 925 542, 910 540, 884 540 H 782"/>
 
   <!-- Side-loop labels -->
-  <g>
+  <g transform="translate(0 160)">
     <rect x="20" y="925" width="164" height="100" rx="16" fill="#eef8ff"/>
     <text x="102" y="950" text-anchor="middle" class="edge-label-ai">AI PLAYERS SAY</text>
     <text x="102" y="973" text-anchor="middle" class="body">what broke</text>
     <text x="102" y="994" text-anchor="middle" class="body">what dragged</text>
     <text x="102" y="1015" text-anchor="middle" class="body">back to MAKE</text>
   </g>
-  <g>
+  <g transform="translate(0 160)">
     <rect x="816" y="1065" width="164" height="100" rx="16" fill="#f7f1ff"/>
     <text x="898" y="1090" text-anchor="middle" class="edge-label-human">PLAYERS SAY</text>
     <text x="898" y="1113" text-anchor="middle" class="body">what they loved</text>
@@ -105,13 +105,16 @@
   <text x="250" y="256" class="body">Say what you want, in your own words.</text>
 
   <!-- Match -->
-  <g filter="url(#shadow)">
-    <rect class="node" x="220" y="320" width="560" height="110" rx="20"/>
+  <g transform="translate(0 80)">
+    <g filter="url(#shadow)">
+      <rect class="node" x="220" y="320" width="560" height="110" rx="20"/>
+    </g>
+    <text x="250" y="348" class="eyebrow">THE WORKSHOP LISTENS</text>
+    <text x="250" y="380" class="heading">MATCH</text>
+    <text x="250" y="406" class="body">Find the Inventor who might love this Wish most.</text>
   </g>
-  <text x="250" y="348" class="eyebrow">THE WORKSHOP LISTENS</text>
-  <text x="250" y="380" class="heading">MATCH</text>
-  <text x="250" y="406" class="body">Find the Inventor who might love this Wish most.</text>
 
+  <g transform="translate(0 160)">
   <!-- Invent -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="470" width="560" height="140" rx="20"/>
@@ -200,4 +203,5 @@
   <text x="250" y="1826" class="body">What you say helps this toy grow—and starts the next adventure.</text>
 
   <text x="500" y="1885" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
+  </g>
 </svg>
