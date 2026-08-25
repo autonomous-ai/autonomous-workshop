@@ -7,9 +7,6 @@ seen.
 
 [![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-Every gate needs its own proof: a picture cannot prove that parts fit, and a
-shipping label cannot prove that a carrier received the box.
-
 ## Meet the inventors
 
 The first five, one for each kind of toy. Many more are coming, and you can
