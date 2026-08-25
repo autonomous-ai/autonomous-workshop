@@ -52,7 +52,7 @@ import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from inventor_workshop.cad import fits_bed_envelope, inspect_stl_path
+from workshop.make.cad import fits_bed_envelope, inspect_stl_path
 
 from harness import agents, budgets, workshop_runtime, ledger, queue, reward
 from loops import playtest, tablerun

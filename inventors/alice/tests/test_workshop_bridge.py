@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from inventor_workshop.pack import (
+from workshop.artifacts.pack import (
     pack_artifact as workshop_pack_artifact,
     seal_artifact,
 )

@@ -254,7 +254,7 @@ A taste-only profile is intentionally small:
 ```python
 from pathlib import Path
 
-from inventor_workshop import Wish, Workshop, WorkshopTools
+from workshop import Wish, Workshop, WorkshopTools
 
 
 INVENTOR_ROOT = Path(__file__).resolve().parent
@@ -297,7 +297,7 @@ Custom Make has one stable boundary after shared Invent has selected and scored
 the industrial-design concept:
 
 ```python
-from inventor_workshop import Made, MakeContext
+from workshop import Made, MakeContext
 
 
 def make(context: MakeContext) -> Made:
@@ -346,7 +346,7 @@ the Workshop still owns the release bar. Capability-specific results carry the
 public typed proof record in `evidence["release_proof"]`:
 
 ```python
-from inventor_workshop import (
+from workshop import (
     CapabilityReleaseProof,
     PlaytestContext,
     Playtested,
@@ -611,7 +611,7 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 From the repository root:
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
 workshop skills list
 workshop schemas list
 workshop inventors --root inventors --check-entrypoints
@@ -629,7 +629,22 @@ invariant and it remains independent of their Taste. Keep code in the inventor
 when it expresses recognizable preferences, niche generation, or stricter
 niche Playtest logic.
 
+Put a shared change in the component that owns it under `src/workshop/`:
+`product`, `wish`, `match`, `invent`, `make`, `playtest`, `instructions`,
+`deliver`, `reviews`, `workflow`, `artifacts`, `runtime`, `integrations`, or
+`contributors`. Put its tests in the matching folder under `tests/`. Make owns
+the single locked skill tree at `src/workshop/make/skills/`; a persisted schema
+lives with the component that defines that contract. The sibling `src/cli/`
+package only implements the `workshop` command and is not a home for domain
+behavior.
+
+The installed distribution is `autonomous-workshop`, while Python imports use
+`workshop`. Cross-component construction belongs at the Workshop bootstrap
+boundary. An inventor should consume the public Workshop surface rather than
+reaching through the CLI or copying another component's implementation.
+
 Shared changes need credential-free contract tests, failure-path tests,
 artifact and evidence binding, and backward-compatible persisted-state
-handling. Older compatibility aliases may remain for existing runs, but new
+handling. Preserve versioned serialized identifiers when replay requires their
+exact bytes, but do not add old Python-package aliases for new code. New
 inventors should learn and expose only the six jobs.

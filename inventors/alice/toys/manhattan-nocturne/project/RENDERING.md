@@ -20,7 +20,7 @@ render it with the local Python that provides NumPy, Pillow, and trimesh:
 ```sh
 PROJECT="inventors/alice/toys/manhattan-nocturne/project"
 
-$CAD_PY skills/cad/scripts/export \
+$CAD_PY src/workshop/make/skills/cad/scripts/export \
   "$PROJECT/manhattan_nocturne.step.py" \
   --glb "$PWD/$PROJECT/exports/manhattan-nocturne.glb"
 

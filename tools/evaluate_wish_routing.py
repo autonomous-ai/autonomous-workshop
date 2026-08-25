@@ -16,7 +16,7 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from inventor_workshop.cli import main as workshop_main
+from cli.main import main as workshop_main
 
 
 CASES = (

@@ -239,7 +239,7 @@ class PrinterCalibrationTests(unittest.TestCase):
 
 class StlTopologyTests(unittest.TestCase):
     def test_alice_public_topology_surface_is_the_shared_workshop(self) -> None:
-        from inventor_workshop.cad import (
+        from workshop.make.cad import (
             KernelBodyObservation as WorkshopKernelBodyObservation,
             StlInspectionLimits as WorkshopStlInspectionLimits,
             StlPathInspectionError as WorkshopStlPathInspectionError,

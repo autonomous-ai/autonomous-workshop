@@ -10,11 +10,12 @@ from pathlib import Path
 WORKSHOP_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(WORKSHOP_ROOT / "src"))
 
-from inventor_workshop.skills import discover_skills  # noqa: E402
+from workshop.make.skill_registry import discover_skills  # noqa: E402
 
 
 def main() -> int:
-    lock_path = WORKSHOP_ROOT / "skills" / "LOCK.json"
+    skills_root = WORKSHOP_ROOT / "src" / "workshop" / "make" / "skills"
+    lock_path = skills_root / "LOCK.json"
     try:
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
         if (
@@ -27,7 +28,7 @@ def main() -> int:
         expected = lock["skills"]
         observed = {
             skill.name: skill.sha256
-            for skill in discover_skills(WORKSHOP_ROOT / "skills")
+            for skill in discover_skills(skills_root)
         }
         if set(expected) != set(observed):
             raise ValueError(

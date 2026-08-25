@@ -216,7 +216,7 @@ class TestInstallScriptContent(unittest.TestCase):
     def test_refuses_when_shared_workshop_is_missing(self):
         self.assertIn("BOB_WORKSHOP_SRC", self.text)
         self.assertIn("require_workshop", self.text)
-        self.assertIn("inventor_workshop", self.text)
+        self.assertIn("workshop", self.text)
 
     def test_creates_log_dir(self):
         self.assertIn("state/logs", self.text)
@@ -256,8 +256,8 @@ class TestCIWorkflow(unittest.TestCase):
         self.assertIn("unittest discover", self.text)
 
     def test_python_matrix_covers_runtime_and_future(self):
-        self.assertIn("3.9", self.text)   # the Mac's system python (runtime)
-        self.assertIn("3.12", self.text)
+        self.assertIn("3.11", self.text)
+        self.assertIn("3.14", self.text)
 
     def test_mock_agents_forced(self):
         self.assertIn("BOB_MOCK_AGENTS", self.text)

@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Static project-layout gate for CAD entry generators.
+
+Enforces the split rule in SKILL.md step 6: a model with separately printable
+parts, 3+ named parts, or more than ~120 code lines gets a project directory
+(library + assembly entry + one entry per part) rather than a single file.
+
+Static only: it reads source, never imports build123d, so it costs milliseconds
+and can run before `gen`. That also means the named-part count is an
+approximation from `label=` / `.label =` string literals, which is why it is a
+secondary trigger and the line count is the primary one.
+
+    scripts/check_layout                 # scan the worktree
+    scripts/check_layout <project-dir>
+    scripts/check_layout --json
+
+Exit 0 when every entry generator conforms, 1 when any violates.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import json
+import sys
+import tokenize
+from pathlib import Path
+
+MAX_ENTRY_CODE_LINES = 120
+MAX_ENTRY_NAMED_PARTS = 2  # 3+ named parts must be split
+
+ENTRY_SUFFIX = ".step.py"
+PART_PREFIX = "part_"
+
+IGNORED_DIR_NAMES = {
+    "__cadgen__",
+    "__pycache__",
+    ".cache",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "node_modules",
+    "skills",
+}
+
+# Built at runtime: the literal bytes would make cadgen's discovery scan treat
+# this checker as a generator script and log a spurious "invalid CAD source".
+GEN_MARKER = "gen_" + "step"
+
+
+def code_lines(path: Path) -> int:
+    """Non-blank, non-comment, non-docstring physical lines."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    live: set[int] = set()
+    try:
+        with path.open("rb") as handle:
+            for token in tokenize.tokenize(handle.readline):
+                if token.type in (
+                    tokenize.COMMENT,
+                    tokenize.NL,
+                    tokenize.NEWLINE,
+                    tokenize.INDENT,
+                    tokenize.DEDENT,
+                    tokenize.ENDMARKER,
+                    tokenize.ENCODING,
+                ):
+                    continue
+                live.update(range(token.start[0], token.end[0] + 1))
+    except (tokenize.TokenError, SyntaxError):
+        return sum(1 for line in text.splitlines() if line.strip())
+
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return len(live)
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        body = getattr(node, "body", None)
+        if not body:
+            continue
+        first = body[0]
+        if isinstance(first, ast.Expr) and isinstance(first.value, ast.Constant) \
+                and isinstance(first.value.value, str):
+            live.difference_update(range(first.lineno, (first.end_lineno or first.lineno) + 1))
+    return len(live)
+
+
+def named_parts(path: Path) -> int:
+    """Distinct label string literals — an approximation of the named-part count."""
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except SyntaxError:
+        return 0
+    labels: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.keyword) and node.arg == "label":
+            value = node.value
+        elif isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                and isinstance(node.targets[0], ast.Attribute) \
+                and node.targets[0].attr == "label":
+            value = node.value
+        else:
+            continue
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            labels.add(value.value)
+        elif isinstance(value, ast.JoinedStr):
+            rendered = "".join(
+                part.value for part in value.values
+                if isinstance(part, ast.Constant) and isinstance(part.value, str)
+            )
+            if rendered:
+                labels.add(rendered)
+    return len(labels)
+
+
+def iter_entries(root: Path):
+    for path in sorted(root.rglob("*" + ENTRY_SUFFIX)):
+        if any(part in IGNORED_DIR_NAMES for part in path.relative_to(root).parts[:-1]):
+            continue
+        if GEN_MARKER not in path.read_text(encoding="utf-8", errors="replace"):
+            continue
+        yield path
+
+
+def check(root: Path) -> list[dict]:
+    entries = list(iter_entries(root))
+    by_dir: dict[Path, list[Path]] = {}
+    for path in entries:
+        by_dir.setdefault(path.parent, []).append(path)
+
+    findings: list[dict] = []
+    for directory, paths in sorted(by_dir.items()):
+        part_entries = [p for p in paths if p.name.startswith(PART_PREFIX)]
+        assembly_entries = [p for p in paths if not p.name.startswith(PART_PREFIX)]
+
+        if part_entries and not assembly_entries:
+            findings.append({
+                "path": str(directory.relative_to(root)),
+                "rule": "missing-assembly-entry",
+                "detail": (
+                    f"{len(part_entries)} part entries with no combined assembly entry; "
+                    "add <name>.step.py that places every part"
+                ),
+            })
+
+        for entry in assembly_entries:
+            lines = code_lines(entry)
+            labels = named_parts(entry)
+            over_lines = lines > MAX_ENTRY_CODE_LINES
+            over_parts = labels > MAX_ENTRY_NAMED_PARTS
+            if not (over_lines or over_parts) or part_entries:
+                continue
+            reasons = []
+            if over_lines:
+                reasons.append(f"{lines} code lines > {MAX_ENTRY_CODE_LINES}")
+            if over_parts:
+                reasons.append(f"~{labels} named parts > {MAX_ENTRY_NAMED_PARTS}")
+            findings.append({
+                "path": str(entry.relative_to(root)),
+                "rule": "unsplit-entry",
+                "detail": (
+                    f"{' and '.join(reasons)}, but no part_*{ENTRY_SUFFIX} beside it; "
+                    "split into <name>_lib.py + <name>.step.py + part_<role>.step.py"
+                ),
+                "codeLines": lines,
+                "namedParts": labels,
+            })
+    return findings
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("root", nargs="?", default=".", help="directory to scan (default: cwd)")
+    parser.add_argument("--json", action="store_true", help="emit findings as JSON")
+    args = parser.parse_args()
+
+    root = Path(args.root).resolve()
+    if not root.is_dir():
+        print(f"check_layout: {root} is not a directory", file=sys.stderr)
+        return 2
+
+    findings = check(root)
+    if args.json:
+        print(json.dumps({"ok": not findings, "root": str(root), "findings": findings}, indent=2))
+        return 1 if findings else 0
+
+    if not findings:
+        print("check_layout: ok - every entry generator conforms to the split rule")
+        return 0
+    print(f"check_layout: {len(findings)} layout violation(s)\n", file=sys.stderr)
+    for finding in findings:
+        print(f"  {finding['path']}\n    [{finding['rule']}] {finding['detail']}\n", file=sys.stderr)
+    print("See the CAD skill's references/project-structure.md for the layout.", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

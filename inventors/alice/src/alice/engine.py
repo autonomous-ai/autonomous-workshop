@@ -12,7 +12,7 @@ import uuid
 from dataclasses import asdict
 from typing import Any, Mapping
 
-from inventor_workshop import Taste, load_taste
+from workshop import Taste, load_taste
 
 from .adapters import AdapterError, CommandAdapter, adapter_input_sha256
 from .config import DATA_ROOT

@@ -3,7 +3,7 @@ import hashlib
 import unittest
 from unittest.mock import patch
 
-from inventor_workshop.pack import pack_artifact as workshop_pack_artifact
+from workshop.artifacts.pack import pack_artifact as workshop_pack_artifact
 
 from alice.fulfillment import (
     build_manufacturing_spec_from_manifest,

@@ -22,6 +22,11 @@ a shortlist from an open Taste catalog, compares the finalists' exact Tastes,
 explains the best fit, and creates one content-bound assignment. No profile is
 required to run 24/7, poll a queue, or schedule itself.
 
+The installed distribution is `autonomous-workshop`, Python users import
+`workshop`, and the `workshop` command is implemented in the sibling `src/cli/`
+package. Shared implementation and tests are grouped by architecture component;
+see [ARCHITECTURE.md](ARCHITECTURE.md#shared-implementation).
+
 ## Current profiles
 
 | Profile | Category | Customization level | Truthful 0.5 status |
@@ -99,6 +104,11 @@ All five profiles use the same 0.5 contracts for:
 - content-addressed product, evidence, and Instructions identities;
 - the shared Instructions and Deliver boundaries;
 - durable state, leases, and a recorded per-Wish Playtest allowance.
+
+Locked making skills have one owner under `src/workshop/make/skills/`.
+Persisted schemas live under the component that defines each contract and are
+distributed as package data; the CLI's schema registry is a view of those
+component-owned resources, not a second source of truth.
 
 The platform operator still has to configure the shared tools. A complete path
 needs, as applicable, authenticated model and CAD workers, executable AI
@@ -187,7 +197,7 @@ python3 tools/scan_secrets.py
 python3 tools/verify_skill_locks.py
 python3 tools/verify_snapshot_locks.py
 workshop inventors --root inventors --check-entrypoints
-PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py'
+PYTHONPATH=src python3 -m unittest discover -s tests -t . -p 'test_*.py'
 git diff --check
 ```
 

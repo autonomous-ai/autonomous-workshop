@@ -1,6 +1,6 @@
 import unittest
 
-from inventor_workshop import WorkshopTools
+from workshop.workflow.engine import WorkshopTools
 from profile import build_workshop, create_wish
 
 

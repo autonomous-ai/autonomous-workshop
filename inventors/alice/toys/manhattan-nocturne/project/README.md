@@ -37,11 +37,11 @@ is the truthful 33-occurrence contract for this product.
 Run from the repository root with the project Python environment:
 
 ```text
-.venv-cad/bin/python skills/cad/scripts/check_layout inventors/alice/toys/manhattan-nocturne/project
+.venv-cad/bin/python src/workshop/make/skills/cad/scripts/check_layout inventors/alice/toys/manhattan-nocturne/project
 .venv-cad/bin/python inventors/alice/toys/manhattan-nocturne/project/measure/check_fit.py
-.venv-cad/bin/python skills/cad/scripts/check_fit inventors/alice/toys/manhattan-nocturne/project --bed 256 256 --strict
+.venv-cad/bin/python src/workshop/make/skills/cad/scripts/check_fit inventors/alice/toys/manhattan-nocturne/project --bed 256 256 --strict
 
-.venv-cad/bin/python skills/cad/scripts/gen \
+.venv-cad/bin/python src/workshop/make/skills/cad/scripts/gen \
   inventors/alice/toys/manhattan-nocturne/project/manhattan_nocturne.step.py \
   inventors/alice/toys/manhattan-nocturne/project/part_board.step.py \
   inventors/alice/toys/manhattan-nocturne/project/part_stone_pawn.step.py \
@@ -58,7 +58,7 @@ Run from the repository root with the project Python environment:
   inventors/alice/toys/manhattan-nocturne/project/part_steel_king.step.py \
   --write
 
-.venv-cad/bin/python skills/cad/scripts/export \
+.venv-cad/bin/python src/workshop/make/skills/cad/scripts/export \
   inventors/alice/toys/manhattan-nocturne/project/manhattan_nocturne.step.py \
   --stl assembled.stl
 ```

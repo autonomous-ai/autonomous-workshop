@@ -9,13 +9,13 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from inventor_workshop.make import Wish, generate_wish_id
-from inventor_workshop.agent_invent import configured_workshop_tools
-from inventor_workshop.handoff import (
+from workshop.bootstrap import configured_workshop
+from workshop.match.handoff import (
     bind_manager_assignment_result,
     read_manager_assignment,
 )
-from inventor_workshop.workshop import Workshop, WorkshopTools
+from workshop.wish import Wish, generate_wish_id
+from workshop.workflow import Workshop, WorkshopTools
 
 
 INVENTOR_ROOT = Path(__file__).resolve().parent
@@ -50,12 +50,11 @@ def build_workshop(
     """Use shared Workshop stages; explicit ``WorkshopTools`` values win."""
 
     selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
-    return Workshop(
+    return configured_workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=configured_workshop_tools(
-            tools, inventor_id="eve", runtime_root=selected_runtime
-        ),
+        inventor_id="eve",
+        tools=tools,
         runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
@@ -80,7 +79,7 @@ def main(argv=None) -> int:
     parser.add_argument("objective", nargs="?")
     parser.add_argument("--playtest-rounds", type=int)
     parser.add_argument("--assignment-stdin", action="store_true", help=argparse.SUPPRESS)
-    args = parser.parse_args(argv)
+    args = parser.parse_intermixed_args(argv)
     if args.assignment_stdin:
         if (
             args.command != "run"

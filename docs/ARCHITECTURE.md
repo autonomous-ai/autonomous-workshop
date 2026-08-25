@@ -1,4 +1,4 @@
-# Toy Workshop architecture
+# Autonomous Workshop architecture
 
 Autonomous Workshop is a Santa-style workshop for **playthings for grown-ups
 (14+)**. People make a Wish, wait, and receive a box. Inside the Workshop,
@@ -418,24 +418,52 @@ inventors/<id>/
   profile.py or src/    thin Workshop connection and optional hooks
   tests/                inventor-specific checks
 
-src/inventor_workshop/
-  manager.py            one-Wish, Taste-bound inventor assignment
-  toys.py               five categories and their shared task blueprint
-  workshop.py           six-job orchestration and improvement loop
-  jobs.py               typed inputs, results, feedback, and waiting
-  make.py               Wish and shared making boundary
-  gameplay.py           reproducible AI-player games and leagues
-  playtest.py           exact artifact-bound evidence
-  instructions.py       truthful product-page and box-paper contract
-  deliver.py            production and carrier contract
-  artifacts.py          immutable product and evidence identity
-  runtime.py            state, leases, budgets, and durable effects
-  taste.py              exact human-owned creative constitution
+src/
+  workshop/             import package
+    product/             categories and product blueprints
+    wish/                preserved customer intent
+    match/               Taste catalog, shortlist, and assignment
+    invent/              concept exploration and selection
+    make/                mechanical/CAD design and Make contracts
+      cad/               CAD-specific contracts and helpers
+      skills/            the single locked copy of making knowledge
+    playtest/            simulation, evidence, feedback, and release gates
+    instructions/        in-box paper and factual Factory handoff
+    deliver/             production, QA, packing, and carrier handoff
+    reviews/             post-delivery feedback for future work
+    workflow/            six-job orchestration and improvement loop
+    artifacts/           immutable product and evidence identity
+    runtime/             state, leases, budgets, effects, and receipts
+    integrations/        provider ports and adapters
+    contributors/        Taste, manifests, and inventor scaffolding
+    errors.py            shared exception vocabulary
+    outcomes.py          shared waiting and outcome vocabulary
+    bootstrap.py         application composition
+  cli/                   implementation of the `workshop` command
 
-skills/                 versioned shared making knowledge
-schemas/                portable persisted contracts
-tests/                  shared Workshop invariant tests
+tests/                   shared tests, mirroring the component folders
 ```
+
+The installed distribution is `autonomous-workshop`; application code imports
+`workshop`. The console command is also named `workshop`, but its implementation
+is a sibling package so CLI parsing cannot become a library dependency. Keeping
+both packages under `src/` prevents the repository root, tests, tools, and
+inventor fixtures from being imported accidentally.
+
+Each persisted schema lives under the component that owns the contract and is
+installed as that component's package data. A component may expose its schema
+through the shared registry, but there is no second root-level schema authority.
+Likewise, Make owns the one installed copy of CAD, product-to-CAD, and STEP-parts
+skills under `workshop/make/skills`; other components call Make's public
+boundary rather than loading another copy.
+
+Dependencies follow the product flow. Domain components expose contracts and
+services; `workflow` coordinates them; `bootstrap` composes concrete runtime
+and integration implementations. `integrations` depends on public component
+contracts, and `cli` depends on the composed Workshop surface. Library code
+never imports `cli`, and Workshop never imports an inventor. Shared tests use
+the same folder names under `tests/`, making ownership visible without putting
+tests inside the installed packages.
 
 Provider adapters may vary, but provider database models never become local
 state authority. Credentials remain outside Taste, prompts, artifacts, events,
@@ -448,9 +476,10 @@ it can remain independent of Taste. Keep it in the inventor when it expresses
 recognizable judgment, niche-specific generation, or stricter niche Playtest
 logic.
 
-Older persisted runs and imports remain readable through compatibility aliases.
-Those aliases are migration details, not alternate jobs or concepts for new
-inventors.
+Older persisted runs remain readable through versioned data migrations. Durable
+protocol identifiers can retain historical strings such as
+`inventor_workshop.artifacts/v1`; those values name wire formats, not importable
+Python packages. New running code uses only the `workshop` namespace.
 
 A scheduler belongs in a future application adapter only when an operator
 actually needs continuous intake. It may create repeated one-shot assignments;

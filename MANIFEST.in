@@ -1,5 +1,7 @@
 include setup.py
-recursive-include schemas *.json
-recursive-include skills *
+include LICENSE
+include THIRD_PARTY_NOTICES.md
+recursive-include src/workshop *.json *.md *.txt
+recursive-include src/workshop/make/skills *
 recursive-include inventors TASTE.md inventor.json profile.py
 global-exclude __pycache__ *.pyc *.pyo .DS_Store

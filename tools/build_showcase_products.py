@@ -42,23 +42,18 @@ except ImportError as exc:  # pragma: no cover - deliberately fail closed
         "no fixture geometry will be substituted (%s)" % exc
     ) from exc
 
-from inventor_workshop import attribute_product_description
-from inventor_workshop.artifacts import build_artifact_manifest
-from inventor_workshop.instructions import DefaultInstructions
-from inventor_workshop.jobs import (
-    Made,
-    MakeContext,
-    Need,
-    PlaytestContext,
-    Playtested,
-    WaitingFor,
-)
-from inventor_workshop.models import PlaytestResult
-from inventor_workshop.playtest import Playtest
-from inventor_workshop.workshop import WorkshopTools
-from inventor_workshop.shop import ShopDoor, ShopInstructionsWriter
-from inventor_workshop.store import InventorStore
-from inventor_workshop.toys import ToyBlueprint
+from workshop.artifacts.core import build_artifact_manifest
+from workshop.product import attribute_product_description
+from workshop.instructions.service import DefaultInstructions
+from workshop.make.contracts import Made, MakeContext
+from workshop.outcomes import Need, WaitingFor
+from workshop.playtest.contracts import PlaytestContext, Playtested
+from workshop.playtest.evidence import PlaytestResult
+from workshop.playtest.service import Playtest
+from workshop.workflow.engine import WorkshopTools
+from workshop.integrations.shop import ShopDoor, ShopInstructionsWriter
+from workshop.runtime.store import InventorStore
+from workshop.product.blueprints import ToyBlueprint
 
 
 SCHEMA_VERSION = 1

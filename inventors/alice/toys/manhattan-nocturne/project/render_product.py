@@ -2073,7 +2073,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not input_path.is_file():
         print(
             f"render_product: input GLB not found: {input_path}\n"
-            "Generate the colored native GLB with skills/cad/scripts/export first.",
+            "Generate the colored native GLB with src/workshop/make/skills/cad/scripts/export first.",
             file=sys.stderr,
         )
         return 2

@@ -19,6 +19,7 @@ from pathlib import Path
 
 
 PROJECT = Path(__file__).resolve().parents[1]
+CAD_SKILL_RELATIVE = Path("src/workshop/make/skills/cad")
 
 PARTS = (
     ("board", 1),
@@ -53,7 +54,7 @@ def sha256(path: Path) -> str:
 
 def repo_root() -> Path:
     for parent in (PROJECT, *PROJECT.parents):
-        if (parent / "skills/cad/scripts/export/__main__.py").is_file():
+        if (parent / CAD_SKILL_RELATIVE / "scripts/export/__main__.py").is_file():
             return parent
     raise RuntimeError("could not find the Workshop repository root")
 
@@ -233,9 +234,10 @@ def main() -> int:
     log_dir.mkdir(parents=True, exist_ok=True)
     thickness_dir.mkdir(parents=True, exist_ok=True)
 
-    export_tool = repo_root() / "skills/cad/scripts/export"
-    mesh_tool = repo_root() / "skills/cad/scripts/check_mesh"
-    thickness_tool = repo_root() / "skills/cad/scripts/check_thickness"
+    skill_root = repo_root() / CAD_SKILL_RELATIVE
+    export_tool = skill_root / "scripts/export"
+    mesh_tool = skill_root / "scripts/check_mesh"
+    thickness_tool = skill_root / "scripts/check_thickness"
     stls: dict[str, Path] = {}
     mesh_rows: list[dict[str, object]] = []
 

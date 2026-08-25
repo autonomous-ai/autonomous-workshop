@@ -127,8 +127,8 @@ their diagnostics.
 
 The supported local deployment is one launchd worker plus an independent
 watchdog. Each tick runs in a fresh bounded process group. The service writes a
-private heartbeat, pins the complete committed Alice source tree, the tracked
-`src/inventor_workshop` package from the same repository, the resolved config,
+private heartbeat, pins the complete committed Alice source tree, the tracked,
+recursive `src/workshop` component package from the same repository, the resolved config,
 and the release policy, and refuses a dirty Alice or Workshop checkout or a
 changed runtime identity. Both Alice and Workshop are copied into one owner-only
 execution snapshot; isolated children import from that snapshot rather than
@@ -147,7 +147,7 @@ python -m pip install -e . -e ./inventors/alice
 ```
 
 The installer requires that Alice's virtual environment contain the declared
-`inventor-workshop==0.3.0` distribution metadata and the statically
+`autonomous-workshop==0.6.0` distribution metadata and the statically
 parsed `__version__` declaration from the explicit source tree; it fails before
 touching launchd if the shared Workshop is absent or version-mismatched. It does not
 import mutable Workshop code to perform that check. Preflight captures the explicit

@@ -209,7 +209,9 @@ The older class and method names remain aliases to the same implementation.
 They are compatibility details, not a second evidence model or an additional
 Workshop job.
 
-Use [`../schemas/playtest-result.schema.json`](../schemas/playtest-result.schema.json)
-for the canonical 0.5 persisted result. The older
-[`../schemas/inspection-result.schema.json`](../schemas/inspection-result.schema.json)
-remains available for compatibility.
+Use
+[`playtest-result.schema.json`](../src/workshop/playtest/schemas/playtest-result.schema.json)
+from the Playtest component for the canonical 0.5 persisted result. The older
+[`inspection-result.schema.json`](../src/workshop/playtest/schemas/inspection-result.schema.json)
+remains beside it for persisted-data compatibility. Both ship as package data;
+there is no second root-level schema copy.

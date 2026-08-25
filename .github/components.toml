@@ -1,0 +1,251 @@
+schema_version = 1
+
+[repository]
+name = "autonomous-workshop"
+ownership_source = ".github/components.toml"
+codeowners_projection = ".github/CODEOWNERS"
+maintainers_projection = "MAINTAINERS.md"
+
+[policy]
+primary_required = true
+backup_required = true
+github_account_prefix = "@"
+vacant_backup_status = "vacant"
+
+[[components]]
+id = "wish"
+name = "Wish"
+purpose = "Preserve and validate the customer's request and constraints."
+primary_role = "Wish maintainer"
+backup_role = "Wish backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/wish/**"]
+tests = ["tests/wish/**"]
+docs = ["src/workshop/wish/README.md"]
+
+[[components]]
+id = "match"
+name = "Match"
+purpose = "Discover inventors, rank fit, and bind one Wish to one assignment."
+primary_role = "Match maintainer"
+backup_role = "Match backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/match/**"]
+tests = ["tests/match/**"]
+docs = ["src/workshop/match/README.md"]
+
+[[components]]
+id = "invent"
+name = "Invent"
+purpose = "Research, explore, score, and select an industrial-design concept."
+primary_role = "Invent maintainer"
+backup_role = "Invent backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/invent/**"]
+tests = ["tests/invent/**"]
+docs = ["src/workshop/invent/README.md"]
+
+[[components]]
+id = "make"
+name = "Make"
+purpose = "Create exact mechanical, CAD, and printable product artifacts."
+primary_role = "Make maintainer"
+backup_role = "Make backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/make/**"]
+tests = ["tests/make/**"]
+docs = ["src/workshop/make/README.md"]
+
+[[components]]
+id = "playtest"
+name = "Playtest"
+purpose = "Test the exact Make, produce evidence, and return bounded feedback."
+primary_role = "Playtest maintainer"
+backup_role = "Playtest backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/playtest/**"]
+tests = ["tests/playtest/**"]
+docs = ["src/workshop/playtest/README.md"]
+
+[[components]]
+id = "instructions"
+name = "Instructions"
+purpose = "Produce exact in-box instructions and the authenticated private content handoff."
+primary_role = "Instructions maintainer"
+backup_role = "Instructions backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/instructions/**"]
+tests = ["tests/instructions/**"]
+docs = ["src/workshop/instructions/README.md"]
+
+[[components]]
+id = "deliver"
+name = "Deliver"
+purpose = "Bind production, physical QA, packing, and carrier evidence to the approved product."
+primary_role = "Deliver maintainer"
+backup_role = "Deliver backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/deliver/**"]
+tests = ["tests/deliver/**"]
+docs = ["src/workshop/deliver/README.md"]
+
+[[components]]
+id = "reviews"
+name = "Reviews"
+purpose = "Authenticate post-delivery customer feedback for future work."
+primary_role = "Reviews maintainer"
+backup_role = "Reviews backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/reviews/**"]
+tests = ["tests/reviews/**"]
+docs = ["src/workshop/reviews/README.md"]
+
+[[components]]
+id = "workflow"
+name = "Workflow"
+purpose = "Sequence Workshop stages, retries, feedback, and checkpoints without owning stage behavior."
+primary_role = "Workflow maintainer"
+backup_role = "Workflow backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "critical"
+source = ["src/workshop/workflow/**", "src/workshop/bootstrap.py"]
+tests = ["tests/workflow/**", "tests/integration/**", "tests/end_to_end/**"]
+docs = ["src/workshop/workflow/README.md", "docs/ARCHITECTURE.md"]
+
+[[components]]
+id = "product"
+name = "Product"
+purpose = "Own product lanes, blueprints, and shared product policy."
+primary_role = "Product maintainer"
+backup_role = "Product backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/workshop/product/**"]
+tests = ["tests/product/**"]
+docs = ["src/workshop/product/README.md"]
+
+[[components]]
+id = "artifacts"
+name = "Artifacts"
+purpose = "Own artifact manifests, packs, sealing, and exact byte identity."
+primary_role = "Artifacts maintainer"
+backup_role = "Artifacts backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "critical"
+source = ["src/workshop/artifacts/**"]
+tests = ["tests/artifacts/**"]
+docs = ["src/workshop/artifacts/README.md"]
+
+[[components]]
+id = "runtime"
+name = "Runtime"
+purpose = "Own durable events, leases, budgets, retries, effects, and persistence."
+primary_role = "Runtime maintainer"
+backup_role = "Runtime backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "critical"
+source = ["src/workshop/runtime/**"]
+tests = ["tests/runtime/**"]
+docs = ["src/workshop/runtime/README.md", "docs/MIGRATION.md"]
+
+[[components]]
+id = "integrations"
+name = "Integrations"
+purpose = "Implement external Factory, carrier, model, CAD, and provider adapters against component-owned ports."
+primary_role = "Integrations maintainer"
+backup_role = "Integrations backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "critical"
+source = ["src/workshop/integrations/**"]
+tests = ["tests/integrations/**"]
+docs = ["src/workshop/integrations/README.md"]
+
+[[components]]
+id = "contributors"
+name = "Contributor SDK"
+purpose = "Own Taste, inventor manifests, discovery, validation, and scaffolding."
+primary_role = "Contributor SDK maintainer"
+backup_role = "Contributor SDK backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "high"
+source = ["src/workshop/contributors/**"]
+tests = ["tests/contributors/**"]
+docs = ["src/workshop/contributors/README.md", "docs/BUILD_AN_INVENTOR.md"]
+
+[[components]]
+id = "cli"
+name = "CLI"
+purpose = "Parse commands, call public Workshop services, format output, and return exit codes."
+primary_role = "CLI maintainer"
+backup_role = "CLI backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["src/cli/**"]
+tests = ["tests/cli/**"]
+docs = ["src/cli/README.md"]
+
+[[components]]
+id = "inventors"
+name = "Inventor profiles"
+purpose = "Own active Taste profiles and genuinely niche custom hooks."
+primary_role = "Inventor catalog maintainer"
+backup_role = "Inventor catalog backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "standard"
+source = ["inventors/**"]
+tests = ["tests/inventors/**"]
+docs = ["inventors/README.md"]
+
+[[components]]
+id = "repository"
+name = "Repository and releases"
+purpose = "Own governance, CI, packaging, documentation, release policy, and architecture enforcement."
+primary_role = "Repository maintainer"
+backup_role = "Repository backup maintainer"
+primary_github = ["@deehw"]
+backup_github = []
+backup_status = "vacant"
+risk = "critical"
+source = [".github/**", ".cadgen-budget.json", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "src/workshop/outcomes.py", "docs/**", "tools/**", "web/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "snapshots.lock.json", "upstreams.json", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
+tests = ["tests/architecture/**", "tests/packaging/**", "tests/fixtures/**"]
+docs = ["README.md", "CONTRIBUTING.md", "src/cli/README.md"]

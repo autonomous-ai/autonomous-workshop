@@ -148,7 +148,7 @@ def showcase_make(context):
     return Made.from_root(artifact, product)
 ```
 
-See the [complete Make adapter](tools/build_showcase_products.py#L1619-L1631).
+See the [complete Make adapter](tools/build_showcase_products.py#L1614-L1626).
 
 ### Custom Playtest
 
@@ -162,7 +162,7 @@ science sources or a private consent/reference vault field by field and keep
 the rest of the Workshop:
 
 ```python
-from inventor_workshop.agent_playtest import LaneAwarePlaytester
+from workshop.playtest.agent import LaneAwarePlaytester
 
 playtest = LaneAwarePlaytester(
     science_provider=workshop_science_sources,
@@ -176,7 +176,7 @@ public proof types to bind its method, measurements, and source bytes to the
 exact Make; put `proof.to_dict()` in that result's `evidence["release_proof"]`:
 
 ```python
-from inventor_workshop import CapabilityReleaseProof, ReleaseProofSource
+from workshop import CapabilityReleaseProof, ReleaseProofSource
 
 
 def showcase_playtest(context):
@@ -218,15 +218,32 @@ capability, proof class, receipt role, dependency hashes, and measurements,
 plus the adapter's non-empty payload. Print proofs also cite the sealed profile
 files and one sealed G-code output per part; hash strings alone do not pass.
 
-See the [complete Playtest adapter](tools/build_showcase_products.py#L1697-L1903).
+See the [complete Playtest adapter](tools/build_showcase_products.py#L1692-L1895).
 
 Full contracts and examples: [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
 
+## Code map
+
+The installed distribution is `autonomous-workshop`. Python code imports the
+`workshop` package, and the `workshop` command is implemented by the sibling
+`src/cli/` package. The `src/` layout keeps repository-only files from being
+imported accidentally.
+
+Shared code is organized by architecture component under `src/workshop/`:
+`product`, `wish`, `match`, `invent`, `make`, `playtest`, `instructions`,
+`deliver`, `reviews`, `workflow`, `artifacts`, `runtime`, `integrations`, and
+`contributors`. Make owns the single installed copy of its locked skills at
+`src/workshop/make/skills/`; portable schemas live with the component that owns
+their contract. Shared tests mirror those component names under `tests/`.
+
+See [Workshop architecture](docs/ARCHITECTURE.md#shared-implementation) for the
+ownership and dependency rules.
+
 ## Check it works
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
 workshop skills list
 workshop schemas list
 workshop inventors --root . --check-entrypoints

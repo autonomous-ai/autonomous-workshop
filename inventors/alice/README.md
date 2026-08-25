@@ -77,7 +77,7 @@ implicitly.
   hash remains authoritative and must equal the archived `product.json` entry.
   Older `publish.*` task rows remain replayable but are never newly scheduled.
 - The always-on service folds the explicit, clean
-  `src/inventor_workshop` checkout into Alice's runtime identity and sealed
+  recursive `src/workshop` component package into Alice's runtime identity and sealed
   execution snapshot. Every worker identity check hashes that mutable checkout,
   while a scheduled child can only import the owner-only Workshop bytes that were
   verified and sealed for its installed identity. Sealed processes use

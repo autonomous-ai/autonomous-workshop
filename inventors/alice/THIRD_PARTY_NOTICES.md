@@ -6,8 +6,8 @@
 `peterat617/text-to-3d` at commit
 `f18aebe4698d92ffccf07d94e2d624b08d30e667`, principally:
 
-- `skills/cad/scripts/cadfits.py`
-- `skills/cad/scripts/check_mesh`
+- `src/workshop/make/skills/cad/scripts/cadfits.py`
+- `src/workshop/make/skills/cad/scripts/check_mesh`
 
 The adaptation covers calibrated fit derivation and strict mesh-topology/body
 validation. Alice's fail-closed motion receipt follows the upstream validation

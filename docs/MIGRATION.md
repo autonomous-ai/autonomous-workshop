@@ -1,8 +1,9 @@
-# Migration to Workshop 0.5
+# Migration to Workshop 0.6
 
-Workshop 0.5 turns the repository into one opinionated Toy Workshop for
-playthings for grown-ups. Every new profile uses one of five product categories
-and the same six creation jobs:
+Workshop 0.6 keeps the opinionated Toy Workshop domain contract introduced in
+0.5 and completes the distribution, package, and component-ownership refactor.
+Every new profile still uses one of five product categories and the same six
+creation jobs:
 
 ```text
 creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
@@ -14,7 +15,7 @@ Migration is incremental. Preserve characterized behavior and persisted
 effects while moving one exact, tested boundary at a time. Current profile
 readiness is recorded in [ADOPTION.md](ADOPTION.md).
 
-## What changed in 0.5
+## Domain contract retained from 0.5
 
 - The product scope is classics made yours, games that do not exist yet,
   machines that move, science you can hold, and little worlds.
@@ -34,9 +35,12 @@ readiness is recorded in [ADOPTION.md](ADOPTION.md).
   blueprints, AI-player leagues, truthful Instructions, and exact Deliver contracts are
   the canonical 0.5 surface.
 
-The distribution remains `inventor-workshop`, the import remains
-`inventor_workshop`, the CLI remains `workshop`, and mutable per-profile state
-remains under `.workshop/`.
+## What changed in 0.6
+
+The distribution is now `autonomous-workshop`. Running Python code imports
+`workshop`; the console command remains `workshop` and is implemented by the
+sibling `src/cli/` package. Mutable per-profile state remains under
+`.workshop/`.
 
 `workshop create inventor` is the canonical profile creator. The former
 `workshop new` command remains parseable during 0.x migration but is hidden
@@ -50,16 +54,35 @@ not be interpreted as a requirement for a profile-owned queue, daemon, or
 
 ## Repository and manifest continuity
 
-The repository-root layout introduced in 0.4 remains canonical:
+The repository keeps a `src/` layout and now mirrors the Workshop architecture
+inside the import package:
 
 ```text
-inventors/              thin profiles and inventor-owned work
-src/inventor_workshop/  shared Workshop implementation
-skills/                 locked making knowledge
-schemas/                portable data contracts
-docs/                   architecture and operating guidance
-tests/                  shared invariant tests
+inventors/                  thin profiles and inventor-owned work
+src/
+  workshop/
+    product/                product categories and blueprints
+    wish/                   preserved customer intent
+    match/                  Taste routing and assignment
+    invent/                 concept exploration and selection
+    make/                   mechanical/CAD work and locked skills
+    playtest/               simulation, evidence, and feedback
+    instructions/           paper and factual Factory handoff
+    deliver/                production and carrier handoff
+    reviews/                post-delivery feedback
+    workflow/               orchestration and improvement loop
+    artifacts/              immutable artifact identity
+    runtime/                state, budgets, effects, and receipts
+    integrations/           provider ports and adapters
+    contributors/           Taste, manifests, and scaffolding
+  cli/                       implementation of the `workshop` command
+docs/                       architecture and operating guidance
+tests/                      shared tests mirroring component folders
 ```
+
+Make's locked knowledge lives once under `src/workshop/make/skills/`. Each
+portable schema lives with the component that owns its contract and is shipped
+as package data; there is no parallel repository-root schema authority.
 
 Schema v5 is the required authoring format for new inventor manifests. It keeps
 only operational fields: `schema_version`, `id`, `status`, `entrypoint`,
@@ -86,8 +109,22 @@ Markdown body, remove creative prose and legacy feature fields from
 in persisted receipts; the reader retains v1-v4 compatibility for those exact
 historical records.
 
-The old package-name import shims remain read-only compatibility routes to the
-same implementation. They must not own separate state or behavior.
+The former `inventor_workshop`, `inventor_core`, `inventor_foundation`, and
+`workshop_cli` Python import namespaces are no longer provided. Historical
+manifests and durable state remain readable, but running code must import
+`workshop`. This is intentionally a clean package boundary while the project is
+young; it prevents four names from describing one implementation.
+
+Within `workshop`, component package roots are canonical: for example,
+`workshop.wish`, `workshop.make`, `workshop.playtest`, and
+`workshop.workflow`. The broad root import surface remains a behavior-free 0.x
+compatibility facade and will not be expanded; established names remain until
+the 1.0 boundary. It never owns persistence, composition, or stage behavior.
+
+Do not confuse an import namespace with a durable protocol identifier. Stored
+values such as `inventor_workshop.artifacts/v1` retain their exact spelling when
+they identify a serialized format. Readers migrate those records by version;
+Python never imports that string.
 
 The product taxonomy is a semantic migration, not merely label replacement:
 
@@ -131,14 +168,17 @@ Do not bulk-rewrite those values in place. Read them through compatibility,
 write the canonical 0.5 concept at new boundaries, and rename persisted state
 only through a versioned migration with rollback and golden replay fixtures.
 
-Likewise, older serialization and outside-effect type names remain aliases for
-existing imports and state. New inventors should treat artifact serialization,
-idempotent provider calls, and receipts as implementation inside Make, Instructions, or
-Deliver—not as extra public jobs.
+Likewise, readers may recognize older serialization and outside-effect type
+names, and selected code-facing names may remain aliases inside the `workshop`
+package. None of those records restores a retired package namespace. New
+inventors should treat artifact serialization, idempotent provider calls, and
+receipts as implementation inside Make, Instructions, or Deliver—not as extra
+public jobs.
 
-`schemas/playtest-result.schema.json` is the canonical 0.5 schema. The existing
-`schemas/inspection-result.schema.json` describes the same persisted field
-shape for compatibility.
+`src/workshop/playtest/schemas/playtest-result.schema.json` is the canonical
+0.5 schema. The component also owns
+`src/workshop/playtest/schemas/inspection-result.schema.json`, which describes
+the same persisted field shape for compatibility.
 
 ## Migrate intake to one-shot assignment
 
@@ -364,7 +404,7 @@ category-specific override seams.
 ## Verification
 
 ```bash
-PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_*.py' -v
+PYTHONPATH=src python3 -m unittest discover -s tests -t . -p 'test_*.py' -v
 workshop inventors --root inventors --check-entrypoints
 python3 tools/verify_skill_locks.py
 python3 tools/verify_snapshot_locks.py
@@ -372,6 +412,6 @@ python3 tools/scan_secrets.py
 git diff --check
 ```
 
-Test canonical and compatibility imports, persisted-state fixtures, conflicting
-authority rejection, installed artifacts, allowance tampering, and ambiguous
-outside effects before deleting any compatibility route.
+Test canonical `workshop` imports, persisted-state compatibility fixtures,
+conflicting authority rejection, installed artifacts, allowance tampering, and
+ambiguous outside effects before deleting any data migration route.

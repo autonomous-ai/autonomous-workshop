@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from inventor_workshop import load_taste
+from workshop import load_taste
 
 from alice.cli import (
     ADAPTER_DIAGNOSTICS_CONTRACT_VERSION,

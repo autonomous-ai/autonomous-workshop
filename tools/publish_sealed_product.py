@@ -23,7 +23,7 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from inventor_workshop.sealed_draft import publish_sealed_draft
+from workshop.integrations.sealed_draft import publish_sealed_draft
 
 
 def _credentials(environ: Mapping[str, str]) -> Tuple[str, str]:

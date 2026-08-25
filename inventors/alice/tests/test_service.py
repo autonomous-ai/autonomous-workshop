@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 import threading
+import tomllib
 import unittest
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta, timezone
@@ -435,13 +436,27 @@ class IdentityTests(unittest.TestCase):
 
     def _workshop_fixture(self, repository: Path) -> tuple[Path, Path]:
         workshop_source = repository / "workshop" / "src"
-        workshop_package = workshop_source / "inventor_workshop"
+        workshop_package = workshop_source / "workshop"
         workshop_package.mkdir(parents=True)
         (workshop_package / "__init__.py").write_text(
-            '__version__ = "0.4.0"\n', encoding="utf-8"
+            '__version__ = "0.6.0"\n', encoding="utf-8"
         )
-        workshop_module = workshop_package / "artifacts.py"
+        artifacts_package = workshop_package / "artifacts"
+        artifacts_package.mkdir()
+        (artifacts_package / "__init__.py").write_text("", encoding="utf-8")
+        workshop_module = artifacts_package / "core.py"
         workshop_module.write_text("WORKSHOP_PIN = 1\n", encoding="utf-8")
+        cad_package = workshop_package / "make" / "cad"
+        cad_package.mkdir(parents=True)
+        (cad_package.parent / "__init__.py").write_text("", encoding="utf-8")
+        (cad_package / "__init__.py").write_text("", encoding="utf-8")
+        (cad_package / "mesh.py").write_text("MESH_PIN = 1\n", encoding="utf-8")
+        skill_script = (
+            workshop_package / "make" / "skills" / "cad" / "scripts" / "check"
+        )
+        skill_script.parent.mkdir(parents=True)
+        skill_script.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        skill_script.chmod(0o755)
         return workshop_source, workshop_module
 
     def test_source_tree_hash_covers_every_tracked_file_and_requires_clean_tree(self) -> None:
@@ -472,7 +487,7 @@ class IdentityTests(unittest.TestCase):
             (alice / "untracked.txt").unlink()
             workshop_module.write_text("WORKSHOP_PIN = 2\n", encoding="utf-8")
             with self.assertRaisesRegex(
-                ServiceError, "Inventor Workshop source tree is not clean"
+                ServiceError, "Workshop source tree is not clean"
             ):
                 source_tree_sha256(alice, workshop_source, environment)
 
@@ -587,9 +602,9 @@ class IdentityTests(unittest.TestCase):
             (alice_package / "__init__.py").write_text("", encoding="utf-8")
             (alice_package / "__main__.py").write_text(
                 "from pathlib import Path\n"
-                "import inventor_workshop\n"
-                "from inventor_workshop.artifacts import WORKSHOP_PIN\n"
-                "print(f'{WORKSHOP_PIN}|{Path(inventor_workshop.__file__).resolve()}')\n",
+                "import workshop\n"
+                "from workshop.artifacts.core import WORKSHOP_PIN\n"
+                "print(f'{WORKSHOP_PIN}|{Path(workshop.__file__).resolve()}')\n",
                 encoding="utf-8",
             )
             workshop_source, workshop_module = self._workshop_fixture(repository)
@@ -608,18 +623,38 @@ class IdentityTests(unittest.TestCase):
                 workshop_source_root=workshop_source,
                 environment=sanitized_environment({}),
             )
-            sealed_workshop = snapshot.source_path / "inventor_workshop" / "artifacts.py"
+            sealed_workshop = (
+                snapshot.source_path / "workshop" / "artifacts" / "core.py"
+            )
             self.assertEqual(
                 sealed_workshop.read_text(encoding="utf-8"), "WORKSHOP_PIN = 1\n"
             )
             self.assertEqual(stat.S_IMODE(sealed_workshop.stat().st_mode), 0o400)
+            sealed_mesh = (
+                snapshot.source_path / "workshop" / "make" / "cad" / "mesh.py"
+            )
+            self.assertEqual(sealed_mesh.read_text(encoding="utf-8"), "MESH_PIN = 1\n")
+            self.assertEqual(stat.S_IMODE(sealed_mesh.stat().st_mode), 0o400)
+            sealed_skill = (
+                snapshot.source_path
+                / "workshop"
+                / "make"
+                / "skills"
+                / "cad"
+                / "scripts"
+                / "check"
+            )
+            self.assertEqual(
+                sealed_skill.read_text(encoding="utf-8"), "#!/bin/sh\nexit 0\n"
+            )
+            self.assertEqual(stat.S_IMODE(sealed_skill.stat().st_mode), 0o500)
             verify_execution_snapshot(
                 snapshot, root=runtime, expected_identity=identity
             )
 
             workshop_module.write_text("WORKSHOP_PIN = 2\n", encoding="utf-8")
             with self.assertRaisesRegex(
-                ServiceError, "Inventor Workshop source tree is not clean"
+                ServiceError, "Workshop source tree is not clean"
             ):
                 resolve_runtime_identity(
                     config=config,
@@ -670,11 +705,13 @@ class IdentityTests(unittest.TestCase):
             (poison_site / "preimport_workshop.pth").write_text(
                 "import pathlib,sys,types;"
                 f"pathlib.Path({str(pth_marker)!r}).write_text('executed');"
-                "m=types.ModuleType('inventor_workshop');"
+                "m=types.ModuleType('workshop');"
                 "m.__file__='pth://poison';m.__path__=[];"
-                "a=types.ModuleType('inventor_workshop.artifacts');a.WORKSHOP_PIN=999;"
-                "sys.modules['inventor_workshop']=m;"
-                "sys.modules['inventor_workshop.artifacts']=a\n",
+                "a=types.ModuleType('workshop.artifacts');a.__path__=[];"
+                "c=types.ModuleType('workshop.artifacts.core');c.WORKSHOP_PIN=999;"
+                "sys.modules['workshop']=m;"
+                "sys.modules['workshop.artifacts']=a;"
+                "sys.modules['workshop.artifacts.core']=c\n",
                 encoding="utf-8",
             )
             control = subprocess.run(
@@ -706,7 +743,7 @@ class IdentityTests(unittest.TestCase):
             self.assertEqual(marker, "1")
             self.assertEqual(
                 Path(imported_path),
-                snapshot.source_path / "inventor_workshop" / "__init__.py",
+                snapshot.source_path / "workshop" / "__init__.py",
             )
 
     def test_execution_snapshot_keeps_staging_root_writable_until_publish(self) -> None:
@@ -1291,13 +1328,32 @@ class LaunchdArtifactTests(unittest.TestCase):
         self.assertIn("trap 'rollback 143' TERM", install)
         self.assertIn("prior jobs were restored", install)
         self.assertIn("runtime state was retained", install)
-        self.assertIn("inventor-workshop 0.4.0", install)
+        self.assertIn("autonomous-workshop 0.6.0", install)
         self.assertIn("--workshop-source-root", install)
         self.assertIn("import ast, importlib.metadata", install)
         self.assertIn("__version__", install)
         self.assertIn("importlib.metadata.version", install)
-        self.assertNotIn("importlib.metadata, inventor_workshop", install)
-        self.assertNotIn("import inventor_workshop", install)
+        self.assertNotIn("importlib.metadata, workshop", install)
+        self.assertNotIn("import workshop", install)
+
+    def test_package_metadata_pins_autonomous_workshop_060(self) -> None:
+        alice_root = Path(__file__).resolve().parents[1]
+        project = tomllib.loads(
+            (alice_root / "pyproject.toml").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            project["project"]["dependencies"],
+            ["autonomous-workshop==0.6.0"],
+        )
+        self.assertEqual(
+            project["tool"]["uv"]["sources"]["autonomous-workshop"],
+            {"path": "../..", "editable": True},
+        )
+
+        lock = tomllib.loads((alice_root / "uv.lock").read_text(encoding="utf-8"))
+        packages = {package["name"]: package for package in lock["package"]}
+        self.assertEqual(packages["autonomous-workshop"]["version"], "0.6.0")
+        self.assertNotIn("inventor-workshop", packages)
 
     @unittest.skipUnless(Path("/bin/zsh").exists(), "macOS installer behavior")
     def test_failed_post_start_health_check_rolls_back_jobs_but_keeps_runtime(self) -> None:

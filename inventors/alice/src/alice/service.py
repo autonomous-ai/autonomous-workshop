@@ -754,15 +754,15 @@ def _capture_workshop_source_tree(
     """Capture the clean, tracked Workshop under its sealed import prefix."""
 
     workshop_source_root = _require_absolute(
-        workshop_source_root, "Inventor Workshop source root"
+        workshop_source_root, "Workshop source root"
     )
     _check_path_components(workshop_source_root)
     if not workshop_source_root.is_dir():
-        raise ServiceError("Inventor Workshop source root must be a directory")
-    package_root = workshop_source_root / "inventor_workshop"
+        raise ServiceError("Workshop source root must be a directory")
+    package_root = workshop_source_root / "workshop"
     _check_path_components(package_root)
     if not package_root.is_dir():
-        raise ServiceError("Inventor Workshop source package is unavailable")
+        raise ServiceError("Workshop source package is unavailable")
 
     repository_text = _git_output(
         workshop_source_root, ["rev-parse", "--show-toplevel"], environment=environment
@@ -776,7 +776,7 @@ def _capture_workshop_source_tree(
         relative_package = package_root.relative_to(repository_root)
     except ValueError as exc:
         raise ServiceError(
-            "Inventor Workshop source is outside its repository"
+            "Workshop source is outside its repository"
         ) from exc
     pathspec = str(relative_package)
 
@@ -788,7 +788,7 @@ def _capture_workshop_source_tree(
         )
 
     if status():
-        raise ServiceError("Inventor Workshop source tree is not clean")
+        raise ServiceError("Workshop source tree is not clean")
     listing = _git_output(
         repository_root,
         ["ls-files", "--full-name", "-z", "--", pathspec],
@@ -796,44 +796,44 @@ def _capture_workshop_source_tree(
     )
     names = [item for item in listing.split(b"\0") if item]
     if not names:
-        raise ServiceError("Inventor Workshop source package has no tracked files")
+        raise ServiceError("Workshop source package has no tracked files")
     entries: list[SourceEntry] = []
     total = 0
     for encoded_name in sorted(names):
         try:
             name = encoded_name.decode("utf-8")
         except UnicodeDecodeError as exc:
-            raise ServiceError("Inventor Workshop source path is not UTF-8") from exc
+            raise ServiceError("Workshop source path is not UTF-8") from exc
         candidate = repository_root / name
         try:
             relative = candidate.relative_to(package_root)
         except ValueError as exc:
-            raise ServiceError("git returned a path outside Inventor Workshop") from exc
+            raise ServiceError("git returned a path outside Workshop") from exc
         if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
-            raise ServiceError("Inventor Workshop contains an unsafe source path")
+            raise ServiceError("Workshop contains an unsafe source path")
         content = _secure_read_file(
             candidate,
             maximum_bytes=SOURCE_FILE_MAX_BYTES,
-            purpose="Inventor Workshop source file",
+            purpose="Workshop source file",
         )
         total += len(content)
         if total > SOURCE_TREE_MAX_BYTES:
-            raise ServiceError("Inventor Workshop exceeds its verification bound")
+            raise ServiceError("Workshop exceeds its verification bound")
         mode = stat.S_IMODE(candidate.lstat().st_mode) & 0o111
         entries.append(
             SourceEntry(
-                (Path("src") / "inventor_workshop" / relative).as_posix(),
+                (Path("src") / "workshop" / relative).as_posix(),
                 content,
                 bool(mode),
             )
         )
     entries.sort(key=lambda entry: entry.relative_name)
     if not any(
-        entry.relative_name == "src/inventor_workshop/__init__.py" for entry in entries
+        entry.relative_name == "src/workshop/__init__.py" for entry in entries
     ):
-        raise ServiceError("Inventor Workshop source package is incomplete")
+        raise ServiceError("Workshop source package is incomplete")
     if status():
-        raise ServiceError("Inventor Workshop source tree changed during verification")
+        raise ServiceError("Workshop source tree changed during verification")
     return SourceCapture(tuple(entries), _source_capture_sha256(entries))
 
 
@@ -938,7 +938,7 @@ def _resolve_runtime_inputs(
     root = _require_absolute(root, "runtime root")
     source_root = _require_absolute(source_root, "Alice source root")
     workshop_source_root = _require_absolute(
-        workshop_source_root, "Inventor Workshop source root"
+        workshop_source_root, "Workshop source root"
     )
     _check_path_components(config)
     _check_path_components(root, allow_missing_leaf=True, allow_missing_parents=True)
@@ -1088,7 +1088,7 @@ def materialize_execution_snapshot(
 
     for prohibited_root, label in (
         (source_root, "Alice source tree"),
-        (workshop_source_root, "Inventor Workshop source tree"),
+        (workshop_source_root, "Workshop source tree"),
     ):
         try:
             root.relative_to(prohibited_root)
@@ -1336,7 +1336,7 @@ def _isolated_module_argv(
     )
     # -I alone still imports site and executes installation-controlled .pth
     # files before this bootstrap can prepend the sealed release. Alice and
-    # inventor_workshop are stdlib-only and both live in the snapshot, so disable
+    # workshop are stdlib-only and both live in the snapshot, so disable
     # site initialization entirely before any application module can be cached.
     return [
         str(python),
@@ -2159,7 +2159,7 @@ def _runtime_arguments(parser: argparse.ArgumentParser) -> None:
         dest="workshop_source_root",
         required=True,
         help=(
-            "absolute Inventor Workshop source root "
+            "absolute Workshop source root "
             "(older option names remain read-only compatibility aliases)"
         ),
     )
@@ -2253,7 +2253,7 @@ def _runtime_context(
     root = _require_absolute(args.root, "runtime root")
     source_root = _require_absolute(args.source_root, "Alice source root")
     workshop_source_root = _require_absolute(
-        args.workshop_source_root, "Inventor Workshop source root"
+        args.workshop_source_root, "Workshop source root"
     )
     _check_path_components(config)
     _check_path_components(env_file)

@@ -85,10 +85,11 @@ Workshop-owned code answers:
 - How are outside effects recorded, executed, and reconciled by receipt?
 - How are shared adapters tested without exposing credentials?
 
-Put reusable infrastructure in the repository's shared root, not in the new
-inventor. Put Taste and only genuinely niche override behavior in the inventor.
-If an adapter is generally useful, propose it as a shared Workshop integration
-and keep provider-specific transport out of inventor domain logic.
+Put reusable infrastructure in its owning component under `src/workshop/`, not
+in the new inventor. Put Taste and only genuinely niche override behavior in
+the inventor. If an adapter is generally useful, propose it under
+`src/workshop/integrations/` and keep provider-specific transport out of
+inventor domain logic.
 
 ## Public names
 
@@ -105,7 +106,9 @@ The creation vocabulary has six jobs:
 not another job. Customer Reviews arrive after Deliver and may guide future
 work; they are not an Inventor hook.
 
-Use `workshop` for the CLI and `inventor_workshop` for the Python package.
+The distribution is `autonomous-workshop`. Use `workshop` for Python imports
+and for the CLI command. The command implementation lives in the sibling
+`src/cli/` package; library code under `src/workshop/` must not import it.
 Artifact, runtime, adapter, and receipt are literal internal implementation
 names, not more lifecycle stages. Migration rules for historical API, manifest,
 and durable-data names live in [MIGRATION.md](docs/MIGRATION.md).
@@ -154,7 +157,7 @@ cannot establish live readiness.
 Run the repository checks from the root:
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
 workshop skills list
 workshop inventors --root inventors --check-entrypoints
 workshop check inventors/deduction-games --run
@@ -171,9 +174,19 @@ interpolation.
 
 ## Change Workshop safely
 
-A Workshop pull request needs contract tests in `tests/` and must
-preserve the dependency direction: inventors import Workshop; Workshop
-never imports an inventor.
+A Workshop pull request needs contract tests in the matching component folder
+under `tests/` and must preserve the dependency direction: inventors import
+Workshop; Workshop never imports an inventor. For example, Make changes belong
+in `src/workshop/make/` with tests in `tests/make/`; Playtest changes use
+`src/workshop/playtest/` and `tests/playtest/`.
+
+The shared component folders are `product`, `wish`, `match`, `invent`, `make`,
+`playtest`, `instructions`, `deliver`, `reviews`, `workflow`, `artifacts`,
+`runtime`, `integrations`, and `contributors`. Keep Make's locked knowledge in
+one place at `src/workshop/make/skills/`. Put a persisted schema under the
+component that owns its contract, not in a second repository-root schema tree.
+Cross-component composition belongs at the Workshop bootstrap boundary rather
+than inside an inventor or the CLI.
 
 Changes to the runtime, budgets, artifact identity, Make or Playtest
 floors, or outside effects need tests for success, malformed input,

@@ -1,4 +1,4 @@
-"""Bob's narrow adapter to the repository-wide :mod:`inventor_workshop`.
+"""Bob's narrow adapter to the repository-wide :mod:`workshop`.
 
 Bob remains runnable from ``inventors/bob/`` without installing a wheel: the
 adapter prefers an installed package, then resolves the repository-root ``../../src``
@@ -59,24 +59,20 @@ def _configured_source() -> Optional[Path]:
     if configured is None:
         return None
     source = Path(configured).expanduser().resolve()
-    if not (source / "inventor_workshop" / "__init__.py").is_file():
+    if not (source / "workshop" / "__init__.py").is_file():
         raise WorkshopUnavailable(
-            "BOB_WORKSHOP_SRC does not contain inventor_workshop: %s" % source
+            "BOB_WORKSHOP_SRC does not contain workshop: %s" % source
         )
     return source
 
 
-def _symbol(module: Any, canonical: str, *legacy: str) -> Any:
-    """Resolve one v0.3 symbol, accepting older names only at this adapter."""
+def _symbol(module: Any, canonical: str) -> Any:
+    """Resolve one required symbol from its owning Workshop component."""
 
-    for name in (canonical,) + legacy:
-        value = getattr(module, name, None)
-        if value is not None:
-            return value
-    raise WorkshopUnavailable(
-        "Workshop does not expose %s (compatibility names checked: %s)"
-        % (canonical, ", ".join(legacy) or "none")
-    )
+    value = getattr(module, canonical, None)
+    if value is None:
+        raise WorkshopUnavailable("Workshop does not expose %s" % canonical)
+    return value
 
 
 def _repository_source() -> Path:
@@ -123,11 +119,9 @@ def _require_loaded_workshop_from(source: Path) -> None:
     modules: mixed old/new Workshop objects are unsafe at a send boundary.
     """
 
-    package_root = (source / "inventor_workshop").resolve()
+    package_root = (source / "workshop").resolve()
     for name, module in tuple(sys.modules.items()):
-        if name != "inventor_workshop" and not name.startswith(
-            "inventor_workshop."
-        ):
+        if name != "workshop" and not name.startswith("workshop."):
             continue
         if module is None:
             raise WorkshopUnavailable(
@@ -160,10 +154,10 @@ def require_workshop() -> WorkshopRuntime:
             sys.path.insert(0, source_text)
     else:
         try:
-            importlib.import_module("inventor_workshop")
+            importlib.import_module("workshop")
         except ImportError:
             source = _repository_source()
-            if not (source / "inventor_workshop" / "__init__.py").is_file():
+            if not (source / "workshop" / "__init__.py").is_file():
                 raise WorkshopUnavailable(
                     "Workshop is unavailable; expected %s or set BOB_WORKSHOP_SRC"
                     % source
@@ -172,9 +166,14 @@ def require_workshop() -> WorkshopRuntime:
             if source_text not in sys.path:
                 sys.path.insert(0, source_text)
     try:
-        workshop = importlib.import_module("inventor_workshop")
-        errors = importlib.import_module("inventor_workshop.errors")
-        models = importlib.import_module("inventor_workshop.models")
+        pack = importlib.import_module("workshop.artifacts.pack")
+        errors = importlib.import_module("workshop.errors")
+        receipts = importlib.import_module("workshop.runtime")
+        send = importlib.import_module("workshop.integrations.send")
+        shop = importlib.import_module("workshop.integrations.shop")
+        provenance = importlib.import_module("workshop.make.provenance")
+        taste = importlib.import_module("workshop.contributors.taste")
+        effects = importlib.import_module("workshop.runtime.effects")
     except ImportError as exc:
         raise WorkshopUnavailable(
             "Workshop could not be imported: %s" % exc
@@ -182,24 +181,20 @@ def require_workshop() -> WorkshopRuntime:
     if source is not None:
         _require_loaded_workshop_from(source)
     return WorkshopRuntime(
-        pack_artifact=_symbol(workshop, "pack_artifact", "build_publish_packet"),
-        plan_pack=_symbol(workshop, "plan_pack"),
-        inspect_pack=_symbol(workshop, "inspect_pack", "inspect_publish_packet"),
-        MakerMark=_symbol(workshop, "MakerMark"),
-        Clockwork=_symbol(workshop, "Clockwork", "InventorStore"),
-        ShopDoor=_symbol(workshop, "ShopDoor", "Portal"),
-        Sender=_symbol(workshop, "Sender", "Launchpad"),
-        HttpResponse=workshop.HttpResponse,
-        Stamp=_symbol(workshop, "Stamp")
-        if getattr(workshop, "Stamp", None) is not None
-        else _symbol(models, "Stamp", "PublicationReceipt"),
-        AmbiguousSendError=_symbol(
-            errors, "AmbiguousSendError", "AmbiguousPublishError"
-        ),
-        ContractError=errors.ContractError,
-        WorkshopSendError=_symbol(errors, "SendError", "PublishError"),
-        StateConflict=errors.StateConflict,
-        load_taste=_symbol(workshop, "load_taste", "load_taste_profile"),
+        pack_artifact=_symbol(pack, "pack_artifact"),
+        plan_pack=_symbol(pack, "plan_pack"),
+        inspect_pack=_symbol(pack, "inspect_pack"),
+        MakerMark=_symbol(provenance, "MakerMark"),
+        Clockwork=_symbol(effects, "Runtime"),
+        ShopDoor=_symbol(shop, "ShopDoor"),
+        Sender=_symbol(send, "Sender"),
+        HttpResponse=_symbol(shop, "HttpResponse"),
+        Stamp=_symbol(receipts, "Stamp"),
+        AmbiguousSendError=_symbol(errors, "AmbiguousSendError"),
+        ContractError=_symbol(errors, "ContractError"),
+        WorkshopSendError=_symbol(errors, "SendError"),
+        StateConflict=_symbol(errors, "StateConflict"),
+        load_taste=_symbol(taste, "load_taste"),
     )
 
 

@@ -503,8 +503,8 @@ wheels = [
 ]
 
 [[package]]
-name = "inventor-workshop"
-version = "0.5.0"
+name = "autonomous-workshop"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "cadgen" },

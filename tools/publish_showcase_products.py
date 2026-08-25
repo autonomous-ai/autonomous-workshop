@@ -156,19 +156,23 @@ def _literal_showcase_contract(builder_path: Path) -> _ShowcaseContract:
 
 showcase = _literal_showcase_contract(TOOLS_ROOT / "build_showcase_products.py")
 
-from inventor_workshop.artifacts import (
+from workshop.artifacts.core import (
     ArtifactEntry,
     ArtifactManifest,
     build_artifact_manifest,
 )
-from inventor_workshop.attribution import attribute_product_description
-from inventor_workshop.errors import ContractError, PublishError, ReceiptError, StateConflict
-from inventor_workshop.instructions import evidence_claims
-from inventor_workshop.jobs import InstructionsContext, Made, Playtested
-from inventor_workshop.make import Wish
-from inventor_workshop.models import PlaytestResult, PublicationReceipt, require_sha256
-from inventor_workshop.playtest import Playtest
-from inventor_workshop.shop import (
+from workshop.product import attribute_product_description
+from workshop.errors import ContractError, PublishError, ReceiptError, StateConflict
+from workshop.instructions.service import evidence_claims
+from workshop.instructions.contracts import InstructionsContext
+from workshop.make.contracts import Made
+from workshop.playtest.contracts import Playtested
+from workshop.wish import Wish
+from workshop.playtest.evidence import PlaytestResult
+from workshop.runtime import PublicationReceipt
+from workshop._validation import require_sha256
+from workshop.playtest.service import Playtest
+from workshop.integrations.shop import (
     DEFAULT_SHOP_PAGE_BASE,
     MAX_RESPONSE_BYTES,
     HttpResponse,
@@ -178,12 +182,23 @@ from inventor_workshop.shop import (
     _factory_enrichment_readback,
     urllib_transport,
 )
-from inventor_workshop.store import InventorStore
-from inventor_workshop.taste import Taste, load_taste
-from inventor_workshop.toys import ToyBlueprint
+from workshop.runtime.store import InventorStore
+from workshop.contributors.taste import Taste, load_taste
+from workshop.product.blueprints import ToyBlueprint
 
 
 _RECONSTRUCTED_OBSERVED_AT = "1970-01-01T00:00:00+00:00"
+
+# The checked-in showcase receipts bind the exact pre-component-layout builder.
+# The migrated builder changes only Python ownership imports (including the
+# product-owned attribution seam), so validate both immutable identities
+# instead of rewriting historical receipts and manifests.
+_LEGACY_PRIVATE_DRAFT_BUILDER_SHA256 = (
+    "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc"
+)
+_COMPONENT_LAYOUT_BUILDER_SHA256 = (
+    "8152eea94feea68e19a1311e58bd873ff1a24a2d8c7143a771982b1272c3db8e"
+)
 
 # These hashes identify the five immutable schema-v1 showcase runs built before
 # the current Workshop blueprints gained their shared-engine contract fields.
@@ -400,7 +415,9 @@ def _load_sealed_showcase(
         or shared.get("playtest") != showcase.PLAYTEST_ID
         or shared.get("builder_path") != "tools/build_showcase_products.py"
         or shared.get("builder_sha256")
-        != _sha256_file(Path(showcase.__file__).resolve())
+        != _LEGACY_PRIVATE_DRAFT_BUILDER_SHA256
+        or _sha256_file(Path(showcase.__file__).resolve())
+        != _COMPONENT_LAYOUT_BUILDER_SHA256
     ):
         raise ContractError("checked-in Workshop receipt no longer binds this sealed bundle")
     if run.get("job") == "instructions":

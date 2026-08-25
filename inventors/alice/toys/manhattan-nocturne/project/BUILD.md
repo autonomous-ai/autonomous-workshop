@@ -1,7 +1,7 @@
 # Build, validate, render, and slice
 
 Run from the repository root. The CAD interpreter is the local Python 3.12
-environment with the pinned `skills/cad/requirements.txt` installed.
+environment with the pinned `src/workshop/make/skills/cad/requirements.txt` installed.
 
 ```sh
 CAD_PY="$PWD/.venv-cad/bin/python"
@@ -11,23 +11,23 @@ PROJECT="inventors/alice/toys/manhattan-nocturne/project"
 ## 1. Open one bounded CAD run
 
 ```sh
-"$CAD_PY" skills/cad/scripts/with_budget \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/with_budget \
   --start --total 30m --label manhattan-nocturne
 ```
 
 ## 2. Quick combined preview
 
 ```sh
-"$CAD_PY" skills/cad/scripts/with_budget --step 8m -- \
-  "$CAD_PY" skills/cad/scripts/verify_project "$PROJECT" \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/with_budget --step 8m -- \
+  "$CAD_PY" src/workshop/make/skills/cad/scripts/verify_project "$PROJECT" \
   --quick --fresh --preview-tolerance 0.1
 ```
 
 ## 3. Final STEP/STL/GLB and geometry gate
 
 ```sh
-"$CAD_PY" skills/cad/scripts/with_budget --step 20m -- \
-  "$CAD_PY" skills/cad/scripts/verify_project "$PROJECT" \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/with_budget --step 20m -- \
+  "$CAD_PY" src/workshop/make/skills/cad/scripts/verify_project "$PROJECT" \
   --fresh --exports --strict-fit --bed 256x256x256 --verbose
 ```
 
@@ -41,11 +41,11 @@ Factory also requires one unambiguous combined STL at the project root. Export
 it from the same assembly source after the final geometry gate:
 
 ```sh
-"$CAD_PY" skills/cad/scripts/export \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/export \
   "$PROJECT/manhattan_nocturne.step.py" \
   --stl assembled.stl
 
-"$CAD_PY" skills/cad/scripts/check_mesh \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/check_mesh \
   "$PROJECT/assembled.stl" --bed 256x256x256 --assembly
 
 "$CAD_PY" "$PROJECT/validation/check_factory_handoff.py"
@@ -72,7 +72,7 @@ No shallow texture is added: the exact bevel provides light response and each
 ## 5. Exact-CAD previews
 
 ```sh
-"$CAD_PY" skills/cad/scripts/export \
+"$CAD_PY" src/workshop/make/skills/cad/scripts/export \
   "$PROJECT/manhattan_nocturne.step.py" \
   --glb "$PWD/$PROJECT/exports/manhattan-nocturne.glb"
 

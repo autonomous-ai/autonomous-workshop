@@ -127,7 +127,7 @@ persisted task names remain compatibility identifiers, not Workshop stages.
 For the always-on worker, the Workshop package is also part of Alice's
 service identity. Installation passes the explicit repository `src` checkout to the
 sealed worker: identity checks continue to hash that mutable checkout, while
-all Alice and `inventor_workshop` imports used for execution resolve from the
+all Alice and `workshop` imports used for execution resolve from the
 owner-only release snapshot. The bootstrap disables Python site initialization
 with `-I -S` before adding that snapshot, preventing editable-install `.pth`
 hooks from pre-caching an unsealed Workshop module.

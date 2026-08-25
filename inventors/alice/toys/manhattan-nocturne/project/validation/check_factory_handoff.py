@@ -11,7 +11,18 @@ import numpy as np
 
 PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT))
-sys.path.insert(0, str(PROJECT.parents[4] / "skills" / "cad" / "scripts"))
+sys.path.insert(
+    0,
+    str(
+        PROJECT.parents[4]
+        / "src"
+        / "workshop"
+        / "make"
+        / "skills"
+        / "cad"
+        / "scripts"
+    ),
+)
 
 import params as p  # noqa: E402
 from meshlib import components, load_stl, weld  # noqa: E402

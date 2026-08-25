@@ -25,7 +25,14 @@ class TestRepositoryWorkshopSource(unittest.TestCase):
             self.assertTrue(link.is_symlink(), name)
             self.assertEqual(
                 link.resolve(strict=True),
-                (repository_root / "skills" / name).resolve(strict=True),
+                (
+                    repository_root
+                    / "src"
+                    / "workshop"
+                    / "make"
+                    / "skills"
+                    / name
+                ).resolve(strict=True),
             )
             self.assertTrue((link / "SKILL.md").is_file(), name)
 
@@ -35,10 +42,10 @@ class TestStrictWorkshopSourcePin(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         root = Path(self.temporary.name)
         self.pinned = root / "pinned"
-        package = self.pinned / "inventor_workshop"
+        package = self.pinned / "workshop"
         package.mkdir(parents=True)
         (package / "__init__.py").write_text("", encoding="utf-8")
-        self.untrusted = root / "site-packages" / "inventor_workshop"
+        self.untrusted = root / "site-packages" / "workshop"
         self.untrusted.mkdir(parents=True)
         (self.untrusted / "__init__.py").write_text("", encoding="utf-8")
         self.previous_source = os.environ.get("BOB_WORKSHOP_SRC")
@@ -50,17 +57,15 @@ class TestStrictWorkshopSourcePin(unittest.TestCase):
         self.previous_modules = {
             name: module
             for name, module in sys.modules.items()
-            if name == "inventor_workshop"
-            or name.startswith("inventor_workshop.")
+            if name == "workshop"
+            or name.startswith("workshop.")
         }
         for name in self.previous_modules:
             del sys.modules[name]
 
     def tearDown(self):
         for name in tuple(sys.modules):
-            if name == "inventor_workshop" or name.startswith(
-                "inventor_workshop."
-            ):
+            if name == "workshop" or name.startswith("workshop."):
                 del sys.modules[name]
         sys.modules.update(self.previous_modules)
         if self.previous_source is None:
@@ -76,10 +81,10 @@ class TestStrictWorkshopSourcePin(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_preimported_site_package_fails_closed_without_reload(self):
-        cached = types.ModuleType("inventor_workshop")
+        cached = types.ModuleType("workshop")
         cached.__file__ = str(self.untrusted / "__init__.py")
         cached.__path__ = [str(self.untrusted)]
-        sys.modules["inventor_workshop"] = cached
+        sys.modules["workshop"] = cached
 
         with mock.patch.object(
             workshop_runtime.importlib, "import_module"
@@ -91,7 +96,7 @@ class TestStrictWorkshopSourcePin(unittest.TestCase):
 
         self.assertIn("outside BOB_WORKSHOP_SRC", str(caught.exception))
         importer.assert_not_called()
-        self.assertIs(sys.modules["inventor_workshop"], cached)
+        self.assertIs(sys.modules["workshop"], cached)
 
     def test_legacy_source_is_an_explicit_fallback(self):
         os.environ.pop("BOB_WORKSHOP_SRC")
@@ -117,13 +122,21 @@ class TestStrictWorkshopSourcePin(unittest.TestCase):
 
 
 class TestCanonicalWorkshopSurface(unittest.TestCase):
-    def test_adapter_exposes_v03_words(self):
+    def test_adapter_exposes_component_owned_contracts(self):
         runtime = workshop_runtime.require_workshop()
         for name in (
             "pack_artifact", "plan_pack", "inspect_pack", "MakerMark",
             "Clockwork", "ShopDoor", "Sender", "Stamp", "load_taste",
         ):
             self.assertTrue(getattr(runtime, name), name)
+
+        self.assertEqual(runtime.pack_artifact.__module__, "workshop.artifacts.pack")
+        self.assertEqual(runtime.MakerMark.__module__, "workshop.make.provenance")
+        self.assertEqual(runtime.Clockwork.__module__, "workshop.runtime.effects")
+        self.assertEqual(runtime.ShopDoor.__module__, "workshop.integrations.shop")
+        self.assertEqual(runtime.Sender.__module__, "workshop.integrations.send")
+        self.assertEqual(runtime.Stamp.__module__, "workshop.runtime.contracts")
+        self.assertEqual(runtime.load_taste.__module__, "workshop.contributors.taste")
 
 
 if __name__ == "__main__":

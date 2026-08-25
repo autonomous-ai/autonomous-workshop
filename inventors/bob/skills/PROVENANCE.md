@@ -1,8 +1,8 @@
 # Skill provenance
 
-## cad + step-parts — shared from Workshop (vendored 2026-08-22)
-- Canonical location: `../../../skills/{cad,step-parts}`; the paths in this
-  folder are compatibility symlinks so Bob's existing build loop keeps working.
+## cad + step-parts — Workshop component assets (pinned 2026-08-22)
+- Canonical location: `src/workshop/make/skills/{cad,step-parts}`. The entries
+  in this folder are symlinks so Bob's existing build loop keeps working.
 - Via: peterat617/text-to-3d @ f18aebe (the product lead's CAD toolchain —
   it built "Arrows Across The River", live on the Factory 08-21)
 - Upstream: earthtojake/text-to-cad, cadgen 0.4.19, commit 16e90db, MIT
@@ -21,4 +21,4 @@
   motion/interference, or physical evidence. Workshop Stamps must bind those
   results before unattended release.
 - Update discipline: bump the canonical Workshop snapshot from Peter's repo, never
-  by hand edits; record the new commit in `skills/PROVENANCE.md`.
+  by hand edits; record the new commit in `inventors/bob/skills/PROVENANCE.md`.

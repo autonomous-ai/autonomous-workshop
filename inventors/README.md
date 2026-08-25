@@ -9,6 +9,10 @@ depend on the shared [Workshop root](../README.md); Workshop never imports an
 inventor. Every toy the inventor makes lives under
 `inventors/<id>/toys/<toy-name>/`.
 
+Inventor code imports the `workshop` package from the `autonomous-workshop`
+distribution. It does not import the sibling CLI implementation or copy shared
+component code, Make skills, or persisted schemas into the inventor folder.
+
 | Inventor | Makes | Default path |
 |---|---|---|
 | [Alice](alice/) | classics made yours | shared Workshop |

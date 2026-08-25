@@ -5,8 +5,8 @@ import hashlib
 import json
 from pathlib import Path
 
-from inventor_workshop import load_taste
-from inventor_workshop.errors import ManifestError
+from workshop import load_taste
+from workshop.errors import ManifestError
 
 from alice.adapters import AdapterError, AdapterReceipt, adapter_input_sha256
 from alice.config import load_config

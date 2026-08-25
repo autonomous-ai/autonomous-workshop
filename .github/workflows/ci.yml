@@ -19,27 +19,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: reject tracked secrets and backups
         run: python tools/scan_secrets.py
       - name: verify canonical making skills are discoverable
         env:
           PYTHONPATH: src
-        run: python -m inventor_workshop skills list
+        run: python -m cli skills list
       - name: verify reviewed making-skill fingerprints
         run: python tools/verify_skill_locks.py
       - name: verify installed schemas are discoverable
         env:
           PYTHONPATH: src
-        run: python -m inventor_workshop schemas list
+        run: python -m cli schemas list
       - name: validate inventor registry
         env:
           PYTHONPATH: src
-        run: python -m inventor_workshop inventors --root inventors --check-entrypoints
+        run: python -m cli inventors --root inventors --check-entrypoints
       - name: run inventor contribution checks
         env:
           PYTHONPATH: src
-        run: python -m inventor_workshop check inventors --run
+        run: python -m cli check inventors --run
       - name: verify pinned inventor snapshot bytes and modes
         run: python tools/verify_snapshot_locks.py
 
@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.13"]
+        python-version: ["3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -59,9 +59,9 @@ jobs:
         env:
           PYTHONPATH: src
           PYTHONWARNINGS: error
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+        run: python -m unittest discover -s tests -t . -p 'test_*.py' -v
       - name: installed Workshop carries skills, schemas, and runnable scaffolds
-        if: matrix.python-version == '3.13'
+        if: matrix.python-version == '3.14'
         run: |
           python -m pip install .
           cd "$RUNNER_TEMP"
@@ -77,8 +77,34 @@ jobs:
           CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor make first-product
           CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor status
       - name: installed wheel supports the no-root customer journey
-        if: matrix.python-version == '3.13'
-        run: python tests/installed_wheel_cli_acceptance.py
+        if: matrix.python-version == '3.14'
+        run: python tests/packaging/installed_wheel_cli_acceptance.py
+
+  distribution-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # ZIP cannot represent earlier dates. Pinning this makes both wheel build
+      # paths reproducible instead of comparing wall-clock timestamps.
+      SOURCE_DATE_EPOCH: "315532800"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: build direct wheel and source distribution independently
+        run: |
+          python -m pip install build "setuptools>=77" wheel
+          python -m build --wheel --outdir dist/direct
+          python -m build --sdist --outdir dist/source
+      - name: rebuild a wheel from the source distribution
+        run: python -m pip wheel --no-build-isolation --no-deps --wheel-dir "$RUNNER_TEMP/from-sdist" dist/source/autonomous_workshop-*.tar.gz
+      - name: verify direct and source-rebuilt wheels are byte-identical
+        run: python -c 'from pathlib import Path; direct = next(Path("dist/direct").glob("autonomous_workshop-*.whl")); rebuilt = next(Path("${{ runner.temp }}/from-sdist").glob("autonomous_workshop-*.whl")); assert direct.read_bytes() == rebuilt.read_bytes(), (direct, rebuilt)'
+      - name: exercise the direct wheel outside the checkout
+        run: python tests/packaging/installed_wheel_cli_acceptance.py --wheel dist/direct/autonomous_workshop-*.whl
+      - name: exercise the source-rebuilt wheel outside the checkout
+        run: python tests/packaging/installed_wheel_cli_acceptance.py --wheel "$RUNNER_TEMP"/from-sdist/autonomous_workshop-*.whl
 
   bob-test:
     runs-on: ubuntu-latest
@@ -86,7 +112,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.11", "3.14"]
     env:
       BOB_MOCK_AGENTS: "1"
     defaults:
@@ -108,7 +134,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.13"]
+        python-version: ["3.11", "3.14"]
     defaults:
       run:
         working-directory: inventors/alice
@@ -144,7 +170,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - name: install Alice and shared Workshop
         run: python -m pip install ../.. .
       - name: service snapshot tests on the declared deployment OS

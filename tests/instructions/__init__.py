@@ -1,0 +1,1 @@
+"""Instructions component tests."""

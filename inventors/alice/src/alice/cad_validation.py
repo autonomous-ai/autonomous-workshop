@@ -1,8 +1,9 @@
 """Fail-closed CAD facts adapted from Peter's ``text-to-3d`` work.
 
 The fit derivation model is adapted from
-``skills/cad/scripts/cadfits.py`` and the STL topology algorithm is adapted
-from ``skills/cad/scripts/check_mesh`` at upstream commit
+``src/workshop/make/skills/cad/scripts/cadfits.py`` and the STL topology
+algorithm is adapted from
+``src/workshop/make/skills/cad/scripts/check_mesh`` at upstream commit
 ``f18aebe4698d92ffccf07d94e2d624b08d30e667``.  Those sources are MIT licensed
 by Thompson Labs LLC; :data:`UPSTREAM_MIT_NOTICE` preserves the notice.
 
@@ -25,7 +26,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from inventor_workshop.cad.mesh import (
+from workshop.make.cad.mesh import (
     KERNEL_BODY_OBSERVATION_VERSION,
     STL_INSPECTION_RECEIPT_VERSION,
     KernelBodyObservation,
@@ -40,8 +41,8 @@ from inventor_workshop.cad.mesh import (
 
 UPSTREAM_SOURCE_COMMIT = "f18aebe4698d92ffccf07d94e2d624b08d30e667"
 UPSTREAM_SOURCE_PATHS = (
-    "skills/cad/scripts/cadfits.py",
-    "skills/cad/scripts/check_mesh",
+    "src/workshop/make/skills/cad/scripts/cadfits.py",
+    "src/workshop/make/skills/cad/scripts/check_mesh",
 )
 UPSTREAM_MIT_NOTICE = """MIT License
 

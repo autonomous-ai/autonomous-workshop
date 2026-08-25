@@ -1,7 +1,7 @@
-"""Fail-closed Pack bridge from Alice to Inventor Workshop.
+"""Fail-closed Pack bridge from Alice to Workshop.
 
 Alice keeps her mature inspection policy and production-manifest hash. At the
-Pack boundary this module asks ``inventor_workshop`` to seal the exact manifest,
+Pack boundary this module asks ``workshop`` to seal the exact manifest,
 build the canonical archive, and inspect those archive bytes again. Only the
 binding is persisted; temporary Pack bytes never become a second authority.
 """
@@ -14,9 +14,9 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping
 
-import inventor_workshop
-from inventor_workshop.errors import WorkshopError
-from inventor_workshop.pack import inspect_pack, pack_artifact, seal_artifact
+import workshop
+from workshop.artifacts.pack import inspect_pack, pack_artifact, seal_artifact
+from workshop.errors import WorkshopError
 
 
 WORKSHOP_PACK_SCHEMA_VERSION = 3
@@ -109,7 +109,7 @@ def build_workshop_pack_binding(
 
     return {
         "schema_version": WORKSHOP_PACK_SCHEMA_VERSION,
-        "workshop_version": inventor_workshop.__version__,
+        "workshop_version": workshop.__version__,
         **_pack_binding(
             product,
             alice_product_sha256=alice_product_sha256,

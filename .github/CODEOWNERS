@@ -1,0 +1,77 @@
+# This file is projected from .github/components.toml. Keep both in the same PR.
+# @deehw is the only repository account verified from current history. Vacant
+# backup seats are tracked explicitly in MAINTAINERS.md; do not invent accounts.
+
+* @deehw
+
+# Product stages
+/src/workshop/wish/ @deehw
+/tests/wish/ @deehw
+/src/workshop/match/ @deehw
+/tests/match/ @deehw
+/src/workshop/invent/ @deehw
+/tests/invent/ @deehw
+/src/workshop/make/ @deehw
+/tests/make/ @deehw
+/src/workshop/playtest/ @deehw
+/tests/playtest/ @deehw
+/src/workshop/instructions/ @deehw
+/tests/instructions/ @deehw
+/src/workshop/deliver/ @deehw
+/tests/deliver/ @deehw
+/src/workshop/reviews/ @deehw
+/tests/reviews/ @deehw
+
+# Orchestration and platform
+/src/workshop/workflow/ @deehw
+/src/workshop/bootstrap.py @deehw
+/src/workshop/__init__.py @deehw
+/src/workshop/_validation.py @deehw
+/src/workshop/errors.py @deehw
+/src/workshop/outcomes.py @deehw
+/tests/workflow/ @deehw
+/tests/integration/ @deehw
+/tests/end_to_end/ @deehw
+/src/workshop/product/ @deehw
+/tests/product/ @deehw
+/src/workshop/artifacts/ @deehw
+/tests/artifacts/ @deehw
+/src/workshop/runtime/ @deehw
+/tests/runtime/ @deehw
+/src/workshop/integrations/ @deehw
+/tests/integrations/ @deehw
+/src/workshop/contributors/ @deehw
+/tests/contributors/ @deehw
+
+# Applications and extensions
+/src/cli/ @deehw
+/tests/cli/ @deehw
+/inventors/ @deehw
+/tests/inventors/ @deehw
+/web/ @deehw
+
+# Repository, compatibility, and release controls
+/.github/ @deehw
+/docs/ @deehw
+/tools/ @deehw
+/tests/architecture/ @deehw
+/tests/packaging/ @deehw
+/tests/fixtures/ @deehw
+/.cadgen-budget.json @deehw
+/.gitattributes @deehw
+/.gitignore @deehw
+/MANIFEST.in @deehw
+/setup.py @deehw
+/pyproject.toml @deehw
+/uv.lock @deehw
+/snapshots.lock.json @deehw
+/upstreams.json @deehw
+/LICENSE @deehw
+/THIRD_PARTY_NOTICES.md @deehw
+/CHANGELOG.md @deehw
+/changes/ @deehw
+/MAINTAINERS.md @deehw
+/GOVERNANCE.md @deehw
+/SECURITY.md @deehw
+/CODE_OF_CONDUCT.md @deehw
+/SUPPORT.md @deehw
