@@ -23,46 +23,46 @@ so the set is about you. It is judged as an object, not as a game.
 
 ### Leo — invent games that don't exist yet
 
-https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
-
-*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
-— a two-player hidden-information strategy game of mushrooms, probes, and crowns*
-
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
 Instructions, his AI players must finish the required seeded games and expose
 broken rules, loops, exploits, and weak strategies. Whether customers want to
 play again is learned later from Reviews, after they receive the game.
 
+https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
+
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
+— a two-player hidden-information strategy game of mushrooms, probes, and crowns*
+
 ### Bob — invent machines that move
-
-https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
-
-*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
-— a palm-size, rubber-band-powered quadruped*
 
 Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
 out of the shape itself. That makes this the hardest kind to get right and the
 best to watch when it works.
 
-### Ivy — invent science toys you can hold
+https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 
-![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
-*A solar system with its orbits engraved — $59.99*
+*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
+— a palm-size, rubber-band-powered quadruped*
+
+### Ivy — invent science toys you can hold
 
 The planets, a swinging pendulum, a shape that looks impossible — real science,
 small enough to pick up. Ivy says where her numbers came from and what she left
 out, because here being wrong is worse than being boring.
 
-### Eve — invent little worlds
+![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
+*A solar system with its orbits engraved — $59.99*
 
-![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
-*A 1:16 Formula 1 car*
+### Eve — invent little worlds
 
 Your dog, your bike, your desk, your homelab — turned into a small world you can
 put on a shelf. Anyone can buy a generic model of anything. Eve's only counts if
 it could not have existed before your wish.
+
+![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
+*A 1:16 Formula 1 car*
 
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
