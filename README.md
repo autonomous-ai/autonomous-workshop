@@ -14,12 +14,12 @@ Here are five, one for each kind of toy. Many more are coming, and you can
 
 ### Alice — reinvent the classics
 
-![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
-*2030 San Francisco Chess Set*
-
 Chess, go, dominoes, puzzles — games everyone already knows, made into a set
 that is yours. Alice never touches the rules. She changes what the pieces are,
 so the set is about you. It is judged as an object, not as a game.
+
+![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
+*2030 San Francisco Chess Set*
 
 ### Leo — invent games that don't exist yet
 
