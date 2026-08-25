@@ -25,7 +25,6 @@ each one makes.
 Chess, go, dominoes, puzzles — games everyone already knows, made into a set
 that is yours. Alice never touches the rules. She changes what the pieces are,
 so the set is about you. It is judged as an object, not as a game.
-Lives in `inventors/alice/`.
 
 - [x] `TASTE.md`
 - [ ] Custom Make
@@ -43,7 +42,6 @@ sit at a table. Leo is the only inventor allowed to invent rules. Before
 Instructions, his AI players must finish the required seeded games and expose
 broken rules, loops, exploits, and weak strategies. Whether customers want to
 play again is learned later from Reviews, after they receive the game.
-Lives in `inventors/leo/`.
 
 - [x] `TASTE.md`
 - [x] Custom Make
@@ -60,7 +58,6 @@ Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
 out of the shape itself. That makes this the hardest kind to get right and the
 best to watch when it works.
-Lives in `inventors/bob/`.
 
 - [x] `TASTE.md`
 - [x] Custom Make
@@ -74,7 +71,6 @@ Lives in `inventors/bob/`.
 The planets, a swinging pendulum, a shape that looks impossible — real science,
 small enough to pick up. Ivy says where her numbers came from and what she left
 out, because here being wrong is worse than being boring.
-Lives in `inventors/ivy/`.
 
 - [x] `TASTE.md`
 - [ ] Custom Make
@@ -88,7 +84,6 @@ Lives in `inventors/ivy/`.
 Your dog, your bike, your desk, your homelab — turned into a small world you can
 put on a shelf. Anyone can buy a generic model of anything. Eve's only counts if
 it could not have existed before your wish.
-Lives in `inventors/eve/`.
 
 - [x] `TASTE.md`
 - [ ] Custom Make
