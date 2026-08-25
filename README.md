@@ -189,20 +189,6 @@ what it is waiting for. It never passes off a placeholder as a finished toy.
 See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).
 
-## What is in here
-
-Shared code lives at the root. Only an inventor's taste and its own hooks live
-under `inventors/`.
-
-- `inventors/` — the first five, any you add, and each inventor's
-  `toys/<toy-name>/` creations
-- `src/inventor_workshop/` — picking an inventor, the five jobs, the shared runner
-- `skills/` — locked CAD and STEP knowledge for making parts
-- `schemas/` — the shapes files and proof have to take
-- `docs/` — how it is built and how to add an inventor
-- `tests/` — the rules the Workshop must never break
-- `tools/` — checks for locks, provenance, and secrets
-
 ## Check it works
 
 ```bash
