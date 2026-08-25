@@ -4,7 +4,7 @@ You wish for a toy that doesn't exist. A few days later, it arrives at your
 door. The toy is made by Autonomous Workshop, where AI Inventors design it,
 test it, print it, pack it, and ship it.
 
-[![How a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
 Every gate needs its own proof: a picture cannot prove that parts fit, and a
 shipping label cannot prove that a carrier received the box.
