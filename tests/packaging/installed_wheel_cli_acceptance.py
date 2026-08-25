@@ -143,6 +143,8 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
             "cli/main.py",
             "workshop/__init__.py",
             "workshop/make/skills/LOCK.json",
+            "workshop/runtime/_agent_assets/.agents/product-run/AGENTS.md",
+            "workshop/runtime/_agent_assets/.agents/skills/autonomous-workshop/SKILL.md",
         ):
             if required not in members:
                 raise AssertionError("wheel is missing %s" % required)
@@ -163,6 +165,31 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
                     "wheel skill mode differs for %s: %o != %o"
                     % (member, wheel_mode, source_mode)
                 )
+
+        agent_asset_sources = (
+            repository / ".agents" / "product-run",
+            repository / ".agents" / "skills" / "autonomous-workshop",
+        )
+        for source_root in agent_asset_sources:
+            for source in source_root.rglob("*"):
+                if not source.is_file() or source.is_symlink():
+                    continue
+                relative = source.relative_to(repository / ".agents")
+                member = (
+                    "workshop/runtime/_agent_assets/.agents/%s"
+                    % relative.as_posix()
+                )
+                if member not in infos:
+                    raise AssertionError("wheel is missing agent asset %s" % member)
+                if archive.read(member) != source.read_bytes():
+                    raise AssertionError("wheel agent asset bytes differ for %s" % member)
+                source_mode = source.stat().st_mode & 0o777
+                wheel_mode = (infos[member].external_attr >> 16) & 0o777
+                if wheel_mode != source_mode:
+                    raise AssertionError(
+                        "wheel agent asset mode differs for %s: %o != %o"
+                        % (member, wheel_mode, source_mode)
+                    )
 
         expected_schemas = {
             "workshop/%s/schemas/%s" % (owner, name)

@@ -1,6 +1,9 @@
 include setup.py
 include LICENSE
 include THIRD_PARTY_NOTICES.md
+include AGENTS.md
+recursive-include .agents/product-run *
+recursive-include .agents/skills/autonomous-workshop *
 recursive-include src/workshop *.json *.md *.txt
 recursive-include src/workshop/make/skills *
 recursive-include inventors TASTE.md inventor.json profile.py

@@ -8,7 +8,7 @@ from setuptools.command.build_py import build_py as _build_py
 
 
 class build_py(_build_py):
-    """Copy the narrow runnable inventor catalog beside the installed package."""
+    """Build exact non-Python runtime assets beside the installed package."""
 
     def run(self):
         super().run()
@@ -20,6 +20,30 @@ class build_py(_build_py):
                 built = built_skills / source.relative_to(source_skills)
                 if built.is_file():
                     shutil.copymode(source, built)
+
+        source_agent_assets = project / ".agents"
+        built_agent_assets = (
+            Path(self.build_lib) / "workshop" / "runtime" / "_agent_assets"
+        )
+        if built_agent_assets.exists():
+            shutil.rmtree(built_agent_assets)
+        for relative_root in (
+            Path("product-run"),
+            Path("skills") / "autonomous-workshop",
+        ):
+            source_root = source_agent_assets / relative_root
+            if not source_root.is_dir():
+                raise FileNotFoundError(
+                    "required product-run agent assets are missing: %s" % source_root
+                )
+            for source in source_root.rglob("*"):
+                if not source.is_file() or source.is_symlink():
+                    continue
+                relative = Path(".agents") / source.relative_to(source_agent_assets)
+                destination = built_agent_assets / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+
         destination = (
             Path(self.build_lib)
             / "workshop"
