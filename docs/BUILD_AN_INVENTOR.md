@@ -141,22 +141,37 @@ category-specific logic.
 
 ## 3. Create your inventor
 
-The canonical creator writes the thin folder, validates its schema-v5 identity,
-runs its smoke checks, and only then lets it join the Manager's catalog:
-
-Generated Inventors require Python 3.11 or newer because the shared CAD runtime
-is part of the default Workshop path.
+Already have a `TASTE.md`? That is enough creative code. Its header names the
+Inventor and tells the Manager when to choose it:
 
 ```bash
-workshop create inventor ada \
-  --description "Choose Ada for Wish-shaped hand-cranked creatures; not static models, tabletop rules, or science explainers." \
+uv run workshop create inventor ada \
+  --taste ./TASTE.md \
   --lane moving-machines
+
+uv run workshop wish --root . \
+  "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-`--name` defaults to the inventor ID in title case, and `--level` defaults to
-`taste-only`. Choose `custom-make` or `custom-playtest` only when the inventor
-really owns that typed creative seam. `--json` returns a versioned receipt with
-the exact Taste, manifest, and catalog hashes for an agent or another tool.
+The creator copies `TASTE.md` byte for byte, validates it, adds the thin runtime
+connection, runs its smoke tests, and atomically joins it to the Manager's
+catalog. The source file is never modified. `workshop wish` records the exact
+Manager assignment so status and continuation stay available. The generated
+`run.py` remains a developer check; installing the package bundles the same
+exact identity.
+
+The only other required choice is one [plaything category](#1-choose-one-plaything-category).
+`taste-only` is the default, so Workshop supplies Invent, Make/CAD, Playtest,
+Instructions, and Deliver. There is no custom Python file to finish.
+
+Starting without a Taste is also supported. The creator writes a useful first
+draft for you:
+
+```bash
+uv run workshop create inventor ada \
+  --description "Choose Ada for hand-cranked creatures; not static models or games." \
+  --lane moving-machines
+```
 
 The routing description is not a slogan. Say what should choose this inventor
 and name the nearest work it must reject. After creation, edit the full
@@ -170,6 +185,7 @@ inventors/your-id/
   README.md
   inventor.json
   pyproject.toml
+  run.py                  works directly from the checkout
   toys/
     your-toy/             one complete creation and its evidence
   src/your_id/
@@ -181,37 +197,6 @@ inventors/your-id/
 Only `TASTE.md` is creative code at the taste-only level. The generated module
 selects a category, creates typed Wishes, and constructs `Workshop`; it does not
 reimplement the loop.
-
-The README must answer:
-
-1. Which category and audience does this inventor serve?
-2. What makes its output recognizable without a logo?
-3. How does it turn useful Wishes into play?
-4. Which customization level does it use, and why?
-5. Which shared capabilities are required for a real run?
-6. Which evidence classes can pass Playtest?
-7. What is missing, synthetic, experimental, or blocked today?
-
-Use a schema-v5 `inventor.json`. It contains only operational facts. Creative
-identity and routing prose belong in `TASTE.md`, so they cannot disagree across
-two files. Capabilities should state the category and real custom behavior, not
-list every shared internal module:
-
-```json
-{
-  "schema_version": 5,
-  "id": "your-id",
-  "status": "experimental",
-  "entrypoint": ["python3", "-m", "your_id"],
-  "capabilities": ["moving-machines", "taste-only"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
-  "source": {"kind": "local"}
-}
-```
-
-Older manifest schemas remain readable during migration, but new inventors do
-not declare an `autonomy` mode. Every profile receives one assignment and may
-truthfully wait for people or tools when the work requires them.
 
 ## 4. Write Taste before code
 
@@ -524,8 +509,10 @@ is a separate downstream responsibility. The draft records
 `enrichment_status=pending` and `page_ready=false`; it does not claim images,
 copy, or video were generated.
 Instructions does not make the page public and does not require an active
-listing. An owner reviews the draft and may make it public later through a
-separate action outside the six-job pipeline.
+listing. The customer CLI performs the separate, owner-controlled transition
+after exact draft verification: `workshop wish` makes it public by default and
+`--draft` opts out. Publication remains outside the six-job pipeline and never
+counts as Deliver proof.
 
 If a run waits here, resume the exact sealed work instead of starting over:
 

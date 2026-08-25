@@ -10,10 +10,15 @@ from unittest import mock
 
 import inventor_workshop
 from inventor_workshop.cli import (
+    _ReadOnlyWorkshopStore,
+    _default_workshop_root,
     _inventor_process_environment,
     _publish_inventor_draft,
+    _promote_factory_intent,
     _resume_factory_instructions,
     _run_inventor,
+    _save_manager_assignment,
+    _status_receipt,
     main,
     parser,
 )
@@ -21,8 +26,12 @@ from inventor_workshop.handoff import (
     ManagerAssignmentHandoff,
     bind_manager_assignment_result,
 )
-from inventor_workshop.errors import WorkshopError
-from inventor_workshop.manager import TasteFit, create_shortlist
+from inventor_workshop.errors import AmbiguousEffectError, WorkshopError
+from inventor_workshop.manager import (
+    TasteFit,
+    create_shortlist,
+    discover_inventor_catalog,
+)
 from inventor_workshop.make import Wish
 from inventor_workshop.models import Receipt
 from inventor_workshop.runtime import Runtime
@@ -45,6 +54,140 @@ class CliTest(unittest.TestCase):
                 ),
             ),
         )
+
+    @staticmethod
+    def durable_wait_fixture(
+        root: Path,
+        *,
+        product_id: str = "wish-one",
+        stage: str = "make",
+        capability: str = "model-and-cad-maker",
+        artifact_sha256=None,
+        instructions_sha256=None,
+    ):
+        inventor_id = "mira"
+        inventor_root = root / "inventors" / inventor_id
+        inventor_root.mkdir(parents=True)
+        (inventor_root / "TASTE.md").write_text(
+            "---\n"
+            "name: Mira\n"
+            "description: Kinetic desk toys, but not board games.\n"
+            "---\n"
+            "# Mira's Taste\n\n"
+            "Make one surprising motion feel inevitable.\n",
+            encoding="utf-8",
+        )
+        (inventor_root / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 5,
+                    "id": inventor_id,
+                    "status": "active",
+                    "entrypoint": ["python3", "profile.py"],
+                    "capabilities": ["moving-machines", "taste-only"],
+                    "checks": [],
+                    "source": {"kind": "local"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (inventor_root / "profile.py").write_text(
+            "# fixture profile\n", encoding="utf-8"
+        )
+        catalog = discover_inventor_catalog(root)
+        card = catalog.card(inventor_id)
+        taste = load_taste(inventor_root)
+        wish = Wish.create(product_id, "A tiny moon that rolls")
+        assignment = SimpleNamespace(
+            wish=wish,
+            inventor_id=inventor_id,
+            playtest_rounds=4,
+            assignment_sha256="a" * 64,
+            decision=SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(card=card, taste=taste),
+            ),
+        )
+        _save_manager_assignment(assignment)
+        runtime = Runtime(inventor_root / ".workshop" / "workshop.sqlite3")
+        runtime.register_product(
+            product_id,
+            "wish",
+            {
+                "wish": wish.to_dict(),
+                "inventor_id": inventor_id,
+                "taste_sha256": taste.sha256,
+                "blueprint_sha256": ToyBlueprint.for_lane(
+                    "moving-machines"
+                ).sha256,
+                "lane": "moving-machines",
+                "customization_level": "taste-only",
+                "playtest_rounds": 4,
+            },
+        )
+        lease = runtime.acquire_lease(product_id, "fixture")
+        product = runtime.get_product(product_id)
+        payload = {
+            "status": "waiting",
+            "round": 1,
+            "needs": [
+                {
+                    "job": stage,
+                    "capability": capability,
+                    "reason": "The shared provider is not connected.",
+                    "instructions": "Connect the shared provider, then continue this exact Wish.",
+                }
+            ],
+        }
+        if instructions_sha256 is not None:
+            payload["instructions_sha256"] = instructions_sha256
+        runtime._transition(
+            product_id,
+            "wish",
+            stage,
+            product["revision"],
+            artifact_sha256,
+            payload,
+            lease,
+        )
+        runtime.release_lease(product_id, lease)
+        return assignment, runtime, inventor_root
+
+    @staticmethod
+    def factory_receipt(status="draft"):
+        history = "history-one"
+        receipt = Receipt.from_design(
+            {
+                "id": "design-one",
+                "slug": "rolling-moon",
+                "owner_id": "owner-mira",
+                "root_id": "design-one",
+                "current_history_id": history,
+                "published_history_id": history if status == "public" else None,
+                "status": status,
+                "project_url": "https://cdn.example.test/history-one/",
+                "listing": (
+                    {
+                        "active": True,
+                        "price_cents": 2400,
+                        "currency": "USD",
+                        "sku": "MOON-001",
+                    }
+                    if status == "public"
+                    else None
+                ),
+            },
+            "a" * 64,
+            "f" * 64,
+        )
+        value = receipt.to_dict()
+        value["details"] = {
+            **value["details"],
+            "instructions_sha256": "b" * 64,
+            "playtest_evidence_sha256": "c" * 64,
+            "page_url": "https://www.autonomous.ai/factory/product/rolling-moon",
+        }
+        return Receipt.from_dict(value)
 
     def test_selected_inventor_receives_no_factory_or_unrelated_secrets(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -243,6 +386,9 @@ class CliTest(unittest.TestCase):
                 lease,
             )
             runtime.release_lease(wish.product_id, lease)
+            database = runtime_root / "workshop.sqlite3"
+            before_database = database.read_bytes()
+            before_database_stat = database.stat()
 
             def runner(command, **kwargs):
                 handoff = ManagerAssignmentHandoff.from_dict(
@@ -271,6 +417,11 @@ class CliTest(unittest.TestCase):
 
             with self.assertRaisesRegex(WorkshopError, "stdout differs"):
                 _run_inventor(assignment, runner=runner)
+            self.assertEqual(database.read_bytes(), before_database)
+            self.assertEqual(
+                database.stat().st_mtime_ns, before_database_stat.st_mtime_ns
+            )
+            self.assertEqual(database.stat().st_mode, before_database_stat.st_mode)
 
     def test_worker_environment_without_factory_secret_has_no_partial_login(self):
         with mock.patch.dict(
@@ -503,11 +654,20 @@ class CliTest(unittest.TestCase):
             "a" * 64,
         )
         draft_value = draft.to_dict()
-        draft_value["details"] = {**draft_value["details"], "page_url": page_url}
+        draft_value["details"] = {
+            **draft_value["details"],
+            "page_url": page_url,
+            "instructions_sha256": "b" * 64,
+            "playtest_evidence_sha256": "c" * 64,
+        }
         draft = Receipt.from_dict(draft_value)
         public_value = draft.to_dict()
         public_value["status"] = "public"
         public_value["published_history_id"] = "history-one"
+        public_value["listing_active"] = True
+        public_value["listing_price_cents"] = 2400
+        public_value["listing_currency"] = "USD"
+        public_value["listing_sku"] = "PD-001"
         public = Receipt.from_dict(public_value)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -520,9 +680,18 @@ class CliTest(unittest.TestCase):
                 ),
             )
             store = mock.Mock()
-            store.latest_publish_intent.return_value = {
+            intent = {
+                "id": "intent-one",
+                "state": "succeeded",
+                "request": {
+                    "_workshop_api_origin": "https://api.example.test",
+                },
                 "receipt": draft.to_dict()
             }
+            store.latest_publish_intent.return_value = intent
+            store.get_publish_intent.return_value = intent
+            store.acquire_lease.return_value = "lease-one"
+            store.begin_live.return_value = {"effect_token": "effect-one"}
             session = object()
             transition = mock.Mock()
             transition.publish.return_value = public
@@ -537,9 +706,119 @@ class CliTest(unittest.TestCase):
                     transition_factory=mock.Mock(return_value=transition),
                 )
         transition.publish.assert_called_once_with(draft)
+        store.begin_live.assert_called_once()
+        store.mark_publish_live.assert_called_once_with(
+            "intent-one", "effect-one", public
+        )
+        store.release_lease.assert_called_once_with("wish-one", "lease-one")
         self.assertEqual(publication["status"], "public")
         self.assertTrue(publication["verified"])
         self.assertEqual(publication["page_url"], page_url)
+
+    def test_stranded_publication_is_leased_and_reconciled_by_get_without_republish(self):
+        draft = self.factory_receipt("draft")
+        public = self.factory_receipt("public")
+        publishing = {
+            "id": "intent-one",
+            "state": "publishing",
+            "receipt": draft.to_dict(),
+        }
+        unknown = {**publishing, "state": "live_unknown"}
+        store = mock.Mock()
+        store.acquire_lease.return_value = "lease-one"
+        store.get_publish_intent.side_effect = [publishing, unknown]
+        identity = SimpleNamespace(owner_id="owner-mira")
+        session = SimpleNamespace(
+            login=mock.Mock(return_value=identity),
+            authenticated_transport=object(),
+        )
+        transition = mock.Mock()
+        transition._design.return_value = {"status": "public"}
+        transition._receipt.return_value = public
+        transition._is_current_public.return_value = True
+        door = mock.Mock()
+        door.get_design.return_value = object()
+        with mock.patch("inventor_workshop.cli.ShopDoor", return_value=door):
+            observed = _promote_factory_intent(
+                store,
+                publishing,
+                draft,
+                object(),
+                product_id="wish-one",
+                session_factory=mock.Mock(return_value=session),
+                transition_factory=mock.Mock(return_value=transition),
+            )
+        self.assertEqual(observed.to_dict(), public.to_dict())
+        store.acquire_lease.assert_called_once_with(
+            "wish-one", mock.ANY, ttl_seconds=900
+        )
+        store.recover_stranded_intent.assert_called_once_with(
+            "intent-one",
+            "previous public transition ended without a durable completion",
+        )
+        transition.publish.assert_not_called()
+        store.resolve_live_as_public.assert_called_once_with("intent-one", public)
+        store.release_lease.assert_called_once_with("wish-one", "lease-one")
+
+    def test_live_unknown_draft_readback_never_republishes(self):
+        draft = self.factory_receipt("draft")
+        unknown = {
+            "id": "intent-one",
+            "state": "live_unknown",
+            "receipt": draft.to_dict(),
+        }
+        store = mock.Mock()
+        store.acquire_lease.return_value = "lease-one"
+        store.get_publish_intent.return_value = unknown
+        session = SimpleNamespace(
+            login=mock.Mock(return_value=SimpleNamespace(owner_id="owner-mira")),
+            authenticated_transport=object(),
+        )
+        transition = mock.Mock()
+        transition._design.return_value = {"status": "draft"}
+        transition._receipt.return_value = draft
+        transition._is_current_public.return_value = False
+        door = mock.Mock()
+        with mock.patch("inventor_workshop.cli.ShopDoor", return_value=door):
+            with self.assertRaisesRegex(
+                AmbiguousEffectError, "no retry was sent"
+            ):
+                _promote_factory_intent(
+                    store,
+                    unknown,
+                    draft,
+                    object(),
+                    product_id="wish-one",
+                    session_factory=mock.Mock(return_value=session),
+                    transition_factory=mock.Mock(return_value=transition),
+                )
+        transition.publish.assert_not_called()
+        store.resolve_live_as_public.assert_not_called()
+        store.release_lease.assert_called_once_with("wish-one", "lease-one")
+
+    def test_active_publication_lease_blocks_stranded_recovery(self):
+        draft = self.factory_receipt("draft")
+        publishing = {
+            "id": "intent-one",
+            "state": "publishing",
+            "receipt": draft.to_dict(),
+        }
+        store = mock.Mock()
+        store.acquire_lease.side_effect = WorkshopError(
+            "another publisher still owns the product lease"
+        )
+        with self.assertRaisesRegex(WorkshopError, "still owns"):
+            _promote_factory_intent(
+                store,
+                publishing,
+                draft,
+                object(),
+                product_id="wish-one",
+                session_factory=mock.Mock(),
+                transition_factory=mock.Mock(),
+            )
+        store.recover_stranded_intent.assert_not_called()
+        store.release_lease.assert_not_called()
 
     def test_publish_waits_truthfully_until_instructions_has_a_draft(self):
         assignment = SimpleNamespace(
@@ -553,6 +832,34 @@ class CliTest(unittest.TestCase):
         publication = _publish_inventor_draft(assignment, {"job": "make"})
         self.assertEqual(publication["status"], "waiting")
         self.assertIn("Instructions", publication["reason"])
+
+    def test_publish_draft_without_factory_secret_returns_an_exact_safe_wait(self):
+        assignment = SimpleNamespace(
+            wish=SimpleNamespace(product_id="wish-one"),
+            decision=SimpleNamespace(
+                selected=SimpleNamespace(
+                    card=SimpleNamespace(
+                        inventor_id="alice",
+                        root=Path("/workshop/inventors/alice"),
+                    )
+                )
+            ),
+        )
+        store = mock.Mock()
+        with mock.patch.dict("os.environ", {}, clear=True):
+            publication = _publish_inventor_draft(
+                assignment,
+                {
+                    "page_url": "https://www.autonomous.ai/factory/product/moon",
+                    "artifact_sha256": "a" * 64,
+                },
+                store_factory=store,
+            )
+        self.assertEqual(publication["status"], "waiting")
+        self.assertIn("FACTORY_PASSWORD", publication["reason"])
+        self.assertIn("workshop resume wish-one", publication["reason"])
+        self.assertNotIn("alice", publication["reason"])
+        store.assert_not_called()
 
     def test_wish_is_the_simple_customer_command(self):
         root = Path(__file__).resolve().parents[1]
@@ -586,6 +893,7 @@ class CliTest(unittest.TestCase):
                 )
 
         output = StringIO()
+        progress = StringIO()
         with mock.patch(
             "inventor_workshop.cli.CodexSemanticManager",
             return_value=FakeSemanticManager(),
@@ -603,7 +911,15 @@ class CliTest(unittest.TestCase):
                     }
                 ],
             },
-        ), redirect_stdout(output):
+        ), mock.patch(
+            "inventor_workshop.cli._save_manager_assignment"
+        ), mock.patch(
+            "inventor_workshop.cli._publish_inventor_draft",
+            return_value={
+                "status": "waiting",
+                "reason": "Instructions has not produced a draft yet.",
+            },
+        ) as publish, redirect_stdout(output), redirect_stderr(progress):
             result = main(
                 (
                     "wish",
@@ -630,6 +946,360 @@ class CliTest(unittest.TestCase):
         self.assertEqual(receipt["match"]["inventor_id"], "bob")
         self.assertEqual(receipt["match"]["score"], 94)
         self.assertEqual(receipt["result"]["status"], "waiting")
+        self.assertEqual(publish.call_count, 1)
+        self.assertIn("Wish:", progress.getvalue())
+        self.assertIn("Track: workshop status", progress.getvalue())
+        self.assertIn("will be public", progress.getvalue())
+        self.assertIn("up to 60 minutes", progress.getvalue())
+        self.assertNotIn("Wish:", output.getvalue().splitlines()[0])
+
+    def test_wish_help_discloses_default_public_wait_and_json_semantics(self):
+        command = parser()
+        subcommands = next(
+            action
+            for action in command._actions
+            if hasattr(action, "choices") and action.choices
+        )
+        help_text = subcommands.choices["wish"].format_help()
+        self.assertIn("public", help_text)
+        self.assertIn("--draft", help_text)
+        self.assertIn("--strict", help_text)
+        self.assertIn("progress goes to stderr", help_text)
+        self.assertIn("four", help_text)
+        self.assertTrue(command.parse_args(("wish", "a moon")).publish)
+        self.assertFalse(
+            command.parse_args(("wish", "a moon", "--draft")).publish
+        )
+
+    def test_empty_working_directory_auto_detects_the_source_checkout(self):
+        expected = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as temporary, mock.patch(
+            "pathlib.Path.cwd", return_value=Path(temporary)
+        ):
+            self.assertEqual(_default_workshop_root(), expected)
+            command = parser()
+            args = command.parse_args(("wish", "a rolling moon"))
+            creator = command.parse_args(
+                (
+                    "create",
+                    "inventor",
+                    "mira",
+                    "--description",
+                    "kinetic desk toys",
+                    "--lane",
+                    "moving-machines",
+                )
+            )
+        # Catalog resolution is intentionally lazy so ``workshop --help`` never
+        # creates an installed WORKSHOP_HOME.
+        self.assertIsNone(args.root)
+        self.assertEqual(creator.root, Path(temporary))
+
+    def test_help_does_not_materialize_an_installed_catalog(self):
+        with mock.patch(
+            "inventor_workshop.cli._source_workshop_root", return_value=None
+        ), mock.patch(
+            "inventor_workshop.cli.packaged_inventors_root",
+            return_value=Path("/installed/_data/inventors"),
+        ), mock.patch(
+            "inventor_workshop.cli.materialize_bundled_inventors"
+        ) as materialize:
+            command = parser()
+            command.format_help()
+            self.assertIsNone(command.parse_args(("status",)).root)
+        materialize.assert_not_called()
+
+    def test_installed_customer_command_materializes_the_current_catalog_lazily(self):
+        expected = Path("/customer/workshop/bundled-catalogs/current")
+        with mock.patch(
+            "inventor_workshop.cli._source_workshop_root", return_value=None
+        ), mock.patch(
+            "inventor_workshop.cli.packaged_inventors_root",
+            return_value=Path("/installed/_data/inventors"),
+        ), mock.patch(
+            "inventor_workshop.cli.materialize_bundled_inventors",
+            return_value=expected,
+        ) as materialize:
+            self.assertEqual(_default_workshop_root(), expected)
+        materialize.assert_called_once_with()
+
+    def test_implicit_installed_status_reads_retained_catalog_without_materializing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary) / "workshop-home"
+            digest = "a" * 64
+            retained = home / "bundled-catalogs" / digest
+            self.durable_wait_fixture(retained)
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._source_workshop_root", return_value=None
+            ), mock.patch(
+                "inventor_workshop.cli.packaged_inventors_root",
+                return_value=Path("/installed/_data/inventors"),
+            ), mock.patch(
+                "inventor_workshop.cli.existing_bundled_catalog_roots",
+                return_value=(retained,),
+            ), mock.patch(
+                "inventor_workshop.cli.materialize_bundled_inventors"
+            ) as materialize, redirect_stdout(output):
+                result = main(("status", "wish-one", "--json"))
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 0)
+            self.assertEqual(receipt["product_id"], "wish-one")
+            self.assertEqual(receipt["catalog_root"], str(retained.resolve()))
+            materialize.assert_not_called()
+
+    def test_one_taste_file_creates_an_inventor_and_prints_a_start_command(self):
+        source = (
+            "---\r\n"
+            'name: "Orbit Muse"\r\n'
+            'description: "Moonlit kinetic desk toys, but not board games."\r\n'
+            "---\r\n"
+            "# Orbit Muse's Taste\r\n\r\n"
+            "Make one surprising motion feel inevitable.\r\n"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            taste = root / "TASTE.md"
+            taste.write_bytes(source.encode("utf-8"))
+            output = StringIO()
+            with redirect_stdout(output), redirect_stderr(StringIO()):
+                result = main(
+                    (
+                        "create",
+                        "inventor",
+                        "--taste",
+                        str(taste),
+                        "--lane",
+                        "moving-machines",
+                        "--root",
+                        str(root),
+                    )
+                )
+            destination = root / "inventors" / "orbit-muse"
+            self.assertEqual(result, 0)
+            self.assertEqual((destination / "TASTE.md").read_bytes(), taste.read_bytes())
+            self.assertTrue((destination / "run.py").is_file())
+            self.assertIn("Orbit Muse joined the Workshop", output.getvalue())
+            self.assertIn("Start:", output.getvalue())
+            self.assertIn("workshop wish", output.getvalue())
+            self.assertIn("--root %s" % root.resolve(), output.getvalue())
+            self.assertNotIn(str(destination / "run.py"), output.getvalue())
+
+    def test_status_reads_and_lists_valid_durable_state_without_model_calls(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, _, inventor_root = self.durable_wait_fixture(root)
+            database = inventor_root / ".workshop" / "workshop.sqlite3"
+            before = database.read_bytes()
+            before_stat = database.stat()
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(
+                    ("status", "wish-one", "--root", str(root), "--json")
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 0)
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["job"], "make")
+            self.assertEqual(receipt["event_chain"], "valid")
+            self.assertEqual(receipt["needs"][0]["capability"], "model-and-cad-maker")
+            self.assertEqual(database.read_bytes(), before)
+            self.assertEqual(database.stat().st_mtime_ns, before_stat.st_mtime_ns)
+            self.assertEqual(database.stat().st_mode, before_stat.st_mode)
+
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(("status", "--root", str(root), "--json"))
+            listing = json.loads(output.getvalue())
+            self.assertEqual(result, 0)
+            self.assertEqual(listing["count"], 1)
+            self.assertEqual(listing["wishes"][0]["product_id"], "wish-one")
+
+    def test_status_lists_assignment_even_before_the_child_registers_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, inventor_root = self.durable_wait_fixture(root)
+            database = inventor_root / ".workshop" / "workshop.sqlite3"
+            database.unlink()
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(("status", "--root", str(root), "--json"))
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 0)
+            self.assertEqual(receipt["count"], 1)
+            self.assertEqual(receipt["wishes"][0]["status"], "assigned")
+            self.assertEqual(
+                receipt["wishes"][0]["product_id"], assignment.wish.product_id
+            )
+
+    def test_resume_rejects_non_instructions_wait_without_mutating_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, runtime, _ = self.durable_wait_fixture(root)
+            before = runtime.events("wish-one")
+            output = StringIO()
+            with redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 1)
+            self.assertEqual(receipt["result"]["resume"], "not-available")
+            self.assertIn("Instructions", receipt["result"]["reason"])
+            self.assertEqual(runtime.events("wish-one"), before)
+
+    def test_resume_instructions_without_factory_secret_is_actionable_and_safe(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_wait_fixture(
+                root,
+                stage="instructions",
+                capability="site-page",
+                artifact_sha256="f" * 64,
+            )
+            output = StringIO()
+            with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
+                "inventor_workshop.cli._resume_factory_instructions"
+            ) as resume_effect, redirect_stdout(output):
+                result = main(
+                    ("resume", "wish-one", "--root", str(root), "--json")
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(result, 0)
+            self.assertEqual(receipt["result"]["status"], "waiting")
+            self.assertEqual(
+                receipt["result"]["needs"][0]["capability"],
+                "factory-authentication",
+            )
+            self.assertIn("FACTORY_PASSWORD", receipt["result"]["needs"][0]["instructions"])
+            self.assertIn("workshop resume", receipt["result"]["needs"][0]["instructions"])
+            resume_effect.assert_not_called()
+
+    def test_doctor_reports_presence_not_secret_value_or_authenticated_factory(self):
+        root = Path(__file__).resolve().parents[1]
+        output = StringIO()
+        secret = "never-print-this-factory-secret"
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "WORKSHOP_CODEX_BIN": "/definitely/missing/codex",
+                "WORKSHOP_PRUSASLICER_VERSION": "0.0.0",
+                "FACTORY_PASSWORD": secret,
+            },
+            clear=True,
+        ), redirect_stdout(output):
+            result = main(("doctor", "--root", str(root), "--json"))
+        receipt = json.loads(output.getvalue())
+        self.assertEqual(result, 1)
+        self.assertNotIn(secret, output.getvalue())
+        factory = next(
+            item for item in receipt["checks"] if item["name"] == "factory-page"
+        )
+        codex = next(item for item in receipt["checks"] if item["name"] == "codex")
+        self.assertIn("could not run", codex["detail"])
+        self.assertEqual(factory["status"], "ready")
+        self.assertIn("verified only", factory["detail"])
+
+    def test_doctor_never_exposes_codex_or_factory_secrets_to_slicer_probe(self):
+        root = Path(__file__).resolve().parents[1]
+        observed = {}
+
+        def runner(command, **kwargs):
+            if command[-2:] == ["login", "status"]:
+                observed["codex"] = kwargs["env"]
+                return subprocess.CompletedProcess(command, 0, stdout="Logged in")
+            self.assertEqual(command, ["/fixture/PrusaSlicer", "--help"])
+            observed["slicer"] = kwargs["env"]
+            return subprocess.CompletedProcess(
+                command, 0, stdout="PrusaSlicer-2.9.6\n"
+            )
+
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "WORKSHOP_CODEX_BIN": "/fixture/codex",
+                "WORKSHOP_PRUSASLICER_BIN": "/fixture/PrusaSlicer",
+                "OPENAI_API_KEY": "codex-secret",
+                "FACTORY_PASSWORD": "factory-secret",
+            },
+            clear=True,
+        ), mock.patch("inventor_workshop.cli.subprocess.run", side_effect=runner), mock.patch(
+            "inventor_workshop.cli.importlib.util.find_spec", return_value=object()
+        ), redirect_stdout(StringIO()):
+            self.assertEqual(main(("doctor", "--root", str(root))), 0)
+        self.assertEqual(observed["codex"]["OPENAI_API_KEY"], "codex-secret")
+        self.assertNotIn("OPENAI_API_KEY", observed["slicer"])
+        self.assertNotIn("FACTORY_PASSWORD", observed["slicer"])
+
+    def test_inventor_timeout_is_actionable_and_has_no_subprocess_traceback(self):
+        assignment = SimpleNamespace(
+            entrypoint=("python3", "profile.py"),
+            wish=Wish.create("wish-timeout", "A patient moon"),
+            inventor_id="mira",
+            playtest_rounds=4,
+            assignment_sha256="a" * 64,
+            decision=SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(
+                    card=SimpleNamespace(
+                        inventor_id="mira",
+                        root=Path("/tmp/inventors/mira"),
+                    )
+                ),
+            ),
+        )
+
+        def timeout(command, **kwargs):
+            raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+        with self.assertRaisesRegex(
+            WorkshopError, "60 minutes.*workshop status wish-timeout"
+        ):
+            _run_inventor(assignment, runner=timeout)
+
+    def test_status_fails_closed_on_a_page_for_different_product_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_wait_fixture(
+                root,
+                stage="instructions",
+                capability="site-page",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+            )
+            stale = Receipt.from_design(
+                {
+                    "id": "design-one",
+                    "slug": "rolling-moon",
+                    "owner_id": "owner-mira",
+                    "root_id": "design-one",
+                    "current_history_id": "history-one",
+                    "published_history_id": None,
+                    "status": "draft",
+                    "project_url": "https://cdn.example.test/history-one/",
+                    "listing": None,
+                },
+                "a" * 64,
+                "e" * 64,
+            )
+            store = mock.Mock()
+            store.latest_publish_intent.return_value = {"receipt": stale.to_dict()}
+            calls = 0
+            read_only = _ReadOnlyWorkshopStore
+
+            def projection(database):
+                nonlocal calls
+                calls += 1
+                return read_only(database) if calls == 1 else store
+
+            with mock.patch(
+                "inventor_workshop.cli._ReadOnlyWorkshopStore",
+                side_effect=projection,
+            ):
+                with self.assertRaisesRegex(
+                    WorkshopError, "different product bytes"
+                ):
+                    _status_receipt(root, "wish-one")
 
     def test_source_version_matches_project_metadata(self):
         project = Path(__file__).resolve().parents[1] / "pyproject.toml"

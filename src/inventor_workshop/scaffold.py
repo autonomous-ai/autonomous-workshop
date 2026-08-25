@@ -7,6 +7,7 @@ import keyword
 import os
 import re
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 from typing import Dict, Optional
@@ -16,7 +17,7 @@ from .toys import PLAYTHING_LANES, WORKSHOP_JOBS
 from .workshop import CUSTOMIZATION_LEVELS
 
 
-_ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
+_ID = re.compile(r"^(?=.{2,63}$)[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 _RESERVED_PACKAGES = frozenset(
     ("inventor_core", "inventor_foundation", "inventor_workshop", "test", "tests")
 )
@@ -129,6 +130,8 @@ def _files(
     niche: str,
     lane: str,
     level: str,
+    *,
+    taste_content: Optional[str] = None,
 ) -> Dict[str, str]:
     package = inventor_id.replace("-", "_")
     env = inventor_id.upper().replace("-", "_")
@@ -140,7 +143,9 @@ def _files(
         "schema_version": 5,
         "id": inventor_id,
         "status": "experimental",
-        "entrypoint": ["python3", "-m", package],
+        # This local bootstrap works before the generated package is installed.
+        # The console script declared below remains the installed-package entrypoint.
+        "entrypoint": ["python3", "run.py"],
         "capabilities": capabilities,
         "checks": [
             [
@@ -202,9 +207,7 @@ def _files(
         ),
     }[level]
 
-    files = {
-        "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        "TASTE.md": """---
+    generated_taste = """---
 name: {name_header}
 description: {description_header}
 ---
@@ -248,13 +251,17 @@ is simple: **I couldn't have bought it before this Wish.**
 - What should a person feel in the first ten seconds and on the tenth play?
 - What physical and human evidence is strong enough to change this Taste?
 """.format(
-            name=name,
-            name_header=json.dumps(name, ensure_ascii=False),
-            niche=niche,
-            description_header=json.dumps(niche, ensure_ascii=False),
-            lane=lane,
-            lane_guidance=lane_guidance,
-        ),
+        name=name,
+        name_header=json.dumps(name, ensure_ascii=False),
+        niche=niche,
+        description_header=json.dumps(niche, ensure_ascii=False),
+        lane=lane,
+        lane_guidance=lane_guidance,
+    )
+
+    files = {
+        "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
+        "TASTE.md": generated_taste if taste_content is None else taste_content,
         "README.md": """# {name}
 
 {name} is the **{lane}** inventor for **{niche}**. {ownership}
@@ -279,29 +286,24 @@ Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
 3. Keep missing model, CAD, physical, human, media, production, and carrier
    capabilities as explicit waits. Never turn a preview into production proof.
 
-## Try the profile
+## Start inventing
 
-Generated inventors use the installable `{package}` module for their profile entrypoint,
-so the manifest, source checkout, and built package all run the same thin wrapper.
-They require Python 3.11 or newer because the common Workshop path includes the
-shared CAD runtime.
+Enter through the Workshop Manager so the exact assignment, durable status,
+and safe continuation are all recorded. Python 3.11 or newer is required
+because the common Workshop path includes the shared CAD runtime.
 
 ```bash
-python3 -m pip install -e ../.. -e .
-{package} profile
-{package} wish first-toy "I wish for a small surprise on my desk"
-{package} preview first-toy "I wish for a small surprise on my desk"
-{package} run --playtest-rounds 4 first-toy "I wish for a small surprise on my desk"
-workshop check . --run
+uv run workshop check . --run
+uv run workshop wish --root ../.. "I wish for a small surprise on my desk"
 ```
 
-`preview` is read-only and shows the exact Wish-, Taste-, and lane-bound brief.
-`run` inherits the shared `Workshop` engine. If a real model, CAD, evidence,
+The Wish ID and Inventor match are automatic. If a real model, CAD, evidence,
 Factory, production, or carrier provider is unavailable, that common component
 returns a typed `waiting` result instead of pretending the work happened.
-The trusted checkout or product tier supplies `--playtest-rounds` for each Wish;
-it is an allowance from 1 to 100, not a value the Wish or inventor may raise.
 Runtime state and credentials stay in `.workshop/` and are never committed.
+
+`python run.py profile` is a local developer check for the thin Inventor
+connection; it is not the customer Wish entrance.
 """.format(
             name=name,
             niche=niche,
@@ -328,7 +330,23 @@ dependencies = ["inventor-workshop>=0.5,<0.6"]
 [tool.setuptools.packages.find]
 where = ["src"]
 """.format(inventor_id=inventor_id, package=package),
-        "MANIFEST.in": "include inventor.json TASTE.md\n",
+        "MANIFEST.in": "include inventor.json TASTE.md run.py\n",
+        "run.py": """\"\"\"Run this Inventor directly from a checkout or installed identity.\"\"\"
+
+from pathlib import Path
+import sys
+
+
+source = Path(__file__).resolve().parent / "src"
+if source.is_dir():
+    sys.path.insert(0, str(source))
+
+from {package}.__main__ import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+""".format(package=package),
         "setup.py": """from pathlib import Path
 import shutil
 
@@ -340,16 +358,18 @@ class build_py(_build_py):
     def run(self):
         super().run()
         project = Path(__file__).resolve().parent
-        destination = Path(self.build_lib) / "{package}" / "_identity"
+        destination = (
+            Path(self.build_lib) / "{package}" / "_identity" / "{inventor_id}"
+        )
         if destination.exists():
             shutil.rmtree(destination)
         destination.mkdir(parents=True)
-        for filename in ("inventor.json", "TASTE.md"):
+        for filename in ("inventor.json", "TASTE.md", "run.py"):
             shutil.copy2(project / filename, destination / filename)
 
 
 setup(cmdclass={{"build_py": build_py}})
-""".format(package=package),
+""".format(package=package, inventor_id=inventor_id),
         "src/{package}/__init__.py".format(package=package): (
             repr("%s: a %s inventor built on the shared Toy Workshop." % (name, lane))
             + "\n"
@@ -380,7 +400,7 @@ DECLARED_LEVEL = {level_literal}
 
 def inventor_root() -> Path:
     package_file = Path(__file__).resolve()
-    packaged = package_file.parent / "_identity"
+    packaged = package_file.parent / "_identity" / INVENTOR_ID
     if (packaged / "inventor.json").is_file() and (packaged / "TASTE.md").is_file():
         return packaged.resolve()
     root = next(
@@ -563,7 +583,8 @@ class SmokeTest(unittest.TestCase):
             ("wish", "invent", "make", "playtest", "instructions", "deliver"),
         )
         profile = load_taste(Path(__file__).resolve().parents[1])
-        self.assertIn("creative constitution", profile.content)
+        self.assertEqual(profile.name, {name_literal})
+        self.assertTrue(profile.content.strip())
 
     def test_preview_is_read_only_and_an_explicitly_disabled_engine_waits_truthfully(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -617,6 +638,7 @@ if __name__ == "__main__":
             env=env,
             lane_literal=repr(lane),
             level_literal=repr(level),
+            name_literal=repr(name),
             package=package,
         ),
     }
@@ -679,15 +701,22 @@ def prepare_inventor_collection(root: Path) -> Path:
 def create_inventor(
     root: Path,
     inventor_id: str,
-    name: str,
-    description: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
     *,
     lane: Optional[str] = None,
     level: str = "taste-only",
     template: Optional[str] = None,
+    taste_path: Optional[Path] = None,
     run_checks: bool = True,
 ) -> Path:
-    """Create and validate one inventor before atomically joining the catalog."""
+    """Create and validate one inventor before atomically joining the catalog.
+
+    When ``taste_path`` is supplied, its strict discovery header supplies the
+    Inventor's name and description and its complete exact bytes become the
+    generated profile's ``TASTE.md``. This is the zero-custom-code path: the
+    generated profile inherits every shared Workshop stage.
+    """
 
     requested_root = Path(root)
     if requested_root.is_symlink():
@@ -701,8 +730,53 @@ def create_inventor(
     if not _ID.fullmatch(inventor_id):
         raise ContractError("inventor id must match %s" % _ID.pattern)
     package = inventor_id.replace("-", "_")
-    if keyword.iskeyword(package) or package in _RESERVED_PACKAGES:
+    if (
+        keyword.iskeyword(package)
+        or package in _RESERVED_PACKAGES
+        or package in sys.stdlib_module_names
+    ):
         raise ContractError("inventor id maps to a reserved Python package name")
+    source_taste = None
+    if taste_path is not None:
+        requested_taste = Path(taste_path)
+        if requested_taste.name != "TASTE.md" or requested_taste.is_symlink():
+            raise ContractError(
+                "existing Taste must be a regular file named TASTE.md: %s"
+                % requested_taste
+            )
+        try:
+            resolved_taste = requested_taste.resolve(strict=True)
+        except OSError as exc:
+            raise ContractError(
+                "cannot resolve existing TASTE.md: %s" % requested_taste
+            ) from exc
+        if resolved_taste.name != "TASTE.md":
+            raise ContractError(
+                "existing Taste must be a regular file named TASTE.md: %s"
+                % requested_taste
+            )
+        from .taste import load_taste
+
+        source_taste = load_taste(resolved_taste.parent)
+        if source_taste.path != resolved_taste:
+            raise ContractError(
+                "existing Taste must be the root TASTE.md in its folder: %s"
+                % requested_taste
+            )
+        if name is not None and _display_text(name, "name", 200) != source_taste.name:
+            raise ContractError(
+                "inventor name conflicts with the name in the existing TASTE.md"
+            )
+        if (
+            description is not None
+            and _display_text(description, "description", 500)
+            != source_taste.description
+        ):
+            raise ContractError(
+                "inventor description conflicts with the description in the existing TASTE.md"
+            )
+        name = source_taste.name
+        description = source_taste.description
     name = _display_text(name, "name", 200)
     description = _display_text(description, "description", 500)
     if type(run_checks) is not bool:
@@ -754,11 +828,20 @@ def create_inventor(
     temporary.mkdir(mode=0o755)
     try:
         for relative, content in _files(
-            inventor_id, name, description, lane, level
+            inventor_id,
+            name,
+            description,
+            lane,
+            level,
+            taste_content=(source_taste.content if source_taste is not None else None),
         ).items():
             target = temporary / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(content, encoding="utf-8")
+            if relative == "TASTE.md":
+                # Preserve an imported creative constitution byte for byte.
+                target.write_bytes(content.encode("utf-8"))
+            else:
+                target.write_text(content, encoding="utf-8")
 
         # Validate exactly the folder that will be made visible. Declared smoke
         # checks run in staging, so failure leaves no half-created inventor.
@@ -768,7 +851,21 @@ def create_inventor(
 
         manifest = load_manifest(temporary / "inventor.json")
         problems = validate_contribution(manifest)
-        load_taste(temporary)
+        generated_taste = load_taste(temporary)
+        if source_taste is not None:
+            try:
+                source_taste.assert_current()
+            except ContractError as exc:
+                raise ContractError(
+                    "existing TASTE.md changed during Inventor creation; retry"
+                ) from exc
+            if (
+                generated_taste.sha256 != source_taste.sha256
+                or generated_taste.content != source_taste.content
+            ):
+                raise ContractError(
+                    "created inventor did not preserve the existing TASTE.md exactly"
+                )
         if not problems and run_checks:
             problems = run_declared_checks(manifest)
         if problems:
@@ -780,6 +877,15 @@ def create_inventor(
         staged_catalog = discover_inventor_catalog(staging_root)
         if not staged_catalog.card(inventor_id).routable:
             raise ContractError("created inventor is not routable")
+        if source_taste is not None:
+            # Do not publish a profile if the person's source Taste changed
+            # while the generated smoke checks were running.
+            try:
+                source_taste.assert_current()
+            except ContractError as exc:
+                raise ContractError(
+                    "existing TASTE.md changed during Inventor creation; retry"
+                ) from exc
         os.replace(str(temporary), str(destination))
     finally:
         if staging_root.exists():

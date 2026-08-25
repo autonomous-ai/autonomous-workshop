@@ -3,17 +3,33 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import importlib.util
 import json
 import os
+import re
+import secrets
+import shlex
+import shutil
+import sqlite3
+import stat
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Mapping, Optional, Sequence
 
+from ._package_data import (
+    existing_bundled_catalog_roots,
+    materialize_bundled_inventors,
+    packaged_inventor_catalog_root,
+    packaged_inventors_root,
+)
 from .artifacts import MAX_PACK_BYTES
 from .clockwork import Clockwork
 from .contribution import check_target, manifests_for_target
-from .errors import WorkshopError
+from .errors import AmbiguousEffectError, EffectError, WorkshopError
 from .factory_agent import (
     FactoryAgentInstructionsWriter,
     FactoryAgentSession,
@@ -21,11 +37,12 @@ from .factory_agent import (
     factory_credentials_from_environment,
 )
 from .handoff import (
+    MAX_HANDOFF_BYTES,
     ManagerAssignmentHandoff,
     validate_manager_assignment_result,
 )
 from .jobs import Delivered, Invented, Need, WaitingFor, WorkshopRun
-from .execution_env import codex_subprocess_environment
+from .execution_env import codex_subprocess_environment, minimal_tool_environment
 from .agent_instructions import (
     DEFAULT_INSTRUCTIONS_CREATOR_MODEL,
     DEFAULT_INSTRUCTIONS_REWARD_MODEL,
@@ -50,13 +67,15 @@ from .scaffold import (
 from .schemas import discover_schemas, resolve_schemas_root
 from .skills import discover_skills, resolve_skills_root
 from .store import InventorStore
-from .runtime import Runtime
+from .shop import ShopDoor
 from .taste import load_taste, load_taste_header
 from .toys import PLAYTHING_LANES, ToyBlueprint
 from .workshop import CUSTOMIZATION_LEVELS, Workshop, WorkshopTools
 
 
 DEFAULT_WISH_PLAYTEST_ROUNDS = 4
+_ASSIGNMENT_DIRECTORY = "manager-assignments"
+_INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
 _SHARED_ENGINE_ENVIRONMENT_NAMES = frozenset(
     (
         "WORKSHOP_CODEX_BIN",
@@ -79,6 +98,254 @@ _SHARED_ENGINE_ENVIRONMENT_NAMES = frozenset(
         "WORKSHOP_PRUSA_PROFILES",
     )
 )
+
+
+def _has_inventor_catalog(root: Path) -> bool:
+    """Recognize a checkout/collection without loading contribution code."""
+
+    try:
+        resolved = Path(root).resolve(strict=True)
+    except OSError:
+        return False
+    collection = resolved / "inventors" if (resolved / "inventors").is_dir() else resolved
+    try:
+        return any(
+            child.is_dir()
+            and not child.is_symlink()
+            and (child / "inventor.json").is_file()
+            and not (child / "inventor.json").is_symlink()
+            and (child / "TASTE.md").is_file()
+            and not (child / "TASTE.md").is_symlink()
+            for child in collection.iterdir()
+        )
+    except OSError:
+        return False
+
+
+def _source_workshop_root() -> Optional[Path]:
+    """Find a source/editable catalog without creating installed state."""
+
+    current = Path.cwd().resolve()
+    for candidate in (current, *current.parents):
+        if _has_inventor_catalog(candidate):
+            return candidate
+    source_checkout = Path(__file__).resolve().parents[2]
+    return source_checkout if _has_inventor_catalog(source_checkout) else None
+
+
+def _catalog_roots(
+    requested: Optional[Path], *, include_retained: bool = False
+) -> tuple[Path, ...]:
+    """Resolve catalog state lazily, materializing only an installed command run."""
+
+    if requested is not None:
+        return (Path(requested).resolve(),)
+    source = _source_workshop_root()
+    if source is not None:
+        return (source,)
+    if packaged_inventors_root() is not None:
+        if include_retained:
+            return _installed_retained_catalog_roots()
+        return (materialize_bundled_inventors(),)
+    # Keep the eventual discovery error grounded in the directory the customer
+    # actually invoked the command from.
+    return (Path.cwd().resolve(),)
+
+
+def _default_workshop_root() -> Path:
+    """Resolve the current catalog for a command that actually needs it."""
+
+    return _catalog_roots(None)[0]
+
+
+def _installed_retained_catalog_roots() -> tuple[Path, ...]:
+    """Read installed catalog generations without creating WORKSHOP_HOME."""
+
+    return existing_bundled_catalog_roots()
+
+
+def _shell_command(*parts: Any) -> str:
+    return " ".join(shlex.quote(str(part)) for part in parts)
+
+
+def _inventor_id_from_taste(path: Path) -> str:
+    """Derive a conservative CLI id from a validated TASTE header."""
+
+    requested = Path(path)
+    if requested.name != "TASTE.md":
+        raise WorkshopError(
+            "--taste must name a file called TASTE.md; rename the file so its identity is explicit"
+        )
+    header = load_taste_header(requested.parent)
+    ascii_name = unicodedata.normalize("NFKD", header.name).encode(
+        "ascii", "ignore"
+    ).decode("ascii")
+    inventor_id = _INVENTOR_ID_PART.sub("-", ascii_name.lower()).strip("-")[:63]
+    inventor_id = inventor_id.rstrip("-")
+    if len(inventor_id) < 2 or not inventor_id[0].isalpha():
+        raise WorkshopError(
+            "the Taste name cannot produce a safe inventor id; provide one explicitly after 'inventor'"
+        )
+    return inventor_id
+
+
+class _ReadOnlyWorkshopStore:
+    """The narrow, non-migrating status projection of one Workshop database."""
+
+    _JSON_COLUMNS = (
+        "metadata_json",
+        "payload_json",
+        "request_json",
+        "live_request_json",
+        "live_attempts_json",
+        "response_json",
+        "receipt_json",
+        "stamp_json",
+    )
+
+    def __init__(self, database: Path) -> None:
+        requested = Path(database)
+        if requested.is_symlink() or not requested.is_file():
+            raise WorkshopError("Workshop status database must be a regular file")
+        self.database = requested.resolve(strict=True)
+
+    def _connect(self) -> sqlite3.Connection:
+        connection = sqlite3.connect(
+            self.database.as_uri() + "?mode=ro",
+            uri=True,
+            timeout=5,
+        )
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA query_only=ON")
+        return connection
+
+    @classmethod
+    def _row(cls, row: sqlite3.Row) -> Mapping[str, Any]:
+        value = dict(row)
+        for key in cls._JSON_COLUMNS:
+            if key in value:
+                raw = value.pop(key)
+                try:
+                    value[key[:-5]] = json.loads(raw) if raw else None
+                except (TypeError, json.JSONDecodeError) as exc:
+                    raise WorkshopError(
+                        "Workshop status database contains malformed JSON"
+                    ) from exc
+        return value
+
+    def get_product(self, product_id: str) -> Mapping[str, Any]:
+        connection = self._connect()
+        try:
+            row = connection.execute(
+                "SELECT * FROM products WHERE id=?", (product_id,)
+            ).fetchone()
+        finally:
+            connection.close()
+        if row is None:
+            raise KeyError("unknown product %r" % product_id)
+        return self._row(row)
+
+    def list_products(self) -> Sequence[Mapping[str, Any]]:
+        connection = self._connect()
+        try:
+            rows = connection.execute("SELECT * FROM products ORDER BY id").fetchall()
+        finally:
+            connection.close()
+        return tuple(self._row(row) for row in rows)
+
+    def events(self, product_id: str) -> Sequence[Mapping[str, Any]]:
+        connection = self._connect()
+        try:
+            rows = connection.execute(
+                "SELECT * FROM events WHERE product_id=? ORDER BY sequence",
+                (product_id,),
+            ).fetchall()
+        finally:
+            connection.close()
+        return tuple(self._row(row) for row in rows)
+
+    def latest_publish_intent(self, product_id: str) -> Optional[Mapping[str, Any]]:
+        connection = self._connect()
+        try:
+            row = connection.execute(
+                """SELECT * FROM publish_intents
+                   WHERE product_id=?
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (product_id,),
+            ).fetchone()
+        finally:
+            connection.close()
+        return self._row(row) if row is not None else None
+
+    def verify_event_chain(self, product_id: str) -> bool:
+        try:
+            product = self.get_product(product_id)
+            events = self.events(product_id)
+        except (KeyError, WorkshopError, sqlite3.DatabaseError):
+            return False
+        if not events or not isinstance(product.get("metadata"), Mapping):
+            return False
+        previous = None
+        stage = None
+        artifact_sha256 = None
+        revision = -1
+        metadata = None
+        for index, event in enumerate(events):
+            if not isinstance(event.get("payload"), Mapping):
+                return False
+            document = {
+                "product_id": event["product_id"],
+                "kind": event["kind"],
+                "from_stage": event["from_stage"],
+                "to_stage": event["to_stage"],
+                "artifact_sha256": event["artifact_sha256"],
+                "payload": event["payload"],
+                "created_at": event["created_at"],
+                "previous_sha256": previous,
+            }
+            encoded = json.dumps(
+                document,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+                allow_nan=False,
+            ).encode("utf-8")
+            expected = hashlib.sha256(encoded).hexdigest()
+            if (
+                event["previous_sha256"] != previous
+                or event["event_sha256"] != expected
+            ):
+                return False
+            if index == 0:
+                if (
+                    event["kind"] != "registered"
+                    or event["from_stage"] is not None
+                    or not event["to_stage"]
+                ):
+                    return False
+                stage = event["to_stage"]
+                artifact_sha256 = event["artifact_sha256"]
+                metadata = event["payload"]
+                revision = 0
+            else:
+                if (
+                    event["kind"] != "transition"
+                    or event["from_stage"] != stage
+                    or not event["to_stage"]
+                ):
+                    return False
+                stage = event["to_stage"]
+                artifact_sha256 = event["artifact_sha256"]
+                revision += 1
+            previous = event["event_sha256"]
+        return (
+            product["stage"] == stage
+            and product["revision"] == revision
+            and product["artifact_sha256"] == artifact_sha256
+            and product["metadata"] == metadata
+            and product["created_at"] == events[0]["created_at"]
+            and product["updated_at"] == events[-1]["created_at"]
+        )
 
 
 def _inventor_process_environment(inventor_id: str) -> Mapping[str, str]:
@@ -203,7 +470,7 @@ def _validate_child_workshop_state(
         raise WorkshopError(
             "selected Inventor returned no durable Workshop event chain"
         )
-    runtime = Runtime(database)
+    runtime = _ReadOnlyWorkshopStore(database)
     product_id = assignment.wish.product_id
     if not runtime.verify_event_chain(product_id):
         raise WorkshopError("selected Inventor Workshop event chain is not trustworthy")
@@ -285,7 +552,7 @@ def _validate_child_workshop_state(
             raise WorkshopError("persisted Deliver result has different exact inputs")
     page_url = None
     if allow_durable_factory_page:
-        intent = InventorStore(database).latest_publish_intent(product_id)
+        intent = runtime.latest_publish_intent(product_id)
         receipt_value = intent.get("receipt") if isinstance(intent, Mapping) else None
         try:
             receipt = Receipt.from_dict(receipt_value)
@@ -458,21 +725,44 @@ def _run_inventor(
         command[0] = sys.executable
     command.extend(("run", "--assignment-stdin"))
     inventor_id = assignment.decision.selected.card.inventor_id
-    completed = runner(
-        command,
-        cwd=str(assignment.decision.selected.card.root),
-        env=_inventor_process_environment(inventor_id),
-        input=json.dumps(
-            handoff.to_dict(),
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        ),
-        capture_output=True,
-        text=True,
-        timeout=3600,
-        check=False,
-    )
+    try:
+        completed = runner(
+            command,
+            cwd=str(assignment.decision.selected.card.root),
+            env=_inventor_process_environment(inventor_id),
+            input=json.dumps(
+                handoff.to_dict(),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+            capture_output=True,
+            text=True,
+            timeout=3600,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        root = Path(assignment.decision.selected.card.root).parent
+        raise WorkshopError(
+            "the selected Inventor did not finish within 60 minutes; its exact "
+            "assignment is saved, but this stage cannot resume automatically. "
+            "Inspect it with: %s. If that process stopped, start a new Wish with: %s"
+            % (
+                _status_command(assignment.wish.product_id, root),
+                _wish_command(assignment.wish.objective, root),
+            )
+        ) from exc
+    except (OSError, subprocess.SubprocessError) as exc:
+        root = Path(assignment.decision.selected.card.root).parent
+        raise WorkshopError(
+            "the selected Inventor process could not run; its exact assignment is "
+            "saved, but no work is running. Inspect it with: %s. Retry as a new "
+            "Wish with: %s"
+            % (
+                _status_command(assignment.wish.product_id, root),
+                _wish_command(assignment.wish.objective, root),
+            )
+        ) from exc
     if completed.returncode != 0:
         raise WorkshopError(
             "the selected Inventor stopped before returning a Workshop result"
@@ -496,6 +786,467 @@ def _run_inventor(
     return state_validator(assignment, bound)
 
 
+def _assignment_file(card_root: Path, product_id: str) -> Path:
+    digest = hashlib.sha256(product_id.encode("utf-8")).hexdigest()
+    return Path(card_root) / ".workshop" / _ASSIGNMENT_DIRECTORY / (digest + ".json")
+
+
+def _read_saved_handoff(path: Path, inventor_id: str) -> ManagerAssignmentHandoff:
+    """Read one bounded, non-symlink Manager handoff used only for resume."""
+
+    try:
+        expected = path.lstat()
+    except FileNotFoundError:
+        raise WorkshopError("this Wish has no saved Manager assignment")
+    if path.is_symlink() or not stat.S_ISREG(expected.st_mode):
+        raise WorkshopError("saved Manager assignment must be a regular file")
+    if not 1 <= expected.st_size <= MAX_HANDOFF_BYTES:
+        raise WorkshopError("saved Manager assignment is empty or too large")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(str(path), flags)
+    except OSError as exc:
+        raise WorkshopError("cannot safely read the saved Manager assignment") from exc
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or (
+            opened.st_dev,
+            opened.st_ino,
+        ) != (expected.st_dev, expected.st_ino):
+            raise WorkshopError("saved Manager assignment changed while opening")
+        source = os.read(descriptor, MAX_HANDOFF_BYTES + 1)
+        if len(source) > MAX_HANDOFF_BYTES or os.read(descriptor, 1):
+            raise WorkshopError("saved Manager assignment is too large")
+        after = os.fstat(descriptor)
+        if (
+            after.st_size != opened.st_size
+            or after.st_mtime_ns != opened.st_mtime_ns
+            or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            raise WorkshopError("saved Manager assignment changed while reading")
+    finally:
+        os.close(descriptor)
+    try:
+        value = json.loads(source.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise WorkshopError("saved Manager assignment is not valid UTF-8 JSON") from exc
+    if not isinstance(value, Mapping):
+        raise WorkshopError("saved Manager assignment must be one object")
+    return ManagerAssignmentHandoff.from_dict(
+        value, expected_inventor_id=inventor_id
+    )
+
+
+def _save_manager_assignment(assignment: Any) -> Path:
+    """Durably save the exact one-shot handoff before launching contribution code."""
+
+    handoff = ManagerAssignmentHandoff.from_assignment(assignment)
+    card_root = Path(assignment.decision.selected.card.root)
+    runtime_root = card_root / ".workshop"
+    assignment_root = runtime_root / _ASSIGNMENT_DIRECTORY
+    for directory in (runtime_root, assignment_root):
+        if directory.is_symlink():
+            raise WorkshopError("Manager assignment storage must not be a symlink")
+        directory.mkdir(mode=0o700, exist_ok=True)
+        if not directory.is_dir():
+            raise WorkshopError("Manager assignment storage must be a directory")
+        try:
+            os.chmod(directory, 0o700)
+        except OSError as exc:
+            raise WorkshopError("cannot secure Manager assignment storage") from exc
+    path = _assignment_file(card_root, handoff.wish.product_id)
+    source = (
+        json.dumps(
+            handoff.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(str(path), flags, 0o600)
+    except FileExistsError:
+        existing = _read_saved_handoff(path, handoff.inventor_id)
+        if existing.to_dict() != handoff.to_dict():
+            raise WorkshopError(
+                "this Wish id is already bound to a different Manager assignment"
+            )
+        return path
+    except OSError as exc:
+        raise WorkshopError("cannot save the exact Manager assignment") from exc
+    try:
+        written = 0
+        while written < len(source):
+            written += os.write(descriptor, source[written:])
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        directory_descriptor = os.open(str(assignment_root), directory_flags)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+    except OSError as exc:
+        raise WorkshopError("cannot durably seal the Manager assignment") from exc
+    return path
+
+
+def _find_durable_wish(
+    root: Path, product_id: str, *, allow_missing: bool = False
+) -> Optional[Mapping[str, Any]]:
+    """Locate one product in Inventor-owned durable stores without mutation."""
+
+    catalog = discover_inventor_catalog(root)
+    matches = []
+    for card in catalog.cards:
+        assignment_path = _assignment_file(card.root, product_id)
+        handoff = None
+        if assignment_path.exists() or assignment_path.is_symlink():
+            handoff = _read_saved_handoff(assignment_path, card.inventor_id)
+            if handoff.wish.product_id != product_id:
+                raise WorkshopError("saved Manager assignment belongs to another Wish")
+        database = Path(card.root) / ".workshop" / "workshop.sqlite3"
+        if database.is_symlink() or not database.is_file():
+            if handoff is not None:
+                matches.append(
+                    {
+                        "card": card,
+                        "database": database,
+                        "runtime": None,
+                        "product": None,
+                        "events": (),
+                        "latest": None,
+                        "handoff": handoff,
+                    }
+                )
+            continue
+        runtime = _ReadOnlyWorkshopStore(database)
+        try:
+            product = runtime.get_product(product_id)
+        except KeyError:
+            if handoff is not None:
+                matches.append(
+                    {
+                        "card": card,
+                        "database": database,
+                        "runtime": runtime,
+                        "product": None,
+                        "events": (),
+                        "latest": None,
+                        "handoff": handoff,
+                    }
+                )
+            continue
+        if not runtime.verify_event_chain(product_id):
+            raise WorkshopError(
+                "saved Workshop event chain is invalid for %s" % product_id
+            )
+        events = runtime.events(product_id)
+        if not events:
+            raise WorkshopError("saved Workshop event chain is empty")
+        matches.append(
+            {
+                "card": card,
+                "database": database,
+                "runtime": runtime,
+                "product": product,
+                "events": events,
+                "latest": events[-1],
+                "handoff": handoff,
+            }
+        )
+    if not matches:
+        if allow_missing:
+            return None
+        raise WorkshopError(
+            "no saved Wish %r was found under %s; use the id printed by 'workshop wish'"
+            % (product_id, Path(root))
+        )
+    if len(matches) != 1:
+        raise WorkshopError(
+            "Wish %r exists in more than one Inventor store; resolve the duplicate before continuing"
+            % product_id
+        )
+    return matches[0]
+
+
+def _root_for_durable_wish(
+    roots: Sequence[Path], product_id: str
+) -> tuple[Path, Mapping[str, Any]]:
+    """Find an exact Wish across current and retained installed catalogs."""
+
+    matches = []
+    for root in roots:
+        located = _find_durable_wish(root, product_id, allow_missing=True)
+        if located is not None:
+            matches.append((Path(root).resolve(), located))
+    if not matches:
+        searched = ", ".join(str(Path(root)) for root in roots)
+        raise WorkshopError(
+            "no saved Wish %r was found in the available catalog(s): %s; "
+            "use the id printed by 'workshop wish'" % (product_id, searched)
+        )
+    if len(matches) != 1:
+        raise WorkshopError(
+            "Wish %r exists in more than one retained catalog; pass the exact "
+            "--root printed when it started" % product_id
+        )
+    return matches[0]
+
+
+def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
+    located = _find_durable_wish(root, product_id)
+    if located is None:  # ``allow_missing`` is false; keeps type narrowing explicit.
+        raise WorkshopError("saved Wish disappeared while reading status")
+    card = located["card"]
+    product = located["product"]
+    latest = located["latest"]
+    if product is None:
+        handoff = located.get("handoff")
+        if not isinstance(handoff, ManagerAssignmentHandoff):
+            raise WorkshopError("saved Wish has no durable state or Manager assignment")
+        return {
+            "schema_version": 1,
+            "catalog_root": str(Path(root).resolve()),
+            "product_id": product_id,
+            "status": "assigned",
+            "job": "wish",
+            "round": None,
+            "inventor_id": card.inventor_id,
+            "inventor_name": card.name,
+            "artifact_sha256": None,
+            "updated_at": None,
+            "wish": handoff.wish.to_dict(),
+            "needs": [],
+            "event_chain": "not-started",
+        }
+    payload = latest.get("payload")
+    if not isinstance(payload, Mapping):
+        raise WorkshopError("latest Workshop event payload is malformed")
+    raw_needs = payload.get("needs", [])
+    if not isinstance(raw_needs, list):
+        raise WorkshopError("latest Workshop needs are malformed")
+    try:
+        needs = [Need(**dict(item)).to_dict() for item in raw_needs]
+    except (TypeError, WorkshopError) as exc:
+        raise WorkshopError("latest Workshop needs are malformed") from exc
+    metadata = product.get("metadata")
+    if not isinstance(metadata, Mapping):
+        raise WorkshopError("saved Wish metadata is malformed")
+    wish = metadata.get("wish")
+    if not isinstance(wish, Mapping) or wish.get("product_id") != product_id:
+        raise WorkshopError("saved Wish metadata has a different identity")
+    status = payload.get("status", "working")
+    if status not in ("working", "waiting", "stopped", "delivered"):
+        raise WorkshopError("latest Workshop status is malformed")
+    receipt = {
+        "schema_version": 1,
+        "catalog_root": str(Path(root).resolve()),
+        "product_id": product_id,
+        "status": status,
+        "job": product.get("stage"),
+        "round": payload.get("round"),
+        "inventor_id": card.inventor_id,
+        "inventor_name": card.name,
+        "artifact_sha256": product.get("artifact_sha256"),
+        "updated_at": product.get("updated_at"),
+        "wish": dict(wish),
+        "needs": needs,
+        "event_chain": "valid",
+    }
+    intent = _ReadOnlyWorkshopStore(located["database"]).latest_publish_intent(
+        product_id
+    )
+    raw_receipt = intent.get("receipt") if isinstance(intent, Mapping) else None
+    page = None
+    if raw_receipt is not None:
+        instructions_sha256 = next(
+            (
+                event["payload"].get("instructions_sha256")
+                for event in reversed(located["events"])
+                if isinstance(event.get("payload"), Mapping)
+                and isinstance(event["payload"].get("instructions_sha256"), str)
+            ),
+            None,
+        )
+        try:
+            page = Receipt.from_dict(raw_receipt)
+            page.assert_artifact(product.get("artifact_sha256"))
+        except (TypeError, WorkshopError) as exc:
+            raise WorkshopError(
+                "saved Factory page receipt identifies different product bytes"
+            ) from exc
+        if (
+            not isinstance(instructions_sha256, str)
+            or page.details.get("instructions_sha256") != instructions_sha256
+        ):
+            raise WorkshopError(
+                "saved Factory page receipt identifies different Instructions"
+            )
+    if page is not None and (page.is_verified_draft or page.is_verified_public):
+        intent_state = intent.get("state") if isinstance(intent, Mapping) else None
+        receipt["page"] = {
+            "status": (
+                "unknown"
+                if intent_state in ("publishing", "live_unknown")
+                else "public"
+                if page.is_verified_public and intent_state == "live"
+                else "draft"
+            ),
+            "page_url": page.details.get("page_url"),
+        }
+    return receipt
+
+
+def _promote_factory_intent(
+    store: Any,
+    intent: Mapping[str, Any],
+    draft: Receipt,
+    credentials: Any,
+    *,
+    product_id: str,
+    session_factory: Any,
+    transition_factory: Any,
+) -> Receipt:
+    """Fence one public effect and reconcile crash ambiguity by GET only."""
+
+    intent_id = intent.get("id")
+    if not isinstance(intent_id, str) or not intent_id:
+        raise WorkshopError("the selected Inventor Factory intent is malformed")
+    if intent.get("state") == "live":
+        public = Receipt.from_dict(intent.get("receipt"))
+        if not public.is_verified_public:
+            raise WorkshopError("durable Factory live receipt is not verified")
+        public.assert_artifact(draft.artifact_sha256)
+        return public
+
+    holder = "workshop-cli-public-%s-%s" % (os.getpid(), secrets.token_hex(8))
+    # Factory HTTP retries are bounded to minutes. Fifteen minutes fences one
+    # complete transition without making a crash unrecoverable for hours.
+    lease_token = store.acquire_lease(product_id, holder, ttl_seconds=900)
+    try:
+        intent = store.get_publish_intent(intent_id)
+        if intent.get("state") == "publishing":
+            # Acquiring the product lease proves the prior lease was released or
+            # expired. Convert the stranded effect to ambiguity before any GET;
+            # never resend the public transition from this state.
+            store.recover_stranded_intent(
+                intent_id,
+                "previous public transition ended without a durable completion",
+            )
+            intent = store.get_publish_intent(intent_id)
+        intent_state = intent.get("state")
+        if intent_state == "live":
+            public = Receipt.from_dict(intent.get("receipt"))
+            if not public.is_verified_public:
+                raise WorkshopError("durable Factory live receipt is not verified")
+            public.assert_artifact(draft.artifact_sha256)
+            return public
+
+        session = session_factory(credentials)
+        transition = transition_factory(session)
+        if intent_state == "live_unknown":
+            # Authenticated readback is the only effect allowed here. A draft
+            # does not prove whether a prior publish crossed the boundary.
+            identity = session.login()
+            draft.assert_owner(identity.owner_id)
+            door = ShopDoor(
+                "manager-session",
+                transport=session.authenticated_transport,
+            )
+            observed = transition._receipt(
+                transition._design(door.get_design(draft.slug)),
+                draft,
+                identity.owner_id,
+            )
+            if not transition._is_current_public(observed):
+                raise AmbiguousEffectError(
+                    "Factory publication remains unknown: authenticated readback "
+                    "does not prove the exact current history public; no retry was sent"
+                )
+            store.resolve_live_as_public(intent_id, observed)
+            return observed
+
+        if intent_state != "succeeded":
+            raise WorkshopError(
+                "Factory draft intent is %s, not a verified resumable draft"
+                % intent_state
+            )
+        request = intent.get("request")
+        if not isinstance(request, Mapping):
+            raise WorkshopError("durable Factory draft request is malformed")
+        origins = [
+            request.get(name)
+            for name in (
+                "_workshop_api_origin",
+                "_foundation_api_origin",
+                "_core_api_origin",
+            )
+            if request.get(name) is not None
+        ]
+        if len(set(origins)) != 1 or not origins:
+            raise WorkshopError("durable Factory draft has no unambiguous API origin")
+        proof = {
+            "instructions_sha256": draft.details.get("instructions_sha256"),
+            "playtest_evidence_sha256": draft.details.get(
+                "playtest_evidence_sha256"
+            ),
+            "page_url": draft.details.get("page_url"),
+        }
+        if any(not isinstance(value, str) or not value for value in proof.values()):
+            raise WorkshopError(
+                "authenticated Factory draft lacks exact Instructions, Playtest, or page proof"
+            )
+        publishing = store.begin_live(
+            intent_id,
+            {
+                "api_origin": origins[0],
+                "owner_id": draft.owner_id,
+                "proof": proof,
+            },
+            lease_token=lease_token,
+        )
+        effect_token = publishing.get("effect_token")
+        if not isinstance(effect_token, str) or not effect_token:
+            raise WorkshopError("durable Factory publication fence is malformed")
+        try:
+            public = transition.publish(draft)
+        except AmbiguousEffectError as exc:
+            store.mark_live_unknown(
+                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+            )
+            raise
+        except EffectError as exc:
+            store.restore_draft_after_publish_rejection(
+                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+            )
+            raise
+        except Exception as exc:
+            store.mark_live_unknown(
+                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+            )
+            raise AmbiguousEffectError(
+                "Factory publication outcome is unknown; reconcile before retry"
+            ) from exc
+        if not isinstance(public, Receipt) or not public.is_verified_public:
+            store.mark_live_unknown(
+                intent_id,
+                effect_token,
+                "Factory transition returned no verified public receipt",
+            )
+            raise AmbiguousEffectError(
+                "Factory publication returned no verified public readback; reconcile before retry"
+            )
+        store.mark_publish_live(intent_id, effect_token, public)
+        return public
+    finally:
+        store.release_lease(product_id, lease_token)
+
+
 def _publish_inventor_draft(
     assignment,
     result: Mapping[str, Any],
@@ -504,7 +1255,7 @@ def _publish_inventor_draft(
     session_factory: Any = FactoryAgentSession,
     transition_factory: Any = FactoryPublicTransition,
 ) -> Mapping[str, Any]:
-    """Make the exact authenticated Instructions draft public, then prove it."""
+    """Durably promote the exact authenticated Instructions draft, then prove it."""
 
     product_id = assignment.wish.product_id
     inventor_id = assignment.decision.selected.card.inventor_id
@@ -516,9 +1267,17 @@ def _publish_inventor_draft(
             "reason": "Instructions has not produced an authenticated Factory draft yet.",
         }
     environment = _factory_credential_environment(inventor_id)
+    if environment is None:
+        catalog_root = Path(assignment.decision.selected.card.root).parent
+        return {
+            "status": "waiting",
+            "reason": (
+                "FACTORY_PASSWORD is not configured in the trusted Manager. Set it, "
+                "then run: %s. The value is never printed or passed to Inventor code."
+                % _resume_command(product_id, catalog_root)
+            ),
+        }
     try:
-        if environment is None:
-            raise WorkshopError("Factory credentials are not configured")
         credentials = factory_credentials_from_environment(inventor_id, environment)
         runtime_root = Path(assignment.decision.selected.card.root) / ".workshop"
         store = store_factory(runtime_root / "workshop.sqlite3")
@@ -531,7 +1290,17 @@ def _publish_inventor_draft(
             )
         if isinstance(artifact_sha256, str):
             draft.assert_artifact(artifact_sha256)
-        public = transition_factory(session_factory(credentials)).publish(draft)
+        if not isinstance(intent, Mapping):
+            raise WorkshopError("the selected Inventor has no durable Factory intent")
+        public = _promote_factory_intent(
+            store,
+            intent,
+            draft,
+            credentials,
+            product_id=product_id,
+            session_factory=session_factory,
+            transition_factory=transition_factory,
+        )
     except WorkshopError:
         raise
     except (KeyError, TypeError, ValueError) as exc:
@@ -558,11 +1327,36 @@ def _waiting_receipt(wish: Wish, waiting: WaitingFor) -> Mapping[str, Any]:
     }
 
 
-def _print_wish_receipt(receipt: Mapping[str, Any]) -> None:
+def _status_command(product_id: str, root: Path) -> str:
+    return _shell_command("workshop", "status", product_id, "--root", Path(root))
+
+
+def _resume_command(product_id: str, root: Path, *, draft: bool = False) -> str:
+    parts = ["workshop", "resume", product_id, "--root", Path(root)]
+    if draft:
+        parts.append("--draft")
+    return _shell_command(*parts)
+
+
+def _wish_command(objective: str, root: Path, *, draft: bool = False) -> str:
+    parts = ["workshop", "wish", objective, "--root", Path(root)]
+    if draft:
+        parts.append("--draft")
+    return _shell_command(*parts)
+
+
+def _print_wish_receipt(
+    receipt: Mapping[str, Any],
+    *,
+    root: Optional[Path] = None,
+    show_wish: bool = True,
+    show_match: bool = True,
+) -> None:
     wish = receipt["wish"]
-    print("Wish: %s" % wish["product_id"])
+    if show_wish:
+        print("Wish: %s" % wish["product_id"])
     match = receipt.get("match")
-    if isinstance(match, dict):
+    if show_match and isinstance(match, dict):
         print("Matched with %s." % match["name"])
         print("Why: %s" % match["explanation"])
     result = receipt.get("result", receipt)
@@ -579,27 +1373,480 @@ def _print_wish_receipt(receipt: Mapping[str, Any]) -> None:
         job = result.get("job")
         print("Waiting%s." % (" at %s" % str(job).title() if job else ""))
         for need in result.get("needs", ()):
-            print("  %s — %s" % (need["capability"], need["reason"]))
+            print("Need: %s" % need["capability"])
+            print("Why: %s" % need["reason"])
+            instructions = need.get("instructions")
+            if isinstance(instructions, str) and instructions:
+                print("Next: %s" % instructions)
+        if isinstance(result.get("next_command"), str):
+            print("Retry: %s" % result["next_command"])
     else:
         print("Status: %s" % result.get("status", "started"))
     publication = result.get("publication")
+    is_live = isinstance(publication, Mapping) and publication.get("status") == "public"
+    page_url = result.get("page_url")
+    if isinstance(page_url, str) and page_url and not is_live:
+        print("Draft: %s" % page_url)
     if isinstance(publication, Mapping):
         if publication.get("status") == "public":
             print("Live: %s" % publication["page_url"])
         elif publication.get("reason"):
             print("Page: waiting — %s" % publication["reason"])
+    if root is not None and match is not None:
+        print("Saved: %s" % _status_command(wish["product_id"], root))
+        if result.get("status") == "waiting" and result.get("job") == "instructions":
+            print("Resume: %s" % _resume_command(wish["product_id"], root))
+        elif result.get("status") == "waiting":
+            print("Resume: unavailable for this stage; the saved command is status only.")
+            print("Restart: %s" % _wish_command(wish["objective"], root))
+
+
+def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
+    print("Wish: %s" % receipt["product_id"])
+    print("Inventor: %s" % receipt["inventor_name"])
+    print(
+        "Status: %s at %s%s"
+        % (
+            receipt["status"],
+            str(receipt["job"]).title(),
+            " (round %s)" % receipt["round"]
+            if isinstance(receipt.get("round"), int)
+            else "",
+        )
+    )
+    for need in receipt.get("needs", ()):
+        print("Need: %s" % need["capability"])
+        print("Why: %s" % need["reason"])
+        print("Next: %s" % need["instructions"])
+    page = receipt.get("page")
+    if isinstance(page, Mapping):
+        label = {
+            "public": "Live",
+            "draft": "Draft",
+            "unknown": "Page (publication unknown)",
+        }.get(page.get("status"), "Page")
+        if page.get("page_url"):
+            print("%s: %s" % (label, page["page_url"]))
+    print("Event chain: %s" % receipt["event_chain"])
+    if receipt.get("status") == "waiting" and receipt.get("job") == "instructions":
+        print("Resume: %s" % _resume_command(receipt["product_id"], root))
+    elif receipt.get("status") in ("assigned", "working", "waiting"):
+        print("Resume: unavailable for this stage; status does not restart its worker.")
+        objective = receipt.get("wish", {}).get("objective")
+        if isinstance(objective, str) and objective:
+            print(
+                "If the original process stopped, restart as a new Wish: %s"
+                % _wish_command(objective, root)
+            )
+
+
+def _status(args: argparse.Namespace) -> int:
+    roots = _catalog_roots(args.root, include_retained=args.root is None)
+    if args.product_id is None:
+        products: dict[str, Path] = {}
+        for root in roots:
+            catalog = discover_inventor_catalog(root)
+            product_ids = []
+            for card in catalog.cards:
+                assignment_root = (
+                    Path(card.root) / ".workshop" / _ASSIGNMENT_DIRECTORY
+                )
+                if assignment_root.is_symlink():
+                    raise WorkshopError(
+                        "Manager assignment storage must not be a symlink"
+                    )
+                if assignment_root.is_dir():
+                    for path in sorted(assignment_root.glob("*.json")):
+                        handoff = _read_saved_handoff(path, card.inventor_id)
+                        product_ids.append(handoff.wish.product_id)
+                database = Path(card.root) / ".workshop" / "workshop.sqlite3"
+                if database.is_symlink() or not database.is_file():
+                    continue
+                product_ids.extend(
+                    item["id"]
+                    for item in _ReadOnlyWorkshopStore(database).list_products()
+                )
+            for product_id in set(product_ids):
+                prior = products.get(product_id)
+                resolved = Path(root).resolve()
+                if prior is not None and prior != resolved:
+                    raise WorkshopError(
+                        "Wish %r exists in more than one retained catalog; pass "
+                        "an exact --root" % product_id
+                    )
+                products[product_id] = resolved
+        records = [
+            _status_receipt(root, product_id)
+            for product_id, root in sorted(products.items())
+        ]
+        receipt = {
+            "schema_version": 1,
+            "status": "ok",
+            "count": len(records),
+            "wishes": records,
+        }
+        if args.json:
+            print(json.dumps(receipt, indent=2, sort_keys=True))
+        elif not records:
+            print("No durable Wishes yet. Start with: workshop wish \"what you wish existed\"")
+        else:
+            for item in records:
+                print(
+                    "%-38s %-12s %-14s %s"
+                    % (
+                        item["product_id"],
+                        item["inventor_id"],
+                        "%s/%s" % (item["job"], item["status"]),
+                        item.get("updated_at") or "",
+                    )
+                )
+        return 0
+    selected_root, _ = _root_for_durable_wish(roots, args.product_id)
+    receipt = _status_receipt(selected_root, args.product_id)
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_status_receipt(receipt, root=selected_root)
+    return 0
+
+
+def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, Any]]:
+    located = _find_durable_wish(root, product_id)
+    if located is None:  # ``allow_missing`` is false; keeps type narrowing explicit.
+        raise WorkshopError("saved Wish disappeared while preparing resume")
+    card = located["card"]
+    handoff = _read_saved_handoff(
+        _assignment_file(card.root, product_id), card.inventor_id
+    )
+    if handoff.wish.product_id != product_id:
+        raise WorkshopError("saved Manager assignment belongs to another Wish")
+    if located["product"] is None:
+        raise WorkshopError(
+            "the Inventor has not created durable state yet; wait a moment and check status again"
+        )
+    metadata = located["product"].get("metadata")
+    if not isinstance(metadata, Mapping) or metadata.get("wish") != handoff.wish.to_dict():
+        raise WorkshopError("saved Manager assignment differs from durable Wish state")
+    taste = load_taste(card.root)
+    assignment = SimpleNamespace(
+        wish=handoff.wish,
+        inventor_id=handoff.inventor_id,
+        playtest_rounds=handoff.playtest_rounds,
+        assignment_sha256=handoff.assignment_sha256,
+        entrypoint=tuple(card.entrypoint),
+        decision=SimpleNamespace(
+            decision_sha256=handoff.decision_sha256,
+            selected=SimpleNamespace(card=card, taste=taste),
+        ),
+    )
+    return assignment, located
+
+
+def _resume(args: argparse.Namespace) -> int:
+    roots = _catalog_roots(args.root, include_retained=args.root is None)
+    selected_root, _ = _root_for_durable_wish(roots, args.product_id)
+    assignment, located = _resume_assignment(selected_root, args.product_id)
+    status = _status_receipt(selected_root, args.product_id)
+    needs = status.get("needs", [])
+    site_wait = (
+        status.get("status") == "waiting"
+        and status.get("job") == "instructions"
+        and any(
+            need.get("capability") in ("site-page", "site-reconciliation")
+            for need in needs
+        )
+    )
+    result: Mapping[str, Any]
+    if site_wait:
+        if _factory_credential_environment(assignment.inventor_id) is None:
+            result = {
+                "product_id": args.product_id,
+                "status": "waiting",
+                "job": "instructions",
+                "needs": [
+                    {
+                        "job": "instructions",
+                        "capability": "factory-authentication",
+                        "reason": "This Manager process has no Factory credential for the matched Inventor.",
+                        "instructions": (
+                            "Set FACTORY_PASSWORD in the trusted Manager environment, then run: "
+                            + _resume_command(
+                                args.product_id,
+                                selected_root,
+                                draft=not args.publish,
+                            )
+                            + ". The value is never passed to Inventor code or printed."
+                        ),
+                    }
+                ],
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+        else:
+            waiting = {
+                "status": "waiting",
+                "job": "instructions",
+                "needs": needs,
+                "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                    assignment
+                ).result_binding(),
+            }
+            result = _resume_factory_instructions(assignment, waiting)
+    else:
+        page = status.get("page")
+        if not isinstance(page, Mapping) or page.get("status") != "draft":
+            result = {
+                "product_id": args.product_id,
+                "status": status["status"],
+                "job": status["job"],
+                "needs": needs,
+                "resume": "not-available",
+                "reason": (
+                    "Only an exact sealed Instructions handoff can currently resume safely; "
+                    "the durable run was not changed."
+                ),
+            }
+        else:
+            result = {
+                "product_id": args.product_id,
+                "status": status["status"],
+                "job": status["job"],
+                "artifact_sha256": status.get("artifact_sha256"),
+                "page_url": page.get("page_url"),
+                "needs": needs,
+            }
+    if args.publish and isinstance(result.get("page_url"), str):
+        result = {
+            **result,
+            "publication": _publish_inventor_draft(assignment, result),
+        }
+    receipt = {
+        "schema_version": 1,
+        "status": result.get("status"),
+        "wish": assignment.wish.to_dict(),
+        "match": {
+            "inventor_id": assignment.inventor_id,
+            "name": assignment.decision.selected.card.name,
+            "explanation": "Resuming the exact saved Manager assignment.",
+        },
+        "result": result,
+    }
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_wish_receipt(receipt, root=selected_root)
+        if result.get("resume") == "not-available":
+            print("Resume: unavailable — %s" % result["reason"])
+    return 1 if result.get("resume") == "not-available" else 0
+
+
+def _doctor(args: argparse.Namespace) -> int:
+    root = _catalog_roots(args.root)[0]
+    checks = []
+    try:
+        catalog = discover_inventor_catalog(root)
+    except (WorkshopError, OSError, ValueError) as exc:
+        checks.append(
+            {
+                "name": "inventor-catalog",
+                "status": "needs-attention",
+                "detail": str(exc),
+                "next": _shell_command(
+                    "workshop", "doctor", "--root", root
+                ),
+            }
+        )
+    else:
+        checks.append(
+            {
+                "name": "inventor-catalog",
+                "status": "ready",
+                "detail": "%d discoverable Inventor(s)" % len(catalog.cards),
+            }
+        )
+
+    binary = os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
+    if not binary:
+        checks.append(
+            {
+                "name": "codex",
+                "status": "needs-attention",
+                "detail": "Codex CLI is not installed or on PATH.",
+                "next": "Install Codex CLI and sign in with 'codex login'.",
+            }
+        )
+    else:
+        try:
+            completed = subprocess.run(
+                [binary, "login", "status"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+                env=codex_subprocess_environment(),
+            )
+        except (OSError, subprocess.SubprocessError):
+            completed = None
+        if completed is None:
+            checks.append(
+                {
+                    "name": "codex",
+                    "status": "needs-attention",
+                    "detail": "The configured Codex CLI command could not run.",
+                    "next": (
+                        "Check WORKSHOP_CODEX_BIN or install Codex CLI, then run "
+                        "'codex login status'."
+                    ),
+                }
+            )
+        elif completed.returncode != 0:
+            checks.append(
+                {
+                    "name": "codex",
+                    "status": "needs-attention",
+                    "detail": "Codex CLI is installed but not signed in.",
+                    "next": "Run 'codex login'; credentials stay in Codex, not the Workshop repo.",
+                }
+            )
+        else:
+            checks.append(
+                {
+                    "name": "codex",
+                    "status": "ready",
+                    "detail": "Codex CLI is installed and signed in.",
+                }
+            )
+
+    cad_ready = importlib.util.find_spec("build123d") is not None
+    checks.append(
+        {
+            "name": "cad-runtime",
+            "status": "ready" if cad_ready else "needs-attention",
+            "detail": (
+                "Shared parametric CAD runtime is installed."
+                if cad_ready
+                else "Shared parametric CAD runtime is not installed."
+            ),
+            **(
+                {}
+                if cad_ready
+                else {"next": "Install the Workshop with its locked runtime dependencies."}
+            ),
+        }
+    )
+    try:
+        from .agent_playtest import PRUSASLICER_VERSION, PrusaSlicerPrintCheck
+
+        slicer = PrusaSlicerPrintCheck.from_environment()
+        if slicer is not None:
+            probe = subprocess.run(
+                [slicer.binary, "--help"],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+                env=minimal_tool_environment(),
+            )
+            version = re.search(
+                r"(?m)^PrusaSlicer(?:-|\s+(?:version\s+)?)"
+                r"([0-9]+(?:\.[0-9]+){2})(?:\s|$)",
+                "%s\n%s" % (probe.stdout, probe.stderr),
+            )
+            if (
+                probe.returncode != 0
+                or version is None
+                or version.group(1) != PRUSASLICER_VERSION
+            ):
+                slicer = None
+    except (
+        WaitingFor,
+        WorkshopError,
+        OSError,
+        ValueError,
+        subprocess.SubprocessError,
+    ):
+        slicer = None
+    checks.append(
+        {
+            "name": "printability",
+            "status": "ready" if slicer is not None else "needs-attention",
+            "detail": (
+                "Pinned PrusaSlicer is available."
+                if slicer is not None
+                else "Pinned PrusaSlicer is not available for exact printability evidence."
+            ),
+            **(
+                {}
+                if slicer is not None
+                else {
+                    "next": "Install PrusaSlicer 2.9.6 in a standard location or set WORKSHOP_PRUSASLICER_BIN."
+                }
+            ),
+        }
+    )
+    factory_ready = bool(os.environ.get("FACTORY_PASSWORD"))
+    checks.append(
+        {
+            "name": "factory-page",
+            "status": "ready" if factory_ready else "needs-attention",
+            "detail": (
+                "A Factory credential is supplied to this Manager; it is verified only during the exact handoff."
+                if factory_ready
+                else "FACTORY_PASSWORD is not configured; a verified page cannot go live."
+            ),
+            **(
+                {}
+                if factory_ready
+                else {
+                    "next": "Set FACTORY_PASSWORD only in the trusted Manager environment; never commit it."
+                }
+            ),
+        }
+    )
+    receipt = {
+        "schema_version": 1,
+        "status": (
+            "ready"
+            if all(item["status"] == "ready" for item in checks)
+            else "needs-attention"
+        ),
+        "root": str(root),
+        "checks": checks,
+    }
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        for item in checks:
+            marker = "ready" if item["status"] == "ready" else "needs attention"
+            print("%-18s %s — %s" % (item["name"], marker, item["detail"]))
+            if item.get("next"):
+                print("  Next: %s" % item["next"])
+        print("Workshop: %s" % receipt["status"])
+    return 0 if receipt["status"] == "ready" else 1
 
 
 def _wish(args: argparse.Namespace) -> int:
+    root = _catalog_roots(args.root)[0]
     objective = " ".join(args.objective)
     wish = Wish.create(
         generate_wish_id(),
         objective,
         context={"source": "workshop-cli"},
     )
+    progress = sys.stderr if args.json else sys.stdout
+    print("Wish: %s" % wish.product_id, file=progress, flush=True)
+    print(
+        "Page: will be public after exact verification (--draft keeps it private)."
+        if args.publish
+        else "Page: will remain a private authenticated draft.",
+        file=progress,
+        flush=True,
+    )
+    print("Matching your Wish with an Inventor...", file=progress, flush=True)
     semantic = CodexSemanticManager()
     manager = WorkshopManager(
-        root=args.root,
+        root=root,
         retriever=semantic.retrieve,
         judge=semantic.judge,
         judge_identity=semantic.judge_identity,
@@ -611,8 +1858,31 @@ def _wish(args: argparse.Namespace) -> int:
             wish, playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS
         )
     except WaitingFor as waiting:
-        receipt = _waiting_receipt(wish, waiting)
+        receipt = {
+            **_waiting_receipt(wish, waiting),
+            "next_command": _wish_command(
+                wish.objective, root, draft=not args.publish
+            ),
+        }
+        showed_match = False
     else:
+        _save_manager_assignment(assignment)
+        print(
+            "Matched with %s." % assignment.decision.selected.card.name,
+            file=progress,
+            flush=True,
+        )
+        print(
+            "Track: %s" % _status_command(wish.product_id, root),
+            file=progress,
+            flush=True,
+        )
+        print(
+            "Inventing, making, and playtesting (up to 60 minutes). "
+            "Use Track in another terminal for durable status.",
+            file=progress,
+            flush=True,
+        )
         result = _run_inventor(assignment)
         result = _resume_factory_instructions(assignment, result)
         if args.publish:
@@ -635,15 +1905,31 @@ def _wish(args: argparse.Namespace) -> int:
             "assignment_sha256": assignment.assignment_sha256,
             "result": result,
         }
+        showed_match = True
     if args.json:
         print(json.dumps(receipt, indent=2, sort_keys=True))
     else:
-        _print_wish_receipt(receipt)
-    return 0
+        _print_wish_receipt(
+            receipt,
+            root=root,
+            show_wish=False,
+            show_match=not showed_match,
+        )
+    return (
+        1
+        if getattr(args, "strict", False) and receipt.get("status") == "waiting"
+        else 0
+    )
 
 
 def _registry(args: argparse.Namespace) -> int:
-    manifests = discover_inventors(args.root)
+    if args.root is not None:
+        root = Path(args.root).resolve()
+    else:
+        root = _source_workshop_root() or packaged_inventor_catalog_root()
+        if root is None:
+            root = Path.cwd().resolve()
+    manifests = discover_inventors(root)
     problems = validate_entrypoints(manifests) if args.check_entrypoints else []
     records = []
     for manifest in manifests:
@@ -747,23 +2033,35 @@ def _default_inventor_name(inventor_id: str) -> str:
 
 def _create_inventor(args: argparse.Namespace) -> int:
     collection = prepare_inventor_collection(args.root)
-    name = args.name or _default_inventor_name(args.inventor_id)
+    if args.taste is None and not args.inventor_id:
+        raise WorkshopError(
+            "inventor_id is required unless --taste supplies a TASTE.md name"
+        )
+    if args.taste is None and not args.description:
+        raise WorkshopError("--description is required unless --taste is supplied")
+    inventor_id = args.inventor_id or _inventor_id_from_taste(args.taste)
+    name = (
+        args.name
+        if args.taste is not None
+        else args.name or _default_inventor_name(inventor_id)
+    )
     destination = create_inventor(
         collection,
-        args.inventor_id,
+        inventor_id,
         name,
         args.description,
         lane=args.lane,
         level=args.level,
+        taste_path=args.taste,
         run_checks=True,
     )
     catalog = discover_inventor_catalog(collection)
-    card = catalog.card(args.inventor_id)
+    card = catalog.card(inventor_id)
     taste = load_taste(destination)
     receipt = {
         "schema_version": 1,
         "status": card.status,
-        "id": args.inventor_id,
+        "id": inventor_id,
         "name": card.name,
         "description": card.description,
         "lane": args.lane,
@@ -785,6 +2083,16 @@ def _create_inventor(args: argparse.Namespace) -> int:
         print("%s joined the Workshop (experimental)." % card.name)
         print("Taste: %s" % (visible / "TASTE.md"))
         print("Checks: passed")
+        print(
+            "Start: %s"
+            % _shell_command(
+                "workshop",
+                "wish",
+                "I wish for a toy only this Inventor would make",
+                "--root",
+                Path(args.root).resolve(),
+            )
+        )
     return 0
 
 
@@ -830,67 +2138,203 @@ def _schemas(args: argparse.Namespace) -> int:
 
 
 def parser() -> argparse.ArgumentParser:
-    root = Path.cwd()
-    command = argparse.ArgumentParser(prog="workshop")
+    command = argparse.ArgumentParser(
+        prog="workshop",
+        description=(
+            "Make one Wish and let the Autonomous Workshop match an Inventor, "
+            "invent the toy, make it, Playtest it, and publish its verified Factory page."
+        ),
+        epilog=(
+            "Start here:\n"
+            "  workshop doctor\n"
+            "  workshop wish \"a wind-up moon that waddles across my desk\"\n"
+            "  workshop create inventor --taste ./TASTE.md --lane moving-machines"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     subcommands = command.add_subparsers(
         dest="command", required=True, metavar="COMMAND"
     )
 
     wish = subcommands.add_parser(
-        "wish", help="wish for a toy and let the Workshop choose its Inventor"
+        "wish",
+        help="wish for a toy; matching and a verified public page are automatic",
+        description=(
+            "Say what you wish existed. The Manager reads Inventor Tastes, chooses "
+            "one exact match, and starts the shared Workshop. The run includes up to "
+            "four AI Playtest-to-Make improvement passes. A verified Factory page goes public by "
+            "default; this never claims the physical toy was printed or delivered."
+        ),
+        epilog=(
+            "Prerequisites: a discoverable Inventor catalog, an installed and signed-in "
+            "Codex CLI, the shared CAD/printability runtime, and FACTORY_PASSWORD for a "
+            "live page. Run 'workshop doctor' first. A truthful waiting result exits 0; "
+            "use --strict when automation should exit 1 on a wait."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     wish.add_argument(
         "objective",
         nargs="+",
-        help="what you wish existed (quotes are optional)",
+        metavar="WISH",
+        help="what you wish existed, in your own words (quotes are optional)",
     )
     wish.add_argument(
         "--root",
         type=Path,
-        default=root,
-        help="Workshop checkout or inventor collection (default: current directory)",
+        default=None,
+        help="Workshop checkout or inventor collection (default: auto-detected)",
     )
-    wish.add_argument("--json", action="store_true")
     wish.add_argument(
+        "--json",
+        action="store_true",
+        help="emit one stable JSON receipt on stdout; progress goes to stderr",
+    )
+    wish.add_argument(
+        "--strict",
+        action="store_true",
+        help="exit 1 instead of 0 when the Workshop truthfully waits for a capability",
+    )
+    publication = wish.add_mutually_exclusive_group()
+    publication.add_argument(
         "--publish",
+        dest="publish",
         action="store_true",
         help=(
-            "make the exact authenticated Instructions draft public; this does "
-            "not claim the toy was printed or delivered"
+            "make the exact authenticated Instructions page public (default; "
+            "kept for explicit scripts)"
         ),
     )
-    wish.set_defaults(handler=_wish)
+    publication.add_argument(
+        "--draft",
+        dest="publish",
+        action="store_false",
+        help="stop after the exact authenticated private draft; do not make it public",
+    )
+    wish.set_defaults(handler=_wish, publish=True)
+
+    status = subcommands.add_parser(
+        "status",
+        help="inspect the durable status of one Wish",
+        description=(
+            "Find a Wish in the Inventors' durable event stores and verify its event "
+            "chain. This command does not change Wish records and never calls a model "
+            "or Factory."
+        ),
+    )
+    status.add_argument(
+        "product_id",
+        nargs="?",
+        help="Wish id printed by 'workshop wish' (omit to list durable Wishes)",
+    )
+    status.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or inventor collection (default: auto-detected, including retained installed runs)",
+    )
+    status.add_argument("--json", action="store_true", help="emit one JSON status receipt")
+    status.set_defaults(handler=_status)
+
+    resume = subcommands.add_parser(
+        "resume",
+        help="continue an exact sealed Instructions handoff",
+        description=(
+            "Resume only the exact, artifact-bound Instructions handoff saved by "
+            "'workshop wish'. Invent, Make, or Playtest waits are reported without "
+            "mutation because those stages do not yet have a safe generic resume."
+        ),
+    )
+    resume.add_argument("product_id", help="saved Wish id")
+    resume.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or inventor collection (default: find the exact retained run)",
+    )
+    resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    resume_publication = resume.add_mutually_exclusive_group()
+    resume_publication.add_argument(
+        "--publish",
+        dest="publish",
+        action="store_true",
+        help="make the verified page public (default)",
+    )
+    resume_publication.add_argument(
+        "--draft",
+        dest="publish",
+        action="store_false",
+        help="create/reconcile the authenticated draft without making it public",
+    )
+    resume.set_defaults(handler=_resume, publish=True)
+
+    doctor = subcommands.add_parser(
+        "doctor",
+        help="check prerequisites without exposing credential values",
+        description=(
+            "Check the Inventor catalog, Codex sign-in, shared CAD/printability "
+            "runtime, and whether Factory authentication is present. No model, "
+            "product import, publication, or delivery action is performed."
+        ),
+    )
+    doctor.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or inventor collection (default: auto-detected)",
+    )
+    doctor.add_argument("--json", action="store_true", help="emit one JSON preflight receipt")
+    doctor.set_defaults(handler=_doctor)
 
     registry = subcommands.add_parser(
         "inventors", aliases=("registry",), help="list and validate inventors"
     )
-    registry.add_argument("--root", type=Path, default=root)
-    registry.add_argument("--json", action="store_true")
-    registry.add_argument("--check-entrypoints", action="store_true")
+    registry.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or inventor collection (default: auto-detected)",
+    )
+    registry.add_argument("--json", action="store_true", help="emit the catalog as JSON")
+    registry.add_argument(
+        "--check-entrypoints",
+        action="store_true",
+        help="also verify every declared profile command is executable",
+    )
     registry.set_defaults(handler=_registry)
 
     artifact = subcommands.add_parser(
         "seal", aliases=("artifact",), help="seal a product artifact tree"
     )
-    artifact.add_argument("source", type=Path)
-    artifact.add_argument("--output", type=Path)
-    artifact.add_argument("--exclude", action="append", default=[])
+    artifact.add_argument("source", type=Path, help="artifact directory to seal")
+    artifact.add_argument("--output", type=Path, help="also write the manifest to this path")
+    artifact.add_argument(
+        "--exclude", action="append", default=[], help="exclude one relative path (repeatable)"
+    )
     artifact.set_defaults(handler=_manifest)
 
     pack = subcommands.add_parser("pack", help="build a reproducible immutable Pack")
-    pack.add_argument("source", type=Path)
-    pack.add_argument("output", type=Path)
-    pack.add_argument("--exclude", action="append", default=[])
-    pack.add_argument("--maximum-bytes", type=int, default=MAX_PACK_BYTES)
+    pack.add_argument("source", type=Path, help="sealed artifact directory")
+    pack.add_argument("output", type=Path, help="output Pack path")
+    pack.add_argument(
+        "--exclude", action="append", default=[], help="exclude one relative path (repeatable)"
+    )
+    pack.add_argument(
+        "--maximum-bytes", type=int, default=MAX_PACK_BYTES, help="hard Pack byte limit"
+    )
     pack.set_defaults(handler=_pack)
 
     plan = subcommands.add_parser(
         "plan-pack", help="preview exact Pack size and largest eligible files"
     )
-    plan.add_argument("source", type=Path)
-    plan.add_argument("--exclude", action="append", default=[])
-    plan.add_argument("--maximum-bytes", type=int, default=MAX_PACK_BYTES)
-    plan.add_argument("--largest", type=int, default=5)
+    plan.add_argument("source", type=Path, help="artifact directory to inspect")
+    plan.add_argument(
+        "--exclude", action="append", default=[], help="exclude one relative path (repeatable)"
+    )
+    plan.add_argument(
+        "--maximum-bytes", type=int, default=MAX_PACK_BYTES, help="planned Pack byte limit"
+    )
+    plan.add_argument("--largest", type=int, default=5, help="number of largest files to show")
     plan.set_defaults(handler=_plan_pack)
 
     clockwork = subcommands.add_parser(
@@ -898,11 +2342,11 @@ def parser() -> argparse.ArgumentParser:
     )
     clockwork_commands = clockwork.add_subparsers(dest="clockwork_action", required=True)
     state = clockwork_commands.add_parser("init", help="initialize the durable database")
-    state.add_argument("database", type=Path)
+    state.add_argument("database", type=Path, help="SQLite state database path")
     state.set_defaults(handler=_init_state)
     audit = clockwork_commands.add_parser("audit", help="verify a product event hash chain")
-    audit.add_argument("database", type=Path)
-    audit.add_argument("product_id")
+    audit.add_argument("database", type=Path, help="existing SQLite state database")
+    audit.add_argument("product_id", help="product whose event chain to verify")
     audit.set_defaults(handler=_audit_state)
 
     # Compatibility commands for 0.2 automation.
@@ -923,18 +2367,39 @@ def parser() -> argparse.ArgumentParser:
     creator = create_commands.add_parser(
         "inventor",
         help="create a discoverable inventor powered by the Workshop",
+        description=(
+            "Bring an existing TASTE.md, or provide an id, description, and lane "
+            "to generate a starter Taste. The Taste-only path inherits every shared "
+            "Workshop engine component."
+        ),
+        epilog=(
+            "Fastest path:\n"
+            "  workshop create inventor --taste ./TASTE.md --lane moving-machines\n\n"
+            "Starter path:\n"
+            "  workshop create inventor mira --description \"kinetic desk toys, not games\" "
+            "--lane moving-machines"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    creator.add_argument("inventor_id")
+    creator.add_argument(
+        "inventor_id",
+        nargs="?",
+        help="safe catalog id; omitted with --taste to derive it from the Taste name",
+    )
+    creator.add_argument(
+        "--taste",
+        type=Path,
+        help="existing TASTE.md to preserve byte-for-byte and validate",
+    )
     creator.add_argument(
         "--name",
-        help="display name (defaults to the inventor id in title case)",
+        help="display name (starter path only; --taste already owns its name)",
     )
     creator.add_argument(
         "--description",
-        required=True,
         help=(
             "Taste selection boundary: what should choose this inventor and "
-            "the closest work that should not"
+            "the closest work that should not (required without --taste)"
         ),
     )
     creator.add_argument(
@@ -949,7 +2414,12 @@ def parser() -> argparse.ArgumentParser:
         default="taste-only",
         help="creative code owned by the inventor (default: taste-only)",
     )
-    creator.add_argument("--root", type=Path, default=root)
+    creator.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="workspace where inventors/ will be created (default: current directory)",
+    )
     creator.add_argument(
         "--json",
         action="store_true",
@@ -979,7 +2449,7 @@ def parser() -> argparse.ArgumentParser:
         choices=("board-game", "physical-product", "custom"),
         help=argparse.SUPPRESS,
     )
-    new.add_argument("--root", type=Path, default=root)
+    new.add_argument("--root", type=Path, default=Path.cwd())
     new.set_defaults(handler=_new_inventor)
 
     check = subcommands.add_parser(
@@ -989,7 +2459,7 @@ def parser() -> argparse.ArgumentParser:
         "target",
         type=Path,
         nargs="?",
-        default=root,
+        default=Path.cwd(),
         help="inventor folder, manifest, inventors/ collection, or repository",
     )
     check.add_argument(

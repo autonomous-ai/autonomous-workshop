@@ -39,6 +39,7 @@ __cadgen__/
 .DS_Store
 .venv-cad/
 .runtime/
+**/.workshop/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal

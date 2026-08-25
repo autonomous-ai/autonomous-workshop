@@ -6,10 +6,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.manifest import load_manifest
-from inventor_workshop.scaffold import scaffold_inventor
+from inventor_workshop.scaffold import create_inventor, scaffold_inventor
 from inventor_workshop.taste import load_taste_header
 from inventor_workshop.toys import PLAYTHING_LANES
 
@@ -132,8 +133,10 @@ class ScaffoldTest(unittest.TestCase):
             )
             self.assertIn("contributes only `TASTE.md`", readme)
             self.assertIn("Workshop supplies Invent, Make, Playtest", readme)
-            self.assertIn("require Python 3.11 or newer", readme)
-            self.assertIn("trusted checkout or product tier", readme)
+            self.assertIn("Python 3.11 or newer is required", readme)
+            self.assertIn("The Wish ID and Inventor match are automatic", readme)
+            self.assertIn("workshop wish --root ../..", readme)
+            self.assertIn("not the customer Wish entrance", readme)
             self.assertIn("No generic, off-the-shelf prints", readme)
             self.assertNotIn("Make/Inspect", readme)
             self.assertIn(
@@ -235,7 +238,7 @@ class ScaffoldTest(unittest.TestCase):
             )
             self.assertTrue((destination / ".workshop/workshop.sqlite3").is_file())
 
-            subprocess.run(
+            built = subprocess.run(
                 [
                     sys.executable,
                     "-m",
@@ -248,11 +251,210 @@ class ScaffoldTest(unittest.TestCase):
                 ],
                 cwd=str(destination),
                 env=environment,
-                check=True,
+                check=False,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
             )
+            self.assertEqual(built.returncode, 0, built.stderr)
+
+    def test_existing_taste_is_the_only_creative_input_and_runs_immediately(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "my-taste" / "TASTE.md"
+            source.parent.mkdir()
+            exact_taste = (
+                "---\r\n"
+                "name: Mira\r\n"
+                "description: Choose Mira for poetic kinetic desk toys; not games or static miniatures.\r\n"
+                "---\r\n\r\n"
+                "# Mira's Taste\r\n\r\n"
+                "I love mechanisms that reveal one small, impossible-looking motion.\r\n"
+                "I reject decoration without interaction. ✨\r\n"
+            ).encode("utf-8")
+            source.write_bytes(exact_taste)
+            collection = root / "inventors"
+            collection.mkdir()
+
+            destination = create_inventor(
+                collection,
+                "mira",
+                lane="moving-machines",
+                taste_path=source,
+            )
+
+            self.assertEqual((destination / "TASTE.md").read_bytes(), exact_taste)
+            self.assertEqual(source.read_bytes(), exact_taste)
+            self.assertFalse((destination / "src/mira/inventor.py").exists())
+            manifest = load_manifest(destination / "inventor.json")
+            self.assertEqual(tuple(manifest.capabilities), ("moving-machines", "taste-only"))
+            self.assertEqual(tuple(manifest.entrypoint), ("python3", "run.py"))
+            header = load_taste_header(destination)
+            self.assertEqual(header.name, "Mira")
+            self.assertEqual(
+                header.description,
+                "Choose Mira for poetic kinetic desk toys; not games or static miniatures.",
+            )
+
+            # Match the Manager's source-checkout execution boundary: only the
+            # Workshop is importable before the generated bootstrap adds src/.
+            away = root / "away"
+            away.mkdir()
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+            environment["WORKSHOP_AGENT_WORKERS"] = "disabled"
+            profile = subprocess.run(
+                [sys.executable, "run.py", "profile"],
+                cwd=destination,
+                env=environment,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            self.assertEqual(json.loads(profile.stdout)["inventor_id"], "mira")
+            run = subprocess.run(
+                [sys.executable, str(destination / "run.py"), "run", "I wish for a moon that waves"],
+                cwd=away,
+                env=environment,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            result = json.loads(run.stdout)
+            self.assertEqual(result["status"], "waiting")
+            self.assertEqual(result["job"], "invent")
+            self.assertEqual(result["needs"][0]["capability"], "industrial-design")
+
+    def test_existing_taste_conflicts_and_unsafe_sources_fail_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            collection = root / "inventors"
+            collection.mkdir()
+            source = root / "source" / "TASTE.md"
+            source.parent.mkdir()
+            source.write_text(
+                "---\n"
+                "name: Mira\n"
+                "description: Choose Mira for moving poetry; not static miniatures.\n"
+                "---\n\n"
+                "# Taste\n\nMotion should carry the idea.\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ContractError, "name conflicts"):
+                create_inventor(
+                    collection,
+                    "wrong-name",
+                    "Someone Else",
+                    lane="moving-machines",
+                    taste_path=source,
+                )
+            self.assertFalse((collection / "wrong-name").exists())
+
+            alias = root / "alias" / "TASTE.md"
+            alias.parent.mkdir()
+            alias.symlink_to(source)
+            with self.assertRaisesRegex(ContractError, "regular file named TASTE.md"):
+                create_inventor(
+                    collection,
+                    "linked-taste",
+                    lane="moving-machines",
+                    taste_path=alias,
+                )
+            self.assertFalse((collection / "linked-taste").exists())
+
+    def test_existing_taste_cannot_change_during_atomic_creation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            collection = root / "inventors"
+            collection.mkdir()
+            source = root / "source" / "TASTE.md"
+            source.parent.mkdir()
+            source.write_text(
+                "---\n"
+                "name: Mira\n"
+                "description: Choose Mira for moving poetry; not static miniatures.\n"
+                "---\n\n"
+                "# Taste\n\nMotion should carry the idea.\n",
+                encoding="utf-8",
+            )
+
+            def mutate_after_generated_checks(manifest):
+                del manifest
+                source.write_text(
+                    source.read_text(encoding="utf-8") + "Taste changed.\n",
+                    encoding="utf-8",
+                )
+                return []
+
+            with mock.patch(
+                "inventor_workshop.contribution.run_declared_checks",
+                side_effect=mutate_after_generated_checks,
+            ), self.assertRaisesRegex(ContractError, "changed during Inventor creation"):
+                create_inventor(
+                    collection,
+                    "changing-taste",
+                    lane="moving-machines",
+                    taste_path=source,
+                )
+            self.assertFalse((collection / "changing-taste").exists())
+            self.assertEqual(tuple(collection.glob(".changing-taste.*")), ())
+
+    def test_generated_package_layout_contains_a_runnable_exact_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source" / "TASTE.md"
+            source.parent.mkdir()
+            exact_taste = (
+                "---\n"
+                "name: Nori\n"
+                "description: Choose Nori for surprising tiny worlds; not games or mechanisms.\n"
+                "---\n\n"
+                "# Nori's Taste\n\nMake every scene reveal a private joke.\n"
+            ).encode("utf-8")
+            source.write_bytes(exact_taste)
+            collection = root / "inventors"
+            collection.mkdir()
+            destination = create_inventor(
+                collection,
+                "nori",
+                lane="little-worlds",
+                taste_path=source,
+                run_checks=False,
+            )
+            target = root / "installed"
+            package = target / "nori"
+            shutil.copytree(destination / "src/nori", package)
+            identity = package / "_identity/nori"
+            identity.mkdir(parents=True)
+            for filename in ("inventor.json", "TASTE.md", "run.py"):
+                shutil.copy2(destination / filename, identity / filename)
+            self.assertEqual((identity / "TASTE.md").read_bytes(), exact_taste)
+            packaged_manifest = load_manifest(identity / "inventor.json")
+            self.assertEqual(
+                tuple(packaged_manifest.entrypoint), ("python3", "run.py")
+            )
+            self.assertIn(
+                'for filename in ("inventor.json", "TASTE.md", "run.py")',
+                (destination / "setup.py").read_text(encoding="utf-8"),
+            )
+            self.assertEqual(
+                (destination / "MANIFEST.in").read_text(encoding="utf-8"),
+                "include inventor.json TASTE.md run.py\n",
+            )
+            environment = dict(os.environ)
+            environment["PYTHONPATH"] = os.pathsep.join(
+                (str(target), str(Path(__file__).resolve().parents[1] / "src"))
+            )
+            environment["WORKSHOP_AGENT_WORKERS"] = "disabled"
+            profile = subprocess.run(
+                [sys.executable, str(identity / "run.py"), "profile"],
+                cwd=root,
+                env=environment,
+                check=True,
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            self.assertEqual(json.loads(profile.stdout)["inventor_id"], "nori")
 
     def test_three_levels_generate_only_the_declared_creative_seams(self):
         cases = (
@@ -322,7 +524,15 @@ class ScaffoldTest(unittest.TestCase):
     def test_scaffold_rejects_unknown_scope_and_unsafe_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for inventor_id in ("class", "inventor-workshop", "tests"):
+            for inventor_id in (
+                "a",
+                "class",
+                "inventor-workshop",
+                "tests",
+                "json",
+                "foo--bar",
+                "foo-",
+            ):
                 with self.subTest(inventor_id=inventor_id), self.assertRaises(ContractError):
                     scaffold_inventor(
                         root,
@@ -451,8 +661,8 @@ class ScaffoldTest(unittest.TestCase):
             target = root / "target"
             package = target / "target_games"
             shutil.copytree(destination / "src/target_games", package)
-            identity = package / "_identity"
-            identity.mkdir()
+            identity = package / "_identity/target-games"
+            identity.mkdir(parents=True)
             shutil.copy2(destination / "inventor.json", identity / "inventor.json")
             shutil.copy2(destination / "TASTE.md", identity / "TASTE.md")
             away = root / "away"

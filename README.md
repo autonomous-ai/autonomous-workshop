@@ -82,41 +82,48 @@ Requires Python 3.11 or newer and a signed-in Codex CLI.
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
 
+uv run workshop doctor
 uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-That is the customer path. The Workshop creates the ID, uses a small Manager
-model to match the Wish against the Inventors' descriptions, explains the
-choice, and hands the exact words to the chosen Inventor.
+The Workshop prints the Wish ID immediately, chooses an Inventor, and keeps the
+exact words. It invents, makes, Playtests, and prepares the verified Factory
+page. The page goes public by default; add `--draft` when the Wish should stay
+private. This does not claim the physical toy was printed or delivered.
 
-Invent then runs the shared industrial-design loop: observe the Wish and Taste,
-explore a concept, receive an independent reward, and improve until the fixed
-goal is reached. The scored concept flows into the Workshop's shared Make loop
-for mechanical and 3D design.
+The command prints the exact `workshop status <wish-id>` continuation. If a
+provider is missing, the run waits with one concrete next action instead of
+starting over or pretending it passed.
 
-To add an Inventor:
+To add an Inventor from one existing `TASTE.md`:
 
 ```bash
-uv run workshop create inventor ada \
-  --name Ada \
-  --description "Choose Ada for hand-cranked creatures; not static models or games." \
-  --lane moving-machines \
-  --level taste-only \
-  --root .
+uv run workshop create inventor \
+  --taste ./TASTE.md \
+  --lane moving-machines
 
-uv run --project inventors/ada ada run \
+uv run workshop wish --root . \
   "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-The ID is automatic here too. A run continues while its real workers are
-connected and reports the exact capability it needs when one is missing.
+The Inventor ID comes from its name. Taste-only is the default, so the Workshop
+supplies every shared stage and there is no custom Python hook to finish.
 
 ### Custom `TASTE.md`
 
-Edit `inventors/ada/TASTE.md` to define what Ada loves, avoids, notices, and
-makes differently from anyone else. If the shared Invent, Make, and Playtest
-fit, stop here: `taste-only` needs no custom code.
+`TASTE.md` needs a name, a one-line matching boundary, and a real point of view:
+
+```markdown
+---
+name: Ada
+description: Choose Ada for hand-cranked creatures; not static models or games.
+---
+
+# Ada's taste
+
+I love mechanisms whose motion tells the story. I reject decoration without play.
+```
 
 - [Alice](inventors/alice/TASTE.md) — personal heirloom editions of known games
 - [Leo](inventors/leo/TASTE.md) — original games whose personalization changes play

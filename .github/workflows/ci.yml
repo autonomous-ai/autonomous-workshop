@@ -76,6 +76,9 @@ jobs:
           test ! -e "$RUNNER_TEMP/ci-runtime"
           CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor make first-product
           CI_INVENTOR_RUNTIME="$RUNNER_TEMP/ci-runtime" ci_inventor status
+      - name: installed wheel supports the no-root customer journey
+        if: matrix.python-version == '3.13'
+        run: python tests/installed_wheel_cli_acceptance.py
 
   bob-test:
     runs-on: ubuntu-latest

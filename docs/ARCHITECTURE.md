@@ -82,9 +82,10 @@ not a seventh inventor job, custom inventor hook, or release gate for the order
 already shipped.
 
 The owner-facing transition from private draft to public page is deliberately
-outside those six jobs. An owner reviews the finished draft and decides when
-to make it public; that decision does not delay Instructions or Deliver and
-does not introduce a seventh job.
+outside those six jobs. Calling `workshop wish` authorizes that separately
+verified transition by default; `--draft` keeps the page private for review.
+This does not delay Instructions or Deliver, claim physical fulfillment, or
+introduce a seventh job.
 
 ## The Workshop Manager
 

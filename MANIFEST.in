@@ -1,4 +1,5 @@
 include setup.py
 recursive-include schemas *.json
 recursive-include skills *
+recursive-include inventors TASTE.md inventor.json profile.py
 global-exclude __pycache__ *.pyc *.pyo .DS_Store

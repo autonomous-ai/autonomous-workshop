@@ -73,6 +73,10 @@ DeliverJob = Callable[[DeliverContext], Delivered]
 
 CUSTOMIZATION_LEVELS = ("taste-only", "custom-make", "custom-playtest")
 _INSTRUCTIONS_CHECKPOINT = "instructions-checkpoint.json"
+# The managed CLI supervises an Inventor child for at most 60 minutes. Keep the
+# Workshop fence alive slightly longer so a valid late result cannot outlive
+# its lease and so no second process can enter during the supervisor's window.
+_MANAGED_RUN_LEASE_SECONDS = 65 * 60
 _INVENTOR_ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
 
 
@@ -1337,7 +1341,11 @@ class Workshop:
                 "playtest_rounds": selected_rounds,
             },
         )
-        lease = runtime.acquire_lease(wish.product_id, "toy-workshop")
+        lease = runtime.acquire_lease(
+            wish.product_id,
+            "toy-workshop",
+            ttl_seconds=_MANAGED_RUN_LEASE_SECONDS,
+        )
         try:
             run_root = self.runtime_root / "runs" / wish.product_id
             if run_root.exists():
