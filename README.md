@@ -203,20 +203,6 @@ under `inventors/`.
 - `tests/` — the rules the Workshop must never break
 - `tools/` — checks for locks, provenance, and secrets
 
-## What the Workshop will not fake
-
-- Proof that is missing, old, broken, timed out, or of the wrong kind is not a
-  pass.
-- Proof follows the exact bytes of the thing it tested, through every repair.
-- Change the rules or the parts and the proof that depended on them is void.
-- A generated picture counts as proof only when it shows the exact thing that
-  passed. Concept art stays labelled as concept art.
-- When a step outside the Workshop ends unclear — a print, an upload, a handover
-  — it waits and checks instead of trying again blindly.
-- "Good enough" means the pinned rules passed inside the time, tries, and money
-  allowed. An inventor may kill its own idea. It may never lower the bar to save
-  one.
-
 ## Check it works
 
 ```bash
