@@ -82,7 +82,7 @@ class SharedEngineMatrixTest(unittest.TestCase):
             )
             stack.enter_context(
                 mock.patch(
-                    "inventor_workshop.workshop.DefaultInstructions",
+                    "inventor_workshop.agent_instructions.RewardedInstructions",
                     return_value=self.shared["instructions"],
                 )
             )
