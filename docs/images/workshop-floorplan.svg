@@ -120,10 +120,11 @@
     <rect class="node-internal" x="220" y="470" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="490" x2="600" y2="590" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="497" class="eyebrow eyebrow-internal">AI INVENTOR · INDUSTRIAL DESIGN · SELF-IMPROVING LOOP</text>
+  <text x="250" y="497" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
   <text x="250" y="531" class="heading">INVENT</text>
-  <text x="250" y="558" class="body">Explore many directions. Choose the concept and</text>
-  <text x="250" y="580" class="body">shape its character, play, and spark.</text>
+  <text x="250" y="556" class="body">Explore many directions in industrial design.</text>
+  <text x="250" y="578" class="body">Choose a concept, then shape its character,</text>
+  <text x="250" y="600" class="body">play, and spark.</text>
   <path class="micro" d="M 665 498 C 735 472, 764 525, 730 572 C 700 612, 633 583, 646 536"/>
   <text x="697" y="507" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="529" text-anchor="middle" class="micro-copy">ACT</text>
@@ -139,10 +140,11 @@
     <rect class="node-internal" x="220" y="670" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="690" x2="600" y2="790" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="697" class="eyebrow eyebrow-internal">AI INVENTOR · MECHANICAL + 3D DESIGN · SELF-IMPROVING LOOP</text>
+  <text x="250" y="697" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
   <text x="250" y="731" class="heading">MAKE</text>
-  <text x="250" y="758" class="body">Engineer the mechanics. Build the 3D design and</text>
-  <text x="250" y="780" class="body">printable parts that fit, move, and feel right.</text>
+  <text x="250" y="756" class="body">Turn the concept into mechanical + 3D design.</text>
+  <text x="250" y="778" class="body">Build printable parts that fit, move,</text>
+  <text x="250" y="800" class="body">and feel right.</text>
   <path class="micro" d="M 665 698 C 735 672, 764 725, 730 772 C 700 812, 633 783, 646 736"/>
   <text x="697" y="707" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="729" text-anchor="middle" class="micro-copy">ACT</text>
