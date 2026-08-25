@@ -826,12 +826,27 @@ def _macos_isolation_profile(context: ContributionIsolationContext) -> str:
         for parent in (root, *root.parents)
         if str(parent) not in ("/", "")
     )
+    traversal_targets = set(read_subpaths) | set(read_literals)
+    traversal_targets.update(
+        (
+            context.attempt,
+            context.control,
+            context.request_path,
+            context.response_path,
+            context.workspace,
+        )
+    )
+    metadata_filters = "\n       ".join(
+        "(path-ancestors %s)" % _sbpl_string(path)
+        for path in sorted(traversal_targets)
+    )
     read_filters = "\n       ".join(
         ["(subpath %s)" % _sbpl_string(path) for path in sorted(read_subpaths)]
         + ["(literal %s)" % _sbpl_string(path) for path in sorted(read_literals)]
     )
     write_filters = "\n       ".join(
         (
+            "(literal %s)" % _sbpl_string(context.workspace),
             "(subpath %s)" % _sbpl_string(context.workspace),
             "(literal %s)" % _sbpl_string(context.response_path),
         )
@@ -848,6 +863,8 @@ def _macos_isolation_profile(context: ContributionIsolationContext) -> str:
             "(deny network*)",
             "(allow process-exec)",
             "(allow process-info* (target self))",
+            "(allow file-read-metadata file-test-existence",
+            "       %s)" % metadata_filters,
             "(allow file-read* file-test-existence",
             "       %s)" % read_filters,
             "(allow file-map-executable",

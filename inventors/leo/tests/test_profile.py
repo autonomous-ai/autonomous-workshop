@@ -1,6 +1,6 @@
 import unittest
 
-from inventor_workshop import WorkshopTools
+from inventor_workshop import WorkshopTools, register_workshop_engine
 from profile import build_workshop, create_wish
 
 
@@ -13,7 +13,9 @@ class LeoProfileTest(unittest.TestCase):
             raise AssertionError("preview must not execute Playtest")
 
         workshop = build_workshop(
-            tools=WorkshopTools(make=shared_make, playtest=shared_playtest)
+            trusted_engine=register_workshop_engine(
+                WorkshopTools(make=shared_make, playtest=shared_playtest)
+            )
         )
         self.assertEqual(workshop.lane, "invented-games")
         self.assertEqual(workshop.customization_level, "taste-only")

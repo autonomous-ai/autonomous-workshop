@@ -262,7 +262,18 @@ class ContributionRpcTest(unittest.TestCase):
             self.assertIn(str(inventor / "hook.py"), profile)
             self.assertIn(str(inventor / "inventor.json"), profile)
             self.assertIn(str(inventor / "TASTE.md"), profile)
+            metadata_clause = profile.split(
+                "(allow file-read-metadata file-test-existence", 1
+            )[1].split("(allow file-read*", 1)[0]
+            self.assertIn(
+                "(path-ancestors %s)" % json.dumps(str(context.workspace)),
+                metadata_clause,
+            )
             write_clause = profile.split("(allow file-write*", 1)[1]
+            self.assertIn(
+                "(literal %s)" % json.dumps(str(context.workspace)),
+                write_clause,
+            )
             self.assertIn(str(context.workspace), write_clause)
             self.assertIn("response.json", write_clause)
             self.assertNotIn(str(inventor), write_clause)
@@ -363,10 +374,35 @@ raise SystemExit(contribution_hook_main(ROOT, make=make))
 """,
                 encoding="utf-8",
             )
-            try:
-                made = ContributionHookClient(inventor, "custom-make").make(
-                    context
+
+            def diagnostic_runner(command, *, cwd, env, timeout):
+                completed = subprocess.run(
+                    list(command),
+                    cwd=str(cwd),
+                    env=dict(env),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=timeout,
+                    check=False,
+                    text=True,
                 )
+                if completed.returncode != 0:
+                    # This is a fixed, credential-free test hook. Keep the
+                    # bounded traceback visible in CI without changing the
+                    # production runner's intentionally silent boundary.
+                    self.fail(
+                        "isolated fixture hook failed (%d): %s"
+                        % (completed.returncode, completed.stderr[-4_000:])
+                    )
+                return completed
+
+            try:
+                made = ContributionHookClient(
+                    inventor,
+                    "custom-make",
+                    runner=diagnostic_runner,
+                ).make(context)
             except WaitingFor as waiting:
                 if any(
                     need.capability == ISOLATION_CAPABILITY
