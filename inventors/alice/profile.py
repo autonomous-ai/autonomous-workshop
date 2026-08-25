@@ -43,11 +43,14 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
+    selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=configured_workshop_tools(tools),
-        runtime_root=runtime_root,
+        tools=configured_workshop_tools(
+            tools, inventor_id="alice", runtime_root=selected_runtime
+        ),
+        runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
 

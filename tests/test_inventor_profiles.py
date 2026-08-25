@@ -59,13 +59,13 @@ def invent_fixture(context):
         90,
     )
 class CanonicalInventorProfileTest(unittest.TestCase):
-    def test_five_profiles_select_the_five_plaything_lanes_and_three_levels(self):
+    def test_five_profiles_select_the_five_lanes_with_shared_worker_defaults(self):
         expected = {
             "alice": ("classics-made-yours", "taste-only"),
-            "bob": ("moving-machines", "custom-make"),
+            "bob": ("moving-machines", "taste-only"),
             "eve": ("little-worlds", "taste-only"),
             "ivy": ("holdable-science", "taste-only"),
-            "leo": ("invented-games", "custom-playtest"),
+            "leo": ("invented-games", "taste-only"),
         }
         for inventor_id, (lane, level) in expected.items():
             with self.subTest(inventor_id=inventor_id):
@@ -178,13 +178,10 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                         )
                     )
 
-    def test_leo_owns_playtest_while_bob_uses_the_shared_default(self):
+    def test_bob_and_leo_wait_for_the_same_shared_playtest_service(self):
         leo = load_profile("leo")
         bob = load_profile("bob")
-        for profile, capability in (
-            (leo, "leo-custom-playtest-adapter"),
-            (bob, "agent-playtest"),
-        ):
+        for profile in (leo, bob):
             with self.subTest(inventor_id=profile.PROFILE["inventor_id"]), tempfile.TemporaryDirectory() as temporary:
                 workshop = profile.build_workshop(
                     tools=WorkshopTools(invent=invent_fixture),
@@ -198,9 +195,12 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                 result = workshop.run(wish, playtest_rounds=2)
                 self.assertEqual(result.job, "playtest")
                 self.assertEqual(result.status, "waiting")
-                self.assertEqual(result.needs[0].capability, capability)
+                self.assertEqual(
+                    [need.capability for need in result.needs],
+                    list(workshop.blueprint.required_capabilities("playtest")),
+                )
 
-    def test_leo_waits_for_his_ai_playtest_adapter(self):
+    def test_leo_waits_for_shared_ai_playtest_when_it_is_not_installed(self):
         leo = load_profile("leo")
         with tempfile.TemporaryDirectory() as temporary:
             workshop = leo.build_workshop(
@@ -214,8 +214,89 @@ class CanonicalInventorProfileTest(unittest.TestCase):
             result = workshop.run(wish, playtest_rounds=2)
         self.assertEqual(
             [need.capability for need in result.needs],
-            ["leo-custom-playtest-adapter"],
+            list(workshop.blueprint.required_capabilities("playtest")),
         )
+
+    def test_bob_uses_shared_make_by_default_and_explicit_override_wins(self):
+        bob = load_profile("bob")
+
+        def shared_make(context):
+            return make_fixture(context)
+
+        def custom_make(context):
+            return make_fixture(context)
+
+        shared = bob.build_workshop(tools=WorkshopTools(make=shared_make))
+        overridden = bob.build_workshop(
+            tools=WorkshopTools(make=shared_make), make=custom_make
+        )
+        unconfigured = bob.build_workshop()
+
+        self.assertIs(shared.make_job, shared_make)
+        self.assertEqual(shared.customization_level, "taste-only")
+        self.assertIs(overridden.make_job, custom_make)
+        self.assertEqual(overridden.customization_level, "custom-make")
+        self.assertIsNot(unconfigured.make_job, bob.bob_make)
+        self.assertEqual(unconfigured.customization_level, "taste-only")
+
+    def test_leo_uses_both_shared_workers_by_default_and_overrides_are_opt_in(self):
+        leo = load_profile("leo")
+
+        def shared_make(context):
+            return make_fixture(context)
+
+        def shared_playtest(context):
+            del context
+            raise AssertionError("selection test does not execute Playtest")
+
+        def custom_make(context):
+            return make_fixture(context)
+
+        def custom_playtest(context):
+            del context
+            raise AssertionError("selection test does not execute Playtest")
+
+        shared = leo.build_workshop(
+            tools=WorkshopTools(make=shared_make, playtest=shared_playtest)
+        )
+        overridden = leo.build_workshop(
+            tools=WorkshopTools(make=shared_make, playtest=shared_playtest),
+            make=custom_make,
+            playtest=custom_playtest,
+        )
+        unconfigured = leo.build_workshop()
+
+        self.assertIs(shared.make_job, shared_make)
+        self.assertIs(shared.playtest_job, shared_playtest)
+        self.assertEqual(shared.customization_level, "taste-only")
+        self.assertIs(overridden.make_job, custom_make)
+        self.assertIs(overridden.playtest_job, custom_playtest)
+        self.assertEqual(overridden.customization_level, "custom-playtest")
+        self.assertIsNot(unconfigured.make_job, leo.leo_make)
+        self.assertIsNot(unconfigured.playtest_job, leo.leo_playtest)
+        self.assertEqual(unconfigured.customization_level, "taste-only")
+
+    def test_leo_partial_shared_configuration_falls_back_only_where_missing(self):
+        leo = load_profile("leo")
+
+        def shared_make(context):
+            return make_fixture(context)
+
+        def shared_playtest(context):
+            del context
+            raise AssertionError("selection test does not execute Playtest")
+
+        shared_make_only = leo.build_workshop(
+            tools=WorkshopTools(make=shared_make)
+        )
+        shared_playtest_only = leo.build_workshop(
+            tools=WorkshopTools(playtest=shared_playtest)
+        )
+
+        self.assertIs(shared_make_only.make_job, shared_make)
+        self.assertIsNot(shared_make_only.playtest_job, leo.leo_playtest)
+        self.assertIsNot(shared_playtest_only.make_job, leo.leo_make)
+        self.assertIs(shared_playtest_only.playtest_job, shared_playtest)
 
     def test_every_taste_enforces_wish_uniqueness_and_cool_over_twee(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):

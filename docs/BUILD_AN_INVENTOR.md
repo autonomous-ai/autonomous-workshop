@@ -133,7 +133,8 @@ Alice, the `classics-made-yours` inventor, illustrates the boundary:
 A new inventor follows this dependency shape and chooses the smallest level its
 category needs; it does not copy Alice's state machine or private history.
 Alice's earlier Blindcap work is Workshop provenance, while Leo is the bundled
-`invented-games` example with custom Make and Playtest.
+`invented-games` example using shared Make/CAD and Playtest by default. Custom
+workers remain optional when an inventor has genuinely category-specific logic.
 
 ## 3. Create your inventor
 

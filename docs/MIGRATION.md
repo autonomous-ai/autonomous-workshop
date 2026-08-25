@@ -239,11 +239,13 @@ they are examples, not a closed catalog or five completed live inventors:
   laboratory is provenance that taught Workshop, not her active profile or a
   second invented-game inventor. Shared Make and Playtest must wait when their real
   capabilities are absent.
-- Leo is the clean Workshop-native `invented-games` inventor with custom Make and
-  custom Playtest. His AI-player adapter must enforce the pinned seeded
-  simulation policy rather than inheriting a second legacy state machine.
-- Bob demonstrates `moving-machines` and still waits for a typed custom Make; his
-  preserved board-game laboratory is not that adapter.
+- Leo is the clean Workshop-native `invented-games` inventor. Shared Make/CAD
+  and Playtest are his defaults and must enforce the pinned seeded simulation
+  policy. Paired custom Make and Playtest workers remain an optional override,
+  not a prerequisite for making a Wish.
+- Bob demonstrates `moving-machines` through shared Make/CAD and Playtest. An
+  inventor-specific Make worker is optional; his preserved board-game
+  laboratory is not that worker.
 - Ivy (`holdable-science`) and Eve (`little-worlds`) are Taste-only profiles and
   wait for configured shared tools.
 
@@ -350,10 +352,10 @@ and never merge authorities by modification time.
 13. Simplify operational names only after every entry point uses one authority.
 
 Blindcap provenance and Bob's preserved laboratory should retain every stronger
-native invariant until Workshop proves equivalent behavior. Alice's active
-classics profile, Eve, and Ivy stay thin; improve shared tools instead of
-growing duplicate infrastructure in their folders. Leo and Bob keep only their
-category-specific custom seams.
+native invariant until Workshop proves equivalent behavior. All five active
+profiles stay thin; improve shared tools instead of growing duplicate
+infrastructure in their folders. Leo and Bob keep only optional,
+category-specific override seams.
 
 ## Verification
 

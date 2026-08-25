@@ -410,13 +410,18 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
+    selected_runtime = runtime_root if runtime_root is not None else default_runtime_root()
     return Workshop(
         inventor_root(),
         LANE,
-        tools=configured_workshop_tools(tools),
+        tools=configured_workshop_tools(
+            tools,
+            inventor_id=INVENTOR_ID,
+            runtime_root=selected_runtime,
+        ),
         make=CUSTOM_MAKE,
         playtest=CUSTOM_PLAYTEST,
-        runtime_root=runtime_root if runtime_root is not None else default_runtime_root(),
+        runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
 

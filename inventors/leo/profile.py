@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Leo's canonical invented-games Workshop profile."""
+"""Leo's canonical invented-games Workshop profile.
+
+The Workshop's shared Make/CAD and AI Playtest workers are Leo's defaults.
+``leo_make`` and ``leo_playtest`` remain available only as explicit
+compatibility overrides.
+"""
 
 from __future__ import annotations
 
@@ -20,10 +25,10 @@ PROFILE = {
     "schema_version": 1,
     "inventor_id": "leo",
     "lane": LANE,
-    "customization": "custom-Make+Playtest",
-    "workshop_level": "custom-playtest",
-    "make": "Leo-owned typed waiting seam",
-    "playtest": "Leo-owned typed waiting seam",
+    "customization": "taste-only; optional custom Make + Playtest",
+    "workshop_level": "taste-only",
+    "make": "Workshop shared Make/CAD by default; optional Leo override",
+    "playtest": "Workshop shared AI Playtest by default; optional Leo override",
     "release_gate": "1,000 seeded AI games across four player styles",
 }
 
@@ -73,13 +78,19 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
+    """Use shared Workshop workers unless explicit Leo overrides are supplied."""
+
+    selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
+    selected_tools = configured_workshop_tools(
+        tools, inventor_id="leo", runtime_root=selected_runtime
+    )
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=configured_workshop_tools(tools),
-        make=leo_make if make is None else make,
-        playtest=leo_playtest if playtest is None else playtest,
-        runtime_root=runtime_root,
+        tools=selected_tools,
+        make=make,
+        playtest=playtest,
+        runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
 
@@ -90,8 +101,7 @@ def describe() -> dict:
         **PROFILE,
         "taste_sha256": workshop.taste.sha256,
         "blueprint_sha256": workshop.blueprint.sha256,
-        "adapter_status": "waiting",
-        "next_need": "typed implementations for Leo's custom Make and Playtest",
+        "adapter_status": "shared Workshop workers",
     }
 
 

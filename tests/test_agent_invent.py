@@ -112,7 +112,7 @@ class AgentInventTest(unittest.TestCase):
         )
 
     def test_inventor_improves_until_the_independent_reward_reaches_goal(self):
-        creator = FakeCodex("gpt-5.6-sol", [action("First dog"), action("Trotter")])
+        creator = FakeCodex("gpt-5.6-terra", [action("First dog"), action("Trotter")])
         evaluator = FakeCodex(
             "gpt-5.6-terra",
             [verdict(74, "Make the gait more specific to this dog."), verdict(91, "Ready for Make.")],
@@ -132,7 +132,7 @@ class AgentInventTest(unittest.TestCase):
         self.assertIn("Make and Playtest own those later", evaluator.prompts[0][0])
 
     def test_workshop_advances_to_make_only_after_invent_passes(self):
-        creator = FakeCodex("gpt-5.6-sol", [action("Trotter")])
+        creator = FakeCodex("gpt-5.6-terra", [action("Trotter")])
         evaluator = FakeCodex("gpt-5.6-terra", [verdict(92, "Ready for Make.")])
         evaluator.reasoning_effort = "low"
         worker = CodexInventor(creator=creator, evaluator=evaluator)

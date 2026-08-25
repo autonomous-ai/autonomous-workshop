@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Bob's thin, canonical moving-machines Workshop profile.
 
-Bob reserves a custom Make seam. The preserved board-game harness is unrelated
-to that typed seam and is never installed automatically.
+The Workshop's shared Make/CAD worker is Bob's default. ``bob_make`` remains
+available only as an explicit compatibility override. The preserved board-game
+harness is unrelated and is never installed automatically.
 """
 
 from __future__ import annotations
@@ -24,9 +25,9 @@ PROFILE = {
     "schema_version": 1,
     "inventor_id": "bob",
     "lane": LANE,
-    "customization": "custom-Make",
-    "workshop_level": "custom-make",
-    "make": "Bob-owned typed waiting seam",
+    "customization": "taste-only; optional custom Make",
+    "workshop_level": "taste-only",
+    "make": "Workshop shared Make/CAD by default; optional Bob override",
     "playtest": "Workshop default",
 }
 
@@ -60,8 +61,7 @@ def describe() -> dict:
         **PROFILE,
         "taste_sha256": workshop.taste.sha256,
         "blueprint_sha256": workshop.blueprint.sha256,
-        "adapter_status": "waiting",
-        "next_need": "typed implementation for Bob's custom moving-machine Make",
+        "adapter_status": "shared Workshop workers",
     }
 
 
@@ -72,14 +72,18 @@ def build_workshop(
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
 ) -> Workshop:
-    """Install Bob's reviewed moving-machine Make and shared Playtest."""
+    """Use shared Workshop workers unless the caller explicitly overrides Make."""
 
+    selected_runtime = runtime_root or (INVENTOR_ROOT / ".workshop")
+    selected_tools = configured_workshop_tools(
+        tools, inventor_id="bob", runtime_root=selected_runtime
+    )
     return Workshop(
         INVENTOR_ROOT,
         LANE,
-        tools=configured_workshop_tools(tools),
-        make=bob_make if make is None else make,
-        runtime_root=runtime_root,
+        tools=selected_tools,
+        make=make,
+        runtime_root=selected_runtime,
         max_rounds=max_rounds,
     )
 

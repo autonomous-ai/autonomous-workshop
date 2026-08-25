@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence
 
 from .codex_runtime import CodexInvocationError, CodexStructuredRunner
@@ -13,7 +14,7 @@ from .jobs import InventContext, Invented, Need, WaitingFor
 from .reward_loop import RewardSignal, json_sha256, run_reward_loop
 
 
-DEFAULT_INVENT_MODEL = "gpt-5.6-sol"
+DEFAULT_INVENT_MODEL = "gpt-5.6-terra"
 DEFAULT_REWARD_MODEL = "gpt-5.6-terra"
 DEFAULT_INVENT_GOAL = 85
 DEFAULT_INVENT_STEPS = 3
@@ -341,16 +342,99 @@ class CodexInventor:
         )
 
 
-def configured_workshop_tools(existing=None):
-    """Install the MVP Invent worker only for an explicitly enabled CLI handoff."""
+def configured_workshop_tools(
+    existing=None,
+    *,
+    inventor_id: Optional[str] = None,
+    runtime_root: Optional[Path] = None,
+):
+    """Merge the opt-in shared Codex workers into one Workshop tool set.
+
+    ``WORKSHOP_AGENT_WORKERS=codex`` installs the Workshop-owned Invent, Make,
+    and Playtest workers.  Instructions is installed only when the selected
+    inventor's exact Factory username/password pair is present; without that
+    pair, Workshop's normal fail-closed Instructions adapter remains in charge.
+    Explicit caller tools always win field by field.
+
+    ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible Invent-only
+    switch.  It never enables the other workers or Factory authentication.
+    """
 
     from .workshop import WorkshopTools
 
-    if existing is not None:
-        return existing
-    if os.environ.get("WORKSHOP_INVENT_WORKER") == "codex":
-        return WorkshopTools(invent=CodexInventor())
-    return WorkshopTools()
+    if existing is not None and not isinstance(existing, WorkshopTools):
+        raise ContractError("configured Workshop tools must be a WorkshopTools value")
+    selected = existing or WorkshopTools()
+    full_workers = os.environ.get("WORKSHOP_AGENT_WORKERS") == "codex"
+    legacy_invent = os.environ.get("WORKSHOP_INVENT_WORKER") == "codex"
+    if not full_workers and not legacy_invent:
+        return selected
+
+    invent = selected.invent
+    make = selected.make
+    playtest = selected.playtest
+    instructions = selected.instructions
+
+    if invent is None:
+        invent = CodexInventor()
+
+    if full_workers:
+        from .agent_make import CodexMaker
+        from .agent_playtest import LaneAwarePlaytester
+
+        if make is None:
+            make = CodexMaker()
+        if playtest is None:
+            playtest = LaneAwarePlaytester()
+
+        factory_names = ("FACTORY_USERNAME", "FACTORY_PASSWORD")
+        factory_environment_present = any(
+            name in os.environ for name in factory_names
+        )
+        if instructions is None and factory_environment_present:
+            from .agent_instructions import RewardedInstructions
+            from .factory_agent import (
+                FactoryAgentInstructionsWriter,
+                factory_credentials_from_environment,
+            )
+            from .store import InventorStore
+
+            if inventor_id is None:
+                raise ContractError(
+                    "Factory Instructions require the selected inventor_id"
+                )
+            if runtime_root is None:
+                raise ContractError(
+                    "Factory Instructions require a caller-supplied runtime_root"
+                )
+            try:
+                selected_runtime = Path(runtime_root)
+            except TypeError as exc:
+                raise ContractError("Workshop runtime_root must be path-like") from exc
+            if not selected_runtime.is_absolute():
+                raise ContractError("Workshop runtime_root must be absolute")
+            if selected_runtime.is_symlink():
+                raise ContractError("Workshop runtime_root must not be a symlink")
+            credentials = factory_credentials_from_environment(
+                inventor_id,
+                os.environ,
+            )
+            store = InventorStore(selected_runtime / "workshop.sqlite3")
+            instructions = RewardedInstructions(
+                FactoryAgentInstructionsWriter(
+                    store,
+                    inventor_id,
+                    credentials,
+                )
+            )
+
+    return WorkshopTools(
+        invent=invent,
+        make=make,
+        playtest=playtest,
+        instructions=instructions,
+        deliver=selected.deliver,
+    )
 
 
 __all__ = [

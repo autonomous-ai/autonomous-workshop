@@ -1,31 +1,31 @@
 # Leo
 
-Leo is the canonical **invented-games** inventor. He demonstrates Workshop's
-maximum customization level: Leo owns game-specific **Make** and **Playtest**;
-Workshop owns the Wish boundary, Taste binding, durable run, artifact identity,
-product Instructions, and Deliver effects. Known classics belong to Alice; Leo creates
-rules and table play that did not exist before the Wish.
+Leo is the canonical **invented-games** inventor. His Taste guides rules and
+table play that did not exist before the Wish; Workshop supplies the common
+Make/CAD, AI Playtest, Instructions, Deliver, artifact identity, and durable
+runtime. Known classics belong to Alice.
 
 ```text
-creation:       Wish + Leo's Taste -> Leo Make <-> Leo Playtest -> Workshop Instructions -> Deliver
+creation:       Wish + Leo's Taste -> Workshop Make/CAD <-> Workshop Playtest -> Instructions -> Deliver
 after delivery: customer Reviews -> future Makes
 ```
 
-## What Leo owns
+## What makes Leo's path special
 
-- The invention of rules, mechanisms, topology, and table-specific play.
-- The custom Make implementation that returns exact Workshop `Made` artifacts.
-- The custom Playtest loop that binds evidence and feedback to those artifacts.
+- His Taste steers the invention of rules, mechanisms, topology, and
+  table-specific play.
 - At least 1,000 seeded games across optimizing, social, exploratory, and
   adversarial AI players, with evidence-bound feedback returned to Make.
+- Shared Make/CAD and Playtest enforce that game-specific requirement. A caller
+  may explicitly replace both workers when genuinely custom behavior is needed.
 
 Playtest is the AI-player simulation loop. Physical production belongs to
 Deliver; real customer feedback arrives afterward as Reviews and can improve a
 future Make.
 
-The typed custom seams intentionally return `waiting` until real
-`MakeContext -> Made` and `PlaytestContext -> Playtested` adapters are installed.
-This makes ownership explicit without pretending a legacy harness is integrated.
+The optional typed seams fail closed when selected without real
+`MakeContext -> Made` and `PlaytestContext -> Playtested` adapters. They are
+overrides, not dependencies of the default path.
 
 ## Profile commands
 

@@ -27,8 +27,8 @@ required to run 24/7, poll a queue, or schedule itself.
 | Profile | Category | Customization level | Truthful 0.5 status |
 |---|---|---|---|
 | Alice | classics made yours (`classics-made-yours`) | Taste only | Alice deliberately demonstrates the minimum extension level and delegates Make and Playtest to shared tools. Her Blindcap laboratory is provenance that taught Workshop, not her active profile or a second invented-game inventor. |
-| Leo | games that don't exist yet (`invented-games`) | custom Make + custom Playtest | Leo is the bundled invented-game example. His AI players must execute the pinned simulation policy before Instructions; customer response arrives later through Reviews. |
-| Bob | machines that move (`moving-machines`) | custom Make | His profile, machine Taste, Wish, preview, and typed seam work. A run waits at Bob's typed custom-Make seam; the preserved board-game laboratory is not a moving-machine Make adapter. |
+| Leo | games that don't exist yet (`invented-games`) | Taste only by default | Shared Make/CAD and AI Playtest build and test Leo's games. The shared game path must execute the pinned simulation policy before Instructions. Leo may opt into paired custom Make and Playtest workers when a game needs them. |
+| Bob | machines that move (`moving-machines`) | Taste only by default | Shared Make/CAD and AI Playtest build and test Bob's moving machines. Bob may opt into a custom Make worker for specialized mechanisms; his preserved board-game laboratory is not that worker. |
 | Ivy | science you can hold (`holdable-science`) | Taste only | Her science profile delegates Make and Playtest to shared tools. Without configured shared model/CAD and scientific-evidence tools, a run truthfully waits at Make or Playtest. |
 | Eve | little worlds (`little-worlds`) | Taste only | Her fresh personalized-world profile delegates Make and Playtest to shared tools. Without configured shared tools, a run truthfully waits at Make. This profile does not restore the old Eve implementation. |
 
@@ -72,18 +72,16 @@ add another Workshop job. A future continuous-intake adapter may repeatedly
 invoke the same one-Wish contract without adding queue or daemon machinery to
 the inventors themselves.
 
-Leo and Bob are blocked at their unfinished custom typed seams. Alice, Eve, and
-Ivy are Taste-only and wait for real shared capabilities when those are not
-configured. Mature legacy code remains useful migration material, but it is not
-silently invoked through a bundled profile. That separation prevents an
-apparently successful run from crossing an unreviewed artifact or evidence
-boundary.
+All five profiles use shared Make/CAD and Playtest by default. The inventor
+supplies Taste; Workshop owns those common workers, the improvement loop,
+Instructions, Deliver, artifact identity, and runtime. Bob and Leo retain
+fail-closed compatibility seams and can accept explicit custom workers, but a
+customer Wish does not depend on either inventor building common infrastructure.
+Mature legacy code remains useful migration material and is never invoked
+silently through a bundled profile.
 
-Alice, Eve, and Ivy demonstrate the smallest adoption level: the inventor owns
-`TASTE.md`; Workshop owns Make, Playtest, the improvement loop, Instructions, Deliver,
-artifact identity, and runtime. “Taste only” means the profile is wired to
-shared capabilities—not that those external capabilities are bundled,
-credentialed, or authenticated in this checkout.
+“Taste only” means the profile is wired to shared capabilities—not that model,
+Factory, printer, or carrier credentials are present in every checkout.
 
 ## What is shared today
 
@@ -100,8 +98,8 @@ All five profiles use the same 0.5 contracts for:
 - the shared Instructions and Deliver boundaries;
 - durable state, leases, and a recorded per-Wish Playtest allowance.
 
-The platform operator still has to install real shared tools. A complete
-path needs, as applicable, authenticated model and CAD workers, executable AI
+The platform operator still has to configure the shared tools. A complete path
+needs, as applicable, authenticated model and CAD workers, executable AI
 players, independent model reviewers, and a pinned slicer profile for Playtest,
 plus private model-only site-draft integration for Instructions. Factory owns
 the downstream customer-facing page renderer, copy, images, and video.
@@ -147,17 +145,11 @@ and outside-effect boundaries.
 
 Those facts are evidence for Workshop's extracted workflow, not proof of 0.5
 adoption and not active category ownership. Alice's bundled classics profile
-does not invoke Blindcap. The custom profiles that still need strict typed jobs
-wait explicitly:
-
-```text
-Leo: MakeContext -> Made -> PlaytestContext -> Playtested   WAITING
-Bob: MakeContext -> Made                                    WAITING
-```
-
-Each bridge must preserve exact Taste, product, evidence, tool-version, budget,
-and external-effect identities. Until golden fixtures show parity, the legacy
-laboratory remains separate and any stronger invariant stays in place.
+does not invoke Blindcap. Bob's and Leo's canonical profiles use the same shared
+Make/CAD and Playtest path as the other inventors. Their optional custom hooks
+must preserve exact Taste, product, evidence, tool-version, budget, and
+external-effect identities. Until golden fixtures show parity, each legacy
+laboratory remains separate and every stronger invariant stays in place.
 
 Some native files, commands, database columns, and event payloads retain older
 terminology. They remain only because renaming persisted operational state can
@@ -205,14 +197,14 @@ model credential, catalog credential, printer, carrier, or paid service.
 1. Connect real semantic retrieval and judgment to the one-Wish Manager and
    rehearse explained routing across a large catalog, including ambiguous,
    close-margin, stale, and all-rejected shortlists.
-2. Keep Alice's classics profile Taste-only and prove shared Make and Playtest
-   can preserve known rules while producing a genuinely personal edition.
-3. Implement Leo's invented-game `Made`, `Playtested`, and `Feedback` adapters,
-   including executable, seeded AI-player simulation and the 1,000-game gate.
-4. Implement Bob's new moving-machine `MakeContext -> Made` path; do not route
-   machine Wishes into the preserved board-game laboratory.
-5. Configure and test shared Make and Playtest tools for the Taste-only
-   profiles.
+2. Prove the shared Make/CAD and Playtest workers preserve Alice's known rules
+   while producing a genuinely personal edition.
+3. Prove the shared workers create and execute Leo's invented games, including
+   seeded AI-player simulation and the 1,000-game gate.
+4. Prove the shared workers create and test Bob's moving machines without
+   routing those Wishes into the preserved board-game laboratory.
+5. Add an inventor-specific Make or Playtest override only when a category
+   truly needs behavior the shared workers cannot express.
 6. Rehearse one exact Wish per category through truthful waiting, then through each
    real capability as it becomes available.
 7. Enable Instructions after exact AI Playtest evidence, then let Deliver own
