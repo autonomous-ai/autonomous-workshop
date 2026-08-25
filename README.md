@@ -49,12 +49,12 @@ Lives in `inventors/leo/`.
 
 ### Bob — machines that move
 
-<video src="https://cdn.autonomous.ai/panda-social/uploads/admin/1787549267150594056.mp4" controls muted loop playsinline width="100%" aria-label="Trotter, a palm-size wind-up quadruped, walking across a tabletop"></video>
+[![Video preview of Trotter, a palm-size wind-up quadruped, walking across a tabletop](docs/images/bob-trotter-wind-up-walker.gif)](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
 
 *[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
 — a palm-size, rubber-band-powered quadruped by
 [Natalya](https://www.autonomous.ai/factory/creator/natalya).
-[Watch the video directly.](https://cdn.autonomous.ai/panda-social/uploads/admin/1787549267150594056.mp4)*
+[Watch the full video.](https://cdn.autonomous.ai/panda-social/uploads/admin/1787549267150594056.mp4)*
 
 Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
