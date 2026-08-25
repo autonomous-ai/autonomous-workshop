@@ -2,9 +2,11 @@
 
 Bob sends over plain HTTPS to the configured Shop Door as its own AI-creator
 account. The order is the contract's order: local validator (Layer 1, every
-run, blocking) -> zip -> POST /designs/import with **status=draft always**
--> curate the rules page -> flip public with an **explicit price** (the
-empty-body trap auto-lists at a platform-guessed price). Auto-publish is
+run, blocking) -> Workshop pack -> model-only draft import -> flip public with
+an **explicit price** (the empty-body trap auto-lists at a platform-guessed
+price). Workshop owns the shared publishing boundary; Bob never uploads
+thumbnails or writes Factory use-case/story content. The server enriches the
+imported model after publication. Auto-publish is
 Dee's 2026-08-22 ruling; the human gate is a kill switch (Telegram notice +
 one-tap UNPUBLISH), not a turnstile.
 
@@ -27,9 +29,10 @@ ALL network goes through one `_http()` seam; tests monkeypatch it and never
 touch the real API. Every state write is atomic (tmp + os.replace).
 
 Metadata source: toys/<slug>/listing.json — {title, description, tags,
-category, prompt, use_case, story_blocks[, price_cents]} — written by the
-page-writer agent upstream. send.json next to it is written only by
-this module.
+category, prompt[, price_cents]} — written by the page-writer agent upstream.
+Historical use_case/story_blocks values may still be read as local evidence,
+but this module never sends them. send.json next to it is written only by this
+module.
 """
 
 import hashlib
@@ -61,12 +64,6 @@ MAX_DESCRIPTION = 900           # publish.py precedent self-cap: "a store
                                 # allows 2000; we keep the working bar)
 MAX_TAGS = 10                   # backend: <=10 tags
 MAX_TAG_CHARS = 40              # backend: <=40 chars each
-
-# Story-block walls (models.ValidateDesignContent, in RUNES not bytes —
-# Python len() on str counts code points, which is what the server counts).
-MAX_BLOCKS = 10
-LEAD_RUNES = (1, 40)
-BODY_RUNES = (180, 400)
 
 # The fixed disclosure line (publish-contract §5). FIXED means byte-for-byte:
 # a paraphrase is a diff a validator can't see and a policy nobody can grep.
@@ -1123,7 +1120,11 @@ def _keep_entry(rel_parts, name):
     """Should this file ship? rel_parts are the path components below the
     game dir (dirs only), name is the basename."""
     for part in rel_parts:
-        if part in STRIP_DIRS or part.startswith(".env"):
+        if (
+            part in STRIP_DIRS
+            or part.endswith("_review")
+            or part.startswith(".env")
+        ):
             return False
     if name in STRIP_FILES:
         return False
@@ -1161,8 +1162,12 @@ def pack_game(slug):
         # prune stripped dirs in place so walk never descends into them
         kept_dirs = []
         for dirname in sorted(dirs):
-            if (dirname in STRIP_DIRS or dirname.startswith(".env")
-                    or dirname.startswith(".")):
+            if (
+                dirname in STRIP_DIRS
+                or dirname.endswith("_review")
+                or dirname.startswith(".env")
+                or dirname.startswith(".")
+            ):
                 continue
             directory_path = os.path.join(root, dirname)
             if os.path.islink(directory_path):
@@ -1579,43 +1584,6 @@ def import_draft(slug):
 _launch_metadata = _send_metadata
 
 
-# ---------------------------------------------------------------------------
-# Curate — the rules page
-# ---------------------------------------------------------------------------
-
-def _content_walls(use_case, blocks):
-    """Mirror models.ValidateDesignContent locally (§4): failing walls we
-    could have measured for free wastes a network round-trip and leaves a
-    half-curated page."""
-    problems = []
-    label = (use_case or {}).get("label", "")
-    body = (use_case or {}).get("body", "")
-    if not (1 <= len(label) <= 40):
-        problems.append("use_case.label: %d runes outside 1-40" % len(label))
-    if not (BODY_RUNES[0] <= len(body) <= BODY_RUNES[1]):
-        problems.append("use_case.body: %d runes outside %d-%d"
-                        % (len(body), BODY_RUNES[0], BODY_RUNES[1]))
-    if len(blocks) > MAX_BLOCKS:
-        problems.append("story_blocks: %d blocks > %d cap — spend the last "
-                        "block pointing at RULES.md instead"
-                        % (len(blocks), MAX_BLOCKS))
-    for i, blk in enumerate(blocks):
-        lead = blk.get("lead", "")
-        bbody = blk.get("body", "")
-        if not (LEAD_RUNES[0] <= len(lead) <= LEAD_RUNES[1]):
-            problems.append("story_blocks[%d].lead: %d runes outside %d-%d"
-                            % (i, len(lead), LEAD_RUNES[0], LEAD_RUNES[1]))
-        if not (BODY_RUNES[0] <= len(bbody) <= BODY_RUNES[1]):
-            problems.append("story_blocks[%d].body: %d runes outside %d-%d"
-                            % (i, len(bbody), BODY_RUNES[0], BODY_RUNES[1]))
-        for field, text in (("lead", lead), ("body", bbody)):
-            if "<" in text or ">" in text:
-                problems.append(
-                    "story_blocks[%d].%s: contains '<' or '>' — plain text "
-                    "only, the server rejects markup" % (i, field))
-    return problems
-
-
 def _authed_call(method, url, payload):
     """JSON call with bearer; one retry through refresh_auth() on 401
     (token lifetimes are undocumented — §2 says refresh on any 401)."""
@@ -1756,69 +1724,20 @@ _design_from_workshop_receipt = _design_from_stamp  # v0.2 compatibility
 
 
 def curate(slug):
-    """PATCH use-case + PUT story-blocks (publish-contract §4).
+    """Refuse Bob's retired provider-specific page writer.
 
-    Order matters: import first (the cover URL comes from the import
-    response), use-case, then story-blocks. If a content write fails the
-    design is still correct — retry ONLY this step (publishdesign's own
-    recovery note). Never touches the feed pin: these endpoints don't bump
-    updated_at.
+    This compatibility name remains so an old scheduler fails with an
+    actionable error instead of an ``AttributeError``. It deliberately fails
+    before loading credentials, reading a send projection, or opening the
+    network seam. Rich copy and media are server-generated from Workshop's
+    model-only import.
     """
-    projection_path = send_projection_path(slug)
-    if not os.path.exists(projection_path):
-        raise SendError(
-            "no send projection for '%s' — run import_draft first; curation "
-            "needs the design's own cover URL" % slug)
-    record = read_send_projection(slug)
-    design = record.get("design", {})
-    listing = _load_listing(slug) or {}
-    use_case = listing.get("use_case") or {}
-    blocks = listing.get("story_blocks") or []
-
-    problems = _content_walls(use_case, blocks)
-    if problems:
-        raise SendError(
-            "content walls for '%s' — fix listing.json, then re-run "
-            "curate:\n  - %s" % (slug, "\n  - ".join(problems)))
-
-    image = use_case.get("image")
-    if not image:
-        thumbs = design.get("thumbnail_urls") or []
-        image = thumbs[0] if thumbs else ""
-    if not str(image).startswith("https://"):
-        raise SendError(
-            "use_case.image must be an absolute https URL (the design's own "
-            "cover from the import response is the publishdesign precedent); "
-            "got %r" % image)
-
-    dslug = design.get("slug", slug)
-    base = _api_base()
-    status, _, resp = _authed_call(
-        "PATCH", "%s/designs/%s/use-case" % (base, dslug),
-        {"label": use_case.get("label", ""),
-         "body": use_case.get("body", ""),
-         "image": image})
-    if status not in (200, 201):
-        raise SendError(
-            "use-case PATCH failed (HTTP %s): %s — the design itself is "
-            "already written and correct; only the curated page failed. "
-            "Retry curate('%s') alone."
-            % (status, resp.decode("utf-8", "replace")[:300], slug))
-    # The endpoint takes an OBJECT wrapping the array, not a bare array —
-    # a bare list returns 400 "cannot unmarshal array into
-    # apis.storyBlocksReq" (measured against the live API 2026-08-23 while
-    # importing Clearance).
-    status, _, resp = _authed_call(
-        "PUT", "%s/designs/%s/story-blocks" % (base, dslug),
-        {"story_blocks": blocks})
-    if status not in (200, 201):
-        raise SendError(
-            "story-blocks PUT failed (HTTP %s): %s — retry curate('%s') "
-            "alone; the 400 names the offending block index."
-            % (status, resp.decode("utf-8", "replace")[:300], slug))
-
-    record["curated_at"] = _now_iso()
-    return write_send_projection(slug, record)
+    del slug
+    raise SendError(
+        "curate is retired: Bob may only send a model-only draft through "
+        "Workshop; Factory generates use-case, story blocks, images, and "
+        "video on the server"
+    )
 
 
 # ---------------------------------------------------------------------------

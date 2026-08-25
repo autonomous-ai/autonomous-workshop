@@ -1,0 +1,83 @@
+{
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "assembly": {
+    "bbox_mm": {
+      "max": [
+        122.00205394311087,
+        122.00205394311087,
+        83.35205394311086
+      ],
+      "min": [
+        -122.00205394311087,
+        -122.00205394311087,
+        -0.0020539431108611336
+      ]
+    },
+    "occurrence_count": 33,
+    "source_path": "project/__cadgen__/models/manhattan_nocturne.step/assembly.json",
+    "source_sha256": "d06fa2f696eaad526f875fa3b9a715928ae57b0dc5d79b159c329aaff1629c85"
+  },
+  "brep_validation": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python skills/cad/scripts/inspect validate <git-b8010d9-project>/manhattan_nocturne.step --skip-self-intersection --format json --quiet",
+    "failure_count": 0,
+    "occurrence_count": 33,
+    "ok": true,
+    "self_intersection_check_skipped": true
+  },
+  "claim_scope": "Exact sealed STEP topology, algebraic layout, bounding boxes, and pairwise B-rep interference; not physical stability, feel, finish, warp, impact behavior, or durability",
+  "git_commit_under_test": "b8010d9d2b928245f64e733c50b24a7e5547a1f4",
+  "interference": {
+    "clash_count": 0,
+    "command": "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python skills/cad/scripts/inspect interfere <git-b8010d9-project>/manhattan_nocturne.step --tolerance 0.001 --format json --quiet",
+    "errors": [],
+    "ok": true,
+    "pairs_skipped_bbox": 496,
+    "pairs_tested": 32,
+    "pairs_total": 528,
+    "pairs_truncated": 0,
+    "tolerance_mm3": 0.001
+  },
+  "layout_audit": {
+    "checks": [
+      "244 x 244 x 9.00 mm board inside the declared 256 mm bed envelope",
+      "one seamless board entry",
+      "0.80 mm four-layer relief over an 8.20 mm dark landing",
+      "0.50 mm internal grid land and 1.20 mm perimeter land",
+      "seven file/rank border lines at 1.20 x 0.40 mm",
+      "Broadway cue keeps 1.20 mm minimum border margin",
+      "Broadway cue clears street intersections",
+      "22.5 mm base plus 3.0 mm clearance per side equals 28.5 mm square pitch",
+      "2.75 mm dark landing margin around maximum base",
+      "Stone one-groove horizontal-band side code",
+      "Steel two-groove vertical-fin side code",
+      "Steel channels retain three 1.20 mm rails",
+      "twelve side/rank variant entries",
+      "16 Stone plus 16 Steel pieces",
+      "32 distinct occupied starting squares",
+      "standard R N B Q K B N R back rank",
+      "two square levels at Z 8.20 and 9.00 mm",
+      "83.35 mm tallest starting assembly"
+    ],
+    "command": "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python <git-b8010d9-project>/measure/check_fit.py",
+    "passed_checks": 18,
+    "script_path": "project/measure/check_fit.py",
+    "script_sha256": "256cb505c53f395555ce725287ba2bd23a406cdbe7679cea6341d063612e433b"
+  },
+  "model_sources": [
+    {
+      "path": "project/params.py",
+      "sha256": "a200326bd4ac25130a9dbd5783d47311174bb0bde8029e5209094bea8436e303"
+    },
+    {
+      "path": "project/manhattan_nocturne_lib.py",
+      "sha256": "64e92343233b1454c190be1718c39bc93a4e3e61025265535f38ffa7d267231b"
+    },
+    {
+      "path": "project/manhattan_nocturne.step.py",
+      "sha256": "16dc85daeb94bff473c57042f095dec707f1f9cf89668a0a908cee560ffa7462"
+    }
+  ],
+  "passed": true,
+  "schema_version": 1,
+  "step_sha256": "96a8cbaaced7798b18506858bb9583d7ce1f197574ac5151e73df699cf27e814"
+}

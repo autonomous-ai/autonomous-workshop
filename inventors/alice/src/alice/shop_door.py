@@ -1,18 +1,16 @@
-"""Low-level HTTP client for the current Shop Door.
+"""Read/reconcile client for Alice's historical direct Shop Door boundary.
 
-The current Shop Door import endpoint creates drafts but is not idempotent. This
-client therefore never retries an ambiguous import. Automatic live publication
-is available only after the server advertises the hash-bound v1 capabilities
-required by Alice's release policy.
+Direct draft import is retired. New models must go through Workshop's durable,
+model-only Shop path so an inventor cannot upload local page media or bypass the
+shared handoff contract. This client preserves authenticated readback and the
+capability-gated historical publication contract for reconciliation.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import mimetypes
 import os
-import secrets
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -20,13 +18,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from .page import (
-    ALICE_PRODUCT_DESCRIPTION_SUFFIX,
-    has_exact_alice_product_description_suffix,
-)
+from .page import has_exact_alice_product_description_suffix
 
 
-MAX_ARCHIVE_BYTES = 95 * 1024 * 1024
 REQUIRED_LIVE_CAPABILITIES = frozenset(
     {
         "idempotent_import",
@@ -158,68 +152,27 @@ class ShopDoorClient:
         license_name: str = "",
         prompt: str = "",
     ) -> ShopDraftStamp:
-        if not has_exact_alice_product_description_suffix(description):
-            raise ValueError(
-                "description must end with the exact attribution "
-                f"{ALICE_PRODUCT_DESCRIPTION_SUFFIX!r} and no trailing whitespace"
-            )
-        archive_path = Path(archive)
-        archive_bytes = archive_path.read_bytes()
-        if not archive_bytes:
-            raise ShopDoorError("Shop Door archive is empty")
-        if len(archive_bytes) > MAX_ARCHIVE_BYTES:
-            raise ShopDoorError("Shop Door archive exceeds Alice's 95 MiB safety ceiling")
-        if not import_key.strip():
-            raise ValueError("import_key is required")
-        archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
-        fields: list[tuple[str, str]] = [
-            ("status", "draft"),
-            ("title", title),
-            ("description", description),
-            ("category", category),
-            ("license", license_name),
-            ("prompt", prompt),
-        ]
-        fields.extend(("tags", tag) for tag in tags)
-        body, content_type = _multipart(
-            fields,
-            "file",
-            archive_path.name,
-            archive_bytes,
-            mimetypes.guess_type(archive_path.name)[0] or "application/zip",
+        """Refuse the retired full-archive importer before file or network I/O.
+
+        The signature remains for source compatibility so old callers receive
+        an actionable failure. The low-level client cannot safely reconstruct
+        Workshop's sealed Make identity, model-only transport Pack, durable
+        intent, or authenticated Stamp, so silently delegating here would
+        create a second and weaker publishing implementation.
+        """
+        del (
+            archive,
+            import_key,
+            title,
+            description,
+            category,
+            tags,
+            license_name,
+            prompt,
         )
-        request_sha256 = hashlib.sha256(body).hexdigest()
-        headers = {
-            "Content-Type": content_type,
-            "Idempotency-Key": import_key,
-            "X-Alice-Archive-SHA256": archive_sha256,
-        }
-        try:
-            raw = self._request("POST", "/api/v1/designs/import", body=body, headers=headers)
-        except (TimeoutError, urllib.error.URLError) as exc:
-            raise AmbiguousShopDoorEffect(
-                "Shop Door import timed out or disconnected; reconcile before any retry"
-            ) from exc
-        status = str(raw.get("status", ""))
-        if status != "draft":
-            raise ShopDoorError(f"Shop Door send did not remain a draft: {status!r}")
-        design_id = str(raw.get("id") or "")
-        slug = str(raw.get("slug") or "")
-        history_id = str(raw.get("current_history_id") or "")
-        if not design_id or not slug or not history_id:
-            raise ShopDoorError("Shop draft stamp lacks id, slug, or current_history_id")
-        if raw.get("published_history_id"):
-            raise ShopDoorError("Shop draft unexpectedly has a published history")
-        return ShopDraftStamp(
-            import_key=import_key,
-            request_sha256=request_sha256,
-            design_id=design_id,
-            slug=slug,
-            status=status,
-            history_id=history_id,
-            project_url=str(raw["project_url"]) if raw.get("project_url") else None,
-            archive_sha256=archive_sha256,
-            raw=raw,
+        raise ShopDoorError(
+            "direct ShopDoorClient.create_draft is retired: publish the "
+            "inspected model through the shared Workshop model-only Shop path"
         )
 
     def get_design(self, slug: str) -> dict[str, Any]:
@@ -334,41 +287,6 @@ class ShopDoorClient:
         if not isinstance(raw, dict):
             raise ShopDoorError("Shop Door response must be an object")
         return raw
-
-
-def _multipart(
-    fields: Sequence[tuple[str, str]],
-    file_field: str,
-    filename: str,
-    file_bytes: bytes,
-    mime_type: str,
-) -> tuple[bytes, str]:
-    boundary = f"alice-{secrets.token_hex(16)}"
-    chunks: list[bytes] = []
-    for name, value in fields:
-        chunks.extend(
-            (
-                f"--{boundary}\r\n".encode(),
-                f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(),
-                value.encode("utf-8"),
-                b"\r\n",
-            )
-        )
-    safe_filename = filename.replace('"', "_")
-    chunks.extend(
-        (
-            f"--{boundary}\r\n".encode(),
-            (
-                f'Content-Disposition: form-data; name="{file_field}"; '
-                f'filename="{safe_filename}"\r\n'
-            ).encode(),
-            f"Content-Type: {mime_type}\r\n\r\n".encode(),
-            file_bytes,
-            b"\r\n",
-            f"--{boundary}--\r\n".encode(),
-        )
-    )
-    return b"".join(chunks), f"multipart/form-data; boundary={boundary}"
 
 
 # Compatibility imports for integrations built before Workshop 0.3.

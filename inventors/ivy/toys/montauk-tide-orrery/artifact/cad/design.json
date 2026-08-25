@@ -1,22 +1,35 @@
 {
-  "blueprint_sha256": "61c2f8d074442ce7709b7b119ed87670fd740e1c0dbea417bb55f81ab94c5380",
+  "blueprint_sha256": "5df739e59f227d3271001ef795cfa41edc6e065c9bba9f99fcf3b7ba9898260f",
   "design": {
+    "assembled_extents_mm": [
+      104.5,
+      104.0,
+      31.2
+    ],
     "base_diameter_mm": 104.0,
+    "earth_hub_diameter_mm": 16.0,
     "kind": "qualitative-tide-orrery",
+    "moon_marker_height_mm": 19.0,
     "phase_positions_degrees": [
       0,
       90,
       180,
       270
     ],
+    "printed_piece_count": 6,
     "relationship": {
       "aligned_or_opposed": "spring-tide configuration",
       "quadrature": "neap-tide configuration"
     },
     "scope": "qualitative alignment model; not to scale and not predictive",
     "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
+    "sun_arrow_length_mm": 21.0,
+    "tide_arm_mm": [
+      96.0,
+      16.0
+    ],
     "wish_features": [
-      "Montauk-specific request is framed as a prediction experiment",
+      "Montauk-specific request is framed as a qualitative alignment comparison",
       "four detents embody the spring-neap cycle",
       "two-lobed tide arm makes the alignment comparison tactile"
     ]

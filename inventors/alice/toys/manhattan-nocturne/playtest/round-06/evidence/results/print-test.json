@@ -1,0 +1,44 @@
+{
+  "agent_roles": [
+    "print breaker",
+    "provenance verifier",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec",
+  "claims": [
+    "All 13 canonical print STL entries are byte-identical to Round 5, where each passed the recorded mesh check and 0.8 millimetre two-line thickness floor, then sliced with OrcaSlicer 2.3.2 using pinned profiles and supports disabled.",
+    "The content-identical complete 32-piece inventory slice records 155.5 grams, 23562 model seconds, 372 layers, 74.4 millimetres maximum Z, and G-code SHA-256 c5d826ee9d023da616512538d04484d393f2af181e88d7ba6a5b85536e250b62.",
+    "The freshly checked combined renderer STL is watertight, manifold, consistently wound, positive-volume, has 33 expected shells, and fits the declared 256 millimetre cube.",
+    "Print-test passes as digital evidence only; the combined STL is not proposed as a one-job replacement for the separately sliced board and piece files."
+  ],
+  "config_sha256": "02292eb735d03cbdbf92e1ead6b46e9e4da90602a08b954d1faa87ff0d8e0bee",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "finish_execution": false,
+  "human_playtest": false,
+  "limitations": [
+    "No G-code was accepted by a physical printer and no successful print, material change, finish, warp, tipping, handling, tactile, support-removal, or durability claim is made.",
+    "The reused slicer receipt is valid only because every canonical printable STL and every named slicer input retains its Round 5 SHA-256 identity."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 6,
+  "schema_version": 1,
+  "simulation": "AI print-breaker, provenance, and adversarial roles interpreted the unchanged canonical print files and the new whole-product renderer mesh without conflating their purposes.",
+  "slicer_backed": true,
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "aca8b221ca0f6dbfef54f8871fe86578352b6ddaace2addc3f1803f371460423"
+    },
+    {
+      "path": "sources/prior-evidence-reuse.json",
+      "sha256": "38ebfca651f2fa86fbc57270c80e5ebd922a24569d1b7cc8149dd6c04d19a10c"
+    },
+    {
+      "path": "sources/factory-handoff.json",
+      "sha256": "4d997e4b76657b3672d8ee38f56a260dae9cccbeaafc003dee46b589254f4c30"
+    }
+  ],
+  "warning": "OrcaSlicer invocations exited zero and the receipt's top-level warnings array is empty, while recorded stdout retains an Invalid T65535 diagnostic."
+}

@@ -294,7 +294,7 @@ class TestBuildZip(SendHome):
             self.assertNotIn(banned, joined)
         self.assertIn("RULES.md", names)
         self.assertIn("assembled.stl", names)
-        self.assertIn("%s_review/_assembled.png" % SLUG, names)
+        self.assertNotIn("%s_review/_assembled.png" % SLUG, names)
         # remove the send.json we planted so other assertions stay valid
         os.remove(os.path.join(g, "send.json"))
 
@@ -1232,41 +1232,22 @@ class TestCurateAndUnpublish(SendHome):
                                   "thumbnail_urls": ["https://cdn/c.png"]}},
                       fh)
 
-    def test_curate_content_walls(self):
-        self.setUpDraft()
-        self.write_listing(story_blocks=[{"lead": "", "body": "short"}])
-        with self.assertRaises(send.SendError) as ctx:
-            send.curate(SLUG)
-        self.assertIn("story_blocks[0]", str(ctx.exception))
-
-    def test_curate_rejects_markup(self):
-        self.setUpDraft()
-        self.write_listing(story_blocks=[
-            {"lead": "Setup", "body": "y" * 190 + "<b>bold</b>"}])
-        with self.assertRaises(send.SendError) as ctx:
-            send.curate(SLUG)
-        self.assertIn("'<'", str(ctx.exception))
-
-    def test_curate_happy_path_uses_cover_url(self):
+    def test_curate_is_retired_before_projection_auth_or_http(self):
         self.setUpDraft()
         seen = []
 
         def fake(method, url, headers=None, data=None, timeout=None):
-            seen.append((method, url, json.loads(data.decode())))
-            return 200, {}, b"{}"
+            seen.append((method, url))
+            raise AssertionError("retired curate must not touch HTTP")
         send._http = fake
-        record = send.curate(SLUG)
-        self.assertIn("curated_at", record)
-        patch = [c for c in seen if c[0] == "PATCH"][0]
-        self.assertEqual(patch[2]["image"], "https://cdn/c.png")
-        put = [c for c in seen if c[0] == "PUT"][0]
-        self.assertTrue(put[1].endswith("/story-blocks"))
 
-    def test_curate_requires_import_first(self):
-        os.environ["BOB_SEND_DRY_RUN"] = "0"
-        self.green()
-        with self.assertRaises(send.SendError):
+        with self.assertRaisesRegex(send.SendError, "curate is retired"):
             send.curate(SLUG)
+
+        self.assertEqual(seen, [])
+        with open(os.path.join(self.gdir(), "send.json")) as fh:
+            projection = json.load(fh)
+        self.assertNotIn("curated_at", projection)
 
     def test_unpublish_flips_record_back_to_draft(self):
         self.setUpDraft()

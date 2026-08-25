@@ -1,0 +1,70 @@
+{
+  "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec",
+  "check": "round-05-evidence-reuse",
+  "checked_at": "2026-08-24T14:38:28Z",
+  "claim_scope": "Reuse is limited to Round 5 visual recognition, ordinary-chess, mechanical, finish-plan, mesh, thickness, and slicer findings whose named inputs have identical SHA-256 identities in Round 6. The new combined Factory export is evaluated separately.",
+  "current_input_identities": [
+    {
+      "path": "manhattan_nocturne.step",
+      "sha256": "a8de2b4e426c923535f55aa235760fb5da02d41d852ef4f8e1e99d5a4c129937"
+    },
+    {
+      "path": "exports/manhattan-nocturne.glb",
+      "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b"
+    },
+    {
+      "path": "product.json",
+      "sha256": "22d664e531bb9366ae26926118463f4fd3e031cd6053414cf58aa538f540bdbf"
+    },
+    {
+      "path": "params.py",
+      "sha256": "e9427b424c99f841bce2dd51ef3c3ef6ed13d41014f3c19bb686cc7ca865bbf8"
+    },
+    {
+      "path": "measure/check_fit.py",
+      "sha256": "0f8e32d1d75bcefee15e969ada7324f4f5255940c2f343c15e73b4b0875a4c65"
+    },
+    {
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "00f186008faf01bce9b6a3b56a8da9625a93812d2c1f85b717d82b6bada7ccbc"
+    },
+    {
+      "path": "render_product.py",
+      "sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
+    },
+    {
+      "path": "validation/finish-plan.json",
+      "sha256": "e597ac0e8323f749434a0a44ac8b17f328391f93542cae0b44e69fbf7eeab107"
+    },
+    {
+      "path": "validation/slicer-receipt.json",
+      "sha256": "1dc0156afd156ae98cbb156837d9c13594c9d25ce830c79db59c29e89b3a8185"
+    }
+  ],
+  "geometry_comparison": {
+    "all_13_print_stl_hashes_unchanged": true,
+    "all_27_canonical_step_and_stl_hashes_unchanged": true,
+    "finish_geometry_seal_sha256": "477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54",
+    "manifest_diff_command": "jq compare round-05/make-manifest.json with round-06/make-manifest.json by path and sha256",
+    "old_entries_unchanged": 123
+  },
+  "passed": true,
+  "prior_make": {
+    "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+    "manifest_path": "playtest/round-05/make-manifest.json",
+    "manifest_sha256": "3ec32062971d5eba16d4e7f78f16133d49ff43d4d6b9e25bed3adc5a8e7d0900"
+  },
+  "prior_playtest": {
+    "evidence_artifact_sha256": "d3d37be5d0069205a78602096ad48b78a5768b74ca9f2ff24ab69e9abbfc3703",
+    "evidence_manifest_path": "playtest/round-05/evidence-manifest.json",
+    "evidence_manifest_sha256": "b2bde11f6ee1d2e21514b3fb256258d93191145e67cdb11a57ca89542f16a9cc",
+    "result_sha256": {
+      "agent-playtest": "1f5e4cc5e9297c89f8b612bad78eccbbb29834b9a250310aaaa59c1e30fd07cf",
+      "classic-rules-test": "0ef1e1bcb61251525424f52bc52a4bc6b771d0d2d0070755754e1bb8d1e73548",
+      "mechanical-test": "dc17afcef03123066c3cae1d4a40f69d0cca406efae4a3d4335755cfb99f7216",
+      "print-test": "7ca1a843cd98a4247937c134342300b107c698e1cf6b58125dff27493cfaf58a"
+    },
+    "round": 5
+  },
+  "schema_version": 1
+}

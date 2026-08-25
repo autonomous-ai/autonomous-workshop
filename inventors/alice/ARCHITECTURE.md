@@ -47,14 +47,14 @@ flowchart TD
   R --> P["Simulation league"]
   P --> U["Blind human tables"]
   U --> C["Industrial design + CAD + DFM"]
-  C --> V["Existing rich-page private-draft operator"]
+  C --> V["Workshop model-only private-draft import"]
   V --> P2["Exact-history prototype + production run"]
   P2 --> M["Safety, IP, market, economics"]
   M --> G{"Pinned draft policy"}
   G -->|pass| DRAFT["Complete private storefront draft"]
   DRAFT --> REVIEW["Dee one-click review and public flip"]
   REVIEW --> F["Public storefront product"]
-  F --> W["Existing rich product-page observer"]
+  F --> W["Factory server copy + media enrichment"]
   G -->|repair| L["Learning policy"]
   G -->|kill| A["Archive with evidence"]
   W --> O["Sales, returns, replay, support outcomes"]
@@ -184,9 +184,10 @@ exports the accepted result to the verified Vibe workspace. DFM checks layout,
 fit, calibrated clearances, motion/interference where relevant, mesh integrity,
 component count, assembly, slice success, packaging, and the evidence still
 open for a physical operator. Alice then calls the
-existing `vibe-ideas` `board-game/tools/publish.py <slug>` operator—not a new
-page generator—to create a private rich-page draft from that exact production
-workspace. The adapter rereads the draft as its owner and hashes every accepted
+shared Workshop model-only importer creates a private draft from that exact
+production workspace. Alice does not upload thumbnails or write use-case/story
+content; Factory generates copy, images, and video on the server. The adapter
+rereads the draft as its owner and hashes every accepted
 CAD artifact back from the immutable `project_url`. Only then does the physical
 adapter print and review that exact design/history. A render is not a print.
 Production validation requires a receipt tied to the same artifact hashes,
@@ -209,10 +210,10 @@ missing backend contract is deployed and Dee explicitly enables it, `live`
 Alice may invoke the supported Vibe public flip used by manually vibed products,
 reusing the exact private draft design/history that was hash-checked, printed,
 and reviewed. One atomic write must compare that exact history/project and
-complete rich page, apply the reviewed SKU, price, and USD currency, and echo
-the packet and policy hashes. The deployed downstream observer may enrich the
-public storefront page further. Alice does not recreate either the draft page
-builder or that downstream merchandising system.
+    exact history/project, apply the reviewed SKU, price, and USD currency, and
+    echo the packet and policy hashes. Factory then enriches the public page;
+    Alice only observes that output and does not recreate the merchandising
+    system.
 
 Alice persists the operation before each remote write, never retries an
 ambiguous create/publish response, and reconciles by reading the design back.

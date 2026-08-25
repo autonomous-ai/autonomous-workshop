@@ -1,0 +1,413 @@
+{
+  "concept_art": false,
+  "evidence_class": "exact-cad-production-finish-acceptance",
+  "input": {
+    "axis_mapping_to_cad": {
+      "cad_x": "glb_x",
+      "cad_y": "-glb_z",
+      "cad_z": "glb_y",
+      "handedness": "preserved (proper rotation, determinant +1)"
+    },
+    "format": "native-glb",
+    "native_axes": "Y-up",
+    "native_units": "metres",
+    "path": "../../exports/manhattan-nocturne.glb",
+    "restored_axes": "right-handed CAD XY bed plane, +Z up",
+    "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
+    "unit_scale_to_mm": 1000.0
+  },
+  "output": {
+    "format": "png",
+    "path": "03d-board-oblique-steel-production-finish.png",
+    "sha256": "603a7b12c3322f845b043207d6bb892c67f608693f53759db2d00bf732dd7ea9"
+  },
+  "physical_finish_execution_verified": false,
+  "physical_print": false,
+  "player_orientation": {
+    "basis": "exact restored GLB occurrence bounds",
+    "status": "ok",
+    "steel": {
+      "a8_center_cad_mm": [
+        -99.739331,
+        99.75,
+        37.5
+      ],
+      "h8_center_cad_mm": [
+        99.760669,
+        99.75,
+        36.7
+      ],
+      "projected_u_cad_mm": {
+        "a8": 39.338697,
+        "h8": -135.478372
+      },
+      "right_light_corner": "a8",
+      "side": "north/+Y"
+    },
+    "stone": {
+      "a1_center_cad_mm": [
+        -99.739331,
+        -99.75,
+        36.7
+      ],
+      "h1_center_cad_mm": [
+        99.760669,
+        -99.75,
+        37.5
+      ],
+      "projected_u_cad_mm": {
+        "a1": -135.459674,
+        "h1": 39.357396
+      },
+      "right_light_corner": "h1",
+      "side": "south/-Y"
+    }
+  },
+  "printability_proof": false,
+  "product_beauty_render": false,
+  "render": {
+    "camera": {
+      "direction_cad": [
+        -0.39778203,
+        0.723453833,
+        0.564255268
+      ],
+      "direction_convention": "object-to-camera in right-handed CAD XYZ",
+      "framed_projected_bounds_cad_mm": [
+        [
+          -165.686426,
+          -93.489439
+        ],
+        [
+          165.686426,
+          100.259362
+        ]
+      ],
+      "projection": "orthographic",
+      "resolution": {
+        "mode": "fixed",
+        "semantic_side": null
+      },
+      "right_cad": [
+        -0.876276039,
+        -0.481809406,
+        0.0
+      ],
+      "screen_right_basis": "cross(CAD +Z, object-to-camera)",
+      "up_cad": [
+        0.271863496,
+        -0.494443371,
+        0.825600383
+      ]
+    },
+    "culled_triangles": 0,
+    "depth_edge_emphasis": {
+      "basis": "exact z-buffer discontinuities",
+      "enabled": false,
+      "threshold_mm": 0.08
+    },
+    "display_crop": {
+      "enabled": false,
+      "minimum_local_z_mm": null,
+      "policy": "none"
+    },
+    "framing": {
+      "mode": "scene",
+      "product_geometry_changed": false
+    },
+    "internal_pixels": [
+      3200,
+      1800
+    ],
+    "lighting_mode": "symmetric-review",
+    "material_mode": "production-finish",
+    "output_pixels": [
+      1600,
+      900
+    ],
+    "rendered_triangles": 988,
+    "scene_bounds_cad_mm": [
+      [
+        -122.000001,
+        -122.000001,
+        0.0
+      ],
+      [
+        122.000001,
+        122.000001,
+        9.0
+      ]
+    ],
+    "shadow": true,
+    "supersample": 2
+  },
+  "renderer": {
+    "id": "manhattan-nocturne-software-cad-preview",
+    "version": 5
+  },
+  "renderer_source": {
+    "path": "../../render_product.py",
+    "sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
+  },
+  "scene_derivation": {
+    "display_crop_below_local_z_mm": null,
+    "display_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 668,
+            "rgba": [
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
+      }
+    },
+    "framing_mode": "scene",
+    "framing_value_mm": null,
+    "geometry_policy": "exact source triangles with deterministic rigid review transforms; no generated or altered product geometry",
+    "material_mode": "production-finish",
+    "material_override": {
+      "applies_to": "display colors on the exact board triangles only",
+      "board_triangles": 988,
+      "boundary_cad_z_mm": 8.2,
+      "classification": "midnight when triangle max Z <= 8.20; warm brass when triangle has Z > 8.20 and no vertex below 8.20; fail on a straddling triangle",
+      "geometry_changed": false,
+      "midnight_faces": 668,
+      "midnight_rgba_srgb": [
+        18,
+        22,
+        31,
+        255
+      ],
+      "mode": "round-5-production-finish",
+      "one_physical_board": true,
+      "physical_execution_verified": false,
+      "production_intent": "midnight base through Z8.20 with warm brass/gold light-square pads above Z8.20",
+      "production_route": "one height-based material change above Z8.20, or a post-print finish applied only to the raised pad region",
+      "warm_brass_faces": 320,
+      "warm_brass_rgba_srgb": [
+        190,
+        143,
+        64,
+        255
+      ]
+    },
+    "mode": "board-only",
+    "review_layout": [
+      {
+        "purpose": "unmodified board-only review",
+        "source_label": "board",
+        "target_base_center_cad_mm": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "selected_node_count": 1,
+    "selected_source_labels": [
+      "board"
+    ],
+    "source_material_summary": {
+      "board": {
+        "colors": [
+          {
+            "faces": 988,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      }
+    },
+    "source_node_count": 33
+  },
+  "scene_integrity": {
+    "bounds_sha256": "ba5d02a7645ede8e1c2a5a4d8d0b1f09279619e6dc4c04a9f99e0097a3a20cb9",
+    "labels_sha256": "849ee7625a81b272c3a3747767346ed0693cd9d99976158e9f14e5dc558552a4",
+    "materials_sha256": "d10f16c32c0667f4e7121c5428d5dfba426868af6467648b61cbda7814145979",
+    "node_records_sha256": "1faf4ec043b58ac633df87e687617d7321c77efd30bfbcd0ba17bcc185d3a4c9",
+    "transforms_sha256": "4a7e9b836bf7801869aded7504b7a80e8dcfd40bc3ee7dd99301cb1a3ce3f5b7"
+  },
+  "scene_nodes": [
+    {
+      "bounds_cad_mm": [
+        [
+          -122.000001,
+          -122.000001,
+          0.0
+        ],
+        [
+          122.000001,
+          122.000001,
+          9.0
+        ]
+      ],
+      "display_material": {
+        "colors": [
+          {
+            "faces": 668,
+            "rgba": [
+              18,
+              22,
+              31,
+              255
+            ]
+          },
+          {
+            "faces": 320,
+            "rgba": [
+              190,
+              143,
+              64,
+              255
+            ]
+          }
+        ],
+        "encoding": "srgb-u8",
+        "source": "round-5-z8.20-production-finish-display-override"
+      },
+      "geometry": "board",
+      "integrity": {
+        "display_material_sha256": "250d6c1b5a098dea006ac92f0a118811cc1f11fe32e723fbd363394b1dc722fc",
+        "geometry_label_sha256": "aec62a20b436a50165c271ae74e73f5f968c5a729f52c52d4eff9577a500275b",
+        "label_sha256": "9eb44ad217ef11e1470dedba14fd04595dc50d1bd57ed67957d43b851fdb426c",
+        "review_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "review_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae",
+        "source_bounds_sha256": "e425f05a1ddc56561427294a19f3ba149462564687f39f95ce06e969dd5facf4",
+        "source_material_sha256": "40f2f5b40a0eeb7d7e7ed708599ce5294479a4e96f524ed53cb34eaa49466a55",
+        "source_transform_sha256": "2163c9d76567ed72097e8c4d524c30a2163c6be4ef7565c48b3eb350242b07ae"
+      },
+      "label": "board",
+      "metallic": 0.0,
+      "record_sha256": "8038e9cff1947570e0a9dc718abfc03a68d4270a949f0433b198d1a6b7d0187c",
+      "review_transform_cad": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "roughness": 0.58,
+      "source_bounds_cad_mm": [
+        [
+          -122.000001,
+          -122.000001,
+          0.0
+        ],
+        [
+          122.000001,
+          122.000001,
+          9.0
+        ]
+      ],
+      "source_glb_material": {
+        "colors": [
+          {
+            "faces": 988,
+            "rgba": [
+              3,
+              3,
+              4,
+              255
+            ]
+          }
+        ],
+        "encoding": "linear-rgb-factor-u8",
+        "source": "glb-material-base-color"
+      },
+      "source_transform_glb": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "triangles": 988,
+      "vertices": 1488
+    }
+  ],
+  "schema": "workshop.cad-preview-render.v5",
+  "view": "board-oblique-steel-production-finish",
+  "view_contract": {
+    "acceptance_dimensions": [
+      "board-parity"
+    ],
+    "acceptance_output_contract": {
+      "output_pixels": [
+        1600,
+        900
+      ],
+      "supersample": 2,
+      "unit_scale_to_mm": 1000.0
+    },
+    "camera_policy": "frozen-literal-direction",
+    "diagnostic": false,
+    "native_material_required": false,
+    "neutral_material_evidence": false,
+    "production_finish_display": true,
+    "production_finish_physical_execution_verified": false,
+    "recipe_acceptance_eligible": true,
+    "run_acceptance_eligible": true,
+    "synthetic_depth_edges": false
+  },
+  "warnings": []
+}

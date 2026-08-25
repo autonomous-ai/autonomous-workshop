@@ -1,0 +1,48 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "check": "finish-plan",
+  "claim_scope": "Deterministic geometry and digital production-finish plan only; no finish, color change, adhesion, or physical execution has occurred",
+  "checker": {
+    "command": ".venv-cad/bin/python project/validation/check_finish.py",
+    "checks_passed": 15,
+    "checks_required": 15,
+    "key_results": [
+      "midnight base through completed Z8.20 and only warm-brass/gold pads above it",
+      "27 STEP and STL geometry artifacts match geometry seal 477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54",
+      "one 244 x 244 x 9.00 mm board solid",
+      "exactly 32 isolated light pads with 25.00 x 25.00 mm flat tops",
+      "a1 is dark and h1 is light",
+      "one layer change at Z8.20 or masked post-print finish is required"
+    ]
+  },
+  "finish_plan": {
+    "allowed_methods": ["single-layer-material-change", "masked-post-print-top-finish"],
+    "boundary_z_mm": 8.2,
+    "geometry_changed": false,
+    "geometry_seal_sha256": "477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54",
+    "light_pad_count": 32,
+    "one_physical_board": true,
+    "top_z_mm": 9.0
+  },
+  "inputs": [
+    {
+      "path": "validation/finish-plan.json",
+      "sha256": "e597ac0e8323f749434a0a44ac8b17f328391f93542cae0b44e69fbf7eeab107"
+    },
+    {
+      "path": "validation/check_finish.py",
+      "sha256": "24755dfd7c610601efb8c3eea18d4177c3cef394658ecac073664a2558b575cf"
+    },
+    {
+      "path": "part_board.step",
+      "sha256": "a826018903927b911f0d049e53f4f079b2a09d4d741b2dc13a351ea4cbe388d2"
+    }
+  ],
+  "limitations": [
+    "No physical board has received the specified material change or masked finish.",
+    "Finish color, adhesion, registration, wear, hand feel, and piece stability remain unverified until Deliver."
+  ],
+  "passed": true,
+  "physical_execution": false,
+  "schema_version": 1
+}

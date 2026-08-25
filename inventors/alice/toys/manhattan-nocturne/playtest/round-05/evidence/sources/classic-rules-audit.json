@@ -1,0 +1,45 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "check": "classic-rules-and-setup",
+  "claim_scope": "Digital inventory, corrected player orientation, starting transforms, product rule statement, and ordinary-chess fidelity only",
+  "inputs": [
+    {
+      "path": "product.json",
+      "sha256": "22d664e531bb9366ae26926118463f4fd3e031cd6053414cf58aa538f540bdbf"
+    },
+    {
+      "path": "manhattan_nocturne_spec.md",
+      "sha256": "ecc7bc7ee55c75512858d1ffee8ca3a1070efc6b3df1822cde4be579e2f71a0c"
+    },
+    {
+      "path": "params.py",
+      "sha256": "e9427b424c99f841bce2dd51ef3c3ef6ed13d41014f3c19bb686cc7ca865bbf8"
+    },
+    {
+      "path": "measure/check_fit.py",
+      "sha256": "0f8e32d1d75bcefee15e969ada7324f4f5255940c2f343c15e73b4b0875a4c65"
+    },
+    {
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "00f186008faf01bce9b6a3b56a8da9625a93812d2c1f85b717d82b6bada7ccbc"
+    }
+  ],
+  "orientation": {
+    "coordinate_restoration": "CAD=(GLB X,-GLB Z,GLB Y)",
+    "steel": "north/+Y with a8 light on the player's right",
+    "stone": "south/-Y with h1 light on the player's right"
+  },
+  "passed": true,
+  "results": {
+    "back_rank": "R N B Q K B N R",
+    "board_count": 1,
+    "piece_count": 32,
+    "rule_changes": 0,
+    "setup_errors": 0,
+    "starting_squares_unique": 32,
+    "steel_pieces": 16,
+    "stone_pieces": 16
+  },
+  "rule_statement": "Set up and play with the standard rules of chess; movement, capture, check, checkmate, castling, en passant, promotion, draws, and turn order are unchanged.",
+  "schema_version": 1
+}

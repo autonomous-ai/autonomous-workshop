@@ -215,7 +215,8 @@ For a mature state machine:
 3. Convert failed findings into structured `Feedback` for a new immutable Make
    round.
 4. Require a passed Playtest for the exact artifact before creating Instructions.
-5. Bind every Instructions claim and image to that artifact and its evidence.
+5. Bind every Instructions fact and in-box guide to that artifact and its evidence;
+   leave customer-facing copy, images, and video to Factory.
 6. Bind production, QA, packing, and carrier receipts to the exact product and
    Instructions hashes before returning Delivered.
 7. Keep post-delivery Reviews attached to the delivered product and offer them

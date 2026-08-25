@@ -6,10 +6,7 @@ from pathlib import Path
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.deliver import DefaultDeliver
-from inventor_workshop.instructions import (
-    DefaultInstructions,
-    REQUIRED_PRODUCT_IMAGES,
-)
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import ContractError
 from inventor_workshop.jobs import (
     CustomerReview,
@@ -166,17 +163,6 @@ class ToyWorkshopTest(unittest.TestCase):
         return cls._playtest(context, passed=True, valid_invented=True)
 
     @staticmethod
-    def media_maker(context):
-        images = context.workspace / "images"
-        images.mkdir(parents=True)
-        result = {}
-        for role in REQUIRED_PRODUCT_IMAGES:
-            path = images / (role + ".png")
-            path.write_bytes(("fixture %s\n" % role).encode("utf-8"))
-            result[role] = path.relative_to(context.workspace).as_posix()
-        return result
-
-    @staticmethod
     def site_writer(context, sealed_root, sealed_manifest):
         del sealed_root
         return Receipt(
@@ -224,7 +210,7 @@ class ToyWorkshopTest(unittest.TestCase):
             concept=self.concept_job,
             make=self.make_job,
             playtest=playtest or self.playtest_job,
-            instructions=DefaultInstructions(self.media_maker, self.site_writer),
+            instructions=DefaultInstructions(site_writer=self.site_writer),
             deliver=DefaultDeliver(self.fulfiller),
         )
 
@@ -261,7 +247,7 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual(len(result.concept_sha256), 64)
 
     def test_resume_instructions_uses_checkpoint_without_repeating_make_or_playtest(self):
-        calls = {"make": 0, "playtest": 0, "media": 0}
+        calls = {"make": 0, "playtest": 0, "site": 0}
 
         def counted_make(context):
             calls["make"] += 1
@@ -271,9 +257,9 @@ class ToyWorkshopTest(unittest.TestCase):
             calls["playtest"] += 1
             return self.passing_playtest(context)
 
-        def counted_media(context):
-            calls["media"] += 1
-            return self.media_maker(context)
+        def counted_site(context, root, manifest):
+            calls["site"] += 1
+            return self.site_writer(context, root, manifest)
 
         wish = Wish.create("resumable-top", "A top whose page can resume")
         waiting_workshop = Workshop(
@@ -283,14 +269,14 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(counted_media),
+                instructions=DefaultInstructions(),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         )
         waiting = waiting_workshop.run(wish, playtest_rounds=3)
         self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
-        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 0})
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 0})
 
         resumed_workshop = Workshop(
             self.inventor,
@@ -299,7 +285,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(counted_media, self.site_writer),
+                instructions=DefaultInstructions(site_writer=counted_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
@@ -312,12 +298,12 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
         self.assertEqual(resumed.artifact_sha256, waiting.artifact_sha256)
         self.assertEqual(resumed.playtest_rounds, 3)
-        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1})
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 1})
         state = Runtime(self.runtime / "workshop.sqlite3")
         self.assertTrue(state.verify_event_chain(wish.product_id))
 
     def test_resume_reuses_sealed_instructions_and_only_retries_the_site(self):
-        calls = {"make": 0, "playtest": 0, "media": 0, "site": 0}
+        calls = {"make": 0, "playtest": 0, "site": 0}
 
         def counted_make(context):
             calls["make"] += 1
@@ -326,10 +312,6 @@ class ToyWorkshopTest(unittest.TestCase):
         def counted_playtest(context):
             calls["playtest"] += 1
             return self.passing_playtest(context)
-
-        def counted_media(context):
-            calls["media"] += 1
-            return self.media_maker(context)
 
         def waiting_site(context, root, manifest):
             del context, root, manifest
@@ -351,13 +333,13 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(counted_media, waiting_site),
+                instructions=DefaultInstructions(site_writer=waiting_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         ).run(wish, playtest_rounds=2)
         self.assertEqual((first.status, first.job), ("waiting", "instructions"))
-        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1, "site": 1})
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 1})
         waiting_payload = Runtime(
             self.runtime / "workshop.sqlite3"
         ).events(wish.product_id)[-1]["payload"]
@@ -375,14 +357,14 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(counted_media, successful_site),
+                instructions=DefaultInstructions(site_writer=successful_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         ).resume_instructions(wish)
         self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
         self.assertEqual(resumed.artifact_sha256, first.artifact_sha256)
-        self.assertEqual(calls, {"make": 1, "playtest": 1, "media": 1, "site": 2})
+        self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 2})
 
     def test_resume_rejects_changed_sealed_instructions_before_site_effect(self):
         site_calls = 0
@@ -406,7 +388,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(self.media_maker, waiting_site),
+                instructions=DefaultInstructions(site_writer=waiting_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
@@ -432,7 +414,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 concept=self.concept_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(self.media_maker, forbidden_site),
+                instructions=DefaultInstructions(site_writer=forbidden_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
@@ -496,7 +478,7 @@ class ToyWorkshopTest(unittest.TestCase):
             tools=WorkshopTools(
                 concept=self.concept_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(self.media_maker, self.site_writer),
+                instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -507,7 +489,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "moving-machines",
             tools=WorkshopTools(
                 concept=self.concept_job,
-                instructions=DefaultInstructions(self.media_maker, self.site_writer),
+                instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,

@@ -15,8 +15,8 @@ from alice.vibe_pipeline import (
     ALICE_REVISION_BOUND_RELEASE_CAPABILITIES,
     LISTING_BOUND_PUBLISH_CAPABILITY,
     PUBLICATION_TARGET,
-    RICH_PAGE_BOUND_PUBLISH_CAPABILITY,
     REVISION_BOUND_PUBLISH_CAPABILITY,
+    SERVER_AUTHORED_PAGE_FIELDS,
     AmbiguousVibeEffect,
     ExistingVibeDesignRequest,
     ShopDoorHttpClient,
@@ -87,7 +87,6 @@ class FakeTransport:
             {
                 REVISION_BOUND_PUBLISH_CAPABILITY,
                 LISTING_BOUND_PUBLISH_CAPABILITY,
-                RICH_PAGE_BOUND_PUBLISH_CAPABILITY,
             }
         )
         self.authenticated_design = {
@@ -100,7 +99,6 @@ class FakeTransport:
             "project_sha256": "d" * 64,
         }
         self.echo_publish_binding = True
-        self.echo_rich_page_binding = True
         self.publish_listing_override: dict[str, object] = {}
         self.jobs: list[dict[str, object]] = [
             {
@@ -166,11 +164,13 @@ class FakeTransport:
         response["published_history_id"] = payload["expected_history_id"]
         response["current_history_id"] = payload["expected_history_id"]
         response["project_url"] = intent.response["project_url"]
+        # A successful publish receipt binds the model/listing revision. Factory
+        # enriches page copy and media asynchronously after this write.
+        for field in SERVER_AUTHORED_PAGE_FIELDS | {"rich_page_complete"}:
+            response.pop(field, None)
         if self.echo_publish_binding:
             response["packet_hash"] = payload["packet_hash"]
             response["policy_hash"] = payload["policy_hash"]
-        if not self.echo_rich_page_binding:
-            response.pop("rich_page_complete", None)
         return response
 
     def get_public_design(self, slug_or_id):
@@ -390,7 +390,6 @@ class VibePipelineTests(unittest.TestCase):
                         "policy_hash": self.policy_hash,
                         "project_sha256": "d" * 64,
                         "preconditions": {
-                            "rich_page_complete": True,
                             "history_id": "history-1",
                             "project_sha256": "d" * 64,
                         },
@@ -399,6 +398,16 @@ class VibePipelineTests(unittest.TestCase):
                 )
             ],
         )
+        published_payload = self.transport.publish_calls[0][1]
+        pending = [published_payload]
+        while pending:
+            value = pending.pop()
+            self.assertTrue(SERVER_AUTHORED_PAGE_FIELDS.isdisjoint(value))
+            pending.extend(
+                child
+                for child in value.values()
+                if isinstance(child, dict)
+            )
         stored = self.store.get_publication_intent(
             PUBLICATION_TARGET, "alice:vibe:existing:1"
         )
@@ -419,7 +428,6 @@ class VibePipelineTests(unittest.TestCase):
         all_capabilities = {
             REVISION_BOUND_PUBLISH_CAPABILITY,
             LISTING_BOUND_PUBLISH_CAPABILITY,
-            RICH_PAGE_BOUND_PUBLISH_CAPABILITY,
         }
         for missing in sorted(all_capabilities):
             with self.subTest(missing=missing):
@@ -503,15 +511,35 @@ class VibePipelineTests(unittest.TestCase):
 
         self.assertEqual(len(self.transport.publish_calls), 1)
 
-    def test_missing_atomic_rich_page_echo_is_ambiguous_and_not_retried(self) -> None:
-        self.transport.echo_rich_page_binding = False
+    def test_factory_enrichment_is_polled_only_after_model_publish(self) -> None:
+        unenriched = complete_design()
+        for field in SERVER_AUTHORED_PAGE_FIELDS | {"rich_page_complete"}:
+            unenriched.pop(field, None)
+        unenriched["packet_hash"] = self.packet_hash
+        unenriched["policy_hash"] = self.policy_hash
+        enriched = complete_design()
+        enriched["packet_hash"] = self.packet_hash
+        enriched["policy_hash"] = self.policy_hash
+        self.transport.public_designs = [unenriched, enriched]
 
-        with self.assertRaisesRegex(AmbiguousVibeEffect, "rich-page precondition"):
-            self.pipeline().publish_existing(self.existing_request())
-        with self.assertRaises(AmbiguousVibeEffect):
-            self.pipeline().publish_existing(self.existing_request())
+        receipt = self.pipeline().publish_existing(self.existing_request())
 
+        self.assertEqual(receipt.status, "complete")
         self.assertEqual(len(self.transport.publish_calls), 1)
+        self.assertEqual(
+            self.transport.public_calls,
+            ["design-1", "design-1"],
+        )
+
+    def test_factory_owned_field_guard_fails_closed(self) -> None:
+        for field in sorted(SERVER_AUTHORED_PAGE_FIELDS):
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(
+                    VibePipelineError, "Factory-owned enrichment fields"
+                ):
+                    VibePipeline._assert_server_authored_page_fields_absent(
+                        {"listing": {field: "inventor-authored"}}
+                    )
 
     def test_publish_receipt_must_echo_exact_sku_and_usd_currency(self) -> None:
         self.transport.publish_listing_override = {

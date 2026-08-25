@@ -1,0 +1,51 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "claims": [
+    "The revised exact-CAD pieces meet the frozen role-recognition targets: 24 of 24 ranks, every rank 4 of 4, and all 8 king/queen judgments are correct.",
+    "Neutral-material side recognition is 24 of 24 after the one-sentence geometric key; setup has zero errors and 128 of 128 cell boundaries remain visible.",
+    "Agent Playtest fails only because alternating square parity is visually recoverable in 0 of 128 judgments from normal neutral and charcoal oblique views."
+  ],
+  "config_sha256": "11e44d632556e17291b196131fda0175cca8a411761a7d7fc496ad26d0fe9248",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [
+    "board-parity-tone-on-tone"
+  ],
+  "independent_human_review": false,
+  "passed": false,
+  "physical_print": false,
+  "round": 2,
+  "schema_version": 1,
+  "scores": {
+    "alternating_square_parity": "0/128 (0%)",
+    "cell_boundaries": "128/128 (100%)",
+    "each_rank": "4/4 each (100%)",
+    "king_and_queen": "8/8 (100%)",
+    "neutral_material_side": "24/24 (100%)",
+    "rank_recognition": "24/24 (100%)",
+    "setup_errors": 0
+  },
+  "simulation": "Six-role AI panel, including two separately prompted player passes, reviewed five exact-CAD views for rank, side, setup, board readability, Manhattan character, mechanical risk, and adversarial ambiguity",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "ba5b520f90a03e0181216aa73c5ff2ab009457b45182940cd72095a93824df8d"
+    },
+    {
+      "path": "sources/two-player-recognition.json",
+      "sha256": "6fcbd326d991a215fe256776b9ce43d5f59d4d817181d18e488360871ed83fa3"
+    },
+    {
+      "path": "sources/nyc-form-review.json",
+      "sha256": "98b6130466c2450204e49a37947a1fe01fdc75bded8221f4560a0d846b679fad"
+    }
+  ]
+}

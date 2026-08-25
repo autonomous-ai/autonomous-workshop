@@ -1,6 +1,12 @@
 {
-  "blueprint_sha256": "920e278909ff582a74226e87598d904adee3d2fc8310357bce11ded443af48b4",
+  "blueprint_sha256": "da4952c5ae0c78ce82134e7c17c2018c11d130a8cf9e043677e7bc824cfb7c1e",
   "design": {
+    "assembled_extents_mm": [
+      108.0,
+      72.0,
+      43.6
+    ],
+    "circuit_trench_count": 3,
     "deck_mm": [
       108.0,
       72.0,
@@ -8,15 +14,27 @@
     ],
     "kind": "personalized-homelab-diorama",
     "node_signatures": {
-      "Comet": "swept cooling fins",
-      "Moss": "paired vertical coolant pipes",
-      "Void": "suspended orbital halo"
+      "Comet": {
+        "feature": "six swept side fins",
+        "height_mm": 34.0
+      },
+      "Moss": {
+        "feature": "paired exposed coolant pipes",
+        "height_mm": 35.0
+      },
+      "Void": {
+        "feature": "vertical orbital halo",
+        "height_mm": 37.7
+      }
     },
     "nodes": [
       "Comet",
       "Moss",
       "Void"
     ],
+    "operator_height_mm": 16.0,
+    "printed_piece_count": 5,
+    "reference_scope": "Wish text only; no private likeness assets were used",
     "wish_features": [
       "three node identities are geometry, not labels",
       "circuit trenches connect the rack city",

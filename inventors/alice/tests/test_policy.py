@@ -33,7 +33,7 @@ def release_facts(**overrides):
             "page_pipeline_readback",
             "expected_history_cas",
             "exact_sku_currency_binding",
-            "atomic_rich_page_precondition",
+            "server_enrichment_readback",
             "order_to_print_job",
         ),
     )

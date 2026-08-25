@@ -1,6 +1,4 @@
-"""export_box: Bob's payload must match text2game/publish.py's out/<slug>/
-contract exactly — that script is the proven publish path (Dee 2026-08-22)
-and it is not ours to edit, so OUR side carries the whole burden of fit."""
+"""Bob may inspect the old text2game payload locally, never publish it."""
 
 import json
 import io
@@ -14,7 +12,6 @@ from unittest import mock
 
 import bob
 from harness import export_box
-from harness import queue
 
 
 class ExportTest(unittest.TestCase):
@@ -59,6 +56,10 @@ class ExportTest(unittest.TestCase):
         # assembled.stl must NOT be duplicated into fe_parts
         self.assertFalse(os.path.exists(
             os.path.join(out, "fe_parts", "assembled.stl")))
+        instructions = " ".join(m["instructions"])
+        self.assertNotIn("rsync", instructions)
+        self.assertNotIn("ssh", instructions.lower())
+        self.assertIn("Workshop", instructions)
 
     def test_disclosure_leads_the_pitch(self):
         # text2game's fit_desc trims the TAIL — a trailing disclosure dies
@@ -90,38 +91,31 @@ class ExportTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(
             self.gdir, "export_text2game", "export_manifest.json")))
 
-    def test_push_box_unconfigured_returns_none(self):
+    def test_push_box_unconfigured_fails_closed(self):
         os.environ.pop("BOB_BOX_SSH", None)
-        self.assertIsNone(export_box.push_box(self.slug))
+        with self.assertRaisesRegex(RuntimeError, "push_box is retired"):
+            export_box.push_box(self.slug)
 
     def test_push_box_refuses_incomplete_export(self):
         self._write("idea.json", json.dumps({"title": "Bare"}))
         export_box.export_text2game(self.slug)
         os.environ["BOB_BOX_SSH"] = "panda-box"
         self.addCleanup(os.environ.pop, "BOB_BOX_SSH", None)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "push_box is retired"):
             export_box.push_box(self.slug)
 
-    def test_push_box_rsync_then_remote_publish(self):
+    def test_push_box_never_runs_rsync_or_ssh_for_complete_export(self):
         self._full_game()
         export_box.export_text2game(self.slug)
-        queue.add_game(self.slug, "Crank")
         os.environ["BOB_BOX_SSH"] = "panda-box"
         self.addCleanup(os.environ.pop, "BOB_BOX_SSH", None)
-        calls = []
-
-        def fake_run(argv, **_kw):
-            calls.append(argv)
-            return mock.Mock(returncode=0,
-                             stdout="published as draft: {'id': 'x'}",
-                             stderr="")
-        with mock.patch.object(export_box.subprocess, "run", fake_run):
-            out = export_box.push_box(self.slug)
-        self.assertIn("published as draft", out)
-        self.assertEqual(calls[0][0], "rsync")
-        self.assertEqual(calls[1][0], "ssh")
-        self.assertIn("./publish.py %s" % self.slug, calls[1][-1])
-        self.assertEqual(queue.load()["games"][self.slug]["state"], "sparked")
+        with mock.patch(
+            "subprocess.run",
+            side_effect=AssertionError("retired box publisher spawned a process"),
+        ) as run:
+            with self.assertRaisesRegex(RuntimeError, "local inspection only"):
+                export_box.push_box(self.slug)
+        run.assert_not_called()
         self.assertFalse(os.path.exists(os.path.join(self.gdir, "send.json")))
         self.assertFalse(os.path.exists(os.path.join(self.gdir, "launch.json")))
         self.assertFalse(os.path.exists(os.path.join(self.gdir, "published.json")))

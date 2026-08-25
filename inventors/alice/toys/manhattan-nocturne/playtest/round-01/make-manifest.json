@@ -1,0 +1,620 @@
+{
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "created_at": "2026-08-24T09:24:11.971297+00:00",
+  "entries": [
+    {
+      "bytes": 2676,
+      "executable": false,
+      "path": "BUILD.md",
+      "sha256": "d2fd157d44a317b684536988eb934594c3b8328ff9e046e2a5001083ff2677ca"
+    },
+    {
+      "bytes": 2774,
+      "executable": false,
+      "path": "README.md",
+      "sha256": "4955a46870fc9d6d5b6e7e238fab959a22c5a601941cf4f8a28847abc393116d"
+    },
+    {
+      "bytes": 1651,
+      "executable": false,
+      "path": "RENDERING.md",
+      "sha256": "82e71b821cb2fa620fda9a934af7262e75625a38335133a7f44cb5c0f2c486f7"
+    },
+    {
+      "bytes": 32,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.generation.lock",
+      "sha256": "9e21a0717d716c7fb1df05baf9ecad2fa1ff3dc445e10882cf5aa989841274db"
+    },
+    {
+      "bytes": 423,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.generation.progress.json",
+      "sha256": "130a370ef36b0d7a118e131eaaeb71f520cb743f6ca7694bc8a27b80b5f80dc2"
+    },
+    {
+      "bytes": 32,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.py.generation.lock",
+      "sha256": "f55c007e1fd37793c763de77f616bb369153df2192e661d8a228beb37a345dd2"
+    },
+    {
+      "bytes": 423,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.py.generation.progress.json",
+      "sha256": "f195ef0f97a1f9134a61e5f0b60582dac119732b262d20e132814a26d1b3129a"
+    },
+    {
+      "bytes": 32,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.py.generator.lock",
+      "sha256": "b913ddda95f3c374b00dbdc369b2769655d1c42c4aada5447b7a8ba4fccf53b3"
+    },
+    {
+      "bytes": 383,
+      "executable": false,
+      "path": "__cadgen__/models/.manhattan_nocturne.step.py.generator.progress.json",
+      "sha256": "464c7d97372b8e1dd94516e367c3d6b52f740be229c44804e3ba02c5624f46f6"
+    },
+    {
+      "bytes": 32,
+      "executable": false,
+      "path": "__cadgen__/models/.part_board.step.py.generation.lock",
+      "sha256": "dd4f68e44cfa6e557dc30f237c1e0ae264c759c6018a79655257699d023650d0"
+    },
+    {
+      "bytes": 422,
+      "executable": false,
+      "path": "__cadgen__/models/.part_board.step.py.generation.progress.json",
+      "sha256": "d229dbf6d20ecbf932ae6b42b2cb7a4e070ee7c3436fc87e47c569ea23909efc"
+    },
+    {
+      "bytes": 32,
+      "executable": false,
+      "path": "__cadgen__/models/.part_board.step.py.generator.lock",
+      "sha256": "3fb7d6d6e476c377ad5effc68a279a499290c4436e882d26a211e9972201f1e4"
+    },
+    {
+      "bytes": 383,
+      "executable": false,
+      "path": "__cadgen__/models/.part_board.step.py.generator.progress.json",
+      "sha256": "a315e5827361e20b622b86cc8a0cb0a935862156610c366e99a28879d9e80701"
+    },
+    {
+      "bytes": 14780,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/assembly.json",
+      "sha256": "3b7e388f9156eecfdbe6f28c0e2dfe4815f457fdd39e3c905244daaac907261a"
+    },
+    {
+      "bytes": 768384,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/3f08e5ea77c5c7d7.glb",
+      "sha256": "bc9b7917c1c43d6bed9ac54be763f7f4b6a74ccc4dc811f85c69d60db0d07c91"
+    },
+    {
+      "bytes": 977664,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/46c571be176769ea.glb",
+      "sha256": "ddeabf186eaf870e82e64c3c1e1ba6e497fcf9abf521c669f22a979958a86036"
+    },
+    {
+      "bytes": 1347940,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/4b04a2b9c6d09b21.glb",
+      "sha256": "cb6d35700a2ae6efebe36037bda63cfc3c618b6490dfad2748a2fd38c5947401"
+    },
+    {
+      "bytes": 252392,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/7bbb1cf788e20b46.glb",
+      "sha256": "622afada1299e29c316671b83c57adb758f4ecdd61ff0003c2ae0d20ca83439d"
+    },
+    {
+      "bytes": 770268,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/861a5865429bbe05.glb",
+      "sha256": "91de42fb133f43dfdb60e337f24a4befc35c45be86f5d13d2a02a6261c158b14"
+    },
+    {
+      "bytes": 1332660,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/8b07a70cefd39694.glb",
+      "sha256": "a1a74e1a8b5245d8c7bd230378eb7353c256110573b7271955fbfdedffff89db"
+    },
+    {
+      "bytes": 1068104,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/9a89f5faca73c691.glb",
+      "sha256": "693dc8a156c7c52f18b6a08e4d4566ae0d11b6ca9c0f0ba59f8df780bfa2a735"
+    },
+    {
+      "bytes": 1392440,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/9eee83dc47801727.glb",
+      "sha256": "9b4178b58a39bc0e197566a2770d25ae191a2fe9a28354c94d7a87f5974b9e99"
+    },
+    {
+      "bytes": 1075784,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/c4ed8fea76d36c0c.glb",
+      "sha256": "337f975f497177994a664e2bac23f007aafd4c30de21b59773d4e0f7ce3aea7f"
+    },
+    {
+      "bytes": 1438364,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/ea1c0ccaf0dab937.glb",
+      "sha256": "679836eed91811c2db2addae0acf57eb9430debed92c9d3031231fbd9fce685b"
+    },
+    {
+      "bytes": 1119880,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/eb2bb8de9a3b9bc6.glb",
+      "sha256": "0d568f8bdeb0a63139159030602f73861ddcf71e707270fa194d4bfa3c56e8f1"
+    },
+    {
+      "bytes": 1144396,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/f1708b454041415e.glb",
+      "sha256": "ce4264c7a026e88530b14f603908052198d21df336f03d2a975295b67e4b5ba2"
+    },
+    {
+      "bytes": 1140544,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step.py/components/fa73369f315f5486.glb",
+      "sha256": "0f9d7afcd2123f2d30403e600252b495727017d3e4cb7437c5bde51b4f7cff7b"
+    },
+    {
+      "bytes": 14423,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/assembly.json",
+      "sha256": "23a9e854114818a87cdafec62dda8b6329f17ef537ce289bd1552d7018a1559e"
+    },
+    {
+      "bytes": 1391260,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/31a2a087663a162a.glb",
+      "sha256": "4602034f38f8d81892588c0c45fdb8e970b2da82956dfee037b0a9479ecd656c"
+    },
+    {
+      "bytes": 1347008,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/3aa63cda64da14a0.glb",
+      "sha256": "f629121714cd882b6cb0019d533c92e442b74176dd914a5d057dc1925f445dbd"
+    },
+    {
+      "bytes": 977408,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/40333274b821a7c6.glb",
+      "sha256": "6227610390f02947e2d5af5a6d93148581c71232281464a096221c4490b97762"
+    },
+    {
+      "bytes": 1437396,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/465e85fb6f8b4e35.glb",
+      "sha256": "ffc3ae2b141a76407b2c2359bab014ba4d2ee8a5fff707fcfccbaf071f8f919f"
+    },
+    {
+      "bytes": 1119636,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/4feacf4ba0e7680d.glb",
+      "sha256": "51c3cc8ea34d7a1004c8ef7a0b2ef5716005dc0752936c7e133861b2bdec6761"
+    },
+    {
+      "bytes": 248312,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/7ae68b8a42a07df0.glb",
+      "sha256": "5e4e68d10da07da531c885975c1d234bdfb7a80b24e8f72fdb3b953f2536ba7c"
+    },
+    {
+      "bytes": 1142612,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/991a786aa2cd5e8d.glb",
+      "sha256": "e1e725c0816b87ce0c99abab212287acac9a5da1e95828919842f55fa5948d2d"
+    },
+    {
+      "bytes": 1067812,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/b4f71c37efff64ea.glb",
+      "sha256": "c8f673a14730b74317d2a9dc13f94f71b7305c5e925d7a82dbaaf66d8a95931e"
+    },
+    {
+      "bytes": 1075192,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/b57984d84584f652.glb",
+      "sha256": "348aef3d525de6cc65fb7f374ff3f265ba5fc76b749c400c38e7f6a6d9ad7743"
+    },
+    {
+      "bytes": 1331136,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/c6ab49b1cbf3223a.glb",
+      "sha256": "e178a7fe38743d5e7a50699383622e9bb516a1f77532ac488c8a197d6fa9f2dc"
+    },
+    {
+      "bytes": 1139016,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/dfcd3828028d8f9c.glb",
+      "sha256": "f5b3a02f5d070418590d95addd82564c0429137954e35b242f68bb5a5e88d0da"
+    },
+    {
+      "bytes": 769384,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/eac7f396b1e3a975.glb",
+      "sha256": "fba2b3646c39f52b9024fbca8e672d62ca6ea29cfec0895d8b640fd017deef61"
+    },
+    {
+      "bytes": 767496,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/components/f80a57f3c08510d3.glb",
+      "sha256": "b166bbfdee672795a487e4b63aec40dce4ceef0e518ef6ff0b367d4d3b25529c"
+    },
+    {
+      "bytes": 98813,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-0.bin",
+      "sha256": "c98f22d50a48a298def0808c8afa065516975f36d1274ea8c007d1ea3337c3d2"
+    },
+    {
+      "bytes": 29657,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-1.bin",
+      "sha256": "c1d3f1673fa8d31bd915145b2b92b46ae2cdae8abeac8bccc0f6a8292d8ea3b3"
+    },
+    {
+      "bytes": 40113,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-10.bin",
+      "sha256": "41cd50eb50ec601f2958292f57df69e6bd977c5d05586a10f8e030182984e313"
+    },
+    {
+      "bytes": 45073,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-11.bin",
+      "sha256": "2d0a3d31340046458d8416d3a9288fc9313ea84040d13a22b9395fa5c619386f"
+    },
+    {
+      "bytes": 52405,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-12.bin",
+      "sha256": "248996a28987d00d2a1c39bea86713ff895502573d62dc45d4c15a4ce3ef6bc5"
+    },
+    {
+      "bytes": 17889,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-2.bin",
+      "sha256": "216aa472c113826bedb0c20ba7f1acfa70143003269f3b49e46cb3a1597f8b69"
+    },
+    {
+      "bytes": 31682,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-3.bin",
+      "sha256": "9c2a4f5b66343e61a7dca7fe5e6b0629b9f9de770e7253f4392b67187693ffbb"
+    },
+    {
+      "bytes": 20157,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-4.bin",
+      "sha256": "55ba63258fa05448b5ecb9374d2da9eb60f50ea44338df32da44afcb731db60d"
+    },
+    {
+      "bytes": 17637,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-5.bin",
+      "sha256": "8192a612d319f89856e1f0e8c205bb5ae45bf09314c3a1eed665d7d425d8ff24"
+    },
+    {
+      "bytes": 24969,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-6.bin",
+      "sha256": "de1edea8a6f58b16ab46351b58321c6c7e214c23030b9f23f6b29a48115cf7e3"
+    },
+    {
+      "bytes": 53827,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-7.bin",
+      "sha256": "012e38ed5422b6932c8c6a809fa2f01cebad0b3223a810d28425941e0d06b13b"
+    },
+    {
+      "bytes": 37845,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-8.bin",
+      "sha256": "4631d0372bc9760846e5894c41a523e3c56b0a8b723653e971d2c5d0bc33d60c"
+    },
+    {
+      "bytes": 51637,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/prototype-9.bin",
+      "sha256": "2a3cfbee2f25b00c3ce53fd4a56322633fbc29abd4ac93049f3c2dc2c824d067"
+    },
+    {
+      "bytes": 63568,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/scene/v2-a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea/scene.json",
+      "sha256": "75ef2fa50fe998ab203f061aa56f8f57453d80aff08ccd3dcaf17a340d1f426d"
+    },
+    {
+      "bytes": 6250332,
+      "executable": false,
+      "path": "__cadgen__/models/manhattan_nocturne.step/topology.glb",
+      "sha256": "2cb91d64eb6bf0abe6d4d06c0ff6484b7b751b865ad0c07717c81e91c95141d7"
+    },
+    {
+      "bytes": 2335,
+      "executable": false,
+      "path": "__cadgen__/models/part_board.step.py/assembly.json",
+      "sha256": "38abfca08dc81cfd2441b524bd2f652ba0d3bf59a881bf1227fd0257bf597071"
+    },
+    {
+      "bytes": 252392,
+      "executable": false,
+      "path": "__cadgen__/models/part_board.step.py/components/7bbb1cf788e20b46.glb",
+      "sha256": "622afada1299e29c316671b83c57adb758f4ecdd61ff0003c2ae0d20ca83439d"
+    },
+    {
+      "bytes": 827540,
+      "executable": false,
+      "path": "exports/manhattan-nocturne.glb",
+      "sha256": "a5ae9ec954f48daaa17ea54a9cbab005a852da12a8a07099050665d6c25c453c"
+    },
+    {
+      "bytes": 2326378,
+      "executable": false,
+      "path": "manhattan_nocturne.step",
+      "sha256": "a65172a7daf8eb4a06823dba179cbba405721d3b2f13e0205b2abeb62e8460ea"
+    },
+    {
+      "bytes": 1744,
+      "executable": false,
+      "path": "manhattan_nocturne.step.py",
+      "sha256": "16dc85daeb94bff473c57042f095dec707f1f9cf89668a0a908cee560ffa7462"
+    },
+    {
+      "bytes": 9960,
+      "executable": false,
+      "path": "manhattan_nocturne_lib.py",
+      "sha256": "a6e5a1c28ebdca4b711e610f5caf55c775509086299fa529b93bad9996679b78"
+    },
+    {
+      "bytes": 8388,
+      "executable": false,
+      "path": "manhattan_nocturne_spec.md",
+      "sha256": "c462a04280732027b0010824d792e55fb10019eb3b19f52d4f74c57fa695b13b"
+    },
+    {
+      "bytes": 2796,
+      "executable": false,
+      "path": "measure/check_fit.py",
+      "sha256": "4312ffa1eb9495defb6bacc676f9127b756198b6107875640141062c5e81e983"
+    },
+    {
+      "bytes": 11531,
+      "executable": false,
+      "path": "params.py",
+      "sha256": "4ab7c0c074aad91c311526d2235a1c0add8419df235be92ce89770f63eebbbf3"
+    },
+    {
+      "bytes": 519009,
+      "executable": false,
+      "path": "part_board.step",
+      "sha256": "7a72cc36144f3bafa68c0c59cbfb4c53a0e562847a3d85ddcbe82baeca87f473"
+    },
+    {
+      "bytes": 152,
+      "executable": false,
+      "path": "part_board.step.py",
+      "sha256": "a8e49c599b0a5638c77ad02202111376f71dff1d9833715a3543a05116647b39"
+    },
+    {
+      "bytes": 151190,
+      "executable": false,
+      "path": "part_steel_bishop.step",
+      "sha256": "7c46a6b29810b21b7c45167f79c38e739b7785fcb30d6931663a0f49fa18f944"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_steel_bishop.step.py",
+      "sha256": "3f5a3882163ebedbc464a3d9ddced11cc4d3c2def18bf3d70ca0f92da3bcd9b8"
+    },
+    {
+      "bytes": 215289,
+      "executable": false,
+      "path": "part_steel_king.step",
+      "sha256": "3058853fb8122759d4f1cdd8946575f8f380c9eb6bcc23072b8976e30c068a2c"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_king.step.py",
+      "sha256": "6259514f12d63ac3ee238ca6f578db449ba32aa12d6092fa0205ec3372f9e39f"
+    },
+    {
+      "bytes": 218891,
+      "executable": false,
+      "path": "part_steel_knight.step",
+      "sha256": "fb953b583a6beae7797ab18fc6cea5360d623d62fbef822ee4133a5452caa30e"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_steel_knight.step.py",
+      "sha256": "08219061ff4bb9ed1dca28a623e28b81a7804ce8541e715fc4152973fd490c9b"
+    },
+    {
+      "bytes": 142266,
+      "executable": false,
+      "path": "part_steel_pawn.step",
+      "sha256": "d060d212c15b5bf92eebf432a6d03eb34380e17404cfea9d400d9845b69673ec"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_pawn.step.py",
+      "sha256": "70c90cd378808e84748391dbb5ffcf6cfc21f3c475a9e3da81601851531300fe"
+    },
+    {
+      "bytes": 174450,
+      "executable": false,
+      "path": "part_steel_queen.step",
+      "sha256": "754b3a3cfb95cbde3d1ab4a49f698fbba41d8302984dd87df0fb895e0ed08506"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_steel_queen.step.py",
+      "sha256": "c81f91d1fd59e4b4360630fc9713663417ef5530d2dbb76d3b8675863710eaaa"
+    },
+    {
+      "bytes": 241631,
+      "executable": false,
+      "path": "part_steel_rook.step",
+      "sha256": "21c84a982356e2395f52b4b94f05b5e8dcfd4e203fbce6019d5c75a2b93af51e"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_rook.step.py",
+      "sha256": "0041717d40ff6140631a8b6c154303c729a6b2b7de29d901a49606c7cf64a369"
+    },
+    {
+      "bytes": 64532,
+      "executable": false,
+      "path": "part_stone_bishop.step",
+      "sha256": "b811d8ded1dfc1425a4e878a19f4554dec43f6b80aef6ea21b4a50fb137b3e89"
+    },
+    {
+      "bytes": 167,
+      "executable": false,
+      "path": "part_stone_bishop.step.py",
+      "sha256": "73b5dd4f9bbd0a209b35257facd3012e389db5ed20da7fef1fc81d634100be3d"
+    },
+    {
+      "bytes": 95248,
+      "executable": false,
+      "path": "part_stone_king.step",
+      "sha256": "7938f01666019573a6cd0efe4785a5bdf365bce6edb33458b0a2ea8ced9e5a04"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_king.step.py",
+      "sha256": "acc7d079509b447543f78afd0d1939d7bc8bb744dc13dd18a77c2cb103175727"
+    },
+    {
+      "bytes": 132114,
+      "executable": false,
+      "path": "part_stone_knight.step",
+      "sha256": "4c0e9f414ba28f8c118d82fe760efae77300fc60f30df820d241ce1128c4b556"
+    },
+    {
+      "bytes": 167,
+      "executable": false,
+      "path": "part_stone_knight.step.py",
+      "sha256": "5e0477da1e86694fb2a8692a7ad923d07d5775c894faa326efc08116f0249123"
+    },
+    {
+      "bytes": 55628,
+      "executable": false,
+      "path": "part_stone_pawn.step",
+      "sha256": "5225b00fe7680ca72ae6d9f8d8d2c7857b17f11db31e8ec8b5bb80f36f18c2d6"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_pawn.step.py",
+      "sha256": "bae6afc1a1890ba2c993e125f067abb4d640111d0c4788c739106f0e9aa489eb"
+    },
+    {
+      "bytes": 54413,
+      "executable": false,
+      "path": "part_stone_queen.step",
+      "sha256": "a00411b71158f9cc6ab61c2ad900bdcc04819cc567255f397ef4b01a909b5be0"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_stone_queen.step.py",
+      "sha256": "48dd81a7c1f45b3f826e060e0bcac236448d124cbd5253119d82076183dc48b4"
+    },
+    {
+      "bytes": 127153,
+      "executable": false,
+      "path": "part_stone_rook.step",
+      "sha256": "c12697cb0694868557e1a4bd8290749beb27ee3d6a04bce954e314912b9c49d6"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_rook.step.py",
+      "sha256": "9b351826ea3fb2239b4b0837cab71be9b2e77860381bb582dcfe827e2ed50161"
+    },
+    {
+      "bytes": 322719,
+      "executable": false,
+      "path": "product-media/cad-preview/01-hero-stone.png",
+      "sha256": "a0bde03e5893da546b2067832c98d7ea578d77106f82ce535a6bb4be3d9ba1b3"
+    },
+    {
+      "bytes": 35572,
+      "executable": false,
+      "path": "product-media/cad-preview/01-hero-stone.render.json",
+      "sha256": "89d9b1adc410346d0f4d26605550f49d083642e80e38de3a95cccd479e9af4e2"
+    },
+    {
+      "bytes": 298482,
+      "executable": false,
+      "path": "product-media/cad-preview/02-hero-steel.png",
+      "sha256": "fd9204c7af39261064ffb9ec99f8507735a646f08b47e386865ffbd3ecac28b2"
+    },
+    {
+      "bytes": 35574,
+      "executable": false,
+      "path": "product-media/cad-preview/02-hero-steel.render.json",
+      "sha256": "1ae69892205ca9201b42ae973ffe30d471f9fb7f15184000895d9e01cdb45833"
+    },
+    {
+      "bytes": 142479,
+      "executable": false,
+      "path": "product-media/cad-preview/03-top-inventory.png",
+      "sha256": "9eea25252dc4069813dd2590e6e1437677c281682fea3cce70ea15b27ac1873e"
+    },
+    {
+      "bytes": 34925,
+      "executable": false,
+      "path": "product-media/cad-preview/03-top-inventory.render.json",
+      "sha256": "8b385d2bee3ada9da0514f01d93cfcf89a23b7eb3baea3ea05168f0b6444f3aa"
+    },
+    {
+      "bytes": 1439,
+      "executable": false,
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "5217cd0d1c80846f7862c6a4b53914087a6cbd3e1e58104104609e1c74153452"
+    },
+    {
+      "bytes": 30143,
+      "executable": false,
+      "path": "render_product.py",
+      "sha256": "f52ed34ad4ffdcc02d6c6c5a63c0d963f068eb2e93ae90158b2f9c67a1470ccb"
+    },
+    {
+      "bytes": 24804,
+      "executable": false,
+      "path": "validation/orca-profiles/p2s-machine-standard.json",
+      "sha256": "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9"
+    },
+    {
+      "bytes": 6146,
+      "executable": false,
+      "path": "validation/orca-profiles/p2s-process-standard.json",
+      "sha256": "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7"
+    },
+    {
+      "bytes": 5372,
+      "executable": false,
+      "path": "validation/orca-profiles/pla-basic-standard.json",
+      "sha256": "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 41091239
+}

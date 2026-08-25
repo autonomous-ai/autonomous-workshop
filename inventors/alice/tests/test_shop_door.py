@@ -1,9 +1,8 @@
 import json
 import os
-import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from alice.factory import FactoryClient
 from alice.shop_door import ShopDoorClient, ShopDoorError, ShopDraftStamp
@@ -57,55 +56,35 @@ class ShopDoorTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     ShopDoorClient(value, "secret")
 
-    def test_create_draft_forces_draft_and_validates_receipt(self) -> None:
-        response = {
-            "id": "d1",
-            "slug": "river-council",
-            "status": "draft",
-            "current_history_id": "h1",
-            "published_history_id": None,
-            "project_url": "https://cdn/project.zip",
-        }
-        with tempfile.TemporaryDirectory() as directory:
-            archive = Path(directory) / "game.zip"
-            archive.write_bytes(b"PK-fixture")
-            client = ShopDoorClient("https://shop.example", "secret")
-            with patch.object(
-                client._opener, "open", return_value=_Response(response)
-            ) as opened:
-                receipt = client.create_draft(
-                    archive,
+    def test_create_draft_is_retired_before_archive_or_http(self) -> None:
+        client = ShopDoorClient("https://shop.example", "secret")
+        missing_archive = Path("/does/not/exist.zip")
+        with patch.object(
+            client._opener,
+            "open",
+            side_effect=AssertionError("retired importer touched HTTP"),
+        ) as opened:
+            with self.assertRaisesRegex(ShopDoorError, "create_draft is retired"):
+                client.create_draft(
+                    missing_archive,
                     import_key="key-1",
                     title="River Council",
                     description="A game\n\nBy Alice.",
                     category="games",
                 )
-            request = opened.call_args.args[0]
-            self.assertIn(b'name="status"\r\n\r\ndraft', request.data)
-            self.assertIn(
-                b'name="description"\r\n\r\nA game\n\nBy Alice.\r\n',
-                request.data,
-            )
-            self.assertEqual(request.headers["Idempotency-key"], "key-1")
-            self.assertEqual(receipt.status, "draft")
+        opened.assert_not_called()
 
-    def test_create_draft_rejects_inexact_attribution_before_reading_archive(self) -> None:
-        client = ShopDoorClient("https://shop.example", "secret")
+    def test_factory_client_alias_cannot_revive_direct_import(self) -> None:
+        client = FactoryClient("https://shop.example", "secret")
         missing_archive = Path("/does/not/exist.zip")
-        for description in (
-            "A game",
-            "A game\n\nNote: By Alice.",
-            "A game\n\nBy Alice.\n",
-        ):
-            with self.subTest(description=description):
-                with self.assertRaisesRegex(ValueError, "exact attribution"):
-                    client.create_draft(
-                        missing_archive,
-                        import_key="key-1",
-                        title="River Council",
-                        description=description,
-                        category="games",
-                    )
+        with self.assertRaisesRegex(ShopDoorError, "shared Workshop"):
+            client.create_draft(
+                missing_archive,
+                import_key="key-1",
+                title="River Council",
+                description="A game",
+                category="games",
+            )
 
     def test_design_readback_requires_exact_alice_attribution(self) -> None:
         client = ShopDoorClient("https://shop.example", "secret")

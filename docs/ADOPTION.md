@@ -107,7 +107,8 @@ All five profiles use the same 0.5 contracts for:
 The platform operator still has to install real shared tools. A complete
 path needs, as applicable, authenticated model and CAD workers, executable AI
 players, independent model reviewers, and a pinned slicer profile for Playtest,
-plus a product renderer and private site-draft integration for Instructions.
+plus private model-only site-draft integration for Instructions. Factory owns
+the downstream customer-facing page renderer, copy, images, and video.
 Deliver then needs a printer profile, exact production, hands-on QA, packing,
 and USPS/UPS/FedEx integration. Reviews begins only after customers receive
 those deliveries.

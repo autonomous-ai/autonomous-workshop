@@ -1,0 +1,36 @@
+{
+  "agent_roles": [
+    "print breaker",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "claims": [
+    "All 13 unique exact STL entries pass both the recorded mesh check and the 0.8 millimetre two-line thickness floor, then slice with OrcaSlicer 2.3.2 using pinned profiles and supports disabled.",
+    "The complete 32-piece inventory arranges and slices on one plate; parsed G-code records 155.5 grams, 23562 model seconds, 372 layers, 74.4 millimetres maximum Z, and SHA-256 c5d826ee9d023da616512538d04484d393f2af181e88d7ba6a5b85536e250b62.",
+    "Print-test passes as digital evidence only. No G-code was accepted by a physical printer and no successful print, color change, finish, warp, tipping, handling, tactile, support-removal, or durability claim is made."
+  ],
+  "config_sha256": "e1c4e670024c95bb623d58d4f3a153fc968cbb6fea1dc8c746ec5678829748eb",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "limitations": [
+    "All 14 invocations exited zero, but every invocation stdout retains '[error] Invalid T command (T65535).' even though the receipt's top-level slicer_warnings array is empty.",
+    "Digital mesh, thickness, and slicing do not establish a successful physical print or real color change, finish, warp, tipping, handling, support removal, tactile quality, fit, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 4,
+  "schema_version": 1,
+  "simulation": "AI print-breaker and adversarial roles interpreted exact mesh and thickness checks, pinned-profile OrcaSlicer receipts, quantity-aware packing, G-code metrics, and retained invocation output",
+  "slicer_backed": true,
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "35855e72a88c090040570b3d48c415896417c7b6c8c3765d2e79bccbf6271644"
+    },
+    {
+      "path": "sources/slicer-audit.json",
+      "sha256": "97e36c8fafee475b23aa03c483944a02aa3f3e6e00a860f529570d7a406e55d0"
+    }
+  ],
+  "warning": "[error] Invalid T command (T65535)."
+}

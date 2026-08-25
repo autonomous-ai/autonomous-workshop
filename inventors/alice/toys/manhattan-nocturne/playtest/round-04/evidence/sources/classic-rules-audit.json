@@ -1,0 +1,40 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "check": "classic-rules-and-setup",
+  "claim_scope": "Digital inventory, starting transforms, product rule statement, and ordinary-chess fidelity only; visual board usability is independently gated by agent-playtest",
+  "inputs": [
+    {
+      "path": "product.json",
+      "sha256": "173d4de4298082b76240d6b30f25832a1e9baa18718738d35c1c08fcb1b58431"
+    },
+    {
+      "path": "manhattan_nocturne_spec.md",
+      "sha256": "0fea75c01da1328f4482754490f0cad176a68fe339b0b447a6ab0e063f0f3096"
+    },
+    {
+      "path": "params.py",
+      "sha256": "253c8be3ceea27020b02149501b9139ad555101ecf6f2972ffe9da2603d2471a"
+    },
+    {
+      "path": "measure/check_fit.py",
+      "sha256": "0f8e32d1d75bcefee15e969ada7324f4f5255940c2f343c15e73b4b0875a4c65"
+    },
+    {
+      "path": "manhattan_nocturne.step",
+      "sha256": "a8de2b4e426c923535f55aa235760fb5da02d41d852ef4f8e1e99d5a4c129937"
+    }
+  ],
+  "passed": true,
+  "results": {
+    "back_rank": "R N B Q K B N R",
+    "board_count": 1,
+    "piece_count": 32,
+    "rule_changes": 0,
+    "setup_errors": 0,
+    "starting_squares_unique": 32,
+    "steel_pieces": 16,
+    "stone_pieces": 16
+  },
+  "rule_statement": "Set up and play with the standard rules of chess; movement, capture, check, checkmate, castling, en passant, promotion, draws, and turn order are unchanged.",
+  "schema_version": 1
+}

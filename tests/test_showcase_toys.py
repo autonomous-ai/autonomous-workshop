@@ -15,6 +15,13 @@ SHOWCASE_TOYS = {
     "ivy": ("Ivy", "montauk-tide-orrery"),
     "leo": ("Leo", "counterorbit"),
 }
+PRINTED_PIECE_COUNTS = {
+    "alice": 25,
+    "bob": 5,
+    "eve": 5,
+    "ivy": 6,
+    "leo": 12,
+}
 
 
 def load_json(path):
@@ -97,6 +104,9 @@ class ShowcaseToyTest(unittest.TestCase):
         required_artifacts = {
             "project.json",
             "product.json",
+            "assembled.stl",
+            "assembled.step",
+            "assembled.step.json",
             "cad/design.json",
             "cad/model.py",
             "cad/product.step",
@@ -132,6 +142,10 @@ class ShowcaseToyTest(unittest.TestCase):
                     for entry in load_json(toy / "artifact-manifest.json")["entries"]
                 }
                 self.assertTrue(required_artifacts.issubset(artifact_paths))
+                self.assertEqual(
+                    (toy / "artifact" / "assembled.stl").read_bytes(),
+                    (toy / "artifact" / "cad" / "product.stl").read_bytes(),
+                )
                 evidence_index = load_json(toy / "evidence" / "evidence-index.json")
                 self.assertEqual(evidence_index["status"], "passed-ai-playtest")
                 self.assertEqual(evidence_index["unresolved_canonical_capabilities"], [])
@@ -147,10 +161,71 @@ class ShowcaseToyTest(unittest.TestCase):
                     instructions_page["playtest_evidence_artifact_sha256"],
                     receipt["evidence_sha256"],
                 )
-                self.assertEqual(
-                    set(instructions_page["images"]),
-                    {"hero", "play", "detail", "parts", "box"},
+                self.assertFalse(
+                    {"images", "use_case", "story_blocks"}
+                    & set(instructions_page)
                 )
+                self.assertEqual(
+                    instructions_page["factory_enrichment"],
+                    {
+                        "copy_owner": "factory",
+                        "media_owner": "factory",
+                        "status": "pending",
+                    },
+                )
+
+    def test_printed_piece_truth_matches_the_occurrence_sidecar(self):
+        for inventor_id, (_, slug) in SHOWCASE_TOYS.items():
+            with self.subTest(inventor_id=inventor_id):
+                artifact = self.toy_root(inventor_id, slug) / "artifact"
+                product = load_json(artifact / "product.json")
+                sidecar = load_json(artifact / "assembled.step.json")
+                build = load_json(artifact / "cad" / "digital-build.json")
+                expected = PRINTED_PIECE_COUNTS[inventor_id]
+                names = [item["name"] for item in sidecar["parts"]]
+
+                self.assertEqual(product["design"]["printed_piece_count"], expected)
+                self.assertEqual(len(names), expected)
+                self.assertEqual(len(names), len(set(names)))
+                self.assertEqual(
+                    build["factory_assembly"]["occurrence_count"], expected
+                )
+                self.assertEqual(
+                    build["factory_assembly"]["step_solid_count"], expected
+                )
+                self.assertEqual(build["product"]["step"]["solid_count"], expected)
+                self.assertEqual(build["product"]["stl"]["shell_count"], expected)
+                self.assertTrue(
+                    all(
+                        record["step"]["solid_count"] == 1
+                        and record["stl"]["shell_count"] == 1
+                        for record in build["parts"].values()
+                    )
+                )
+                self.assertEqual(build["factory_assembly"]["part_names"], names)
+                if inventor_id == "bob":
+                    expected_components = [
+                        "one base",
+                        "two axles (one is the hand-crank input axle)",
+                        "one comet drive wheel",
+                        "one six-slot orbit wheel",
+                    ]
+                    self.assertEqual(product["components"], expected_components)
+                    instructions = load_json(
+                        self.toy_root(inventor_id, slug)
+                        / "instructions"
+                        / "product.json"
+                    )
+                    self.assertEqual(
+                        instructions["what_arrives"], expected_components
+                    )
+                if inventor_id == "ivy":
+                    self.assertEqual(len(product["components"]), 6)
+                    self.assertIn("one center post", product["components"])
+                    self.assertIn("one Earth hub", product["components"])
+                    self.assertIn(
+                        "all six printed pieces", product["factory_brief"]
+                    )
 
 
 if __name__ == "__main__":

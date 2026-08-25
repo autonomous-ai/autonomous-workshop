@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "6b8d03050b7d5c9a3dadbdf71cf8ace41500ce1bebebe7c3d7ed24cf7a768621",
+      "evidence_sha256": "0e9edd5ccf61fce4d9b2299b75166aa760e9985dbc5bfcca7728539f81b25f31",
       "passed": true
     },
     "classic-rules-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "classic-rules-test.json",
-      "evidence_sha256": "8fc0d7d348f93d9d6700c5ac5cf2204c4cbed1663d0212d4fae7d1b7dee4d582",
+      "evidence_sha256": "3856a12ac068a78f7256d1a40c631ecdb187db5a5705dedd9f43a8a189c34afa",
       "passed": true
     },
     "mechanical-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "ce7a2b28db181713830cbca165fac88682928c7a41d0a44bf1a9231a868855fb",
+      "evidence_sha256": "679a0e5eb9c09a16ab7ce7aa6343c8e128cd3a1abc91153983c1c2dc4c155a1b",
       "passed": true
     },
     "print-test": {
@@ -42,52 +42,29 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "91f1e03de50ab9156fb3ee53e41f5d083424d311bea56661e7bc62c9f3597614",
+      "evidence_sha256": "22998c9753e3998438f65245642d6dc3975d545aa9cccf6e3d7ae2a5acd2b80f",
       "passed": true
     }
   },
-  "how_to_play": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
-  "images": {
-    "box": "images/box.png",
-    "detail": "images/detail.png",
-    "hero": "images/hero.png",
-    "parts": "images/parts.png",
-    "play": "images/play.png"
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
   },
+  "how_to_play": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "instructions_kind": "rulebook",
+  "kind": "workshop.instructions-facts",
   "lane": "classics-made-yours",
   "limitations": [
     "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
     "The exact physical set is produced and checked during Deliver, not Playtest."
   ],
-  "playtest_evidence_artifact_sha256": "cf755b891fd53ae8f6c2bc1c4534d730587d4830f174df4ce0e8558058fc11d7",
-  "product_artifact_sha256": "4c61268b25ce6ec89bb5a643ad0aa244a98f85a4a1a002c689f518ae4b733a33",
-  "schema_version": 1,
-  "status": "ready",
-  "story_blocks": [
-    {
-      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-      "hero_image": "play",
-      "lead": "How to play",
-      "pair_images": [
-        "detail",
-        "parts"
-      ]
-    },
-    {
-      "body": "The box contains one checkers board, twelve five-ring pieces, twelve five-spoke pieces. AI players checked the known rules and role readability; customer experience will arrive later as Reviews. The exact physical set is produced and checked during Deliver, not Playtest.",
-      "hero_image": "box",
-      "lead": "What arrives",
-      "pair_images": []
-    }
-  ],
+  "playtest_evidence_artifact_sha256": "4a2a3a63e6bd4572dbeff3df46510f5c6ce363bf2f38aaec55a25cfa322c9d74",
+  "product_artifact_sha256": "d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9",
+  "schema_version": 2,
+  "status": "facts-ready",
   "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.\n\nBy Alice.",
   "title": "Five-Job Checkers",
-  "use_case": {
-    "body": "A known checkers game made into an architectural portrait of the Workshop's five jobs. It turns one person's request into this exact plaything instead of decorating a generic download.",
-    "image": "hero",
-    "label": "Made from your wish"
-  },
   "what_arrives": [
     "one checkers board",
     "twelve five-ring pieces",

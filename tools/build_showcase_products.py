@@ -16,6 +16,7 @@ import json
 import math
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -47,7 +48,7 @@ except ImportError as exc:  # pragma: no cover - deliberately fail closed
 from inventor_workshop import attribute_product_description
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.concept import DefaultConcept
-from inventor_workshop.instructions import DefaultInstructions, REQUIRED_PRODUCT_IMAGES
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.jobs import (
     ConceptBrief,
     ConceptComponent,
@@ -92,6 +93,9 @@ class ProductSpec:
     description: str
     extension_level: str
     playtest_rounds: int
+    factory_brief: str
+    story: Mapping[str, Any]
+    art_direction: Mapping[str, Any]
     design: Mapping[str, Any]
     limitations: Sequence[str]
 
@@ -108,13 +112,52 @@ SPECS: tuple[ProductSpec, ...] = (
         "A regulation-readable checkers edition whose five-ring and five-spoke pieces, five brass-like threshold markers, and midnight grid turn the Workshop workflow into table presence without changing the known game. By Alice.",
         "taste-only",
         2,
+        (
+            "A late-night design review, cast as a game you already know. This is "
+            "ordinary English checkers translated into the Workshop's architecture, "
+            "not a new ruleset and not a decorative checker pattern. Preserve the "
+            "exact 132 mm board, unmistakable 8×8 grid, twelve five-ring pieces, "
+            "twelve five-spoke pieces, and five raised edge thresholds. The two "
+            "armies must remain different by touch and silhouette. Palette: Midnight "
+            "black #12151D with warm brass-like gold #D6A449; architectural, "
+            "restrained, high contrast. Film in this order: Full three-quarter hero "
+            "with all 24 pieces and all five threshold bars visible. Then prove the "
+            "8×8 grid from true overhead; compare ring and spoke pieces in macro; "
+            "skim the five thresholds from a low edge; move from the exact opening "
+            "position into a credible midgame; finish on a clean board-plus-24-piece "
+            "inventory. Use dark after-hours studio light with warm brass highlights, "
+            "never an ivory wash. Do not randomize the opening setup, invent labels, "
+            "add components, alter the known rules, or call digital checks a physical "
+            "print or a human playtest."
+        ),
+        {
+            "core_promise": "Familiar English checkers, recast as an architectural portrait of the Workshop’s five jobs without changing a rule.",
+            "geometry_and_meaning": "A 132 × 132 × 10 mm assembled set with an 8×8 grid, 14.5 mm cells, twelve five-ring pieces and twelve five-spoke pieces. The two tactile silhouettes identify the sides. Five raised threshold bars at the board edge represent Wish, Make, Playtest, Instructions, and Deliver.",
+            "interaction_story": "The setup and play remain ordinary checkers; the personalization lives in the board, piece language, tactility, and table presence.",
+            "attribution": "By Alice.",
+        },
+        {
+            "palette": "Midnight black #12151D with warm brass-like gold #D6A449; architectural, restrained, high contrast.",
+            "must_show_media": [
+                "Full three-quarter hero with all 24 pieces and all five threshold bars visible.",
+                "True top-down view proving the complete 8×8 grid.",
+                "Macro comparison of five-ring versus five-spoke geometry.",
+                "Low edge view showing the five raised Workshop thresholds.",
+                "Opening-position-to-midgame transition using familiar checkers movement.",
+                "Clean inventory view: board, 12 ring pieces, 12 spoke pieces.",
+            ],
+            "avoid_limitations": "Do not invent new rules, labels, logos, or extra components. Digital checks establish geometry, topology, known-rule compatibility, and bed fit—not physical print quality or customer delight.",
+        },
         {
             "kind": "classic-checkers-edition",
+            "printed_piece_count": 25,
             "known_rules": "English draughts/checkers; this edition does not alter play",
             "board_mm": [132.0, 132.0, 5.5],
+            "assembled_extents_mm": [132.0, 132.0, 10.0],
             "grid": [8, 8],
             "cell_mm": 14.5,
             "piece_count": {"five-ring": 12, "five-spoke": 12},
+            "thresholds": ["Wish", "Make", "Playtest", "Instructions", "Deliver"],
             "wish_features": [
                 "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
                 "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",
@@ -137,14 +180,55 @@ SPECS: tuple[ProductSpec, ...] = (
         "A compact exposed Geneva machine: turn the cratered drive wheel and its comet pin advances the six-station orbit one crisp step at a time. The mechanism—not a plaque—is the Wish. By Bob.",
         "custom-make",
         4,
+        (
+            "A continuous turn becomes one deliberate jump. The visible comet pin is "
+            "the cause, the six-slot orbit is the effect, and the pause between them "
+            "is the delight. Preserve the exact 94 × 68 × 20 mm exposed Geneva "
+            "mechanism: base, two replaceable axles, cratered drive wheel with hand "
+            "knob and comet pin, and the six-slot orbit wheel. One complete drive-wheel "
+            "revolution advances exactly one 60° step; six drive revolutions complete "
+            "one orbit. Never say one revolution makes six jumps. Palette: Charcoal "
+            "#1C1F26 with ember/coral #EE5F3E; exposed, mechanical, dramatic. Film in "
+            "this order: Full three-quarter hero revealing both wheels and their "
+            "relationship. Move overhead to all six slots and stations; cut to a macro "
+            "of the pin approaching, entering, indexing 60°, releasing, and locking; "
+            "show the pause; then show six uninterrupted revolutions completing the "
+            "cycle; finish with the exact parts inventory. Use a hard cool rim with a "
+            "warm highlight only on the comet pin. No gears, motors, electronics, "
+            "automatic motion, extra knobs, or claims of proven hand feel, wear life, "
+            "or physical safety."
+        ),
+        {
+            "core_promise": "A hand-cranked desk machine where continuous motion becomes six deliberate orbital jumps—and the exposed mechanism is the spectacle.",
+            "geometry_and_meaning": "The assembly is 94 × 68 × 20 mm. A cratered 36 mm drive wheel carries the visible comet pin and hand knob; it engages a roughly 46 mm six-slot Geneva wheel. The 4.3 mm pin enters 5.0 mm slots with 0.7 mm nominal pin-slot clearance. Each crank revolution advances the orbit by 60°.",
+            "interaction_story": "The user turns the drive wheel continuously, watches the comet pin enter a radial slot, pushes the orbit one station, then sees it pause before the next encounter.",
+            "attribution": "By Bob.",
+        },
+        {
+            "palette": "Charcoal #1C1F26 with ember/coral #EE5F3E; exposed, mechanical, dramatic.",
+            "must_show_media": [
+                "Full three-quarter hero revealing both wheels and their relationship.",
+                "Overhead view showing all six radial slots and station markers.",
+                "Macro of the comet pin approaching and entering one slot.",
+                "Slow-motion single 60° index from engagement through release.",
+                "One uninterrupted six-jump/full-cycle sequence.",
+                "Parts view: base, axles, comet drive, six-slot orbit.",
+            ],
+            "avoid_limitations": "Do not depict gears, electronics, automatic motion, or a decorative plaque. The evidence covers dimensional and kinematic intent only; physical fit, wear, cycle life, pinch behavior, and satisfying hand feel still require Deliver QA.",
+        },
         {
             "kind": "six-step-geneva-machine",
+            "printed_piece_count": 5,
             "base_mm": [94.0, 68.0, 5.0],
+            "assembled_extents_mm": [94.0, 68.0, 20.0],
             "geneva_slots": 6,
             "step_degrees": 60.0,
             "drive_radius_mm": 18.0,
             "geneva_radius_mm": 23.0,
-            "nominal_clearance_mm": 0.35,
+            "drive_pin_diameter_mm": 4.3,
+            "slot_width_mm": 5.0,
+            "nominal_pin_slot_clearance_mm": 0.7,
+            "nominal_clearance_per_side_mm": 0.35,
             "wish_features": [
                 "continuous crank becomes six discrete orbital jumps",
                 "comet pin is the visible cause of motion",
@@ -167,15 +251,56 @@ SPECS: tuple[ProductSpec, ...] = (
         "Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recognizable as a single engine-room world, watched over by a lone night-shift operator. By Eve.",
         "taste-only",
         3,
+        (
+            "Three machines. One watch. Turn the named homelab nodes Comet, Moss, and "
+            "Void into one small orbital engine room watched by a lone night-shift "
+            "operator—not three generic server blocks on a white desk. Preserve the "
+            "exact 108 × 72 × 43.6 mm deck, three circuit trenches, Comet's six fins, "
+            "Moss's paired coolant pipes, Void's vertical halo, and exactly one 16 mm "
+            "operator. Palette: Deep navy #141C2A with industrial teal #5EC5BF; "
+            "cinematic and technical, never cute. Film in this order: Operator-eye "
+            "hero framing all three nodes as one room. Begin low behind the operator; "
+            "orbit slowly past all six Comet fins, Moss's paired pipes, Void's halo, "
+            "and the trenches that join the city; rise overhead to prove the one-deck "
+            "layout; finish with five separate production pieces. Light it like an "
+            "unoccupied engine room at 2 a.m.—deep navy shadows, teal structure, a "
+            "restrained warm accent on the operator, sharp rim light and real negative "
+            "space. Do not add rack labels, cables, screens, glow, electronics, a "
+            "second figure, personal biography, or likeness details not present in "
+            "the Wish."
+        ),
+        {
+            "core_promise": "A three-node homelab transformed into a tiny orbital engine room whose identities are visible in geometry, watched by one lone operator.",
+            "geometry_and_meaning": "The assembled world is 108 × 72 × 43.6 mm on a rounded engine deck crossed by three circuit trenches. Comet is a 34 mm tower with six swept side fins; Moss is a 35 mm structure with paired exposed coolant pipes; Void rises to 37.7 mm beneath a vertical orbital halo. A single 16 mm operator faces all three and establishes scale.",
+            "interaction_story": "The trenches make the nodes read as one connected machine city; the operator turns the arrangement into a night-shift scene rather than three unrelated server blocks.",
+            "attribution": "By Eve.",
+        },
+        {
+            "palette": "Deep navy #141C2A with industrial teal #5EC5BF; cinematic and technical, never cute.",
+            "must_show_media": [
+                "Operator-eye hero framing all three nodes as one room.",
+                "Comet detail showing all six fins.",
+                "Moss detail showing the paired coolant pipes.",
+                "Void silhouette centered on its vertical halo.",
+                "Overhead view showing the connecting circuit trenches.",
+                "Slow orbit around the complete 108 mm deck, with the operator always legible.",
+            ],
+            "avoid_limitations": "No nameplates, generic rack labels, added cables, invented personal history, or private likeness details. The only personalization source was the Wish text; physical detail survival and handling durability remain Deliver checks.",
+        },
         {
             "kind": "personalized-homelab-diorama",
+            "printed_piece_count": 5,
             "deck_mm": [108.0, 72.0, 5.0],
+            "assembled_extents_mm": [108.0, 72.0, 43.6],
             "nodes": ["Comet", "Moss", "Void"],
+            "circuit_trench_count": 3,
+            "operator_height_mm": 16.0,
             "node_signatures": {
-                "Comet": "swept cooling fins",
-                "Moss": "paired vertical coolant pipes",
-                "Void": "suspended orbital halo",
+                "Comet": {"height_mm": 34.0, "feature": "six swept side fins"},
+                "Moss": {"height_mm": 35.0, "feature": "paired exposed coolant pipes"},
+                "Void": {"height_mm": 37.7, "feature": "vertical orbital halo"},
             },
+            "reference_scope": "Wish text only; no private likeness assets were used",
             "wish_features": [
                 "three node identities are geometry, not labels",
                 "circuit trenches connect the rack city",
@@ -195,13 +320,59 @@ SPECS: tuple[ProductSpec, ...] = (
         "holdable-science",
         "I wish I could hold the spring-neap tide cycle for Montauk and predict what alignment makes the larger tide.",
         "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.",
-        "Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast. By Ivy.",
+        "Rotate the tide arm through Sun–Earth–Moon alignment and quadrature to compare why spring and neap tide ranges differ. It is a qualitative teaching model, not a Montauk tide forecast. By Ivy.",
         "taste-only",
         3,
+        (
+            "The tide begins as geometry in the sky. Present this only as a qualitative "
+            "spring–neap alignment comparison, never as a Montauk tide forecast and "
+            "never as a solar-system model. Copy rule: never use predict, prediction, "
+            "or forecast as a product capability, heading, label, or call to action; "
+            "say compare spring and neap alignment instead. Preserve "
+            "the complete 104 mm circular phase base, four raised stops at 0°, 90°, "
+            "180°, and 270°, the full two-lobed arm, center post, Earth hub, Moon "
+            "marker, and Sun arrow. Exact material story: deep-ocean #122630 base; "
+            "instrument-gold #EDC250 center post, tide arm, and Sun arrow; sea-glass "
+            "teal #2E7F8F Earth hub; warm ivory #D8D2C4 Moon marker. Film in this order: "
+            "Near-top-down hero showing the entire circular base, all four phase "
+            "markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the "
+            "thin layered disc from low three-quarter; move through 0° → 90° → 180° → "
+            "270° with a clean stop at each phase; compare aligned/opposed with "
+            "quadrature side by side; show all six printed pieces clearly—the phase "
+            "base, center post, tide arm, Earth hub, Moon marker, and Sun arrow; finish on "
+            "the full circular silhouette. Use dark coastal light, ocean navy, "
+            "instrument brass, and sea-glass teal. Never crop the base into a post, "
+            "turn the markers into mushrooms or planets, omit an assembly image, or "
+            "claim scale accuracy, predictive ability, physical detent feel, or human proof."
+        ),
+        {
+            "core_promise": "Hold the spring–neap relationship in your hands, then rotate the model to compare how alignment changes the pattern.",
+            "geometry_and_meaning": "This must read first as a 104 mm circular phase-base instrument, not a post or cylinder. The full assembly is approximately 104.5 × 104 × 31.2 mm. Four raised phase markers sit around the disc at 0°, 90°, 180°, and 270°. A center post carries a 96 × 16 mm two-lobed tide arm spanning nearly the base diameter, with a 16 mm Earth hub at center, a 19 mm-high Moon marker on the arm, and a 21 mm Sun arrow near the rim.",
+            "interaction_story": "Aligned and opposed positions represent spring-tide configurations; the two quadrature positions represent neap-tide configurations. The tactile arm makes side-by-side comparison the interaction.",
+            "attribution": "By Ivy.",
+        },
+        {
+            "palette": "Deep-ocean #122630 base; instrument-gold #EDC250 center post, arm, and Sun; sea-glass teal #2E7F8F Earth; warm ivory #D8D2C4 Moon.",
+            "must_show_media": [
+                "Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun.",
+                "Low three-quarter view establishing the disc’s thin base and layered assembly.",
+                "Macro of the Earth hub, center post, and tide arm.",
+                "Rotation through 0° → 90° → 180° → 270°, stopping clearly at each phase.",
+                "Side-by-side aligned/opposed versus quadrature configurations.",
+                "Final overhead tableau with the 104 mm circular silhouette unmistakable.",
+            ],
+            "avoid_limitations": "Never render it as a generic pedestal, narrow cylinder, solar-system model, or literal Montauk tide predictor. It is qualitative, not to scale and not predictive; physical detent feel and hands-on comprehension remain unproven until Deliver and Reviews.",
+        },
         {
             "kind": "qualitative-tide-orrery",
+            "printed_piece_count": 6,
             "base_diameter_mm": 104.0,
+            "assembled_extents_mm": [104.5, 104.0, 31.2],
             "phase_positions_degrees": [0, 90, 180, 270],
+            "tide_arm_mm": [96.0, 16.0],
+            "earth_hub_diameter_mm": 16.0,
+            "moon_marker_height_mm": 19.0,
+            "sun_arrow_length_mm": 21.0,
             "relationship": {
                 "aligned_or_opposed": "spring-tide configuration",
                 "quadrature": "neap-tide configuration",
@@ -209,7 +380,7 @@ SPECS: tuple[ProductSpec, ...] = (
             "scope": "qualitative alignment model; not to scale and not predictive",
             "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
             "wish_features": [
-                "Montauk-specific request is framed as a prediction experiment",
+                "Montauk-specific request is framed as a qualitative alignment comparison",
                 "four detents embody the spring-neap cycle",
                 "two-lobed tide arm makes the alignment comparison tactile",
             ],
@@ -230,13 +401,72 @@ SPECS: tuple[ProductSpec, ...] = (
         "Place one of five signal stones, rotate the shared orbit, and try to hold a three-point wedge while every move reframes both players' plans. The five-job topology changes play rather than decorating it. By Leo.",
         "custom-playtest",
         10,
+        (
+            "Place a signal. Turn the world. See whether your line survives. This is "
+            "an original two-player alignment duel whose orbit changes adjacency; it "
+            "must never look like a static pegboard or a reskinned classic. Preserve "
+            "the exact roughly 104 mm assembly: fixed five-station core with five inner "
+            "wells, rotating outer ring with ten wells, five ring signals, and five "
+            "spoke signals. Palette: Near-black violet #181726 with electric amethyst "
+            "#BC5DE8; mysterious and high-contrast. Film in this order: True top-down "
+            "empty-board view clearly separating five inner and ten outer wells. Then "
+            "show the exact ten-stone inventory; place one signal; rotate the shared "
+            "orbit exactly one notch; hold a before/after split so changed framing is "
+            "obvious; resolve a three-signal wedge across core and orbit; finish with a "
+            "short complete-turn montage. Use tense overhead pools of light, an "
+            "amethyst ring side and cool-silver spoke side, with the rotating boundary "
+            "always legible. Copy rule: call this twelve printed pieces—one core, one "
+            "orbit, five ring signals, and five spoke signals—never four parts; the "
+            "rulebook is not a printed game piece. Describe the designed clearance as "
+            "intended and never claim smooth rotation, no slop, or proven physical fit "
+            "before Reviews. Do not show random pegs, a decorative or nonmoving orbit, "
+            "extra wells, extra stones, or any 'perfectly balanced' claim: 1,200 AI "
+            "simulations terminated, but the observed first-seat rate was 81.58% and "
+            "fun and balance remain unresolved until human Reviews."
+        ),
+        {
+            "core_promise": "An original two-player alignment duel where every placement is followed by a shared orbit rotation, so adjacency—and both plans—changes every turn.",
+            "geometry_and_meaning": "A roughly 104 mm circular assembly with a fixed 70 mm core containing five inner wells and a rotating outer ring containing ten wells. Each player has five tactile signals: five ring stones versus five spoke stones, each about 7.4 mm wide. The five inner stations represent the Workshop’s five jobs.",
+            "interaction_story": "Place one signal in any empty inner or outer well, rotate the outer orbit exactly one notch clockwise or counterclockwise, then check for a wedge: one occupied inner station plus its two currently framed outer wells. A wedge wins; otherwise the game resolves after all ten signals are placed.",
+            "attribution": "By Leo.",
+        },
+        {
+            "palette": "Near-black violet #181726 with electric amethyst #BC5DE8; mysterious and high-contrast.",
+            "must_show_media": [
+                "True top-down empty-board view clearly separating five inner and ten outer wells.",
+                "Inventory shot with five ring and five spoke signals.",
+                "Placement followed by a visible one-notch orbit rotation.",
+                "Before/after split showing how the same inner station frames different outer wells.",
+                "Three-signal wedge forming across core and orbit.",
+                "Short complete-turn montage emphasizing interference and counterplay.",
+            ],
+            "avoid_limitations": "Do not present it as a reskinned classic or make the orbit decorative. AI Playtest ran 1,200 terminating games across 16 style matchups, but this proves executability and termination—not balance or fun; the recorded first-seat win rate was 81.58%, so avoid any ‘perfectly balanced’ claim.",
+        },
         {
             "kind": "original-two-player-orbit-game",
+            "printed_piece_count": 12,
+            "assembled_diameter_mm": 104.0,
+            "fixed_core_diameter_mm": 70.0,
             "players": 2,
             "maximum_turns": 10,
             "inner_wells": 5,
             "outer_wells": 10,
             "tokens_per_player": 5,
+            "token_styles": {"ring": 5, "spoke": 5},
+            "token_diameter_mm": 7.4,
+            "turn": [
+                "place one signal in any empty inner or outer well",
+                "rotate the outer orbit exactly one notch clockwise or counterclockwise",
+                "check the occupied inner station and its two currently framed outer wells for a wedge",
+            ],
+            "win_condition": "a three-signal wedge wins; if both players complete one on the same move, the mover wins",
+            "playtest_evidence": {
+                "simulated_games": 1200,
+                "terminating_games": 1200,
+                "style_matchups": 16,
+                "first_seat_win_rate": 0.815833,
+                "claim_scope": "executability and termination only; not balance or fun",
+            },
             "player_styles": ["optimizing", "social", "exploratory", "adversarial"],
             "wish_features": [
                 "five inner stations are the five Workshop jobs",
@@ -253,9 +483,21 @@ SPECS: tuple[ProductSpec, ...] = (
 
 SHOWCASE_COMPONENTS = {
     "alice": ["one checkers board", "twelve five-ring pieces", "twelve five-spoke pieces"],
-    "bob": ["one base", "one hand crank", "one comet drive wheel", "one six-station Geneva wheel"],
+    "bob": [
+        "one base",
+        "two axles (one is the hand-crank input axle)",
+        "one comet drive wheel",
+        "one six-slot orbit wheel",
+    ],
     "eve": ["one engine-room deck", "three named node structures", "one night-shift operator"],
-    "ivy": ["one Montauk base", "one tide-alignment arm", "one Sun marker", "one Moon marker"],
+    "ivy": [
+        "one phase base",
+        "one center post",
+        "one tide-alignment arm",
+        "one Earth hub",
+        "one Sun marker",
+        "one Moon marker",
+    ],
     "leo": ["one fixed core", "one rotating outer orbit", "ten signal stones", "one rulebook"],
 }
 
@@ -328,6 +570,31 @@ def _shape(value: Any):
     return value.val() if hasattr(value, "val") else value
 
 
+def _fused(shapes: Sequence[Any]):
+    """Make one printable solid from features that belong to one part.
+
+    Factory assigns occurrence colors by connected STL shell order. A visual
+    feature that merely shares a compound with its part becomes a phantom
+    occurrence and shifts every color that follows it. Fuse all features of
+    one printable part and fail closed if OCC cannot produce one solid; only
+    the product-level assembly may contain multiple solids.
+    """
+
+    values = [_shape(item) for item in shapes]
+    if not values:
+        raise RuntimeError("cannot fuse an empty printable part")
+    result = values[0]
+    for value in values[1:]:
+        result = result.fuse(value)
+    result = result.clean()
+    solids = result.Solids()
+    if result.isNull() or len(solids) != 1 or not result.isValid():
+        raise RuntimeError(
+            "printable part features must fuse into exactly one valid solid"
+        )
+    return solids[0]
+
+
 def _placed(value: Any, xyz: tuple[float, float, float], angle: float = 0.0):
     result = _shape(value)
     if angle:
@@ -339,6 +606,7 @@ def _placed(value: Any, xyz: tuple[float, float, float], angle: float = 0.0):
 class GeometryBundle:
     assembled: Any
     parts: Mapping[str, Any]
+    occurrences: Sequence[tuple[str, str, Any]]
     digital_checks: Mapping[str, Any]
 
 
@@ -359,7 +627,7 @@ def _alice_geometry(spec: ProductSpec) -> GeometryBundle:
     for index in range(5):
         marker = cq.Workplane("XY").box(8.5, 2.4, 1.7, centered=(True, True, False))
         board_shapes.append(_placed(marker, ((index - 2) * 12.0, -63.0, 5.0)))
-    board = _compound(board_shapes)
+    board = _fused(board_shapes)
 
     # A checker must sit comfortably inside a 14.5 mm square.  The earlier
     # 20.4 mm draft nearly touched diagonal neighbors and failed Alice's table
@@ -377,10 +645,10 @@ def _alice_geometry(spec: ProductSpec) -> GeometryBundle:
         )
         spoke = cq.Workplane("XY").box(4.1, 1.05, 1.25, centered=(True, True, False))
         spoke_shapes.append(_placed(spoke, (1.8, 0.0, 3.2), index * 72.0))
-    five_ring = _compound(ring_shapes)
-    five_spoke = _compound(spoke_shapes)
+    five_ring = _fused(ring_shapes)
+    five_spoke = _fused(spoke_shapes)
 
-    assembly: list[Any] = [board]
+    occurrences: list[tuple[str, str, Any]] = [("board", "board", board)]
     side_a = []
     side_b = []
     for row in range(3):
@@ -391,13 +659,18 @@ def _alice_geometry(spec: ProductSpec) -> GeometryBundle:
         for column in range(8):
             if (row + column) % 2 == 1:
                 side_b.append(((column - 3.5) * cell, (row - 3.5) * cell))
-    for x, y in side_a:
-        assembly.append(_placed(five_ring, (x, y, 5.55)))
-    for x, y in side_b:
-        assembly.append(_placed(five_spoke, (x, y, 5.55)))
+    for index, (x, y) in enumerate(side_a, 1):
+        occurrences.append(
+            ("five-ring-%02d" % index, "five-ring-piece", _placed(five_ring, (x, y, 5.55)))
+        )
+    for index, (x, y) in enumerate(side_b, 1):
+        occurrences.append(
+            ("five-spoke-%02d" % index, "five-spoke-piece", _placed(five_spoke, (x, y, 5.55)))
+        )
     return GeometryBundle(
-        _compound(assembly),
+        _compound([item[2] for item in occurrences]),
         {"board": board, "five-ring-piece": five_ring, "five-spoke-piece": five_spoke},
+        tuple(occurrences),
         {
             "classic": "English checkers geometry: 8x8 grid, 12 pieces per side",
             "rule_changes": 0,
@@ -415,13 +688,16 @@ def _bob_geometry(spec: ProductSpec) -> GeometryBundle:
     drive = cq.Workplane("XY").circle(18.0).circle(2.7).extrude(4.0)
     for index in range(6):
         crater = cq.Workplane("XY").circle(1.6).extrude(0.8)
-        angle = math.radians(index * 60.0)
+        # Offset the crater ring from the crank axis. A crater directly under
+        # the fused hand knob becomes a sealed internal void: printable, but a
+        # second hidden render shell that breaks Factory occurrence coloring.
+        angle = math.radians(index * 60.0 + 30.0)
         drive = drive.cut(
             _placed(crater, (11.8 * math.cos(angle), 11.8 * math.sin(angle), 3.4))
         )
     comet_pin = cq.Workplane("XY").circle(2.15).extrude(6.0)
     hand_knob = cq.Workplane("XY").circle(3.2).extrude(8.0)
-    drive_part = _compound(
+    drive_part = _fused(
         [drive, _placed(comet_pin, (14.5, 0.0, 4.0)), _placed(hand_knob, (-11.5, 0.0, 4.0))]
     )
 
@@ -439,20 +715,19 @@ def _bob_geometry(spec: ProductSpec) -> GeometryBundle:
         geneva_shapes.append(
             _placed(station, (16.8 * math.cos(angle), 16.8 * math.sin(angle), 5.0))
         )
-    geneva_part = _compound(geneva_shapes)
+    geneva_part = _fused(geneva_shapes)
 
-    assembly = _compound(
-        [
-            base,
-            _placed(axle, (-17.5, 0.0, 5.0)),
-            _placed(axle, (18.0, 0.0, 5.0)),
-            _placed(drive_part, (-17.5, 0.0, 8.0), 0.0),
-            _placed(geneva_part, (18.0, 0.0, 8.0), 180.0),
-        ]
+    occurrences = (
+        ("base", "base", base),
+        ("drive-axle", "axle", _placed(axle, (-17.5, 0.0, 5.0))),
+        ("orbit-axle", "axle", _placed(axle, (18.0, 0.0, 5.0))),
+        ("comet-drive", "comet-drive", _placed(drive_part, (-17.5, 0.0, 8.0), 0.0)),
+        ("six-slot-orbit", "six-slot-orbit", _placed(geneva_part, (18.0, 0.0, 8.0), 180.0)),
     )
     return GeometryBundle(
-        assembly,
+        _compound([item[2] for item in occurrences]),
         {"base": base, "axle": axle, "comet-drive": drive_part, "six-slot-orbit": geneva_part},
+        occurrences,
         {
             "kinematic_model": "six-slot external Geneva prototype",
             "input": "continuous manual crank",
@@ -473,7 +748,7 @@ def _eve_geometry(spec: ProductSpec) -> GeometryBundle:
     for y in (-19.0, 0.0, 19.0):
         trench = cq.Workplane("XY").box(82.0, 2.2, 0.9, centered=(True, True, False))
         deck_shapes.append(_placed(trench, (0.0, y, 5.0)))
-    deck_part = _compound(deck_shapes)
+    deck_part = _fused(deck_shapes)
 
     comet_core = _rounded_box(22.0, 18.0, 34.0, 1.8)
     comet_shapes: list[Any] = [comet_core]
@@ -481,20 +756,20 @@ def _eve_geometry(spec: ProductSpec) -> GeometryBundle:
         for z in (7.0, 15.0, 23.0):
             fin = cq.Workplane("XY").box(7.0, 16.0, 2.2, centered=(True, True, False))
             comet_shapes.append(_placed(fin, (side * 13.0, 0.0, z)))
-    comet = _compound(comet_shapes)
+    comet = _fused(comet_shapes)
 
     moss_core = _rounded_box(22.0, 18.0, 31.0, 1.8)
     moss_shapes: list[Any] = [moss_core]
     for x in (-7.5, 7.5):
         moss_shapes.append(_placed(cq.Workplane("XY").circle(2.2).extrude(35.0), (x, -10.5, 0.0)))
         moss_shapes.append(_placed(cq.Workplane("XY").circle(3.5).extrude(2.0), (x, -10.5, 33.0)))
-    moss = _compound(moss_shapes)
+    moss = _fused(moss_shapes)
 
     void_core = _rounded_box(22.0, 18.0, 32.0, 1.8)
     halo = cq.Solid.makeTorus(
         12.0, 1.7, cq.Vector(0.0, 0.0, 24.0), cq.Vector(1.0, 0.0, 0.0)
     )
-    void = _compound([void_core, halo])
+    void = _fused([void_core, halo])
 
     operator_profile = (
         cq.Workplane("XZ")
@@ -511,18 +786,17 @@ def _eve_geometry(spec: ProductSpec) -> GeometryBundle:
         .close()
     )
     operator = operator_profile.revolve(360.0)
-    assembly = _compound(
-        [
-            deck_part,
-            _placed(comet, (-31.0, 5.0, 5.9)),
-            _placed(moss, (0.0, 5.0, 5.9)),
-            _placed(void, (31.0, 5.0, 5.9)),
-            _placed(operator, (0.0, -23.0, 5.9)),
-        ]
+    occurrences = (
+        ("engine-deck", "engine-deck", deck_part),
+        ("comet-node", "comet-node", _placed(comet, (-31.0, 5.0, 5.9))),
+        ("moss-node", "moss-node", _placed(moss, (0.0, 5.0, 5.9))),
+        ("void-node", "void-node", _placed(void, (31.0, 5.0, 5.9))),
+        ("night-operator", "night-operator", _placed(operator, (0.0, -23.0, 5.9))),
     )
     return GeometryBundle(
-        assembly,
+        _compound([item[2] for item in occurrences]),
         {"engine-deck": deck_part, "comet-node": comet, "moss-node": moss, "void-node": void, "night-operator": operator},
+        occurrences,
         {
             "personalization_map": {
                 "Comet": "six swept side fins",
@@ -543,7 +817,7 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
         rad = math.radians(angle)
         notch = cq.Workplane("XY").box(7.0, 2.4, 1.6, centered=(True, True, False))
         base_shapes.append(_placed(notch, (45.0 * math.cos(rad), 45.0 * math.sin(rad), 4.0), angle))
-    base_part = _compound(base_shapes)
+    base_part = _fused(base_shapes)
     post = cq.Workplane("XY").circle(2.3).extrude(16.0)
 
     arm_bar = cq.Workplane("XY").box(78.0, 7.0, 3.2, centered=(True, True, False))
@@ -551,7 +825,7 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
     tide_lobes = [arm_bar]
     for x in (-40.0, 40.0):
         tide_lobes.append(_placed(cq.Workplane("XY").circle(8.0).extrude(3.2), (x, 0.0, 0.0)))
-    tide_arm = _compound(tide_lobes)
+    tide_arm = _fused(tide_lobes)
     earth = cq.Solid.makeSphere(8.0, cq.Vector(0.0, 0.0, 8.0)).cut(
         cq.Workplane("XY").circle(2.7).extrude(17.0).val()
     )
@@ -568,25 +842,35 @@ def _ivy_geometry(spec: ProductSpec) -> GeometryBundle:
     ):
         moon_profile = moon_profile.lineTo(radius, height)
     moon = moon_profile.close().revolve(360.0)
-    sun_marker = _compound(
+    sun_marker = _fused(
         [
             cq.Workplane("XY").box(15.0, 5.0, 3.0, centered=(True, True, False)),
             _placed(cq.Workplane("XY").circle(4.5).extrude(3.0), (9.0, 0.0, 0.0)),
         ]
     )
-    assembly = _compound(
-        [
-            base_part,
-            _placed(post, (0.0, 0.0, 4.0)),
-            _placed(tide_arm, (0.0, 0.0, 9.0), 35.0),
-            _placed(earth, (0.0, 0.0, 10.5)),
-            _placed(moon, (28.0 * math.cos(math.radians(35.0)), 28.0 * math.sin(math.radians(35.0)), 12.2)),
-            _placed(sun_marker, (-39.0, 0.0, 4.0), 180.0),
-        ]
+    occurrences = (
+        ("phase-base", "phase-base", base_part),
+        ("center-post", "center-post", _placed(post, (0.0, 0.0, 4.0))),
+        ("tide-arm", "tide-arm", _placed(tide_arm, (0.0, 0.0, 9.0), 35.0)),
+        ("earth-hub", "earth-hub", _placed(earth, (0.0, 0.0, 10.5))),
+        (
+            "moon-marker",
+            "moon-marker",
+            _placed(
+                moon,
+                (
+                    28.0 * math.cos(math.radians(35.0)),
+                    28.0 * math.sin(math.radians(35.0)),
+                    12.2,
+                ),
+            ),
+        ),
+        ("sun-arrow", "sun-arrow", _placed(sun_marker, (-39.0, 0.0, 4.0), 180.0)),
     )
     return GeometryBundle(
-        assembly,
+        _compound([item[2] for item in occurrences]),
         {"phase-base": base_part, "center-post": post, "tide-arm": tide_arm, "earth-hub": earth, "moon-marker": moon, "sun-arrow": sun_marker},
+        occurrences,
         {
             "source": spec.design["source"],
             "tested_relationships": [
@@ -606,7 +890,7 @@ def _leo_geometry(spec: ProductSpec) -> GeometryBundle:
         angle = math.radians(index * 72.0)
         well = cq.Workplane("XY").circle(4.2).extrude(3.0)
         base = base.cut(_placed(well, (22.0 * math.cos(angle), 22.0 * math.sin(angle), 3.1)))
-    core = _compound([base, cq.Workplane("XY").circle(3.0).extrude(9.0)])
+    core = _fused([base, cq.Workplane("XY").circle(3.0).extrude(9.0)])
 
     ring = cq.Workplane("XY").circle(52.0).circle(36.3).extrude(5.0)
     for index in range(10):
@@ -616,24 +900,40 @@ def _leo_geometry(spec: ProductSpec) -> GeometryBundle:
     ring_part = ring
 
     token_base = cq.Workplane("XY").circle(3.7).extrude(3.2)
-    token_ring = _compound(
+    token_ring = _fused(
         [token_base, _placed(cq.Workplane("XY").circle(1.4).extrude(1.1), (0.0, 0.0, 3.2))]
     )
     token_spoke_shapes: list[Any] = [token_base]
     for index in range(5):
         spoke = cq.Workplane("XY").box(3.8, 0.9, 1.0, centered=(True, True, False))
         token_spoke_shapes.append(_placed(spoke, (1.5, 0.0, 3.2), index * 72.0))
-    token_spoke = _compound(token_spoke_shapes)
-    assembly_shapes: list[Any] = [core, _placed(ring_part, (0.0, 0.0, 0.25), 18.0)]
+    token_spoke = _fused(token_spoke_shapes)
+    occurrences: list[tuple[str, str, Any]] = [
+        ("five-job-core", "five-job-core", core),
+        ("counter-orbit", "counter-orbit", _placed(ring_part, (0.0, 0.0, 0.25), 18.0)),
+    ]
     for index in range(5):
         angle = math.radians(index * 72.0)
-        assembly_shapes.append(_placed(token_ring, (22.0 * math.cos(angle), 22.0 * math.sin(angle), 5.5)))
+        occurrences.append(
+            (
+                "ring-signal-%02d" % (index + 1),
+                "ring-signal",
+                _placed(token_ring, (22.0 * math.cos(angle), 22.0 * math.sin(angle), 5.5)),
+            )
+        )
     for index in range(5):
         angle = math.radians((index * 2 + 1) * 36.0 + 18.0)
-        assembly_shapes.append(_placed(token_spoke, (44.0 * math.cos(angle), 44.0 * math.sin(angle), 5.75)))
+        occurrences.append(
+            (
+                "spoke-signal-%02d" % (index + 1),
+                "spoke-signal",
+                _placed(token_spoke, (44.0 * math.cos(angle), 44.0 * math.sin(angle), 5.75)),
+            )
+        )
     return GeometryBundle(
-        _compound(assembly_shapes),
+        _compound([item[2] for item in occurrences]),
         {"five-job-core": core, "counter-orbit": ring_part, "ring-signal": token_ring, "spoke-signal": token_spoke},
+        tuple(occurrences),
         {
             "topology": {"inner_wells": 5, "outer_wells": 10, "rotating_offsets": 10},
             "inventory": {"ring-signals": 5, "spoke-signals": 5},
@@ -682,13 +982,30 @@ def _mesh(path: Path):
     return loaded
 
 
-def _validate_cad_pair(step_path: Path, stl_path: Path) -> Mapping[str, Any]:
+def _validate_cad_pair(
+    step_path: Path,
+    stl_path: Path,
+    *,
+    expected_solid_count: int,
+    expected_shell_count: int,
+) -> Mapping[str, Any]:
     imported = cq.importers.importStep(str(step_path))
     solids = imported.solids().vals()
     if not solids:
         raise RuntimeError("STEP re-import produced no solids: %s" % step_path)
+    if len(solids) != expected_solid_count:
+        raise RuntimeError(
+            "STEP contains %d solids, expected %d: %s"
+            % (len(solids), expected_solid_count, step_path)
+        )
     bbox = imported.val().BoundingBox()
     mesh = _mesh(stl_path)
+    shell_count = len(mesh.split(only_watertight=False))
+    if shell_count != expected_shell_count:
+        raise RuntimeError(
+            "STL contains %d connected shells, expected %d: %s"
+            % (shell_count, expected_shell_count, stl_path)
+        )
     bounds = mesh.bounds
     extents = np.asarray(mesh.extents, dtype=float)
     watertight = bool(mesh.is_watertight)
@@ -709,6 +1026,7 @@ def _validate_cad_pair(step_path: Path, stl_path: Path) -> Mapping[str, Any]:
             "sha256": _sha_file(stl_path),
             "bytes": stl_path.stat().st_size,
             "triangles": int(mesh.faces.shape[0]),
+            "shell_count": shell_count,
             "watertight": watertight,
             "winding_consistent": winding,
             "volume_mm3": round(abs(float(mesh.volume)), 4),
@@ -886,9 +1204,76 @@ def _build_cad_files(geometry: GeometryBundle, destination: Path) -> Mapping[str
         step_path = destination / "parts" / (name + ".step")
         stl_path = destination / "parts" / (name + ".stl")
         _export_shape(part, step_path, stl_path)
-        part_records[name] = _validate_cad_pair(step_path, stl_path)
-    product_record = _validate_cad_pair(destination / "product.step", destination / "product.stl")
+        part_records[name] = _validate_cad_pair(
+            step_path,
+            stl_path,
+            expected_solid_count=1,
+            expected_shell_count=1,
+        )
+    occurrence_count = len(geometry.occurrences)
+    product_record = _validate_cad_pair(
+        destination / "product.step",
+        destination / "product.stl",
+        expected_solid_count=occurrence_count,
+        expected_shell_count=occurrence_count,
+    )
     return {"schema_version": 1, "product": product_record, "parts": part_records}
+
+
+def _build_factory_assembly(geometry: GeometryBundle, artifact: Path) -> Mapping[str, Any]:
+    """Export an occurrence-aware assembly for Factory rendering and slicing.
+
+    The visual STL is exact but has no notion of repeated pieces.  This STEP
+    assembly and its small sidecar give Factory one stable occurrence per item
+    in the box, including repeated checkers, signals, and axles.  Production
+    geometry remains sourced from the sealed per-part STLs.
+    """
+
+    if not geometry.occurrences:
+        raise RuntimeError("Factory assembly requires at least one occurrence")
+    names = [item[0] for item in geometry.occurrences]
+    if len(names) != len(set(names)):
+        raise RuntimeError("Factory assembly occurrence names must be unique")
+    assembly = cq.Assembly(name="assembled")
+    sidecar_parts = []
+    for name, part_name, shape in geometry.occurrences:
+        if part_name not in geometry.parts:
+            raise RuntimeError("Factory occurrence references an unknown part")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name):
+            raise RuntimeError("Factory occurrence has an unsafe name")
+        assembly.add(_shape(shape), name=name)
+        sidecar_parts.append(
+            {
+                "name": name,
+                "stlPath": "cad/parts/%s.stl" % part_name,
+            }
+        )
+    step_path = artifact / "assembled.step"
+    exported = cq.exporters.assembly.exportAssembly(assembly, str(step_path))
+    if not exported or not step_path.is_file() or step_path.stat().st_size < 256:
+        raise RuntimeError("Factory assembly STEP export is implausibly small")
+    imported = cq.importers.importStep(str(step_path))
+    imported_solids = imported.solids().vals()
+    if len(imported_solids) != len(geometry.occurrences):
+        raise RuntimeError(
+            "Factory assembly STEP contains %d solids, expected %d occurrences"
+            % (len(imported_solids), len(geometry.occurrences))
+        )
+    sidecar = {
+        "schemaVersion": 1,
+        "generator": BUILDER_ID,
+        "entryKind": "assembly",
+        "primaryPose": "assembled",
+        "parts": sidecar_parts,
+    }
+    _write_json(artifact / "assembled.step.json", sidecar)
+    return {
+        "step_sha256": _sha_file(step_path),
+        "step_bytes": step_path.stat().st_size,
+        "occurrence_count": len(sidecar_parts),
+        "step_solid_count": len(imported_solids),
+        "part_names": names,
+    }
 
 
 COUNTERORBIT_RULES = """\
@@ -1128,6 +1513,11 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     attributed_description = attribute_product_description(
         spec.description, spec.inventor_name
     )
+    product_instructions = (
+        "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written."
+        if spec.inventor_id == "leo"
+        else "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind."
+    )
     product = {
         "schema_version": 1,
         "kind": "workshop-showcase-prototype",
@@ -1142,6 +1532,11 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         "audience": "grown-ups-14-plus",
         "wish": context.wish.to_dict(),
         "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
+        "instructions": product_instructions,
+        "factory_brief": spec.factory_brief,
+        "story": dict(spec.story),
+        "art_direction": dict(spec.art_direction),
+        "design": dict(spec.design),
         "digital_files": [
             "declarative CAD source",
             "real STEP and STL exports",
@@ -1156,6 +1551,8 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     }
     if not product["description"].endswith("By %s." % spec.inventor_name):
         raise RuntimeError("product attribution must be the description's exact ending")
+    if product["story"].get("attribution") != "By %s." % spec.inventor_name:
+        raise RuntimeError("product story must preserve the exact inventor attribution")
     _write_json(artifact / "product.json", product)
     _write_text(artifact / "README.md", _artifact_readme(spec))
 
@@ -1175,7 +1572,16 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
     _write_json(artifact / "cad" / "design.json", design_source)
     _write_text(artifact / "cad" / "model.py", MODEL_WRAPPER, executable=True)
     geometry = GEOMETRY_BUILDERS[spec.inventor_id](spec)
+    if spec.design.get("printed_piece_count") != len(geometry.occurrences):
+        raise RuntimeError(
+            "declared printed-piece count does not match the Factory occurrence inventory"
+        )
     cad_record = _build_cad_files(geometry, artifact / "cad")
+    cad_record["factory_assembly"] = _build_factory_assembly(geometry, artifact)
+    # Factory selects ``assembled.stl`` before nested part meshes. Keep this
+    # exact alias inside Made so the primary model is sealed by Playtest; the
+    # publication handoff must never invent or patch geometry afterward.
+    shutil.copyfile(artifact / "cad" / "product.stl", artifact / "assembled.stl")
     render_record = _render_exact_mesh(
         artifact / "cad" / "product.stl", artifact / "images" / "hero.png", spec.inventor_id
     )
@@ -1206,6 +1612,7 @@ def _build_artifact(spec: ProductSpec, context: MakeContext) -> Path:
         "declared_bed_mm": list(BED_MM),
         "product": cad_record["product"],
         "parts": cad_record["parts"],
+        "factory_assembly": cad_record["factory_assembly"],
         "render": render_record,
         "lane_checks": geometry.digital_checks,
         "conclusion": "real CAD and digital topology checks passed",
@@ -1293,27 +1700,11 @@ def showcase_make(context: MakeContext) -> Made:
     if spec is None or spec.lane != context.blueprint.lane:
         raise RuntimeError("showcase Make received an unknown or cross-lane Wish")
     artifact = _build_artifact(spec, context)
-    instructions = (
-        "Use the complete rules in game/RULES.md; set up, take legal turns, score, and end the game exactly as written."
-        if spec.inventor_id == "leo"
-        else "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind."
-    )
-    return Made.from_root(
-        artifact,
-        {
-            "title": spec.title,
-            "summary": spec.summary,
-            "description": attribute_product_description(
-                spec.description, spec.inventor_name
-            ),
-            "lane": spec.lane,
-            "inventor": spec.inventor_name,
-            "prototype_status": "digital-only",
-            "instructions": instructions,
-            "components": list(SHOWCASE_COMPONENTS[spec.inventor_id]),
-            "limitations": list(spec.limitations),
-        },
-    )
+    # One canonical mapping crosses Make, Playtest, Instructions, and Factory.
+    # Returning a hand-maintained subset would leave story facts outside the
+    # sealed artifact and let callers mutate them without invalidating Playtest.
+    product = json.loads((artifact / "product.json").read_text(encoding="utf-8"))
+    return Made.from_root(artifact, product)
 
 
 def _evidence_result(
@@ -1398,6 +1789,11 @@ def showcase_playtest(context: PlaytestContext):
         "artifact_sha256": context.made.artifact_sha256,
         "step_reimported": bool(digital_build["product"]["step"]["reimported"]),
         "step_solid_count": digital_build["product"]["step"]["solid_count"],
+        "stl_shell_count": digital_build["product"]["stl"]["shell_count"],
+        "stl_shells_match_printed_pieces": (
+            digital_build["product"]["stl"]["shell_count"]
+            == spec.design["printed_piece_count"]
+        ),
         "stl_watertight": bool(digital_build["product"]["stl"]["watertight"]),
         "stl_winding_consistent": bool(
             digital_build["product"]["stl"]["winding_consistent"]
@@ -1408,6 +1804,10 @@ def showcase_playtest(context: PlaytestContext):
         ),
         "all_parts_watertight": all(
             item["stl"]["watertight"] for item in digital_build["parts"].values()
+        ),
+        "all_parts_are_one_solid_and_one_shell": all(
+            item["step"]["solid_count"] == 1 and item["stl"]["shell_count"] == 1
+            for item in digital_build["parts"].values()
         ),
         "claim_scope": "OpenCascade/mesh simulation; physical QA belongs to Deliver",
     }
@@ -1576,21 +1976,6 @@ def showcase_playtest(context: PlaytestContext):
     )
 
 
-def showcase_instructions_media(context):
-    """Render five distinct, exact-geometry views for shared Instructions."""
-
-    image_root = context.workspace / "images"
-    image_root.mkdir(parents=True, exist_ok=False)
-    stl = context.made.artifact_root / "cad" / "product.stl"
-    inventor_id = str(context.made.product["inventor"]).casefold()
-    paths = {}
-    for role in REQUIRED_PRODUCT_IMAGES:
-        destination = image_root / (role + ".png")
-        _render_exact_mesh(stl, destination, inventor_id, role)
-        paths[role] = destination.relative_to(context.workspace).as_posix()
-    return paths
-
-
 def _waiting_site_writer(context, sealed_root, sealed_manifest):
     del context, sealed_root, sealed_manifest
     raise WaitingFor(
@@ -1617,7 +2002,7 @@ def _showcase_instructions(runtime_root: Path) -> DefaultInstructions:
             ShopDoor(token),
             owner_id,
         )
-    return DefaultInstructions(showcase_instructions_media, site_writer)
+    return DefaultInstructions(site_writer=site_writer)
 
 
 def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
@@ -1632,10 +2017,10 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
         else "- Product page: sealed locally; waiting for the Workshop site account"
     )
     stop_explanation = (
-        "AI Playtest passed and shared Instructions created, enriched, and verified the private product draft. "
+        "AI Playtest passed and shared Instructions handed off the model and facts, then verified the private product draft. "
         "The owner controls the later public flip; the Workshop is now waiting for production and shipping in Deliver."
         if run["job"] == "deliver"
-        else "AI Playtest passed. Shared Instructions created the page, guide, and five exact-product views, then stopped because this run has no authenticated site account."
+        else "AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account."
     )
     return f"""\
 # {spec.title}
@@ -1666,10 +2051,11 @@ def _bundle_readme(spec: ProductSpec, run: Mapping[str, Any]) -> str:
 - [`artifact/cad/design.json`](artifact/cad/design.json) — declarative CAD source
 - [`artifact/cad/model.py`](artifact/cad/model.py) — executable rebuild entry point
 - [`artifact/cad/product.step`](artifact/cad/product.step) — real OpenCascade STEP
-- [`artifact/cad/product.stl`](artifact/cad/product.stl) — exact printable mesh candidate
+- [`artifact/cad/product.stl`](artifact/cad/product.stl) — whole-product inspection mesh; production uses the occurrence inventory
+- [`artifact/assembled.stl`](artifact/assembled.stl) — exact root alias Factory selects as the primary model
 - [`artifact/cad/digital-build.json`](artifact/cad/digital-build.json) — geometry checks and hashes
 - [`evidence/evidence-index.json`](evidence/evidence-index.json) — sealed AI Playtest index
-- [`instructions/product.json`](instructions/product.json) — the sealed site page
+- [`instructions/product.json`](instructions/product.json) — the sealed factual handoff for Factory enrichment
 - [`instructions/INSTRUCTIONS.md`](instructions/INSTRUCTIONS.md) — the paper for the box
 - [`workshop-run.json`](workshop-run.json) — canonical profile/run receipt
 
@@ -1896,6 +2282,14 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     )
     if product["inventor"] != {"id": spec.inventor_id, "name": spec.inventor_name}:
         raise RuntimeError("product inventor metadata mismatch")
+    if product.get("story") != spec.story:
+        raise RuntimeError("product lost its reviewed story facts")
+    if product.get("factory_brief") != spec.factory_brief:
+        raise RuntimeError("product lost its reviewed Factory creative brief")
+    if product.get("art_direction") != spec.art_direction:
+        raise RuntimeError("product lost its reviewed art direction")
+    if product.get("design") != spec.design:
+        raise RuntimeError("product lost its exact design facts")
     if project != {"id": spec.slug, "name": spec.title}:
         raise RuntimeError("Factory project marker does not identify this exact showcase")
     if not product["description"].endswith("By %s." % spec.inventor_name):
@@ -1933,13 +2327,14 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
         raise RuntimeError("Instructions page points at different product bytes")
     if page["playtest_evidence_artifact_sha256"] != current_evidence.artifact_sha256:
         raise RuntimeError("Instructions page points at different AI Playtest bytes")
-    for role, relative in page["images"].items():
-        if role not in REQUIRED_PRODUCT_IMAGES:
-            raise RuntimeError("Instructions page contains an unknown image role")
-        image = Image.open(bundle / "instructions" / relative)
-        image.verify()
-    if set(page["images"]) != set(REQUIRED_PRODUCT_IMAGES):
-        raise RuntimeError("Instructions page does not contain all five image roles")
+    if {"images", "use_case", "story_blocks"} & set(page):
+        raise RuntimeError("Instructions facts contain creator-owned page copy or media")
+    if page.get("factory_enrichment") != {
+        "copy_owner": "factory",
+        "media_owner": "factory",
+        "status": "pending",
+    }:
+        raise RuntimeError("Instructions facts do not leave enrichment to Factory")
     if receipt["run"]["job"] == "deliver":
         if not receipt["site_receipt"] or not receipt["run"].get("page_url"):
             raise RuntimeError("Deliver wait must preserve the verified private draft")
@@ -1961,6 +2356,8 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
     current_product_cad = _validate_cad_pair(
         bundle / "artifact" / "cad" / "product.step",
         bundle / "artifact" / "cad" / "product.stl",
+        expected_solid_count=spec.design["printed_piece_count"],
+        expected_shell_count=spec.design["printed_piece_count"],
     )
     if current_product_cad != build["product"]:
         raise RuntimeError("independent CAD revalidation disagrees with digital-build.json")
@@ -1968,11 +2365,48 @@ def _verify_bundle(bundle: Path, spec: ProductSpec) -> Mapping[str, Any]:
         current_part = _validate_cad_pair(
             bundle / "artifact" / "cad" / "parts" / (part_name + ".step"),
             bundle / "artifact" / "cad" / "parts" / (part_name + ".stl"),
+            expected_solid_count=1,
+            expected_shell_count=1,
         )
         if current_part != stored_part:
             raise RuntimeError("independent CAD revalidation disagrees for part %s" % part_name)
     if build["product"]["stl"]["sha256"] != _sha_file(bundle / "artifact" / "cad" / "product.stl"):
         raise RuntimeError("digital build points at different product STL bytes")
+    if (bundle / "artifact" / "assembled.stl").read_bytes() != (
+        bundle / "artifact" / "cad" / "product.stl"
+    ).read_bytes():
+        raise RuntimeError("Factory root assembled.stl differs from the Playtested product STL")
+    factory_assembly = build.get("factory_assembly")
+    factory_step = bundle / "artifact" / "assembled.step"
+    factory_sidecar = json.loads(
+        (bundle / "artifact" / "assembled.step.json").read_text(encoding="utf-8")
+    )
+    if (
+        not isinstance(factory_assembly, Mapping)
+        or factory_assembly.get("step_sha256") != _sha_file(factory_step)
+        or factory_assembly.get("step_bytes") != factory_step.stat().st_size
+        or factory_sidecar.get("schemaVersion") != 1
+        or factory_sidecar.get("entryKind") != "assembly"
+        or factory_sidecar.get("primaryPose") != "assembled"
+        or not isinstance(factory_sidecar.get("parts"), list)
+        or factory_assembly.get("occurrence_count") != len(factory_sidecar["parts"])
+        or factory_assembly.get("part_names")
+        != [item.get("name") for item in factory_sidecar["parts"]]
+    ):
+        raise RuntimeError("Factory occurrence assembly no longer matches its sealed record")
+    for item in factory_sidecar["parts"]:
+        if (
+            not isinstance(item, Mapping)
+            or not isinstance(item.get("name"), str)
+            or not isinstance(item.get("stlPath"), str)
+            or not (bundle / "artifact" / item["stlPath"]).is_file()
+        ):
+            raise RuntimeError("Factory occurrence assembly references a missing print part")
+    factory_solids = cq.importers.importStep(str(factory_step)).solids().vals()
+    if len(factory_solids) != spec.design["printed_piece_count"]:
+        raise RuntimeError(
+            "Factory occurrence assembly solid count no longer matches printed pieces"
+        )
     current_builder_sha256 = _sha_file(Path(__file__).resolve())
     if (
         build["generator"]["sha256"] != current_builder_sha256

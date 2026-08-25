@@ -1,0 +1,746 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "created_at": "2026-08-24T11:54:48.811340+00:00",
+  "entries": [
+    {
+      "bytes": 3062,
+      "executable": false,
+      "path": "BUILD.md",
+      "sha256": "76f0231e276bc3921768daf7a17252b3f9eb59aa1ea96a0099e33ad75ec6e937"
+    },
+    {
+      "bytes": 3097,
+      "executable": false,
+      "path": "README.md",
+      "sha256": "a61796d04bfb112efc49df8ed06718887299720b1169daf124fb5ac5323f64aa"
+    },
+    {
+      "bytes": 2794,
+      "executable": false,
+      "path": "RENDERING.md",
+      "sha256": "8854f5cbea55c1fd623027bb4ac94e7b2686dcf3e58593edb16cb05a7bec447d"
+    },
+    {
+      "bytes": 1518620,
+      "executable": false,
+      "path": "exports/manhattan-nocturne.glb",
+      "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b"
+    },
+    {
+      "bytes": 49484,
+      "executable": false,
+      "path": "exports/stl/part_board.stl",
+      "sha256": "ca3296da95ee5e4ebe8827aab11ea02dedc275b5ba3e0ee3a53c1a590ff79fc6"
+    },
+    {
+      "bytes": 115684,
+      "executable": false,
+      "path": "exports/stl/part_steel_bishop.stl",
+      "sha256": "8c84accba97226be6ac76ceecf2887444631b4c88c90837df908cd82fb158eca"
+    },
+    {
+      "bytes": 129684,
+      "executable": false,
+      "path": "exports/stl/part_steel_king.stl",
+      "sha256": "6ea587db09918f05db94db9f6ae884735507d0c6edccf2e4f863ec17a16c58d3"
+    },
+    {
+      "bytes": 152284,
+      "executable": false,
+      "path": "exports/stl/part_steel_knight.stl",
+      "sha256": "b55cfa4c2e6ea629654d27e62ff7f52306f796444af54eebb7359625564c6069"
+    },
+    {
+      "bytes": 148884,
+      "executable": false,
+      "path": "exports/stl/part_steel_pawn.stl",
+      "sha256": "2fdf463a5edbce48d5cc25071c2a45eb39c8f6115980be5f2d439d3c3cd64fde"
+    },
+    {
+      "bytes": 111484,
+      "executable": false,
+      "path": "exports/stl/part_steel_queen.stl",
+      "sha256": "01e24a6e2ae4db804480c83add97bf094b8c293f86d013dd1dba67ff844f672b"
+    },
+    {
+      "bytes": 109184,
+      "executable": false,
+      "path": "exports/stl/part_steel_rook.stl",
+      "sha256": "613c28854b6faee24f9d13c7d6abe3bbb5e07463bf2ab946d0ae2f867e57bb72"
+    },
+    {
+      "bytes": 216384,
+      "executable": false,
+      "path": "exports/stl/part_stone_bishop.stl",
+      "sha256": "d89f9a8918279b0fd4b6613dbe86fc0bf3c0aa38c48769724323b616a4a40886"
+    },
+    {
+      "bytes": 231184,
+      "executable": false,
+      "path": "exports/stl/part_stone_king.stl",
+      "sha256": "805b5fde3a0cc5ee4aaa584ae219d47a152838eba1cffccd7bb295c0f0229a1a"
+    },
+    {
+      "bytes": 258884,
+      "executable": false,
+      "path": "exports/stl/part_stone_knight.stl",
+      "sha256": "4ba7641d9db153a96c2c65d901d2a38e23fc5bfc28289027631a7a4772bcc692"
+    },
+    {
+      "bytes": 290884,
+      "executable": false,
+      "path": "exports/stl/part_stone_pawn.stl",
+      "sha256": "6602c2cd9455e210d74f56ea00193bde3eff95e5166b89f46beae93f3fb337d0"
+    },
+    {
+      "bytes": 216984,
+      "executable": false,
+      "path": "exports/stl/part_stone_queen.stl",
+      "sha256": "55ea750a60b329116a5cb2b497144210a915ec9cd0a12f51c58fb9d0cd2e62b1"
+    },
+    {
+      "bytes": 214884,
+      "executable": false,
+      "path": "exports/stl/part_stone_rook.stl",
+      "sha256": "e9f14aed08511a29ad7c033b8c140686d87ac6a6f77d1beca9b3f3ec2de3b51d"
+    },
+    {
+      "bytes": 5500676,
+      "executable": false,
+      "path": "manhattan_nocturne.step",
+      "sha256": "a8de2b4e426c923535f55aa235760fb5da02d41d852ef4f8e1e99d5a4c129937"
+    },
+    {
+      "bytes": 1744,
+      "executable": false,
+      "path": "manhattan_nocturne.step.py",
+      "sha256": "16dc85daeb94bff473c57042f095dec707f1f9cf89668a0a908cee560ffa7462"
+    },
+    {
+      "bytes": 19918,
+      "executable": false,
+      "path": "manhattan_nocturne_lib.py",
+      "sha256": "1620b84846c87f98a67cfe1a29ed0f1fd55f7b8fe29de72a77af3a4856ec0151"
+    },
+    {
+      "bytes": 9262,
+      "executable": false,
+      "path": "manhattan_nocturne_spec.md",
+      "sha256": "0fea75c01da1328f4482754490f0cad176a68fe339b0b447a6ab0e063f0f3096"
+    },
+    {
+      "bytes": 5302,
+      "executable": false,
+      "path": "measure/check_fit.py",
+      "sha256": "0f8e32d1d75bcefee15e969ada7324f4f5255940c2f343c15e73b4b0875a4c65"
+    },
+    {
+      "bytes": 24389,
+      "executable": false,
+      "path": "params.py",
+      "sha256": "253c8be3ceea27020b02149501b9139ad555101ecf6f2972ffe9da2603d2471a"
+    },
+    {
+      "bytes": 1011702,
+      "executable": false,
+      "path": "part_board.step",
+      "sha256": "a826018903927b911f0d049e53f4f079b2a09d4d741b2dc13a351ea4cbe388d2"
+    },
+    {
+      "bytes": 152,
+      "executable": false,
+      "path": "part_board.step.py",
+      "sha256": "a8e49c599b0a5638c77ad02202111376f71dff1d9833715a3543a05116647b39"
+    },
+    {
+      "bytes": 532243,
+      "executable": false,
+      "path": "part_steel_bishop.step",
+      "sha256": "3a08b3acdd47ecd6c088e8e5f0dac7162b646d9ff457610a571a7384492529db"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_steel_bishop.step.py",
+      "sha256": "3f5a3882163ebedbc464a3d9ddced11cc4d3c2def18bf3d70ca0f92da3bcd9b8"
+    },
+    {
+      "bytes": 472674,
+      "executable": false,
+      "path": "part_steel_king.step",
+      "sha256": "21674f9590a9a72c278f611965035c543c52a2a92218e2dce1cb651d734bde5c"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_king.step.py",
+      "sha256": "6259514f12d63ac3ee238ca6f578db449ba32aa12d6092fa0205ec3372f9e39f"
+    },
+    {
+      "bytes": 358717,
+      "executable": false,
+      "path": "part_steel_knight.step",
+      "sha256": "ea710a99574ec8168a0e5cfffc655dd13d3487b1a435881e0969ff32e59c6640"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_steel_knight.step.py",
+      "sha256": "08219061ff4bb9ed1dca28a623e28b81a7804ce8541e715fc4152973fd490c9b"
+    },
+    {
+      "bytes": 290367,
+      "executable": false,
+      "path": "part_steel_pawn.step",
+      "sha256": "2449c4e2c069e5bf5ee339a94a9aefff5095a7a3c4dc75fa4e95ea7d1593d55f"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_pawn.step.py",
+      "sha256": "70c90cd378808e84748391dbb5ffcf6cfc21f3c475a9e3da81601851531300fe"
+    },
+    {
+      "bytes": 517573,
+      "executable": false,
+      "path": "part_steel_queen.step",
+      "sha256": "c37787cd166779022287b56895de6cc3ef3fe462c08897d8f7f0754a574b8619"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_steel_queen.step.py",
+      "sha256": "c81f91d1fd59e4b4360630fc9713663417ef5530d2dbb76d3b8675863710eaaa"
+    },
+    {
+      "bytes": 435614,
+      "executable": false,
+      "path": "part_steel_rook.step",
+      "sha256": "cd44e40243fe64278178841c4f691313f97122d5ec2bf69e46460454fb36a4c1"
+    },
+    {
+      "bytes": 161,
+      "executable": false,
+      "path": "part_steel_rook.step.py",
+      "sha256": "0041717d40ff6140631a8b6c154303c729a6b2b7de29d901a49606c7cf64a369"
+    },
+    {
+      "bytes": 327496,
+      "executable": false,
+      "path": "part_stone_bishop.step",
+      "sha256": "cc1b610fe185f831c32ec5475f5d37a89861f96979205e2254f560c2ecca9d61"
+    },
+    {
+      "bytes": 167,
+      "executable": false,
+      "path": "part_stone_bishop.step.py",
+      "sha256": "73b5dd4f9bbd0a209b35257facd3012e389db5ed20da7fef1fc81d634100be3d"
+    },
+    {
+      "bytes": 226681,
+      "executable": false,
+      "path": "part_stone_king.step",
+      "sha256": "f64cc924a7d38aa2b85ad31d6a11ef6c22b5891530bcb153f3a613660ded7551"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_king.step.py",
+      "sha256": "acc7d079509b447543f78afd0d1939d7bc8bb744dc13dd18a77c2cb103175727"
+    },
+    {
+      "bytes": 344493,
+      "executable": false,
+      "path": "part_stone_knight.step",
+      "sha256": "9814f35abd609ce67671439a3aa2ea334a546e65973d3a66de6cbbb11093ee6d"
+    },
+    {
+      "bytes": 167,
+      "executable": false,
+      "path": "part_stone_knight.step.py",
+      "sha256": "5e0477da1e86694fb2a8692a7ad923d07d5775c894faa326efc08116f0249123"
+    },
+    {
+      "bytes": 70198,
+      "executable": false,
+      "path": "part_stone_pawn.step",
+      "sha256": "c3040745d2df68235ac201dc71eb21267a8d47c78c9042025d29ee9e95e3093f"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_pawn.step.py",
+      "sha256": "bae6afc1a1890ba2c993e125f067abb4d640111d0c4788c739106f0e9aa489eb"
+    },
+    {
+      "bytes": 347735,
+      "executable": false,
+      "path": "part_stone_queen.step",
+      "sha256": "121ce40c89c9e88f3f8c6ecd3749dadd76f8e0b3995c5ee489c2c8d55d06efeb"
+    },
+    {
+      "bytes": 165,
+      "executable": false,
+      "path": "part_stone_queen.step.py",
+      "sha256": "48dd81a7c1f45b3f826e060e0bcac236448d124cbd5253119d82076183dc48b4"
+    },
+    {
+      "bytes": 309110,
+      "executable": false,
+      "path": "part_stone_rook.step",
+      "sha256": "7b46aa59c8dc28647f6a5cd5091de1d1ea3c60d031f5f98dcdbecb52fa640492"
+    },
+    {
+      "bytes": 163,
+      "executable": false,
+      "path": "part_stone_rook.step.py",
+      "sha256": "9b351826ea3fb2239b4b0837cab71be9b2e77860381bb582dcfe827e2ed50161"
+    },
+    {
+      "bytes": 367853,
+      "executable": false,
+      "path": "product-media/cad-preview/01-hero-stone.png",
+      "sha256": "6285cb8dbfb792b88ef8f28b250327ff5250d63a99dd48d301bd1a8029ad9524"
+    },
+    {
+      "bytes": 108965,
+      "executable": false,
+      "path": "product-media/cad-preview/01-hero-stone.render.json",
+      "sha256": "95bdeca56507a7aa387910f2daa80bf285affe5146b0b10a005cb40a80f89362"
+    },
+    {
+      "bytes": 314414,
+      "executable": false,
+      "path": "product-media/cad-preview/02-hero-steel.png",
+      "sha256": "9c9510f48cff0de40c88903451214b7253ab2c1ed65b3738053dd8c71df3f818"
+    },
+    {
+      "bytes": 108966,
+      "executable": false,
+      "path": "product-media/cad-preview/02-hero-steel.render.json",
+      "sha256": "71997c026e212fec9470fd9ac78cf1da692fea7023ffa63225f0ed1a784fc18a"
+    },
+    {
+      "bytes": 14985,
+      "executable": false,
+      "path": "product-media/cad-preview/03a-board-top-raw.png",
+      "sha256": "1ff0904816952415b164fce99ab130c44f89f811f2373d01cda4dc370afd9d9c"
+    },
+    {
+      "bytes": 7166,
+      "executable": false,
+      "path": "product-media/cad-preview/03a-board-top-raw.render.json",
+      "sha256": "05857ab1fcb7f62c4ff29715a40aeb33b9a0a06c00c2cb71eb7ce9ec6d16ee99"
+    },
+    {
+      "bytes": 17524,
+      "executable": false,
+      "path": "product-media/cad-preview/03b-board-top-depth-diagnostic.png",
+      "sha256": "d3dce166814653c6726d93890a5a0fca26bdc585786516deafafed849bada9b1"
+    },
+    {
+      "bytes": 7155,
+      "executable": false,
+      "path": "product-media/cad-preview/03b-board-top-depth-diagnostic.render.json",
+      "sha256": "10819ba28fc70e51ea44447c1373826c024e491bf65ad8cfeb59b417f9b76b88"
+    },
+    {
+      "bytes": 104950,
+      "executable": false,
+      "path": "product-media/cad-preview/03c-board-oblique-stone-raw.png",
+      "sha256": "7556a763bf16b38618be5201ccead19591f2d32d919ab7efbef9f18aef135fc3"
+    },
+    {
+      "bytes": 7250,
+      "executable": false,
+      "path": "product-media/cad-preview/03c-board-oblique-stone-raw.render.json",
+      "sha256": "7daf9558198628e58ba966efb819b640547041dfcd5345cafa7ee8a70f0740b6"
+    },
+    {
+      "bytes": 104965,
+      "executable": false,
+      "path": "product-media/cad-preview/03d-board-oblique-steel-raw.png",
+      "sha256": "950836ec5269f80bbec54e63d31996f69e7626d87ed0a9f46ab438b6d4c7f405"
+    },
+    {
+      "bytes": 7251,
+      "executable": false,
+      "path": "product-media/cad-preview/03d-board-oblique-steel-raw.render.json",
+      "sha256": "651b3456986a0dc64e51b124c49c9720fac30223c72244161a35369b8d3fea24"
+    },
+    {
+      "bytes": 19573,
+      "executable": false,
+      "path": "product-media/cad-preview/03e-south-border-street-plan-raw.png",
+      "sha256": "15c0a7f38c992f3640ddd5d6b0721d79b0192b171bb9c5892c05b70b89ae71af"
+    },
+    {
+      "bytes": 7610,
+      "executable": false,
+      "path": "product-media/cad-preview/03e-south-border-street-plan-raw.render.json",
+      "sha256": "b0ce128bfa72e184e0423d8a3b125735f63b936816bb735065e537b94128f104"
+    },
+    {
+      "bytes": 110657,
+      "executable": false,
+      "path": "product-media/cad-preview/03f-top-inventory-raw.png",
+      "sha256": "da49f6b8cb7a7bf46f10a91da0c583be7d078a2a6fe9f50a4379e2e390462016"
+    },
+    {
+      "bytes": 108958,
+      "executable": false,
+      "path": "product-media/cad-preview/03f-top-inventory-raw.render.json",
+      "sha256": "0caf9140818a135c533603c328945c907452b16677dbebc26d1aecd5ebc7183f"
+    },
+    {
+      "bytes": 146958,
+      "executable": false,
+      "path": "product-media/cad-preview/04a-rank-lineup-front-neutral.png",
+      "sha256": "d3c2ec28b5d42ff6029792a98cb0931572250e356127e777a0a0e69a2069df26"
+    },
+    {
+      "bytes": 45150,
+      "executable": false,
+      "path": "product-media/cad-preview/04a-rank-lineup-front-neutral.render.json",
+      "sha256": "a7e5d5a5f88f912ec416b1e9ed53f0a5f1c4ebcc14ec3509a64cb7593a07bf95"
+    },
+    {
+      "bytes": 147047,
+      "executable": false,
+      "path": "product-media/cad-preview/04b-rank-lineup-rear-neutral.png",
+      "sha256": "6d2d751a0ecdf01ab0c344f7d0d7c1e2b650fe2084e275c1d816dbe0507c3a4c"
+    },
+    {
+      "bytes": 45147,
+      "executable": false,
+      "path": "product-media/cad-preview/04b-rank-lineup-rear-neutral.render.json",
+      "sha256": "26b08306ca21c10c38c94eb37cd329159d1d697eb2536b1b7ea53d4de252e1da"
+    },
+    {
+      "bytes": 63523,
+      "executable": false,
+      "path": "product-media/cad-preview/04c-rank-lineup-top-neutral.png",
+      "sha256": "337e89b15e433d6a08938974569a54f8a9e83f7a872c1eb89525c7bb4a7d4a0e"
+    },
+    {
+      "bytes": 45117,
+      "executable": false,
+      "path": "product-media/cad-preview/04c-rank-lineup-top-neutral.render.json",
+      "sha256": "568a2059be6a97f07ad6cd14e0348dc1a1c1e097b194e5cf858fcb259bbe1250"
+    },
+    {
+      "bytes": 207137,
+      "executable": false,
+      "path": "product-media/cad-preview/05a-side-code-pairs-front-neutral.png",
+      "sha256": "d3291254eaa0399c8bead9c808ae0aa2f68a95cf04e924d430d352a335718cec"
+    },
+    {
+      "bytes": 45201,
+      "executable": false,
+      "path": "product-media/cad-preview/05a-side-code-pairs-front-neutral.render.json",
+      "sha256": "47f87b4aae4b0f40de2e7b0400659e15cb74a19bc77117dc29eecaaf3c32fdd9"
+    },
+    {
+      "bytes": 206538,
+      "executable": false,
+      "path": "product-media/cad-preview/05b-side-code-pairs-rear-neutral.png",
+      "sha256": "b837c78778dee522ca82553d6d537e06e4a37b57048458d4a070eaad6490ad70"
+    },
+    {
+      "bytes": 45198,
+      "executable": false,
+      "path": "product-media/cad-preview/05b-side-code-pairs-rear-neutral.render.json",
+      "sha256": "fe9c2e293401447b061073a8771564b3776c49a85069e7595b8c1fadb57f1fd9"
+    },
+    {
+      "bytes": 37271,
+      "executable": false,
+      "path": "product-media/cad-preview/05c-side-code-upper-body-neutral.png",
+      "sha256": "b4a8e967fab4f1449c8214d92d94b4e268de882c5f48046a1a08b5515f0ed538"
+    },
+    {
+      "bytes": 45440,
+      "executable": false,
+      "path": "product-media/cad-preview/05c-side-code-upper-body-neutral.render.json",
+      "sha256": "06c2e6097ba2567b544a9d817c7b4c35080add3e2ca3fe4778e9eb5edb43585f"
+    },
+    {
+      "bytes": 295546,
+      "executable": false,
+      "path": "product-media/cad-preview/06a-manhattan-identity-neutral.png",
+      "sha256": "a44d0bfe6392b544e4523f2f2ac752a4d112a1e13e60fe77cd105073e029a055"
+    },
+    {
+      "bytes": 48554,
+      "executable": false,
+      "path": "product-media/cad-preview/06a-manhattan-identity-neutral.render.json",
+      "sha256": "41013672a0b1c07de0f19a4849fda7cd8e5626e155d78f925711606c25874f8f"
+    },
+    {
+      "bytes": 301900,
+      "executable": false,
+      "path": "product-media/cad-preview/06b-board-inventory-engineering-raw.png",
+      "sha256": "4cdc09b6b3ae740dcc7278ca414de2b51bb24a3a98f440f51048bbe5567efd37"
+    },
+    {
+      "bytes": 48287,
+      "executable": false,
+      "path": "product-media/cad-preview/06b-board-inventory-engineering-raw.render.json",
+      "sha256": "d45989da9552476b939e18814518698634b6dd3fb9a8cff81a9a625970ecf743"
+    },
+    {
+      "bytes": 290297,
+      "executable": false,
+      "path": "product-media/cad-preview/06c-board-inventory-depth-diagnostic.png",
+      "sha256": "9c660893295d8300c8ca4b0299dba24af8f91d4b61b5b61dcb44167f6779b91e"
+    },
+    {
+      "bytes": 48224,
+      "executable": false,
+      "path": "product-media/cad-preview/06c-board-inventory-depth-diagnostic.render.json",
+      "sha256": "9b43efe2116b699fae163d4d4bd1e71446cb7c995137cb483856a7ca3f01008e"
+    },
+    {
+      "bytes": 345490,
+      "executable": false,
+      "path": "product-media/cad-preview/07a-neutral-start-stone.png",
+      "sha256": "aee719ed4efc8bf6de997880f15991d1c75ba5f1d2679266a38467f033552ac0"
+    },
+    {
+      "bytes": 109301,
+      "executable": false,
+      "path": "product-media/cad-preview/07a-neutral-start-stone.render.json",
+      "sha256": "a5732d722980604c4f8b795dd39c5cae25e0c46b665afa1a161623eb1565eab8"
+    },
+    {
+      "bytes": 358444,
+      "executable": false,
+      "path": "product-media/cad-preview/07b-neutral-start-steel.png",
+      "sha256": "8e1b4b5f040365989af31badc519f7056836fccdfd30272013b6a75c4f9d2a94"
+    },
+    {
+      "bytes": 109302,
+      "executable": false,
+      "path": "product-media/cad-preview/07b-neutral-start-steel.render.json",
+      "sha256": "45d42c020ad9ce11faac6bd359974654f46ee14353efdaf53d004c335ba289f0"
+    },
+    {
+      "bytes": 22515,
+      "executable": false,
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "a28fd138f100e7d82bbf3bfa020c21aecd3a398e14653b930c3bdca042f1f984"
+    },
+    {
+      "bytes": 2253,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "173d4de4298082b76240d6b30f25832a1e9baa18718738d35c1c08fcb1b58431"
+    },
+    {
+      "bytes": 71,
+      "executable": false,
+      "path": "project.json",
+      "sha256": "ddc4d2999af57d03ef67b60d7aedfece30ed3882178489bf676ba8e264e2e209"
+    },
+    {
+      "bytes": 64814,
+      "executable": false,
+      "path": "render_product.py",
+      "sha256": "9efede1144b2608aa2198f3f33f3122c8eb377ab53b4006647645eb3b4ba1dba"
+    },
+    {
+      "bytes": 814,
+      "executable": false,
+      "path": "validation/mesh-logs/part_board.txt",
+      "sha256": "627dabab74f3453f5f6c3b6481cf0e689fc491d5485c784ca6186450b493e1c4"
+    },
+    {
+      "bytes": 823,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_bishop.txt",
+      "sha256": "68053c1b65e431f8f1eab958e3e64fa390dc004693904ac9a95197b8d96673c9"
+    },
+    {
+      "bytes": 821,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_king.txt",
+      "sha256": "bf2c88926d6301f2ac43531db4d66e5ec5474bd313f262c4ca14d5752ac49761"
+    },
+    {
+      "bytes": 822,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_knight.txt",
+      "sha256": "1028882ec3f7e4dd1cd874adbe79df16dd3c98896f586f7790d50716f5021f31"
+    },
+    {
+      "bytes": 820,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_pawn.txt",
+      "sha256": "f116c570f28cd4ee2921a3d45d722cf6022bb713a1376f42bf8747f527fb7d7d"
+    },
+    {
+      "bytes": 822,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_queen.txt",
+      "sha256": "9714dec113d2257807ca0b21b317ca703c0da77323ee4b320b71573add537566"
+    },
+    {
+      "bytes": 821,
+      "executable": false,
+      "path": "validation/mesh-logs/part_steel_rook.txt",
+      "sha256": "386c46546e5e95e5e87840b59276918e6ea0aaee7168cfd551bf06eef359277a"
+    },
+    {
+      "bytes": 823,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_bishop.txt",
+      "sha256": "21a06e7bb431f2f89e53f44ca3df5f5cba3e82946cb6dcdde4b365241b09faa2"
+    },
+    {
+      "bytes": 821,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_king.txt",
+      "sha256": "b43a20bcce6a411cf1575a45dd974ecb3e116827ea3a205e61cb668f1a953357"
+    },
+    {
+      "bytes": 822,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_knight.txt",
+      "sha256": "dba1e1c1801067841ffd12096cfb246cf06a203582f4e06f0c6eaf0084cbae4d"
+    },
+    {
+      "bytes": 820,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_pawn.txt",
+      "sha256": "a7ffd5dac25344f20c9def22a9ab6e9bb024e83bb99dfd4edce73e02065a55e2"
+    },
+    {
+      "bytes": 822,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_queen.txt",
+      "sha256": "9fd9e0a5939f9e00926b59f8381eed8ff69bbbdd8f3adc688b77708d7e2f55d1"
+    },
+    {
+      "bytes": 821,
+      "executable": false,
+      "path": "validation/mesh-logs/part_stone_rook.txt",
+      "sha256": "8f0817a53c7fcf231e8f393cc3c1027235f8e2beb42d588bfcfd707cc1ddd6cb"
+    },
+    {
+      "bytes": 24804,
+      "executable": false,
+      "path": "validation/orca-profiles/p2s-machine-standard.json",
+      "sha256": "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9"
+    },
+    {
+      "bytes": 6146,
+      "executable": false,
+      "path": "validation/orca-profiles/p2s-process-standard.json",
+      "sha256": "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7"
+    },
+    {
+      "bytes": 5372,
+      "executable": false,
+      "path": "validation/orca-profiles/pla-basic-standard.json",
+      "sha256": "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+    },
+    {
+      "bytes": 16567,
+      "executable": false,
+      "path": "validation/slice_product.py",
+      "sha256": "d33bcdad6a3c00eb179973a7157cb305f9c80221f8b4209aea0a422cd44ae985"
+    },
+    {
+      "bytes": 38299,
+      "executable": false,
+      "path": "validation/slicer-receipt.json",
+      "sha256": "1dc0156afd156ae98cbb156837d9c13594c9d25ce830c79db59c29e89b3a8185"
+    },
+    {
+      "bytes": 938,
+      "executable": false,
+      "path": "validation/thickness-reports/part_board.md",
+      "sha256": "be91e669c6c1d2ea4716965d2c0e2ec38a63549b19555f95b6ac3fbf395ecb6f"
+    },
+    {
+      "bytes": 953,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_bishop.md",
+      "sha256": "339aa3f4bf2d30d0abae926aecc7e26596ebbb98e60e4bd6ca124848cd3da943"
+    },
+    {
+      "bytes": 947,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_king.md",
+      "sha256": "24053a65664d74eab20daf5d40c9275404590197ade759a0f351a5c52a8f968a"
+    },
+    {
+      "bytes": 951,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_knight.md",
+      "sha256": "8b5340b0fac84824d4e43a89537c130442359c1638b11584c5e62d2efa768faa"
+    },
+    {
+      "bytes": 945,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_pawn.md",
+      "sha256": "6b0a4b00fa9a57529a7809d1bc3840066fefd265d30dec2e3c56c25a0af98549"
+    },
+    {
+      "bytes": 950,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_queen.md",
+      "sha256": "1a93e32df07a6ca68bd2be2ec1160e338100e2359377ed8abdd9c7c5c29d93ef"
+    },
+    {
+      "bytes": 947,
+      "executable": false,
+      "path": "validation/thickness-reports/part_steel_rook.md",
+      "sha256": "dcef7875094420609f702f313d779f804ed17a2e8c5828fae6c5c7cdcd57f288"
+    },
+    {
+      "bytes": 999,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_bishop.md",
+      "sha256": "021f8cc3b24111cc06be4702c38b75690d12242c776aa80f0ca0dc797f12afb2"
+    },
+    {
+      "bytes": 947,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_king.md",
+      "sha256": "5a849c9915636334c6587e46326d8e9c6ed1e37f6cd65cc5796c569b1bcf8816"
+    },
+    {
+      "bytes": 951,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_knight.md",
+      "sha256": "40db9d32b69737dea1d1417b9e281740ee6f9b7ebff628a3c390decbb0bdf756"
+    },
+    {
+      "bytes": 945,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_pawn.md",
+      "sha256": "0029e4f1531f994b6a6313fa1de817cdf9b28c393336d9c595ef2c892aaa5514"
+    },
+    {
+      "bytes": 950,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_queen.md",
+      "sha256": "4abab3d2ad824ecb1db1541329721edfe1c5e92055d11596e4faad77985c8e2f"
+    },
+    {
+      "bytes": 947,
+      "executable": false,
+      "path": "validation/thickness-reports/part_stone_rook.md",
+      "sha256": "9d050a6c1a0be05eabf1310007b61e89ae004483202bc38fad0a506b6a4f1143"
+    },
+    {
+      "bytes": 291,
+      "executable": false,
+      "path": "wish.json",
+      "sha256": "5cc9acc4dcd95d209fefc8b6700156bad2a8a131ff9275c6435c7218c5d1d9ae"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 19238963
+}

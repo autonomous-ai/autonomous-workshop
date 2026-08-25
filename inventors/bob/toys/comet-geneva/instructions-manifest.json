@@ -1,50 +1,20 @@
 {
-  "artifact_sha256": "03372d82a1f6a38001d6972183d996b4e9617350bc260a364335df0daa0f8fa9",
+  "artifact_sha256": "c67978dc6b11cb32ec77b031ec2db7cc3818d17645e2e17fcc09153ce41b9e44",
   "created_at": "content-addressed",
   "entries": [
     {
-      "bytes": 597,
+      "bytes": 623,
       "executable": false,
       "path": "INSTRUCTIONS.md",
-      "sha256": "f9389f018df9308260ecbb662e3b2b44e4afbc701051e5ec444963f43d2da37b"
+      "sha256": "70f95be20754de9126a9a855025ed5df2edd9871df743981a14ef9eac4e0f0c4"
     },
     {
-      "bytes": 78220,
-      "executable": false,
-      "path": "images/box.png",
-      "sha256": "f95eb4996596b4a270942eeebaf13c86f6031b047e869fd628cf31e058a14c5e"
-    },
-    {
-      "bytes": 87109,
-      "executable": false,
-      "path": "images/detail.png",
-      "sha256": "482e5bfc22b207ffe1baa595da48dfa863ed360d45084ce7716daaf1699358e6"
-    },
-    {
-      "bytes": 93196,
-      "executable": false,
-      "path": "images/hero.png",
-      "sha256": "5e6a62e4dda37b709dc4c0dacb8100c99d51bf074cc00af9388cba1ba36c449b"
-    },
-    {
-      "bytes": 63418,
-      "executable": false,
-      "path": "images/parts.png",
-      "sha256": "72a12630c7d59fee81b2e0041549a3935a66ae3d416f82d2d43c460f47793237"
-    },
-    {
-      "bytes": 72214,
-      "executable": false,
-      "path": "images/play.png",
-      "sha256": "181889743dec7cea63dfb53be6427305b55b064c792b883abc25f946017e68f9"
-    },
-    {
-      "bytes": 4324,
+      "bytes": 3221,
       "executable": false,
       "path": "product.json",
-      "sha256": "18dfc448ee37dfe230592026802656db75b9d7ce3176bb07e195eee2aac58a67"
+      "sha256": "aa4d5a3cd382744f888bcb80ac592b82e0daafe943b3378eb3185da54eba5a4c"
     }
   ],
   "schema_version": 1,
-  "total_bytes": 399078
+  "total_bytes": 3844
 }

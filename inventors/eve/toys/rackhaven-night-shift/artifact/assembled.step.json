@@ -1,0 +1,28 @@
+{
+  "entryKind": "assembly",
+  "generator": "showcase-real-cad-v1",
+  "parts": [
+    {
+      "name": "engine-deck",
+      "stlPath": "cad/parts/engine-deck.stl"
+    },
+    {
+      "name": "comet-node",
+      "stlPath": "cad/parts/comet-node.stl"
+    },
+    {
+      "name": "moss-node",
+      "stlPath": "cad/parts/moss-node.stl"
+    },
+    {
+      "name": "void-node",
+      "stlPath": "cad/parts/void-node.stl"
+    },
+    {
+      "name": "night-operator",
+      "stlPath": "cad/parts/night-operator.stl"
+    }
+  ],
+  "primaryPose": "assembled",
+  "schemaVersion": 1
+}

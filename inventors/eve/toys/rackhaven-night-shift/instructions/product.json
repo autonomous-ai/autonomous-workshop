@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "ff00333fa857469f2b4043893ccdf5905e13efc7d3354338ef09f13f580d525c",
+      "evidence_sha256": "1415b6a61963e702044ca002d180ef8f485bad1410478d6043dd18a837d8315a",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "8de8f8516734735c3ec12f44ca49d52dfeed072ee8ed0748ea8720f6ef082995",
+      "evidence_sha256": "8ab4994d167d92652c8e3de213544a3b4d81753a8753d63d501c908e8c52e07d",
       "passed": true
     },
     "print-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "fb59753bb5d30a2e9b52db0abd6bd3e06761fba1f44493c2ef14e71c3603443d",
+      "evidence_sha256": "29cc5fa75e479b94fb6e785102c8c43eee31dda642ae9f35313599c0ad952a6c",
       "passed": true
     },
     "world-test": {
@@ -42,52 +42,29 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "world-test.json",
-      "evidence_sha256": "99b55d9f2a4794644f7717e56cf51e0c4f724b47f0a61f096e2f9cc5aa10d718",
+      "evidence_sha256": "378941b06418050a8f546f0622e1dfaef7c18c8eff4af76d9c0a2098c141e7cc",
       "passed": true
     }
   },
-  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
-  "images": {
-    "box": "images/box.png",
-    "detail": "images/detail.png",
-    "hero": "images/hero.png",
-    "parts": "images/parts.png",
-    "play": "images/play.png"
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
   },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "instructions_kind": "instructions",
+  "kind": "workshop.instructions-facts",
   "lane": "little-worlds",
   "limitations": [
     "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
     "Fine details and handling durability are checked on the produced object during Deliver."
   ],
-  "playtest_evidence_artifact_sha256": "917bf5cc658af8f6e81495c1e85b2e78c5328711f3d9c1380381cb756086dc80",
-  "product_artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
-  "schema_version": 1,
-  "status": "ready",
-  "story_blocks": [
-    {
-      "body": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind. The play image shows the intended interaction; detail and parts views show how the approved design is put together.",
-      "hero_image": "play",
-      "lead": "How to use",
-      "pair_images": [
-        "detail",
-        "parts"
-      ]
-    },
-    {
-      "body": "The box contains one engine-room deck, three named node structures, one night-shift operator. AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews. Fine details and handling durability are checked on the produced object during Deliver.",
-      "hero_image": "box",
-      "lead": "What arrives",
-      "pair_images": []
-    }
-  ],
+  "playtest_evidence_artifact_sha256": "e3f180c35323b9a6b223c33e75a97e576470f08c6c630b6ad3426c670fb31e22",
+  "product_artifact_sha256": "f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429",
+  "schema_version": 2,
+  "status": "facts-ready",
   "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.\n\nBy Eve.",
   "title": "Rackhaven: Night Shift",
-  "use_case": {
-    "body": "A personalized three-node homelab transformed into a cinematic orbital engine room. It turns one person's request into this exact plaything instead of decorating a generic download.",
-    "image": "hero",
-    "label": "Made from your wish"
-  },
   "what_arrives": [
     "one engine-room deck",
     "three named node structures",

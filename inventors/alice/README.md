@@ -130,10 +130,12 @@ is evidence of the product workflow rather than evidence that the 24/7 service
 is activated.
 
 `auto_publish_when_eligible` is false by default: a verified **private** storefront
-draft is the current release boundary, and Dee publishes it manually after
-review. Future automatic public publishing remains fail-closed until the storefront
+model-only draft is the current release boundary. Factory generates its copy,
+images, and video; Dee publishes it manually after review. Alice's retired
+inventor-side rich-page writer fails closed and is retained only for read-only
+legacy reconciliation. Future automatic public publishing remains fail-closed until the storefront
 advertises and enforces atomic revision/packet, SKU/price/currency, and
-rich-page contracts described in
+server-enrichment readback contracts described in
 [INTEGRATIONS.md](INTEGRATIONS.md). `alice doctor` accepts an effectful mode only
 after every required boundary returns an authenticated, version-matched,
 read-only diagnostic; having a command in config is not readiness.

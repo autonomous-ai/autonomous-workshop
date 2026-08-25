@@ -77,11 +77,13 @@ after delivery: customer Reviews -> a future revision of this toy
   every relevant angle. A failed check returns actionable feedback to Make,
   producing a new immutable round. Playtest never means a human
   print-and-play session.
-- **Instructions** creates the truthful product page, exact-product images, and
-  paper that belongs in the box—a rulebook for a game or instructions for
-  another toy. It preserves the terminal `By <Inventor>.` byline, creates and
-  enriches a private Factory draft, and authenticates that exact draft before the
-  job passes. It does not make the page public or require an active listing.
+- **Instructions** creates the paper that belongs in the box and a factual,
+  evidence-bound content brief. It preserves the terminal `By <Inventor>.`
+  attribution, sends a model-only private draft to Factory, and authenticates
+  that handoff. Factory owns later marketing images and page copy; the handoff
+  remains explicitly pending and not page-ready until a separate content
+  pipeline confirms enrichment. Instructions does not make the page public or
+  require an active listing.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
@@ -260,7 +262,7 @@ Wish + Taste + ToyBlueprint
                             | evidence + Feedback
                             v
           InstructionsContext  ->  ProductInstructions
-                            | exact page manifest + authenticated private draft
+                            | exact facts/paper manifest + authenticated private draft
                             v
        DeliverContext  ->  Delivered
                             | production + carrier receipts
@@ -272,9 +274,10 @@ Wish + Taste + ToyBlueprint
 concept root, giving a `concept_sha256` the run records and re-checks whenever
 the concept is used. `Made` binds product metadata to an immutable artifact
 tree. `Playtested` binds every result and evidence file to that artifact hash.
-`ProductInstructions` binds the page and media to both its own manifest and the
-product hash. `Delivered` binds production and carrier receipts to the exact
-product and Instructions hashes.
+`ProductInstructions` binds the factual Factory handoff and in-box paper to both
+its own manifest and the product hash. Factory alone creates customer-facing page
+copy, images, and video. `Delivered` binds production and carrier receipts to the
+exact product and Instructions hashes.
 
 Three things are checked at the Concept/Make boundary rather than trusted:
 the concept's bytes are re-checked when Make returns, the product's declared
@@ -367,35 +370,54 @@ pass. An inventor's own confidence is not independent evidence.
 ## Instructions is part of the proof chain
 
 Instructions begins only after Playtest passes for the exact Make. The shared
-default creates the in-box instructions plus a page with five fixed image
-roles—hero, play, detail, parts, and box—and a claim-to-evidence map. It then
-creates and enriches that page in Factory as a private draft. A local page is
-not a completed Instructions job: the result must include authenticated owner
-readback proving that the exact approved product, sealed page, guide, media,
-and terminal `By <Inventor>.` byline are present in that private draft.
+default creates the in-box instructions plus a structured content brief and
+claim-to-evidence map. It derives a model-only handoff from the exact Make and
+imports it into Factory as a private draft. Local CAD previews, inspection
+renders, `use_case`, and `story_blocks` are never sent as marketing content.
+Project-marker handoffs must expose a Playtested root `assembled.stl` or
+`<slug>.stl`, so Factory cannot mistake a nested component for the complete
+toy. Generator handoffs may instead provide a top-level `gen_step`.
+Authenticated owner readback proves the exact approved model history and
+sealed fact identities. It also records `enrichment_status=pending` and
+`page_ready=false`; model import alone does not prove that final images, copy,
+or video exist.
+
+Factory receives both the full canonical facts file and a bounded factual
+story prompt made from the Wish, title, summary, description, components,
+design facts/specifications, rules/instructions, optional structured story and
+art direction, limitations, and exact inventor credit. The prompt is input to Factory enrichment, not
+creator-authored page output.
 
 Instructions stops there and advances to Deliver. It neither makes the page
 public nor requires an active listing. An owner may review the draft and make
 it public later through a separate, explicit action outside the six-job
 pipeline.
 
+This is a fail-closed boundary across every shared Shop entry point, including
+the low-level compatibility APIs: a caller cannot attach an import thumbnail,
+upload page media, patch `use_case` or `story_blocks`, or add creator
+attachments while publishing. Those calls fail before HTTP. Authenticated
+readback may observe copy, images, attachments, and video that Factory generated
+after the model handoff; Workshop accepts that server-owned enrichment without
+requiring it to equal the original factual brief.
+
 Concept art guides Make and never stands in as product proof. Now that concept
-art is a first-class record this is enforced rather than merely stated, at two
-levels. `ConceptImages` has no `hero`/`play`/`detail`/`parts`/`box` roles, so
-the record cannot be passed where product media is expected. And because a
+art is a first-class record this is enforced rather than merely stated. Because a
 faithful build makes the substitution tempting — the closer Make comes to
 building what the concept shows, the more reasonable it looks to reuse the
-drawing — the concept's *bytes* are barred too: the Workshop refuses a `Made`
-containing any file whose sha256 matches a concept image, and Instructions
-refuses a product image with those bytes. An instruction is not evidence. The
-concept says what should be built; a product image says what was built, and it
-exists precisely to reveal any divergence between the two.
+drawing — the concept's *bytes* are barred from the build: the Workshop refuses a
+`Made` containing any file whose sha256 matches a concept image. An instruction is
+not evidence. The concept says what should be built; the product says what was
+built, and the model handoff exists precisely to reveal any divergence between the
+two. Nothing from the concept root reaches Factory: only the sealed Make model and
+its factual brief are handed over, and page media is Factory's to generate.
 
 Before any site effect, Workshop seals both the approved Make/Playtest
 checkpoint and the complete Instructions tree. If credentials disappear or a
 site response is ambiguous, `workshop.resume_instructions(wish)` reuses those
-exact bytes and retries only the idempotent site writer. It never reruns Make,
-Playtest, copy, or image generation.
+exact bytes and retries only the idempotent model-handoff writer. It never
+reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
+separate handoff, not a silently retried Workshop side effect.
 
 Images must depict the product actually approved. Concept art can guide Make,
 but it cannot masquerade as a render or photograph of printable geometry. Copy

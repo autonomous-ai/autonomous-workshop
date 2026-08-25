@@ -16,16 +16,49 @@
   },
   "design_source": {
     "path": "cad/design.json",
-    "sha256": "ff7d5b6e0d87e7326c407c8971a34b680801d42b0e664dcf3d114bfff142b882"
+    "sha256": "a58feb4b60a2e60c1f5c21df0b2fb50eb20e4a6ee57e14ee9e7ff9ac5104f32d"
   },
   "executable_source": {
     "path": "cad/model.py",
     "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
   },
+  "factory_assembly": {
+    "occurrence_count": 25,
+    "part_names": [
+      "board",
+      "five-ring-01",
+      "five-ring-02",
+      "five-ring-03",
+      "five-ring-04",
+      "five-ring-05",
+      "five-ring-06",
+      "five-ring-07",
+      "five-ring-08",
+      "five-ring-09",
+      "five-ring-10",
+      "five-ring-11",
+      "five-ring-12",
+      "five-spoke-01",
+      "five-spoke-02",
+      "five-spoke-03",
+      "five-spoke-04",
+      "five-spoke-05",
+      "five-spoke-06",
+      "five-spoke-07",
+      "five-spoke-08",
+      "five-spoke-09",
+      "five-spoke-10",
+      "five-spoke-11",
+      "five-spoke-12"
+    ],
+    "step_bytes": 2415418,
+    "step_sha256": "c6fc0168926f8d8adcca011e0b6de736f4c03cf44a320ae024b9ffe8bbea42c1",
+    "step_solid_count": 25
+  },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac"
+    "sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -46,10 +79,10 @@
           132.0,
           6.7
         ],
-        "bytes": 651762,
+        "bytes": 575013,
         "reimported": true,
-        "sha256": "b96616e39b3c141e1baa8736d0caa0a41187a4763dc5f1a4d4b44eda9934dee0",
-        "solid_count": 38
+        "sha256": "63bbef4e1c0bf487206a7ec842ff90d63bb97b9440dd4058ba000e1d88e5bf82",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -64,15 +97,16 @@
             6.7
           ]
         ],
-        "bytes": 48484,
+        "bytes": 55884,
         "extents_mm": [
           132.0,
           132.0,
           6.7
         ],
         "inside_declared_bed": true,
-        "sha256": "be4dc47ac1afacb295668ecdefec9531863355989a8b86d24cbe801f5abd64e8",
-        "triangles": 968,
+        "sha256": "60ce556ec2cfe116f6fb1bed3db1ad90f1b4c6090ad40abbfc71ae45b89da4d4",
+        "shell_count": 1,
+        "triangles": 1116,
         "volume_mm3": 90679.7195,
         "watertight": true,
         "winding_consistent": true
@@ -85,10 +119,10 @@
           11.6,
           4.45
         ],
-        "bytes": 36945,
+        "bytes": 25805,
         "reimported": true,
-        "sha256": "92a44ac794ee68b7fc70104f146a0430e2d5c659bc07789bad18d1b5e7b7c519",
-        "solid_count": 6
+        "sha256": "fe6a35d36fd81c4e6a7895fc9edce44a17ac753ed73e927ba3b3b6a3d3c58ced",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -103,15 +137,16 @@
             4.45
           ]
         ],
-        "bytes": 150084,
+        "bytes": 151084,
         "extents_mm": [
           11.6,
           11.5964,
           4.45
         ],
         "inside_declared_bed": true,
-        "sha256": "6392fcec6652ec102789e95b4ddf8be9f07f93f646dc6476bf55bc63e4adb117",
-        "triangles": 3000,
+        "sha256": "33048cb8924bb99fc527a29bb1d2b98fee6b3d4448d2a123eb5dec1b6608ee15",
+        "shell_count": 1,
+        "triangles": 3020,
         "volume_mm3": 353.9437,
         "watertight": true,
         "winding_consistent": true
@@ -124,10 +159,10 @@
           11.6,
           4.45
         ],
-        "bytes": 91893,
+        "bytes": 118654,
         "reimported": true,
-        "sha256": "0aef8a410fef8a4cf9171f10a7a7cbb771628e1d6ee732066d7dd7e63c373cda",
-        "solid_count": 6
+        "sha256": "de78d33617c3b3cc5223d2c92208b91927f910415d5605e9663438eca9b49193",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -142,16 +177,17 @@
             4.45
           ]
         ],
-        "bytes": 28084,
+        "bytes": 31084,
         "extents_mm": [
           11.6,
           11.5964,
           4.45
         ],
         "inside_declared_bed": true,
-        "sha256": "c2d8ebcaa905f3c93315e45314c5f67f81cc231f5e4c766898908bd533eefc99",
-        "triangles": 560,
-        "volume_mm3": 364.9523,
+        "sha256": "17c837b07d42eb2438c11e3160ed4c83b19ed96d7d30c9a5b01d2853dc072b5f",
+        "shell_count": 1,
+        "triangles": 620,
+        "volume_mm3": 354.3487,
         "watertight": true,
         "winding_consistent": true
       }
@@ -164,10 +200,10 @@
         132.0,
         10.0
       ],
-      "bytes": 2274206,
+      "bytes": 2416382,
       "reimported": true,
-      "sha256": "183a261f566c0e07c80dedb2ed2332a6b7a69ce7169f322cb0d2ceb20f2053dc",
-      "solid_count": 182
+      "sha256": "ed94ad5fb74ceb93aeb2b000c36d8b389919beded71fcc5fc432698992b354df",
+      "solid_count": 25
     },
     "stl": {
       "bounds_mm": [
@@ -182,16 +218,17 @@
           10.0
         ]
       ],
-      "bytes": 2184484,
+      "bytes": 2239884,
       "extents_mm": [
         132.0,
         132.0,
         10.0
       ],
       "inside_declared_bed": true,
-      "sha256": "e225ab6863229abaab45b265b8bdfc841a47e6a1341330a8bddafef596f9b954",
-      "triangles": 43688,
-      "volume_mm3": 99306.4711,
+      "sha256": "c8e45346169abe8eb7a0df4e3ee51e8ff7a91d600889a5cb931fc6fc1a61c85b",
+      "shell_count": 25,
+      "triangles": 44796,
+      "volume_mm3": 99179.2282,
       "watertight": true,
       "winding_consistent": true
     }
@@ -208,10 +245,10 @@
     },
     "concept_art": false,
     "input": "cad/product.stl",
-    "input_sha256": "e225ab6863229abaab45b265b8bdfc841a47e6a1341330a8bddafef596f9b954",
+    "input_sha256": "c8e45346169abe8eb7a0df4e3ee51e8ff7a91d600889a5cb931fc6fc1a61c85b",
     "kind": "fixed-view exact-STL render",
     "output": "hero.png",
-    "output_sha256": "82b8f3dd498522c62fd3480d00f21b8343ec64e40d11a35d35e89f620ac01d71",
+    "output_sha256": "9c0b4276a6a96738fd40302a7a0528483708d1c8be9e8e8dd08bcc2582b0cc87",
     "pixels": [
       1200,
       900

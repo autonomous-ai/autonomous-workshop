@@ -1,14 +1,17 @@
 {
+  "all_parts_are_one_solid_and_one_shell": true,
   "all_parts_step_reimported": true,
   "all_parts_watertight": true,
-  "artifact_sha256": "cdb3f910400caee939c5fa891291cf6b30a2485cac5355fcfcdbc23ca98fbd54",
+  "artifact_sha256": "f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429",
   "check": "digital-geometry",
   "claim_scope": "OpenCascade/mesh simulation; physical QA belongs to Deliver",
   "part_count": 5,
   "passed": true,
   "schema_version": 1,
   "step_reimported": true,
-  "step_solid_count": 19,
+  "step_solid_count": 5,
+  "stl_shell_count": 5,
+  "stl_shells_match_printed_pieces": true,
   "stl_watertight": true,
   "stl_winding_consistent": true
 }

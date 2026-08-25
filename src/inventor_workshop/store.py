@@ -11,13 +11,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 import sqlite3
 import urllib.parse
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional
+from pathlib import Path, PurePosixPath
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
 from .errors import (
     AmbiguousPublishError,
@@ -49,6 +50,18 @@ _LAUNCH_KEYS = {
         "_core_api_origin",
     ),
 }
+
+_FACTORY_COLOR = re.compile(r"#[0-9A-Fa-f]{6}\Z")
+MAX_FACTORY_ASSEMBLY_PARTS = 128
+_FACTORY_ASSEMBLY_OCCURRENCE_KEYS = {
+    "order",
+    "mesh_name",
+    "part",
+    "color",
+}
+_FACTORY_ASSEMBLY_LEGACY_KEYS = {"part", "color"}
+FACTORY_ASSEMBLY_INVENTORY_FIELD = "_workshop_factory_assembly_inventory"
+_FACTORY_ASSEMBLY_INVENTORY_KEYS = {"order", "mesh_name", "part"}
 
 
 def _required_text(value: Any, label: str, maximum: int = 256) -> str:
@@ -104,15 +117,263 @@ def _launch_request_identity(request: Mapping[str, Any]) -> Mapping[str, Any]:
     return identity
 
 
+def _validate_factory_assembly_parts(
+    value: Any,
+    *,
+    allow_legacy_shorthand: bool = False,
+) -> Optional[List[Mapping[str, Any]]]:
+    """Canonicalize reviewed colors accepted by Factory's publish API.
+
+    Factory's renderer addresses the combined model by occurrence ``order``;
+    it does not expand a part-level palette.  New public effects therefore carry
+    one complete, contiguous occurrence record per rendered shell.  The legacy
+    ``{part, color}`` form is accepted only when a caller explicitly opts into
+    read-only compatibility (for example, reconciling an already-persisted old
+    request).  It must never cross the Shop Door as a new live effect.
+    """
+
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ContractError("Factory assembly_parts must be a non-empty sequence")
+    if not value or len(value) > MAX_FACTORY_ASSEMBLY_PARTS:
+        raise ContractError(
+            "Factory assembly_parts must contain 1..%d reviewed entries"
+            % MAX_FACTORY_ASSEMBLY_PARTS
+        )
+    if any(not isinstance(item, Mapping) for item in value):
+        raise ContractError(
+            "each Factory assembly_parts entry must be an object"
+        )
+    shapes = {frozenset(item) for item in value}
+    if len(shapes) != 1:
+        raise ContractError(
+            "Factory assembly_parts entries must use one consistent shape"
+        )
+    shape = next(iter(shapes), frozenset())
+    if shape == frozenset(_FACTORY_ASSEMBLY_LEGACY_KEYS):
+        if not allow_legacy_shorthand:
+            raise ContractError(
+                "Factory live assembly_parts require full occurrence entries "
+                "with order, mesh_name, part, and color"
+            )
+        normalized_legacy: List[Mapping[str, Any]] = []
+        seen_parts = set()
+        for item in value:
+            part = _validate_factory_part(item.get("part"))
+            if part in seen_parts:
+                raise ContractError(
+                    "legacy Factory assembly_parts part names must be unique"
+                )
+            seen_parts.add(part)
+            normalized_legacy.append(
+                {
+                    "part": part,
+                    "color": _validate_factory_color(item.get("color")),
+                }
+            )
+        return sorted(normalized_legacy, key=lambda item: item["part"])
+    if shape != frozenset(_FACTORY_ASSEMBLY_OCCURRENCE_KEYS):
+        raise ContractError(
+            "each Factory assembly_parts entry must contain exactly order, "
+            "mesh_name, part, and color"
+        )
+
+    normalized: List[Mapping[str, Any]] = []
+    seen_orders = set()
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ContractError(
+                "each Factory assembly_parts entry must be an object"
+            )
+        order = item.get("order")
+        if (
+            not isinstance(order, int)
+            or isinstance(order, bool)
+            or order < 0
+            or order >= MAX_FACTORY_ASSEMBLY_PARTS
+        ):
+            raise ContractError(
+                "Factory assembly_parts order must be an integer in 0..%d"
+                % (MAX_FACTORY_ASSEMBLY_PARTS - 1)
+            )
+        if order in seen_orders:
+            raise ContractError(
+                "Factory assembly_parts occurrence orders must be unique"
+            )
+        mesh_name = item.get("mesh_name")
+        if (
+            not isinstance(mesh_name, str)
+            or not mesh_name
+            or mesh_name != mesh_name.strip()
+            or len(mesh_name) > 255
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in mesh_name
+            )
+        ):
+            raise ContractError(
+                "Factory assembly_parts mesh_name must be one non-empty "
+                "trimmed control-free string"
+            )
+        seen_orders.add(order)
+        normalized.append(
+            {
+                "order": order,
+                "mesh_name": mesh_name,
+                "part": _validate_factory_part(item.get("part")),
+                "color": _validate_factory_color(item.get("color")),
+            }
+        )
+    normalized.sort(key=lambda item: item["order"])
+    if [item["order"] for item in normalized] != list(range(len(normalized))):
+        raise ContractError(
+            "Factory assembly_parts must cover contiguous occurrence orders from zero"
+        )
+    return normalized
+
+
+def _validate_factory_assembly_inventory(
+    value: Any,
+) -> Optional[List[Mapping[str, Any]]]:
+    """Canonicalize the color-free occurrence inventory sealed at import.
+
+    This is internal publication identity, not caller-authored listing data.
+    Keeping it separate from ``assembly_parts`` makes the only mutable value in
+    a later palette the color itself.
+    """
+
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ContractError(
+            "sealed Factory assembly inventory must be a non-empty sequence"
+        )
+    if not value or len(value) > MAX_FACTORY_ASSEMBLY_PARTS:
+        raise ContractError(
+            "sealed Factory assembly inventory must contain 1..%d occurrences"
+            % MAX_FACTORY_ASSEMBLY_PARTS
+        )
+    normalized: List[Mapping[str, Any]] = []
+    seen_orders = set()
+    for item in value:
+        if not isinstance(item, Mapping) or set(item) != _FACTORY_ASSEMBLY_INVENTORY_KEYS:
+            raise ContractError(
+                "each sealed Factory assembly occurrence must contain exactly "
+                "order, mesh_name, and part"
+            )
+        order = item.get("order")
+        if (
+            not isinstance(order, int)
+            or isinstance(order, bool)
+            or order < 0
+            or order >= MAX_FACTORY_ASSEMBLY_PARTS
+            or order in seen_orders
+        ):
+            raise ContractError(
+                "sealed Factory assembly occurrence orders must be unique integers "
+                "in 0..%d" % (MAX_FACTORY_ASSEMBLY_PARTS - 1)
+            )
+        mesh_name = item.get("mesh_name")
+        if (
+            not isinstance(mesh_name, str)
+            or not mesh_name
+            or mesh_name != mesh_name.strip()
+            or len(mesh_name) > 255
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in mesh_name
+            )
+        ):
+            raise ContractError(
+                "sealed Factory assembly mesh_name must be one non-empty "
+                "trimmed control-free string"
+            )
+        seen_orders.add(order)
+        normalized.append(
+            {
+                "order": order,
+                "mesh_name": mesh_name,
+                "part": _validate_factory_part(item.get("part")),
+            }
+        )
+    normalized.sort(key=lambda item: item["order"])
+    if [item["order"] for item in normalized] != list(range(len(normalized))):
+        raise ContractError(
+            "sealed Factory assembly inventory must cover contiguous orders from zero"
+        )
+    return normalized
+
+
+def _bind_factory_assembly_parts(
+    value: Any,
+    inventory: Any,
+) -> Optional[List[Mapping[str, Any]]]:
+    """Bind a requested palette to the exact sealed import occurrences."""
+
+    normalized = _validate_factory_assembly_parts(value)
+    if normalized is None:
+        return None
+    expected = _validate_factory_assembly_inventory(inventory)
+    if expected is None:
+        raise ContractError(
+            "Factory assembly_parts require a sealed occurrence inventory in the "
+            "imported model handoff"
+        )
+    identities = [
+        {
+            "order": item["order"],
+            "mesh_name": item["mesh_name"],
+            "part": item["part"],
+        }
+        for item in normalized
+    ]
+    if identities != expected:
+        raise ContractError(
+            "Factory assembly_parts must match the exact sealed occurrence count, "
+            "order, mesh_name, and part; only colors may vary"
+        )
+    return normalized
+
+
+def _validate_factory_part(value: Any) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or len(value) > 255
+        or PurePosixPath(value).name != value
+        or "\\" in value
+        or value in (".", "..")
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise ContractError(
+            "Factory assembly_parts part must be one non-empty safe basename"
+        )
+    return value
+
+
+def _validate_factory_color(value: Any) -> str:
+    if not isinstance(value, str) or _FACTORY_COLOR.fullmatch(value) is None:
+        raise ContractError(
+            "Factory assembly_parts color must use full #RRGGBB hex"
+        )
+    return value.lower()
+
+
 def _validate_live_request(
     request: Mapping[str, Any], persisted_request: Mapping[str, Any]
 ) -> Mapping[str, Any]:
-    """Validate the exact rich Shop request persisted before public visibility."""
+    """Validate the exact model/listing request before public visibility.
+
+    Customer-facing copy and media are generated by Factory. They can appear in
+    authenticated readback, but never in Workshop's outgoing request.
+    """
 
     if not isinstance(request, Mapping):
         raise ContractError("live request must be an object")
     document = _object(_json(dict(request)))
-    allowed = {"api_origin", "owner_id", "listing", "attachments", "title", "proof"}
+    allowed = {"api_origin", "owner_id", "listing", "assembly_parts", "proof"}
     if set(document) - allowed or not {"api_origin", "owner_id"} <= set(document):
         raise ContractError("live request contains unsupported fields")
     if (
@@ -131,38 +392,12 @@ def _validate_live_request(
         or not 100 <= listing["price_cents"] <= 1_000_000
     ):
         raise ContractError("live listing must contain one valid price_cents")
-    title = document.get("title")
-    if title is not None and (
-        not isinstance(title, str)
-        or not title.strip()
-        or len(title) > 120
-        or any(ord(character) < 32 or ord(character) == 127 for character in title)
-    ):
-        raise ContractError("live title must be 1..120 control-free characters")
-    attachments = document.get("attachments")
-    if attachments is not None:
-        if not isinstance(attachments, list) or not 1 <= len(attachments) <= 12:
-            raise ContractError("live attachments must contain 1..12 items")
-        for item in attachments:
-            if (
-                not isinstance(item, Mapping)
-                or set(item) != {"kind", "url"}
-                or item.get("kind") not in ("image", "video")
-                or not isinstance(item.get("url"), str)
-            ):
-                raise ContractError("live attachment is malformed")
-            parsed = urllib.parse.urlsplit(item["url"])
-            if (
-                parsed.scheme != "https"
-                or not parsed.hostname
-                or parsed.username is not None
-                or parsed.password is not None
-                or any(
-                    ord(character) < 32 or ord(character) == 127
-                    for character in item["url"]
-                )
-            ):
-                raise ContractError("live attachment URL must be absolute HTTPS")
+    assembly_parts = _bind_factory_assembly_parts(
+        document.get("assembly_parts"),
+        persisted_request.get(FACTORY_ASSEMBLY_INVENTORY_FIELD),
+    )
+    if assembly_parts is not None:
+        document["assembly_parts"] = assembly_parts
     proof = document.get("proof")
     bound_instructions = persisted_request.get("_workshop_instructions_sha256")
     bound_playtest = persisted_request.get("_workshop_playtest_evidence_sha256")
@@ -177,17 +412,12 @@ def _validate_live_request(
             "instructions_sha256",
             "playtest_evidence_sha256",
             "page_url",
-            "media_sha256",
-            "page_content_sha256",
-            "listing_request_sha256",
         }
         if set(proof) - allowed_proof or "instructions_sha256" not in proof:
             raise ContractError("live proof contains unsupported fields")
         for name in (
             "instructions_sha256",
             "playtest_evidence_sha256",
-            "page_content_sha256",
-            "listing_request_sha256",
         ):
             if proof.get(name) is not None:
                 require_sha256(proof[name], "live proof %s" % name)
@@ -206,16 +436,6 @@ def _validate_live_request(
                 or any(ord(character) < 32 or ord(character) == 127 for character in page_url)
             ):
                 raise ContractError("live proof page_url must be absolute HTTPS")
-        media = proof.get("media_sha256")
-        if media is not None and (
-            not isinstance(media, Mapping)
-            or not media
-            or any(not isinstance(role, str) or not role for role in media)
-        ):
-            raise ContractError("live proof media_sha256 must be a non-empty object")
-        if isinstance(media, Mapping):
-            for role, digest in media.items():
-                require_sha256(digest, "live proof media_sha256[%s]" % role)
         if proof["instructions_sha256"] != persisted_request.get(
             "_workshop_instructions_sha256"
         ):
@@ -233,29 +453,11 @@ def _validate_live_request(
                 "instructions_sha256",
                 "playtest_evidence_sha256",
                 "page_url",
-                "media_sha256",
-                "page_content_sha256",
-                "listing_request_sha256",
             }
             if set(proof) != required_proof:
                 raise StateConflict(
                     "Instructions-owned Shop proof is incomplete"
                 )
-        api_request = {
-            name: document[name]
-            for name in ("title", "listing", "attachments")
-            if name in document
-        }
-        expected_request_sha256 = hashlib.sha256(
-            _json(api_request).encode("utf-8")
-        ).hexdigest()
-        if (
-            proof.get("listing_request_sha256") is not None
-            and proof["listing_request_sha256"] != expected_request_sha256
-        ):
-            raise StateConflict(
-                "live proof request hash does not match the exact Shop request"
-            )
     return document
 
 
@@ -438,27 +640,6 @@ class InventorStore:
                     updated_at TEXT NOT NULL,
                     UNIQUE(product_id, pack_sha256, door_name)
                 );
-                CREATE TABLE IF NOT EXISTS shop_effects (
-                    id TEXT PRIMARY KEY,
-                    publish_intent_id TEXT NOT NULL
-                        REFERENCES publish_intents(id),
-                    kind TEXT NOT NULL CHECK(kind IN (
-                        'media-upload', 'use-case', 'story-blocks'
-                    )),
-                    effect_key TEXT NOT NULL,
-                    state TEXT NOT NULL CHECK(state IN (
-                        'planned', 'sending', 'unknown', 'rejected', 'succeeded'
-                    )),
-                    request_json TEXT NOT NULL,
-                    effect_token TEXT,
-                    response_json TEXT,
-                    error TEXT,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL,
-                    UNIQUE(publish_intent_id, kind, effect_key)
-                );
-                CREATE INDEX IF NOT EXISTS shop_effects_publish_intent
-                    ON shop_effects(publish_intent_id, kind, effect_key);
                 """
             )
             columns = {
@@ -1295,6 +1476,12 @@ class InventorStore:
         request_document = dict(request)
         if request_document.get("status") != "draft":
             raise ContractError("publish intent requires status=draft")
+        if FACTORY_ASSEMBLY_INVENTORY_FIELD in request_document:
+            request_document[FACTORY_ASSEMBLY_INVENTORY_FIELD] = (
+                _validate_factory_assembly_inventory(
+                    request_document[FACTORY_ASSEMBLY_INVENTORY_FIELD]
+                )
+            )
         artifact_sha256 = _launch_value(request_document, "artifact_sha256")
         require_sha256(
             artifact_sha256,
@@ -1409,96 +1596,26 @@ class InventorStore:
         request: Mapping[str, Any],
         lease_token: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind one Instructions-owned Shop effect before touching the network.
-
-        Import and the final draft-to-public transition already have dedicated
-        outbox states.  Product-page images and curated copy happen between
-        those boundaries, so they use small child effects tied to the same
-        publication intent and sealed Instructions hash.
-        """
-
-        publish_intent_id = _required_text(
-            publish_intent_id, "publish intent id"
+        del publish_intent_id, kind, effect_key, request, lease_token
+        raise ContractError(
+            "Workshop page effects are retired; Factory owns generated media and copy"
         )
-        if kind not in ("media-upload", "use-case", "story-blocks"):
-            raise ContractError("Shop effect kind is not supported")
-        effect_key = _required_text(effect_key, "Shop effect key")
-        if not isinstance(request, Mapping) or not request:
-            raise ContractError("Shop effect request must be a non-empty object")
-        # Round-trip to detach nested caller-owned containers and reject
-        # non-JSON values before they can become durable authority.
-        request_document = _object(_json(dict(request)))
-        instructions_sha256 = request_document.get("instructions_sha256")
-        require_sha256(instructions_sha256, "Shop effect instructions_sha256")
-        effect_id = secrets.token_hex(16)
-        now = utc_now()
-        with self._transaction() as connection:
-            parent = connection.execute(
-                "SELECT * FROM publish_intents WHERE id=?",
-                (publish_intent_id,),
-            ).fetchone()
-            if parent is None:
-                raise KeyError("unknown publish intent %r" % publish_intent_id)
-            self._assert_lease_fence(
-                connection, parent["product_id"], lease_token, now
-            )
-            launch_request = _object(parent["request_json"])
-            if (
-                not isinstance(launch_request, Mapping)
-                or launch_request.get("_workshop_instructions_sha256")
-                != instructions_sha256
-            ):
-                raise StateConflict(
-                    "Shop effect Instructions hash does not match the sealed draft request"
-                )
-            existing = connection.execute(
-                """SELECT * FROM shop_effects
-                   WHERE publish_intent_id=? AND kind=? AND effect_key=?""",
-                (publish_intent_id, kind, effect_key),
-            ).fetchone()
-            if existing is not None:
-                parsed = self._row(existing)
-                if parsed["request"] != request_document:
-                    raise StateConflict(
-                        "Shop effect request drifted under an existing durable key"
-                    )
-                return parsed
-            if parent["state"] != "succeeded":
-                raise StateConflict(
-                    "Shop page effects require an authenticated private draft"
-                )
-            connection.execute(
-                """INSERT INTO shop_effects(
-                       id, publish_intent_id, kind, effect_key, state,
-                       request_json, effect_token, response_json, error,
-                       created_at, updated_at
-                   ) VALUES (?, ?, ?, ?, 'planned', ?, NULL, NULL, NULL, ?, ?)""",
-                (
-                    effect_id,
-                    publish_intent_id,
-                    kind,
-                    effect_key,
-                    _json(request_document),
-                    now,
-                    now,
-                ),
-            )
-        return self.get_shop_effect(effect_id)
 
     def get_shop_effect(self, effect_id: str) -> Dict[str, Any]:
-        effect_id = _required_text(effect_id, "Shop effect id")
-        with self._connection() as connection:
-            row = connection.execute(
-                "SELECT * FROM shop_effects WHERE id=?", (effect_id,)
-            ).fetchone()
-        if row is None:
-            raise KeyError("unknown Shop effect %r" % effect_id)
-        return self._row(row)
+        del effect_id
+        raise ContractError(
+            "Workshop page effects are retired; only legacy intent-level audit is readable"
+        )
 
     def shop_effects_for_publish_intent(
         self, publish_intent_id: str
     ) -> List[Dict[str, Any]]:
-        """Return the durable page effects used to verify final Shop readback."""
+        """Read legacy page effects only so new flows can fail closed.
+
+        New databases do not create this table and no method can add to it.
+        Existing databases may retain rows as forensic evidence; callers treat
+        any such row as a forbidden inventor-side mutation.
+        """
 
         publish_intent_id = _required_text(
             publish_intent_id, "publish intent id"
@@ -1509,6 +1626,11 @@ class InventorStore:
             ).fetchone()
             if parent is None:
                 raise KeyError("unknown publish intent %r" % publish_intent_id)
+            table = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='shop_effects'"
+            ).fetchone()
+            if table is None:
+                return []
             rows = connection.execute(
                 """SELECT * FROM shop_effects
                    WHERE publish_intent_id=?
@@ -1520,55 +1642,14 @@ class InventorStore:
     def begin_shop_effect(
         self, effect_id: str, lease_token: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Fence an exact media/content request immediately before HTTP."""
-
-        with self._transaction() as connection:
-            row = connection.execute(
-                """SELECT e.*, p.product_id, p.state AS publish_state
-                   FROM shop_effects e
-                   JOIN publish_intents p ON p.id=e.publish_intent_id
-                   WHERE e.id=?""",
-                (effect_id,),
-            ).fetchone()
-            if row is None:
-                raise KeyError("unknown Shop effect %r" % effect_id)
-            self._assert_lease_fence(
-                connection, row["product_id"], lease_token, utc_now()
-            )
-            if row["state"] == "succeeded":
-                return self.get_shop_effect(effect_id)
-            if row["state"] in ("sending", "unknown"):
-                raise AmbiguousPublishError(
-                    "Shop effect %s may already have happened; reconcile before retry"
-                    % effect_id
-                )
-            if row["state"] not in ("planned", "rejected"):
-                raise StateConflict(
-                    "Shop effect %s is %s" % (effect_id, row["state"])
-                )
-            if row["publish_state"] != "succeeded":
-                raise StateConflict(
-                    "Shop page effects require an authenticated private draft"
-                )
-            effect_token = secrets.token_hex(16)
-            connection.execute(
-                """UPDATE shop_effects
-                   SET state='sending', effect_token=?, error=NULL, updated_at=?
-                   WHERE id=?""",
-                (effect_token, utc_now(), effect_id),
-            )
-        return self.get_shop_effect(effect_id)
+        del effect_id, lease_token
+        raise ContractError("Workshop page effects are retired")
 
     def mark_shop_effect_unknown(
         self, effect_id: str, effect_token: str, error: str
     ) -> Dict[str, Any]:
-        return self._set_shop_effect_state(
-            effect_id,
-            "sending",
-            "unknown",
-            effect_token=effect_token,
-            error=error,
-        )
+        del effect_id, effect_token, error
+        raise ContractError("Workshop page effects are retired")
 
     def mark_shop_effect_rejected(
         self,
@@ -1577,14 +1658,8 @@ class InventorStore:
         error: str,
         response: Optional[Mapping[str, Any]] = None,
     ) -> Dict[str, Any]:
-        return self._set_shop_effect_state(
-            effect_id,
-            "sending",
-            "rejected",
-            effect_token=effect_token,
-            error=error,
-            response=response,
-        )
+        del effect_id, effect_token, error, response
+        raise ContractError("Workshop page effects are retired")
 
     def mark_shop_effect_succeeded(
         self,
@@ -1592,64 +1667,14 @@ class InventorStore:
         effect_token: str,
         response: Mapping[str, Any],
     ) -> Dict[str, Any]:
-        return self._set_shop_effect_state(
-            effect_id,
-            "sending",
-            "succeeded",
-            effect_token=effect_token,
-            response=response,
-        )
+        del effect_id, effect_token, response
+        raise ContractError("Workshop page effects are retired")
 
     def resolve_shop_effect_succeeded(
         self, effect_id: str, response: Mapping[str, Any]
     ) -> Dict[str, Any]:
-        """Resolve an ambiguous idempotent page write from authenticated readback."""
-
-        return self._set_shop_effect_state(
-            effect_id, "unknown", "succeeded", response=response
-        )
-
-    def _set_shop_effect_state(
-        self,
-        effect_id: str,
-        expected: str,
-        target: str,
-        *,
-        effect_token: Optional[str] = None,
-        error: Optional[str] = None,
-        response: Optional[Mapping[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        if response is not None and not isinstance(response, Mapping):
-            raise ContractError("Shop effect response must be an object")
-        with self._transaction() as connection:
-            row = connection.execute(
-                "SELECT state, effect_token FROM shop_effects WHERE id=?",
-                (effect_id,),
-            ).fetchone()
-            if row is None:
-                raise KeyError("unknown Shop effect %r" % effect_id)
-            if row["state"] != expected:
-                raise StateConflict(
-                    "Shop effect %s is %s, expected %s"
-                    % (effect_id, row["state"], expected)
-                )
-            if expected == "sending" and (
-                not effect_token or row["effect_token"] != effect_token
-            ):
-                raise StateConflict("Shop effect token is stale")
-            connection.execute(
-                """UPDATE shop_effects
-                   SET state=?, effect_token=NULL, response_json=COALESCE(?, response_json),
-                       error=?, updated_at=? WHERE id=?""",
-                (
-                    target,
-                    _json(dict(response)) if response is not None else None,
-                    error,
-                    utc_now(),
-                    effect_id,
-                ),
-            )
-        return self.get_shop_effect(effect_id)
+        del effect_id, response
+        raise ContractError("Workshop page effects are retired")
 
     def begin_publish(
         self, intent_id: str, lease_token: Optional[str] = None
@@ -1730,14 +1755,13 @@ class InventorStore:
         receipt: PublicationReceipt,
         lease_token: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind a fully enriched private Shop draft to sealed Instructions.
+        """Bind a model-only private Shop draft to sealed Instructions.
 
-        The import transition records the remote design before any page media
-        or curated copy is written.  Instructions completes only after those
-        durable child effects have succeeded and authenticated readback has
-        produced ``receipt``.  This method enriches the existing draft receipt
-        without changing the intent's terminal ``succeeded`` state; making the
-        draft public remains a separate, explicit effect.
+        Factory owns the downstream images, copy, and optional video.  This
+        transition therefore records authenticated model/history readback and
+        an explicit pending-enrichment handoff; it must not claim the customer
+        page is ready.  Making the draft public remains a separate, explicit
+        effect.
         """
 
         intent = self.get_publish_intent(intent_id)
@@ -1755,13 +1779,18 @@ class InventorStore:
         require_sha256(playtest_sha256, "Instructions Playtest evidence sha256")
         details = receipt.details
         required_details = {
-            "cover_sha256",
             "cover_url",
+            "server_cover_urls",
             "instructions_sha256",
             "playtest_evidence_sha256",
             "page_url",
-            "media_sha256",
-            "page_content_sha256",
+            "handoff_artifact_sha256",
+            "product_facts_sha256",
+            "primary_model_path",
+            "primary_model_sha256",
+            "content_brief_sha256",
+            "enrichment_status",
+            "page_ready",
         }
         if not required_details <= set(details):
             raise ReceiptError("Instructions draft receipt proof is incomplete")
@@ -1769,11 +1798,39 @@ class InventorStore:
             raise ReceiptError("Instructions draft receipt describes different Instructions bytes")
         if details.get("playtest_evidence_sha256") != playtest_sha256:
             raise ReceiptError("Instructions draft receipt describes different Playtest evidence")
-        cover_sha256 = request.get("_workshop_cover_sha256")
-        require_sha256(cover_sha256, "Instructions draft cover sha256")
-        if details.get("cover_sha256") != cover_sha256:
-            raise ReceiptError("Instructions draft receipt describes different cover bytes")
-        require_sha256(details.get("page_content_sha256"), "Instructions page content sha256")
+        handoff_sha256 = request.get("_workshop_handoff_artifact_sha256")
+        require_sha256(handoff_sha256, "Factory model handoff sha256")
+        if details.get("handoff_artifact_sha256") != handoff_sha256:
+            raise ReceiptError(
+                "Instructions draft receipt describes a different model handoff"
+            )
+        require_sha256(
+            details.get("product_facts_sha256"),
+            "Instructions product facts sha256",
+        )
+        primary_path = details.get("primary_model_path")
+        if (
+            not isinstance(primary_path, str)
+            or not primary_path
+            or "/" in primary_path
+            or "\\" in primary_path
+        ):
+            raise ReceiptError("Instructions primary model path is malformed")
+        require_sha256(
+            details.get("primary_model_sha256"),
+            "Instructions primary model sha256",
+        )
+        require_sha256(
+            details.get("content_brief_sha256"),
+            "Instructions content brief sha256",
+        )
+        if (
+            details.get("enrichment_status") != "pending"
+            or details.get("page_ready") is not False
+        ):
+            raise ReceiptError(
+                "model handoff cannot claim Factory page enrichment is complete"
+            )
         for url_name in ("page_url", "cover_url"):
             url = details.get(url_name)
             try:
@@ -1794,12 +1851,14 @@ class InventorStore:
                 raise ReceiptError(
                     "Instructions draft %s must be absolute HTTPS" % url_name
                 )
-        media = details.get("media_sha256")
-        if not isinstance(media, Mapping) or not media:
-            raise ReceiptError("Instructions draft media proof must be a non-empty object")
-        for role, digest in media.items():
-            _required_text(role, "Instructions media role")
-            require_sha256(digest, "Instructions media sha256")
+        server_covers = details.get("server_cover_urls")
+        if (
+            not isinstance(server_covers, list)
+            or not server_covers
+            or server_covers[0] != details.get("cover_url")
+            or any(not isinstance(url, str) or not url for url in server_covers)
+        ):
+            raise ReceiptError("Factory model handoff cover readback is malformed")
 
         with self._transaction() as connection:
             row = connection.execute(
@@ -1825,7 +1884,7 @@ class InventorStore:
             if (
                 not isinstance(imported_covers, list)
                 or not imported_covers
-                or imported_covers[0] != details.get("cover_url")
+                or imported_covers != server_covers
             ):
                 raise ReceiptError(
                     "Instructions draft cover does not match authenticated import readback"
@@ -1855,37 +1914,21 @@ class InventorStore:
                     )
                 return self._row(row)
 
-            effects = connection.execute(
-                """SELECT kind, effect_key, state, request_json
-                   FROM shop_effects WHERE publish_intent_id=?""",
-                (intent_id,),
-            ).fetchall()
-            media_effects = {
-                effect["effect_key"]: effect for effect in effects
-                if effect["kind"] == "media-upload"
-            }
-            if set(media_effects) != set(media):
+            legacy_table = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='shop_effects'"
+            ).fetchone()
+            effects = (
+                connection.execute(
+                    """SELECT kind, state FROM shop_effects
+                       WHERE publish_intent_id=?""",
+                    (intent_id,),
+                ).fetchall()
+                if legacy_table is not None
+                else []
+            )
+            if effects:
                 raise ReceiptError(
-                    "Instructions draft media proof does not match durable uploads"
-                )
-            for role, effect in media_effects.items():
-                effect_request = _object(effect["request_json"])
-                if (
-                    effect["state"] != "succeeded"
-                    or not isinstance(effect_request, Mapping)
-                    or effect_request.get("instructions_sha256") != instructions_sha256
-                    or effect_request.get("sha256") != media[role]
-                ):
-                    raise ReceiptError(
-                        "Instructions draft media upload is not durably proven"
-                    )
-            if media.get("hero") != cover_sha256:
-                raise ReceiptError(
-                    "Instructions draft cover is not the sealed hero image"
-                )
-            if any(effect["state"] != "succeeded" for effect in effects):
-                raise ReceiptError(
-                    "Instructions draft still has an incomplete Shop page effect"
+                    "Factory-owned enrichment cannot contain Workshop page effects"
                 )
             connection.execute(
                 """UPDATE publish_intents SET receipt_json=?, updated_at=?
@@ -1932,49 +1975,17 @@ class InventorStore:
             if not isinstance(persisted_request, Mapping):
                 raise StateConflict("persisted draft request is malformed")
             request_document = _validate_live_request(request, persisted_request)
-            proof = request_document.get("proof")
-            media_proof = proof.get("media_sha256") if isinstance(proof, Mapping) else None
-            if isinstance(media_proof, Mapping):
-                rows = connection.execute(
-                    """SELECT state, request_json, response_json
-                       FROM shop_effects
-                       WHERE publish_intent_id=? AND kind='media-upload'""",
+            legacy_table = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='shop_effects'"
+            ).fetchone()
+            if legacy_table is not None:
+                legacy_effect = connection.execute(
+                    "SELECT 1 FROM shop_effects WHERE publish_intent_id=? LIMIT 1",
                     (intent_id,),
-                ).fetchall()
-                completed_media: Dict[str, str] = {}
-                completed_urls = set()
-                for effect in rows:
-                    effect_request = _object(effect["request_json"])
-                    effect_response = _object(effect["response_json"])
-                    if (
-                        effect["state"] != "succeeded"
-                        or not isinstance(effect_request, Mapping)
-                        or not isinstance(effect_response, Mapping)
-                        or effect_request.get("instructions_sha256")
-                        != proof.get("instructions_sha256")
-                        or not isinstance(effect_request.get("role"), str)
-                        or not isinstance(effect_response.get("url"), str)
-                    ):
-                        raise StateConflict(
-                            "Instructions media proof requires completed durable uploads"
-                        )
-                    completed_media[effect_request["role"]] = effect_request.get(
-                        "sha256"
-                    )
-                    completed_urls.add(effect_response["url"])
-                if completed_media != dict(media_proof):
+                ).fetchone()
+                if legacy_effect is not None:
                     raise StateConflict(
-                        "Instructions media hashes do not match completed uploads"
-                    )
-                attachments = request_document.get("attachments")
-                if (
-                    not isinstance(attachments, list)
-                    or any(item.get("kind") != "image" for item in attachments)
-                    or len(attachments) != len(completed_urls)
-                    or {item.get("url") for item in attachments} != completed_urls
-                ):
-                    raise StateConflict(
-                        "Instructions attachments do not match completed uploads"
+                        "inventor-side page effects are incompatible with Factory-owned enrichment"
                     )
             existing = _object(row["live_request_json"])
             if existing is not None and existing != request_document:
@@ -1998,6 +2009,53 @@ class InventorStore:
             effect_token=effect_token,
             error=error,
         )
+
+    def resume_live(
+        self, intent_id: str, lease_token: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Resume one exact, reconciled draft-to-public request.
+
+        The caller must first read the remote design and prove it is still the
+        persisted draft.  Re-entry is safe because the full occurrence seed is
+        an idempotent merge by order and ``live_request_json`` cannot change.
+        """
+
+        with self._transaction() as connection:
+            row = connection.execute(
+                "SELECT * FROM publish_intents WHERE id=?", (intent_id,)
+            ).fetchone()
+            if row is None:
+                raise KeyError("unknown publish intent %r" % intent_id)
+            self._assert_lease_fence(
+                connection, row["product_id"], lease_token, utc_now()
+            )
+            if row["state"] != "live_unknown":
+                raise StateConflict(
+                    "intent %s is %s, expected live_unknown"
+                    % (intent_id, row["state"])
+                )
+            persisted_request = _object(row["request_json"])
+            live_request = _object(row["live_request_json"])
+            if not isinstance(persisted_request, Mapping) or not isinstance(
+                live_request, Mapping
+            ):
+                raise StateConflict("persisted live request is malformed")
+            request_document = _validate_live_request(
+                live_request, persisted_request
+            )
+            effect_token = secrets.token_hex(16)
+            connection.execute(
+                """UPDATE publish_intents
+                   SET state='publishing', live_request_json=?, effect_token=?,
+                       error=NULL, updated_at=? WHERE id=?""",
+                (
+                    _json(request_document),
+                    effect_token,
+                    utc_now(),
+                    intent_id,
+                ),
+            )
+        return self.get_publish_intent(intent_id)
 
     def restore_draft_after_publish_rejection(
         self, intent_id: str, effect_token: str, error: str
@@ -2123,8 +2181,7 @@ class InventorStore:
             "root_id",
             "current_history_id",
         ]
-        if live_request.get("title") is None:
-            identity_fields.extend(("slug", "project_url"))
+        identity_fields.extend(("slug", "project_url"))
         if any(
             getattr(draft, field) != getattr(receipt, field)
             for field in identity_fields

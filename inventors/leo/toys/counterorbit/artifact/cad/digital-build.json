@@ -16,16 +16,36 @@
   },
   "design_source": {
     "path": "cad/design.json",
-    "sha256": "e7c8327a33e1bc0f95dcbd2189175b01128d79d8da94925184ac2ad951e513ed"
+    "sha256": "29d4b8464edd14ad751c4480e06fbd614d1408b7162b76352bdc47d50ceeb854"
   },
   "executable_source": {
     "path": "cad/model.py",
     "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
   },
+  "factory_assembly": {
+    "occurrence_count": 12,
+    "part_names": [
+      "five-job-core",
+      "counter-orbit",
+      "ring-signal-01",
+      "ring-signal-02",
+      "ring-signal-03",
+      "ring-signal-04",
+      "ring-signal-05",
+      "spoke-signal-01",
+      "spoke-signal-02",
+      "spoke-signal-03",
+      "spoke-signal-04",
+      "spoke-signal-05"
+    ],
+    "step_bytes": 758980,
+    "step_sha256": "54a326b8befbe96cb6e0ad7402ba964ec2337700fd5e5519cf0a2f27fd6d70de",
+    "step_solid_count": 12
+  },
   "generator": {
     "id": "showcase-real-cad-v1",
     "path": "tools/build_showcase_products.py",
-    "sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac"
+    "sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc"
   },
   "kind": "real-digital-cad-build",
   "lane_checks": {
@@ -51,7 +71,7 @@
         ],
         "bytes": 56471,
         "reimported": true,
-        "sha256": "3f232cd5c9f85da957d95f20054eb732beb10e51cfe95f422617164c53209859",
+        "sha256": "54e8d007444108ac7180e150747bb905e955de60411c344ff371ca0f5be19313",
         "solid_count": 1
       },
       "stl": {
@@ -75,6 +95,7 @@
         ],
         "inside_declared_bed": true,
         "sha256": "406543cfaa14a7c8f29913eeed25d0e60a90d8d7b9a3d57e5b7a878fb175a212",
+        "shell_count": 1,
         "triangles": 6048,
         "volume_mm3": 20714.5828,
         "watertight": true,
@@ -88,10 +109,10 @@
           70.0,
           9.0
         ],
-        "bytes": 36435,
+        "bytes": 33459,
         "reimported": true,
-        "sha256": "184079f5304644cc763236183ecc4cedbd593a46243308d5a383d8bd9a870749",
-        "solid_count": 2
+        "sha256": "e1fc8d62792bfa4112fb0feed6485a6f95fc8af458e198a3ee0c0c30a3a92a77",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -106,16 +127,17 @@
             9.0
           ]
         ],
-        "bytes": 176084,
+        "bytes": 176284,
         "extents_mm": [
           70.0,
           69.9782,
           9.0
         ],
         "inside_declared_bed": true,
-        "sha256": "0ad80aa57f5653eba347536a719fde439bd75f1ec817054042a19be0b6f832cf",
-        "triangles": 3520,
-        "volume_mm3": 18962.3947,
+        "sha256": "6b80e3015f17da0f28f56af1a32b4887c5f238ec07693bb36d95c3ac0edd8240",
+        "shell_count": 1,
+        "triangles": 3524,
+        "volume_mm3": 18821.0816,
         "watertight": true,
         "winding_consistent": true
       }
@@ -127,10 +149,10 @@
           7.4,
           4.3
         ],
-        "bytes": 13231,
+        "bytes": 9685,
         "reimported": true,
-        "sha256": "fc24bbb41a7a0047dca20d26e77fef3b8155096427cdf8b31970d5b4c298f837",
-        "solid_count": 2
+        "sha256": "2253bd2a3bc7471c01089cfb1763d8de19e525a1033aaf39cea1b436cf39bb82",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -145,15 +167,16 @@
             4.3
           ]
         ],
-        "bytes": 50084,
+        "bytes": 50284,
         "extents_mm": [
           7.4,
           7.3977,
           4.3
         ],
         "inside_declared_bed": true,
-        "sha256": "5b582d826dcb2514680afc7c1638c1b8854ffa1d22f766e335783febc8ea5d02",
-        "triangles": 1000,
+        "sha256": "868a07ec9cae405d7ac9f59af7d0e82a5becce7f63e3d9cbb2aa139f830bfad4",
+        "shell_count": 1,
+        "triangles": 1004,
         "volume_mm3": 144.3403,
         "watertight": true,
         "winding_consistent": true
@@ -166,10 +189,10 @@
           7.4,
           4.2
         ],
-        "bytes": 91688,
+        "bytes": 118281,
         "reimported": true,
-        "sha256": "29c0a6f35857b59bc46621e08f1ae894f4b426c2a637d22b1afaa48bc6d8864c",
-        "solid_count": 6
+        "sha256": "030c051696e7ed59734ed54b399f102e7a6dd9662d91cd5b5732e188791cabf2",
+        "solid_count": 1
       },
       "stl": {
         "bounds_mm": [
@@ -184,16 +207,17 @@
             4.2
           ]
         ],
-        "bytes": 28084,
+        "bytes": 31084,
         "extents_mm": [
           7.4,
           7.3977,
           4.2
         ],
         "inside_declared_bed": true,
-        "sha256": "61c8d6ae163bd5c57c2207ccf6a26c4732289640759f3bd56e4683f3eebaf03b",
-        "triangles": 560,
-        "volume_mm3": 154.6699,
+        "sha256": "3b9c8d99d3ebaab4686d0e0d6f5ae4baed99789fb13757c0a5877857a72165de",
+        "shell_count": 1,
+        "triangles": 620,
+        "volume_mm3": 148.4376,
         "watertight": true,
         "winding_consistent": true
       }
@@ -206,10 +230,10 @@
         104.0,
         9.95
       ],
-      "bytes": 629119,
+      "bytes": 759412,
       "reimported": true,
-      "sha256": "f9d155cd31faf86ec228cd37b97a76182164371d02f4a93ccfe2a0a44784a776",
-      "solid_count": 43
+      "sha256": "b204804016fae405032e825701f942722b53fa224a2c9f362d6d6b681479b573",
+      "solid_count": 12
     },
     "stl": {
       "bounds_mm": [
@@ -224,16 +248,17 @@
           9.95
         ]
       ],
-      "bytes": 868484,
+      "bytes": 884684,
       "extents_mm": [
         103.9884,
         103.9948,
         9.95
       ],
       "inside_declared_bed": true,
-      "sha256": "e08d80984a64b733151639be44f43a13b131e616ec9b95a5e4afbf373610b2d8",
-      "triangles": 17368,
-      "volume_mm3": 41172.0282,
+      "sha256": "5ce46527f49fc2d919125ec9db715019d281d3f6b25d14b11d28a53e6b9d8244",
+      "shell_count": 12,
+      "triangles": 17692,
+      "volume_mm3": 40999.5536,
       "watertight": true,
       "winding_consistent": true
     }
@@ -250,10 +275,10 @@
     },
     "concept_art": false,
     "input": "cad/product.stl",
-    "input_sha256": "e08d80984a64b733151639be44f43a13b131e616ec9b95a5e4afbf373610b2d8",
+    "input_sha256": "5ce46527f49fc2d919125ec9db715019d281d3f6b25d14b11d28a53e6b9d8244",
     "kind": "fixed-view exact-STL render",
     "output": "hero.png",
-    "output_sha256": "d691954b92c36a150ef8a556f6dda13710c7e7f3053adc81c6310a309b9be9e2",
+    "output_sha256": "2a4ebf0a0951d8580940c7d4df9a6a661f343ec19420872906cb1c55663cbf0e",
     "pixels": [
       1200,
       900

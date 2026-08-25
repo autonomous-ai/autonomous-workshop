@@ -1,0 +1,40 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "claims": [
+    "All 13 unique exact STL entries pass both the recorded mesh check and the 0.8 millimetre two-line thickness floor, then slice with OrcaSlicer 2.3.2 using pinned profiles and supports disabled.",
+    "The complete 32-piece inventory arranges and slices on one plate; parsed G-code records 155.51 grams, 23563 model seconds, 372 layers, 74.4 millimetres maximum Z, and SHA-256 3834c1709e51904f8bf3e3e5f69a38d193d20add341ab8bfa5c73056fa711b39.",
+    "Print-test passes as digital evidence only. No G-code was accepted by a physical printer and no successful print, finish, warp, tipping, handling, tactile, support-removal, or durability claim is made."
+  ],
+  "config_sha256": "6e899ce7c6fe6ec1c77b844f83c80d64d122c631a8ae6bd647c7dcbc952afa10",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "limitations": [
+    "All 14 invocations exited zero, but every invocation stdout retains '[error] Invalid T command (T65535).' even though the receipt's top-level slicer_warnings array is empty.",
+    "Digital mesh, thickness, and slicing do not establish a successful physical print or real finish, warp, tipping, handling, support-removal, tactile quality, fit, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 3,
+  "schema_version": 1,
+  "simulation": "AI print-breaker and adversarial roles interpreted exact mesh and thickness checks, pinned-profile OrcaSlicer receipts, quantity-aware packing, G-code metrics, and retained invocation output",
+  "slicer_backed": true,
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "a32590bb4e743d2d40cbc9c0fd9edcc9ef2db2cd42bc265e80419cf511b6c76a"
+    },
+    {
+      "path": "sources/slicer-validation.json",
+      "sha256": "293b3e1d09f3d39cb9fe6b9472bd3819ee38ec72a4c53a012e700a9059cb7a96"
+    }
+  ],
+  "warning": "[error] Invalid T command (T65535)."
+}

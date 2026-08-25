@@ -1,16 +1,25 @@
 {
-  "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
+  "blueprint_sha256": "8edc5b2d1c3e8ed2d1e513151a70fac2ddce7fe1a0d72924bd31eadfffe1b117",
   "design": {
+    "assembled_extents_mm": [
+      94.0,
+      68.0,
+      20.0
+    ],
     "base_mm": [
       94.0,
       68.0,
       5.0
     ],
+    "drive_pin_diameter_mm": 4.3,
     "drive_radius_mm": 18.0,
     "geneva_radius_mm": 23.0,
     "geneva_slots": 6,
     "kind": "six-step-geneva-machine",
-    "nominal_clearance_mm": 0.35,
+    "nominal_clearance_per_side_mm": 0.35,
+    "nominal_pin_slot_clearance_mm": 0.7,
+    "printed_piece_count": 5,
+    "slot_width_mm": 5.0,
     "step_degrees": 60.0,
     "wish_features": [
       "continuous crank becomes six discrete orbital jumps",

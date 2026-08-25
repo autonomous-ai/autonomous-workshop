@@ -7,6 +7,7 @@ while Make is running, and concept pixels trying to travel onward as proof.
 """
 
 import hashlib
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,10 +16,7 @@ from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.concept import DefaultConcept
 from inventor_workshop.deliver import DefaultDeliver
 from inventor_workshop.errors import ArtifactError, ContractError
-from inventor_workshop.instructions import (
-    DefaultInstructions,
-    REQUIRED_PRODUCT_IMAGES,
-)
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.jobs import (
     CONCEPT_OVERALL_ROLES,
     Delivered,
@@ -73,6 +71,7 @@ class ConceptPipelineTest(unittest.TestCase):
         )
         self.runtime = self.root / "runtime"
         self.seen = []
+        self.sealed_instructions = []
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -167,20 +166,8 @@ class ConceptPipelineTest(unittest.TestCase):
     def second_round_playtest(self, context):
         return self._playtest(context, passed=context.round >= 2)
 
-    @staticmethod
-    def media_maker(context):
-        images = context.workspace / "images"
-        images.mkdir(parents=True)
-        result = {}
-        for role in REQUIRED_PRODUCT_IMAGES:
-            path = images / (role + ".png")
-            path.write_bytes(("product render %s\n" % role).encode("utf-8"))
-            result[role] = path.relative_to(context.workspace).as_posix()
-        return result
-
-    @staticmethod
-    def site_writer(context, sealed_root, sealed_manifest):
-        del sealed_root
+    def site_writer(self, context, sealed_root, sealed_manifest):
+        self.sealed_instructions.append(Path(sealed_root))
         return Receipt(
             pack_sha256="f" * 64,
             artifact_sha256=context.made.artifact_sha256,
@@ -226,7 +213,6 @@ class ConceptPipelineTest(unittest.TestCase):
         concept=True,
         make=None,
         playtest=None,
-        media=None,
         runtime=None,
     ):
         return Workshop(
@@ -236,9 +222,7 @@ class ConceptPipelineTest(unittest.TestCase):
                 concept=self.concept_job() if concept else None,
                 make=make or self.make_job,
                 playtest=playtest or self.passing_playtest,
-                instructions=DefaultInstructions(
-                    media or self.media_maker, self.site_writer
-                ),
+                instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=runtime or self.runtime,
@@ -302,7 +286,7 @@ class ConceptPipelineTest(unittest.TestCase):
             tools=WorkshopTools(
                 make=forbidden_make,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(self.media_maker, self.site_writer),
+                instructions=DefaultInstructions(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
@@ -411,25 +395,35 @@ class ConceptPipelineTest(unittest.TestCase):
 
     # -- 5.5 ------------------------------------------------------------------
 
-    def test_a_concept_image_set_cannot_satisfy_the_instructions_media_roles(self):
-        self.assertFalse(set(CONCEPT_OVERALL_ROLES) & set(REQUIRED_PRODUCT_IMAGES))
+    def test_instructions_refuses_a_media_provider_serving_concept_art(self):
+        """Concept art cannot be wired in as page media, because nothing can.
 
-        def concept_as_media(context):
-            return context.concept_images
+        Instructions no longer owns generated page media at all — Factory does.
+        The refusal lands at construction, so a stale integration handing over
+        the concept's own images fails before a run can start.
+        """
 
-        with self.assertRaisesRegex(ContractError, "must return a path mapping"):
-            self.workshop(media=concept_as_media).run(
-                self.wish("concept-as-media"), playtest_rounds=1
-            )
-
-    def test_concept_roles_cannot_stand_in_for_product_image_roles(self):
         def concept_paths_as_media(context):
             return context.concept_images.paths()
 
-        with self.assertRaises(ContractError):
-            self.workshop(media=concept_paths_as_media).run(
-                self.wish("concept-roles"), playtest_rounds=1
+        with self.assertRaisesRegex(ContractError, "media_maker is retired"):
+            DefaultInstructions(
+                site_writer=self.site_writer, media_maker=concept_paths_as_media
             )
+
+    def test_the_sealed_instructions_facts_declare_no_creator_media(self):
+        result = self.workshop().run(self.wish("facts-only"), playtest_rounds=1)
+        self.assertEqual(result.status, "delivered")
+
+        self.assertEqual(len(self.sealed_instructions), 1)
+        facts = json.loads(
+            (self.sealed_instructions[0] / "product.json").read_text(encoding="utf-8")
+        )
+        self.assertNotIn("images", facts)
+        for role in CONCEPT_OVERALL_ROLES:
+            self.assertNotIn(role, facts)
+        self.assertEqual(facts["factory_enrichment"]["media_owner"], "factory")
+        self.assertEqual(facts["factory_enrichment"]["copy_owner"], "factory")
 
     # -- 5.5a -----------------------------------------------------------------
 
@@ -464,29 +458,25 @@ class ConceptPipelineTest(unittest.TestCase):
                 self.wish("copied-pixels"), playtest_rounds=1
             )
 
-    def test_an_instructions_image_with_concept_bytes_is_refused(self):
-        def concept_pixels_media(context):
-            images = context.workspace / "images"
-            images.mkdir(parents=True)
-            result = {}
-            for role in REQUIRED_PRODUCT_IMAGES:
-                path = images / (role + ".png")
-                if role == "hero":
-                    path.write_bytes(
-                        (
-                            context.concept_images.root
-                            / context.concept_images.overall["front"]
-                        ).read_bytes()
-                    )
-                else:
-                    path.write_bytes(("product render %s\n" % role).encode("utf-8"))
-                result[role] = path.relative_to(context.workspace).as_posix()
-            return result
+    def test_no_concept_pixels_reach_the_sealed_instructions_tree(self):
+        """The concept's bytes stop at Make; nothing carries them onward.
 
-        with self.assertRaisesRegex(ContractError, "bytes of a concept image"):
-            self.workshop(media=concept_pixels_media).run(
-                self.wish("concept-proof"), playtest_rounds=1
-            )
+        Make is the boundary that refuses copied pixels, so by Instructions the
+        sealed tree should hold none of them. Checking the sealed bytes directly
+        keeps that end-to-end rather than trusting the earlier refusal.
+        """
+
+        result = self.workshop().run(self.wish("no-concept-pixels"), playtest_rounds=1)
+        self.assertEqual(result.status, "delivered")
+
+        forbidden = self.seen[0].concept_images.image_digests()
+        self.assertTrue(forbidden)
+        sealed_root = self.sealed_instructions[0]
+        for path in sorted(sealed_root.rglob("*")):
+            if not path.is_file():
+                continue
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertNotIn(digest, forbidden, path.relative_to(sealed_root).as_posix())
 
     def test_building_faithfully_without_copying_pixels_is_accepted(self):
         result = self.workshop().run(self.wish("faithful-top"), playtest_rounds=1)

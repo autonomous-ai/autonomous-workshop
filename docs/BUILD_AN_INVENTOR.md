@@ -526,15 +526,18 @@ customer feedback begins only after delivery as Reviews.
 ## 10. Let shared Instructions tell only the truth
 
 Instructions starts only after the exact Make passes Playtest. It produces the
-truthful product page and the paper that belongs in the box: a rulebook for a
-game, or instructions for another toy. Both stay bound to the same approved
-product. The shared contract requires distinct hero, play, detail, parts, and
-box images plus a claim-to-evidence map.
+paper that belongs in the box and a structured, evidence-bound content brief:
+a rulebook for a game, or instructions for another toy. Both stay bound to the
+same approved product. Local product renders can remain useful Make/Playtest
+evidence, but they are not uploaded as Factory marketing images.
 
 Creating files locally is only the first half of Instructions. The same shared
-job creates and enriches the page in Factory as a private draft and requires
-authenticated owner readback for the exact approved product, sealed page,
-guide, media, and terminal `By <Inventor>.` byline before Deliver can begin.
+job creates a model-only Factory draft and requires authenticated owner
+readback for the exact approved model, sealed facts, guide, and terminal
+`By <Inventor>.` attribution before Deliver can begin. Factory page enrichment
+is a separate downstream responsibility. The draft records
+`enrichment_status=pending` and `page_ready=false`; it does not claim images,
+copy, or video were generated.
 Instructions does not make the page public and does not require an active
 listing. An owner reviews the draft and may make it public later through a
 separate action outside the six-job pipeline.
@@ -547,11 +550,12 @@ resumed = workshop.resume_instructions(wish)
 
 Workshop verifies the original Wish, Taste, blueprint, round allowance, Make,
 Playtest evidence, event chain, and Instructions manifest, then calls only the
-shared site writer. Make, Playtest, copy, and media are not repeated.
+shared model-handoff writer. Make, Playtest, and the sealed content brief are
+not repeated.
 
-The media provider must render or photograph the approved artifact. Concept art
-may appear only when clearly labeled as concept art; it cannot stand in for a
-product render, printed prototype, or packed box.
+Do not add a media provider to Instructions. Factory renders the approved model
+and owns all customer-facing page images and video. Local renders may remain
+Make or Playtest evidence, but the model-only handoff excludes them.
 
 Copy must retain evidence qualifiers. Good copy can be magical without
 inventing facts:
@@ -610,7 +614,9 @@ At minimum, an inventor's tests should prove:
 - slicer output cannot be presented as a successful physical print;
 - production and hands-on QA cannot be presented as Playtest;
 - customer Reviews cannot rewrite the Playtest evidence for a shipped toy;
-- Instructions claims and images remain bound to the approved product;
+- Instructions facts and in-box paper remain bound to the approved product;
+- creator code cannot add marketing images, video, `use_case`, `story_blocks`,
+  or publication attachments to the Factory handoff;
 - Instructions completes only with authenticated readback of the exact private
   draft, without requiring public visibility or an active listing;
 - changed Instructions bytes cannot enter Deliver;

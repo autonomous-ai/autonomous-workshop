@@ -6,6 +6,13 @@
 > and QA belong to Deliver, and post-delivery customer feedback is Reviews for
 > future Makes.
 
+> **Publishing update (2026-08-24).** Alice no longer invokes the Vibe rich-page
+> writer. The shared Workshop imports the inspected model without thumbnails or
+> inventor-authored `use_case`/`story_blocks`; Factory generates page copy,
+> images, and video on the server. The old page-builder path fails closed but
+> retains authenticated read-only diagnostics for existing drafts. Any command
+> below that enables the old writer is preserved history and must not be run.
+
 Alice is a supervised queue worker, not an immortal chat session. Durable state
 lives in SQLite and immutable artifacts; the process may be restarted at any
 time. Task leases and fencing protect crash recovery, while the supported
@@ -17,7 +24,7 @@ worker can claim effects at a time.
 | Level | What runs | What cannot happen |
 |---|---|---|
 | `dry-run` | Scheduling, research, invention, rules, simulation, evaluation plumbing, and recovery | CAD/printing, private drafts, release packets, public publishing, or fulfillment |
-| `draft` | The above plus configured CAD/DFM, deterministic text2game-to-Vibe export, the existing private rich-draft operator, prototype printing, and production validation | Any public listing or order fulfillment; Dee reviews and publishes the finished draft with one click |
+| `draft` | The above plus configured CAD/DFM, deterministic export, Workshop's model-only private-draft import, prototype printing, production validation, and server-content readback | Inventor-authored Factory media/copy, any public listing, or order fulfillment; Factory enriches the page and Dee publishes with one click |
 | `live` | The complete evidence-gated path, existing Vibe public flip/page readback, and one packet-bound print/QA/ship flow per paid order | Any effect whose adapter, credential, capability, price, packet, SKU, revision, or receipt check is missing |
 
 The checked-in default is `dry-run` with a deterministic fixture provider. The
@@ -36,12 +43,13 @@ advertise the three atomic public-write contracts required by Alice.
 `alice doctor` therefore refuses `draft` while its invention, evidence, CAD,
 printing, rich-draft, or authenticated readback dependencies are absent. The
 missing public-write contracts block `live`, not the private-draft milestone.
-The Vibe adapter makes zero public POSTs unless
-revision/packet, SKU/price/currency, and rich-page bindings can all be proved.
+The Vibe adapter makes zero public POSTs unless revision/packet and
+SKU/price/currency bindings can all be proved. Rich page content cannot be a
+precondition because Factory creates it only after publication.
 
-The current activation target is `draft`: automatically create the complete
-private storefront product page and stop. Dee reviews it and uses the existing
-one-click publish control. The checked-in default keeps
+The current activation target is `draft`: create the model-only private
+storefront draft through Workshop and stop. Dee reviews the model and uses the
+existing one-click publish control; Factory then enriches its public page. The checked-in default keeps
 `auto_publish_when_eligible=false`; do not change that value as part of draft
 activation.
 
@@ -51,10 +59,11 @@ separate operator actions:
 1. authenticate Alice's dedicated model seat and configure every real evidence
    and storefront adapter;
 2. deploy a backend publish contract that advertises
-   `packet_hash_bound_publish`, `sku_currency_bound_publish`, and
-   `rich_page_bound_publish`; atomically rejects a stale history/project or an
-   incomplete rich page; applies the reviewed SKU, price, and USD currency; and
-   echoes every accepted history/project/packet/policy/listing binding; and
+   `packet_hash_bound_publish` and `sku_currency_bound_publish`; atomically
+   rejects a stale history/project, applies the reviewed SKU, price, and USD
+   currency, and echoes every accepted history/project/packet/policy/listing
+   binding; expose Factory enrichment through authenticated and anonymous
+   readback; and
 3. rerun `alice doctor` in `live` mode and retain its successful readiness
    report with the deployment record.
 
@@ -352,94 +361,19 @@ Passing these checks enables CAD/DFM work; it is not a print receipt, deployment
 record, or storefront draft. Prototype/production, market, human-playtest, and
 private-draft adapters must still pass their own readiness and evidence gates.
 
-The existing board-game rich-page draft adapter and Vibe public adapter are
-built in. The draft adapter points at one exact `vibe-ideas` production
-checkout and invokes its existing operator; no page-generation command lives in
-Alice. Enable it in `draft` or `live` with absolute paths:
+The Vibe rich-page draft writer is retired. Its compatibility adapter can only
+reconcile a legacy draft that already has Alice's exact sidecar; a new
+invocation fails before provenance, a sender claim, the historical operator,
+or any remote mutation. Do not configure `publish.py`, `publishdesign`, backend
+credentials, cover uploads, or page-copy endpoints as a draft route.
 
-```json
-{
-  "runtime": {"effect_mode": "draft"},
-  "adapters": {
-    "page_builder": {
-      "enabled": true,
-      "workspace": "/srv/vibe-ideas",
-      "workspace_commit": "73d9bfdd85aa3c3ec2f51a7af3e20ac18676498d",
-      "operator_command": [
-        "/srv/vibe-ideas/.venv/bin/python",
-        "/srv/vibe-ideas/board-game/tools/publish.py"
-      ],
-      "interpreter_sha256": "<reviewed-64-hex-interpreter-sha256>",
-      "operator_sha256": "7815a40531ff09d5c301409a5d95651624970fb273ec5259426dcbed7258d118",
-      "operator_dependency_sha256": {
-        "animation_gate.py": "e405c259743f641bfbba60b46beddbdafe15e1a1d355a386ffcfc942efa860ea",
-        "journal.py": "d747326b230f480d1254e22db9499e25e5400c8411b76a246f7bdfbb58a4d740",
-        "telegram.py": "2947466e209e9d35ef6b3332365f6470a75f28c2cdad27a0227ef6a6d632b336"
-      },
-      "publishdesign_sha256": "<reviewed-64-hex-publishdesign-sha256>",
-      "publishdesign_preflight_receipt": "/secure/publishdesign-preflight.json",
-      "publishdesign_preflight_sha256": "<reviewed-64-hex-preflight-receipt-sha256>",
-      "git_binary": "/usr/bin/git",
-      "diagnostic_design_id": "an-existing-private-draft-id-or-slug",
-      "diagnostic_owner_id": "the-exact-24-hex-owner-id",
-      "allowed_project_hosts": ["the-exact-immutable-cdn-host.example"]
-    }
-  }
-}
-```
-
-Replace all angle-bracketed SHA placeholders before loading this configuration;
-they are intentionally invalid activation values. The operator command is
-exactly those two absolute paths. Alice verifies the clean Git commit and every
-configured digest, then internally supplies fixed isolated-Python flags.
-Wrappers, caller-supplied flags, another `publish.py`, symlinked files, tracked
-drift, hidden index flags, replacement refs, bytecode caches, and any unreviewed
-file under `board-game/tools` are rejected. The sole allowed untracked tool is
-the exact hash-pinned `board-game/tools/bin/publishdesign` binary.
-
-The diagnostic design must already be a private draft owned by
-`diagnostic_owner_id`, have a current history, have no published history, and be
-readable through the authenticated owner API. It is a read-only authentication
-probe, not the game being published. `WORKSHOP_SHOP_OWNER_ID` must match that owner.
-Provide `WORKSHOP_SHOP_BACKEND_DIR` and `GOOGLE_APPLICATION_CREDENTIALS` explicitly in
-the owner-only service environment; the backend `.env` and GCS credential JSON
-must be owner-only regular files. A Vibe-workspace `.env` is forbidden, and
-Telegram variables are forced empty. Artifact readback is anonymous but
-restricted to the explicit HTTPS CDN host allowlist above; credentials,
-redirects, query strings, and other hosts are rejected.
-
-The production slug must satisfy one of two audited source contracts. An
-ordinary Vibe workspace still requires `QUEUE.json` state `shipped`. An Alice
-text2game export instead carries the static `alice-text2game-export-v1`
-private-draft contract and explicitly neither requires nor mutates that legacy
-pre-draft owner queue gate. In both cases `project/gate.json` passes, approved
-covers exist, and `publishdesign` plus backend/GCS credentials are configured.
-Alice never uses `--force`. The CAD and DFM adapters must both return the same
-complete relative-path `artifact_hashes` map; text2game handoffs additionally
-bind the original source map and the exact root `idea.json` bytes copied into
-the project. Alice authenticates back to the private draft and downloads/hashes
-those exact artifacts before any prototype or production run can start.
-
-Before setting `enabled: true`, an accountable operator must run the exact
-hash-pinned helper's documented `-dry-run` against the configured backend. It
-must exercise a first import with a real nonempty project archive and at least
-one cover. Its final helper JSON must report `dry_run: true`, `mode: import`,
-the exact owner, `status: draft`, a normalized absolute archive path, positive
-archive bytes, comma-delimited absolute cover paths, and nonempty owner name,
-database, and bucket. A content-only or empty dry run does not prove the draft
-writer. Alice does not run this credential-bearing Mongo/GCS probe
-automatically; that execution requires separate approval. Canonicalize the
-captured JSON with `alice.page_builder.build_publishdesign_preflight_receipt`,
-write it as an owner-only regular file, and put that file's SHA-256 in
-`publishdesign_preflight_sha256`. The receipt binds the Vibe commit, every
-operator/helper hash, owner, backend path and config hashes, GCS credential
-path/hash, and the full captured dry-run result. Alice revalidates it at
-startup, in `doctor`, and immediately before the sender claim. A changed input
-invalidates the receipt.
-
-The supplied Vibe checkout currently has no compiled `publishdesign` or manual
-preflight receipt, so draft readiness correctly remains false until the helper
-is built, reviewed, hashed, dry-run by an accountable operator, and attested.
+Workshop is the only new-draft authority. It accepts the inspected model and
+bounded product facts, creates the durable intent, and sends a model-only
+archive. Factory then generates thumbnails, video, use-case copy, and story
+blocks. Alice may authenticate or anonymously read those results for exact
+history/artifact reconciliation and page verification; she may not replace
+them. Historical Vibe source pins and preflight receipts remain useful only for
+investigating an already-recorded sidecar, not for enabling a writer.
 
 Enable the public Vibe adapter only in `live` and place the dedicated bearer
 token only in the named environment variable:
@@ -475,10 +409,10 @@ order or shipment.
    exporter must not advance or claim the Vibe queue itself.
 3. After Alice's actual gate accepts that workspace, use the audited
    `alice-text2game-export-v1` handoff to run the existing
-   `vibe-ideas` rich-page operator through `ShopDoorAdapter`.
+   Workshop's shared model-only Shop path.
 4. Alice authenticates back to the private design, verifies `status=draft`, the
-   exact design/history/project/artifact hashes, and the complete rules, use
-   case, story, specs, and covers.
+   exact design/history/project/artifact hashes, and that the inventor did not
+   attach page media or copy.
 5. Alice stops. Dee reviews that storefront draft and clicks the existing publish
    control. No Alice public POST is enabled in this mode.
 
@@ -490,20 +424,20 @@ current checkout can publish.
 
 1. The release policy verifies held-out play, a real print, yield, safety/IP,
    economics, and equality of the reviewed and production packet hashes.
-2. Before physical production, the rich-page adapter has already created a
-   private draft through `vibe-ideas` `publish.py`, read it back, and verified
-   the accepted files under its immutable project URL.
+2. Before physical production, Workshop has created a model-only private draft,
+   and Alice has read it back and verified the accepted files under its
+   immutable project URL.
 3. Alice records a publication intent before any public write.
 4. The Vibe adapter publishes the already built Vibe design/history bound into
    that packet and supplies the reviewed SKU, price, and USD currency
-   explicitly. The backend atomically verifies the exact rich-page/history/
-   project precondition and echoes every binding. Alice never regenerates the
-   product after physical validation.
+   explicitly. The backend atomically verifies the exact history/project
+   precondition and echoes every binding. Alice never regenerates the product
+   after physical validation.
 5. A timeout, nonzero operator exit after launch, disconnect, or unverifiable
    receipt after a write is `ambiguous`; never retry it. Read
    remote state and reconcile the original operation.
-6. The existing deployed observer may enrich the product page. Alice polls
-   the anonymous storefront design record and verifies its listing, exact price,
+6. Factory enriches the product page after publish. Alice only polls the
+   anonymous storefront design record and verifies its listing, exact price,
    visuals, story, use case, print specifications, and assembly data.
 7. Only a complete page receipt advances `publish_ready -> page_ready ->
    published`.

@@ -1,68 +1,52 @@
 # Autonomous Workshop
 
-You ask for a toy that doesn't exist. One of the inventors makes it — designs
-it, tests it, prints it, packs it, ships it. A few days later a box shows up at
-your door.
+You wish for a toy that doesn't exist. A few days later, it arrives at your
+door. Not from a shelf. From your imagination. Welcome to Autonomous Workshop,
+where human and AI Inventors come together to make toys the world has never
+seen.
 
-The inventors are AI. Each one likes making a different kind of thing. You say
-what you want in your own words, and your wish goes to the one that fits.
+[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-These are toys for grown-ups, and every one has to pass the same test: **you
-could not have bought it before you asked for it.** Not on Amazon, not in a
-shop, not anywhere.
+## Meet some of the inventors
 
-## The inventors
+Here are five, one for each kind of toy. Many more are coming, and you can
+[build your own](#build-your-own-inventor).
 
-The first five, one for each kind of toy. Many more are coming, and you can
-[build your own](#make-your-own-inventor). The photos show the kind of thing
-each one makes.
-
-### Alice — classics made yours
-
-![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
-*2030 San Francisco Chess Set*
+### Alice — reinvent the classics
 
 Chess, go, dominoes, puzzles — games everyone already knows, made into a set
 that is yours. Alice never touches the rules. She changes what the pieces are,
 so the set is about you. It is judged as an object, not as a game.
-Lives in `inventors/alice/`.
 
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
+![2030 San Francisco Chess Set](docs/images/alice-sf-chess.jpg)
+*2030 San Francisco Chess Set*
 
-### Leo — games that don't exist yet
+### Leo — invent games that don't exist yet
 
-![Blindcap: Duel](docs/images/leo-blindcap-duel.jpg)
-*Blindcap: Duel — $199.99*
+https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
+
+*[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
+— a two-player hidden-information strategy game of mushrooms, probes, and crowns*
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
 Instructions, his AI players must finish the required seeded games and expose
 broken rules, loops, exploits, and weak strategies. Whether customers want to
 play again is learned later from Reviews, after they receive the game.
-Lives in `inventors/leo/`.
 
-- [x] `TASTE.md`
-- [x] Custom Make
-- [x] Custom Playtest
+### Bob — invent machines that move
 
-### Bob — machines that move
+https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 
-![A pocket biplane powered by a rubber band](docs/images/bob-rubber-band-biplane.jpg)
-*A pocket biplane powered by a rubber band*
+*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
+— a palm-size, rubber-band-powered quadruped*
 
 Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
 out of the shape itself. That makes this the hardest kind to get right and the
 best to watch when it works.
-Lives in `inventors/bob/`.
 
-- [x] `TASTE.md`
-- [x] Custom Make
-- [ ] Custom Playtest
-
-### Ivy — science you can hold
+### Ivy — invent science toys you can hold
 
 ![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
 *A solar system with its orbits engraved — $59.99*
@@ -70,13 +54,8 @@ Lives in `inventors/bob/`.
 The planets, a swinging pendulum, a shape that looks impossible — real science,
 small enough to pick up. Ivy says where her numbers came from and what she left
 out, because here being wrong is worse than being boring.
-Lives in `inventors/ivy/`.
 
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
-
-### Eve — little worlds
+### Eve — invent little worlds
 
 ![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
 *A 1:16 Formula 1 car*
@@ -84,150 +63,38 @@ Lives in `inventors/ivy/`.
 Your dog, your bike, your desk, your homelab — turned into a small world you can
 put on a shelf. Anyone can buy a generic model of anything. Eve's only counts if
 it could not have existed before your wish.
-Lives in `inventors/eve/`.
-
-- [x] `TASTE.md`
-- [ ] Custom Make
-- [ ] Custom Playtest
 
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
 
-## The Workshop Manager
+## Build your own inventor
 
-```text
-one person's Wish
-        |
-        v
-every inventor's taste, one line each
-        |
-        v
-the few who might love it -> their taste, read in full
-        |
-        v
-Alice chosen, and told why
-Classics made yours · Taste only
-        |
-        v
-+------------------------------------------------------------------+
-|                        SHARED WORKSHOP                           |
-|                                                                  |
-| Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver  |
-|            ^                    |                                |
-|            +--------------------+                                |
-|                    AI-agent feedback                             |
-+------------------------------------------------------------------+
-        |
-        v
-the approved product -> customer Reviews
-                            |
-                            +-> a better revision of this toy
-                            `-> future Wishes and Makes
+Choose how much the Inventor owns, set the Playtest allowance, then create and
+run it.
 
-Alice supplies taste. Workshop supplies the repeatable work.
-```
-
-The Manager is the front door. Nothing here runs all day looking for something
-to do — your wish is what starts it. For every wish it:
-
-1. reads the one line each inventor wrote about what it likes to make;
-2. picks the few that might want this one;
-3. reads those few in full, and weighs your wish against what each inventor
-   loves, refuses, and knows how to build;
-4. picks one, writes down why in plain words, and hands over your wish and the
-   number of test rounds you paid for.
-
-Two passes, because one line is not enough to choose on and reading a thousand
-long ones costs too much. The short line narrows the field; the long one
-decides. `inventor.json` holds the boring facts — where the code lives, what it
-can do. It is not a second personality.
-
-`TASTE.md` is where an inventor says what it is. A short name and one-line
-description at the top, for the first pass. Then the long version: what it
-loves, what it refuses, when it should say no. It holds judgment, not machinery
-— no CAD, no shipping code.
-
-The Manager is ordinary, tested code. Deciding who gets a real person's wish
-stays in code you can read and check.
-
-The Manager is not a job of its own. It only decides who does the six.
-
-## Five toys, one Workshop
-
-Each built-in inventor made one checked-in toy through the shared Workshop
-Make and Playtest contracts. Together they exercise all five initial lanes,
-all three extension levels, and different Playtest allowances.
-
-| Inventor | Toy | Extension | Playtest allowance | Truthful result |
-|---|---|---|---:|---|
-| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 rounds | Instructions: authenticated draft needed |
-| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 rounds | Instructions: authenticated draft needed |
-| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 rounds | Instructions: authenticated draft needed |
-| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
-| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 rounds | Instructions: authenticated draft needed |
-
-Every bundle contains an exact-geometry render, CAD source, STEP and STL
-files, content-addressed manifests, complete AI Playtest evidence, the in-box
-guide, five exact-product page images, and the Workshop run receipt. All five
-pass Playtest. Their page bundles are sealed; these checked-in runs wait in
-Instructions because no Workshop site credential is present to create and
-authenticate their private drafts. Printing and shipping happen later in
-Deliver. Afterward, an owner may review a draft and make it public outside the
-six-job pipeline. Customer experience is collected after delivery as Reviews.
-
-## The six jobs
-
-Every toy goes through the same six steps:
-
-| Job | What happens |
-|---|---|
-| **Wish** | Keep exactly what the person asked for, word for word, and give it to the chosen inventor. |
-| **Concept** | Decide what the thing actually looks like: lock its physical facts, then draw one consistent set of images — front, top, bottom, an exploded view, and one per part — that Make has to follow. |
-| **Make** | Invent the thing and draw the parts so they can really be printed, building to the concept rather than reinterpreting the wish. |
-| **Playtest** | Have AI agents simulate using or playing it, find problems, and tell Make what to improve until it passes or the rounds run out. |
-| **Instructions** | Write the honest product page and the paper that goes in the box, save and enrich the page as a private Factory draft, and authenticate that exact draft. |
-| **Deliver** | Print it, check it by hand, pack it, and hand it to a carrier. |
-
-Playtest is entirely simulated by AI agents. They play complete games, adopt
-different strategies, try to cheat, stress rules and mechanisms, inspect CAD,
-check science and printability, and return concrete feedback to Make. It is not
-a human print-and-play session and it must not claim that customers had fun.
-Printing, physical QA, packing, and carrier handoff belong to Deliver.
-
-For **games that don't exist yet**, nothing gets written up or shipped until
-this passes:
-
-- **1,000 full games or more, played by AI players** from a fixed seed,
-  poking at the rules, the endings, the balance, the tactics, and the ways to
-  cheat.
-
-What real customers think is learned after delivery through Reviews. Reviews
-can improve a future revision of the same toy as well as future Wishes and
-Makes, but they never rewrite the evidence for the version already shipped.
-Reviews is a public, post-delivery feedback stream—not a sixth inventor job, a
-custom inventor hook, or a gate that holds up the original order.
-
-One kind of proof still never stands in for another: a picture cannot prove the
-parts fit, and a shipping label cannot prove a carrier took the box.
-
-## Three ways to build an inventor
+### 1. Choose an extension level
 
 Start with the least you need.
 
-| Level | The inventor brings | The Workshop brings |
-|---|---|---|
-| **Taste only** (`taste-only`) | `TASTE.md` and a thin profile | Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **Custom Make** (`custom-make`) | `TASTE.md` and its own Make | Playtest and its loop, Instructions, Deliver, storage, files, and connections |
-| **Custom Make + Playtest** (`custom-playtest`) | `TASTE.md`, its own Make, and its own Playtest | The loop around them, Instructions, Deliver, storage, files, and connections |
+| Inventor brings | Workshop supplies |
+|---|---|
+| **`TASTE.md`** | Concept, Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
+| **`TASTE.md` + Custom Make** | Concept, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
+| **`TASTE.md` + Custom Make + Custom Playtest** | Concept, the improvement loop around Make and Playtest, Instructions, Deliver, storage, files, and connections |
 
-Its own Playtest requires its own Make. Instructions and Deliver are always
-shared. Instructions creates the page and in-box guide, preserves the terminal
-`By <Inventor>.` product byline, puts the page in Factory as a private draft,
-and records authenticated draft readback before Deliver can begin. It does not
-make the page public or require an active listing. An owner reviews the draft
-and may make it public later, outside the six-job pipeline. That keeps the
-page, print, and box tied to the exact thing that passed without confusing
-draft creation with release.
+The CLI calls these levels `taste-only`, `custom-make`, and `custom-playtest`.
+
+Custom Playtest requires Custom Make. Instructions and Deliver are always
+shared. Instructions creates the in-box guide and factual content brief,
+preserves the terminal `By <Inventor>.` attribution, puts a model-only handoff
+in Factory as a private draft, and records authenticated draft readback before
+Deliver can begin. It uploads no local marketing images and writes no final
+page copy. The receipt remains `enrichment_status=pending` and
+`page_ready=false` until a separate Factory content pipeline proves otherwise.
+It does not make the page public or require an active listing. An owner reviews
+the finished draft and may make it public later, outside the six-job pipeline.
+
+#### Custom Make
 
 A custom Make is one function. `workshop create inventor … --level custom-make`
 writes it for you, already wired up and waiting:
@@ -248,6 +115,8 @@ def make(context: MakeContext) -> Made:
 Replace the wait: design the thing, write the files into `context.workspace`,
 and return a `Made`. Until you do, a run stops and says what it is waiting for
 instead of inventing a result.
+
+#### Custom Playtest
 
 A custom Playtest is the same shape. `--level custom-playtest` writes this one
 too:
@@ -270,29 +139,7 @@ worse than a note sends the toy back to Make with your notes in
 `context.feedback`, and round 2 begins. That loop is the whole job: Make and
 Playtest talking until the evidence passes or the rounds run out.
 
-### Examples
-
-Each inventor has taken one toy through the shared contracts — all five kinds,
-all three levels. *Playtest rounds* is how many times that wish paid for
-Playtest to test the toy and send it back to Make.
-
-| Inventor | Toy | Level | Playtest rounds |
-|---|---|---|---:|
-| Alice | [Five-Job Checkers](inventors/alice/toys/five-job-checkers/) | Taste only | 2 |
-| Leo | [Counterorbit](inventors/leo/toys/counterorbit/) | Custom Make + Playtest | 10 |
-| Bob | [Comet Geneva](inventors/bob/toys/comet-geneva/) | Custom Make | 4 |
-| Ivy | [Montauk Tide Orrery](inventors/ivy/toys/montauk-tide-orrery/) | Taste only | 3 |
-| Eve | [Rackhaven: Night Shift](inventors/eve/toys/rackhaven-night-shift/) | Taste only | 3 |
-
-Open one to see the render, the CAD source, the STEP and STL files, and the
-receipt for the run. Every check a computer can do has passed — the geometry is
-real, the files reimport, the parts should print. What is missing is the part no
-computer can do: nobody has printed these and put them in someone's hands. Until
-that happens the last two jobs stay locked, and the receipt says so instead of
-calling the toy finished.
-
-
-## How many rounds you get
+### 2. Choose the Playtest allowance
 
 Checkout decides how many times an inventor may improve a toy before it has to
 pass or stop:
@@ -306,7 +153,7 @@ The words of a wish can never buy money or compute — only checkout can. Passin
 early ends it early. Running out of rounds stops the toy before it is written up
 or shipped. More rounds buy more tries, never an easier bar.
 
-## Make your own inventor
+### 3. Create and run it
 
 You need Python 3.9 or newer. Creating one checks the layout and runs its own
 smoke tests before the inventor can receive a wish.

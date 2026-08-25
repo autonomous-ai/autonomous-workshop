@@ -11,9 +11,9 @@ Set the parts on a stable surface, follow the intended interaction shown in the 
 ## What's in the box
 
 - one base
-- one hand crank
+- two axles (one is the hand-crank input axle)
 - one comet drive wheel
-- one six-station Geneva wheel
+- one six-slot orbit wheel
 
 ## Care and safety
 

@@ -8,7 +8,12 @@ from pathlib import Path
 from unittest import mock
 
 from inventor_workshop.artifacts import build_publish_packet
-from inventor_workshop.errors import AmbiguousPublishError, ContractError, PublishError
+from inventor_workshop.errors import (
+    AmbiguousPublishError,
+    ContractError,
+    PublishError,
+    StateConflict,
+)
 from inventor_workshop.launch import (
     HttpResponse,
     Launchpad,
@@ -40,9 +45,73 @@ class LaunchTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.packet = Path(self.temp.name) / "game.zip"
         product = Path(self.temp.name) / "product"
-        product.mkdir()
+        (product / "game_parts").mkdir(parents=True)
         (product / "project.json").write_text('{"id":"game"}\n', encoding="utf-8")
         (product / "game.stl").write_text("solid game\nendsolid game\n", encoding="utf-8")
+        step_content = b"ISO-10303-21;\nEND-ISO-10303-21;\n"
+        (product / "game.step").write_bytes(step_content)
+        occurrence_sources = (
+            ("base-occurrence", b"solid base\nendsolid base\n"),
+            ("orbit-occurrence-one", b"solid orbit\nendsolid orbit\n"),
+            ("orbit-occurrence-two", b"solid orbit\nendsolid orbit\n"),
+        )
+        production_stls = []
+        sidecar_parts = []
+        self.factory_inventory = []
+        for order, (name, content) in enumerate(occurrence_sources):
+            path = "game_parts/%s.stl" % name
+            (product / path).write_bytes(content)
+            part = "%s.stl" % name
+            production_stls.append(
+                {
+                    "order": order,
+                    "name": name,
+                    "mesh_name": name,
+                    "part": part,
+                    "path": path,
+                    "sha256": hashlib.sha256(content).hexdigest(),
+                    "source_path": "cad/parts/%s" % part,
+                }
+            )
+            sidecar_parts.append({"name": name, "stlPath": path})
+            self.factory_inventory.append(
+                {"order": order, "mesh_name": name, "part": part}
+            )
+        sidecar_content = (
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": sidecar_parts,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            + b"\n"
+        )
+        (product / "game.step.json").write_bytes(sidecar_content)
+        facts = {
+            "factory_assembly": {
+                "schema_version": 1,
+                "kind": "factory.occurrence-family",
+                "occurrence_count": len(production_stls),
+                "parts_directory": "game_parts",
+                "production_stls": production_stls,
+                "step": {
+                    "path": "game.step",
+                    "sha256": hashlib.sha256(step_content).hexdigest(),
+                },
+                "sidecar": {
+                    "path": "game.step.json",
+                    "sha256": hashlib.sha256(sidecar_content).hexdigest(),
+                },
+            }
+        }
+        (product / "workshop-product-facts.json").write_text(
+            json.dumps(facts, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
         build_publish_packet(product, self.packet)
         self.artifact_sha = _load_packet(self.packet)[2]
         self.store = InventorStore(Path(self.temp.name) / "state.sqlite")
@@ -51,7 +120,7 @@ class LaunchTest(unittest.TestCase):
     def test_public_packet_inspection_returns_verified_identity(self):
         inspection = inspect_publish_packet(self.packet)
         self.assertEqual(inspection["bytes"], self.packet.stat().st_size)
-        self.assertEqual(inspection["entries"], 3)
+        self.assertEqual(inspection["entries"], 9)
         self.assertEqual(inspection["artifact_sha256"], self.artifact_sha)
         self.assertEqual(
             inspection["packet_sha256"],
@@ -74,7 +143,7 @@ class LaunchTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(
-            ContractError, "valid root project.json.*defining gen_step"
+            ContractError, "top-level.*gen_step.*root project.json.*assembled.stl"
         ):
             coordinator.import_draft(
                 "undiscoverable", packet, {"title": "Undiscoverable"}
@@ -82,6 +151,31 @@ class LaunchTest(unittest.TestCase):
 
         self.assertEqual(transport.calls, [])
         self.assertIsNone(self.store.latest_publish_intent("undiscoverable"))
+
+    def test_project_marker_requires_a_root_primary_model_before_network(self):
+        product = Path(self.temp.name) / "nested-primary"
+        (product / "cad").mkdir(parents=True)
+        (product / "project.json").write_text(
+            '{"id":"nested-primary"}\n', encoding="utf-8"
+        )
+        (product / "cad" / "product.stl").write_text(
+            "solid nested\nendsolid nested\n", encoding="utf-8"
+        )
+        packet = Path(self.temp.name) / "nested-primary.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "nested-primary", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+
+        with self.assertRaisesRegex(ContractError, "root assembled.stl.*<slug>.stl"):
+            Launchpad(
+                self.store, Portal("token", transport=transport), "owner"
+            ).import_draft("nested-primary", packet, {"title": "Nested Primary"})
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("nested-primary"))
 
     def test_import_rejects_nested_generator_that_would_drop_artifact_files(self):
         product = Path(self.temp.name) / "narrowed"
@@ -107,6 +201,37 @@ class LaunchTest(unittest.TestCase):
 
         self.assertEqual(transport.calls, [])
         self.assertIsNone(self.store.latest_publish_intent("narrowed"))
+
+    def test_every_shared_import_rejects_factory_discoverable_local_page_media(self):
+        product = Path(self.temp.name) / "creator-media"
+        (product / "review").mkdir(parents=True)
+        (product / "project.json").write_text(
+            '{"id":"creator-media"}\n', encoding="utf-8"
+        )
+        (product / "toy.step").write_text("exact model\n", encoding="utf-8")
+        (product / "creator-media.stl").write_text(
+            "solid exact\nendsolid exact\n", encoding="utf-8"
+        )
+        (product / "review" / "hero.png").write_bytes(b"creator cover")
+        packet = Path(self.temp.name) / "creator-media.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "creator-media", "reviewed", artifact_sha256=artifact_sha
+        )
+        transport = QueueTransport([])
+
+        with self.assertRaisesRegex(ContractError, "creator page-output|local page media"):
+            Portal("token", transport=transport).import_design(
+                packet, {"title": "Creator Media"}
+            )
+        with self.assertRaisesRegex(ContractError, "creator page-output|local page media"):
+            self.coordinator(transport).import_draft(
+                "creator-media", packet, {"title": "Creator Media"}
+            )
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("creator-media"))
 
     @staticmethod
     def design(status="draft", price_cents=4000):
@@ -190,6 +315,9 @@ class LaunchTest(unittest.TestCase):
             ).fetchone()[0]
         return self.store.get_publish_intent(intent_id)
 
+    def reviewed_factory_palette(self, color="#112233"):
+        return [{**item, "color": color} for item in self.factory_inventory]
+
     def test_draft_then_public_readback(self):
         transport = QueueTransport(
             [
@@ -206,6 +334,465 @@ class LaunchTest(unittest.TestCase):
             self.store.get_publish_intent(draft.intent_id)["state"], "live"
         )
         self.assertEqual([call[0] for call in transport.calls], ["POST", "POST", "GET"])
+
+    def test_public_readback_accepts_factory_generated_copy_and_media(self):
+        enriched = self.design("public")
+        enriched.update(
+            {
+                "title": "Factory-polished title",
+                "description": "Factory-generated product story.",
+                "attachments": [
+                    {
+                        "kind": "video",
+                        "url": "https://cdn.example/generated/product-story.mp4",
+                    },
+                    {
+                        "kind": "image",
+                        "url": "https://cdn.example/generated/product-story.webp",
+                    },
+                ],
+            }
+        )
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, enriched),
+                self.response(200, enriched),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        live = coordinator.publish_live(draft.intent_id, 4000)
+
+        self.assertTrue(live.is_verified_public)
+        publish_body = json.loads(transport.calls[1][3].decode("utf-8"))
+        self.assertNotIn("attachments", publish_body)
+
+    def test_reviewed_occurrence_colors_are_canonical_durable_and_replay_bound(self):
+        reviewed = [
+            {
+                "order": 2,
+                "mesh_name": "orbit-occurrence-two",
+                "part": "orbit-occurrence-two.stl",
+                "color": "#FEDCBA",
+            },
+            {
+                "order": 0,
+                "mesh_name": "base-occurrence",
+                "part": "base-occurrence.stl",
+                "color": "#12151D",
+            },
+            {
+                "order": 1,
+                "mesh_name": "orbit-occurrence-one",
+                "part": "orbit-occurrence-one.stl",
+                "color": "#ABCDEF",
+            },
+        ]
+        public = self.design("public")
+        public["assembly_parts"] = [
+            {
+                "order": 0,
+                "mesh_name": "base-occurrence",
+                "part": "base-occurrence.stl",
+                "color": "#12151d",
+            },
+            {
+                "order": 1,
+                "mesh_name": "orbit-occurrence-one",
+                "part": "orbit-occurrence-one.stl",
+                "color": "#abcdef",
+            },
+            {
+                "order": 2,
+                "mesh_name": "orbit-occurrence-two",
+                "part": "orbit-occurrence-two.stl",
+                "color": "#fedcba",
+            },
+        ]
+        seeded_draft = self.design("draft")
+        seeded_draft["assembly_parts"] = public["assembly_parts"]
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(
+                    200, {"assembly_parts": public["assembly_parts"]}
+                ),
+                self.response(200, seeded_draft),
+                self.response(200, public),
+                self.response(200, public),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        live = coordinator.publish_live(
+            draft.intent_id, 4000, assembly_parts=reviewed
+        )
+
+        self.assertTrue(live.is_verified_public)
+        expected = [
+            {
+                "order": 0,
+                "mesh_name": "base-occurrence",
+                "part": "base-occurrence.stl",
+                "color": "#12151d",
+            },
+            {
+                "order": 1,
+                "mesh_name": "orbit-occurrence-one",
+                "part": "orbit-occurrence-one.stl",
+                "color": "#abcdef",
+            },
+            {
+                "order": 2,
+                "mesh_name": "orbit-occurrence-two",
+                "part": "orbit-occurrence-two.stl",
+                "color": "#fedcba",
+            },
+        ]
+        seed_body = json.loads(transport.calls[1][3].decode("utf-8"))
+        self.assertEqual(seed_body["assembly_parts"], expected)
+        publish_body = json.loads(transport.calls[3][3].decode("utf-8"))
+        self.assertNotIn("assembly_parts", publish_body)
+        intent = self.store.get_publish_intent(draft.intent_id)
+        self.assertEqual(intent["live_request"]["assembly_parts"], expected)
+        self.assertEqual(
+            intent["request"]["_workshop_factory_assembly_inventory"],
+            self.factory_inventory,
+        )
+
+        replay = coordinator.publish_live(
+            draft.intent_id, 4000, assembly_parts=list(reversed(reviewed))
+        )
+        self.assertEqual(replay.to_dict(), live.to_dict())
+        self.assertEqual(len(transport.calls), 5)
+        with self.assertRaisesRegex(StateConflict, "request changed"):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=[
+                    expected[0],
+                    {**expected[1], "color": "#000000"},
+                    expected[2],
+                ],
+            )
+        self.assertEqual(len(transport.calls), 5)
+
+    def test_assembly_colors_reject_shorthand_partial_and_malformed_occurrences(self):
+        transport = QueueTransport([])
+        door = Portal("token", transport=transport)
+        cases = (
+            [],
+            [{"part": "body.stl", "color": "#112233"}],
+            [{"order": 0, "color": "#112233"}],
+            [
+                {
+                    "order": 0,
+                    "mesh_name": "body",
+                    "part": "body.stl",
+                    "color": "#123",
+                }
+            ],
+            [
+                {
+                    "order": 0,
+                    "mesh_name": "body",
+                    "part": "../body.stl",
+                    "color": "#112233",
+                }
+            ],
+            [
+                {
+                    "order": 0,
+                    "mesh_name": "body one",
+                    "part": "body.stl",
+                    "color": "#112233",
+                },
+                {
+                    "order": 0,
+                    "mesh_name": "body two",
+                    "part": "body.stl",
+                    "color": "#445566",
+                },
+            ],
+            [
+                {
+                    "order": 1,
+                    "mesh_name": "body",
+                    "part": "body.stl",
+                    "color": "#112233",
+                }
+            ],
+            [
+                {
+                    "order": True,
+                    "mesh_name": "body",
+                    "part": "body.stl",
+                    "color": "#112233",
+                }
+            ],
+            [
+                {
+                    "order": 0,
+                    "mesh_name": " ",
+                    "part": "body.stl",
+                    "color": "#112233",
+                }
+            ],
+        )
+        for assembly_parts in cases:
+            with self.subTest(assembly_parts=assembly_parts):
+                with self.assertRaises(ContractError):
+                    door.publish(
+                        "game", 4000, assembly_parts=assembly_parts
+                    )
+        with self.assertRaisesRegex(ContractError, "durable Workshop publish intent"):
+            door.publish(
+                "game",
+                4000,
+                assembly_parts=self.reviewed_factory_palette(),
+            )
+        with self.assertRaisesRegex(ContractError, "sealed occurrence inventory"):
+            door.seed_assembly_parts(
+                "game",
+                self.reviewed_factory_palette(),
+            )
+        self.assertEqual(transport.calls, [])
+
+    def test_live_sender_rejects_legacy_shorthand_before_public_effect(self):
+        transport = QueueTransport([self.response(201, self.design("draft"))])
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaisesRegex(ContractError, "complete ordered occurrence"):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=[{"part": "body.stl", "color": "#112233"}],
+            )
+
+        self.assertEqual(len(transport.calls), 1)
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"], "succeeded"
+        )
+
+    def test_live_palette_must_match_sealed_inventory_before_any_live_http(self):
+        transport = QueueTransport([self.response(201, self.design("draft"))])
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+        reviewed = self.reviewed_factory_palette()
+        cases = {
+            "short-but-contiguous": reviewed[:2],
+            "wrong-mesh": [
+                reviewed[0],
+                {**reviewed[1], "mesh_name": "substitute-mesh"},
+                reviewed[2],
+            ],
+            "wrong-part": [
+                reviewed[0],
+                {**reviewed[1], "part": "substitute-part.stl"},
+                reviewed[2],
+            ],
+            "wrong-occurrence-order": [
+                {**reviewed[0], "mesh_name": reviewed[1]["mesh_name"], "part": reviewed[1]["part"]},
+                {**reviewed[1], "mesh_name": reviewed[0]["mesh_name"], "part": reviewed[0]["part"]},
+                reviewed[2],
+            ],
+        }
+
+        for label, assembly_parts in cases.items():
+            with self.subTest(label=label), self.assertRaisesRegex(
+                ContractError, "exact sealed occurrence"
+            ):
+                coordinator.publish_live(
+                    draft.intent_id,
+                    4000,
+                    assembly_parts=assembly_parts,
+                )
+
+        self.assertEqual([call[0] for call in transport.calls], ["POST"])
+        intent = self.store.get_publish_intent(draft.intent_id)
+        self.assertEqual(intent["state"], "succeeded")
+        self.assertIsNone(intent["live_request"])
+
+    def test_live_palette_rejects_model_without_sealed_inventory_before_http(self):
+        product = Path(self.temp.name) / "single"
+        product.mkdir()
+        (product / "project.json").write_text(
+            '{"id":"single"}\n', encoding="utf-8"
+        )
+        (product / "single.stl").write_text(
+            "solid single\nendsolid single\n", encoding="utf-8"
+        )
+        packet = Path(self.temp.name) / "single.zip"
+        build_publish_packet(product, packet)
+        artifact_sha = _load_packet(packet)[2]
+        self.store.register_product(
+            "single", "reviewed", artifact_sha256=artifact_sha
+        )
+        draft_design = {**self.design("draft"), "slug": "single"}
+        transport = QueueTransport([self.response(201, draft_design)])
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft(
+            "single", packet, {"title": "Single"}
+        )
+
+        with self.assertRaisesRegex(ContractError, "sealed occurrence inventory"):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=[
+                    {
+                        "order": 0,
+                        "mesh_name": "single",
+                        "part": "single.stl",
+                        "color": "#112233",
+                    }
+                ],
+            )
+
+        self.assertEqual([call[0] for call in transport.calls], ["POST"])
+
+    def test_public_readback_must_preserve_reviewed_assembly_colors(self):
+        reviewed = self.reviewed_factory_palette()
+        seeded_draft = self.design("draft")
+        seeded_draft["assembly_parts"] = reviewed
+        public = self.design("public")
+        public["assembly_parts"] = [
+            {**reviewed[0], "mesh_name": "wrong-occurrence"},
+            *reviewed[1:],
+        ]
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, {"assembly_parts": reviewed}),
+                self.response(200, seeded_draft),
+                self.response(200, public),
+                self.response(200, public),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaises(AmbiguousPublishError):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=reviewed,
+            )
+
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"],
+            "live_unknown",
+        )
+
+    def test_unknown_draft_seed_resumes_from_the_same_durable_occurrences(self):
+        reviewed = self.reviewed_factory_palette()
+        seeded_draft = self.design("draft")
+        seeded_draft["assembly_parts"] = reviewed
+        public = self.design("public")
+        public["assembly_parts"] = reviewed
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                OSError("connection reset during seed"),
+                self.response(200, self.design("draft")),
+                self.response(200, {"assembly_parts": reviewed}),
+                self.response(200, seeded_draft),
+                self.response(200, public),
+                self.response(200, public),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaises(AmbiguousPublishError):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=reviewed,
+            )
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"],
+            "live_unknown",
+        )
+
+        live = coordinator.reconcile_live(draft.intent_id)
+
+        self.assertTrue(live.is_verified_public)
+        self.assertEqual(
+            [call[0] for call in transport.calls],
+            ["POST", "PATCH", "GET", "PATCH", "GET", "POST", "GET"],
+        )
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["live_request"][
+                "assembly_parts"
+            ],
+            reviewed,
+        )
+
+    def test_server_error_during_draft_seed_is_unknown_and_never_publishes(self):
+        reviewed = self.reviewed_factory_palette()
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(503, {"error": "seed queue unavailable"}),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaisesRegex(AmbiguousPublishError, "seed outcome is unknown"):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=reviewed,
+            )
+
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"],
+            "live_unknown",
+        )
+        self.assertEqual(
+            [call[0] for call in transport.calls],
+            ["POST", "PATCH"],
+        )
+        with self.assertRaises(AmbiguousPublishError):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=reviewed,
+            )
+        self.assertEqual(len(transport.calls), 2)
+
+    def test_shared_sender_rejects_thumbnail_and_attachment_bypasses_before_http(self):
+        transport = QueueTransport([])
+        coordinator = self.coordinator(transport)
+
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.import_draft(
+                "game",
+                self.packet,
+                {"title": "Game"},
+                thumbnail={"filename": "cover.png"},
+            )
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.publish_live(
+                "missing-intent",
+                4000,
+                attachments=[
+                    {"kind": "image", "url": "https://cdn.example/creator.png"}
+                ],
+            )
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            coordinator.publish_live(
+                "missing-intent", 4000, title="Creator replacement"
+            )
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.store.latest_publish_intent("game"))
 
     def test_transport_failure_is_unknown_and_blocks_retry(self):
         transport = QueueTransport([OSError("connection reset")])
@@ -271,6 +858,31 @@ class LaunchTest(unittest.TestCase):
             coordinator.publish_live(draft.intent_id, 4000)
         self.assertEqual(
             self.store.get_publish_intent(draft.intent_id)["state"], "live_unknown"
+        )
+
+    def test_public_live_reconciliation_uses_its_single_authenticated_get(self):
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, self.design("public")),
+                self.response(503, {"error": "readback unavailable"}),
+                self.response(200, self.design("public")),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaises(AmbiguousPublishError):
+            coordinator.publish_live(draft.intent_id, 4000)
+        live = coordinator.reconcile_live(draft.intent_id)
+
+        self.assertTrue(live.is_verified_public)
+        self.assertEqual(
+            [call[0] for call in transport.calls],
+            ["POST", "POST", "GET", "GET"],
+        )
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"], "live"
         )
 
     def test_deterministic_live_rejection_records_attempt_and_allows_correction(self):

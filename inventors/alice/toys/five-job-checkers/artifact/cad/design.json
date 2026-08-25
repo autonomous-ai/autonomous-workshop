@@ -1,6 +1,11 @@
 {
-  "blueprint_sha256": "aa2cc01c516e86bdfd741724e619de4a99b24866f84073fe79a456cd4b433de9",
+  "blueprint_sha256": "3b74057c2d747be170b6e0febbe4223a1fda0ddd1f2d4c1d6f7b3630f8e9a108",
   "design": {
+    "assembled_extents_mm": [
+      132.0,
+      132.0,
+      10.0
+    ],
     "board_mm": [
       132.0,
       132.0,
@@ -17,6 +22,14 @@
       "five-ring": 12,
       "five-spoke": 12
     },
+    "printed_piece_count": 25,
+    "thresholds": [
+      "Wish",
+      "Make",
+      "Playtest",
+      "Instructions",
+      "Deliver"
+    ],
     "wish_features": [
       "five raised threshold markers represent Wish, Make, Playtest, Instructions, Deliver",
       "five-ring and five-spoke motifs distinguish both sides by touch and silhouette",

@@ -51,11 +51,16 @@ from .doors import (
 from .integrations import Adapter
 from .inspection import Inspection
 from .playtest import Playtest
+from .sealed_draft import (
+    CanonicalSlugDoor,
+    SealedDraft,
+    load_sealed_draft,
+    publish_sealed_draft,
+)
 from .deliver import DefaultDeliver
 from .instructions import (
     DefaultInstructions,
     InstructionsSiteWriter,
-    REQUIRED_PRODUCT_IMAGES,
 )
 from .gameplay import (
     ExecutableGame,
@@ -269,11 +274,11 @@ __all__ = [
     "PlaytestResult",
     "Playtested",
     "ProductInstructions",
-    "REQUIRED_PRODUCT_IMAGES",
     "RandomPlayer",
     "ReviewsPolicy",
     "Receipt",
     "ReceiptError",
+    "SealedDraft",
     "Runtime",
     "RoutingContext",
     "RoutingDecision",
@@ -317,11 +322,13 @@ __all__ = [
     "inspect_stl_topology",
     "load_dotenv",
     "load_manifest",
+    "load_sealed_draft",
     "load_finalists",
     "load_taste",
     "load_taste_header",
     "plan_artifact",
     "playful_make_request",
+    "publish_sealed_draft",
     "resolve_schemas_root",
     "retrieve_shortlist",
     "run_game",
@@ -336,6 +343,7 @@ __all__ = [
     "CadInspectionDoor",
     "CadPort",
     "CadVerifierPort",
+    "CanonicalSlugDoor",
     "Clockwork",
     "CreationBrief",
     "CreationResult",

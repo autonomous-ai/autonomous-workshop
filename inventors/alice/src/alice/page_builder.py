@@ -1,14 +1,20 @@
-"""Narrow handoff to the existing Vibe Ideas Shop Door operator.
+"""Read-only compatibility for drafts made by the retired Vibe page writer.
 
-The operator owned by ``reinSPQR/vibe-ideas`` is
-``board-game/tools/publish.py <slug>``.  It packages an already-built game,
-imports it through the Shop Door backend, and authors the private draft's use-case,
-story blocks, print specs, rules file, and cover images.  This
-module deliberately does none of those jobs.  It only:
+The historical operator owned by ``reinSPQR/vibe-ideas`` is
+``board-game/tools/publish.py <slug>``. It packaged an already-built game,
+imported it, and authored the private draft's use-case, story blocks, print
+specs, rules file, and cover images. Inventors must no longer invoke that
+provider-specific writer: Workshop sends the inspected model and product facts,
+then Factory generates page copy and media on the server.
+
+This module retains the strict snapshot and authenticated readback machinery so
+Alice can inspect and reconcile a draft that already has an exact sidecar. For a
+new draft it fails before writing provenance, claiming an effect, launching a
+subprocess, or calling a remote mutation. It only:
 
 * binds the invocation to one candidate version and one exact local project;
-* invokes that operator without any force, public, or regeneration flags;
-* requires a strict receipt and an authenticated draft readback; and
+* refuses every new invocation of that operator;
+* verifies a strict existing receipt with authenticated draft readback; and
 * returns the design/history identity that later print tests and public publish
   must keep using.
 
@@ -42,7 +48,7 @@ from .providers import (
     BoundedProcessTimeout,
     run_bounded_process,
 )
-from .store import DurableStore, StateConflictError
+from .store import DurableStore
 
 
 # Alice speaks Workshop's Shop Door vocabulary. The imported Vibe operator
@@ -54,13 +60,6 @@ _SHOP_ENV_ALIASES = {
     "WORKSHOP_SHOP_BACKEND_DIR": ("VIBE_PORTAL_BACKEND_DIR", "PANDA_BACKEND_DIR"),
     "WORKSHOP_SHOP_APP_URL": ("VIBE_PORTAL_APP_URL", "PANDA_APP_URL"),
 }
-_SHOP_ENV_TO_OPERATOR_ENV = {
-    "WORKSHOP_SHOP_OWNER_ID": "PANDA_OWNER_ID",
-    "WORKSHOP_SHOP_BACKEND_DIR": "PANDA_BACKEND_DIR",
-    "WORKSHOP_SHOP_APP_URL": "PANDA_APP_URL",
-}
-
-
 PAGE_BUILDER_OPERATION = "physical.create_rich_draft"
 PAGE_BUILDER_DIAGNOSTICS_CONTRACT_VERSION = "alice.page-builder.v1"
 REQUIRED_RULES_ARCHIVE_CONTRACT = "project-rules-byte-exact-v1"
@@ -659,21 +658,19 @@ def _verify_text2game_export_handoff(
 
 
 class ShopDoorAdapter:
-    """Send one inspected product through the existing private Shop Door.
+    """Inspect legacy rich drafts; refuse the retired inventor-side writer.
 
     ``operator_command`` must be exactly one absolute interpreter plus the
     existing entry point, for example
     ``[/venv/bin/python, "/srv/vibe-ideas/board-game/tools/publish.py"]``. The
-    adapter appends the validated slug. It never accepts wrappers or appends ``--force``,
-    ``--page``, ``--new-version``, or any public-status option.
+    The command and source pins remain part of reconciliation evidence, but the
+    adapter never launches the command. New drafts must go through Workshop's
+    model-only publishing boundary.
     """
 
     capabilities = (
-        "private_rich_page_draft",
-        "exact_history_handoff",
-        "project_hash_bound_draft",
-        "exact_project_rules_archive",
-        "alice_export_private_draft_gate",
+        "authenticated_server_content_readback",
+        "legacy_rich_draft_reconciliation",
     )
 
     def __init__(
@@ -1605,149 +1602,14 @@ class ShopDoorAdapter:
                 "that draft and create .alice-rich-draft.json before retrying"
             )
 
-        self._assert_workspace_integrity()
-        _write_exact_file(provenance_path, provenance_bytes)
-        # Recheck after the last local preparation and immediately before the
-        # durable single-writer fence that permits the remote import.
-        self._assert_workspace_integrity()
-
-        effect_claim_key = f"alice.effect:rich-draft:{operation_key}"
-        try:
-            self.store.put_state(
-                effect_claim_key,
-                {
-                    "operation": PAGE_BUILDER_OPERATION,
-                    "operation_key": operation_key,
-                    "input_sha256": input_sha256,
-                    "candidate_id": candidate_id,
-                    "candidate_version": candidate_version,
-                    "project_sha256": snapshot.project_sha256,
-                    "vibe_execution": execution_binding,
-                    "status": "sending",
-                },
-                None,
-            )
-        except StateConflictError as exc:
-            raise AmbiguousPageBuilderEffect(
-                "the rich-draft write was already claimed; reconcile its remote "
-                "outcome instead of launching the operator again"
-            ) from exc
-
-        env = dict(self.environment)
-        for workshop_name, operator_name in _SHOP_ENV_TO_OPERATOR_ENV.items():
-            if workshop_name in env:
-                env[operator_name] = env.pop(workshop_name)
-        env["ALICE_OPERATION_KEY"] = operation_key
-        env["ALICE_INPUT_SHA256"] = input_sha256
-        env["ALICE_PROJECT_SHA256"] = snapshot.project_sha256
-        for name in tuple(env):
-            if (
-                name.startswith(("DYLD_", "PYTHON"))
-                or name in {"BASH_ENV", "ENV", "LD_PRELOAD"}
-            ):
-                env.pop(name)
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        env["PYTHONNOUSERSITE"] = "1"
-        # publish.py calls telegram.load_env(), whose setdefault semantics
-        # otherwise rehydrate messaging credentials from the workspace .env.
-        # Explicit empty values keep this private-draft effect single-purpose
-        # and prevent telegram.py from launching its unpinned curl helper.
-        env["TELEGRAM_BOT_TOKEN"] = ""
-        env["TELEGRAM_CHAT_DM"] = ""
-        env["TELEGRAM_CHAT_JOURNAL"] = ""
-        env["TELEGRAM_CHAT_ID"] = ""
-        try:
-            with tempfile.TemporaryDirectory(
-                prefix="alice-page-builder-pycache-"
-            ) as pycache:
-                env["PYTHONPYCACHEPREFIX"] = pycache
-                command = [
-                    str(self._resolved_interpreter),
-                    "-I",
-                    "-B",
-                    "-S",
-                    "-X",
-                    f"pycache_prefix={pycache}",
-                    str(self._expected_operator),
-                    slug,
-                ]
-                run = run_bounded_process(
-                    command,
-                    input_bytes=b"",
-                    cwd=self.workspace,
-                    env=env,
-                    timeout_seconds=self.timeout_seconds,
-                    stdout_limit_bytes=self.maximum_stdout_bytes,
-                    stderr_limit_bytes=self.maximum_stderr_bytes,
-                    shutdown_grace_seconds=self.shutdown_grace_seconds,
-                )
-        except BoundedProcessTimeout as exc:
-            raise AmbiguousPageBuilderEffect(
-                f"rich-page draft operator timed out after {self.timeout_seconds}s; "
-                "the remote write may have completed and must be reconciled"
-            ) from exc
-        except BoundedProcessOutputLimit as exc:
-            raise AmbiguousPageBuilderEffect(
-                f"rich-page draft operator {exc.stream} exceeded its byte limit; "
-                "the remote write may have completed and must be reconciled"
-            ) from exc
-        except OSError as exc:
-            # The durable claim is intentionally irreversible.  We cannot
-            # prove another process did not start the same command, so even a
-            # local spawn error is reconciled rather than retried.
-            raise AmbiguousPageBuilderEffect(
-                f"rich-page draft operator could not be observed after its "
-                f"single-writer claim ({type(exc).__name__})"
-            ) from exc
-
-        if run.returncode != 0:
-            raise AmbiguousPageBuilderEffect(
-                f"rich-page draft operator exited {run.returncode} after launch; "
-                "the backend import may have committed and must be reconciled; "
-                f"stderr_sha256={run.stderr_sha256}; stderr_bytes={run.stderr_bytes}"
-            )
-
-        try:
-            stdout = run.stdout.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise AmbiguousPageBuilderEffect(
-                "draft operator completed but stdout was not UTF-8; reconcile the remote write"
-            ) from exc
-
-        try:
-            local_receipt: Mapping[str, Any]
-            if published_path.is_file():
-                local_receipt = _load_object(published_path, "upstream published.json")
-            else:
-                local_receipt = _strict_stdout_receipt(stdout)
-
-            normalized = self._verify_remote(
-                local_receipt,
-                requested_slug=slug,
-                operation_key=operation_key,
-                input_sha256=input_sha256,
-                project=snapshot,
-                artifact_hashes=expected_artifacts,
-                provenance_sha256=hashlib.sha256(provenance_bytes).hexdigest(),
-                candidate_id=candidate_id,
-                candidate_version=candidate_version,
-                candidate_content_sha256=candidate_content_sha256,
-                rules_sha256=rules_sha256,
-                rules_file_sha256=rules_file_sha256,
-                text2game_binding=text2game_binding,
-            )
-        except AmbiguousPageBuilderEffect:
-            raise
-        except Exception as exc:
-            raise AmbiguousPageBuilderEffect(
-                "draft operator finished but its exact receipt/readback could not be verified; "
-                "do not invoke it again"
-            ) from exc
-        normalized["operator_stdout_sha256"] = hashlib.sha256(
-            run.stdout
-        ).hexdigest()
-        _write_sidecar(sidecar_path, normalized)
-        return _adapter_receipt(normalized, input_sha256, started)
+        # This is the last safe point in the compatibility reader. Everything
+        # above is local validation or authenticated read-only reconciliation;
+        # no writer implementation remains behind this refusal.
+        raise PageBuilderError(
+            "Alice's inventor-side rich-page writer is retired: send the "
+            "inspected model through Workshop and let Factory generate "
+            "use-case, story blocks, images, and video on the server"
+        )
 
     def _verify_remote(
         self,
@@ -2074,21 +1936,6 @@ def _verify_artifact_files(project: Path, artifact_hashes: Mapping[str, str]) ->
             raise PageBuilderError(f"accepted artifact changed: {relative}")
 
 
-def _strict_stdout_receipt(stdout: str) -> Mapping[str, Any]:
-    lines = [line.strip() for line in stdout.splitlines() if line.strip()]
-    if not lines:
-        raise PageBuilderError("draft operator produced no receipt")
-    try:
-        value = json.loads(lines[-1])
-    except json.JSONDecodeError as exc:
-        raise PageBuilderError(
-            "draft operator created no published.json and returned no strict JSON receipt"
-        ) from exc
-    if not isinstance(value, Mapping):
-        raise PageBuilderError("draft operator receipt must be a JSON object")
-    return value
-
-
 def _verify_sidecar_binding(
     receipt: Mapping[str, Any],
     *,
@@ -2137,24 +1984,6 @@ def _load_object(path: Path, label: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
         raise PageBuilderError(f"{label} must contain a JSON object")
     return value
-
-
-def _write_sidecar(path: Path, receipt: Mapping[str, Any]) -> None:
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    encoded = json.dumps(
-        dict(receipt),
-        indent=2,
-        sort_keys=True,
-        ensure_ascii=False,
-        allow_nan=False,
-    ) + "\n"
-    try:
-        temporary.write_text(encoded, encoding="utf-8")
-        temporary.replace(path)
-    except OSError as exc:
-        raise AmbiguousPageBuilderEffect(
-            "draft exists but Alice could not persist its exact binding sidecar"
-        ) from exc
 
 
 def _canonical_document(value: Mapping[str, Any]) -> bytes:

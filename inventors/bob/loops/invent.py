@@ -1460,19 +1460,15 @@ def _compute_components(slug, lane, records):
 #: the ai-created tag, never a paragraph of explanation.
 DISCLOSURE_LINE = "By Bob."
 
-#: curate()'s content walls (harness/send.py BODY_RUNES/LEAD_RUNES): a
-#: use-case/story body must land in 180-400 runes, a lead/label in 1-40.
-#: The fallback listing has to clear them DETERMINISTICALLY — the agentless
-#: path previously omitted use_case/story_blocks entirely, so curate()
-#: refused every degraded publish (pre-launch verify finding).
+#: Historical page-content walls. These keep local product facts concise for
+#: evidence and future server ingestion; Bob's retired curate() path never
+#: sends them to Factory.
 _WALL_BODY_RUNES = (180, 400)
 _WALL_LEAD_RUNES = (1, 40)
 
 
 def _wall_body(seed_text):
-    """Stretch/trim deterministic copy into curate()'s 180-400-rune body
-    wall. Markup chars are swapped out (the server rejects '<'/'>'), the
-    rules-pointer sentence pads up to the floor, the cap cuts the rest."""
+    """Stretch/trim deterministic local product facts to a concise body."""
     body = " ".join((seed_text or "").split())
     body = body.replace("<", "(").replace(">", ")")
     filler = (" The complete rules ship with the printed files as RULES.md:"
@@ -1546,9 +1542,9 @@ def _page_kit(slug, game):
         desc = ("%s %s players. %d printed parts. The complete rules ship "
                 "with the files as RULES.md. %s"
                 % (pitch, idea.get("players", "2-4"), parts, DISCLOSURE_LINE))
-        # use_case + 2 story blocks, derived from bill.json/rules and sized
-        # to curate()'s walls — the platform's content pipeline can polish,
-        # but the degraded kit must be publishable AS IS.
+        # Local use_case + story facts are derived from bill.json/rules for
+        # evidence and future server ingestion. Bob never writes them to the
+        # Factory page.
         listing = {
             "title": game.get("title", slug),
             "description": desc[:900],
@@ -1562,8 +1558,7 @@ def _page_kit(slug, game):
                     "same day." % (pitch, idea.get("players", "2-4"))),
             },
             "story_blocks": [
-                # "lead" is the key curate()'s walls read; "label" mirrors
-                # the page-writer contract so downstream readers agree.
+                # Keep both names for older local evidence readers.
                 {"lead": "What you print", "label": "What you print",
                  "body": _wall_body("%d parts: %s." % (parts, part_names))},
                 {"lead": "How it plays", "label": "How it plays",
@@ -1687,21 +1682,15 @@ def _send(slug, game, score_value):
     if errors:
         queue.park(slug, "send validator red: %s" % "; ".join(errors))
         return
+    # Workshop sends only the inspected model and product facts. Factory owns
+    # all rich copy and media generation; Bob must never PATCH/PUT those page
+    # surfaces himself.
     send.send_draft(slug)   # advances reviewed -> published itself
-    try:
-        send.curate(slug)
-    except Exception as exc:  # noqa: BLE001 — page copy never blocks a flip
-        # The design itself is already imported and correct; only the
-        # curated page copy failed, and the platform's own content
-        # pipeline can fill the page after import (Dee 2026-08-22). A
-        # publishable game must never park on page copy.
-        _warn("curate failed for %s — continuing to the flip: %s: %s"
-              % (slug, type(exc).__name__, exc))
     # Draft-first (Dee 2026-08-22, second ruling): "publish draft is fine.
     # it's one click for me to review for now. once it's ok, we'll make it
     # auto publish." The flip is opt-in via BOB_AUTO_FLIP=1 — until quality
-    # is proven on real listings, Bob imports + curates and the human's one
-    # click in admindash takes it public.
+    # is proven on real listings, Bob imports through Workshop and the human's
+    # one click in admindash takes it public. Factory enriches the page.
     try:
         make_public = _send_setting(
             "BOB_SHOP_PUBLIC", "BOB_AUTO_FLIP", "0"

@@ -57,6 +57,23 @@ class StoreTest(unittest.TestCase):
             **metadata,
         }
 
+    def test_store_has_no_creator_page_effect_authority(self):
+        with closing(sqlite3.connect(str(self.store.path))) as connection:
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+        self.assertNotIn("shop_effects", tables)
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            self.store.prepare_shop_effect(
+                "unused",
+                "media-upload",
+                "hero",
+                {"instructions_sha256": SHA},
+            )
+
     def test_revision_fence_and_hash_chain(self):
         product = self.store._transition("game", "idea", "rules", 0, SHA, {"why": "ok"})
         self.assertEqual(product["revision"], 1)

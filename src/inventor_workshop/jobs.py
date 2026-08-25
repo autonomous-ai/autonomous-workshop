@@ -21,8 +21,13 @@ _SEVERITIES = frozenset(("note", "improve", "block"))
 _RUN_STATUSES = frozenset(("working", "waiting", "ready", "delivered", "stopped"))
 _CARRIERS = frozenset(("USPS", "UPS", "FedEx"))
 _DELIVERY_STATUSES = frozenset(("handed-off", "delivered"))
-_INSTRUCTIONS_MEDIA_ROLES = frozenset(("hero", "play", "detail", "parts", "box"))
-_INSTRUCTIONS_IMAGE_SUFFIXES = frozenset((".png", ".jpg", ".jpeg", ".webp"))
+_FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES = frozenset(
+    (
+        ".avi", ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg",
+        ".m4v", ".mkv", ".mov", ".mp4", ".png", ".svg", ".tif",
+        ".tiff", ".webm", ".webp",
+    )
+)
 
 CONCEPT_OVERALL_ROLES: Tuple[str, ...] = ("front", "top", "bottom", "exploded")
 CONCEPT_DESCRIPTOR_FILENAME = "concept.json"
@@ -335,7 +340,7 @@ class ConceptBrief:
 
 
 def _safe_concept_image(root: Path, value: Any, label: str) -> str:
-    """Apply the Instructions media path rules to one concept image path."""
+    """Confine one concept image path to the sealed concept root."""
 
     if not isinstance(value, str) or not value:
         raise ContractError("concept image %s must be a relative path" % label)
@@ -791,13 +796,13 @@ class InstructionsContext:
 
 @dataclass(frozen=True)
 class ProductInstructions:
-    """One sealed box insert and authenticated site draft for the exact Make.
+    """One sealed box insert, factual brief, and authenticated model draft.
 
-    Instructions is not complete merely because local copy and images exist.  The
-    site receipt binds the complete Instructions tree (page, paper, and media) to
-    an authenticated private draft for the exact product artifact.  A verified
-    public receipt remains accepted for older/custom writers, but public
-    visibility is not part of the shared Instructions job.
+    Factory owns customer-facing copy and media. The site receipt binds the
+    complete Instructions tree (facts and paper) to an authenticated private
+    draft for the exact product artifact. A verified public receipt remains
+    accepted for older/custom writers, but public visibility is not part of the
+    shared Instructions job.
     """
 
     root: Path
@@ -850,9 +855,13 @@ class ProductInstructions:
             "ProductInstructions product.json",
             nonempty=True,
         )
-        if page.get("status") != "ready":
+        if (
+            page.get("schema_version") != 2
+            or page.get("kind") != "workshop.instructions-facts"
+            or page.get("status") != "facts-ready"
+        ):
             raise ContractError(
-                "ProductInstructions product.json must be sealed and ready for the site"
+                "ProductInstructions product.json must be a sealed factual handoff"
             )
         if page.get("product_artifact_sha256") != self.product_artifact_sha256:
             raise ContractError(
@@ -865,54 +874,33 @@ class ProductInstructions:
         )
         if page_claims != claims:
             raise ContractError(
-                "ProductInstructions claims differ from the sealed product page"
+                "ProductInstructions claims differ from the sealed product facts"
             )
-        images_value = page.get("images")
-        if (
-            not isinstance(images_value, Mapping)
-            or set(images_value) != _INSTRUCTIONS_MEDIA_ROLES
-        ):
+        forbidden_page_fields = {"images", "use_case", "story_blocks"} & set(page)
+        if forbidden_page_fields:
             raise ContractError(
-                "ProductInstructions product.json requires hero, play, detail, "
-                "parts, and box images"
+                "ProductInstructions cannot contain creator-owned page copy or media: %s"
+                % sorted(forbidden_page_fields)
             )
-        image_paths = []
-        resolved_root = root.resolve(strict=True)
-        for role in sorted(_INSTRUCTIONS_MEDIA_ROLES):
-            relative_value = images_value[role]
-            relative = (
-                Path(relative_value)
-                if isinstance(relative_value, str)
-                else Path(".")
-            )
-            if (
-                not isinstance(relative_value, str)
-                or not relative_value
-                or relative.is_absolute()
-                or ".." in relative.parts
-                or "\\" in relative_value
-                or relative.suffix.casefold() not in _INSTRUCTIONS_IMAGE_SUFFIXES
-            ):
-                raise ContractError(
-                    "ProductInstructions %s image must be a safe relative image path"
-                    % role
-                )
-            try:
-                image_path = (root / relative).resolve(strict=True)
-                image_path.relative_to(resolved_root)
-            except (OSError, ValueError) as exc:
-                raise ContractError(
-                    "ProductInstructions %s image is missing or outside its root"
-                    % role
-                ) from exc
-            if not image_path.is_file():
-                raise ContractError(
-                    "ProductInstructions %s image must be a regular file" % role
-                )
-            image_paths.append(relative.as_posix())
-        if len(set(image_paths)) != len(_INSTRUCTIONS_MEDIA_ROLES):
+        enrichment = page.get("factory_enrichment")
+        if enrichment != {
+            "copy_owner": "factory",
+            "media_owner": "factory",
+            "status": "pending",
+        }:
             raise ContractError(
-                "ProductInstructions requires a distinct file for every image role"
+                "ProductInstructions must leave Factory copy and media enrichment pending"
+            )
+        forbidden_media = [
+            entry.path
+            for entry in self.manifest.entries
+            if Path(entry.path).suffix.casefold()
+            in _FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES
+        ]
+        if forbidden_media:
+            raise ContractError(
+                "ProductInstructions cannot seal local page media: %s"
+                % forbidden_media
             )
         self._assert_site_receipt()
         object.__setattr__(self, "root", root.resolve(strict=True))
@@ -953,7 +941,7 @@ class ProductInstructions:
             != self.manifest.artifact_sha256
         ):
             raise ContractError(
-                "ProductInstructions site Receipt describes different page, paper, or media bytes"
+                "ProductInstructions site Receipt describes different facts or paper bytes"
             )
 
     def _site_page_url(self) -> str:

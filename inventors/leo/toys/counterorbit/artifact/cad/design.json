@@ -1,6 +1,8 @@
 {
-  "blueprint_sha256": "e2c69b700f99162be8de8d4eb078adc052cfc7c94fb41c3f56daf08bdb7fdeb8",
+  "blueprint_sha256": "bc28c3590ee202c21de2ba21b556c02df61b58b7649dc80317249c8a7080138a",
   "design": {
+    "assembled_diameter_mm": 104.0,
+    "fixed_core_diameter_mm": 70.0,
     "inner_wells": 5,
     "kind": "original-two-player-orbit-game",
     "maximum_turns": 10,
@@ -12,7 +14,26 @@
       "adversarial"
     ],
     "players": 2,
+    "playtest_evidence": {
+      "claim_scope": "executability and termination only; not balance or fun",
+      "first_seat_win_rate": 0.815833,
+      "simulated_games": 1200,
+      "style_matchups": 16,
+      "terminating_games": 1200
+    },
+    "printed_piece_count": 12,
+    "token_diameter_mm": 7.4,
+    "token_styles": {
+      "ring": 5,
+      "spoke": 5
+    },
     "tokens_per_player": 5,
+    "turn": [
+      "place one signal in any empty inner or outer well",
+      "rotate the outer orbit exactly one notch clockwise or counterclockwise",
+      "check the occupied inner station and its two currently framed outer wells for a wedge"
+    ],
+    "win_condition": "a three-signal wedge wins; if both players complete one on the same move, the mover wins",
     "wish_features": [
       "five inner stations are the five Workshop jobs",
       "the shared rotating orbit changes adjacency after every placement",

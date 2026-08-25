@@ -1,0 +1,28 @@
+{
+  "artifact_sha256": "9cc1f969ee21c424ceadb6299949faf67364c8a7cbb14e8ede112eddbd119880",
+  "config_sha256": "6e899ce7c6fe6ec1c77b844f83c80d64d122c631a8ae6bd647c7dcbc952afa10",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "3.0.0",
+  "evidence": {
+    "agent_roles": [
+      "first-time chess player",
+      "competitive chess player",
+      "low-color-vision player",
+      "NYC design critic",
+      "print breaker",
+      "adversarial player"
+    ],
+    "evidence_class": "ai-simulation",
+    "mesh_passed": 13,
+    "physical_print": false,
+    "result_file_sha256": "795450b219a23c0c7bb5ebe585375ebbba642a42a7c1fa2bbdc47a63fee47c1e",
+    "slicer_backed": true,
+    "thickness_passed": 13,
+    "warning": "[error] Invalid T command (T65535)."
+  },
+  "evidence_ref": "results/print-test.json",
+  "evidence_sha256": "795450b219a23c0c7bb5ebe585375ebbba642a42a7c1fa2bbdc47a63fee47c1e",
+  "inspection_id": "print-test",
+  "observed_at": "2026-08-24T11:24:53+00:00",
+  "passed": true
+}

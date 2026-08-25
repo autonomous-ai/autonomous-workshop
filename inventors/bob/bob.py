@@ -295,7 +295,6 @@ def cmd_send(args):
             print("  - %s" % e)
         return 1
     send.send_draft(args.slug)
-    send.curate(args.slug)
     if args.price_cents:
         send.flip_public(args.slug, args.price_cents)
         print("sent %s to the shop at %d cents" % (args.slug, args.price_cents))

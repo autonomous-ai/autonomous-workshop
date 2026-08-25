@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
+  "artifact_sha256": "c33e3f6ddde9a554f951ba94dbace931e985b5bafc163185be2e601f13079e2b",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -8,15 +8,15 @@
     "instructions_created": true,
     "physical_prototype": false,
     "real_step_and_stl": true,
-    "site_draft_verified": true,
+    "site_draft_verified": false,
     "site_page_live": false,
     "step_reimported": true,
     "typed_evidence_contract_validated": true,
     "typed_workshop_run": true
   },
-  "blueprint_sha256": "af2e316480e76000238594ca0a0ce0c2312e3b957fdc4f1a2df562456e9558d5",
-  "evidence_sha256": "9c873d14dad20ff359b9869d0662ae2335438642f6caa8cc84acfd6010bd143a",
-  "instructions_sha256": "03372d82a1f6a38001d6972183d996b4e9617350bc260a364335df0daa0f8fa9",
+  "blueprint_sha256": "8edc5b2d1c3e8ed2d1e513151a70fac2ddce7fe1a0d72924bd31eadfffe1b117",
+  "evidence_sha256": "f1c8a812021e19066987dd219a83edcae7ef027e5249019ca058c4ae6fbdffc3",
+  "instructions_sha256": "c67978dc6b11cb32ec77b031ec2db7cc3818d17645e2e17fcc09153ce41b9e44",
   "inventor": {
     "extension_level": "custom-make",
     "id": "bob",
@@ -25,19 +25,19 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
+    "artifact_sha256": "c33e3f6ddde9a554f951ba94dbace931e985b5bafc163185be2e601f13079e2b",
     "delivery": null,
-    "instructions_sha256": "03372d82a1f6a38001d6972183d996b4e9617350bc260a364335df0daa0f8fa9",
-    "job": "deliver",
+    "instructions_sha256": null,
+    "job": "instructions",
     "needs": [
       {
-        "capability": "production-and-shipping",
-        "instructions": "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
-        "job": "deliver",
-        "reason": "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured."
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
       }
     ],
-    "page_url": "https://www.autonomous.ai/factory/product/comet-geneva",
+    "page_url": null,
     "playtest_rounds": 4,
     "product_id": "comet-geneva",
     "round": 1,
@@ -46,45 +46,11 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "e21753190796624e2abb59cd6928619eef64915c55cd6759a806aa6e4f2ba5ac",
+    "builder_sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },
-  "site_receipt": {
-    "artifact_sha256": "dfef566ac401d81c494a224cafe48568773c018cc8a156909b9cd07d9122a447",
-    "current_history_id": "6a8be9626ddacb62db04c4d9",
-    "design_id": "6a8be9626ddacb62db04c4d8",
-    "details": {
-      "cover_sha256": "5e6a62e4dda37b709dc4c0dacb8100c99d51bf074cc00af9388cba1ba36c449b",
-      "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8be9626ddacb62db04c4d8/cover.png",
-      "instructions_sha256": "03372d82a1f6a38001d6972183d996b4e9617350bc260a364335df0daa0f8fa9",
-      "kind": "shop-design",
-      "media_sha256": {
-        "box": "f95eb4996596b4a270942eeebaf13c86f6031b047e869fd628cf31e058a14c5e",
-        "detail": "482e5bfc22b207ffe1baa595da48dfa863ed360d45084ce7716daaf1699358e6",
-        "hero": "5e6a62e4dda37b709dc4c0dacb8100c99d51bf074cc00af9388cba1ba36c449b",
-        "parts": "72a12630c7d59fee81b2e0041549a3935a66ae3d416f82d2d43c460f47793237",
-        "play": "181889743dec7cea63dfb53be6427305b55b064c792b883abc25f946017e68f9"
-      },
-      "page_content_sha256": "c4a5811816ff07237c64b536ab413dd637721dcd299f2a24fda9e3a2119763bd",
-      "page_url": "https://www.autonomous.ai/factory/product/comet-geneva",
-      "playtest_evidence_sha256": "9c873d14dad20ff359b9869d0662ae2335438642f6caa8cc84acfd6010bd143a"
-    },
-    "door": "shop",
-    "listing_active": null,
-    "listing_currency": null,
-    "listing_price_cents": null,
-    "listing_sku": null,
-    "observed_at": "2026-08-24T06:49:12.353884+00:00",
-    "owner_id": "6a4dfe7a83c93d8bdf733ac0",
-    "pack_sha256": "87fc8aa6eb8c8364bcecd295c6edb7b4a46859c85df4947ce02eabb83cb34a6b",
-    "project_url": "https://cdn.autonomous.ai/panda-social/6a8be9626ddacb62db04c4d8/6a8be9626ddacb62db04c4d9/",
-    "published_history_id": null,
-    "reference": "6a8be9626ddacb62db04c4d8",
-    "root_id": "6a8be9626ddacb62db04c4d8",
-    "slug": "comet-geneva",
-    "status": "draft"
-  },
+  "site_receipt": null,
   "taste_sha256": "ce2db44b057b79bc2e385daf1dec3024311a434aec39123514fdb0d5ef11cf50",
   "wish": {
     "constraints": {

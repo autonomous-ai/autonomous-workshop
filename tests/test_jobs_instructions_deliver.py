@@ -6,10 +6,7 @@ from pathlib import Path
 
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
-from inventor_workshop.instructions import (
-    DefaultInstructions,
-    REQUIRED_PRODUCT_IMAGES,
-)
+from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import ArtifactError, ContractError
 from inventor_workshop.jobs import (
     DeliverContext,
@@ -120,17 +117,6 @@ class WorkshopJobFixture(unittest.TestCase):
         )
 
     @staticmethod
-    def media_maker(context: InstructionsContext):
-        images = context.workspace / "images"
-        images.mkdir(parents=True)
-        paths = {}
-        for role in REQUIRED_PRODUCT_IMAGES:
-            path = images / (role + ".png")
-            path.write_bytes(("fake PNG for %s\n" % role).encode("utf-8"))
-            paths[role] = path.relative_to(context.workspace).as_posix()
-        return paths
-
-    @staticmethod
     def site_writer(context, sealed_root, sealed_manifest):
         del sealed_root
         return Receipt(
@@ -154,7 +140,7 @@ class WorkshopJobFixture(unittest.TestCase):
     def generated_instructions(
         self, name: str = "instructions"
     ) -> ProductInstructions:
-        return DefaultInstructions(self.media_maker, self.site_writer)(
+        return DefaultInstructions(site_writer=self.site_writer)(
             self.instructions_context(name)
         )
 
@@ -271,27 +257,21 @@ class JobBindingTest(WorkshopJobFixture):
 
 
 class InstructionsJobTest(WorkshopJobFixture):
-    def test_instructions_wait_truthfully_when_no_media_provider_exists(self):
+    def test_instructions_wait_truthfully_when_no_site_writer_exists(self):
         context = self.instructions_context("waiting-instructions")
         with self.assertRaises(WaitingFor) as raised:
             DefaultInstructions()(context)
-        self.assertEqual(len(raised.exception.needs), 2)
+        self.assertEqual(len(raised.exception.needs), 1)
         self.assertTrue(all(isinstance(need, Need) for need in raised.exception.needs))
         self.assertEqual(
             {need.capability for need in raised.exception.needs},
-            {"product-images", "site-page"},
+            {"site-page"},
         )
         self.assertFalse(context.workspace.exists())
 
-    def test_instructions_wait_when_images_exist_but_site_access_is_missing(self):
-        context = self.instructions_context("site-waiting-instructions")
-        with self.assertRaises(WaitingFor) as raised:
-            DefaultInstructions(self.media_maker)(context)
-        self.assertEqual(
-            [(need.job, need.capability) for need in raised.exception.needs],
-            [("instructions", "site-page")],
-        )
-        self.assertFalse(context.workspace.exists())
+    def test_instructions_reject_retired_creator_media_provider(self):
+        with self.assertRaisesRegex(ContractError, "Factory owns"):
+            DefaultInstructions(media_maker=lambda context: {})
 
     def test_instructions_reject_site_receipt_for_unverified_or_different_bytes(self):
         def unverified(context, sealed_root, sealed_manifest):
@@ -302,7 +282,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             return Receipt.from_dict(value)
 
         with self.assertRaisesRegex(ContractError, "authenticated private draft"):
-            DefaultInstructions(self.media_maker, unverified)(
+            DefaultInstructions(site_writer=unverified)(
                 self.instructions_context("unverified-site-instructions")
             )
 
@@ -316,20 +296,9 @@ class InstructionsJobTest(WorkshopJobFixture):
             }
             return Receipt.from_dict(value)
 
-        with self.assertRaisesRegex(ContractError, "different page"):
-            DefaultInstructions(self.media_maker, wrong_page)(
+        with self.assertRaisesRegex(ContractError, "different facts"):
+            DefaultInstructions(site_writer=wrong_page)(
                 self.instructions_context("wrong-site-instructions")
-            )
-
-    def test_instructions_require_every_fixed_image_role(self):
-        def incomplete(context):
-            media = self.media_maker(context)
-            del media["box"]
-            return media
-
-        with self.assertRaisesRegex(ContractError, "box"):
-            DefaultInstructions(incomplete, self.site_writer)(
-                self.instructions_context("incomplete-instructions")
             )
 
     def test_verified_public_receipt_remains_compatible_for_custom_writers(self):
@@ -348,43 +317,19 @@ class InstructionsJobTest(WorkshopJobFixture):
             )
             return Receipt.from_dict(value)
 
-        instructions = DefaultInstructions(self.media_maker, public_writer)(
+        instructions = DefaultInstructions(site_writer=public_writer)(
             self.instructions_context("legacy-public-instructions")
         )
         self.assertTrue(instructions.is_public)
         self.assertTrue(instructions.site_receipt.is_verified_public)
-
-    def test_instructions_reject_one_file_claimed_as_every_fixed_view(self):
-        def repeated(context):
-            path = context.workspace / "one.png"
-            path.write_bytes(b"not five distinct views")
-            return {role: "one.png" for role in REQUIRED_PRODUCT_IMAGES}
-
-        with self.assertRaisesRegex(ContractError, "distinct"):
-            DefaultInstructions(repeated, self.site_writer)(
-                self.instructions_context("repeated-instructions")
-            )
-
-    def test_instructions_reject_media_outside_workspace(self):
-        outside = self.root / "outside.png"
-        outside.write_bytes(b"outside")
-
-        def escaped(context):
-            media = self.media_maker(context)
-            media["hero"] = "../outside.png"
-            return media
-
-        with self.assertRaisesRegex(ContractError, "stay inside"):
-            DefaultInstructions(escaped, self.site_writer)(
-                self.instructions_context("escaped-instructions")
-            )
 
     def test_instructions_output_is_box_ready_and_page_preserves_provenance(self):
         instructions = self.generated_instructions("complete-instructions")
         page = json.loads(
             (instructions.root / "product.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(page["status"], "ready")
+        self.assertEqual(page["status"], "facts-ready")
+        self.assertEqual(page["kind"], "workshop.instructions-facts")
         self.assertEqual(
             page["summary"],
             "A tiny bluffing game with a satisfying reveal.\n\nBy Alice.",
@@ -392,7 +337,11 @@ class InstructionsJobTest(WorkshopJobFixture):
         self.assertEqual(page["instructions_kind"], "rulebook")
         self.assertEqual(page["how_to_play"], "Choose, commit, and reveal.")
         self.assertNotIn("how_to_use", page)
-        self.assertEqual(set(page["images"]), set(REQUIRED_PRODUCT_IMAGES))
+        self.assertFalse({"images", "use_case", "story_blocks"} & set(page))
+        self.assertEqual(
+            page["factory_enrichment"],
+            {"copy_owner": "factory", "media_owner": "factory", "status": "pending"},
+        )
         self.assertEqual(page["product_artifact_sha256"], self.made.artifact_sha256)
         claim = page["claims"]["gameplay-league"]
         result = self.playtested.evidence.results[0]
@@ -437,7 +386,7 @@ class InstructionsJobTest(WorkshopJobFixture):
             self.playtested,
             self.root / "moving-machine-instructions",
         )
-        instructions = DefaultInstructions(self.media_maker, self.site_writer)(context)
+        instructions = DefaultInstructions(site_writer=self.site_writer)(context)
         page = json.loads(
             (instructions.root / "product.json").read_text(encoding="utf-8")
         )
@@ -461,17 +410,18 @@ class InstructionsJobTest(WorkshopJobFixture):
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
             instructions.assert_current()
 
-    def test_instructions_detect_product_tampering_before_calling_media_provider(self):
+    def test_instructions_detect_product_tampering_before_calling_site_writer(self):
         context = self.instructions_context("product-tamper-instructions")
         (self.product_root / "rules.md").write_text("changed\n", encoding="utf-8")
         calls = []
 
-        def media(observed):
+        def writer(observed, sealed_root, sealed_manifest):
+            del sealed_root
             calls.append(observed)
-            return self.media_maker(observed)
+            return self.site_writer(observed, None, sealed_manifest)
 
         with self.assertRaisesRegex(ArtifactError, "bytes changed"):
-            DefaultInstructions(media, self.site_writer)(context)
+            DefaultInstructions(site_writer=writer)(context)
         self.assertEqual(calls, [])
 
 

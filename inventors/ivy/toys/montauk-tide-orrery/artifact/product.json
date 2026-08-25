@@ -1,12 +1,60 @@
 {
+  "art_direction": {
+    "avoid_limitations": "Never render it as a generic pedestal, narrow cylinder, solar-system model, or literal Montauk tide predictor. It is qualitative, not to scale and not predictive; physical detent feel and hands-on comprehension remain unproven until Deliver and Reviews.",
+    "must_show_media": [
+      "Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun.",
+      "Low three-quarter view establishing the disc\u2019s thin base and layered assembly.",
+      "Macro of the Earth hub, center post, and tide arm.",
+      "Rotation through 0\u00b0 \u2192 90\u00b0 \u2192 180\u00b0 \u2192 270\u00b0, stopping clearly at each phase.",
+      "Side-by-side aligned/opposed versus quadrature configurations.",
+      "Final overhead tableau with the 104 mm circular silhouette unmistakable."
+    ],
+    "palette": "Deep-ocean #122630 base; instrument-gold #EDC250 center post, arm, and Sun; sea-glass teal #2E7F8F Earth; warm ivory #D8D2C4 Moon."
+  },
   "audience": "grown-ups-14-plus",
   "components": [
-    "one Montauk base",
+    "one phase base",
+    "one center post",
     "one tide-alignment arm",
+    "one Earth hub",
     "one Sun marker",
     "one Moon marker"
   ],
-  "description": "Rotate the tide arm through Sun\u2013Earth\u2013Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast.\n\nBy Ivy.",
+  "description": "Rotate the tide arm through Sun\u2013Earth\u2013Moon alignment and quadrature to compare why spring and neap tide ranges differ. It is a qualitative teaching model, not a Montauk tide forecast.\n\nBy Ivy.",
+  "design": {
+    "assembled_extents_mm": [
+      104.5,
+      104.0,
+      31.2
+    ],
+    "base_diameter_mm": 104.0,
+    "earth_hub_diameter_mm": 16.0,
+    "kind": "qualitative-tide-orrery",
+    "moon_marker_height_mm": 19.0,
+    "phase_positions_degrees": [
+      0,
+      90,
+      180,
+      270
+    ],
+    "printed_piece_count": 6,
+    "relationship": {
+      "aligned_or_opposed": "spring-tide configuration",
+      "quadrature": "neap-tide configuration"
+    },
+    "scope": "qualitative alignment model; not to scale and not predictive",
+    "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
+    "sun_arrow_length_mm": 21.0,
+    "tide_arm_mm": [
+      96.0,
+      16.0
+    ],
+    "wish_features": [
+      "Montauk-specific request is framed as a qualitative alignment comparison",
+      "four detents embody the spring-neap cycle",
+      "two-lobed tide arm makes the alignment comparison tactile"
+    ]
+  },
   "digital_files": [
     "declarative CAD source",
     "real STEP and STL exports",
@@ -14,6 +62,8 @@
     "fixed-view render from exact STL",
     "digital Make and Playtest evidence"
   ],
+  "factory_brief": "The tide begins as geometry in the sky. Present this only as a qualitative spring\u2013neap alignment comparison, never as a Montauk tide forecast and never as a solar-system model. Copy rule: never use predict, prediction, or forecast as a product capability, heading, label, or call to action; say compare spring and neap alignment instead. Preserve the complete 104 mm circular phase base, four raised stops at 0\u00b0, 90\u00b0, 180\u00b0, and 270\u00b0, the full two-lobed arm, center post, Earth hub, Moon marker, and Sun arrow. Exact material story: deep-ocean #122630 base; instrument-gold #EDC250 center post, tide arm, and Sun arrow; sea-glass teal #2E7F8F Earth hub; warm ivory #D8D2C4 Moon marker. Film in this order: Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the thin layered disc from low three-quarter; move through 0\u00b0 \u2192 90\u00b0 \u2192 180\u00b0 \u2192 270\u00b0 with a clean stop at each phase; compare aligned/opposed with quadrature side by side; show all six printed pieces clearly\u2014the phase base, center post, tide arm, Earth hub, Moon marker, and Sun arrow; finish on the full circular silhouette. Use dark coastal light, ocean navy, instrument brass, and sea-glass teal. Never crop the base into a post, turn the markers into mushrooms or planets, omit an assembly image, or claim scale accuracy, predictive ability, physical detent feel, or human proof.",
+  "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
   "inventor": {
     "id": "ivy",
     "name": "Ivy"
@@ -31,6 +81,12 @@
   "site_status": "pending-instructions",
   "slug": "montauk-tide-orrery",
   "status": "digital-prototype",
+  "story": {
+    "attribution": "By Ivy.",
+    "core_promise": "Hold the spring\u2013neap relationship in your hands, then rotate the model to compare how alignment changes the pattern.",
+    "geometry_and_meaning": "This must read first as a 104 mm circular phase-base instrument, not a post or cylinder. The full assembly is approximately 104.5 \u00d7 104 \u00d7 31.2 mm. Four raised phase markers sit around the disc at 0\u00b0, 90\u00b0, 180\u00b0, and 270\u00b0. A center post carries a 96 \u00d7 16 mm two-lobed tide arm spanning nearly the base diameter, with a 16 mm Earth hub at center, a 19 mm-high Moon marker on the arm, and a 21 mm Sun arrow near the rim.",
+    "interaction_story": "Aligned and opposed positions represent spring-tide configurations; the two quadrature positions represent neap-tide configurations. The tactile arm makes side-by-side comparison the interaction."
+  },
   "summary": "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.",
   "title": "Montauk Tide Orrery",
   "wish": {
