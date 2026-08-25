@@ -11,7 +11,25 @@ These are toys for grown-ups, and every one has to pass the same test: **you
 could not have bought it before you asked for it.** Not on Amazon, not in a
 shop, not anywhere.
 
-## The inventors
+## The Workshop floorplan
+
+[![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
+
+- **Wish + Match** — the customer's exact brief goes to the Inventor whose
+  Taste fits it best.
+- **Industrial Design + Mechanical Design** — the Inventor explores the
+  product, engineers printable parts, and improves each stage to its target score.
+- **Playtest** — AI Players simulate use and send issues back to Mechanical
+  Design. New games must pass at least 1,000 seeded games.
+- **Instructions + Deliver** — the Inventor prepares the guide; Autonomous
+  prints, physically inspects, packs, and ships the toy.
+- **Reviews** — human feedback begins after delivery and shapes the next
+  revision and future Wishes.
+
+Every gate needs its own proof: a picture cannot prove that parts fit, and a
+shipping label cannot prove that a carrier received the box.
+
+## Meet the inventors
 
 The first five, one for each kind of toy. Many more are coming, and you can
 [build your own](#make-your-own-inventor). The photos show the kind of thing
@@ -91,67 +109,6 @@ it could not have existed before your wish.
 
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
-
-## How does the Workshop work?
-
-This is the floorplan of the Workshop: a Wish moves from the customer to the
-right inventor, through a set of scored improvement loops, and back to the
-customer as a finished toy.
-
-[![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
-
-**Industrial Design, Mechanical Design, and Instructions** each have their own
-reward function. The AI keeps working inside each micro-loop until it reaches
-the target score. **Playtest** is the outside AI-player loop: simulated use
-sends concrete issues and suggestions back to Mechanical Design. **Reviews** is
-the outside human-player loop: experience with the delivered toy helps the
-inventor improve that toy and what it makes for future Wishes.
-
-The floorplan is also a contract. **Wish** preserves the customer's words
-exactly. **Industrial Design** turns the brief into a coherent toy concept.
-**Mechanical Design** engineers the mechanisms and printable parts. Together,
-those two design loops form the Workshop's `Make` contract. **Instructions**
-prepares the in-box guide and authenticates the website handoff. **Deliver** owns
-printing, hands-on quality checks, packing, and carrier handoff.
-
-**Playtest** is entirely simulated by AI agents. They play complete games,
-adopt different strategies, try to cheat, stress rules and mechanisms, inspect
-CAD, and check science and printability. It is not a claim that human customers
-had fun. For a game that does not exist yet, the gate includes at least **1,000
-complete games played by AI players** from a fixed seed, probing endings,
-balance, tactics, strategies, and exploits.
-
-**Reviews** begin only after delivery. Human feedback can improve a future
-revision of the toy and future Wishes, but it never rewrites the evidence for
-the version already shipped or holds up the original order. **Proof** stays
-specific at every stage: a picture cannot prove that parts fit, and a shipping
-label cannot prove that a carrier received the box.
-
-The Manager is the front door. Nothing here runs all day looking for something
-to do — your wish is what starts it. For every wish it:
-
-1. reads the one line each inventor wrote about what it likes to make;
-2. picks the few that might want this one;
-3. reads those few in full, and weighs your wish against what each inventor
-   loves, refuses, and knows how to build;
-4. picks one, writes down why in plain words, and hands over your wish and the
-   number of test rounds you paid for.
-
-Two passes, because one line is not enough to choose on and reading a thousand
-long ones costs too much. The short line narrows the field; the long one
-decides. `inventor.json` holds the boring facts — where the code lives, what it
-can do. It is not a second personality.
-
-`TASTE.md` is where an inventor says what it is. A short name and one-line
-description at the top, for the first pass. Then the long version: what it
-loves, what it refuses, when it should say no. It holds judgment, not machinery
-— no CAD, no shipping code.
-
-The Manager is ordinary, tested code. Deciding who gets a real person's wish
-stays in code you can read and check.
-
-The Manager owns Match. It chooses the inventor and explains why; it does not
-design or make the toy.
 
 ## Three ways to build an inventor
 
