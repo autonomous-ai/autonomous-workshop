@@ -34,7 +34,7 @@ from .errors import (
     StateConflict,
 )
 from .models import PublicationOutcome, PublicationReceipt, require_sha256
-from .store import InventorStore
+from .store import InventorStore, _validate_factory_assembly_parts
 
 DEFAULT_SHOP_API = "https://panda-social-api.autonomous.ai/api/v1"
 DEFAULT_SHOP_PAGE_BASE = "https://www.autonomous.ai/factory/product"
@@ -1297,6 +1297,7 @@ class ShopDoor:
         *,
         title: Optional[str] = None,
         attachments: Sequence[Mapping[str, Any]] = (),
+        assembly_parts: Optional[Sequence[Mapping[str, Any]]] = None,
     ) -> HttpResponse:
         if price_cents is not None and (
             not isinstance(price_cents, int)
@@ -1318,9 +1319,12 @@ class ShopDoor:
             raise ContractError(
                 "Workshop cannot attach creator media; Factory owns generated media"
             )
+        reviewed_assembly_parts = _validate_factory_assembly_parts(assembly_parts)
         request: Dict[str, Any] = {}
         if price_cents is not None:
             request["listing"] = {"price_cents": price_cents}
+        if reviewed_assembly_parts is not None:
+            request["assembly_parts"] = reviewed_assembly_parts
         path = "/designs/%s/publish" % urllib.parse.quote(slug, safe="")
         if not request:
             return self._request("POST", path)
@@ -1507,6 +1511,7 @@ class _ShopSender:
         *,
         title: Optional[str] = None,
         attachments: Sequence[Mapping[str, Any]] = (),
+        assembly_parts: Optional[Sequence[Mapping[str, Any]]] = None,
         proof: Optional[Mapping[str, Any]] = None,
     ) -> PublicationReceipt:
         if price_cents is not None and (
@@ -1529,6 +1534,7 @@ class _ShopSender:
             raise ContractError(
                 "Workshop cannot attach creator media; Factory owns generated media"
             )
+        reviewed_assembly_parts = _validate_factory_assembly_parts(assembly_parts)
         # Build the complete request before checking for a completed intent so
         # replay means exact idempotency, never silent acceptance of a new price,
         # attachment set or proof under an old receipt.
@@ -1538,6 +1544,8 @@ class _ShopSender:
         }
         if price_cents is not None:
             live_request["listing"] = {"price_cents": price_cents}
+        if reviewed_assembly_parts is not None:
+            live_request["assembly_parts"] = reviewed_assembly_parts
         if proof is not None:
             live_request["proof"] = dict(proof)
         intent = self.store.get_publish_intent(intent_id)
@@ -1564,9 +1572,15 @@ class _ShopSender:
         try:
             persisted = intent["live_request"]
             listing = persisted.get("listing")
+            persisted_assembly_parts = persisted.get("assembly_parts")
             response = self.client.publish(
                 draft.slug,
                 listing.get("price_cents") if isinstance(listing, Mapping) else None,
+                assembly_parts=(
+                    persisted_assembly_parts
+                    if isinstance(persisted_assembly_parts, Sequence)
+                    else None
+                ),
             )
         except Exception as exc:
             self.store.mark_live_unknown(
@@ -1640,6 +1654,48 @@ class _ShopSender:
                 raise ReceiptError("publish intent has a malformed listing request")
             if isinstance(listing_request, Mapping):
                 receipt.assert_listing(listing_request.get("price_cents"))
+            requested_assembly_parts = live_request.get("assembly_parts")
+            if requested_assembly_parts is not None:
+                if not isinstance(requested_assembly_parts, Sequence):
+                    raise ReceiptError(
+                        "publish intent has malformed Factory assembly colors"
+                    )
+                expected_parts = {
+                    item["part"]: item["color"]
+                    for item in _validate_factory_assembly_parts(
+                        requested_assembly_parts
+                    ) or ()
+                }
+                observed_parts = design.get("assembly_parts")
+                if not isinstance(observed_parts, list) or not observed_parts:
+                    raise ReceiptError(
+                        "public readback lacks the reviewed Factory assembly colors"
+                    )
+                observed_colors: Dict[str, str] = {}
+                for item in observed_parts:
+                    if not isinstance(item, Mapping):
+                        raise ReceiptError(
+                            "public readback Factory assembly colors are malformed"
+                        )
+                    try:
+                        normalized = _validate_factory_assembly_parts(
+                            [{"part": item.get("part"), "color": item.get("color")}]
+                        )
+                    except ContractError as exc:
+                        raise ReceiptError(
+                            "public readback Factory assembly colors are malformed"
+                        ) from exc
+                    observed = normalized[0]
+                    prior = observed_colors.get(observed["part"])
+                    if prior is not None and prior != observed["color"]:
+                        raise ReceiptError(
+                            "public readback gives one part conflicting colors"
+                        )
+                    observed_colors[observed["part"]] = observed["color"]
+                if observed_colors != expected_parts:
+                    raise ReceiptError(
+                        "public readback does not preserve the reviewed Factory assembly colors"
+                    )
             if live_request.get("attachments") is not None:
                 raise ReceiptError(
                     "Workshop public request must not contain creator media"

@@ -9,7 +9,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "agent-playtest.json",
-      "evidence_sha256": "78b3054a27a8befc96a535689e4842439d0dff17ed9cb87720a5ed43fa6f8f3f",
+      "evidence_sha256": "c1347c0e530d708b581cfe61982480194cf38df89641737db5ca4ff76871606f",
       "passed": true
     },
     "mechanical-test": {
@@ -20,7 +20,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "mechanical-test.json",
-      "evidence_sha256": "1243257d3e0689f635115ca388f9ffebd6271b17fc56703d06ace2017a55f083",
+      "evidence_sha256": "d2ad5ea211cf9a51ef52da9f3a09687e2de56aff98421589a2de942a360c6c45",
       "passed": true
     },
     "motion-test": {
@@ -31,7 +31,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "motion-test.json",
-      "evidence_sha256": "f091881ac880065281cec27e2d886e7ef60015a70ac1962ff5cb130fb6499c14",
+      "evidence_sha256": "27d0186981751ee0d4e002ad684c617ab7064afab4d68423c9332eabee4cfa46",
       "passed": true
     },
     "print-test": {
@@ -42,7 +42,7 @@
       "evaluator_version": "1.0.0",
       "evidence_class": "ai-simulation",
       "evidence_ref": "print-test.json",
-      "evidence_sha256": "b8a4214cf1ab2f5097052feb17c115aa46e7eec97418f843d7695365d2c0ba66",
+      "evidence_sha256": "67e5d388eb1111a586416172dddc9571023e8ca9bd8712dc89cb0abd1b490a42",
       "passed": true
     }
   },
@@ -59,8 +59,8 @@
     "AI agents simulate kinematics, tolerance, wear, misuse, and pinch risks; the shipped print still receives hands-on QA in Deliver.",
     "Customer observations begin as Reviews only after delivery."
   ],
-  "playtest_evidence_artifact_sha256": "409cb826a901f3f065d23c766fb7fa0cfad7386e177416d5ba48c25102fca19c",
-  "product_artifact_sha256": "e2e128bd49064530c0c75036d61a2d03ec8538d52f310ce2dfd07b9a25ecab2a",
+  "playtest_evidence_artifact_sha256": "95b63c08d1145495555fdd2abe82f0e91e380063a3ceb34367a087cfaeec7094",
+  "product_artifact_sha256": "6514e01f5b27958d0507557be175e1f89acf583eed0470a908e616169c342c22",
   "schema_version": 2,
   "status": "facts-ready",
   "summary": "A six-step Geneva mechanism that turns one continuous crank into a comet's deliberate orbital jumps.\n\nBy Bob.",

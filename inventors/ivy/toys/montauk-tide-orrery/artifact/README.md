@@ -10,7 +10,7 @@
 
 ## The plaything
 
-Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast. By Ivy.
+Rotate the tide arm through Sun–Earth–Moon alignment and quadrature to compare why spring and neap tide ranges differ. It is a qualitative teaching model, not a Montauk tide forecast. By Ivy.
 
 The shared Workshop Make produced editable declarative source, real STEP and
 STL geometry, per-part exports, and the fixed render above from the exact

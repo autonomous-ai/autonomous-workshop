@@ -2,7 +2,7 @@
 
 ![Exact-geometry render of Montauk Tide Orrery](artifact/images/hero.png)
 
-Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast. By Ivy.
+Rotate the tide arm through Sun–Earth–Moon alignment and quadrature to compare why spring and neap tide ranges differ. It is a qualitative teaching model, not a Montauk tide forecast. By Ivy.
 
 ## Workshop result
 
@@ -11,7 +11,7 @@ Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the fou
 - Extension level: `taste-only`
 - Configured Playtest rounds: `3`
 - Actual stop: **Instructions / waiting**, round 1
-- Exact artifact: `f38de1240ab4a3c96c88d4e67cb128d13555c456590916333c151a1482c44245`
+- Exact artifact: `9cfcce963fd4aa83829264c8b6f000d1c25cba4db1fa9e11dea4fd0111ad2357`
 - Product page: sealed locally; waiting for the Workshop site account
 
 AI Playtest passed. Shared Instructions created the box guide and factual handoff, then stopped because this run has no authenticated site account.

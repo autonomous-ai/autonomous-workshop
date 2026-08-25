@@ -306,17 +306,20 @@ SPECS: tuple[ProductSpec, ...] = (
         "holdable-science",
         "I wish I could hold the spring-neap tide cycle for Montauk and predict what alignment makes the larger tide.",
         "A hand-operated alignment model for reasoning about spring and neap tides at Montauk.",
-        "Rotate the tide arm through Sun–Earth–Moon alignment and quadrature: the four notches invite a prediction before the model reveals why spring and neap ranges differ. It is a qualitative teaching model, not a tide forecast. By Ivy.",
+        "Rotate the tide arm through Sun–Earth–Moon alignment and quadrature to compare why spring and neap tide ranges differ. It is a qualitative teaching model, not a Montauk tide forecast. By Ivy.",
         "taste-only",
         3,
         (
-            "The tide begins as geometry in the sky. Present this as a qualitative "
-            "spring–neap alignment instrument that invites a prediction, never as a "
-            "literal Montauk tide forecast and never as a solar-system model. Preserve "
+            "The tide begins as geometry in the sky. Present this only as a qualitative "
+            "spring–neap alignment comparison, never as a Montauk tide forecast and "
+            "never as a solar-system model. Copy rule: never use predict, prediction, "
+            "or forecast as a product capability, heading, label, or call to action; "
+            "say compare spring and neap alignment instead. Preserve "
             "the complete 104 mm circular phase base, four raised stops at 0°, 90°, "
             "180°, and 270°, the full two-lobed arm, center post, Earth hub, Moon "
-            "marker, and Sun arrow. Palette: Deep ocean #122630 with instrument gold "
-            "#EDC250; elegant, scientific, display-worthy. Film in this order: "
+            "marker, and Sun arrow. Exact material story: deep-ocean #122630 base; "
+            "instrument-gold #EDC250 center post, tide arm, and Sun arrow; sea-glass "
+            "teal #2E7F8F Earth hub; warm ivory #D8D2C4 Moon marker. Film in this order: "
             "Near-top-down hero showing the entire circular base, all four phase "
             "markers, full two-lobed arm, Earth, Moon, and Sun. Then establish the "
             "thin layered disc from low three-quarter; move through 0° → 90° → 180° → "
@@ -325,16 +328,16 @@ SPECS: tuple[ProductSpec, ...] = (
             "the full circular silhouette. Use dark coastal light, ocean navy, "
             "instrument brass, and sea-glass teal. Never crop the base into a post, "
             "turn the markers into mushrooms or planets, omit an assembly image, or "
-            "claim scale accuracy, prediction, physical detent feel, or human proof."
+            "claim scale accuracy, predictive ability, physical detent feel, or human proof."
         ),
         {
-            "core_promise": "Hold the spring–neap relationship in your hands, make a prediction, then rotate the model to see how alignment changes the result.",
+            "core_promise": "Hold the spring–neap relationship in your hands, then rotate the model to compare how alignment changes the pattern.",
             "geometry_and_meaning": "This must read first as a 104 mm circular phase-base instrument, not a post or cylinder. The full assembly is approximately 104.5 × 104 × 31.2 mm. Four raised phase markers sit around the disc at 0°, 90°, 180°, and 270°. A center post carries a 96 × 16 mm two-lobed tide arm spanning nearly the base diameter, with a 16 mm Earth hub at center, a 19 mm-high Moon marker on the arm, and a 21 mm Sun arrow near the rim.",
-            "interaction_story": "Aligned and opposed positions represent spring-tide configurations; the two quadrature positions represent neap-tide configurations. The tactile arm makes comparison and prediction the interaction.",
+            "interaction_story": "Aligned and opposed positions represent spring-tide configurations; the two quadrature positions represent neap-tide configurations. The tactile arm makes side-by-side comparison the interaction.",
             "attribution": "By Ivy.",
         },
         {
-            "palette": "Deep ocean #122630 with instrument gold #EDC250; elegant, scientific, display-worthy.",
+            "palette": "Deep-ocean #122630 base; instrument-gold #EDC250 center post, arm, and Sun; sea-glass teal #2E7F8F Earth; warm ivory #D8D2C4 Moon.",
             "must_show_media": [
                 "Near-top-down hero showing the entire circular base, all four phase markers, full two-lobed arm, Earth, Moon, and Sun.",
                 "Low three-quarter view establishing the disc’s thin base and layered assembly.",
@@ -361,7 +364,7 @@ SPECS: tuple[ProductSpec, ...] = (
             "scope": "qualitative alignment model; not to scale and not predictive",
             "source": "https://oceanservice.noaa.gov/education/tutorial_tides/tides06_variations.html",
             "wish_features": [
-                "Montauk-specific request is framed as a prediction experiment",
+                "Montauk-specific request is framed as a qualitative alignment comparison",
                 "four detents embody the spring-neap cycle",
                 "two-lobed tide arm makes the alignment comparison tactile",
             ],

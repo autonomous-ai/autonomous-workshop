@@ -8,7 +8,12 @@ from pathlib import Path
 from unittest import mock
 
 from inventor_workshop.artifacts import build_publish_packet
-from inventor_workshop.errors import AmbiguousPublishError, ContractError, PublishError
+from inventor_workshop.errors import (
+    AmbiguousPublishError,
+    ContractError,
+    PublishError,
+    StateConflict,
+)
 from inventor_workshop.launch import (
     HttpResponse,
     Launchpad,
@@ -296,6 +301,122 @@ class LaunchTest(unittest.TestCase):
         self.assertTrue(live.is_verified_public)
         publish_body = json.loads(transport.calls[1][3].decode("utf-8"))
         self.assertNotIn("attachments", publish_body)
+
+    def test_reviewed_assembly_colors_are_canonical_durable_and_replay_bound(self):
+        reviewed = [
+            {"part": "orbit.stl", "color": "#ABCDEF"},
+            {"part": "base.stl", "color": "#12151D"},
+        ]
+        public = self.design("public")
+        public["assembly_parts"] = [
+            {
+                "order": 0,
+                "mesh_name": "base occurrence",
+                "part": "base.stl",
+                "color": "#12151d",
+            },
+            {
+                "order": 1,
+                "mesh_name": "orbit occurrence one",
+                "part": "orbit.stl",
+                "color": "#abcdef",
+            },
+            {
+                "order": 2,
+                "mesh_name": "orbit occurrence two",
+                "part": "orbit.stl",
+                "color": "#abcdef",
+            },
+        ]
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, public),
+                self.response(200, public),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        live = coordinator.publish_live(
+            draft.intent_id, 4000, assembly_parts=reviewed
+        )
+
+        self.assertTrue(live.is_verified_public)
+        expected = [
+            {"part": "base.stl", "color": "#12151d"},
+            {"part": "orbit.stl", "color": "#abcdef"},
+        ]
+        publish_body = json.loads(transport.calls[1][3].decode("utf-8"))
+        self.assertEqual(publish_body["assembly_parts"], expected)
+        self.assertNotIn("order", publish_body["assembly_parts"][0])
+        self.assertNotIn("mesh_name", publish_body["assembly_parts"][0])
+        intent = self.store.get_publish_intent(draft.intent_id)
+        self.assertEqual(intent["live_request"]["assembly_parts"], expected)
+
+        replay = coordinator.publish_live(
+            draft.intent_id, 4000, assembly_parts=list(reversed(reviewed))
+        )
+        self.assertEqual(replay.to_dict(), live.to_dict())
+        self.assertEqual(len(transport.calls), 3)
+        with self.assertRaisesRegex(StateConflict, "request changed"):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=[
+                    {"part": "base.stl", "color": "#12151d"},
+                    {"part": "orbit.stl", "color": "#000000"},
+                ],
+            )
+        self.assertEqual(len(transport.calls), 3)
+
+    def test_assembly_colors_reject_order_skeletons_and_malformed_entries(self):
+        transport = QueueTransport([])
+        door = Portal("token", transport=transport)
+        cases = (
+            [],
+            [{"order": 0, "color": "#112233"}],
+            [{"part": "body.stl", "color": "#123"}],
+            [{"part": "../body.stl", "color": "#112233"}],
+            [
+                {"part": "body.stl", "color": "#112233"},
+                {"part": "body.stl", "color": "#445566"},
+            ],
+        )
+        for assembly_parts in cases:
+            with self.subTest(assembly_parts=assembly_parts):
+                with self.assertRaises(ContractError):
+                    door.publish(
+                        "game", 4000, assembly_parts=assembly_parts
+                    )
+        self.assertEqual(transport.calls, [])
+
+    def test_public_readback_must_preserve_reviewed_assembly_colors(self):
+        public = self.design("public")
+        public["assembly_parts"] = [
+            {"order": 0, "part": "body.stl", "color": "#ffffff"}
+        ]
+        transport = QueueTransport(
+            [
+                self.response(201, self.design("draft")),
+                self.response(200, public),
+                self.response(200, public),
+            ]
+        )
+        coordinator = self.coordinator(transport)
+        draft = coordinator.import_draft("game", self.packet, {"title": "Game"})
+
+        with self.assertRaises(AmbiguousPublishError):
+            coordinator.publish_live(
+                draft.intent_id,
+                4000,
+                assembly_parts=[{"part": "body.stl", "color": "#112233"}],
+            )
+
+        self.assertEqual(
+            self.store.get_publish_intent(draft.intent_id)["state"],
+            "live_unknown",
+        )
 
     def test_shared_sender_rejects_thumbnail_and_attachment_bypasses_before_http(self):
         transport = QueueTransport([])

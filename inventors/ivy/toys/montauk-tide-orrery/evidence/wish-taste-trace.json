@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "f38de1240ab4a3c96c88d4e67cb128d13555c456590916333c151a1482c44245",
+  "artifact_sha256": "9cfcce963fd4aa83829264c8b6f000d1c25cba4db1fa9e11dea4fd0111ad2357",
   "blueprint_sha256": "5df739e59f227d3271001ef795cfa41edc6e065c9bba9f99fcf3b7ba9898260f",
   "check": "wish-taste-trace",
   "claim_scope": "AI-player traceability and distinctiveness review; not a customer Review",
@@ -8,7 +8,7 @@
   "schema_version": 1,
   "taste_sha256": "6893a9e4033b73813998db78a446081c371ee297e7cb3acbd6d0e4d12d5bc9fc",
   "wish_features": [
-    "Montauk-specific request is framed as a prediction experiment",
+    "Montauk-specific request is framed as a qualitative alignment comparison",
     "four detents embody the spring-neap cycle",
     "two-lobed tide arm makes the alignment comparison tactile"
   ],

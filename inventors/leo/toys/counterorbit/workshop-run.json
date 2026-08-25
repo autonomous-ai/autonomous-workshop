@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "3465a6abecdb23b53bb542ffd9ba8e5671f0de3fae7ed03e77c82df21cfa584c",
+  "artifact_sha256": "b397d1bea418a3caa5da283a08d7501a66202ed70d6143efe054611201fc2f1e",
   "assertions": {
     "ai_playtest_passed": true,
     "customer_reviews": false,
@@ -15,8 +15,8 @@
     "typed_workshop_run": true
   },
   "blueprint_sha256": "bc28c3590ee202c21de2ba21b556c02df61b58b7649dc80317249c8a7080138a",
-  "evidence_sha256": "23d9f0e88b87ce89357d232f042a780565e01273f19d79775a6153881b832a74",
-  "instructions_sha256": "b4383790d760af738ff2fb467ab900c19a1b28543239c06a83aec1dd00c72135",
+  "evidence_sha256": "efc43726d7819d230bcdf1df565e89ba460d9c8a19195f84f1382df9bf12ef09",
+  "instructions_sha256": "9f54814099040a980d016ae2b05906d13db2ddb57d7066108a43f04f82b2bd8d",
   "inventor": {
     "extension_level": "custom-playtest",
     "id": "leo",
@@ -25,7 +25,7 @@
   },
   "kind": "showcase-workshop-run",
   "run": {
-    "artifact_sha256": "3465a6abecdb23b53bb542ffd9ba8e5671f0de3fae7ed03e77c82df21cfa584c",
+    "artifact_sha256": "b397d1bea418a3caa5da283a08d7501a66202ed70d6143efe054611201fc2f1e",
     "delivery": null,
     "instructions_sha256": null,
     "job": "instructions",
@@ -46,7 +46,7 @@
   "schema_version": 1,
   "shared_adapters": {
     "builder_path": "tools/build_showcase_products.py",
-    "builder_sha256": "67528adb48c3bb16dd913059deab59f2d5cd1de81d411db02dbfc7f0a8bc6585",
+    "builder_sha256": "505bdcb2f28daf821506e2c908ade5f4e3265ae5b2331b8d6d02d3c97e28ae79",
     "make": "showcase-real-cad-v1",
     "playtest": "showcase-digital-playtest-v1"
   },

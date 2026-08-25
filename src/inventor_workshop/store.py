@@ -11,13 +11,14 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import secrets
 import sqlite3
 import urllib.parse
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, Dict, Iterator, List, Mapping, Optional
+from pathlib import Path, PurePosixPath
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Sequence
 
 from .errors import (
     AmbiguousPublishError,
@@ -49,6 +50,9 @@ _LAUNCH_KEYS = {
         "_core_api_origin",
     ),
 }
+
+_FACTORY_COLOR = re.compile(r"#[0-9A-Fa-f]{6}\Z")
+MAX_FACTORY_ASSEMBLY_PARTS = 2_048
 
 
 def _required_text(value: Any, label: str, maximum: int = 256) -> str:
@@ -104,6 +108,59 @@ def _launch_request_identity(request: Mapping[str, Any]) -> Mapping[str, Any]:
     return identity
 
 
+def _validate_factory_assembly_parts(
+    value: Any,
+) -> Optional[List[Mapping[str, str]]]:
+    """Canonicalize reviewed colors accepted by Factory's publish API.
+
+    Factory resolves occurrence order and mesh names itself.  Workshop only
+    sends a unique part basename and one full six-digit sRGB color per part.
+    Sorting by part makes equivalent caller orderings one durable request while
+    still fencing every material color change as a different public effect.
+    """
+
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ContractError("Factory assembly_parts must be a non-empty sequence")
+    if not value or len(value) > MAX_FACTORY_ASSEMBLY_PARTS:
+        raise ContractError(
+            "Factory assembly_parts must contain 1..%d reviewed entries"
+            % MAX_FACTORY_ASSEMBLY_PARTS
+        )
+    normalized: List[Mapping[str, str]] = []
+    seen = set()
+    for item in value:
+        if not isinstance(item, Mapping) or set(item) != {"part", "color"}:
+            raise ContractError(
+                "each Factory assembly_parts entry must contain exactly part and color"
+            )
+        part = item.get("part")
+        if (
+            not isinstance(part, str)
+            or not part
+            or part != part.strip()
+            or len(part) > 255
+            or PurePosixPath(part).name != part
+            or "\\" in part
+            or part in (".", "..")
+            or any(ord(character) < 32 or ord(character) == 127 for character in part)
+        ):
+            raise ContractError(
+                "Factory assembly_parts part must be one non-empty safe basename"
+            )
+        if part in seen:
+            raise ContractError("Factory assembly_parts part names must be unique")
+        color = item.get("color")
+        if not isinstance(color, str) or _FACTORY_COLOR.fullmatch(color) is None:
+            raise ContractError(
+                "Factory assembly_parts color must use full #RRGGBB hex"
+            )
+        seen.add(part)
+        normalized.append({"part": part, "color": color.lower()})
+    return sorted(normalized, key=lambda item: item["part"])
+
+
 def _validate_live_request(
     request: Mapping[str, Any], persisted_request: Mapping[str, Any]
 ) -> Mapping[str, Any]:
@@ -116,7 +173,7 @@ def _validate_live_request(
     if not isinstance(request, Mapping):
         raise ContractError("live request must be an object")
     document = _object(_json(dict(request)))
-    allowed = {"api_origin", "owner_id", "listing", "proof"}
+    allowed = {"api_origin", "owner_id", "listing", "assembly_parts", "proof"}
     if set(document) - allowed or not {"api_origin", "owner_id"} <= set(document):
         raise ContractError("live request contains unsupported fields")
     if (
@@ -135,6 +192,11 @@ def _validate_live_request(
         or not 100 <= listing["price_cents"] <= 1_000_000
     ):
         raise ContractError("live listing must contain one valid price_cents")
+    assembly_parts = _validate_factory_assembly_parts(
+        document.get("assembly_parts")
+    )
+    if assembly_parts is not None:
+        document["assembly_parts"] = assembly_parts
     proof = document.get("proof")
     bound_instructions = persisted_request.get("_workshop_instructions_sha256")
     bound_playtest = persisted_request.get("_workshop_playtest_evidence_sha256")

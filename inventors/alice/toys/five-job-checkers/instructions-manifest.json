@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "5be971b8a5f1a81b30a3244c065df6766e1ab6993a792cebcbbb0abd184600fd",
+  "artifact_sha256": "7bf7b7395b2b79d738231cc4dc5e33f638111152c4660bc22946c35842f453c0",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 3215,
       "executable": false,
       "path": "product.json",
-      "sha256": "051a0282f87b35f9e482a0a92f9fc9ca3f6b09298737eb1cfff2e9a629fee807"
+      "sha256": "e6b752bec6fcc5b9c7362fb0781cb0d902f777d0a830d83c31cb1c38ace28c02"
     }
   ],
   "schema_version": 1,

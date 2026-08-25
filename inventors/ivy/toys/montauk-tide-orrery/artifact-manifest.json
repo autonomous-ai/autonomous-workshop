@@ -1,18 +1,18 @@
 {
-  "artifact_sha256": "f38de1240ab4a3c96c88d4e67cb128d13555c456590916333c151a1482c44245",
+  "artifact_sha256": "9cfcce963fd4aa83829264c8b6f000d1c25cba4db1fa9e11dea4fd0111ad2357",
   "created_at": "content-addressed",
   "entries": [
     {
-      "bytes": 1243,
+      "bytes": 1204,
       "executable": false,
       "path": "README.md",
-      "sha256": "32dd97b847caba51be5c848af3e49f271477c81d0320464cf0ed63c0ddff69d8"
+      "sha256": "0de0dde584b40e1e38038bf7e2c3dba91bfe98921457661b893be482c35446fa"
     },
     {
       "bytes": 150940,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "febb10aeb06060c707ddf4b08400e1acf4b7ea9643e6a4515611ff0825f8e083"
+      "sha256": "6b43f63dc8362678810ae2b1e9762a5358ebd81c63f4a060d3daa911fdabbd05"
     },
     {
       "bytes": 644,
@@ -27,16 +27,16 @@
       "sha256": "777fb5efa1ad595af49604c7482371d82b8b32a8fe9f1073b164fdbb654dc00b"
     },
     {
-      "bytes": 1404,
+      "bytes": 1415,
       "executable": false,
       "path": "cad/design.json",
-      "sha256": "f5d4a58faa4e115371a29da2c4bcb68245787003b5aff29d9754a773988293d3"
+      "sha256": "6561da01f5108ad94c4186e563465b8221f7cfb9f0c865343f68f6d28965e2d8"
     },
     {
       "bytes": 8487,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "62a1f6ffe16e1bbdbbb8a4faaee1356e4605ae4be3c4b948e81fcd91c712b177"
+      "sha256": "18b769383614f7f2c6b1c7cd40835dfbd7f16fe93ce620d07ab7ce64993dec41"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 5756,
       "executable": false,
       "path": "cad/parts/center-post.step",
-      "sha256": "106939e47d33ca742a65dd5a099be5cf70e344527ffb82b7777961a795181866"
+      "sha256": "eb1ee2203203dccfebe3a0488e8a77a07094464c2787e1242da8e54ae6da5aac"
     },
     {
       "bytes": 25084,
@@ -60,7 +60,7 @@
       "bytes": 8548,
       "executable": false,
       "path": "cad/parts/earth-hub.step",
-      "sha256": "742cf5056dcb4f28bc02928464886bf2a3404bde0b95614d310b28de2214ab20"
+      "sha256": "d0b3a1c85928f02db2d733768e030d254f77538cdf044ea711e3af089059fc6a"
     },
     {
       "bytes": 192484,
@@ -72,7 +72,7 @@
       "bytes": 16638,
       "executable": false,
       "path": "cad/parts/moon-marker.step",
-      "sha256": "23d062ebf731662094857a1f61c21469c8f4a3d206484606dc45b649174d5fc5"
+      "sha256": "86b7d76ddfe48efce019c268eb81cd86de10dd374189a88912e537f68802377e"
     },
     {
       "bytes": 151084,
@@ -84,7 +84,7 @@
       "bytes": 71863,
       "executable": false,
       "path": "cad/parts/phase-base.step",
-      "sha256": "55fc7ca6bbd1c3625f8eda7cdcea59f4be85d0382a7e472fb0d0853c2d314714"
+      "sha256": "916b21811496c5f44ded20f5e6e175f21c305d2a8fef35f8138166c49c09f1f0"
     },
     {
       "bytes": 27484,
@@ -96,7 +96,7 @@
       "bytes": 22876,
       "executable": false,
       "path": "cad/parts/sun-arrow.step",
-      "sha256": "5d6134c2c798bc77ce48f5d0ec7ba3287e112cf1e5940d6ac6ac9df82989a533"
+      "sha256": "15711e8c7098a546bb77bb7610e22a0a441b10e0fcafb630cd7d04b29040308d"
     },
     {
       "bytes": 25684,
@@ -108,7 +108,7 @@
       "bytes": 32879,
       "executable": false,
       "path": "cad/parts/tide-arm.step",
-      "sha256": "9053b850647eab7dade06c90b32125e116498e02349b269256ca0bcfd0bc2035"
+      "sha256": "343bc11c6058c43f07814bf1fbb4cfc9ad8c38acbf9fef9a9af10d3a0289d453"
     },
     {
       "bytes": 76084,
@@ -120,7 +120,7 @@
       "bytes": 162998,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "458f7d67eb3e41404f58a33c55d9ee4eb3d06d5c5b450829df3ed7ded591d6ad"
+      "sha256": "9edefffcbbdbabeccad1db0953ccdf9df08961e4db3ed2b7442964864181bd97"
     },
     {
       "bytes": 497484,
@@ -135,10 +135,10 @@
       "sha256": "cf54fda9703008a1d3ff68704b1fc207f53537629b4cbc81e56fa7921f7619eb"
     },
     {
-      "bytes": 5947,
+      "bytes": 6168,
       "executable": false,
       "path": "product.json",
-      "sha256": "b435124a075603d1d99777ababf9fa1ca586e6259b737ed9df3e9847bd417214"
+      "sha256": "b3ea2c09ef4d7adcbdc99b88d0b2756e0c114ad6a6979adab75a6c573799445f"
     },
     {
       "bytes": 67,
@@ -154,5 +154,5 @@
     }
   ],
   "schema_version": 1,
-  "total_bytes": 2092453
+  "total_bytes": 2092646
 }

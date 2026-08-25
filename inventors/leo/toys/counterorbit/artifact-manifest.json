@@ -1,5 +1,5 @@
 {
-  "artifact_sha256": "3465a6abecdb23b53bb542ffd9ba8e5671f0de3fae7ed03e77c82df21cfa584c",
+  "artifact_sha256": "b397d1bea418a3caa5da283a08d7501a66202ed70d6143efe054611201fc2f1e",
   "created_at": "content-addressed",
   "entries": [
     {
@@ -12,7 +12,7 @@
       "bytes": 575320,
       "executable": false,
       "path": "assembled.step",
-      "sha256": "9d12fb742838f0fc5af47b403b5615ec0ca3980dc5e030d83bb857ae9103fcb9"
+      "sha256": "57f6930da0462d81593e03703685c1672de9eacc56df377d5367a23d66d26a37"
     },
     {
       "bytes": 1230,
@@ -36,7 +36,7 @@
       "bytes": 6552,
       "executable": false,
       "path": "cad/digital-build.json",
-      "sha256": "66646caaf0f228ac6496da4e15ba3ef289da5563c5f7388abc6854c1518aed13"
+      "sha256": "cbc321849b5917334a5e02b38bf2e5d2a3e253e0d4a9a8ccf505f85dbdab915d"
     },
     {
       "bytes": 999,
@@ -48,7 +48,7 @@
       "bytes": 56471,
       "executable": false,
       "path": "cad/parts/counter-orbit.step",
-      "sha256": "718c9bc88184b1853cacbf9daa2aa8b2be5e67f7760d6d6059d0f94bf600f3f3"
+      "sha256": "9d96e3b42cbc97eb40bc7a181a51fe76e27bb569502c730ffe17e782adf32a04"
     },
     {
       "bytes": 302484,
@@ -60,7 +60,7 @@
       "bytes": 36435,
       "executable": false,
       "path": "cad/parts/five-job-core.step",
-      "sha256": "b865b8be989543ce367d0e2420b6c9b34c14dedcefff41b4bf2baa1a4e8600c3"
+      "sha256": "2ad616d97543a03a8796afecc8b5430c481667d0956dd348ab286778b7c0e5c5"
     },
     {
       "bytes": 176084,
@@ -72,7 +72,7 @@
       "bytes": 13231,
       "executable": false,
       "path": "cad/parts/ring-signal.step",
-      "sha256": "f70c7fdb8b83b21460e27e8237770783206223aac5c817f4865406866f42ffb3"
+      "sha256": "96c216e02f5507675fe27384dd70719269997822e9ac80e4eb5a2e37d6948156"
     },
     {
       "bytes": 50084,
@@ -84,7 +84,7 @@
       "bytes": 91688,
       "executable": false,
       "path": "cad/parts/spoke-signal.step",
-      "sha256": "72136c8477da1a10da8972c826f8a290ba68e588b38c2b6ee581d7a4987e46c9"
+      "sha256": "e9a09d2988649213c8c789a45d8792e16e19869730aa151ee80d99f10d6ba561"
     },
     {
       "bytes": 28084,
@@ -96,7 +96,7 @@
       "bytes": 629119,
       "executable": false,
       "path": "cad/product.step",
-      "sha256": "b6b15219f8550933fe3b7f861f0de1ba3d787db1fb0c52b1633c41021913a6a8"
+      "sha256": "b4b15b7078cebb8e1a6c70e6312d6c6a7c22cf7f6afa358651fb04d47984326c"
     },
     {
       "bytes": 868484,
