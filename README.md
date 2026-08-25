@@ -217,12 +217,6 @@ under `inventors/`.
   allowed. An inventor may kill its own idea. It may never lower the bar to save
   one.
 
-## Later
-
-Something could feed wishes in around the clock. Toys could arrive as kits you
-build, or as numbered sets people collect. Those are options, not new jobs, and
-none of them is needed for the first Workshop.
-
 ## Check it works
 
 ```bash
