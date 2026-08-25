@@ -49,14 +49,22 @@
   <text x="50" y="65" class="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</text>
 
   <g transform="translate(55 112)">
-    <line x1="0" y1="0" x2="30" y2="0" stroke="#525b66" stroke-width="3"/>
-    <text x="40" y="5" class="legend">through the Workshop</text>
-    <path d="M 182 2 C 192 19, 216 19, 226 2" fill="none" stroke="#d97706" stroke-width="3"/>
-    <text x="238" y="5" class="legend">try, score, improve</text>
-    <line x1="420" y1="0" x2="450" y2="0" stroke="#1675b8" stroke-width="3"/>
-    <text x="460" y="5" class="legend">AI Players send it back</text>
-    <line x1="660" y1="0" x2="690" y2="0" stroke="#7c4dcc" stroke-width="3"/>
-    <text x="700" y="5" class="legend">players inspire what's next</text>
+    <g transform="translate(0 0)">
+      <line x1="0" y1="0" x2="30" y2="0" stroke="#525b66" stroke-width="3"/>
+      <text x="40" y="5" class="legend">through the Workshop</text>
+    </g>
+    <g transform="translate(230 0)">
+      <path d="M 0 2 C 6 19, 24 19, 30 2" fill="none" stroke="#d97706" stroke-width="3"/>
+      <text x="40" y="5" class="legend">try, score, improve</text>
+    </g>
+    <g transform="translate(460 0)">
+      <line x1="0" y1="0" x2="30" y2="0" stroke="#1675b8" stroke-width="3"/>
+      <text x="40" y="5" class="legend">AI Players send it back</text>
+    </g>
+    <g transform="translate(690 0)">
+      <line x1="0" y1="0" x2="30" y2="0" stroke="#7c4dcc" stroke-width="3"/>
+      <text x="40" y="5" class="legend">players inspire what's next</text>
+    </g>
   </g>
 
   <!-- Main vertical journey -->
