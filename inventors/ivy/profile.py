@@ -82,7 +82,7 @@ def main(argv=None) -> int:
     parser.add_argument("objective", nargs="?")
     parser.add_argument("--playtest-rounds", type=int)
     parser.add_argument("--assignment-stdin", action="store_true", help=argparse.SUPPRESS)
-    args = parser.parse_args(argv)
+    args = parser.parse_intermixed_args(argv)
     if args.assignment_stdin:
         if (
             args.command not in ("run", "resume")

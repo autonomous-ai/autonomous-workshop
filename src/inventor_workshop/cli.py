@@ -82,6 +82,21 @@ from .workshop import (
     _rebuild_checkpoint_results,
     _rebuild_made_value,
     _rebuild_playtested_value,
+    world_personalization_from_made,
+)
+from .world_reference_vault import (
+    LOCAL_STORAGE_SECURITY_BOUNDARY,
+    SUPPORTED_WORLD_CONSENT_METHODS,
+    SUPPORTED_WORLD_MEDIA_TYPES,
+    SUPPORTED_WORLD_SUBJECT_KINDS,
+    WorldReferenceScope,
+    WorldReferenceVault,
+)
+from .world_service import (
+    WorldInventInputs,
+    WorldPlaytestEvidence,
+    WorldProviderIdentity,
+    prepare_world_invent_inputs,
 )
 
 
@@ -110,6 +125,32 @@ _SHARED_ENGINE_ENVIRONMENT_NAMES = frozenset(
         "WORKSHOP_PRUSA_PROFILES",
     )
 )
+
+
+def _configured_world_reference_service(assignment: Any):
+    """Production injection seam; return ``(service, public_identity)``.
+
+    The default deliberately has no credential discovery. Deployments install
+    this Manager-side adapter without placing its object or authority in the
+    Inventor environment. Tests may replace this function deterministically.
+    """
+
+    del assignment
+    return None
+
+
+def _configured_world_playtest_evidence(
+    assignment: Any, result: Mapping[str, Any]
+) -> Optional[WorldPlaytestEvidence]:
+    """Production Manager seam for already verified raw-free evidence.
+
+    A deployment normally builds the value with
+    ``prepare_world_playtest_evidence`` and an isolated service. The default
+    cannot measure private references and therefore returns no evidence.
+    """
+
+    del assignment, result
+    return None
 
 
 def _has_inventor_catalog(root: Path) -> bool:
@@ -615,6 +656,35 @@ def _validate_child_workshop_state(
         if invented_value is not None
         else None
     )
+    world_inputs = getattr(assignment, "world_inputs", None)
+    if world_inputs is not None:
+        if lane != "little-worlds" or not isinstance(
+            world_inputs, WorldInventInputs
+        ):
+            raise WorkshopError("Manager world inputs belong to another lane")
+        world_inputs.assert_wish(assignment.wish)
+        if invented is not None:
+            world_inputs.assert_lane_contract(
+                invented.concept.get("lane_contract")
+            )
+            accepted = next(
+                (
+                    event.get("payload")
+                    for event in events
+                    if event.get("from_stage") == "invent"
+                    and event.get("to_stage") == "make"
+                    and isinstance(event.get("payload"), Mapping)
+                ),
+                None,
+            )
+            if (
+                not isinstance(accepted, Mapping)
+                or accepted.get("world_inputs_sha256")
+                != world_inputs.binding_sha256
+            ):
+                raise WorkshopError(
+                    "durable Invent state is not bound to Manager world inputs"
+                )
     delivery = None
     if status == "delivered":
         delivery = _delivered_from_event(payload.get("delivery"))
@@ -779,6 +849,19 @@ def _resume_factory_instructions(
         assert_current()
     card = assignment.decision.selected.card
     lane, level = _manifest_workshop_shape(card)
+    assignment, world_need = _refresh_world_instructions_evidence(
+        assignment, result
+    )
+    if world_need is not None:
+        return {
+            **dict(result),
+            "status": "waiting",
+            "job": "instructions",
+            "needs": [world_need.to_dict()],
+            "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                assignment
+            ).result_binding(),
+        }
     credentials = factory_credentials_from_environment(
         inventor_id, selected_environment
     )
@@ -812,6 +895,13 @@ def _resume_factory_instructions(
         ),
         "runtime_root": runtime_root,
     }
+    if lane == "little-worlds":
+        workshop_kwargs.update(
+            {
+                "world_inputs": getattr(assignment, "world_inputs", None),
+                "world_evidence": getattr(assignment, "world_evidence", None),
+            }
+        )
     # These inert seams reconstruct only the checkpoint-bound contribution
     # level. They are never called by resume_instructions and never import or
     # execute the inventor's custom implementation.
@@ -1513,7 +1603,11 @@ def _exact_playtest_checkpoint_problem(
 
 
 def _exact_instructions_checkpoint_problem(
-    located: Mapping[str, Any], run_root: Path, latest_payload: Mapping[str, Any]
+    located: Mapping[str, Any],
+    run_root: Path,
+    latest_payload: Mapping[str, Any],
+    *,
+    manager_assignment: Any = None,
 ) -> Optional[str]:
     try:
         latest = located["latest"]
@@ -1558,8 +1652,19 @@ def _exact_instructions_checkpoint_problem(
         )
         made.assert_current()
         blueprint = ToyBlueprint.for_lane(metadata["lane"])
+        world_kwargs = {}
+        if blueprint.lane == "little-worlds" and manager_assignment is not None:
+            world_kwargs = {
+                "wish": manager_assignment.wish,
+                "world_inputs": getattr(
+                    manager_assignment, "world_inputs", None
+                ),
+                "world_evidence": getattr(
+                    manager_assignment, "world_evidence", None
+                ),
+            }
         if not playtested.passed or _playtest_policy_needs(
-            blueprint, made, playtested, evidence_root
+            blueprint, made, playtested, evidence_root, **world_kwargs
         ):
             return "Instructions checkpoint no longer satisfies Playtest policy"
         if (
@@ -1577,7 +1682,10 @@ def _exact_instructions_checkpoint_problem(
 
 
 def _resume_availability(
-    located: Mapping[str, Any], page: Optional[Mapping[str, Any]] = None
+    located: Mapping[str, Any],
+    page: Optional[Mapping[str, Any]] = None,
+    *,
+    manager_assignment: Any = None,
 ) -> tuple[bool, str, str]:
     """Decide whether durable state supports an exact, non-overlapping resume."""
 
@@ -1702,7 +1810,10 @@ def _resume_availability(
             modern_checkpoint or legacy_waiting_checkpoint
         ):
             checkpoint_problem = _exact_instructions_checkpoint_problem(
-                located, run_root.resolve(strict=True), payload
+                located,
+                run_root.resolve(strict=True),
+                payload,
+                manager_assignment=manager_assignment,
             )
             if checkpoint_problem is not None:
                 return False, "invalid-instructions-checkpoint", checkpoint_problem
@@ -2317,6 +2428,261 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
     return assignment, located
 
 
+def _world_assignment_view(
+    assignment: Any,
+    *,
+    world_inputs: WorldInventInputs,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
+) -> Any:
+    """Add raw-free world bindings without moving a service into child code."""
+
+    world_inputs.assert_wish(assignment.wish)
+    if world_evidence is not None and not isinstance(
+        world_evidence, WorldPlaytestEvidence
+    ):
+        raise WorkshopError("configured world evidence is not typed")
+    return SimpleNamespace(
+        wish=assignment.wish,
+        inventor_id=assignment.inventor_id,
+        playtest_rounds=assignment.playtest_rounds,
+        assignment_sha256=assignment.assignment_sha256,
+        entrypoint=tuple(assignment.entrypoint),
+        assert_current=assignment.assert_current,
+        decision=assignment.decision,
+        world_inputs=world_inputs,
+        world_evidence=world_evidence,
+    )
+
+
+def _prepare_assignment_world_inputs(
+    assignment: Any, *, allow_same_user_local_vault: bool
+) -> Any:
+    """Fetch exact descriptors in the Manager before contribution code runs."""
+
+    card = assignment.decision.selected.card
+    lane, unused_level = _manifest_workshop_shape(card)
+    del unused_level
+    if lane != "little-worlds":
+        if allow_same_user_local_vault:
+            raise WorkshopError(
+                "--allow-same-user-local-vault belongs only to a little-worlds Wish"
+            )
+        return assignment
+    configured = _configured_world_reference_service(assignment)
+    if configured is None and allow_same_user_local_vault:
+        vault = WorldReferenceVault(
+            Path(card.root),
+            trust_same_user_processes=True,
+        )
+        identity = WorldProviderIdentity(
+            "workshop-local-world-reference-vault",
+            "1.0.0",
+            hashlib.sha256(
+                b"world-reference-vault-v1:same-user-local-development"
+            ).hexdigest(),
+            LOCAL_STORAGE_SECURITY_BOUNDARY,
+        )
+        configured = (vault, identity)
+    if configured is None:
+        return assignment
+    if (
+        not isinstance(configured, tuple)
+        or len(configured) != 2
+        or not isinstance(configured[1], WorldProviderIdentity)
+    ):
+        raise WorkshopError(
+            "configured world reference service must return (service, WorldProviderIdentity)"
+        )
+    world_inputs = prepare_world_invent_inputs(
+        assignment.wish, configured[0], configured[1]
+    )
+    return _world_assignment_view(assignment, world_inputs=world_inputs)
+
+
+def _world_instructions_evidence_need() -> Need:
+    return Need(
+        "instructions",
+        "world-playtest-evidence",
+        "The Manager cannot re-verify the exact private-reference Playtest "
+        "envelope for this approved little world.",
+        "Reconnect the isolated WorldPlaytestService and resume this exact Wish. "
+        "Instructions and Factory publication remain blocked until its raw-free "
+        "evidence matches the durable Wish, Invent scope, Make, and Playtest receipts.",
+    )
+
+
+def _durable_world_instructions_results(
+    assignment: Any,
+    result: Mapping[str, Any],
+    located: Optional[Mapping[str, Any]] = None,
+):
+    """Rebuild exact approved bytes for Manager-side evidence re-verification."""
+
+    if located is None:
+        card = assignment.decision.selected.card
+        database = Path(card.root) / ".workshop" / "workshop.sqlite3"
+        if database.is_symlink() or not database.is_file():
+            raise WorkshopError("world Instructions has no durable Workshop store")
+        runtime = _ReadOnlyWorkshopStore(database)
+        product = runtime.get_product(assignment.wish.product_id)
+        if not runtime.verify_event_chain(assignment.wish.product_id):
+            raise WorkshopError(
+                "world Instructions event chain is not trustworthy"
+            )
+        events = runtime.events(assignment.wish.product_id)
+        located = {
+            "card": card,
+            "runtime": runtime,
+            "product": product,
+            "events": events,
+            "latest": events[-1] if events else None,
+        }
+    product = located.get("product")
+    latest = located.get("latest")
+    events = located.get("events")
+    if (
+        not isinstance(product, Mapping)
+        or product.get("stage") != "instructions"
+        or not isinstance(latest, Mapping)
+        or not isinstance(events, Sequence)
+    ):
+        raise WorkshopError(
+            "Manager world evidence re-verification requires durable Instructions state"
+        )
+    card = assignment.decision.selected.card
+    run_root = (
+        Path(card.root)
+        / ".workshop"
+        / "runs"
+        / assignment.wish.product_id
+    )
+    checkpoint, unused_checkpoint_sha256 = _read_instructions_checkpoint(
+        run_root.resolve(strict=True), latest
+    )
+    del unused_checkpoint_sha256
+    made, playtested, evidence_root = _rebuild_checkpoint_results(
+        run_root.resolve(strict=True), checkpoint
+    )
+    _, invented = _accepted_invented_record(located)
+    if invented is None:
+        raise WorkshopError(
+            "world Instructions has no exact accepted Invented record"
+        )
+    world_inputs = getattr(assignment, "world_inputs", None)
+    if not isinstance(world_inputs, WorldInventInputs):
+        return None, None, None, None, _world_instructions_evidence_need()
+    world_inputs.assert_wish(assignment.wish)
+    lane_contract = invented.concept.get("lane_contract")
+    world_inputs.assert_lane_contract(lane_contract)
+    personalization = world_personalization_from_made(made)
+    expected_personalization = {
+        "consented_references": lane_contract.get("consented_references"),
+        "feature_to_form_map": lane_contract.get("feature_to_form_map"),
+    }
+    if personalization != expected_personalization:
+        raise WorkshopError(
+            "durable Make personalization differs from its accepted Invent scope"
+        )
+    result_artifact = result.get("artifact_sha256")
+    if result_artifact is not None and result_artifact != made.artifact_sha256:
+        raise WorkshopError(
+            "Manager Instructions result names different durable Make bytes"
+        )
+    return made, playtested, evidence_root, personalization, None
+
+
+def _refresh_world_instructions_evidence(
+    assignment: Any,
+    result: Mapping[str, Any],
+    *,
+    located: Optional[Mapping[str, Any]] = None,
+) -> tuple[Any, Optional[Need]]:
+    """Re-authorize a crash-resumed world release before any Factory effect."""
+
+    card = assignment.decision.selected.card
+    lane, unused_level = _manifest_workshop_shape(card)
+    del unused_level
+    if lane != "little-worlds" or result.get("job") != "instructions":
+        return assignment, None
+    made, playtested, evidence_root, personalization, need = (
+        _durable_world_instructions_results(assignment, result, located)
+    )
+    if need is not None:
+        return assignment, need
+    world_inputs = getattr(assignment, "world_inputs", None)
+    evidence = getattr(assignment, "world_evidence", None)
+    if evidence is None:
+        evidence_request = {
+            **dict(result),
+            "artifact_sha256": made.artifact_sha256,
+            "world_inputs_sha256": world_inputs.binding_sha256,
+        }
+        evidence = _configured_world_playtest_evidence(
+            assignment, evidence_request
+        )
+    if evidence is None:
+        return assignment, _world_instructions_evidence_need()
+    if not isinstance(evidence, WorldPlaytestEvidence):
+        raise WorkshopError("configured world evidence is not typed")
+    evidence.assert_context(
+        assignment.wish,
+        made.artifact_sha256,
+        personalization,
+        world_inputs,
+    )
+    needs = _playtest_policy_needs(
+        ToyBlueprint.for_lane("little-worlds"),
+        made,
+        playtested,
+        evidence_root,
+        wish=assignment.wish,
+        world_inputs=world_inputs,
+        world_evidence=evidence,
+    )
+    if not playtested.passed or needs:
+        raise WorkshopError(
+            "durable world Playtest no longer satisfies exact Manager release policy"
+        )
+    return (
+        _world_assignment_view(
+            assignment,
+            world_inputs=world_inputs,
+            world_evidence=evidence,
+        ),
+        None,
+    )
+
+
+def _continue_world_playtest_as_manager(
+    assignment: Any, result: Mapping[str, Any]
+) -> tuple[Any, Mapping[str, Any]]:
+    """Resume once with independently verified evidence, when configured."""
+
+    needs = result.get("needs")
+    is_world_wait = (
+        result.get("status") == "waiting"
+        and result.get("job") == "playtest"
+        and isinstance(needs, list)
+        and any(
+            isinstance(need, Mapping)
+            and need.get("capability") == "world-test"
+            for need in needs
+        )
+    )
+    world_inputs = getattr(assignment, "world_inputs", None)
+    if not is_world_wait or not isinstance(world_inputs, WorldInventInputs):
+        return assignment, dict(result)
+    evidence = _configured_world_playtest_evidence(assignment, result)
+    if evidence is None:
+        return assignment, dict(result)
+    enhanced = _world_assignment_view(
+        assignment,
+        world_inputs=world_inputs,
+        world_evidence=evidence,
+    )
+    return enhanced, _resume_inventor(enhanced)
+
+
 def _is_site_wait(result: Mapping[str, Any]) -> bool:
     needs = result.get("needs")
     return (
@@ -2386,13 +2752,49 @@ def _resume(args: argparse.Namespace) -> int:
     roots = _catalog_roots(args.root, include_retained=args.root is None)
     selected_root, _ = _root_for_durable_wish(roots, args.product_id)
     assignment, located = _resume_assignment(selected_root, args.product_id)
+    assignment = _prepare_assignment_world_inputs(
+        assignment,
+        allow_same_user_local_vault=args.allow_same_user_local_vault,
+    )
     status = _status_receipt(selected_root, args.product_id)
     needs = status.get("needs", [])
-    available, kind, unavailable_reason = _resume_availability(
-        located, status.get("page")
+    evidence_probe = {
+        "status": status.get("status"),
+        "job": status.get("job"),
+        "needs": needs,
+        "artifact_sha256": status.get("artifact_sha256"),
+    }
+    assignment, world_instructions_need = _refresh_world_instructions_evidence(
+        assignment,
+        evidence_probe,
+        located=located,
     )
+    if world_instructions_need is None:
+        available, kind, unavailable_reason = _resume_availability(
+            located,
+            status.get("page"),
+            manager_assignment=assignment,
+        )
+    else:
+        available, kind, unavailable_reason = (
+            False,
+            "world-playtest-evidence",
+            world_instructions_need.reason,
+        )
     result: Mapping[str, Any]
-    if not available:
+    if world_instructions_need is not None:
+        result = {
+            "product_id": args.product_id,
+            "status": "waiting",
+            "job": "instructions",
+            "playtest_rounds": assignment.playtest_rounds,
+            "artifact_sha256": status.get("artifact_sha256"),
+            "needs": [world_instructions_need.to_dict()],
+            "manager_assignment": ManagerAssignmentHandoff.from_assignment(
+                assignment
+            ).result_binding(),
+        }
+    elif not available:
         result = {
             "product_id": args.product_id,
             "status": status["status"],
@@ -2423,6 +2825,7 @@ def _resume(args: argparse.Namespace) -> int:
         waiting = {
             "status": "waiting",
             "job": "instructions",
+            "artifact_sha256": status.get("artifact_sha256"),
             "needs": needs,
             "manager_assignment": ManagerAssignmentHandoff.from_assignment(
                 assignment
@@ -2458,6 +2861,15 @@ def _resume(args: argparse.Namespace) -> int:
             selected_root,
             publish=args.publish,
         )
+    assignment, result = _continue_world_playtest_as_manager(
+        assignment, result
+    )
+    result = _continue_instructions_as_manager(
+        assignment,
+        result,
+        selected_root,
+        publish=args.publish,
+    )
     if args.publish and isinstance(result.get("page_url"), str):
         result = {
             **result,
@@ -2668,6 +3080,116 @@ def _doctor(args: argparse.Namespace) -> int:
     return 0 if receipt["status"] == "ready" else 1
 
 
+def _references(args: argparse.Namespace) -> int:
+    """Continue one exact little-worlds Wish with private customer inputs."""
+
+    roots = _catalog_roots(args.root, include_retained=True)
+    _, located = _root_for_durable_wish(roots, args.product_id)
+    handoff = located.get("handoff")
+    if not isinstance(handoff, ManagerAssignmentHandoff):
+        raise WorkshopError(
+            "private references require the exact saved Manager assignment"
+        )
+    wish = handoff.wish
+    if wish.product_id != args.product_id:
+        raise WorkshopError("saved Manager assignment belongs to another Wish")
+    card = located["card"]
+    if args.references_action == "add":
+        if not args.allow_same_user_local_vault:
+            raise WorkshopError(
+                "the local vault is not isolated from Inventor code running as "
+                "the same OS user; use a production reference service, or pass "
+                "--allow-same-user-local-vault only for trusted development"
+            )
+        runtime = located.get("runtime")
+        if runtime is None or located.get("product") is None:
+            raise WorkshopError(
+                "private references can be added after the Wish has a durable Workshop run"
+            )
+        lease = runtime.active_lease(wish.product_id)
+        if lease is not None:
+            raise WorkshopError(
+                "the Wish is still running; wait for its durable waiting result before adding private references"
+            )
+        scope = WorldReferenceScope(
+            reference_id=args.reference_id,
+            subject_kind=args.subject_kind,
+            subject=args.subject,
+            rights_basis=args.rights_basis,
+            allowed_features=tuple(args.allowed_feature),
+            excluded_features=tuple(args.excluded_feature),
+            reviewer_id=args.reviewer_id,
+            verification_method=args.verification_method,
+        )
+        vault = WorldReferenceVault(
+            Path(card.root),
+            create=True,
+            trust_same_user_processes=True,
+        )
+        receipt = vault.add(
+            wish,
+            scope=scope,
+            reference_path=args.reference_file,
+            consent_path=args.consent_file,
+            media_type=args.media_type,
+        )
+        document = {
+            "schema_version": 1,
+            "status": "staged-local-development",
+            "wish": wish.product_id,
+            "reference": receipt.to_dict(),
+            "integration_status": {
+                "invent": "ready-on-explicit-manager-resume",
+                "playtest": "external-isolated-service-required",
+            },
+        }
+        if args.json:
+            print(json.dumps(document, indent=2, sort_keys=True))
+        else:
+            print(
+                "Reference %s is staged in the same-user local development vault for %s."
+                % (receipt.reference_id, wish.product_id)
+            )
+            print(
+                "Resume with 'workshop resume %s --allow-same-user-local-vault' "
+                "to pass only raw-free scope and hashes to shared Invent."
+                % wish.product_id
+            )
+            print(
+                "This vault remains readable by same-user Inventor code, and World "
+                "Playtest still requires an external isolated service."
+            )
+        return 0
+
+    if WorldReferenceVault.exists(Path(card.root)):
+        receipts = WorldReferenceVault(
+            Path(card.root), trust_same_user_processes=True
+        ).list(wish)
+    else:
+        receipts = ()
+    document = {
+        "schema_version": 1,
+        "wish": wish.product_id,
+        "references": [receipt.to_dict() for receipt in receipts],
+    }
+    if args.json:
+        print(json.dumps(document, indent=2, sort_keys=True))
+    elif receipts:
+        for receipt in receipts:
+            print(
+                "%s  %s  %d bytes  reviewer %s"
+                % (
+                    receipt.reference_id,
+                    receipt.content_sha256,
+                    receipt.content_bytes,
+                    receipt.reviewer_id,
+                )
+            )
+    else:
+        print("No private references are sealed for %s." % wish.product_id)
+    return 0
+
+
 def _wish(args: argparse.Namespace) -> int:
     root = _catalog_roots(args.root)[0]
     objective = " ".join(args.objective)
@@ -2709,6 +3231,10 @@ def _wish(args: argparse.Namespace) -> int:
         showed_match = False
     else:
         _save_manager_assignment(assignment)
+        assignment = _prepare_assignment_world_inputs(
+            assignment,
+            allow_same_user_local_vault=False,
+        )
         print(
             "Matched with %s." % assignment.decision.selected.card.name,
             file=progress,
@@ -2726,6 +3252,9 @@ def _wish(args: argparse.Namespace) -> int:
             flush=True,
         )
         result = _run_inventor(assignment)
+        assignment, result = _continue_world_playtest_as_manager(
+            assignment, result
+        )
         result = _resume_factory_instructions(assignment, result)
         if args.publish:
             result = {
@@ -3097,6 +3626,14 @@ def parser() -> argparse.ArgumentParser:
         help="Workshop checkout or inventor collection (default: find the exact retained run)",
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    resume.add_argument(
+        "--allow-same-user-local-vault",
+        action="store_true",
+        help=(
+            "development only: let the Manager read the local reference vault; "
+            "same-user Inventor code can also read those files"
+        ),
+    )
     resume_publication = resume.add_mutually_exclusive_group()
     resume_publication.add_argument(
         "--publish",
@@ -3111,6 +3648,113 @@ def parser() -> argparse.ArgumentParser:
         help="create/reconcile the authenticated draft without making it public",
     )
     resume.set_defaults(handler=_resume, publish=True)
+
+    references = subcommands.add_parser(
+        "references",
+        help="stage Wish-bound little-world reference inputs",
+        description=(
+            "Stage or inspect reference material for a saved little-worlds Wish. "
+            "The current 0600 local backend is development-only and is not isolated "
+            "from Inventor code running as the same OS user."
+        ),
+    )
+    reference_commands = references.add_subparsers(
+        dest="references_action", required=True, metavar="ACTION"
+    )
+    reference_add = reference_commands.add_parser(
+        "add",
+        help="stage one reference and customer-supplied attestation record",
+        description=(
+            "Seal one immutable reference id for an exact, already-started "
+            "little-worlds Wish. This stages the customer's declaration; it does "
+            "not independently prove legal rights or likeness recognition."
+        ),
+    )
+    reference_add.add_argument("product_id", help="Wish id printed by 'workshop wish'")
+    reference_add.add_argument("reference_id", help="stable lowercase id for this attachment")
+    reference_add.add_argument("reference_file", type=Path, help="private JPEG, PNG, or WebP file")
+    reference_add.add_argument(
+        "--consent-file",
+        type=Path,
+        required=True,
+        help="customer-created attestation/rights record (never generated by the Workshop)",
+    )
+    reference_add.add_argument(
+        "--media-type",
+        choices=tuple(sorted(SUPPORTED_WORLD_MEDIA_TYPES)),
+        required=True,
+        help="declared media type of the reference bytes",
+    )
+    reference_add.add_argument(
+        "--subject-kind",
+        choices=tuple(sorted(SUPPORTED_WORLD_SUBJECT_KINDS)),
+        required=True,
+        help="supported declared subject class; celebrity, franchise, and third-party likenesses are rejected",
+    )
+    reference_add.add_argument(
+        "--subject", required=True, help="bounded subject description used by Invent"
+    )
+    reference_add.add_argument(
+        "--rights-basis",
+        required=True,
+        help="customer's declared ownership or authorization basis; not independently verified",
+    )
+    reference_add.add_argument(
+        "--allow",
+        dest="allowed_feature",
+        action="append",
+        required=True,
+        metavar="FEATURE",
+        help="one feature allowed by the customer-supplied scope record (repeatable)",
+    )
+    reference_add.add_argument(
+        "--exclude",
+        dest="excluded_feature",
+        action="append",
+        default=[],
+        metavar="FEATURE",
+        help="one feature excluded by the customer-supplied scope record (repeatable)",
+    )
+    reference_add.add_argument(
+        "--reviewer-id",
+        required=True,
+        help="claimed stable customer/order reviewer id for this exact scope",
+    )
+    reference_add.add_argument(
+        "--verification-method",
+        choices=tuple(sorted(SUPPORTED_WORLD_CONSENT_METHODS)),
+        default="customer-supplied-attestation-record",
+        help="declared record type; the local vault does not authenticate the customer or legal rights",
+    )
+    reference_add.add_argument(
+        "--allow-same-user-local-vault",
+        action="store_true",
+        help=(
+            "development only: acknowledge that local 0600 files are readable "
+            "by Inventor code running as the same OS user"
+        ),
+    )
+    reference_add.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or retained run containing the exact Wish",
+    )
+    reference_add.add_argument("--json", action="store_true", help="emit a raw-free JSON receipt")
+    reference_add.set_defaults(handler=_references)
+
+    reference_list = reference_commands.add_parser(
+        "list", help="list raw-free receipts for one exact Wish"
+    )
+    reference_list.add_argument("product_id", help="Wish id printed by 'workshop wish'")
+    reference_list.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or retained run containing the exact Wish",
+    )
+    reference_list.add_argument("--json", action="store_true", help="emit raw-free JSON")
+    reference_list.set_defaults(handler=_references)
 
     doctor = subcommands.add_parser(
         "doctor",

@@ -17,6 +17,7 @@ from typing import Any, Dict, Mapping, Optional, Sequence, TextIO, Tuple
 from .errors import ContractError
 from .make import Wish
 from .models import require_json_mapping, require_sha256
+from .world_service import WorldInventInputs, WorldPlaytestEvidence
 
 
 HANDOFF_KIND = "autonomous-workshop-manager-assignment"
@@ -127,14 +128,16 @@ class ManagerAssignmentHandoff:
     taste_sha256: Optional[str] = None
     implementation_sha256: Optional[str] = None
     entrypoint: Sequence[str] = field(default_factory=tuple)
+    world_inputs: Optional[WorldInventInputs] = None
+    world_evidence: Optional[WorldPlaytestEvidence] = None
     schema_version: int = 1
     kind: str = HANDOFF_KIND
     wish_sha256: str = field(init=False)
     handoff_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version not in (1, 2):
-            raise ContractError("Manager assignment handoff schema_version must be 1 or 2")
+        if type(self.schema_version) is not int or self.schema_version not in (1, 2, 3):
+            raise ContractError("Manager assignment handoff schema_version must be 1, 2, or 3")
         if self.kind != HANDOFF_KIND:
             raise ContractError("Manager assignment handoff kind is invalid")
         if not isinstance(self.wish, Wish):
@@ -162,6 +165,8 @@ class ManagerAssignmentHandoff:
                 raise ContractError(
                     "legacy Manager assignment handoff cannot claim v2 inventor identity"
                 )
+            if self.world_inputs is not None or self.world_evidence is not None:
+                raise ContractError("legacy Manager handoff cannot carry world inputs")
             entrypoint: Tuple[str, ...] = ()
         else:
             require_sha256(
@@ -173,6 +178,18 @@ class ManagerAssignmentHandoff:
                 "Manager assignment implementation sha256",
             )
             entrypoint = _entrypoint(self.entrypoint)
+            if self.schema_version == 2 and (
+                self.world_inputs is not None or self.world_evidence is not None
+            ):
+                raise ContractError("v2 Manager handoff cannot carry world inputs")
+            if self.schema_version == 3:
+                if not isinstance(self.world_inputs, WorldInventInputs):
+                    raise ContractError("v3 Manager handoff requires typed world inputs")
+                self.world_inputs.assert_wish(self.wish)
+                if self.world_evidence is not None and not isinstance(
+                    self.world_evidence, WorldPlaytestEvidence
+                ):
+                    raise ContractError("v3 Manager handoff world evidence is untyped")
         object.__setattr__(self, "entrypoint", entrypoint)
         object.__setattr__(self, "wish_sha256", _sha256(self.wish.to_dict()))
         object.__setattr__(self, "handoff_sha256", _sha256(self._identity_dict()))
@@ -188,13 +205,25 @@ class ManagerAssignmentHandoff:
             "decision_sha256": self.decision_sha256,
             "assignment_sha256": self.assignment_sha256,
         }
-        if self.schema_version == 2:
+        if self.schema_version in (2, 3):
             payload.update(
                 {
                     "manifest_sha256": self.manifest_sha256,
                     "taste_sha256": self.taste_sha256,
                     "implementation_sha256": self.implementation_sha256,
                     "entrypoint": list(self.entrypoint),
+                }
+            )
+        if self.schema_version == 3:
+            assert self.world_inputs is not None
+            payload.update(
+                {
+                    "world_inputs": self.world_inputs.to_dict(),
+                    "world_evidence": (
+                        self.world_evidence.to_dict()
+                        if self.world_evidence is not None
+                        else None
+                    ),
                 }
             )
         return payload
@@ -216,7 +245,7 @@ class ManagerAssignmentHandoff:
             "assignment_sha256": self.assignment_sha256,
             "handoff_sha256": self.handoff_sha256,
         }
-        if self.schema_version == 2:
+        if self.schema_version in (2, 3):
             payload.update(
                 {
                     "manifest_sha256": self.manifest_sha256,
@@ -225,13 +254,25 @@ class ManagerAssignmentHandoff:
                     "entrypoint": list(self.entrypoint),
                 }
             )
+        if self.schema_version == 3:
+            assert self.world_inputs is not None
+            payload.update(
+                {
+                    "world_inputs_sha256": self.world_inputs.binding_sha256,
+                    "world_evidence_sha256": (
+                        self.world_evidence.evidence_sha256
+                        if self.world_evidence is not None
+                        else None
+                    ),
+                }
+            )
         return payload
 
     @property
     def has_exact_inventor_identity(self) -> bool:
         """Whether this handoff can prove which contribution code may execute."""
 
-        return self.schema_version == 2
+        return self.schema_version in (2, 3)
 
     def require_exact_inventor_identity(self) -> None:
         """Reject legacy handoffs at contribution-code execution boundaries."""
@@ -311,6 +352,10 @@ class ManagerAssignmentHandoff:
             or assignment_entrypoint != entrypoint
         ):
             raise ContractError("Manager assignment contains stale inventor identity")
+        world_inputs = getattr(assignment, "world_inputs", None)
+        world_evidence = getattr(assignment, "world_evidence", None)
+        if world_evidence is not None and world_inputs is None:
+            raise ContractError("Manager assignment world evidence has no Invent inputs")
         handoff = cls(
             wish=wish,
             inventor_id=inventor_id,
@@ -321,7 +366,9 @@ class ManagerAssignmentHandoff:
             taste_sha256=taste,
             implementation_sha256=implementation,
             entrypoint=entrypoint,
-            schema_version=2,
+            world_inputs=world_inputs,
+            world_evidence=world_evidence,
+            schema_version=3 if world_inputs is not None else 2,
         )
         handoff.assert_inventor_current(card)
         return handoff
@@ -343,13 +390,15 @@ class ManagerAssignmentHandoff:
             "assignment_sha256",
             "handoff_sha256",
         }
-        if version == 2:
+        if version in (2, 3):
             expected_keys |= {
                 "manifest_sha256",
                 "taste_sha256",
                 "implementation_sha256",
                 "entrypoint",
             }
+        if version == 3:
+            expected_keys |= {"world_inputs", "world_evidence"}
         if set(payload) != expected_keys:
             raise ContractError("Manager assignment handoff fields are invalid")
         wish_value = payload["wish"]
@@ -368,6 +417,17 @@ class ManagerAssignmentHandoff:
             constraints=wish_value["constraints"],
             context=wish_value["context"],
         )
+        world_inputs = (
+            WorldInventInputs.from_dict(payload["world_inputs"])
+            if version == 3
+            else None
+        )
+        raw_world_evidence = payload.get("world_evidence")
+        world_evidence = (
+            WorldPlaytestEvidence.from_dict(raw_world_evidence)
+            if version == 3 and raw_world_evidence is not None
+            else None
+        )
         handoff = cls(
             wish=wish,
             inventor_id=payload["inventor_id"],
@@ -378,6 +438,8 @@ class ManagerAssignmentHandoff:
             taste_sha256=payload.get("taste_sha256"),
             implementation_sha256=payload.get("implementation_sha256"),
             entrypoint=payload.get("entrypoint", ()),
+            world_inputs=world_inputs,
+            world_evidence=world_evidence,
             schema_version=payload["schema_version"],
             kind=payload["kind"],
         )

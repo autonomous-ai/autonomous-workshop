@@ -18,6 +18,7 @@ from .models import Receipt, require_json_mapping, require_sha256, require_utc_t
 from .playtest import Playtest
 from .taste import Taste
 from .toys import PLAYTHING_LANES, ToyBlueprint, WORKSHOP_JOBS
+from .world_service import WorldInventInputs, WorldPlaytestEvidence
 
 
 _SEVERITIES = frozenset(("note", "improve", "block"))
@@ -157,6 +158,7 @@ class InventContext:
     taste: Taste
     blueprint: ToyBlueprint
     workspace: Path
+    world_inputs: Optional[WorldInventInputs] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -167,6 +169,15 @@ class InventContext:
         if not root.is_absolute():
             raise ContractError("InventContext workspace must be absolute")
         object.__setattr__(self, "workspace", root)
+        if self.blueprint.lane == "little-worlds":
+            if self.world_inputs is not None:
+                if not isinstance(self.world_inputs, WorldInventInputs):
+                    raise ContractError(
+                        "little-worlds Invent requires typed Manager world inputs"
+                    )
+                self.world_inputs.assert_wish(self.wish)
+        elif self.world_inputs is not None:
+            raise ContractError("world reference inputs belong only to little-worlds")
         self.wish.assert_valid()
         self.taste.assert_current()
 
@@ -339,6 +350,8 @@ class PlaytestContext:
     made: Made
     workspace: Path
     playtest_rounds: int = 1
+    world_inputs: Optional[WorldInventInputs] = None
+    world_evidence: Optional[WorldPlaytestEvidence] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish) or not isinstance(self.taste, Taste):
@@ -363,6 +376,21 @@ class PlaytestContext:
         if not root.is_absolute():
             raise ContractError("PlaytestContext workspace must be absolute")
         object.__setattr__(self, "workspace", root)
+        if self.blueprint.lane == "little-worlds":
+            if self.world_inputs is not None:
+                if not isinstance(self.world_inputs, WorldInventInputs):
+                    raise ContractError(
+                        "little-worlds Playtest requires typed Manager world inputs"
+                    )
+                self.world_inputs.assert_wish(self.wish)
+            if self.world_evidence is not None and not isinstance(
+                self.world_evidence, WorldPlaytestEvidence
+            ):
+                raise ContractError(
+                    "little-worlds Playtest requires typed Manager world evidence"
+                )
+        elif self.world_inputs is not None or self.world_evidence is not None:
+            raise ContractError("world evidence belongs only to little-worlds")
         self.made.assert_current()
 
 

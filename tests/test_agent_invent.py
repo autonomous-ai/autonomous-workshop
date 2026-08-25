@@ -28,6 +28,12 @@ from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from inventor_workshop.world_reference_vault import WorldReferenceScope
+from inventor_workshop.world_service import (
+    WorldInventInputs,
+    WorldInventReference,
+    WorldProviderIdentity,
+)
 
 
 LANES = (
@@ -340,11 +346,49 @@ class AgentInventTest(unittest.TestCase):
             if lane == "holdable-science"
             else "A wind-up version of my dog that walks"
         )
+        wish = Wish.create("walking-dog", objective)
+        world_inputs = None
+        if lane == "little-worlds":
+            contract = lane_contract(lane)["consented_references"][0]
+            scope = WorldReferenceScope(
+                contract["reference_id"],
+                "customer-owned-subject",
+                contract["subject"],
+                contract["consent_or_rights_basis"],
+                tuple(contract["allowed_features"]),
+                tuple(contract["excluded_features"]),
+                "customer-order-42",
+                "customer-supplied-attestation-record",
+            )
+            wish_sha256 = json_sha256(wish.to_dict())
+            world_inputs = WorldInventInputs(
+                wish.product_id,
+                wish_sha256,
+                WorldProviderIdentity(
+                    "fixture-world-reference-service", "1.0.0", "9" * 64
+                ),
+                (
+                    WorldInventReference(
+                        scope,
+                        wish.product_id,
+                        wish_sha256,
+                        "8" * 64,
+                        "7" * 64,
+                        128,
+                        "6" * 64,
+                        64,
+                        "image/png",
+                        "8" * 64,
+                        "5" * 64,
+                    ),
+                ),
+            )
         return InventContext(
-            Wish.create("walking-dog", objective),
+            wish,
             load_taste(self.inventor),
             ToyBlueprint.for_lane(lane),
             (self.root / ("invent-workspace-" + lane)).absolute(),
+            world_inputs,
         )
 
     def research(self, context=None):

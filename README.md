@@ -158,18 +158,14 @@ tests. Implement `playtest(context)` to return evidence and feedback; failed
 tests go back to Make. Custom Playtest always includes Custom Make.
 
 Infrastructure is not a custom Inventor. The shared Playtest already includes
-pinned checkers and primitive moving-machine providers. Install authoritative
-science sources or a private consent/reference vault field by field and keep
-the rest of the Workshop:
-
-```python
-from inventor_workshop.agent_playtest import LaneAwarePlaytester
-
-playtest = LaneAwarePlaytester(
-    science_provider=workshop_science_sources,
-    world_provider=workshop_consent_vault,
-)
-```
+pinned checkers and moving-machine providers. Independent science sources and
+private personalization also stay in shared Workshop services. For little
+worlds, use the Workshop-owned
+[`references` input contract](docs/PRIVATE_WORLD_REFERENCES.md). Its current
+same-user local backend is development-only. On explicit resume it can pass
+only raw-free scope and hashes to shared Invent; World Playtest still requires
+raw-free evidence from an external isolated Manager-side service. Raw customer
+bytes never belong in the Inventor child process.
 
 A custom worker may change how a check runs, but never the Workshop release
 bar. Each required capability still needs exact, sealed evidence. Use the

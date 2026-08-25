@@ -30,6 +30,15 @@ from inventor_workshop.playtest_release import playtest_release_needs
 from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
+from inventor_workshop.world_reference_vault import WorldReferenceScope
+from inventor_workshop.world_service import (
+    WorldEvidenceCase,
+    WorldEvidenceReference,
+    WorldInventInputs,
+    WorldInventReference,
+    WorldPlaytestEvidence,
+    WorldProviderIdentity,
+)
 
 
 def _write_json(path, value):
@@ -227,7 +236,102 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             2,
         )
 
-    def release_needs(self, context, capability, prepared, *, tamper=None):
+    def manager_world_context(self, contract, *, suffix):
+        base = self.context("little-worlds", contract, suffix=suffix)
+        scope_contract = contract["consented_references"][0]
+        scope = WorldReferenceScope(
+            scope_contract["reference_id"],
+            "customer-owned-subject",
+            scope_contract["subject"],
+            scope_contract["consent_or_rights_basis"],
+            tuple(scope_contract["allowed_features"]),
+            tuple(scope_contract["excluded_features"]),
+            "customer-order-42",
+            "customer-supplied-attestation-record",
+        )
+        inputs = WorldInventInputs(
+            base.wish.product_id,
+            json_sha256(base.wish.to_dict()),
+            WorldProviderIdentity(
+                "isolated-world-reference-service", "1.0.0", "1" * 64
+            ),
+            (
+                WorldInventReference(
+                    scope,
+                    base.wish.product_id,
+                    json_sha256(base.wish.to_dict()),
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "2" * 64,
+                    "5" * 64,
+                ),
+            ),
+        )
+        personalization = {
+            "consented_references": contract["consented_references"],
+            "feature_to_form_map": contract["feature_to_form_map"],
+        }
+        mapping = contract["feature_to_form_map"][0]
+        evidence = WorldPlaytestEvidence(
+            base.wish.product_id,
+            json_sha256(base.wish.to_dict()),
+            base.made.artifact_sha256,
+            json_sha256(personalization),
+            inputs.binding_sha256,
+            WorldProviderIdentity(
+                "isolated-world-comparison-service", "2.0.0", "6" * 64
+            ),
+            (
+                WorldEvidenceReference(
+                    scope.reference_id,
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "authenticated-customer-supplied-scope-record",
+                    "2026-08-26T01:02:03Z",
+                    {"authorization_sha256": "7" * 64},
+                ),
+            ),
+            (
+                WorldEvidenceCase(
+                    mapping["reference_id"],
+                    mapping["reference_feature"],
+                    mapping["recognition_test"],
+                    "3" * 64,
+                    True,
+                    True,
+                    "deterministic-feature-comparison",
+                ),
+            ),
+            {"attestation_sha256": "8" * 64},
+        )
+        return PlaytestContext(
+            base.wish,
+            base.taste,
+            base.blueprint,
+            base.round,
+            base.made,
+            base.workspace,
+            base.playtest_rounds,
+            inputs,
+            evidence,
+        )
+
+    def release_needs(
+        self,
+        context,
+        capability,
+        prepared,
+        *,
+        tamper=None,
+    ):
         evidence_root = context.workspace
         evidence_root.mkdir()
         proof = prepared.seal(evidence_root)
@@ -270,7 +374,13 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             )
         )
         return playtest_release_needs(
-            context.blueprint, context.made, playtested, evidence_root
+            context.blueprint,
+            context.made,
+            playtested,
+            evidence_root,
+            wish=context.wish,
+            world_inputs=context.world_inputs,
+            world_evidence=context.world_evidence,
         )
 
     @staticmethod
@@ -787,7 +897,11 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             world_provider=lambda unused_context, unused_map: verification
         )
         prepared = providers.prepare(context, "world-test")
-        self.assert_core_accepts_capability(context, "world-test", prepared)
+        # The legacy provider fixture demonstrates raw-byte exclusion only. It
+        # cannot cross the canonical little-world release bar without typed
+        # Manager Invent inputs and independent Playtest evidence.
+        needs = self.release_needs(context, "world-test", prepared)
+        self.assertIn("world-test", {item.capability for item in needs})
         sealed = b"".join(
             path.read_bytes()
             for path in context.workspace.rglob("*")
@@ -830,6 +944,108 @@ class LanePlaytestProvidersTest(unittest.TestCase):
             "world-test",
             tampered,
             tamper=forge_likeness,
+        )
+        self.assertIn("world-test", {item.capability for item in needs})
+
+    def test_canonical_world_release_requires_exact_manager_envelope(self):
+        contract = {
+            "schema_version": 1,
+            "lane": "little-worlds",
+            "consented_references": [
+                {
+                    "reference_id": "customer-dog",
+                    "subject": "the customer's dog",
+                    "consent_or_rights_basis": "customer upload declaration",
+                    "allowed_features": ["proud neck posture"],
+                    "excluded_features": ["home address"],
+                }
+            ],
+            "feature_to_form_map": [
+                {
+                    "reference_id": "customer-dog",
+                    "reference_feature": "proud neck posture",
+                    "physical_form": "raised miniature silhouette",
+                    "recognition_test": "posture remains recognizable in profile",
+                }
+            ],
+        }
+        context = self.manager_world_context(contract, suffix="manager-world")
+        prepared = WorkshopLanePlaytestProviders().prepare(context, "world-test")
+        needs = self.release_needs(
+            context,
+            "world-test",
+            prepared,
+        )
+        self.assertNotIn("world-test", {item.capability for item in needs})
+
+        legacy_context = self.context(
+            "little-worlds", contract, suffix="manager-world-missing"
+        )
+        private_reference = b"legacy private fixture"
+        legacy = WorkshopLanePlaytestProviders(
+            world_provider=lambda unused_context, unused_map: WorldVerification(
+                ProviderIdentity(
+                    "self-declared-provider",
+                    "1.0.0",
+                    "9" * 64,
+                    "private-reference-feature-comparison",
+                ),
+                (
+                    WorldConsentRecord(
+                        "customer-dog",
+                        "the customer's dog",
+                        "customer upload declaration",
+                        ("proud neck posture",),
+                        ("home address",),
+                        "self-declared-record",
+                        "2026-08-26T01:02:03Z",
+                        b"self-declared consent",
+                    ),
+                ),
+                (
+                    WorldReferenceMaterial(
+                        "customer-dog", "image/jpeg", private_reference
+                    ),
+                ),
+                (
+                    WorldLikenessCase(
+                        "customer-dog",
+                        "proud neck posture",
+                        "posture remains recognizable in profile",
+                        hashlib.sha256(private_reference).hexdigest(),
+                        True,
+                        True,
+                        "vision-feature-comparison",
+                    ),
+                ),
+            )
+        ).prepare(legacy_context, "world-test")
+        needs = self.release_needs(
+            legacy_context,
+            "world-test",
+            legacy,
+        )
+        self.assertIn("world-test", {item.capability for item in needs})
+
+        def tamper(root, proof):
+            def mutate(document):
+                document["payload"]["provider_attestation"][
+                    "attestation_sha256"
+                ] = "a" * 64
+
+            self.rewrite_receipt(root, proof, "likeness-traces", mutate)
+
+        tampered_context = self.manager_world_context(
+            contract, suffix="manager-world-tampered"
+        )
+        tampered = WorkshopLanePlaytestProviders().prepare(
+            tampered_context, "world-test"
+        )
+        needs = self.release_needs(
+            tampered_context,
+            "world-test",
+            tampered,
+            tamper=tamper,
         )
         self.assertIn("world-test", {item.capability for item in needs})
 
@@ -896,7 +1112,14 @@ class LanePlaytestProvidersTest(unittest.TestCase):
         with self.assertRaises(WaitingFor) as caught:
             WorkshopLanePlaytestProviders().prepare(world, "world-test")
         self.assertEqual(caught.exception.needs[0].capability, "world-test")
-        self.assertIn("Never", caught.exception.needs[0].instructions)
+        self.assertIn(
+            "external isolated WorldPlaytestService",
+            caught.exception.needs[0].instructions,
+        )
+        self.assertIn(
+            "not legal-consent proof",
+            caught.exception.needs[0].instructions,
+        )
 
     def test_language_model_opinion_cannot_be_provider_identity(self):
         with self.assertRaisesRegex(Exception, "opinion alone"):

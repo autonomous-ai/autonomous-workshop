@@ -307,6 +307,74 @@ class CliTest(unittest.TestCase):
         )
 
     @staticmethod
+    def durable_world_instructions_fixture(root: Path):
+        """Build an approved world checkpoint, then discard Manager envelopes."""
+
+        inventor_id = "eve"
+        inventor_root = root / "inventors" / inventor_id
+        card, taste = CliTest.inventor_identity(
+            inventor_root,
+            inventor_id,
+            lane="little-worlds",
+            level="taste-only",
+        )
+        wish = Wish.create(
+            "wish-world-crash",
+            "A tiny world using one exact admitted feature",
+        )
+        assignment = SimpleNamespace(
+            wish=wish,
+            inventor_id=inventor_id,
+            playtest_rounds=4,
+            assignment_sha256="a" * 64,
+            entrypoint=tuple(card.entrypoint),
+            decision=SimpleNamespace(
+                decision_sha256="d" * 64,
+                selected=SimpleNamespace(card=card, taste=taste),
+            ),
+        )
+        _save_manager_assignment(assignment)
+        inputs = ToyWorkshopTest.world_inputs(wish)
+        tools = WorkshopTools(
+            invent=ToyWorkshopTest.world_invent_job,
+            make=ToyWorkshopTest.make_job,
+            playtest=ToyWorkshopTest.passing_invented_playtest,
+            instructions=DefaultInstructions(),
+        )
+        runtime_root = inventor_root / ".workshop"
+        first = Workshop(
+            inventor_root,
+            "little-worlds",
+            inventor_id=inventor_id,
+            tools=tools,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+        ).run(wish, playtest_rounds=4)
+        if (first.status, first.job) != ("waiting", "playtest"):
+            raise AssertionError("world fixture did not stop for Manager evidence")
+        evidence = ToyWorkshopTest.world_evidence(
+            wish, first.artifact_sha256, inputs
+        )
+        approved = Workshop(
+            inventor_root,
+            "little-worlds",
+            inventor_id=inventor_id,
+            tools=tools,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+            world_evidence=evidence,
+        ).resume(wish)
+        if (approved.status, approved.job) != ("waiting", "instructions"):
+            raise AssertionError("world fixture did not stop at Instructions")
+        return (
+            assignment,
+            Runtime(runtime_root / "workshop.sqlite3"),
+            inventor_root,
+            inputs,
+            evidence,
+        )
+
+    @staticmethod
     def factory_receipt(status="draft", artifact_sha256="f" * 64):
         history = "history-one"
         receipt = Receipt.from_design(
@@ -687,7 +755,7 @@ class CliTest(unittest.TestCase):
                         "id": root.name,
                         "status": "active",
                         "entrypoint": ["python3", "profile.py"],
-                        "capabilities": ["little-worlds", "taste-only"],
+                        "capabilities": ["moving-machines", "taste-only"],
                         "checks": [],
                         "source": {"kind": "local"},
                     }
@@ -815,6 +883,57 @@ class CliTest(unittest.TestCase):
                         "playtest" in observed["kwargs"],
                         level == "custom-playtest",
                     )
+
+    def test_direct_world_factory_resume_requires_exact_manager_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _, inputs, evidence = (
+                self.durable_world_instructions_fixture(root)
+            )
+            exact = SimpleNamespace(
+                **vars(assignment),
+                assert_current=lambda: None,
+                world_inputs=inputs,
+                world_evidence=evidence,
+            )
+            handoff = ManagerAssignmentHandoff.from_assignment(exact)
+            waiting = {
+                "status": "waiting",
+                "job": "instructions",
+                "artifact_sha256": evidence.artifact_sha256,
+                "needs": [{"job": "instructions", "capability": "site-page"}],
+                "manager_assignment": handoff.result_binding(),
+            }
+            observed = {}
+
+            class FakeRun:
+                def to_dict(self):
+                    return {"status": "waiting", "job": "deliver"}
+
+            class FakeWorkshop:
+                def __init__(self, *args, **kwargs):
+                    observed["kwargs"] = kwargs
+
+                def resume_instructions(self, wish):
+                    observed["wish"] = wish
+                    return FakeRun()
+
+            result = _resume_factory_instructions(
+                exact,
+                waiting,
+                environment={"FACTORY_PASSWORD": "manager-only"},
+                store_factory=lambda path: path,
+                writer_factory=lambda *args: (
+                    lambda context, sealed_root, sealed_manifest: None
+                ),
+                workshop_factory=FakeWorkshop,
+                state_validator=lambda selected, payload, **kwargs: payload,
+            )
+
+            self.assertEqual(result["job"], "deliver")
+            self.assertIs(observed["kwargs"]["world_inputs"], inputs)
+            self.assertIs(observed["kwargs"]["world_evidence"], evidence)
+            self.assertEqual(observed["wish"], assignment.wish)
 
     def test_factory_resume_rejects_unknown_manifest_contribution(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1726,6 +1845,172 @@ class CliTest(unittest.TestCase):
             self.assertIn("FACTORY_PASSWORD", receipt["result"]["needs"][0]["instructions"])
             self.assertIn("workshop resume", receipt["result"]["needs"][0]["instructions"])
             resume_effect.assert_not_called()
+
+    def test_world_instructions_crash_restart_reverifies_without_repeating_stages(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, runtime, _, inputs, evidence = (
+                self.durable_world_instructions_fixture(root)
+            )
+            before_events = runtime.events(assignment.wish.product_id)
+            observed = {}
+
+            def restore_inputs(selected, **unused):
+                return SimpleNamespace(
+                    **vars(selected),
+                    world_inputs=inputs,
+                    world_evidence=None,
+                )
+
+            def refetch(selected, result):
+                observed["request"] = dict(result)
+                observed["input_sha256"] = selected.world_inputs.binding_sha256
+                return evidence
+
+            def factory_resume(selected, result):
+                observed["factory_evidence"] = selected.world_evidence
+                return {
+                    **dict(result),
+                    "status": "waiting",
+                    "job": "deliver",
+                    "needs": [],
+                }
+
+            output = StringIO()
+            with mock.patch.dict(
+                "os.environ", {"FACTORY_PASSWORD": "manager-only"}, clear=True
+            ), mock.patch(
+                "inventor_workshop.cli._prepare_assignment_world_inputs",
+                side_effect=restore_inputs,
+            ), mock.patch(
+                "inventor_workshop.cli._configured_world_playtest_evidence",
+                side_effect=refetch,
+            ), mock.patch(
+                "inventor_workshop.cli._resume_factory_instructions",
+                side_effect=factory_resume,
+            ) as factory, mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as child, mock.patch(
+                "inventor_workshop.cli._run_inventor"
+            ) as initial, redirect_stdout(output):
+                code = main(
+                    (
+                        "resume",
+                        assignment.wish.product_id,
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(code, 0)
+            self.assertEqual(receipt["result"]["job"], "deliver")
+            self.assertEqual(
+                observed["request"]["artifact_sha256"],
+                evidence.artifact_sha256,
+            )
+            self.assertEqual(observed["input_sha256"], inputs.binding_sha256)
+            self.assertIs(observed["factory_evidence"], evidence)
+            self.assertEqual(runtime.events(assignment.wish.product_id), before_events)
+            factory.assert_called_once()
+            child.assert_not_called()
+            initial.assert_not_called()
+
+    def test_world_instructions_restart_blocks_factory_without_manager_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, runtime, _, inputs, _ = (
+                self.durable_world_instructions_fixture(root)
+            )
+            before_events = runtime.events(assignment.wish.product_id)
+
+            def restore_inputs(selected, **unused):
+                return SimpleNamespace(
+                    **vars(selected),
+                    world_inputs=inputs,
+                    world_evidence=None,
+                )
+
+            output = StringIO()
+            with mock.patch.dict(
+                "os.environ", {"FACTORY_PASSWORD": "manager-only"}, clear=True
+            ), mock.patch(
+                "inventor_workshop.cli._prepare_assignment_world_inputs",
+                side_effect=restore_inputs,
+            ), mock.patch(
+                "inventor_workshop.cli._configured_world_playtest_evidence",
+                return_value=None,
+            ), mock.patch(
+                "inventor_workshop.cli._resume_factory_instructions"
+            ) as factory, mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as child, redirect_stdout(output):
+                code = main(
+                    (
+                        "resume",
+                        assignment.wish.product_id,
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(code, 0)
+            self.assertEqual(
+                receipt["result"]["needs"][0]["capability"],
+                "world-playtest-evidence",
+            )
+            self.assertEqual(runtime.events(assignment.wish.product_id), before_events)
+            factory.assert_not_called()
+            child.assert_not_called()
+
+    def test_world_instructions_restart_rejects_tampered_evidence_before_factory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, _, _, inputs, _ = self.durable_world_instructions_fixture(
+                root
+            )
+            tampered = ToyWorkshopTest.world_evidence(
+                assignment.wish, "f" * 64, inputs
+            )
+
+            def restore_inputs(selected, **unused):
+                return SimpleNamespace(
+                    **vars(selected),
+                    world_inputs=inputs,
+                    world_evidence=None,
+                )
+
+            error = StringIO()
+            with mock.patch.dict(
+                "os.environ", {"FACTORY_PASSWORD": "manager-only"}, clear=True
+            ), mock.patch(
+                "inventor_workshop.cli._prepare_assignment_world_inputs",
+                side_effect=restore_inputs,
+            ), mock.patch(
+                "inventor_workshop.cli._configured_world_playtest_evidence",
+                return_value=tampered,
+            ), mock.patch(
+                "inventor_workshop.cli._resume_factory_instructions"
+            ) as factory, mock.patch(
+                "inventor_workshop.cli._resume_inventor"
+            ) as child, redirect_stderr(error):
+                code = main(
+                    (
+                        "resume",
+                        assignment.wish.product_id,
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+
+            self.assertEqual(code, 2)
+            self.assertIn("another exact context", error.getvalue())
+            factory.assert_not_called()
+            child.assert_not_called()
 
     def test_doctor_reports_presence_not_secret_value_or_authenticated_factory(self):
         root = Path(__file__).resolve().parents[1]

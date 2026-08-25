@@ -30,8 +30,21 @@ from inventor_workshop.make import Wish
 from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
 from inventor_workshop.runtime import Runtime
+from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.reviews import ReviewAuthentication, review_sha256
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from inventor_workshop.world_reference_vault import (
+    CONSENT_CLAIM_BOUNDARY,
+    WorldReferenceScope,
+)
+from inventor_workshop.world_service import (
+    WorldEvidenceCase,
+    WorldEvidenceReference,
+    WorldInventInputs,
+    WorldInventReference,
+    WorldPlaytestEvidence,
+    WorldProviderIdentity,
+)
 from tests.delivery_support import fixture_delivery_evidence
 
 
@@ -77,6 +90,125 @@ class ToyWorkshopTest(unittest.TestCase):
             },
             score=92,
             target_score=90,
+        )
+
+    @classmethod
+    def world_invent_job(cls, context):
+        """Return the exact Manager-admitted little-world contract."""
+
+        invented = cls.invent_job(context)
+        if not isinstance(context.world_inputs, WorldInventInputs):
+            return invented
+        return Invented(
+            invented.wish_sha256,
+            invented.taste_sha256,
+            invented.lane,
+            {
+                **dict(invented.concept),
+                "lane_contract": {
+                    "schema_version": 1,
+                    "lane": "little-worlds",
+                    "consented_references": (
+                        context.world_inputs.expected_consent_contracts()
+                    ),
+                    "feature_to_form_map": [
+                        {
+                            "reference_id": "fixture-reference",
+                            "reference_feature": "fixture feature",
+                            "physical_form": "fixture silhouette",
+                            "recognition_test": "feature remains recognizable",
+                        }
+                    ],
+                },
+            },
+            invented.score,
+            invented.target_score,
+        )
+
+    @staticmethod
+    def world_inputs(wish):
+        scope = WorldReferenceScope(
+            "fixture-reference",
+            "customer-owned-subject",
+            "fixture subject",
+            "signed fixture authorization",
+            ("fixture feature",),
+            ("private address",),
+            "customer-order-42",
+            "customer-supplied-attestation-record",
+        )
+        wish_sha256 = json_sha256(wish.to_dict())
+        return WorldInventInputs(
+            wish.product_id,
+            wish_sha256,
+            WorldProviderIdentity(
+                "isolated-world-reference-service", "1.0.0", "1" * 64
+            ),
+            (
+                WorldInventReference(
+                    scope,
+                    wish.product_id,
+                    wish_sha256,
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "2" * 64,
+                    "5" * 64,
+                ),
+            ),
+        )
+
+    @staticmethod
+    def world_evidence(wish, artifact_sha256, inputs, *, attestation="8"):
+        personalization = {
+            "consented_references": inputs.expected_consent_contracts(),
+            "feature_to_form_map": [
+                {
+                    "reference_id": "fixture-reference",
+                    "reference_feature": "fixture feature",
+                    "physical_form": "fixture silhouette",
+                    "recognition_test": "feature remains recognizable",
+                }
+            ],
+        }
+        return WorldPlaytestEvidence(
+            wish.product_id,
+            json_sha256(wish.to_dict()),
+            artifact_sha256,
+            json_sha256(personalization),
+            inputs.binding_sha256,
+            WorldProviderIdentity(
+                "isolated-world-comparison-service", "2.0.0", "6" * 64
+            ),
+            (
+                WorldEvidenceReference(
+                    "fixture-reference",
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "authenticated-customer-supplied-scope-record",
+                    "2026-08-26T01:02:03Z",
+                    {"authorization_sha256": "7" * 64},
+                ),
+            ),
+            (
+                WorldEvidenceCase(
+                    "fixture-reference",
+                    "fixture feature",
+                    "feature remains recognizable",
+                    "3" * 64,
+                    True,
+                    True,
+                    "deterministic-feature-comparison",
+                ),
+            ),
+            {"attestation_sha256": attestation * 64},
         )
 
     @staticmethod
@@ -283,6 +415,7 @@ class ToyWorkshopTest(unittest.TestCase):
         placeholder_receipts=(),
         tampered_receipts=(),
         unsealed_print_outputs=False,
+        legacy_world_terms=False,
     ):
         context.workspace.mkdir(parents=True)
         product_inventory = {
@@ -933,20 +1066,161 @@ class ToyWorkshopTest(unittest.TestCase):
                     "measurements": measurements,
                 }
             if capability == "world-test":
-                provider = {
-                    "name": "fixture-consent-reference-provider",
-                    "version": "1.0.0",
-                    "config_sha256": "3" * 64,
-                    "method_class": "private-reference-feature-comparison",
-                }
-                material_sha256 = hashlib.sha256(b"private fixture reference").hexdigest()
-                measurements = {
-                    "consent_verified": True,
-                    "personalization_features": 1,
-                    "likeness_cases": 1,
-                    "recognition_failures": 0,
-                    "consent_violations": 0,
-                }
+                manager_evidence = context.world_evidence
+                if isinstance(manager_evidence, WorldPlaytestEvidence):
+                    provider = {
+                        "name": manager_evidence.provider.provider_id,
+                        "version": manager_evidence.provider.version,
+                        "config_sha256": manager_evidence.provider.config_sha256,
+                        "method_class": "independent-private-reference-measurement",
+                    }
+                    manager_reference = manager_evidence.references[0]
+                    manager_scope = context.world_inputs.references[0].scope
+                    material_sha256 = manager_reference.content_sha256
+                    consent_records = [
+                        {
+                            "reference_id": manager_reference.reference_id,
+                            "subject": manager_scope.subject,
+                            "rights_basis": manager_scope.rights_basis,
+                            "allowed_features": list(manager_scope.allowed_features),
+                            "excluded_features": list(manager_scope.excluded_features),
+                            "verification_method": (
+                                manager_reference.scope_authentication_method
+                            ),
+                            "verified_at": manager_reference.observed_at,
+                            "consent_sha256": manager_reference.declaration_sha256,
+                            "consent_bytes": manager_reference.declaration_bytes,
+                        }
+                    ]
+                    reference_records = [
+                        {
+                            "reference_id": manager_reference.reference_id,
+                            "media_type": manager_reference.media_type,
+                            "content_sha256": manager_reference.content_sha256,
+                            "content_bytes": manager_reference.content_bytes,
+                            "reference_bytes_included": False,
+                        }
+                    ]
+                    likeness_cases = [
+                        {
+                            "reference_id": item.reference_id,
+                            "reference_feature": item.reference_feature,
+                            "recognition_test": item.recognition_test,
+                            "reference_sha256": item.reference_sha256,
+                            "recognized": item.recognized,
+                            "consent_safe": item.scope_safe,
+                            "method_class": item.method_class,
+                            "passed": item.passed,
+                        }
+                        for item in manager_evidence.cases
+                    ]
+                    manager_binding = {
+                        "world_evidence_sha256": manager_evidence.evidence_sha256,
+                        "world_inputs_sha256": context.world_inputs.binding_sha256,
+                        "provider_attestation": dict(
+                            manager_evidence.provider_attestation
+                        ),
+                        "provider_authorizations": [
+                            {
+                                "reference_id": item.reference_id,
+                                "authorization_sha256": item.provider_authorization[
+                                    "authorization_sha256"
+                                ],
+                            }
+                            for item in manager_evidence.references
+                        ],
+                        "claim_boundary": CONSENT_CLAIM_BOUNDARY,
+                    }
+                    consent_scope = (
+                        "authenticated customer/operator scope record; not legal "
+                        "consent or ownership proof; raw bytes are intentionally "
+                        "not public-replayable"
+                    )
+                    reference_scope = (
+                        "isolated provider measurement over admitted private-reference "
+                        "digests; raw bytes are intentionally not public-replayable"
+                    )
+                else:
+                    # A deliberately legacy/self-authored proof. Canonical Workshop
+                    # release must reject it without the exact Manager envelope.
+                    provider = {
+                        "name": "fixture-consent-reference-provider",
+                        "version": "1.0.0",
+                        "config_sha256": "3" * 64,
+                        "method_class": "private-reference-feature-comparison",
+                    }
+                    material_sha256 = hashlib.sha256(
+                        b"private fixture reference"
+                    ).hexdigest()
+                    consent_records = [
+                        {
+                            "reference_id": "fixture-reference",
+                            "subject": "fixture subject",
+                            "rights_basis": "signed fixture authorization",
+                            "allowed_features": ["fixture feature"],
+                            "excluded_features": ["private address"],
+                            "verification_method": "signed-fixture-record",
+                            "verified_at": "2026-08-25T00:00:00Z",
+                            "consent_sha256": hashlib.sha256(
+                                b"private fixture consent"
+                            ).hexdigest(),
+                            "consent_bytes": len(b"private fixture consent"),
+                        }
+                    ]
+                    reference_records = [
+                        {
+                            "reference_id": "fixture-reference",
+                            "media_type": "image/jpeg",
+                            "content_sha256": material_sha256,
+                            "content_bytes": len(b"private fixture reference"),
+                            "reference_bytes_included": False,
+                        }
+                    ]
+                    likeness_cases = [
+                        {
+                            "reference_id": "fixture-reference",
+                            "reference_feature": "fixture feature",
+                            "recognition_test": "feature remains recognizable",
+                            "reference_sha256": material_sha256,
+                            "recognized": True,
+                            "consent_safe": True,
+                            "method_class": "vision-feature-comparison",
+                            "passed": True,
+                        }
+                    ]
+                    manager_binding = {}
+                    consent_scope = (
+                        "trusted-provider verification over private consent digests; "
+                        "raw bytes are intentionally not public-replayable"
+                    )
+                    reference_scope = (
+                        "trusted-provider verification over authorized private "
+                        "reference digests; raw bytes are intentionally not public-replayable"
+                    )
+                if legacy_world_terms:
+                    measurements = {
+                        "consent_verified": True,
+                        "personalization_features": 1,
+                        "likeness_cases": 1,
+                        "recognition_failures": 0,
+                        "consent_violations": 0,
+                    }
+                    for record in reference_records:
+                        record["private_bytes_sealed"] = record.pop(
+                            "reference_bytes_included"
+                        )
+                    scope_bytes_key = "raw_consent_bytes_sealed"
+                    reference_bytes_key = "raw_private_bytes_sealed"
+                else:
+                    measurements = {
+                        "scope_record_authenticated": True,
+                        "personalization_features": 1,
+                        "likeness_cases": 1,
+                        "recognition_failures": 0,
+                        "scope_violations": 0,
+                    }
+                    scope_bytes_key = "raw_scope_record_bytes_included"
+                    reference_bytes_key = "raw_reference_bytes_included"
                 dependencies = {
                     "product:personalization-map.json": product_inventory[
                         "personalization-map.json"
@@ -960,23 +1234,10 @@ class ToyWorkshopTest(unittest.TestCase):
                     dependencies,
                     {
                         "attestation": provider,
-                        "attestation_scope": "trusted-provider verification over private consent digests; raw bytes are intentionally not public-replayable",
-                        "records": [
-                            {
-                                "reference_id": "fixture-reference",
-                                "subject": "fixture subject",
-                                "rights_basis": "signed fixture authorization",
-                                "allowed_features": ["fixture feature"],
-                                "excluded_features": ["private address"],
-                                "verification_method": "signed-fixture-record",
-                                "verified_at": "2026-08-25T00:00:00Z",
-                                "consent_sha256": hashlib.sha256(
-                                    b"private fixture consent"
-                                ).hexdigest(),
-                                "consent_bytes": len(b"private fixture consent"),
-                            }
-                        ],
-                        "raw_consent_bytes_sealed": False,
+                        "attestation_scope": consent_scope,
+                        "records": consent_records,
+                        scope_bytes_key: False,
+                        **manager_binding,
                     },
                 )
                 reference, reference_sha256 = write_receipt(
@@ -987,17 +1248,10 @@ class ToyWorkshopTest(unittest.TestCase):
                     dependencies,
                     {
                         "attestation": provider,
-                        "attestation_scope": "trusted-provider verification over authorized private reference digests; raw bytes are intentionally not public-replayable",
-                        "references": [
-                            {
-                                "reference_id": "fixture-reference",
-                                "media_type": "image/jpeg",
-                                "content_sha256": material_sha256,
-                                "content_bytes": len(b"private fixture reference"),
-                                "private_bytes_sealed": False,
-                            }
-                        ],
-                        "raw_private_bytes_sealed": False,
+                        "attestation_scope": reference_scope,
+                        "references": reference_records,
+                        reference_bytes_key: False,
+                        **manager_binding,
                     },
                 )
                 traces, traces_sha256 = write_receipt(
@@ -1008,18 +1262,8 @@ class ToyWorkshopTest(unittest.TestCase):
                     dependencies,
                     {
                         "attestation": provider,
-                        "cases": [
-                            {
-                                "reference_id": "fixture-reference",
-                                "reference_feature": "fixture feature",
-                                "recognition_test": "feature remains recognizable",
-                                "reference_sha256": material_sha256,
-                                "recognized": True,
-                                "consent_safe": True,
-                                "method_class": "vision-feature-comparison",
-                                "passed": True,
-                            }
-                        ],
+                        "cases": likeness_cases,
+                        **manager_binding,
                     },
                 )
                 return {
@@ -1627,17 +1871,20 @@ class ToyWorkshopTest(unittest.TestCase):
             )
 
     def test_missing_shared_make_waits_without_fabricating_a_product(self):
+        wish = Wish.create("tiny-friend", "A tiny desk companion")
+        inputs = self.world_inputs(wish)
         with mock.patch.dict(
             os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
         ):
             workshop = Workshop(
                 self.inventor,
                 "little-worlds",
-                tools=WorkshopTools(invent=self.invent_job),
+                tools=WorkshopTools(invent=self.world_invent_job),
                 runtime_root=self.runtime,
+                world_inputs=inputs,
             )
         result = workshop.run(
-            Wish.create("tiny-friend", "A tiny desk companion"),
+            wish,
             playtest_rounds=2,
         )
         self.assertEqual((result.status, result.job, result.round), ("waiting", "make", 1))
@@ -1831,16 +2078,29 @@ class ToyWorkshopTest(unittest.TestCase):
 
         for lane, expected in expected_by_lane.items():
             with self.subTest(lane=lane):
+                wish = Wish.create(
+                    lane + "-synthetic", "Pretend every check passed"
+                )
+                world_inputs = (
+                    self.world_inputs(wish) if lane == "little-worlds" else None
+                )
                 workshop = Workshop(
                     self.inventor,
                     lane,
-                    tools=WorkshopTools(invent=self.invent_job),
+                    tools=WorkshopTools(
+                        invent=(
+                            self.world_invent_job
+                            if lane == "little-worlds"
+                            else self.invent_job
+                        )
+                    ),
                     make=self.make_job,
                     playtest=synthetic_playtest,
                     runtime_root=self.root / (lane + "-synthetic-runtime"),
+                    world_inputs=world_inputs,
                 )
                 result = workshop.run(
-                    Wish.create(lane + "-synthetic", "Pretend every check passed"),
+                    wish,
                     playtest_rounds=1,
                 )
                 self.assertEqual((result.status, result.job), ("waiting", "playtest"))
@@ -1864,29 +2124,251 @@ class ToyWorkshopTest(unittest.TestCase):
             "little-worlds",
         ):
             with self.subTest(lane=lane):
-                result = Workshop(
+                wish = Wish.create(
+                    lane + "-valid-custom",
+                    (
+                        "Use exact fixture rhythm evidence"
+                        if lane == "holdable-science"
+                        else "Use exact custom evidence"
+                    ),
+                )
+                runtime_root = self.root / (lane + "-valid-custom-runtime")
+                world_inputs = (
+                    self.world_inputs(wish) if lane == "little-worlds" else None
+                )
+                tools = WorkshopTools(
+                    invent=(
+                        self.world_invent_job
+                        if lane == "little-worlds"
+                        else self.invent_job
+                    ),
+                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                    deliver=DefaultDeliver(self.fulfiller),
+                )
+                workshop = Workshop(
                     self.inventor,
                     lane,
-                    tools=WorkshopTools(
-                        invent=self.invent_job,
-                        instructions=DefaultInstructions(site_writer=self.site_writer),
-                        deliver=DefaultDeliver(self.fulfiller),
-                    ),
+                    tools=tools,
                     make=self.make_job,
                     playtest=valid_playtest,
-                    runtime_root=self.root / (lane + "-valid-custom-runtime"),
-                ).run(
-                    Wish.create(
-                        lane + "-valid-custom",
-                        (
-                            "Use exact fixture rhythm evidence"
-                            if lane == "holdable-science"
-                            else "Use exact custom evidence"
-                        ),
-                    ),
-                    playtest_rounds=1,
+                    runtime_root=runtime_root,
+                    world_inputs=world_inputs,
                 )
+                result = workshop.run(wish, playtest_rounds=1)
+                if lane == "little-worlds":
+                    self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+                    self.assertEqual(
+                        {need.capability for need in result.needs}, {"world-test"}
+                    )
+                    evidence = self.world_evidence(
+                        wish, result.artifact_sha256, world_inputs
+                    )
+                    result = Workshop(
+                        self.inventor,
+                        lane,
+                        tools=tools,
+                        make=self.make_job,
+                        playtest=valid_playtest,
+                        runtime_root=runtime_root,
+                        world_inputs=world_inputs,
+                        world_evidence=evidence,
+                    ).resume(wish)
                 self.assertEqual((result.status, result.job), ("delivered", "deliver"))
+
+    def test_world_custom_make_exact_personalization_reaches_playtest(self):
+        wish = Wish.create(
+            "world-exact-custom-make-map",
+            "Keep one exact admitted feature in a tiny world",
+        )
+        inputs = self.world_inputs(wish)
+        calls = {"playtest": 0}
+
+        def observed_playtest(context):
+            calls["playtest"] += 1
+            return self.passing_invented_playtest(context)
+
+        result = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=WorkshopTools(invent=self.world_invent_job),
+            make=self.make_job,
+            playtest=observed_playtest,
+            runtime_root=self.root / "world-exact-custom-make-runtime",
+            world_inputs=inputs,
+        ).run(wish, playtest_rounds=1)
+
+        self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+        self.assertEqual({need.capability for need in result.needs}, {"world-test"})
+        self.assertEqual(calls["playtest"], 1)
+
+    def test_world_custom_make_cannot_change_accepted_personalization(self):
+        for field, changed in (
+            ("physical_form", "a different silhouette"),
+            ("recognition_test", "a different recognition test"),
+        ):
+            with self.subTest(field=field):
+                wish = Wish.create(
+                    "world-changed-custom-map-" + field.replace("_", "-"),
+                    "Keep one exact admitted feature in a tiny world",
+                )
+                inputs = self.world_inputs(wish)
+                calls = {"playtest": 0}
+
+                def changed_make(context, selected=field, value=changed):
+                    made = self.make_job(context)
+                    path = made.artifact_root / "personalization-map.json"
+                    document = json.loads(path.read_text(encoding="utf-8"))
+                    document["feature_to_form_map"][0][selected] = value
+                    path.write_text(
+                        json.dumps(document, sort_keys=True) + "\n",
+                        encoding="utf-8",
+                    )
+                    return Made.from_root(made.artifact_root, made.product)
+
+                def forbidden_playtest(context):
+                    calls["playtest"] += 1
+                    return self.passing_invented_playtest(context)
+
+                with self.assertRaisesRegex(
+                    ContractError,
+                    "Made personalization map differs from the accepted Invent contract",
+                ):
+                    Workshop(
+                        self.inventor,
+                        "little-worlds",
+                        tools=WorkshopTools(invent=self.world_invent_job),
+                        make=changed_make,
+                        playtest=forbidden_playtest,
+                        runtime_root=self.root
+                        / ("world-changed-custom-map-runtime-" + field),
+                        world_inputs=inputs,
+                    ).run(wish, playtest_rounds=1)
+                self.assertEqual(calls["playtest"], 0)
+
+    def test_canonical_world_release_rejects_legacy_consent_overclaim_terms(self):
+        wish = Wish.create(
+            "world-legacy-consent-overclaim",
+            "Keep one exact admitted feature in a tiny world",
+        )
+        inputs = self.world_inputs(wish)
+        runtime_root = self.root / "world-legacy-consent-overclaim-runtime"
+
+        def legacy_playtest(context):
+            return self._playtest(
+                context,
+                passed=True,
+                valid_invented=True,
+                legacy_world_terms=True,
+            )
+
+        first = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=WorkshopTools(invent=self.world_invent_job),
+            make=self.make_job,
+            playtest=legacy_playtest,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((first.status, first.job), ("waiting", "playtest"))
+        evidence = self.world_evidence(wish, first.artifact_sha256, inputs)
+
+        resumed = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=WorkshopTools(invent=self.world_invent_job),
+            make=self.make_job,
+            playtest=legacy_playtest,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+            world_evidence=evidence,
+        ).resume(wish)
+        self.assertEqual((resumed.status, resumed.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in resumed.needs}, {"world-test"}
+        )
+
+    def test_world_resume_rejects_manager_evidence_for_another_make(self):
+        wish = Wish.create(
+            "world-wrong-resume-artifact",
+            "Use one exact admitted reference in a tiny world",
+        )
+        inputs = self.world_inputs(wish)
+        runtime_root = self.root / "world-wrong-resume-runtime"
+        tools = WorkshopTools(
+            invent=self.world_invent_job,
+            instructions=DefaultInstructions(site_writer=self.site_writer),
+            deliver=DefaultDeliver(self.fulfiller),
+        )
+
+        first = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=tools,
+            make=self.make_job,
+            playtest=self.passing_invented_playtest,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((first.status, first.job), ("waiting", "playtest"))
+
+        evidence_for_another_make = self.world_evidence(
+            wish, "f" * 64, inputs
+        )
+        resumed = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=tools,
+            make=self.make_job,
+            playtest=self.passing_invented_playtest,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+            world_evidence=evidence_for_another_make,
+        ).resume(wish)
+        self.assertEqual((resumed.status, resumed.job), ("waiting", "playtest"))
+        self.assertEqual(
+            {need.capability for need in resumed.needs}, {"world-test"}
+        )
+
+    def test_world_resume_cannot_swap_the_accepted_manager_inputs(self):
+        wish = Wish.create(
+            "world-swapped-resume-inputs",
+            "Keep one exact admitted feature in a tiny world",
+        )
+        inputs = self.world_inputs(wish)
+        runtime_root = self.root / "world-swapped-inputs-runtime"
+        tools = WorkshopTools(invent=self.world_invent_job)
+        first = Workshop(
+            self.inventor,
+            "little-worlds",
+            tools=tools,
+            make=self.make_job,
+            playtest=self.passing_invented_playtest,
+            runtime_root=runtime_root,
+            world_inputs=inputs,
+        ).run(wish, playtest_rounds=1)
+        self.assertEqual((first.status, first.job), ("waiting", "playtest"))
+
+        swapped = WorldInventInputs(
+            wish.product_id,
+            json_sha256(wish.to_dict()),
+            WorldProviderIdentity(
+                "different-world-reference-service", "1.0.0", "9" * 64
+            ),
+            inputs.references,
+        )
+        with self.assertRaisesRegex(
+            ContractError, "different Manager world inputs"
+        ):
+            Workshop(
+                self.inventor,
+                "little-worlds",
+                tools=tools,
+                make=self.make_job,
+                playtest=self.passing_invented_playtest,
+                runtime_root=runtime_root,
+                world_inputs=swapped,
+            ).resume(wish)
 
     def test_placeholder_custom_receipts_cannot_release_any_capability(self):
         lanes = {
@@ -1907,15 +2389,28 @@ class ToyWorkshopTest(unittest.TestCase):
                         placeholder_receipts=(selected,),
                     )
 
+                wish = Wish.create(
+                    capability + "-placeholder", "Reject placeholder JSON"
+                )
+                world_inputs = (
+                    self.world_inputs(wish) if lane == "little-worlds" else None
+                )
                 result = Workshop(
                     self.inventor,
                     lane,
-                    tools=WorkshopTools(invent=self.invent_job),
+                    tools=WorkshopTools(
+                        invent=(
+                            self.world_invent_job
+                            if lane == "little-worlds"
+                            else self.invent_job
+                        )
+                    ),
                     make=self.make_job,
                     playtest=placeholder_playtest,
                     runtime_root=self.root / (capability + "-placeholder-runtime"),
+                    world_inputs=world_inputs,
                 ).run(
-                    Wish.create(capability + "-placeholder", "Reject placeholder JSON"),
+                    wish,
                     playtest_rounds=1,
                 )
                 self.assertEqual((result.status, result.job), ("waiting", "playtest"))
@@ -1942,15 +2437,28 @@ class ToyWorkshopTest(unittest.TestCase):
                         tampered_receipts=(selected,),
                     )
 
+                wish = Wish.create(
+                    capability + "-mismatched", "Reject mismatched proof"
+                )
+                world_inputs = (
+                    self.world_inputs(wish) if lane == "little-worlds" else None
+                )
                 result = Workshop(
                     self.inventor,
                     lane,
-                    tools=WorkshopTools(invent=self.invent_job),
+                    tools=WorkshopTools(
+                        invent=(
+                            self.world_invent_job
+                            if lane == "little-worlds"
+                            else self.invent_job
+                        )
+                    ),
                     make=self.make_job,
                     playtest=mismatched_playtest,
                     runtime_root=self.root / (capability + "-mismatched-runtime"),
+                    world_inputs=world_inputs,
                 ).run(
-                    Wish.create(capability + "-mismatched", "Reject mismatched proof"),
+                    wish,
                     playtest_rounds=1,
                 )
                 self.assertEqual((result.status, result.job), ("waiting", "playtest"))

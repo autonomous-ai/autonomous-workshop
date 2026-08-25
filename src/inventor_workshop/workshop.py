@@ -23,7 +23,12 @@ import stat
 import sys
 from typing import Any, Callable, Mapping, Optional, Tuple
 
-from .artifacts import ArtifactEntry, ArtifactManifest, build_artifact_manifest
+from .artifacts import (
+    ArtifactEntry,
+    ArtifactManifest,
+    _read_open_file,
+    build_artifact_manifest,
+)
 from .cad import (
     CadPart,
     CadProjectManifest,
@@ -40,7 +45,7 @@ from .instructions import (
     sealed_instructions_manifest,
 )
 from .lease_guard import LeaseGuard
-from .errors import ContractError, StateConflict
+from .errors import ArtifactError, ContractError, StateConflict
 from .jobs import (
     CustomerReview,
     DeliverContext,
@@ -67,6 +72,7 @@ from .runtime import Runtime
 from .reviews import ReviewAuthentication, ReviewAuthenticator
 from .taste import load_taste
 from .toys import ToyBlueprint, playful_make_request
+from .world_service import WorldInventInputs, WorldPlaytestEvidence
 
 
 InventJob = Callable[[InventContext], Invented]
@@ -218,10 +224,22 @@ def _playtest_policy_needs(
     made: Made,
     playtested: Playtested,
     evidence_root: Path,
+    *,
+    wish: Optional[Wish] = None,
+    world_inputs: Optional[WorldInventInputs] = None,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
 ) -> tuple[Need, ...]:
     """Apply the common release bar to shared and custom Playtest outputs."""
 
-    return playtest_release_needs(blueprint, made, playtested, evidence_root)
+    return playtest_release_needs(
+        blueprint,
+        made,
+        playtested,
+        evidence_root,
+        wish=wish,
+        world_inputs=world_inputs,
+        world_evidence=world_evidence,
+    )
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -411,6 +429,143 @@ def _safe_relative_file(root: Path, value: Any, label: str) -> Path:
     if not resolved.is_file():
         raise ContractError("%s must be a regular file" % label)
     return resolved
+
+
+_WORLD_PERSONALIZATION_PATH = "personalization-map.json"
+_WORLD_MECHANICAL_PATH = "playtest/mechanical.json"
+_MAX_WORLD_MAP_BYTES = 2 * 1024 * 1024
+
+
+def _strict_json_object(pairs: list[tuple[str, Any]]) -> Mapping[str, Any]:
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ContractError("world personalization JSON has duplicate keys")
+        value[key] = item
+    return value
+
+
+def _reject_world_json_constant(value: str) -> None:
+    del value
+    raise ContractError("world personalization JSON must be finite")
+
+
+def _sealed_made_json(
+    made: Made, relative_path: str, label: str
+) -> Optional[Mapping[str, Any]]:
+    """Read one manifest-bound Made JSON document without trusting its path."""
+
+    entry = next(
+        (
+            candidate
+            for candidate in made.artifact_manifest.entries
+            if candidate.path == relative_path
+        ),
+        None,
+    )
+    if entry is None:
+        return None
+    if entry.bytes > _MAX_WORLD_MAP_BYTES:
+        raise ContractError("%s is too large" % label)
+    _safe_relative_file(made.artifact_root, relative_path, label)
+    try:
+        payload, metadata = _read_open_file(
+            made.artifact_root, Path(relative_path)
+        )
+    except (OSError, ArtifactError) as exc:
+        raise ContractError("%s is unavailable" % label) from exc
+    if (
+        metadata.st_size != entry.bytes
+        or len(payload) != entry.bytes
+        or hashlib.sha256(payload).hexdigest() != entry.sha256
+    ):
+        raise ContractError("%s differs from the sealed Made manifest" % label)
+    try:
+        document = json.loads(
+            payload.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=_reject_world_json_constant,
+        )
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ContractError("%s must be valid UTF-8 JSON" % label) from exc
+    if not isinstance(document, Mapping):
+        raise ContractError("%s must be a JSON object" % label)
+    made.assert_current()
+    return document
+
+
+def world_personalization_from_made(made: Made) -> Mapping[str, Any]:
+    """Return the one exact personalization map sealed by a little-world Make.
+
+    Shared Make seals the accepted Invent contract inside
+    ``playtest/mechanical.json``. Engine-neutral custom Make may instead seal a
+    dedicated ``personalization-map.json``. If both are present they must name
+    identical map bytes; a custom worker cannot select whichever version helps
+    a later proof pass.
+    """
+
+    if not isinstance(made, Made):
+        raise ContractError("world personalization binding requires Made")
+    made.assert_current()
+    candidates = []
+    mechanical = _sealed_made_json(
+        made, _WORLD_MECHANICAL_PATH, "world mechanical declaration"
+    )
+    if mechanical is not None:
+        plan = mechanical.get("digital_test_plan")
+        contract = (
+            plan.get("invent_lane_contract")
+            if isinstance(plan, Mapping)
+            else None
+        )
+        if (
+            not isinstance(contract, Mapping)
+            or plan.get("invent_lane_contract_sha256")
+            != hashlib.sha256(_canonical_json(contract)).hexdigest()
+        ):
+            raise ContractError(
+                "world mechanical declaration lacks its exact Invent contract"
+            )
+        candidates.append(("world mechanical declaration", contract, True))
+
+    direct = _sealed_made_json(
+        made, _WORLD_PERSONALIZATION_PATH, "world personalization map"
+    )
+    if direct is not None:
+        candidates.append(("world personalization map", direct, False))
+    if not candidates:
+        raise ContractError("little-world Make lacks a sealed personalization map")
+
+    normalized = None
+    for label, candidate, full_contract in candidates:
+        if full_contract:
+            if (
+                candidate.get("schema_version") != 1
+                or candidate.get("lane") != "little-worlds"
+            ):
+                raise ContractError("%s belongs to another Invent contract" % label)
+        elif set(candidate) != {
+            "consented_references",
+            "feature_to_form_map",
+        }:
+            raise ContractError("%s has an inexact public map shape" % label)
+        selected = {
+            "consented_references": candidate.get("consented_references"),
+            "feature_to_form_map": candidate.get("feature_to_form_map"),
+        }
+        if not isinstance(selected["consented_references"], list) or not isinstance(
+            selected["feature_to_form_map"], list
+        ):
+            raise ContractError("%s has an incomplete personalization map" % label)
+        if normalized is None:
+            normalized = selected
+        elif _canonical_json(selected) != _canonical_json(normalized):
+            raise ContractError(
+                "Made contains different sealed world personalization maps"
+            )
+    if normalized is None:  # pragma: no cover - candidates is non-empty above
+        raise ContractError("little-world Make lacks a personalization map")
+    return json.loads(_canonical_json(normalized).decode("utf-8"))
 
 
 def _workshop_run_root(
@@ -1233,6 +1388,8 @@ class Workshop:
         review_authenticator: Optional[ReviewAuthenticator] = None,
         runtime_root: Optional[Path] = None,
         max_rounds: int = 4,
+        world_inputs: Optional[WorldInventInputs] = None,
+        world_evidence: Optional[WorldPlaytestEvidence] = None,
     ) -> None:
         requested_root = Path(inventor_root)
         if requested_root.is_symlink():
@@ -1261,6 +1418,27 @@ class Workshop:
         self.inventor_id = _resolve_inventor_id(root, inventor_id)
         self.taste = load_taste(root)
         self.blueprint = ToyBlueprint.for_lane(lane)
+        if self.blueprint.lane == "little-worlds":
+            if world_inputs is not None and not isinstance(
+                world_inputs, WorldInventInputs
+            ):
+                raise ContractError(
+                    "Workshop world_inputs must be a typed Manager binding"
+                )
+            if world_evidence is not None and not isinstance(
+                world_evidence, WorldPlaytestEvidence
+            ):
+                raise ContractError(
+                    "Workshop world_evidence must be typed Manager-side evidence"
+                )
+            if world_evidence is not None and world_inputs is None:
+                raise ContractError("world evidence requires exact world Invent inputs")
+        elif world_inputs is not None or world_evidence is not None:
+            raise ContractError(
+                "world reference inputs and evidence belong only to little-worlds"
+            )
+        self.world_inputs = world_inputs
+        self.world_evidence = world_evidence
         requested_tools = tools or WorkshopTools()
         if not isinstance(requested_tools, WorkshopTools):
             raise ContractError("Workshop tools must be a WorkshopTools value")
@@ -1312,6 +1490,71 @@ class Workshop:
 
     def _runtime(self) -> Runtime:
         return Runtime(self.runtime_root / "workshop.sqlite3")
+
+    def _world_inputs_sha256(self) -> Optional[str]:
+        return (
+            self.world_inputs.binding_sha256
+            if self.world_inputs is not None
+            else None
+        )
+
+    def _require_world_invent_inputs(self, wish: Wish) -> None:
+        if self.lane != "little-worlds":
+            return
+        if self.world_inputs is None:
+            raise WaitingFor(
+                Need(
+                    "invent",
+                    "world-reference-descriptors",
+                    "This Wish needs exact raw-free reference scope admitted by the Workshop Manager before Invent may choose a personalized concept.",
+                    "Connect the Manager to an isolated WorldReferenceService, or explicitly use the same-user local development vault, then resume this exact Wish.",
+                )
+            )
+        self.world_inputs.assert_wish(wish)
+
+    def _assert_world_invented(self, wish: Wish, invented: Invented) -> None:
+        if self.lane != "little-worlds":
+            return
+        self._require_world_invent_inputs(wish)
+        if self.world_inputs is None:
+            return
+        contract = invented.concept.get("lane_contract")
+        self.world_inputs.assert_lane_contract(contract)
+
+    def _assert_world_made(
+        self, wish: Wish, invented: Invented, made: Made
+    ) -> None:
+        """Bind every little-world physical map to accepted Invent bytes."""
+
+        if self.lane != "little-worlds":
+            return
+        self._assert_world_invented(wish, invented)
+        contract = invented.concept.get("lane_contract")
+        if not isinstance(contract, Mapping):  # checked above; narrows the type
+            raise ContractError("little-world Invent contract is malformed")
+        expected = {
+            "consented_references": contract.get("consented_references"),
+            "feature_to_form_map": contract.get("feature_to_form_map"),
+        }
+        actual = world_personalization_from_made(made)
+        if _canonical_json(actual) != _canonical_json(expected):
+            raise ContractError(
+                "Made personalization map differs from the accepted Invent contract"
+            )
+        mechanical = _sealed_made_json(
+            made, _WORLD_MECHANICAL_PATH, "world mechanical declaration"
+        )
+        if mechanical is not None:
+            plan = mechanical.get("digital_test_plan")
+            made_contract = (
+                plan.get("invent_lane_contract")
+                if isinstance(plan, Mapping)
+                else None
+            )
+            if _canonical_json(made_contract) != _canonical_json(contract):
+                raise ContractError(
+                    "Made mechanical declaration differs from the accepted Invent contract"
+                )
 
     def reviews(self, product_id: str) -> Tuple[CustomerReview, ...]:
         """Read customer Reviews without making them part of the five-job gate.
@@ -1771,12 +2014,20 @@ class Workshop:
             or payload.get("invent_target_score") != invented.target_score
         ):
             raise ContractError("accepted Invent event identifies different concept bytes")
+        if self.lane == "little-worlds" and (
+            payload.get("world_inputs_sha256") != self._world_inputs_sha256()
+        ):
+            raise ContractError(
+                "accepted Invent event identifies different Manager world inputs"
+            )
+        self._assert_world_invented(wish, invented)
         return invented
 
     def _feedback_for_make(
         self,
         events: list[Mapping[str, Any]],
         wish: Wish,
+        invented: Invented,
         run_root: Path,
         selected_rounds: int,
         round_number: int,
@@ -1817,6 +2068,7 @@ class Workshop:
                 checkpoint, wish, selected_rounds, round_number - 1
             )
             made = _rebuild_made_value(run_root, checkpoint.get("made"))
+            self._assert_world_made(wish, invented, made)
             playtested, _ = _rebuild_playtested_value(
                 run_root, checkpoint.get("playtested"), made
             )
@@ -2028,6 +2280,7 @@ class Workshop:
                     raise ContractError(
                         "Make returned a product for another plaything lane"
                     )
+                self._assert_world_made(wish, invented, made)
                 self.taste.assert_current()
 
                 made_payload = _made_checkpoint_payload(
@@ -2066,6 +2319,7 @@ class Workshop:
                     lease_token=lease,
                 )
 
+            self._assert_world_made(wish, invented, made)
             lease.assert_current()
             playtest_workspace = self._attempt_workspace(
                 run_root,
@@ -2081,6 +2335,8 @@ class Workshop:
                 made,
                 playtest_workspace,
                 selected_rounds,
+                self.world_inputs,
+                self.world_evidence,
             )
             lease.assert_current()
             try:
@@ -2140,7 +2396,13 @@ class Workshop:
                     else playtest_workspace
                 )
                 policy_needs = _playtest_policy_needs(
-                    self.blueprint, made, playtested, evidence_root
+                    self.blueprint,
+                    made,
+                    playtested,
+                    evidence_root,
+                    wish=wish,
+                    world_inputs=self.world_inputs,
+                    world_evidence=self.world_evidence,
                 )
                 if policy_needs:
                     return self._wait(
@@ -2361,11 +2623,27 @@ class Workshop:
                 if round_number != 1:
                     raise ContractError("Invent resume round must be one")
                 lease.assert_current()
+                try:
+                    self._require_world_invent_inputs(wish)
+                except WaitingFor as waiting:
+                    return self._wait(
+                        runtime,
+                        wish,
+                        "invent",
+                        1,
+                        waiting,
+                        lease,
+                        selected_rounds,
+                    )
                 invent_workspace = self._attempt_workspace(
                     run_root, "invent", 1, product["revision"]
                 )
                 invent_context = InventContext(
-                    wish, self.taste, self.blueprint, invent_workspace
+                    wish,
+                    self.taste,
+                    self.blueprint,
+                    invent_workspace,
+                    self.world_inputs,
                 )
                 lease.assert_current()
                 try:
@@ -2384,6 +2662,7 @@ class Workshop:
                 if not isinstance(invented, Invented):
                     raise ContractError("Invent must return Invented")
                 invented.assert_context(invent_context)
+                self._assert_world_invented(wish, invented)
                 if not invented.passed:
                     return self._wait(
                         runtime,
@@ -2412,6 +2691,11 @@ class Workshop:
                         "concept_sha256": invented.concept_sha256,
                         "invent_score": invented.score,
                         "invent_target_score": invented.target_score,
+                        **(
+                            {"world_inputs_sha256": self._world_inputs_sha256()}
+                            if self.lane == "little-worlds"
+                            else {}
+                        ),
                         "invented": invented.to_dict(),
                     },
                     lease_token=lease,
@@ -2430,6 +2714,7 @@ class Workshop:
                 feedback = self._feedback_for_make(
                     events,
                     wish,
+                    invented,
                     run_root,
                     selected_rounds,
                     round_number,
@@ -2495,6 +2780,7 @@ class Workshop:
             expected_feedback = self._feedback_for_make(
                 events,
                 wish,
+                invented,
                 run_root,
                 selected_rounds,
                 round_number,
@@ -2714,8 +3000,15 @@ class Workshop:
                 run_root, checkpoint
             )
             invented = self._accepted_invented(events, wish, run_root)
+            self._assert_world_made(wish, invented, made)
             if not playtested.passed or _playtest_policy_needs(
-                self.blueprint, made, playtested, evidence_root
+                self.blueprint,
+                made,
+                playtested,
+                evidence_root,
+                wish=wish,
+                world_inputs=self.world_inputs,
+                world_evidence=self.world_evidence,
             ):
                 raise ContractError("checkpoint no longer satisfies Playtest policy")
             if (
@@ -2935,7 +3228,20 @@ class Workshop:
                 self.taste,
                 self.blueprint,
                 invent_workspace,
+                self.world_inputs,
             )
+            try:
+                self._require_world_invent_inputs(wish)
+            except WaitingFor as waiting:
+                return self._wait(
+                    runtime,
+                    wish,
+                    "invent",
+                    1,
+                    waiting,
+                    lease,
+                    selected_rounds,
+                )
             lease.assert_current()
             try:
                 invented = self.invent_job(invent_context)
@@ -2953,6 +3259,7 @@ class Workshop:
             if not isinstance(invented, Invented):
                 raise ContractError("Invent must return Invented")
             invented.assert_context(invent_context)
+            self._assert_world_invented(wish, invented)
             if not invented.passed:
                 return self._wait(
                     runtime,
@@ -2981,6 +3288,11 @@ class Workshop:
                     "concept_sha256": invented.concept_sha256,
                     "invent_score": invented.score,
                     "invent_target_score": invented.target_score,
+                    **(
+                        {"world_inputs_sha256": self._world_inputs_sha256()}
+                        if self.lane == "little-worlds"
+                        else {}
+                    ),
                     "invented": invented.to_dict(),
                 },
                 lease_token=lease,

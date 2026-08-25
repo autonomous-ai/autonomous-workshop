@@ -1,4 +1,5 @@
 import json
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -647,9 +648,54 @@ class ScaffoldTest(unittest.TestCase):
             self.assertIn("bind_manager_assignment_result", source)
             self.assertEqual(source.count("handoff.assert_inventor_current"), 2)
             self.assertIn("expected_inventor_id=INVENTOR_ID", source)
+            self.assertNotIn("INVENTOR_ROOT", source)
+            self.assertIn("identity = inventor_root()", source)
+            self.assertIn("world_inputs=handoff.world_inputs", source)
+            self.assertIn("world_evidence=handoff.world_evidence", source)
             self.assertIn('workshop.resume(handoff.wish)', source)
             self.assertIn("resume is an internal Manager-only action", source)
             compile(source, str(destination / "src/handoff_toys/__main__.py"), "exec")
+
+            module_path = destination / "src/handoff_toys/__main__.py"
+            spec = importlib.util.spec_from_file_location(
+                "generated_handoff_toys", module_path
+            )
+            self.assertIsNotNone(spec)
+            self.assertIsNotNone(spec.loader)
+            generated = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(generated)
+            handoff = mock.Mock(unsafe=True)
+            handoff.wish = mock.sentinel.wish
+            handoff.playtest_rounds = 7
+            handoff.world_inputs = mock.sentinel.world_inputs
+            handoff.world_evidence = mock.sentinel.world_evidence
+            workshop = mock.Mock()
+            workshop.run.return_value.to_dict.return_value = {"stage": "invent"}
+            with (
+                mock.patch.object(
+                    generated, "read_manager_assignment", return_value=handoff
+                ),
+                mock.patch.object(
+                    generated, "build_workshop", return_value=workshop
+                ) as build_workshop,
+                mock.patch.object(
+                    generated,
+                    "bind_manager_assignment_result",
+                    return_value={"stage": "invent", "manager_assignment": {}},
+                ),
+                mock.patch("builtins.print"),
+            ):
+                self.assertEqual(
+                    generated.main(["run", "--assignment-stdin"]), 0
+                )
+            build_workshop.assert_called_once_with(
+                world_inputs=mock.sentinel.world_inputs,
+                world_evidence=mock.sentinel.world_evidence,
+            )
+            workshop.run.assert_called_once_with(
+                mock.sentinel.wish, playtest_rounds=7
+            )
+            self.assertEqual(handoff.assert_inventor_current.call_count, 2)
 
     def test_generated_identity_resolves_from_target_like_package_data(self):
         with tempfile.TemporaryDirectory() as temporary:

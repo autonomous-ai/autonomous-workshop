@@ -43,6 +43,8 @@ from .models import (
     require_utc_timestamp,
 )
 from .toys import ToyBlueprint
+from .world_reference_vault import CONSENT_CLAIM_BOUNDARY
+from .world_service import WorldInventInputs, WorldPlaytestEvidence
 
 
 _ROLE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -543,11 +545,31 @@ def _validate_world(proof: CapabilityReleaseProof) -> None:
     _one_role(proof, "reference-material", scope="playtest")
     _one_role(proof, "likeness-traces", scope="playtest")
     measurements = proof.measurements
-    _true_measurement(measurements, "consent_verified")
+    new_profile = (
+        "scope_record_authenticated" in measurements
+        or "scope_violations" in measurements
+    )
+    legacy_profile = (
+        "consent_verified" in measurements
+        or "consent_violations" in measurements
+    )
+    if new_profile == legacy_profile:
+        raise ContractError(
+            "world measurements must use exactly one scope-authentication profile"
+        )
+    if new_profile:
+        _true_measurement(measurements, "scope_record_authenticated")
+    else:
+        _true_measurement(measurements, "consent_verified")
     _int_measurement(measurements, "personalization_features", minimum=1)
     _int_measurement(measurements, "likeness_cases", minimum=1)
     _int_measurement(measurements, "recognition_failures", minimum=0, maximum=0)
-    _int_measurement(measurements, "consent_violations", minimum=0, maximum=0)
+    _int_measurement(
+        measurements,
+        "scope_violations" if new_profile else "consent_violations",
+        minimum=0,
+        maximum=0,
+    )
 
 
 def _load_source_bytes(
@@ -1399,7 +1421,23 @@ def _validate_world_receipt_semantics(
     proof: CapabilityReleaseProof,
     receipts: Mapping[str, Mapping[str, Any]],
     product_root: Path,
+    *,
+    wish: Optional[Wish] = None,
+    world_inputs: Optional[WorldInventInputs] = None,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
+    require_manager_evidence: bool = False,
 ) -> None:
+    measurements = proof.measurements
+    new_measurements = "scope_record_authenticated" in measurements
+    legacy_measurements = "consent_verified" in measurements
+    if new_measurements == legacy_measurements:
+        raise ContractError(
+            "world proof mixes or omits scope-authentication terminology"
+        )
+    if require_manager_evidence and not new_measurements:
+        raise ContractError(
+            "canonical world release requires scope-record authentication measurements"
+        )
     consent_payload = _receipt_payload(receipts, "consent-record")
     reference_payload = _receipt_payload(receipts, "reference-material")
     likeness_payload = _receipt_payload(receipts, "likeness-traces")
@@ -1411,9 +1449,108 @@ def _validate_world_receipt_semantics(
         != attestation
     ):
         raise ContractError("world receipts name different trusted providers")
+    bound_fields = (
+        "world_evidence_sha256",
+        "world_inputs_sha256",
+        "provider_attestation",
+        "provider_authorizations",
+        "claim_boundary",
+    )
+    bound_values = {
+        field: (
+            consent_payload.get(field),
+            reference_payload.get(field),
+            likeness_payload.get(field),
+        )
+        for field in bound_fields
+    }
+    if any(
+        any(value is not None for value in values)
+        for values in bound_values.values()
+    ):
+        if any(
+            values[0] is None
+            or values[0] != values[1]
+            or values[0] != values[2]
+            for values in bound_values.values()
+        ):
+            raise ContractError("world receipts identify different Manager evidence")
+        require_sha256(
+            bound_values["world_evidence_sha256"][0],
+            "world evidence sha256",
+        )
+        require_sha256(
+            bound_values["world_inputs_sha256"][0],
+            "world Invent inputs sha256",
+        )
+        provider_attestation = bound_values["provider_attestation"][0]
+        if (
+            not isinstance(provider_attestation, Mapping)
+            or set(provider_attestation) != {"attestation_sha256"}
+            or not isinstance(bound_values["provider_authorizations"][0], list)
+            or bound_values["claim_boundary"][0] != CONSENT_CLAIM_BOUNDARY
+            or "not legal consent"
+            not in str(consent_payload.get("attestation_scope", ""))
+        ):
+            raise ContractError("world Manager evidence overstates its trust boundary")
+        require_sha256(
+            provider_attestation.get("attestation_sha256"),
+            "world provider attestation sha256",
+        )
+        authorization_ids = []
+        for authorization in bound_values["provider_authorizations"][0]:
+            if not isinstance(authorization, Mapping) or set(authorization) != {
+                "reference_id",
+                "authorization_sha256",
+            }:
+                raise ContractError(
+                    "world provider authorization receipt is malformed"
+                )
+            authorization_ids.append(
+                _nonempty_text(
+                    authorization.get("reference_id"),
+                    "world provider authorization reference id",
+                )
+            )
+            require_sha256(
+                authorization.get("authorization_sha256"),
+                "world provider authorization sha256",
+            )
+        if (
+            not authorization_ids
+            or len(authorization_ids) != len(set(authorization_ids))
+            or authorization_ids != sorted(authorization_ids)
+        ):
+            raise ContractError(
+                "world provider authorization receipts must be unique and ordered"
+            )
+    new_payload = (
+        "raw_scope_record_bytes_included" in consent_payload
+        or "raw_reference_bytes_included" in reference_payload
+    )
+    legacy_payload = (
+        "raw_consent_bytes_sealed" in consent_payload
+        or "raw_private_bytes_sealed" in reference_payload
+    )
+    if new_payload == legacy_payload or new_payload != new_measurements:
+        raise ContractError("world receipts mix private-byte disclosure profiles")
+    if require_manager_evidence and not new_payload:
+        raise ContractError(
+            "canonical world receipts use deprecated private-byte terminology"
+        )
+    raw_scope_included = (
+        consent_payload.get("raw_scope_record_bytes_included")
+        if new_payload
+        else consent_payload.get("raw_consent_bytes_sealed")
+    )
+    raw_reference_included = (
+        reference_payload.get("raw_reference_bytes_included")
+        if new_payload
+        else reference_payload.get("raw_private_bytes_sealed")
+    )
     if (
-        consent_payload.get("raw_consent_bytes_sealed") is not False
-        or reference_payload.get("raw_private_bytes_sealed") is not False
+        raw_scope_included is not False
+        or raw_reference_included is not False
         or "not public-replayable"
         not in str(consent_payload.get("attestation_scope", ""))
         or "not public-replayable"
@@ -1476,15 +1613,32 @@ def _validate_world_receipt_semantics(
         raise ContractError("world receipt lacks private reference attestations")
     material_by_id = {}
     for reference in references:
-        if not isinstance(reference, Mapping) or set(reference) != {
+        common_reference_fields = {
             "reference_id",
             "media_type",
             "content_sha256",
             "content_bytes",
-            "private_bytes_sealed",
-        }:
+        }
+        if not isinstance(reference, Mapping):
+            raise ContractError("world reference attestation is incomplete")
+        reference_new = set(reference) == common_reference_fields | {
+            "reference_bytes_included"
+        }
+        reference_legacy = set(reference) == common_reference_fields | {
+            "private_bytes_sealed"
+        }
+        if (
+            reference_new == reference_legacy
+            or reference_new != new_payload
+            or (require_manager_evidence and not reference_new)
+        ):
             raise ContractError("world reference attestation is incomplete")
         reference_id = reference.get("reference_id")
+        bytes_included = (
+            reference.get("reference_bytes_included")
+            if reference_new
+            else reference.get("private_bytes_sealed")
+        )
         if (
             reference_id not in expected_by_id
             or reference_id in material_by_id
@@ -1492,7 +1646,7 @@ def _validate_world_receipt_semantics(
             or "/" not in reference["media_type"]
             or type(reference.get("content_bytes")) is not int
             or reference["content_bytes"] < 1
-            or reference.get("private_bytes_sealed") is not False
+            or bytes_included is not False
         ):
             raise ContractError("world reference attestation is invalid")
         require_sha256(reference.get("content_sha256"), "world reference sha256")
@@ -1557,28 +1711,170 @@ def _validate_world_receipt_semantics(
         consent_violations += not case["consent_safe"]
     if observed_cases != expected_cases:
         raise ContractError("world likeness receipt omits a personalization mapping")
-    measurements = proof.measurements
+    violation_key = "scope_violations" if new_measurements else "consent_violations"
     if (
-        measurements.get("consent_verified") is not True
+        measurements.get(
+            "scope_record_authenticated"
+            if new_measurements
+            else "consent_verified"
+        )
+        is not True
         or measurements.get("personalization_features") != len(expected_cases)
         or measurements.get("likeness_cases") != len(cases)
         or measurements.get("recognition_failures") != recognition_failures
-        or measurements.get("consent_violations") != consent_violations
+        or measurements.get(violation_key) != consent_violations
     ):
         raise ContractError("world measurements do not match replayed attestation cases")
+
+    if require_manager_evidence:
+        if (
+            not isinstance(wish, Wish)
+            or not isinstance(world_inputs, WorldInventInputs)
+            or not isinstance(world_evidence, WorldPlaytestEvidence)
+        ):
+            raise ContractError(
+                "canonical world release requires exact Manager Invent inputs and Playtest evidence"
+            )
+        personalization = {
+            "consented_references": expected_references,
+            "feature_to_form_map": expected_mappings,
+        }
+        world_evidence.assert_context(
+            wish,
+            proof.artifact_sha256,
+            personalization,
+            world_inputs,
+        )
+        if any(values[0] is None for values in bound_values.values()):
+            raise ContractError(
+                "canonical world receipts omit their exact Manager evidence binding"
+            )
+        expected_provider = {
+            "name": world_evidence.provider.provider_id,
+            "version": world_evidence.provider.version,
+            "config_sha256": world_evidence.provider.config_sha256,
+            "method_class": "independent-private-reference-measurement",
+        }
+        if attestation != expected_provider:
+            raise ContractError("world receipt provider differs from Manager evidence")
+        if (
+            bound_values["world_evidence_sha256"][0]
+            != world_evidence.evidence_sha256
+            or bound_values["world_inputs_sha256"][0]
+            != world_inputs.binding_sha256
+            or bound_values["provider_attestation"][0]
+            != world_evidence.provider_attestation
+        ):
+            raise ContractError("world receipts differ from the exact Manager envelope")
+        expected_authorizations = [
+            {
+                "reference_id": item.reference_id,
+                "authorization_sha256": item.provider_authorization[
+                    "authorization_sha256"
+                ],
+            }
+            for item in sorted(
+                world_evidence.references, key=lambda item: item.reference_id
+            )
+        ]
+        if (
+            bound_values["provider_authorizations"][0]
+            != expected_authorizations
+        ):
+            raise ContractError(
+                "world receipt authorizations differ from Manager evidence"
+            )
+        admitted = {
+            item.scope.reference_id: item for item in world_inputs.references
+        }
+        evidence_references = {
+            item.reference_id: item for item in world_evidence.references
+        }
+        expected_consent_records = {
+            reference_id: {
+                "reference_id": reference_id,
+                "subject": admitted[reference_id].scope.subject,
+                "rights_basis": admitted[reference_id].scope.rights_basis,
+                "allowed_features": list(
+                    admitted[reference_id].scope.allowed_features
+                ),
+                "excluded_features": list(
+                    admitted[reference_id].scope.excluded_features
+                ),
+                "verification_method": item.scope_authentication_method,
+                "verified_at": item.observed_at,
+                "consent_sha256": item.declaration_sha256,
+                "consent_bytes": item.declaration_bytes,
+            }
+            for reference_id, item in evidence_references.items()
+        }
+        expected_reference_records = {
+            reference_id: {
+                "reference_id": reference_id,
+                "media_type": item.media_type,
+                "content_sha256": item.content_sha256,
+                "content_bytes": item.content_bytes,
+                "reference_bytes_included": False,
+            }
+            for reference_id, item in evidence_references.items()
+        }
+        expected_case_records = {
+            (
+                item.reference_id,
+                item.reference_feature,
+                item.recognition_test,
+            ): {
+                "reference_id": item.reference_id,
+                "reference_feature": item.reference_feature,
+                "recognition_test": item.recognition_test,
+                "reference_sha256": item.reference_sha256,
+                "recognized": item.recognized,
+                "consent_safe": item.scope_safe,
+                "method_class": item.method_class,
+                "passed": item.passed,
+            }
+            for item in world_evidence.cases
+        }
+        if consent_by_id != expected_consent_records:
+            raise ContractError("world consent receipts differ from Manager evidence")
+        if material_by_id != expected_reference_records:
+            raise ContractError("world reference receipts differ from Manager evidence")
+        observed_case_records = {
+            (
+                item["reference_id"],
+                item["reference_feature"],
+                item["recognition_test"],
+            ): dict(item)
+            for item in cases
+        }
+        if observed_case_records != expected_case_records:
+            raise ContractError("world likeness receipts differ from Manager evidence")
 
 
 def _validate_lane_receipt_semantics(
     proof: CapabilityReleaseProof,
     receipts: Mapping[str, Mapping[str, Any]],
     product_root: Path,
+    *,
+    wish: Optional[Wish] = None,
+    world_inputs: Optional[WorldInventInputs] = None,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
+    require_manager_world_evidence: bool = False,
 ) -> None:
     if proof.capability == "classic-rules-test":
         _validate_classic_receipt_semantics(proof, receipts, product_root)
     elif proof.capability == "science-test":
         _validate_science_receipt_semantics(proof, receipts, product_root)
     elif proof.capability == "world-test":
-        _validate_world_receipt_semantics(proof, receipts, product_root)
+        _validate_world_receipt_semantics(
+            proof,
+            receipts,
+            product_root,
+            wish=wish,
+            world_inputs=world_inputs,
+            world_evidence=world_evidence,
+            require_manager_evidence=require_manager_world_evidence,
+        )
 
 
 def _validate_game(
@@ -1788,6 +2084,10 @@ def _validate_capability_result(
     product_inventory: Mapping[str, str],
     evidence_inventory: Mapping[str, str],
     evidence_root: Path,
+    wish: Optional[Wish] = None,
+    world_inputs: Optional[WorldInventInputs] = None,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
+    require_manager_world_evidence: bool = False,
 ) -> None:
     evidence = result.evidence
     if evidence.get("evidence_class") != "ai-simulation":
@@ -1831,6 +2131,10 @@ def _validate_capability_result(
         proof,
         receipt_documents,
         made.artifact_root,
+        wish=wish,
+        world_inputs=world_inputs,
+        world_evidence=world_evidence,
+        require_manager_world_evidence=require_manager_world_evidence,
     )
     if capability == "print-test":
         _validate_print(
@@ -1855,7 +2159,7 @@ def _need(capability: str) -> Need:
         "motion-test": "kinematic evidence across tolerances, orientations, loads, wear, stalls, and misuse",
         "classic-rules-test": "reference-bound rule conformance and seeded classic-game traces",
         "science-test": "Wish-relevant source-bound accuracy, simplification, and deterministic product-text coverage evidence",
-        "world-test": "consent-, reference-, and personalization-bound likeness evidence",
+        "world-test": "scope-record-, reference-, and personalization-bound recognition evidence",
         "game-simulation": "1,000 complete seeded traces plus balance, exploit, choice, and flow analysis",
         "agent-playtest": "artifact-bound evidence from at least two distinct AI-player roles",
     }.get(capability, "artifact-bound evidence matching the Workshop capability contract")
@@ -1873,6 +2177,10 @@ def playtest_release_needs(
     made: Made,
     playtested: Playtested,
     evidence_root: Path,
+    *,
+    wish: Optional[Wish] = None,
+    world_inputs: Optional[WorldInventInputs] = None,
+    world_evidence: Optional[WorldPlaytestEvidence] = None,
 ) -> Tuple[Need, ...]:
     """Return every missing common release proof before Instructions.
 
@@ -1923,6 +2231,13 @@ def playtest_release_needs(
                 product_inventory=product_inventory,
                 evidence_inventory=evidence_inventory,
                 evidence_root=selected_root,
+                wish=wish,
+                world_inputs=world_inputs,
+                world_evidence=world_evidence,
+                require_manager_world_evidence=(
+                    blueprint.lane == "little-worlds"
+                    and capability == "world-test"
+                ),
             )
         except (ContractError, KeyError, TypeError, ValueError):
             needs.append(_need(capability))

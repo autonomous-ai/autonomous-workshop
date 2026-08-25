@@ -50,6 +50,8 @@ from .models import (
 )
 from .playtest_release import CapabilityReleaseProof, ReleaseProofSource
 from .reward_loop import json_sha256
+from .world_reference_vault import CONSENT_CLAIM_BOUNDARY
+from .world_service import WorldPlaytestEvidence
 
 
 _RELEASE_RECEIPT_KIND = "workshop.capability-release-receipt"
@@ -222,6 +224,31 @@ def _lane_contract(context: PlaytestContext) -> Tuple[Mapping[str, Any], str]:
     if declared != json_sha256(contract):
         raise ContractError("Make Invent lane contract hash is invalid")
     return contract, digest
+
+
+def _world_lane_contract(
+    context: PlaytestContext,
+) -> Tuple[Mapping[str, Any], str, str]:
+    """Resolve either Workshop Make or engine-neutral custom world output."""
+
+    inventory = {entry.path for entry in context.made.artifact_manifest.entries}
+    if "playtest/mechanical.json" in inventory:
+        contract, digest = _lane_contract(context)
+        return contract, digest, "playtest/mechanical.json"
+    document, digest = _sealed_json(context, "personalization-map.json")
+    if set(document) != {"consented_references", "feature_to_form_map"}:
+        raise ContractError("custom world Make personalization map is inexact")
+    contract = {
+        "schema_version": 1,
+        "lane": "little-worlds",
+        "consented_references": document.get("consented_references"),
+        "feature_to_form_map": document.get("feature_to_form_map"),
+    }
+    if not isinstance(contract["consented_references"], list) or not isinstance(
+        contract["feature_to_form_map"], list
+    ):
+        raise ContractError("custom world Make personalization map is incomplete")
+    return contract, digest, "personalization-map.json"
 
 
 @dataclass(frozen=True)
@@ -784,7 +811,10 @@ class SealedInventScienceEvidenceProvider:
 
 @dataclass(frozen=True)
 class WorldConsentRecord:
-    """Verified consent bytes; only their digest is emitted into evidence."""
+    """Customer/operator-supplied scope bytes; evidence emits only a digest.
+
+    This legacy adapter type does not establish legal consent or ownership.
+    """
 
     reference_id: str
     subject: str
@@ -809,7 +839,7 @@ class WorldConsentRecord:
             raise ContractError("world consent cannot allow and exclude one feature")
         method = _bounded_text(self.verification_method, "consent verification method", 300)
         if method.casefold() in _DISALLOWED_OPINION_METHODS:
-            raise ContractError("model opinion is not verified consent")
+            raise ContractError("model opinion cannot authenticate a scope record")
         require_utc_timestamp(self.verified_at, "consent verified_at")
         _bounded_bytes(self.consent_bytes, "consent record", 256 * 1024)
         object.__setattr__(self, "allowed_features", allowed)
@@ -855,7 +885,7 @@ class WorldReferenceMaterial:
             "media_type": self.media_type,
             "content_sha256": self.sha256,
             "content_bytes": len(self.content),
-            "private_bytes_sealed": False,
+            "reference_bytes_included": False,
         }
 
 
@@ -1430,11 +1460,14 @@ class PinnedCheckersRulesProvider:
 class WorkshopLanePlaytestProviders:
     """Workshop-owned registry for lane release adapters.
 
-    ``science_provider`` and ``world_provider`` are infrastructure inputs, not
+    ``science_provider`` and the legacy test-only ``world_provider`` are
+    infrastructure inputs, not
     Inventor hooks.  Science defaults to deterministic replay of the exact
     research excerpts sealed by shared Invent and Make.  Explicit providers may
-    replace that adapter.  World evidence still requires a consent vault or an
-    explicit deterministic test double; its absence produces a typed Need.
+    replace that adapter. Production World evidence requires Manager-verified,
+    raw-free evidence from an external isolated service; its absence produces a
+    typed Need. The legacy in-process World provider remains for compatibility
+    tests and does not establish legal consent.
     """
 
     def __init__(
@@ -1770,13 +1803,15 @@ class WorkshopLanePlaytestProviders:
         )
 
     def _prepare_world(self, context: PlaytestContext) -> PreparedLaneRelease:
+        if context.world_evidence is not None:
+            return self._prepare_attested_world(context)
         if self.world_provider is None:
             raise _need(
                 "world-test",
-                "The shared world adapter has no verified consent and private reference input for this exact personalization map.",
-                "Connect a Workshop-managed WorldEvidenceProvider backed by the consent vault and authorized private references. Never ask the Inventor or a language model to fabricate consent.",
+                "This exact Make has no Manager-verified, raw-free world comparison evidence.",
+                "Have the Workshop Manager call an external isolated WorldPlaytestService, verify its evidence envelope, and resume this exact Wish. The customer-supplied scope record is not legal-consent proof.",
             )
-        contract, contract_sha = _lane_contract(context)
+        contract, contract_sha, contract_path = _world_lane_contract(context)
         references = contract.get("consented_references")
         mappings = contract.get("feature_to_form_map")
         if not isinstance(references, list) or not isinstance(mappings, list):
@@ -1807,7 +1842,7 @@ class WorkshopLanePlaytestProviders:
                     or tuple(consent.allowed_features) != tuple(expected.get("allowed_features", ()))
                     or tuple(consent.excluded_features) != tuple(expected.get("excluded_features", ()))
                 ):
-                    raise ContractError("verified consent differs from the Invent authorization")
+                    raise ContractError("authenticated scope record differs from the Invent authorization")
             expected_cases = {
                 (
                     item.get("reference_id"),
@@ -1837,26 +1872,26 @@ class WorkshopLanePlaytestProviders:
         except Exception as exc:
             raise _need(
                 "world-test",
-                "The shared world provider did not return complete consent- and reference-bound evidence for these exact Invent bytes.",
-                "Repair the Workshop consent/reference provider and cover every authorized reference and recognition test. Do not fabricate or publish private reference bytes.",
+                "The shared world provider did not return complete scope- and reference-bound evidence for these exact Invent bytes.",
+                "Repair the Workshop scope/reference provider and cover every admitted reference and recognition test. Do not fabricate or publish private reference bytes.",
             ) from exc
         recognition_failures = sum(
             not item.recognized for item in verification.likeness_cases
         )
-        consent_violations = sum(
+        scope_violations = sum(
             not item.consent_safe for item in verification.likeness_cases
         )
         measurements = {
-            "consent_verified": True,
+            "scope_record_authenticated": True,
             "personalization_features": len(mappings),
             "likeness_cases": len(verification.likeness_cases),
             "recognition_failures": recognition_failures,
-            "consent_violations": consent_violations,
+            "scope_violations": scope_violations,
         }
         source = ReleaseProofSource(
             "personalization-map",
             "product",
-            "playtest/mechanical.json",
+            contract_path,
             contract_sha,
         )
         return PreparedLaneRelease(
@@ -1870,23 +1905,180 @@ class WorkshopLanePlaytestProviders:
                     "attestation": verification.identity.to_dict(),
                     "attestation_scope": "trusted-provider verification over private consent digests; raw bytes are intentionally not public-replayable",
                     "records": [item.receipt_dict() for item in verification.consent_records],
-                    "raw_consent_bytes_sealed": False,
+                    "raw_scope_record_bytes_included": False,
                 },
                 "reference-material": {
                     "attestation": verification.identity.to_dict(),
                     "attestation_scope": "trusted-provider verification over authorized private reference digests; raw bytes are intentionally not public-replayable",
                     "references": [item.receipt_dict() for item in verification.references],
-                    "raw_private_bytes_sealed": False,
+                    "raw_reference_bytes_included": False,
                 },
                 "likeness-traces": {
                     "attestation": verification.identity.to_dict(),
                     "cases": [item.to_dict() for item in verification.likeness_cases]
                 },
             },
-            recognition_failures == consent_violations == 0,
+            recognition_failures == scope_violations == 0,
             (
-                "Matched every exact personalization feature to verified consent and authorized private reference hashes.",
-                "Private reference and consent bytes stayed outside Playtest evidence; only bounded digests and comparison traces were sealed.",
+                "Matched every exact personalization feature to an authenticated customer/operator scope record and admitted private-reference hashes.",
+                "Private reference and scope-record bytes stayed outside Playtest evidence; only bounded digests and comparison traces were sealed.",
+            ),
+        )
+
+    def _prepare_attested_world(
+        self, context: PlaytestContext
+    ) -> PreparedLaneRelease:
+        """Consume raw-free evidence fetched outside the contribution process."""
+
+        if context.world_inputs is None or not isinstance(
+            context.world_evidence, WorldPlaytestEvidence
+        ):
+            raise _need(
+                "world-test",
+                "This exact Make has no Manager-bound private-reference evidence.",
+                "Have the Workshop Manager call an isolated WorldPlaytestService, verify its raw-free envelope, and resume this exact Wish.",
+            )
+        contract, contract_sha, contract_path = _world_lane_contract(context)
+        references = contract.get("consented_references")
+        mappings = contract.get("feature_to_form_map")
+        if not isinstance(references, list) or not isinstance(mappings, list):
+            raise ContractError("world Invent contract is incomplete")
+        personalization = {
+            "consented_references": references,
+            "feature_to_form_map": mappings,
+        }
+        evidence = context.world_evidence
+        try:
+            evidence.assert_context(
+                context.wish,
+                context.made.artifact_sha256,
+                personalization,
+                context.world_inputs,
+            )
+            identity = ProviderIdentity(
+                evidence.provider.provider_id,
+                evidence.provider.version,
+                evidence.provider.config_sha256,
+                "independent-private-reference-measurement",
+            )
+            admitted = {
+                item.scope.reference_id: item
+                for item in context.world_inputs.references
+            }
+            attested = {item.reference_id: item for item in evidence.references}
+            consent_records = []
+            reference_records = []
+            for reference_id in sorted(admitted):
+                scope = admitted[reference_id].scope
+                item = attested[reference_id]
+                consent_records.append(
+                    {
+                        "reference_id": reference_id,
+                        "subject": scope.subject,
+                        "rights_basis": scope.rights_basis,
+                        "allowed_features": list(scope.allowed_features),
+                        "excluded_features": list(scope.excluded_features),
+                        "verification_method": item.scope_authentication_method,
+                        "verified_at": item.observed_at,
+                        "consent_sha256": item.declaration_sha256,
+                        "consent_bytes": item.declaration_bytes,
+                    }
+                )
+                reference_records.append(
+                    {
+                        "reference_id": reference_id,
+                        "media_type": item.media_type,
+                        "content_sha256": item.content_sha256,
+                        "content_bytes": item.content_bytes,
+                        "reference_bytes_included": False,
+                    }
+                )
+            cases = [
+                {
+                    "reference_id": item.reference_id,
+                    "reference_feature": item.reference_feature,
+                    "recognition_test": item.recognition_test,
+                    "reference_sha256": item.reference_sha256,
+                    "recognized": item.recognized,
+                    "consent_safe": item.scope_safe,
+                    "method_class": item.method_class,
+                    "passed": item.passed,
+                }
+                for item in evidence.cases
+            ]
+        except WaitingFor:
+            raise
+        except Exception as exc:
+            raise _need(
+                "world-test",
+                "The Manager-supplied world evidence is not bound to this exact Wish, Invent scope, Make, and provider attestation.",
+                "Re-run the isolated WorldPlaytestService for this exact artifact and resume with its verified raw-free envelope.",
+            ) from exc
+        recognition_failures = sum(not item.recognized for item in evidence.cases)
+        scope_violations = sum(not item.scope_safe for item in evidence.cases)
+        measurements = {
+            "scope_record_authenticated": True,
+            "personalization_features": len(mappings),
+            "likeness_cases": len(evidence.cases),
+            "recognition_failures": recognition_failures,
+            "scope_violations": scope_violations,
+        }
+        common_attestation = {
+            "world_evidence_sha256": evidence.evidence_sha256,
+            "world_inputs_sha256": context.world_inputs.binding_sha256,
+            "provider_attestation": json.loads(
+                _canonical_json(evidence.provider_attestation).decode("utf-8")
+            ),
+            "provider_authorizations": [
+                {
+                    "reference_id": item.reference_id,
+                    "authorization_sha256": item.provider_authorization[
+                        "authorization_sha256"
+                    ],
+                }
+                for item in sorted(
+                    evidence.references, key=lambda item: item.reference_id
+                )
+            ],
+            "claim_boundary": CONSENT_CLAIM_BOUNDARY,
+        }
+        source = ReleaseProofSource(
+            "personalization-map",
+            "product",
+            contract_path,
+            contract_sha,
+        )
+        return PreparedLaneRelease(
+            "world-test",
+            context.made.artifact_sha256,
+            identity,
+            (source,),
+            measurements,
+            {
+                "consent-record": {
+                    "attestation": identity.to_dict(),
+                    "attestation_scope": "authenticated customer/operator scope record; not legal consent or ownership proof; raw bytes are intentionally not public-replayable",
+                    "records": consent_records,
+                    "raw_scope_record_bytes_included": False,
+                    **common_attestation,
+                },
+                "reference-material": {
+                    "attestation": identity.to_dict(),
+                    "attestation_scope": "isolated provider measurement over admitted private-reference digests; raw bytes are intentionally not public-replayable",
+                    "references": reference_records,
+                    "raw_reference_bytes_included": False,
+                    **common_attestation,
+                },
+                "likeness-traces": {
+                    "attestation": identity.to_dict(),
+                    "cases": cases,
+                    **common_attestation,
+                },
+            },
+            recognition_failures == scope_violations == 0,
+            (
+                "Authenticated the exact customer/operator-supplied scope record without claiming legal consent or ownership.",
+                "Compared every exact admitted feature with the exact Make through an isolated provider; no private bytes entered Inventor code or public evidence.",
             ),
         )
 

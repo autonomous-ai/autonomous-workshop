@@ -14,7 +14,14 @@ from inventor_workshop.agent_invent import (
 from inventor_workshop.artifacts import build_artifact_manifest
 from inventor_workshop.deliver import DefaultDeliver
 from inventor_workshop.instructions import DefaultInstructions
-from inventor_workshop.jobs import Delivered, Invented, Made, Playtested
+from inventor_workshop.jobs import (
+    Delivered,
+    Invented,
+    Made,
+    Need,
+    Playtested,
+    WaitingFor,
+)
 from inventor_workshop.make import Wish
 from inventor_workshop.models import PlaytestResult, Receipt
 from inventor_workshop.playtest import Playtest
@@ -23,6 +30,18 @@ from inventor_workshop.playtest_release import (
     ReleaseProofSource,
 )
 from inventor_workshop.workshop import WorkshopTools
+from inventor_workshop.world_reference_vault import (
+    CONSENT_CLAIM_BOUNDARY,
+    WorldReferenceScope,
+)
+from inventor_workshop.world_service import (
+    WorldEvidenceCase,
+    WorldEvidenceReference,
+    WorldInventInputs,
+    WorldInventReference,
+    WorldPlaytestEvidence,
+    WorldProviderIdentity,
+)
 from tests.delivery_support import fixture_delivery_evidence
 
 
@@ -138,20 +157,38 @@ class DeterministicWorkshopFakes:
 
     def invent(self, context):
         self._record("invent", context)
+        concept = {
+            "title": "%s ownership fixture" % self.inventor_id.title(),
+            "summary": "A deterministic industrial-design handoff for the shared engine.",
+            "bindings": {
+                "wish_sha256": self.wish_sha256,
+                "taste_sha256": self.taste_sha256,
+                "lane": self.lane,
+                "inventor_id": self.inventor_id,
+            },
+        }
+        if self.lane == "little-worlds":
+            self.case.assertIsInstance(context.world_inputs, WorldInventInputs)
+            concept["lane_contract"] = {
+                "schema_version": 1,
+                "lane": "little-worlds",
+                "consented_references": (
+                    context.world_inputs.expected_consent_contracts()
+                ),
+                "feature_to_form_map": [
+                    {
+                        "reference_id": "fixture-reference",
+                        "reference_feature": "fixture feature",
+                        "physical_form": "fixture silhouette",
+                        "recognition_test": "feature remains recognizable",
+                    }
+                ],
+            }
         return Invented(
             wish_sha256=self.wish_sha256,
             taste_sha256=self.taste_sha256,
             lane=self.lane,
-            concept={
-                "title": "%s ownership fixture" % self.inventor_id.title(),
-                "summary": "A deterministic industrial-design handoff for the shared engine.",
-                "bindings": {
-                    "wish_sha256": self.wish_sha256,
-                    "taste_sha256": self.taste_sha256,
-                    "lane": self.lane,
-                    "inventor_id": self.inventor_id,
-                },
-            },
+            concept=concept,
             score=95,
             target_score=90,
         )
@@ -855,19 +892,41 @@ class DeterministicWorkshopFakes:
 
         if capability == "world-test":
             proof_class = "reference-bound-world-proof"
+            self.case.assertIsInstance(
+                context.world_evidence, WorldPlaytestEvidence
+            )
+            self.case.assertIsInstance(context.world_inputs, WorldInventInputs)
+            manager_evidence = context.world_evidence
+            manager_reference = manager_evidence.references[0]
+            manager_scope = context.world_inputs.references[0].scope
             provider = {
-                "name": "ownership-consent-reference-provider",
-                "version": "1.0.0",
-                "config_sha256": "3" * 64,
-                "method_class": "private-reference-feature-comparison",
+                "name": manager_evidence.provider.provider_id,
+                "version": manager_evidence.provider.version,
+                "config_sha256": manager_evidence.provider.config_sha256,
+                "method_class": "independent-private-reference-measurement",
             }
-            material_sha256 = hashlib.sha256(b"private ownership reference").hexdigest()
+            material_sha256 = manager_reference.content_sha256
+            manager_binding = {
+                "world_evidence_sha256": manager_evidence.evidence_sha256,
+                "world_inputs_sha256": context.world_inputs.binding_sha256,
+                "provider_attestation": dict(manager_evidence.provider_attestation),
+                "provider_authorizations": [
+                    {
+                        "reference_id": item.reference_id,
+                        "authorization_sha256": item.provider_authorization[
+                            "authorization_sha256"
+                        ],
+                    }
+                    for item in manager_evidence.references
+                ],
+                "claim_boundary": CONSENT_CLAIM_BOUNDARY,
+            }
             measurements = {
-                "consent_verified": True,
+                "scope_record_authenticated": True,
                 "personalization_features": 1,
                 "likeness_cases": 1,
                 "recognition_failures": 0,
-                "consent_violations": 0,
+                "scope_violations": 0,
             }
             map_source = source(
                 "personalization-map",
@@ -884,21 +943,22 @@ class DeterministicWorkshopFakes:
                 measurements=measurements,
                 payload={
                     "attestation": provider,
-                    "attestation_scope": "trusted-provider verification over private consent digests; raw bytes are intentionally not public-replayable",
+                    "attestation_scope": "authenticated customer/operator scope record; not legal consent or ownership proof; raw bytes are intentionally not public-replayable",
                     "records": [
                         {
-                            "reference_id": "fixture-reference",
-                            "subject": "fixture subject",
-                            "rights_basis": "signed fixture authorization",
-                            "allowed_features": ["fixture feature"],
-                            "excluded_features": ["private address"],
-                            "verification_method": "signed-fixture-record",
-                            "verified_at": "2026-08-25T00:00:00Z",
-                            "consent_sha256": hashlib.sha256(b"private ownership consent").hexdigest(),
-                            "consent_bytes": len(b"private ownership consent"),
+                            "reference_id": manager_reference.reference_id,
+                            "subject": manager_scope.subject,
+                            "rights_basis": manager_scope.rights_basis,
+                            "allowed_features": list(manager_scope.allowed_features),
+                            "excluded_features": list(manager_scope.excluded_features),
+                            "verification_method": manager_reference.scope_authentication_method,
+                            "verified_at": manager_reference.observed_at,
+                            "consent_sha256": manager_reference.declaration_sha256,
+                            "consent_bytes": manager_reference.declaration_bytes,
                         }
                     ],
-                    "raw_consent_bytes_sealed": False,
+                    "raw_scope_record_bytes_included": False,
+                    **manager_binding,
                 },
             )
             reference, reference_sha256 = self._canonical_receipt(
@@ -910,17 +970,18 @@ class DeterministicWorkshopFakes:
                 measurements=measurements,
                 payload={
                     "attestation": provider,
-                    "attestation_scope": "trusted-provider verification over authorized private reference digests; raw bytes are intentionally not public-replayable",
+                    "attestation_scope": "isolated provider measurement over admitted private-reference digests; raw bytes are intentionally not public-replayable",
                     "references": [
                         {
-                            "reference_id": "fixture-reference",
-                            "media_type": "image/jpeg",
+                            "reference_id": manager_reference.reference_id,
+                            "media_type": manager_reference.media_type,
                             "content_sha256": material_sha256,
-                            "content_bytes": len(b"private ownership reference"),
-                            "private_bytes_sealed": False,
+                            "content_bytes": manager_reference.content_bytes,
+                            "reference_bytes_included": False,
                         }
                     ],
-                    "raw_private_bytes_sealed": False,
+                    "raw_reference_bytes_included": False,
+                    **manager_binding,
                 },
             )
             traces, traces_sha256 = self._canonical_receipt(
@@ -934,16 +995,18 @@ class DeterministicWorkshopFakes:
                     "attestation": provider,
                     "cases": [
                         {
-                            "reference_id": "fixture-reference",
-                            "reference_feature": "fixture feature",
-                            "recognition_test": "feature remains recognizable",
-                            "reference_sha256": material_sha256,
-                            "recognized": True,
-                            "consent_safe": True,
-                            "method_class": "vision-feature-comparison",
-                            "passed": True,
+                            "reference_id": item.reference_id,
+                            "reference_feature": item.reference_feature,
+                            "recognition_test": item.recognition_test,
+                            "reference_sha256": item.reference_sha256,
+                            "recognized": item.recognized,
+                            "consent_safe": item.scope_safe,
+                            "method_class": item.method_class,
+                            "passed": item.passed,
                         }
+                        for item in manager_evidence.cases
                     ],
+                    **manager_binding,
                 },
             )
             return CapabilityReleaseProof(
@@ -1029,6 +1092,15 @@ class DeterministicWorkshopFakes:
         raise AssertionError("unexpected release capability %s" % capability)
 
     def playtest(self, context):
+        if self.lane == "little-worlds" and context.world_evidence is None:
+            raise WaitingFor(
+                Need(
+                    "playtest",
+                    "world-test",
+                    "The exact Make needs independent Manager world evidence.",
+                    "Evaluate this artifact outside the Inventor and resume it.",
+                )
+            )
         self._record("playtest", context)
         context.workspace.mkdir(parents=True)
         product_inventory = {
@@ -1160,6 +1232,92 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
             },
         )
 
+    @staticmethod
+    def world_inputs(wish):
+        wish_sha256 = canonical_sha256(wish.to_dict())
+        scope = WorldReferenceScope(
+            "fixture-reference",
+            "customer-owned-subject",
+            "fixture subject",
+            "signed fixture authorization",
+            ("fixture feature",),
+            ("private address",),
+            "customer-order-42",
+            "customer-supplied-attestation-record",
+        )
+        return WorldInventInputs(
+            wish.product_id,
+            wish_sha256,
+            WorldProviderIdentity(
+                "isolated-world-reference-service", "1.0.0", "1" * 64
+            ),
+            (
+                WorldInventReference(
+                    scope,
+                    wish.product_id,
+                    wish_sha256,
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "2" * 64,
+                    "5" * 64,
+                ),
+            ),
+        )
+
+    @staticmethod
+    def world_evidence(wish, artifact_sha256, inputs):
+        personalization = {
+            "consented_references": inputs.expected_consent_contracts(),
+            "feature_to_form_map": [
+                {
+                    "reference_id": "fixture-reference",
+                    "reference_feature": "fixture feature",
+                    "physical_form": "fixture silhouette",
+                    "recognition_test": "feature remains recognizable",
+                }
+            ],
+        }
+        return WorldPlaytestEvidence(
+            wish.product_id,
+            canonical_sha256(wish.to_dict()),
+            artifact_sha256,
+            canonical_sha256(personalization),
+            inputs.binding_sha256,
+            WorldProviderIdentity(
+                "isolated-world-comparison-service", "2.0.0", "6" * 64
+            ),
+            (
+                WorldEvidenceReference(
+                    "fixture-reference",
+                    "2" * 64,
+                    "3" * 64,
+                    128,
+                    "4" * 64,
+                    64,
+                    "image/jpeg",
+                    "authenticated-customer-supplied-scope-record",
+                    "2026-08-26T01:02:03Z",
+                    {"authorization_sha256": "7" * 64},
+                ),
+            ),
+            (
+                WorldEvidenceCase(
+                    "fixture-reference",
+                    "fixture feature",
+                    "feature remains recognizable",
+                    "3" * 64,
+                    True,
+                    True,
+                    "deterministic-feature-comparison",
+                ),
+            ),
+            {"attestation_sha256": "8" * 64},
+        )
+
     def fixture_for(self, inventor_id, lane, wish, runtime_name):
         profile = load_profile(inventor_id)
         runtime_root = self.root / runtime_name
@@ -1195,9 +1353,28 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
                     tools=fixture.tools(),
                     runtime_root=runtime_root,
                     max_rounds=1,
+                    **(
+                        {"world_inputs": self.world_inputs(wish)}
+                        if inventor_id == "eve"
+                        else {}
+                    ),
                 )
 
                 result = workshop.run(wish, playtest_rounds=1)
+                if inventor_id == "eve":
+                    self.assertEqual((result.status, result.job), ("waiting", "playtest"))
+                    world_inputs = workshop.world_inputs
+                    world_evidence = self.world_evidence(
+                        wish, result.artifact_sha256, world_inputs
+                    )
+                    workshop = profile.build_workshop(
+                        tools=fixture.tools(),
+                        runtime_root=runtime_root,
+                        max_rounds=1,
+                        world_inputs=world_inputs,
+                        world_evidence=world_evidence,
+                    )
+                    result = workshop.resume(wish)
 
                 self.assertEqual(workshop.customization_level, "taste-only")
                 self.assertEqual(workshop.inventor_id, inventor_id)

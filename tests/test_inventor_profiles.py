@@ -168,7 +168,11 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                     self.assertEqual(result.playtest_rounds, 3)
                     self.assertEqual(
                         [need.capability for need in result.needs],
-                        ["industrial-design"],
+                        [
+                            "world-reference-descriptors"
+                            if inventor_id == "eve"
+                            else "industrial-design"
+                        ],
                     )
 
     def test_profile_cli_passes_the_checked_playtest_allowance_to_workshop(self):

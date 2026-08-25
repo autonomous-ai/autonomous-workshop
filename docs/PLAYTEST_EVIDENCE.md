@@ -147,11 +147,20 @@ Category-specific Playtest then adds the right gates:
   endings, strategies, and ways to cheat before Instructions.
 - **Machines that move (`moving-machines`)** needs exact motion, interference,
   wear proxies, assembly, and digital printability evidence.
-- **Science you can hold (`holdable-science`)** needs scientific accuracy plus
-  exact geometry, simulated interaction, and digital printability evidence.
+- **Science you can hold (`holdable-science`)** needs Wish-relevant public
+  authority excerpts, exact Invent-provider/source replay, source-bound model,
+  scale, and simplification checks, deterministic product-text coverage, exact
+  geometry, simulated interaction, and digital printability evidence. See the
+  [science proof boundary](SCIENCE_PROOF_BOUNDARY.md).
 - **Little worlds (`little-worlds`)** needs evidence that the Wish materially
   shaped the world, plus legibility, originality, digital printability, and
-  assembly checks.
+  assembly checks. Private personalization has a Workshop-owned
+  [Wish-bound input contract](PRIVATE_WORLD_REFERENCES.md). Its same-user local
+  backend is development-only. Before Invent, the Manager admits only raw-free
+  scope and hashes. After Make, an external isolated service must return
+  Manager-verified raw-free comparison evidence. Neither the customer-supplied
+  scope record nor its local attestation is legal-consent or
+  likeness-recognition proof.
 
 After Playtest and Instructions, Deliver owns the exact print, hands-on QA,
 packing, and carrier handoff for every category. After delivery, Reviews may

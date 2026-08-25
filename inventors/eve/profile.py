@@ -46,6 +46,8 @@ def build_workshop(
     tools: Optional[WorkshopTools] = None,
     runtime_root: Optional[Path] = None,
     max_rounds: int = 4,
+    world_inputs=None,
+    world_evidence=None,
 ) -> Workshop:
     """Use shared Workshop stages; explicit ``WorkshopTools`` values win."""
 
@@ -58,6 +60,8 @@ def build_workshop(
         ),
         runtime_root=selected_runtime,
         max_rounds=max_rounds,
+        world_inputs=world_inputs,
+        world_evidence=world_evidence,
     )
 
 
@@ -82,7 +86,7 @@ def main(argv=None) -> int:
     parser.add_argument("objective", nargs="?")
     parser.add_argument("--playtest-rounds", type=int)
     parser.add_argument("--assignment-stdin", action="store_true", help=argparse.SUPPRESS)
-    args = parser.parse_args(argv)
+    args = parser.parse_intermixed_args(argv)
     if args.assignment_stdin:
         if (
             args.command not in ("run", "resume")
@@ -93,7 +97,10 @@ def main(argv=None) -> int:
             parser.error("--assignment-stdin is an internal Manager handoff")
         handoff = read_manager_assignment(sys.stdin, expected_inventor_id="eve")
         handoff.assert_inventor_current(INVENTOR_ROOT)
-        workshop = build_workshop()
+        workshop = build_workshop(
+            world_inputs=handoff.world_inputs,
+            world_evidence=handoff.world_evidence,
+        )
         resumed = (
             workshop.resume(handoff.wish)
             if args.command == "resume"

@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.13"]
+        python-version: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -79,6 +79,9 @@ jobs:
       - name: installed wheel supports the no-root customer journey
         if: matrix.python-version == '3.13'
         run: python tests/installed_wheel_cli_acceptance.py
+      - name: installed wheel orchestrates all five profiles with deterministic external boundaries
+        if: matrix.python-version == '3.13'
+        run: python tests/installed_all_five_cli_acceptance.py
 
   bob-test:
     runs-on: ubuntu-latest
@@ -86,7 +89,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        python-version: ["3.11", "3.12"]
     env:
       BOB_MOCK_AGENTS: "1"
     defaults:
