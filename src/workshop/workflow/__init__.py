@@ -1,5 +1,14 @@
 """Canonical workshop workflow orchestration."""
 
+from workshop.workflow.agent_run import (
+    AGENT_OUTCOME_STATUSES,
+    AGENT_RUN_STAGES,
+    AgentArtifact,
+    AgentOutcome,
+    AgentRun,
+    AgentRunCheckpoint,
+    DeterministicGateReceipt,
+)
 from workshop.workflow.clockwork import (
     Clockwork,
     InspectionPolicy,
@@ -25,9 +34,16 @@ from workshop.workflow.lifecycle import (
 )
 
 __all__ = [
+    "AGENT_OUTCOME_STATUSES",
+    "AGENT_RUN_STAGES",
+    "AgentArtifact",
+    "AgentOutcome",
+    "AgentRun",
+    "AgentRunCheckpoint",
     "CUSTOMIZATION_LEVELS",
     "Clockwork",
     "DeliverJob",
+    "DeterministicGateReceipt",
     "GatePolicy",
     "InspectionPolicy",
     "InstructionsJob",
