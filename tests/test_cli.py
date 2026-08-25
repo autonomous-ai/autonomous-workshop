@@ -4,12 +4,91 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest import mock
 
 import inventor_workshop
 from inventor_workshop.cli import main, parser
+from inventor_workshop.manager import TasteFit, create_shortlist
 
 
 class CliTest(unittest.TestCase):
+    def test_wish_is_the_simple_customer_command(self):
+        root = Path(__file__).resolve().parents[1]
+
+        class FakeSemanticManager:
+            judge_identity = "fixture-description-matcher"
+            judge_version = "1.0.0"
+            judge_config_sha256 = "a" * 64
+
+            def retrieve(self, context):
+                return create_shortlist(
+                    context,
+                    ("bob",),
+                    retriever="fixture-description-matcher",
+                    retriever_version="1.0.0",
+                    rationale="Bob turns a playful movement into a real mechanism.",
+                )
+
+            def judge(self, context):
+                finalist = context.finalists[0]
+                return (
+                    TasteFit(
+                        inventor_id="bob",
+                        taste_sha256=finalist.taste.sha256,
+                        score=94,
+                        accepted=True,
+                        explanation=(
+                            "Bob turns a playful movement into a real mechanism."
+                        ),
+                    ),
+                )
+
+        output = StringIO()
+        with mock.patch(
+            "inventor_workshop.cli.CodexSemanticManager",
+            return_value=FakeSemanticManager(),
+        ), mock.patch(
+            "inventor_workshop.cli._run_inventor",
+            return_value={
+                "status": "waiting",
+                "job": "make",
+                "needs": [
+                    {
+                        "job": "make",
+                        "capability": "mechanical-designer",
+                        "reason": "The mechanical designer is not connected yet.",
+                        "instructions": "Connect it.",
+                    }
+                ],
+            },
+        ), redirect_stdout(output):
+            result = main(
+                (
+                    "wish",
+                    "a",
+                    "wind-up",
+                    "version",
+                    "of",
+                    "my",
+                    "dog",
+                    "--root",
+                    str(root),
+                    "--json",
+                )
+            )
+        self.assertEqual(result, 0)
+        receipt = json.loads(output.getvalue())
+        self.assertRegex(
+            receipt["wish"]["product_id"],
+            r"^wish-\d{8}-\d{6}-[0-9a-f]{8}$",
+        )
+        self.assertEqual(
+            receipt["wish"]["objective"], "a wind-up version of my dog"
+        )
+        self.assertEqual(receipt["match"]["inventor_id"], "bob")
+        self.assertEqual(receipt["match"]["score"], 94)
+        self.assertEqual(receipt["result"]["status"], "waiting")
+
     def test_source_version_matches_project_metadata(self):
         project = Path(__file__).resolve().parents[1] / "pyproject.toml"
         in_project = False

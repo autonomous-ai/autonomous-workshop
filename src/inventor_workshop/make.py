@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
 
@@ -20,6 +22,25 @@ from .taste import Taste, load_taste
 MAX_PRODUCT_ID_CHARS = 256
 MAX_OBJECTIVE_CHARS = 50_000
 _UNSET = object()
+
+
+def generate_wish_id(
+    *, moment: Optional[datetime] = None, token: Optional[str] = None
+) -> str:
+    """Create an opaque local identifier without putting Wish words in paths."""
+
+    observed = moment if moment is not None else datetime.now(timezone.utc)
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=timezone.utc)
+    observed = observed.astimezone(timezone.utc)
+    suffix = token if token is not None else secrets.token_hex(4)
+    if (
+        not isinstance(suffix, str)
+        or len(suffix) != 8
+        or any(character not in "0123456789abcdef" for character in suffix)
+    ):
+        raise ContractError("Wish id token must be eight lowercase hexadecimal characters")
+    return "wish-%s-%s" % (observed.strftime("%Y%m%d-%H%M%S"), suffix)
 
 
 def _bounded_text(

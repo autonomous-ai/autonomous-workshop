@@ -1,20 +1,24 @@
-"""Small operator CLI; it validates and inspects without running an inventor."""
+"""The customer and operator CLI for Autonomous Workshop."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 from .artifacts import MAX_PACK_BYTES
 from .clockwork import Clockwork
 from .contribution import check_target, manifests_for_target
 from .errors import WorkshopError
+from .jobs import WaitingFor
+from .make import Wish, generate_wish_id
 from .manifest import discover_inventors, inventor_collection, validate_entrypoints
 from .pack import pack_artifact, plan_pack, seal_artifact
-from .manager import discover_inventor_catalog
+from .manager import WorkshopManager, discover_inventor_catalog
+from .semantic_manager import CodexSemanticManager
 from .scaffold import (
     create_inventor,
     prepare_inventor_collection,
@@ -25,6 +29,117 @@ from .skills import discover_skills, resolve_skills_root
 from .taste import load_taste, load_taste_header
 from .toys import PLAYTHING_LANES
 from .workshop import CUSTOMIZATION_LEVELS
+
+
+DEFAULT_WISH_PLAYTEST_ROUNDS = 4
+
+
+def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, Any]:
+    command = list(assignment.entrypoint)
+    if command[0] in ("python", "python3"):
+        command[0] = sys.executable
+    command.extend(
+        (
+            "run",
+            assignment.wish.product_id,
+            assignment.wish.objective,
+            "--playtest-rounds",
+            str(assignment.playtest_rounds),
+        )
+    )
+    completed = runner(
+        command,
+        cwd=str(assignment.decision.selected.card.root),
+        capture_output=True,
+        text=True,
+        timeout=3600,
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise WorkshopError(
+            "the selected Inventor stopped before returning a Workshop result"
+        )
+    try:
+        payload = json.loads(completed.stdout)
+    except (TypeError, ValueError) as exc:
+        raise WorkshopError(
+            "the selected Inventor returned an unreadable Workshop result"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise WorkshopError("the selected Inventor must return one Workshop result")
+    return payload
+
+
+def _waiting_receipt(wish: Wish, waiting: WaitingFor) -> Mapping[str, Any]:
+    return {
+        "schema_version": 1,
+        "status": "waiting",
+        "wish": wish.to_dict(),
+        "needs": [item.to_dict() for item in waiting.needs],
+    }
+
+
+def _print_wish_receipt(receipt: Mapping[str, Any]) -> None:
+    wish = receipt["wish"]
+    print("Wish: %s" % wish["product_id"])
+    match = receipt.get("match")
+    if isinstance(match, dict):
+        print("Matched with %s." % match["name"])
+        print("Why: %s" % match["explanation"])
+    result = receipt.get("result", receipt)
+    if result.get("status") == "waiting":
+        job = result.get("job")
+        print("Waiting%s." % (" at %s" % str(job).title() if job else ""))
+        for need in result.get("needs", ()):
+            print("  %s — %s" % (need["capability"], need["reason"]))
+    else:
+        print("Status: %s" % result.get("status", "started"))
+
+
+def _wish(args: argparse.Namespace) -> int:
+    objective = " ".join(args.objective)
+    wish = Wish.create(
+        generate_wish_id(),
+        objective,
+        context={"source": "workshop-cli"},
+    )
+    semantic = CodexSemanticManager()
+    manager = WorkshopManager(
+        root=args.root,
+        retriever=semantic.retrieve,
+        judge=semantic.judge,
+        judge_identity=semantic.judge_identity,
+        judge_version=semantic.judge_version,
+        judge_config_sha256=semantic.judge_config_sha256,
+    )
+    try:
+        assignment = manager.assign(
+            wish, playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS
+        )
+    except WaitingFor as waiting:
+        receipt = _waiting_receipt(wish, waiting)
+    else:
+        result = _run_inventor(assignment)
+        decision = assignment.decision
+        receipt = {
+            "schema_version": 1,
+            "status": result.get("status", "started"),
+            "wish": wish.to_dict(),
+            "match": {
+                "inventor_id": assignment.inventor_id,
+                "name": decision.selected.card.name,
+                "score": decision.fit.score,
+                "explanation": decision.fit.explanation,
+                "decision_sha256": decision.decision_sha256,
+            },
+            "assignment_sha256": assignment.assignment_sha256,
+            "result": result,
+        }
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_wish_receipt(receipt)
+    return 0
 
 
 def _registry(args: argparse.Namespace) -> int:
@@ -220,6 +335,23 @@ def parser() -> argparse.ArgumentParser:
     subcommands = command.add_subparsers(
         dest="command", required=True, metavar="COMMAND"
     )
+
+    wish = subcommands.add_parser(
+        "wish", help="wish for a toy and let the Workshop choose its Inventor"
+    )
+    wish.add_argument(
+        "objective",
+        nargs="+",
+        help="what you wish existed (quotes are optional)",
+    )
+    wish.add_argument(
+        "--root",
+        type=Path,
+        default=root,
+        help="Workshop checkout or inventor collection (default: current directory)",
+    )
+    wish.add_argument("--json", action="store_true")
+    wish.set_defaults(handler=_wish)
 
     registry = subcommands.add_parser(
         "inventors", aliases=("registry",), help="list and validate inventors"
