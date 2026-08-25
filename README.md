@@ -98,85 +98,32 @@ This is the floorplan of the Workshop: a Wish moves from the customer to the
 right inventor, through a set of scored improvement loops, and back to the
 customer as a finished toy.
 
-```text
-CUSTOMER
-   |
-   v
-WISH
-Customer makes a wish
-   |
-   v
-MATCH
-AI Workshop Manager matches the Wish with an Inventor
-   |
-   v
-+--------------------------------------------------------------------+
-| AI INVENTOR                                                        |
-|                                                                    |
-| CONCEPT micro-loop                                                 |
-| research -> explore concepts -> score -> improve -> repeat          |
-|                                |                                   |
-|                                `-> target score reached             |
-|                                                                    |
-| MAKE micro-loop                                                    |
-| make the chosen concept -> score -> improve -> repeat               |
-|                            |                                       |
-|                            `-> target score reached                 |
-+--------------------------------------------------------------------+
-   |
-   v
-PLAYTEST external loop
-AI Players play the toy, find issues, and suggest improvements
-   |
-   +-- issues and suggestions --------------------------> back to MAKE
-   |
-   `-- target score reached
-           |
-           v
-+--------------------------------------------------------------------+
-| AI INVENTOR                                                        |
-|                                                                    |
-| INSTRUCTIONS micro-loop                                            |
-| publish the toy instruction page -> score -> improve -> repeat      |
-|                                        |                           |
-|                                        `-> target score reached     |
-+--------------------------------------------------------------------+
-   |
-   v
-DELIVER
-Autonomous ships the toy to the customer
-   |
-   v
-REVIEWS external loop
-Customer leaves a review
-   |
-   `-> AI Inventor learns -> improve this toy and future Wishes
-```
+[![The Workshop floorplan, showing the customer journey, three scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-Concept, Make, and Instructions each have their own reward function. The AI
+**Concept, Make, and Instructions** each have their own reward function. The AI
 keeps working inside each micro-loop until it reaches the target score.
-Playtest is the outside AI-player loop: simulated use sends concrete issues and
-suggestions back to Make. Reviews is the outside human-player loop: experience
-with the delivered toy helps the inventor improve that toy and what it makes
-for future Wishes.
+**Playtest** is the outside AI-player loop: simulated use sends concrete issues
+and suggestions back to Make. **Reviews** is the outside human-player loop:
+experience with the delivered toy helps the inventor improve that toy and what
+it makes for future Wishes.
 
-The floorplan is also a contract. Wish preserves the customer's words exactly.
-Make produces parts that can really be printed. Instructions prepares the
-in-box guide and authenticates the website handoff. Deliver owns printing,
-hands-on quality checks, packing, and carrier handoff.
+The floorplan is also a contract. **Wish** preserves the customer's words
+exactly. **Make** produces parts that can really be printed. **Instructions**
+prepares the in-box guide and authenticates the website handoff. **Deliver**
+owns printing, hands-on quality checks, packing, and carrier handoff.
 
-Playtest is entirely simulated by AI agents. They play complete games, adopt
-different strategies, try to cheat, stress rules and mechanisms, inspect CAD,
-and check science and printability. It is not a claim that human customers had
-fun. For a game that does not exist yet, the gate includes at least **1,000
+**Playtest** is entirely simulated by AI agents. They play complete games,
+adopt different strategies, try to cheat, stress rules and mechanisms, inspect
+CAD, and check science and printability. It is not a claim that human customers
+had fun. For a game that does not exist yet, the gate includes at least **1,000
 complete games played by AI players** from a fixed seed, probing endings,
 balance, tactics, strategies, and exploits.
 
-Reviews begin only after delivery. Human feedback can improve a future revision
-of the toy and future Wishes, but it never rewrites the evidence for the version
-already shipped or holds up the original order. Proof stays specific at every
-stage: a picture cannot prove that parts fit, and a shipping label cannot prove
-that a carrier received the box.
+**Reviews** begin only after delivery. Human feedback can improve a future
+revision of the toy and future Wishes, but it never rewrites the evidence for
+the version already shipped or holds up the original order. **Proof** stays
+specific at every stage: a picture cannot prove that parts fit, and a shipping
+label cannot prove that a carrier received the box.
 
 The Manager is the front door. Nothing here runs all day looking for something
 to do — your wish is what starts it. For every wish it:
