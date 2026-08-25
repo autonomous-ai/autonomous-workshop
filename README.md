@@ -11,17 +11,6 @@ anywhere else.**
 
 [![The Workshop product lifecycle, showing Industrial Design, Mechanical Design, scored micro-loops, AI Playtest feedback, and human Reviews feedback](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
 
-- **Wish + Match** — the customer's exact brief goes to the Inventor whose
-  Taste fits it best.
-- **Industrial Design + Mechanical Design** — the Inventor explores the
-  product, engineers printable parts, and improves each stage to its target score.
-- **Playtest** — AI Players simulate use and send issues back to Mechanical
-  Design. New games must pass at least 1,000 seeded games.
-- **Instructions + Deliver** — the Inventor prepares the guide; Autonomous
-  prints, physically inspects, packs, and ships the toy.
-- **Reviews** — human feedback begins after delivery and shapes the next
-  revision and future Wishes.
-
 Every gate needs its own proof: a picture cannot prove that parts fit, and a
 shipping label cannot prove that a carrier received the box.
 
