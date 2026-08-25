@@ -16,7 +16,13 @@ from inventor_workshop.cli import (
     main,
     parser,
 )
+from inventor_workshop.handoff import (
+    ManagerAssignmentHandoff,
+    bind_manager_assignment_result,
+)
+from inventor_workshop.errors import WorkshopError
 from inventor_workshop.manager import TasteFit, create_shortlist
+from inventor_workshop.make import Wish
 from inventor_workshop.models import Receipt
 
 
@@ -24,11 +30,20 @@ class CliTest(unittest.TestCase):
     def test_selected_inventor_receives_only_its_factory_username(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            wish = Wish.create(
+                "wish-one",
+                "A tiny world",
+                constraints={"size": {"maximum_mm": 88}, "colors": ["red", "blue"]},
+                context={"source": "test", "customer": {"locale": "vi-VN"}},
+            )
             assignment = SimpleNamespace(
                 entrypoint=("python3", "profile.py"),
-                wish=SimpleNamespace(product_id="wish-one", objective="A tiny world"),
+                wish=wish,
+                inventor_id="eve",
                 playtest_rounds=4,
+                assignment_sha256="a" * 64,
                 decision=SimpleNamespace(
+                    decision_sha256="d" * 64,
                     selected=SimpleNamespace(
                         card=SimpleNamespace(inventor_id="eve", root=root)
                     )
@@ -39,7 +54,20 @@ class CliTest(unittest.TestCase):
             def runner(command, **kwargs):
                 observed["command"] = command
                 observed.update(kwargs)
-                return subprocess.CompletedProcess(command, 0, stdout='{"status":"waiting"}')
+                handoff = ManagerAssignmentHandoff.from_dict(
+                    json.loads(kwargs["input"]), expected_inventor_id="eve"
+                )
+                result = bind_manager_assignment_result(
+                    {
+                        "product_id": "wish-one",
+                        "status": "waiting",
+                        "playtest_rounds": 4,
+                    },
+                    handoff,
+                )
+                return subprocess.CompletedProcess(
+                    command, 0, stdout=json.dumps(result)
+                )
 
             with mock.patch.dict(
                 "os.environ", {"FACTORY_PASSWORD": "fixture-password"}, clear=False
@@ -51,6 +79,55 @@ class CliTest(unittest.TestCase):
             self.assertEqual(observed["env"]["FACTORY_PASSWORD"], "fixture-password")
             self.assertEqual(observed["env"]["WORKSHOP_AGENT_WORKERS"], "codex")
             self.assertNotIn("fixture-password", observed["command"])
+            self.assertEqual(observed["command"][-2:], ["run", "--assignment-stdin"])
+            self.assertNotIn(wish.product_id, observed["command"])
+            self.assertNotIn(wish.objective, observed["command"])
+            handed_off = json.loads(observed["input"])
+            self.assertEqual(handed_off["wish"], wish.to_dict())
+            self.assertEqual(handed_off["decision_sha256"], "d" * 64)
+            self.assertEqual(handed_off["assignment_sha256"], "a" * 64)
+
+    def test_selected_inventor_result_must_match_the_exact_assignment(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment = SimpleNamespace(
+                entrypoint=("python3", "profile.py"),
+                wish=Wish.create(
+                    "wish-one",
+                    "Keep all of this",
+                    constraints={"must": ["one", "two"]},
+                    context={"source": "manager"},
+                ),
+                inventor_id="alice",
+                playtest_rounds=3,
+                assignment_sha256="a" * 64,
+                decision=SimpleNamespace(
+                    decision_sha256="d" * 64,
+                    selected=SimpleNamespace(
+                        card=SimpleNamespace(inventor_id="alice", root=root)
+                    ),
+                ),
+            )
+
+            def drifted_runner(command, **kwargs):
+                handoff = ManagerAssignmentHandoff.from_dict(
+                    json.loads(kwargs["input"]), expected_inventor_id="alice"
+                )
+                result = bind_manager_assignment_result(
+                    {
+                        "product_id": "wish-one",
+                        "status": "waiting",
+                        "playtest_rounds": 3,
+                    },
+                    handoff,
+                )
+                result["manager_assignment"]["assignment_sha256"] = "b" * 64
+                return subprocess.CompletedProcess(command, 0, stdout=json.dumps(result))
+
+            with self.assertRaisesRegex(
+                WorkshopError, "different Manager assignment"
+            ):
+                _run_inventor(assignment, runner=drifted_runner)
 
     def test_worker_environment_without_factory_secret_has_no_partial_login(self):
         with mock.patch.dict(

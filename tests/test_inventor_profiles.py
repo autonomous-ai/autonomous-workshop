@@ -9,7 +9,9 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
+from inventor_workshop.handoff import ManagerAssignmentHandoff
 from inventor_workshop.jobs import Invented, Made
+from inventor_workshop.make import Wish
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -139,6 +141,57 @@ class CanonicalInventorProfileTest(unittest.TestCase):
                         0,
                     )
                 self.assertEqual(workshop.run.call_args.kwargs, {"playtest_rounds": 7})
+
+    def test_every_profile_accepts_the_exact_manager_assignment_over_stdin(self):
+        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            with self.subTest(inventor_id=inventor_id):
+                profile = load_profile(inventor_id)
+                exact_wish = Wish.create(
+                    "manager-%s" % inventor_id,
+                    "Keep this exact\nmultiline Wish.",
+                    constraints={
+                        "maximum_mm": [90, 70, 25],
+                        "must_keep": ["hinge", "midnight blue"],
+                    },
+                    context={
+                        "source": "workshop-cli",
+                        "customer": {"locale": "vi-VN"},
+                    },
+                )
+                handoff = ManagerAssignmentHandoff(
+                    wish=exact_wish,
+                    inventor_id=inventor_id,
+                    playtest_rounds=9,
+                    decision_sha256="d" * 64,
+                    assignment_sha256="a" * 64,
+                )
+                workshop = mock.Mock()
+                workshop.run.return_value.to_dict.return_value = {
+                    "product_id": exact_wish.product_id,
+                    "status": "waiting",
+                    "playtest_rounds": 9,
+                }
+                output = io.StringIO()
+                with mock.patch.object(
+                    profile, "build_workshop", return_value=workshop
+                ), mock.patch.object(
+                    profile.sys,
+                    "stdin",
+                    io.StringIO(json.dumps(handoff.to_dict())),
+                ), redirect_stdout(output):
+                    self.assertEqual(
+                        profile.main(("run", "--assignment-stdin")), 0
+                    )
+
+                received = workshop.run.call_args.args[0]
+                self.assertEqual(received.to_dict(), exact_wish.to_dict())
+                self.assertEqual(
+                    workshop.run.call_args.kwargs, {"playtest_rounds": 9}
+                )
+                result = json.loads(output.getvalue())
+                self.assertEqual(
+                    result["manager_assignment"], handoff.result_binding()
+                )
 
     def test_direct_inventor_cli_generates_the_product_id(self):
         for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):

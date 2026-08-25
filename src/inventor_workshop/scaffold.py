@@ -133,7 +133,9 @@ def _files(
     package = inventor_id.replace("-", "_")
     env = inventor_id.upper().replace("-", "_")
     lane_guidance = _LANE_GUIDANCE[lane]
-    capabilities = [*WORKSHOP_JOBS, lane, level]
+    # Capabilities describe the Inventor's public lane and chosen override
+    # level—not the shared engine components it inherits automatically.
+    capabilities = ["wish", lane, level]
     manifest = {
         "schema_version": 5,
         "id": inventor_id,
@@ -289,8 +291,9 @@ workshop check . --run
 ```
 
 `preview` is read-only and shows the exact Wish-, Taste-, and lane-bound brief.
-`run` uses `Workshop` and `WorkshopTools`; an unconfigured capability returns a
-typed `waiting` result instead of pretending a product was made or tested.
+`run` inherits the shared `Workshop` engine. If a real model, CAD, evidence,
+Factory, production, or carrier provider is unavailable, that common component
+returns a typed `waiting` result instead of pretending the work happened.
 The trusted checkout or product tier supplies `--playtest-rounds` for each Wish;
 it is an allowance from 1 to 100, not a value the Wish or inventor may raise.
 Runtime state and credentials stay in `.workshop/` and are never committed.
@@ -349,12 +352,17 @@ setup(cmdclass={{"build_py": build_py}})
         "src/{package}/__main__.py".format(package=package): """import argparse
 import json
 import os
+import sys
 import sysconfig
 from pathlib import Path
 from typing import Optional
 
 from inventor_workshop import WORKSHOP_JOBS, Wish, Workshop, WorkshopTools
 from inventor_workshop.agent_invent import configured_workshop_tools
+from inventor_workshop.handoff import (
+    bind_manager_assignment_result,
+    read_manager_assignment,
+)
 from inventor_workshop.make import generate_wish_id
 
 {custom_import}
@@ -458,8 +466,30 @@ def main(argv=None) -> int:
         metavar="N",
         help="trusted per-Wish Playtest allowance (1-100; run only)",
     )
+    parser.add_argument(
+        "--assignment-stdin",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
     args = parser.parse_args(argv)
-    if args.command == "profile":
+    if args.assignment_stdin:
+        if (
+            args.command != "run"
+            or args.product_id is not None
+            or args.objective is not None
+            or args.playtest_rounds is not None
+        ):
+            parser.error("--assignment-stdin is an internal run-only handoff")
+        handoff = read_manager_assignment(
+            sys.stdin, expected_inventor_id=INVENTOR_ID
+        )
+        result = bind_manager_assignment_result(
+            build_workshop().run(
+                handoff.wish, playtest_rounds=handoff.playtest_rounds
+            ).to_dict(),
+            handoff,
+        )
+    elif args.command == "profile":
         if args.playtest_rounds is not None:
             parser.error("--playtest-rounds belongs to run, not profile")
         result = describe()

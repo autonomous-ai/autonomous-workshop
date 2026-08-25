@@ -11,7 +11,7 @@ from inventor_workshop.errors import ContractError, StateConflict
 from inventor_workshop.manifest import load_manifest
 from inventor_workshop.scaffold import scaffold_inventor
 from inventor_workshop.taste import load_taste_header
-from inventor_workshop.toys import PLAYTHING_LANES, WORKSHOP_JOBS
+from inventor_workshop.toys import PLAYTHING_LANES
 
 
 class ScaffoldTest(unittest.TestCase):
@@ -104,7 +104,7 @@ class ScaffoldTest(unittest.TestCase):
             self.assertEqual(manifest.workshop_features, ())
             self.assertEqual(
                 tuple(manifest.capabilities),
-                (*WORKSHOP_JOBS, "invented-games", "taste-only"),
+                ("wish", "invented-games", "taste-only"),
             )
 
             package = destination / "src/word_games"
@@ -404,6 +404,24 @@ class ScaffoldTest(unittest.TestCase):
                 text=True,
             )
             self.assertEqual(observed.stdout.strip(), "My exact wish")
+
+    def test_generated_profile_supports_the_structured_manager_handoff(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = scaffold_inventor(
+                Path(temporary),
+                "handoff-toys",
+                "Ada",
+                "small exact toys",
+                lane="little-worlds",
+            )
+            source = (
+                destination / "src/handoff_toys/__main__.py"
+            ).read_text(encoding="utf-8")
+            self.assertIn("--assignment-stdin", source)
+            self.assertIn("read_manager_assignment", source)
+            self.assertIn("bind_manager_assignment_result", source)
+            self.assertIn("expected_inventor_id=INVENTOR_ID", source)
+            compile(source, str(destination / "src/handoff_toys/__main__.py"), "exec")
 
     def test_generated_identity_resolves_from_target_like_package_data(self):
         with tempfile.TemporaryDirectory() as temporary:

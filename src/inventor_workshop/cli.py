@@ -19,6 +19,10 @@ from .factory_agent import (
     FactoryPublicTransition,
     factory_credentials_from_environment,
 )
+from .handoff import (
+    ManagerAssignmentHandoff,
+    validate_manager_assignment_result,
+)
 from .jobs import WaitingFor
 from .make import Wish, generate_wish_id
 from .manifest import discover_inventors, inventor_collection, validate_entrypoints
@@ -61,23 +65,22 @@ def _inventor_process_environment(inventor_id: str) -> Mapping[str, str]:
 
 
 def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, Any]:
+    handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     command = list(assignment.entrypoint)
     if command[0] in ("python", "python3"):
         command[0] = sys.executable
-    command.extend(
-        (
-            "run",
-            assignment.wish.product_id,
-            assignment.wish.objective,
-            "--playtest-rounds",
-            str(assignment.playtest_rounds),
-        )
-    )
+    command.extend(("run", "--assignment-stdin"))
     inventor_id = assignment.decision.selected.card.inventor_id
     completed = runner(
         command,
         cwd=str(assignment.decision.selected.card.root),
         env=_inventor_process_environment(inventor_id),
+        input=json.dumps(
+            handoff.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ),
         capture_output=True,
         text=True,
         timeout=3600,
@@ -95,7 +98,12 @@ def _run_inventor(assignment, *, runner: Any = subprocess.run) -> Mapping[str, A
         ) from exc
     if not isinstance(payload, dict):
         raise WorkshopError("the selected Inventor must return one Workshop result")
-    return payload
+    try:
+        return validate_manager_assignment_result(payload, handoff)
+    except WorkshopError as exc:
+        raise WorkshopError(
+            "the selected Inventor returned a result for a different Manager assignment"
+        ) from exc
 
 
 def _publish_inventor_draft(

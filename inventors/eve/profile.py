@@ -5,11 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Optional
 
 from inventor_workshop.make import Wish, generate_wish_id
 from inventor_workshop.agent_invent import configured_workshop_tools
+from inventor_workshop.handoff import (
+    bind_manager_assignment_result,
+    read_manager_assignment,
+)
 from inventor_workshop.workshop import Workshop, WorkshopTools
 
 
@@ -71,8 +76,24 @@ def main(argv=None) -> int:
     parser.add_argument("product_id", nargs="?")
     parser.add_argument("objective", nargs="?")
     parser.add_argument("--playtest-rounds", type=int)
+    parser.add_argument("--assignment-stdin", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    if args.command == "profile":
+    if args.assignment_stdin:
+        if (
+            args.command != "run"
+            or args.product_id is not None
+            or args.objective is not None
+            or args.playtest_rounds is not None
+        ):
+            parser.error("--assignment-stdin is an internal run-only handoff")
+        handoff = read_manager_assignment(sys.stdin, expected_inventor_id="eve")
+        result = bind_manager_assignment_result(
+            build_workshop().run(
+                handoff.wish, playtest_rounds=handoff.playtest_rounds
+            ).to_dict(),
+            handoff,
+        )
+    elif args.command == "profile":
         if args.playtest_rounds is not None:
             parser.error("--playtest-rounds belongs to run, not profile")
         result = describe()
