@@ -319,28 +319,165 @@ def _occurrence_transport(
         transport_stem + ".step.json",
     )
     sidecars = [name for name in dict.fromkeys(candidates) if _manifest_entry(manifest, name)]
-    if not sidecars:
-        return None
-    if len(sidecars) != 1:
+    if len(sidecars) > 1:
         raise ContractError("Factory handoff requires one occurrence sidecar")
-    source_sidecar = sidecars[0]
-    source_step = source_sidecar[:-5]
+    source_sidecar = sidecars[0] if sidecars else None
+    source_step = source_sidecar[:-5] if source_sidecar else "assembled.step"
     step_entry = _manifest_entry(manifest, source_step)
     if step_entry is None:
         raise ContractError("Factory occurrence sidecar requires its sealed STEP")
-    try:
-        sidecar = json.loads(_read_bound_file(root, manifest, source_sidecar).decode("utf-8"))
-    except (UnicodeError, ValueError) as exc:
-        raise ContractError("Factory occurrence sidecar is malformed") from exc
-    if (
-        not isinstance(sidecar, Mapping)
-        or sidecar.get("schemaVersion") != 1
-        or sidecar.get("entryKind") != "assembly"
-        or sidecar.get("primaryPose") != "assembled"
-        or not isinstance(sidecar.get("parts"), list)
-        or not sidecar["parts"]
-    ):
-        raise ContractError("Factory occurrence sidecar is malformed")
+
+    sidecar: Any = None
+    if source_sidecar is not None:
+        try:
+            sidecar = json.loads(
+                _read_bound_file(root, manifest, source_sidecar).decode("utf-8")
+            )
+        except (UnicodeError, ValueError) as exc:
+            raise ContractError("Factory occurrence sidecar is malformed") from exc
+
+    has_factory_sidecar = (
+        isinstance(sidecar, Mapping)
+        and sidecar.get("schemaVersion") == 1
+        and sidecar.get("entryKind") == "assembly"
+        and sidecar.get("primaryPose") == "assembled"
+        and isinstance(sidecar.get("parts"), list)
+        and bool(sidecar["parts"])
+    )
+    if not has_factory_sidecar:
+        if source_sidecar is None:
+            return None
+        if not isinstance(sidecar, Mapping):
+            raise ContractError("Factory occurrence sidecar is malformed")
+        if {"schemaVersion", "entryKind", "primaryPose", "parts"} & set(sidecar):
+            # A document that claims any part of Factory's schema must satisfy
+            # all of it. Never silently repair a malformed transport contract.
+            raise ContractError("Factory occurrence sidecar is malformed")
+
+        # Native Make may place a richer CAD assembly descriptor beside its
+        # STEP. Translate only the exact, fully bound descriptor+inventory
+        # shape into Factory's narrow sidecar. The descriptor owns occurrence
+        # identity; product inventory owns the printable STL paths.
+        product = _read_json_file(root / "product.json", "Made product.json")
+        cad = product.get("cad")
+        inventory = product.get("inventory")
+        native_parts = (
+            inventory.get("parts") if isinstance(inventory, Mapping) else None
+        )
+        native_names = sidecar.get("occurrences")
+        occurrence_count = sidecar.get("occurrence_count")
+        total_printed_parts = (
+            inventory.get("total_printed_parts")
+            if isinstance(inventory, Mapping)
+            else None
+        )
+        if (
+            sidecar.get("schema_version") != 1
+            or not isinstance(cad, Mapping)
+            or not isinstance(inventory, Mapping)
+            or not isinstance(native_parts, list)
+            or not native_parts
+            or not isinstance(native_names, list)
+            or not native_names
+            or not isinstance(occurrence_count, int)
+            or isinstance(occurrence_count, bool)
+            or not isinstance(total_printed_parts, int)
+            or isinstance(total_printed_parts, bool)
+            or occurrence_count != len(native_names)
+            or occurrence_count != len(native_parts)
+            or occurrence_count != total_printed_parts
+        ):
+            raise ContractError("native Made assembly descriptor is malformed")
+
+        def bound_reference(
+            value: Any, label: str, expected_path: Optional[str] = None
+        ) -> Tuple[str, int, str]:
+            if not isinstance(value, Mapping):
+                raise ContractError("%s is malformed" % label)
+            path = value.get("path")
+            declared_bytes = value.get("bytes")
+            if not isinstance(path, str):
+                raise ContractError("%s is malformed" % label)
+            pure = PurePosixPath(path)
+            entry = _manifest_entry(manifest, path)
+            declared_sha256 = require_sha256(value.get("sha256"), label + " sha256")
+            if (
+                pure.is_absolute()
+                or pure.as_posix() != path
+                or any(item in ("", ".", "..") for item in pure.parts)
+                or expected_path is not None
+                and path != expected_path
+                or entry is None
+                or not isinstance(declared_bytes, int)
+                or isinstance(declared_bytes, bool)
+                or entry.bytes != declared_bytes
+                or entry.sha256 != declared_sha256
+            ):
+                raise ContractError("%s is malformed" % label)
+            _read_bound_file(root, manifest, path)
+            return path, declared_bytes, declared_sha256
+
+        descriptor_ref = bound_reference(
+            cad.get("assembly_descriptor"),
+            "Made assembly descriptor reference",
+            source_sidecar,
+        )
+        sidecar_entry = _manifest_entry(manifest, source_sidecar)
+        if sidecar_entry is None or descriptor_ref[1:] != (
+            sidecar_entry.bytes,
+            sidecar_entry.sha256,
+        ):
+            raise ContractError("Made assembly descriptor reference is malformed")
+        assembly_ref = bound_reference(
+            sidecar.get("assembly"), "native assembly STEP", source_step
+        )
+        if assembly_ref != bound_reference(
+            cad.get("assembled_step"), "Made assembled STEP", source_step
+        ):
+            raise ContractError("native assembly STEP bindings differ")
+        mesh_ref = bound_reference(
+            sidecar.get("mesh"), "native assembly mesh", primary_source
+        )
+        if mesh_ref != bound_reference(
+            cad.get("assembled_stl"), "Made assembled STL", primary_source
+        ):
+            raise ContractError("native assembly mesh bindings differ")
+
+        derived_parts = []
+        derived_names = set()
+        source_paths = set()
+        for native_name, native_part in zip(native_names, native_parts):
+            if not isinstance(native_part, Mapping):
+                raise ContractError("Made product inventory part is malformed")
+            stl = native_part.get("stl")
+            if (
+                not isinstance(stl, Mapping)
+                or native_part.get("quantity") != 1
+                or isinstance(native_part.get("quantity"), bool)
+                or not isinstance(native_name, str)
+                or not _OCCURRENCE_NAME.fullmatch(native_name)
+                or native_name in derived_names
+            ):
+                raise ContractError("Made product inventory part is malformed")
+            source_path, _, _ = bound_reference(
+                stl, "Made product inventory STL"
+            )
+            pure = PurePosixPath(source_path)
+            if (
+                pure.suffix.casefold() != ".stl"
+                or source_path == primary_source
+                or source_path in source_paths
+            ):
+                raise ContractError("Made product inventory STL is malformed")
+            derived_names.add(native_name)
+            source_paths.add(source_path)
+            derived_parts.append({"name": native_name, "stlPath": source_path})
+        sidecar = {
+            "schemaVersion": 1,
+            "entryKind": "assembly",
+            "primaryPose": "assembled",
+            "parts": derived_parts,
+        }
 
     occurrences = []
     transported_parts = []
@@ -420,13 +557,25 @@ def _assert_archive_inventory(content: bytes, project_id: str) -> None:
             root_visuals = {"assembled.stl", project_id + ".stl"} & stls
             if len(root_visuals) != 1:
                 raise ContractError("Factory handoff requires one root primary STL")
-            parts_directory = project_id + "_parts"
+            try:
+                project = json.loads(archive.read("project.json").decode("utf-8"))
+            except (KeyError, UnicodeError, ValueError) as exc:
+                raise ContractError("Factory handoff project.json is malformed") from exc
+            if (
+                not isinstance(project, Mapping)
+                or project.get("id") != project_id
+                or not isinstance(project.get("name"), str)
+                or not project["name"].strip()
+            ):
+                raise ContractError("Factory handoff project.json is malformed")
+            primary_stem = PurePosixPath(next(iter(root_visuals))).stem
+            parts_directory = primary_stem + "_parts"
             production = {name for name in stls if name.startswith(parts_directory + "/")}
             if len(stls) == 1:
                 if production:
                     raise ContractError("single-part Factory handoff cannot have a parts tree")
                 return
-            step_name = project_id + ".step"
+            step_name = primary_stem + ".step"
             sidecar_name = step_name + ".json"
             if not production or step_name not in files or sidecar_name not in files:
                 raise ContractError("multipart Factory handoff lacks its occurrence family")
@@ -612,12 +761,9 @@ def _build_model_handoff(
         if PurePosixPath(entry.path).suffix.casefold() == ".stl"
         and entry.path not in primary_aliases
     ]
+    # Keep assembled.stl at the root when Make provides it. Factory's importer
+    # ranks that conventional name above all part meshes for the product viewer.
     transport_primary = primary_source
-    if sealed_primary["kind"] == "mesh" and included_stls:
-        transport_primary = context.wish.product_id + ".stl"
-        existing = _manifest_entry(manifest, transport_primary)
-        if existing is not None and existing.sha256 != primary_sha256:
-            raise ContractError("root <product-id>.stl differs from assembled.stl")
     occurrence = (
         _occurrence_transport(
             root,
@@ -666,6 +812,10 @@ def _build_model_handoff(
     if _canonical_json(validate_release_product(release_page)) != release_page_content:
         raise ContractError("Factory handoff Release page bytes are not canonical")
     assert_packable_content(FACTORY_RELEASE_PAGE_PATH, release_page_content)
+    project_payload = _canonical_json(
+        {"id": context.wish.product_id, "name": release_page["title"]}
+    ) + b"\n"
+    assert_packable_content("project.json", project_payload)
     if not isinstance(manual_content, bytes) or not manual_content:
         raise ContractError("Factory handoff requires sealed MANUAL.md bytes")
     try:
@@ -677,12 +827,13 @@ def _build_model_handoff(
     skip_paths = set()
     if occurrence is not None:
         skip_paths.update(
-            (
+            path for path in (
                 occurrence["source_step"],
                 occurrence["source_sidecar"],
                 occurrence["step_path"],
                 occurrence["sidecar_path"],
             )
+            if path is not None
         )
         skip_paths.update(
             entry.path
@@ -693,6 +844,12 @@ def _build_model_handoff(
     with tempfile.TemporaryDirectory(prefix="workshop-factory-handoff-") as temporary:
         staging = Path(temporary)
         for entry in manifest.entries:
+            # Native Make may carry an engineering manual, but Factory must
+            # receive the exact customer-facing manual sealed by Release.
+            # Factory also requires root project.json for discovery, so the
+            # boundary writes one deterministically from sealed Wish+Release.
+            if entry.path in (FACTORY_RELEASE_MANUAL_PATH, "project.json"):
+                continue
             if (
                 not _is_factory_model_path(
                     entry.path,
@@ -730,12 +887,14 @@ def _build_model_handoff(
             "workshop-product-facts.json",
             FACTORY_RELEASE_PAGE_PATH,
             FACTORY_RELEASE_MANUAL_PATH,
+            "project.json",
         )
         if any((staging / path).exists() for path in reserved):
             raise ContractError("Made contains a reserved Factory handoff path")
         (staging / "workshop-product-facts.json").write_bytes(facts_payload)
         (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
         (staging / FACTORY_RELEASE_MANUAL_PATH).write_bytes(manual_content)
+        (staging / "project.json").write_bytes(project_payload)
         result = dict(build_pack(staging, destination))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
     if (

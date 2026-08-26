@@ -425,6 +425,10 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("workshop-release-page.json", names)
             self.assertIn("workshop-product-facts.json", names)
             self.assertIn("MANUAL.md", names)
+            self.assertEqual(
+                json.loads(archive.read("project.json")),
+                {"id": "verified-toy", "name": "Verified Toy"},
+            )
             self.assertNotIn("main.py", names)
             self.assertNotIn("page.json", names)
             self.assertNotIn("review.json", names)
@@ -500,13 +504,45 @@ class FactoryReleaseTest(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn("product.json", names)
             self.assertIn("assembled.stl", names)
-            self.assertNotIn("project.json", names)
+            self.assertFalse((product / "project.json").exists())
+            self.assertEqual(
+                json.loads(archive.read("project.json")),
+                {"id": "verified-toy", "name": "Verified Toy"},
+            )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
                 facts["source_artifact_sha256"], self.made.artifact_sha256
             )
             self.assertEqual(facts["wish"], self.context.wish.to_dict())
             self.assertEqual(facts["product"], dict(self.made.product))
+
+    def test_release_manual_supersedes_made_manual_at_factory_boundary(self):
+        product = self.made.artifact_root
+        (product / "MANUAL.md").write_text(
+            "# Engineering manual\n\nCreator-only build notes.\n", encoding="utf-8"
+        )
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        transport = FactoryTransport()
+        self.writer(transport)(self.context, self.release, self.manifest)
+
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            self.assertEqual(
+                archive.read("MANUAL.md"), (self.release / "MANUAL.md").read_bytes()
+            )
+            self.assertNotIn(b"Creator-only build notes", archive.read("MANUAL.md"))
 
     def test_generator_primary_is_included_but_creator_outputs_are_not(self):
         product = self.made.artifact_root
@@ -627,11 +663,99 @@ class FactoryReleaseTest(unittest.TestCase):
         parts = multipart_parts(import_call[2], import_call[3])
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
-            occurrence_path = "verified-toy_parts/stone_rook_a1.stl"
+            occurrence_path = "assembled_parts/stone_rook_a1.stl"
             self.assertIn(occurrence_path, names)
-            sidecar = json.loads(archive.read("verified-toy.step.json"))
+            sidecar = json.loads(archive.read("assembled.step.json"))
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
             self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
+
+    def test_multipart_import_derives_sidecar_from_sealed_product_inventory(self):
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "cad").mkdir()
+        part = product / "cad" / "part_lantern.stl"
+        part.write_bytes(TETRA_STL)
+        step_content = (product / "assembled.step").read_bytes()
+        step_ref = {
+            "path": "assembled.step",
+            "bytes": len(step_content),
+            "sha256": hashlib.sha256(step_content).hexdigest(),
+        }
+        mesh_ref = {
+            "path": "assembled.stl",
+            "bytes": len(TETRA_STL),
+            "sha256": hashlib.sha256(TETRA_STL).hexdigest(),
+        }
+        descriptor = {
+            "schema_version": 1,
+            "kind": "native-cad.assembly-descriptor",
+            "assembly": step_ref,
+            "mesh": mesh_ref,
+            "occurrence_count": 1,
+            "occurrences": ["lantern"],
+        }
+        descriptor_content = canonical_json(descriptor) + b"\n"
+        (product / "assembled.step.json").write_bytes(descriptor_content)
+        made_product = dict(self.made.product)
+        made_product["cad"] = {
+            "assembled_step": step_ref,
+            "assembled_stl": mesh_ref,
+            "assembly_descriptor": {
+                "path": "assembled.step.json",
+                "bytes": len(descriptor_content),
+                "sha256": hashlib.sha256(descriptor_content).hexdigest(),
+            },
+        }
+        made_product["inventory"] = {
+            "parts": [
+                {
+                    "id": "LANTERN",
+                    "quantity": 1,
+                    "stl": {
+                        "path": "cad/part_lantern.stl",
+                        "bytes": len(TETRA_STL),
+                        "sha256": hashlib.sha256(TETRA_STL).hexdigest(),
+                    },
+                }
+            ],
+            "total_printed_parts": 1,
+        }
+        (product / "product.json").write_bytes(canonical_json(made_product) + b"\n")
+        self.made = Made.from_root(product, made_product)
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            occurrence_path = "assembled_parts/lantern.stl"
+            self.assertIn(occurrence_path, names)
+            self.assertNotIn("cad/part_lantern.stl", names)
+            sidecar = json.loads(archive.read("assembled.step.json"))
+            self.assertEqual(
+                sidecar,
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "lantern", "stlPath": occurrence_path}
+                    ],
+                },
+            )
 
     def test_unrepresentable_factory_copy_fails_before_remote_import(self):
         page = json.loads((self.release / "product.json").read_text(encoding="utf-8"))
