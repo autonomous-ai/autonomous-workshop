@@ -41,27 +41,8 @@ __cadgen__/
 .DS_Store
 .venv-cad/
 
-# Historical toy projects intentionally preserve exact generated CAD views.
-# Runtime-created toy projects are private by default. Only the reviewed
-# historical migrations below are allowlisted for source control.
+# Runtime-created toy projects are private and ignored by default. Keep only
+# this explanation in Git; a product is published through a verified Factory
+# receipt, not by committing a customer's run workspace.
 /toys/*
 !/toys/README.md
-!/toys/legacy-migration.json
-!/toys/alice-blindcap-duel/
-!/toys/alice-blindcap-duel/**
-!/toys/alice-cone-nine/
-!/toys/alice-cone-nine/**
-!/toys/alice-five-job-checkers/
-!/toys/alice-five-job-checkers/**
-!/toys/alice-manhattan-nocturne/
-!/toys/alice-manhattan-nocturne/**
-!/toys/bob-comet-geneva/
-!/toys/bob-comet-geneva/**
-!/toys/eve-rackhaven-night-shift/
-!/toys/eve-rackhaven-night-shift/**
-!/toys/ivy-montauk-tide-orrery/
-!/toys/ivy-montauk-tide-orrery/**
-!/toys/leo-counterorbit/
-!/toys/leo-counterorbit/**
-!toys/**/__cadgen__/
-!toys/**/__cadgen__/**
