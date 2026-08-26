@@ -350,11 +350,6 @@ def load_taste(inventor_root: Path) -> Taste:
     )
 
 
-# Compatibility spellings used before Workshop 0.3.
-TasteProfile = Taste
-load_taste_profile = load_taste
-
-
 __all__ = [
     "MAX_TASTE_BYTES",
     "MAX_TASTE_DESCRIPTION_CHARS",
@@ -362,8 +357,6 @@ __all__ = [
     "MAX_TASTE_NAME_CHARS",
     "Taste",
     "TasteHeader",
-    "TasteProfile",
     "load_taste",
     "load_taste_header",
-    "load_taste_profile",
 ]

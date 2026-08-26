@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, Sequence, Tuple
 
 from workshop.artifacts.core import ArtifactManifest
-from workshop.make import CadReleaseBundle
 from workshop.errors import ContractError, TransitionError
 from workshop.playtest.evidence import PlaytestResult
 
@@ -27,13 +26,10 @@ class Playtest:
 
     artifact_manifest: ArtifactManifest
     results: Sequence[PlaytestResult]
-    cad_release: Optional[CadReleaseBundle] = None
-    evidence_manifest: Optional[ArtifactManifest] = None
+    evidence_manifest: ArtifactManifest
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "results", tuple(self.results))
-        if self.evidence_manifest is None:
-            object.__setattr__(self, "evidence_manifest", self.artifact_manifest)
         self.assert_valid()
 
     @property
@@ -42,9 +38,7 @@ class Playtest:
 
     @property
     def evidence_artifact_sha256(self) -> str:
-        # ``__post_init__`` turns the compatibility default into an explicit
-        # manifest before validation.
-        return self.evidence_manifest.artifact_sha256  # type: ignore[union-attr]
+        return self.evidence_manifest.artifact_sha256
 
     @property
     def passed(self) -> bool:
@@ -59,29 +53,9 @@ class Playtest:
         self.evidence_manifest.assert_valid()
         if not self.results:
             raise ContractError("Playtest requires at least one PlaytestResult")
-        product_inventory = {
-            entry.path: entry.sha256 for entry in self.artifact_manifest.entries
-        }
         evidence_inventory = {
             entry.path: entry.sha256 for entry in self.evidence_manifest.entries
         }
-        if self.cad_release is not None:
-            if not isinstance(self.cad_release, CadReleaseBundle):
-                raise ContractError("Playtest CAD release must use CadReleaseBundle")
-            self.cad_release.assert_artifact(self.artifact_sha256)
-            for path, digest in self.cad_release.manifest.evidence_files.items():
-                if evidence_inventory.get(path) != digest:
-                    raise ContractError(
-                        "CAD evidence is absent or hash-mismatched in the sealed "
-                        "evidence artifact: %s" % path
-                    )
-            for part in self.cad_release.manifest.parts:
-                for path in (part.source_path, part.step_path, part.stl_path):
-                    if path not in product_inventory:
-                        raise ContractError(
-                            "CAD part file is absent from the sealed product artifact: %s"
-                            % path
-                        )
         seen = set()
         for result in self.results:
             if not isinstance(result, PlaytestResult):
@@ -130,8 +104,5 @@ class Playtest:
             "artifact_sha256": self.artifact_sha256,
             "evidence_artifact_sha256": self.evidence_artifact_sha256,
             "passed": self.passed,
-            "cad_release_sha256": (
-                self.cad_release.sha256 if self.cad_release is not None else None
-            ),
             "results": [result.to_dict() for result in self.results],
         }

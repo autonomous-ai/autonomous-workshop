@@ -1,1 +1,0 @@
-"""Reviews component tests."""

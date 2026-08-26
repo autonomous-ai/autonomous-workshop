@@ -1,187 +1,160 @@
-# ADR 0012: Codex-orchestrated agent runtime
+# ADR 0012: Codex-orchestrated native runtime
 
-- Status: Accepted
+- Status: Accepted and implemented
 - Date: 2026-08-26
 - Owners: Workflow, Runtime, and lifecycle component maintainers
 
 ## Context
 
-Autonomous Workshop is intended to run on a world-class coding agent that a
-contributor authenticates locally. The current implementation reaches Codex
-through bounded, ephemeral structured-output calls embedded in substantial
-Python stage agents. Those calls helped establish contracts and deterministic
-tests, but they reduce Codex to a response generator: Python constructs large
-state prompts, owns cognitive loops, and exposes only a narrow read-only turn.
+Autonomous Workshop is intended to harness a world-class coding agent using a
+contributor's local subscription. The earlier Python implementation called
+Codex for bounded structured answers from separate stage agents. That made
+Python responsible for prompts, role views, candidate loops, semantic judging,
+and repair strategy while reducing Codex to a response generator.
 
-The Autonomous Vibe predecessor demonstrated a more useful boundary. A small
-host can own a fixed workflow and deterministic artifact review while one
-native coding-agent session owns repository inspection, skills, editing, shell
-tools, rendering, and self-correction. Workshop needs that boundary without
-giving model output authority over gates, secrets, or external effects.
-
-This decision refines ADR 0002 rather than superseding it. `workflow` remains
-the only lifecycle sequencer; stage packages continue to own public contracts
-and deterministic gates. Codex becomes the cognitive/tool-using implementation
-behind those seams.
+The useful boundary is the inverse: one native coding-agent session owns the
+cognitive and tool-using work, while a small trusted host retains lifecycle,
+exact-byte gates, durable state, security, and external effects.
 
 ## Decision
 
-### Target runtime
+One Wish uses one persistent native Codex session. `workshop wish` creates a
+private run workspace and launches the session before Match. `workshop resume`
+continues the recorded session id through:
 
-One Wish uses one persistent native Codex session. The trusted Workshop host
-creates or records the session id, resumes it across Match, Invent, Make,
-Playtest, Release, and Deliver, and retains the ability to substitute a
-different native coding-agent adapter later. Session memory improves
-continuity, but durable workspace checkpoints, exact-byte manifests, and
-verified receipts remain authoritative.
+```text
+Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+```
 
-The host provides the product-run constitution from
-`.agents/product-run/AGENTS.md`, the repo-scoped `autonomous-workshop` skill,
-and the current
-stage/capability envelope. Codex uses its native repository tools, shell, web
-search, image/render inspection, and applicable skills to perform research,
-creation, and repair. Required research uses the runtime's native search mode
-and leaves source provenance in the workspace. Workshop will not implement a
-parallel Python browsing, planning, or multi-agent framework.
+The host materializes a run-only `AGENTS.md`, the `autonomous-workshop` skill,
+Make domain skills, the exact Wish, and immutable declared Inventor bundles.
+Before each native stage it writes a read-only `STAGE.json` bound to the current
+checkpoint and gate subject.
 
-Substantive outputs live as bounded files in the assigned run workspace. Codex
-returns a small checkpoint envelope containing status, paths/hashes, gate
-references, needs, and a proposed transition. Large concepts, manifests,
-source snapshots, CAD descriptions, or review batches are not passed stage to
-stage as chat JSON.
+The root Codex session is the Workshop Manager. It uses native dynamic
+subagents where useful for bounded Match analysis, selected-Inventor work, and
+independent inspection. V1 briefs those children from exact materialized bytes
+and does not depend on undocumented named custom-role configuration or launch
+separate OS-level Codex processes.
 
-### Ownership boundary
+Codex uses native inspection, editing, shell, search, rendering, applicable
+skills, and specialist delegation to perform Match reasoning, research,
+concept exploration, design, CAD, Playtest, repair, manual writing, and factual
+product-page work. Substantive output stays in the run workspace.
+
+After authoring one stage, Codex invokes the materialized standard-library
+`stage_proposal.py` finalizer. It validates and hashes exact bytes, writes the
+canonical stage contract, and produces a checkpoint-bound
+`agent-outcome.json`. The host independently rereads all cited bytes, reruns
+trusted checks, seals accepted artifacts, and alone advances the checkpoint.
+
+### Host ownership
 
 The outer Workshop host owns:
 
-- Wish/run identity, lifecycle order, bounded Make–Playtest rounds, leases, and
-  durable checkpoints;
-- sandbox and capability selection for each phase;
-- public contract validation, exact-byte artifact sealing, deterministic CAD
-  and simulation gates, and invalidation rules;
-- authorization checks, idempotent effect intents, credential isolation,
-  external adapters, reconciliation, and verified receipts;
-- classifying waits, failures, unknown outcomes, and safe bounded recovery.
+- Wish/run identity, lifecycle order, Make–Playtest rounds, invalidation,
+  leases, and durable checkpoints;
+- native-session start/resume and sandbox/environment boundaries;
+- contracts, exact-byte manifests, deterministic CAD/evidence gates, and
+  artifact sealing;
+- authorization, credential isolation, idempotent effect intents, external
+  adapters, reconciliation, and receipts;
+- classification of waits, failures, unknown outcomes, and bounded recovery.
+
+### Native-agent ownership
 
 Codex owns:
 
-- understanding the Wish and inspected repository state;
-- Match reasoning, concept exploration, research, design, implementation,
-  native tool/skill use, artifact inspection, and bounded repair;
-- AI-player judgment and evidence-linked feedback, without overriding
-  deterministic observations;
-- writing concepts, product files, source notes, and the Release package into the run
-  workspace;
-- reporting compact needs and proposing, never authorizing, the next
-  transition.
+- Workshop management, native subagent delegation, and synthesis;
+- understanding the Wish and selecting a suitable immutable Inventor bundle;
+- research, source provenance, concept exploration, and design;
+- CAD/artifact creation, native tool and skill use, inspection, and repair;
+- AI Playtest judgment and evidence-linked feedback without overriding
+  deterministic results;
+- the Release package: `MANUAL.md`, canonical facts, evidence-bound claims,
+  page metadata, and factual Factory input;
+- compact needs and proposed transitions.
 
-Model prose and self-scores are untrusted inputs. Only the host can advance a
-gate. Wish text, fetched pages, tool output, and artifacts are treated as data
-and cannot expand instructions or authority.
+Model prose and self-assessment are untrusted. Python does not run a parallel
+prompt chain, semantic judge, persona subprocess, candidate fan-out, or reward
+loop.
 
-### Effects and people
+An Inventor bundle keeps judgment in `TASTE.md`, identity/capabilities and
+declared extensions in `inventor.json`, and may include an inventor-owned
+Codex skill tree with `SKILL.md`, scripts, references, assets, CAD generators,
+evaluators, or other tested deterministic tools. A native Inventor subagent
+reasons and invokes these resources. Custom code cannot become an agent
+orchestrator, lifecycle engine, gate, or effect path. The root Manager reviews
+child work; the host alone advances the checkpoint.
 
-Codex does not receive effect credentials and does not directly create remote
-Factory state, publish, purchase, manufacture, ship, or contact a carrier. It
-may prepare a local draft or effect request. The host performs an authorized
-effect through a narrow idempotent adapter, reconciles remote state, and binds
-the receipt to exact artifact hashes.
+### Effects
 
-Public publication, spend, manufacture, postage, shipping, and other
-irreversible or customer-visible actions require explicit human authorization.
-An ambiguous external result is reconciled before any retry; if it cannot be
-proved complete or absent, the run stops in an unknown/needs-human state.
+Codex never receives effect credentials and cannot directly create remote
+Factory state, publish, purchase, manufacture, buy postage, ship, or contact a
+carrier. The CLI default is private. `--publish` records explicit prospective
+authority for the host to promote the exact verified Factory page after
+reconciled private import.
 
-### Transitional structured calls
+An ambiguous effect is reconciled before retry. If completion or absence
+cannot be proved, the run stops unknown/needs-human. Publication never counts
+as physical delivery evidence.
 
-`CodexStructuredRunner` and existing Python stage agents remain transitional
-adapters while the persistent-session host is implemented. They must stay
-bounded, schema-validated, read-only, secret-isolated, and unable to perform
-external effects. They may use native search only when the phase requests it
-and proves a search event. A single bounded retry is allowed only for an
-explicit provider transport failure before any effect; partial responses are
-never accepted or resumed as completed artifacts.
+Every external adapter persists an intent and stable idempotency key before
+the effect, reconciles completion through authenticated readback, and binds its
+receipt to the exact request and artifact hashes. A command exit code or model
+claim is never proof of publication, manufacture, shipment, or delivery. When
+authenticated readback cannot prove either completion or absence, the adapter
+must stop at unknown rather than retrying blindly.
 
-New cognitive policy should be added to the repo skill or native-agent prompt,
-not expanded into another Python reasoning loop. New Python should implement a
-contract, deterministic tool/gate, checkpoint, sandbox boundary, or effect
-adapter. Transitional calls will be removed as equivalent native-session stage
-paths become covered by integration and end-to-end tests.
+## Alternatives rejected
 
-## Alternatives considered
+### One structured model call per stage or reward step
 
-### Keep one structured model call per action and reward step
+Rejected because it discards native session continuity and requires Python to
+reimplement reasoning and tool orchestration that the coding agent already
+provides.
 
-Rejected as the target because it repeatedly serializes large state, discards
-native session continuity, and forces Python to reimplement work the coding
-agent already performs well. It remains an explicitly temporary migration
-mechanism.
-
-### Let Codex run the entire lifecycle and all effects directly
+### Let Codex own lifecycle gates and effects
 
 Rejected because prompt content or model error could bypass phase order,
-artifact identity, authorization, idempotency, or reconciliation. Cognitive
-ownership does not imply trust or effect authority.
+artifact identity, authorization, idempotency, or reconciliation.
 
-### Use session transcript as the durable run state
+### Use the session transcript as durable state
 
 Rejected because sessions can be truncated, unavailable, or inconsistent with
-files changed by tools. Content-addressed workspace artifacts and host events
-are auditable and portable across agent runtimes.
+tool-written files. Exact workspace bytes and host receipts are authoritative.
 
-### Build custom Python search, tool, and sub-agent frameworks
+### Build a custom Python search or multi-agent framework
 
-Rejected because they duplicate the native coding-agent runtime, increase
-surface area, and make later engine substitution harder. Python remains useful
-for narrow deterministic operations and trusted boundaries.
+Rejected because it duplicates the native runtime, increases attack surface,
+and makes future engine substitution harder. This does not reject the coding
+agent runtime's own bounded subagents.
 
 ## Consequences
 
-Codex can do most creative and diagnostic work with the same native tools a
-developer uses, while Workshop stays small and fail-closed. A run keeps context
-across stages without depending on chat-sized state transfer. The filesystem
-protocol and outer gates also form a practical adapter seam for Claude Code,
-OpenCode, or another future engine.
+Codex can do nearly all creative and diagnostic work with the same tools a
+developer uses, while Workshop remains small and fail-closed. The filesystem
+protocol and host gates provide an adapter seam for future Claude Code,
+OpenCode, Pi, or Hermes runtimes.
 
-The host must add durable native-session creation/resume, phase capability
-modes, compact checkpoint envelopes, and end-to-end recovery tests. Stage
-implementations will temporarily exist in both shapes. Maintainers must resist
-turning the target skill into a copied Python framework or turning the host
-into a permissive shell wrapper.
-
-## Compatibility and migration
-
-This ADR does not rename the installed `workshop` command or current public
-Python contracts. Existing `workshop wish`, `workshop status`, and
-`workshop resume` behavior remains supported during migration; current resume
-limitations remain until a persistent-session path is implemented and tested.
-Protocol terms in the skill are not promises that corresponding per-stage CLI
-commands already exist. `workshop wish` and `workshop resume` remain outer
-host commands, not tools exposed inside the Codex session; current versions may
-publish by default. The target host must record suitable authorization before
-using that behavior, and a safer default can be introduced through the normal
-CLI compatibility process.
-
-Migration proceeds by placing the shared repository guidance, separate
-product-run constitution, and product-run skill first,
-then adding a host session adapter, then exposing existing CAD, simulation,
-sealing, validation, and effect code as narrow tools. Each stage moves from
-large ephemeral structured calls to workspace artifacts in the resumed native
-session only after its contracts and failure behavior remain equivalent.
+Python stage agents, profile subprocesses, `CodexStructuredRunner`, and numeric
+Invent/reward loops are not part of the supported architecture and must not be
+reintroduced as compatibility extensions. Useful deterministic contracts and
+tools remain at their owning component boundaries.
 
 ## Verification
 
-- Validate the repo skill structure with the skill-creator validator.
-- Prove one end-to-end Wish reuses or resumes one native session across all
-  stages while the durable checkpoint survives process restart.
-- Prove stage messages stay within a compact cap and substantive output is
-  referenced from hash-bound workspace files.
-- Prove Codex subprocesses cannot receive effect secrets or perform effect
-  operations, while authorized host adapters can and return reconciled
-  receipts.
-- Prove every phase transition fails closed for changed bytes, missing or stale
-  evidence, denied authorization, exhausted round budgets, and unknown effects.
-- Prove Make feedback creates a new revision and invalidates/re-runs downstream
-  gates before Release or Deliver can advance.
-- Prove explicit transient provider failure has at most one bounded recovery
-  attempt and never duplicates an external effect.
+- One end-to-end Wish reuses one session id across all native stages.
+- Native Inventor children use exact hash-bound bundles without launching a
+  second root Codex process.
+- Child agents and Inventor tools cannot advance gates or receive effect
+  credentials.
+- Resume uses the exact workspace and rejects changed materialized instructions.
+- Stale checkpoint/subject bindings and changed artifact bytes fail closed.
+- Failed Playtest evidence returns to Make and invalidates downstream stages.
+- Make and Playtest rerun host-owned CAD verification on exact bytes.
+- Release claims exactly match the passing Playtest evidence.
+- The native subprocess never receives effect credentials.
+- Public promotion requires `--publish` and returns a reconciled, hash-bound
+  receipt.
+- Deliver cannot advance from mocked, digital, or page-only evidence.

@@ -1,4 +1,4 @@
-"""Create a lean persona for the shared native Workshop agent."""
+"""Atomically create one native Inventor bundle."""
 
 from __future__ import annotations
 
@@ -8,20 +8,16 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
+from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ContractError, StateConflict
 from workshop.product import PLAYTHING_LANES
 
 
-_ID = re.compile(r"^(?=.{2,63}$)[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
-
-# Accepted only for old callers. New callers choose an explicit plaything lane.
-_LEGACY_TEMPLATES = {
-    "board-game": "invented-games",
-    "physical-product": "moving-machines",
-    "custom": "little-worlds",
-}
+# The generated ``<id>-inventor`` skill name must stay within Codex's 63-char
+# skill-name contract.
+_ID = re.compile(r"^(?=.{2,54}$)[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 
 _LANE_GUIDANCE = {
     "classics-made-yours": (
@@ -32,8 +28,7 @@ _LANE_GUIDANCE = {
     "invented-games": (
         "Invented games are experimental rules craft. Make the rules complete and "
         "executable, then Playtest at least 1,000 seeded games with optimizing, "
-        "social, exploratory, and adversarial AI players. Customer reactions arrive "
-        "after Deliver as Reviews and may improve a future Make."
+        "social, exploratory, and adversarial AI players."
     ),
     "moving-machines": (
         "Make motion the magic: one legible mechanism should invite a hand, reward "
@@ -50,7 +45,7 @@ _LANE_GUIDANCE = {
 }
 
 
-def _display_text(value: str, label: str, maximum: int) -> str:
+def _display_text(value: Optional[str], label: str, maximum: int) -> str:
     if not isinstance(value, str):
         raise ContractError("inventor %s must be a string" % label)
     normalized = value.strip()
@@ -66,22 +61,8 @@ def _display_text(value: str, label: str, maximum: int) -> str:
     return normalized
 
 
-def _files(
-    inventor_id: str,
-    name: str,
-    description: str,
-    lane: str,
-    *,
-    taste_content: Optional[str] = None,
-) -> Dict[str, str]:
-    manifest = {
-        "schema_version": 6,
-        "id": inventor_id,
-        "status": "experimental",
-        "capabilities": [lane],
-        "source": {"kind": "local"},
-    }
-    generated_taste = """---
+def _generated_taste(name: str, description: str, lane: str) -> str:
+    return """---
 name: {name_header}
 description: {description_header}
 ---
@@ -90,7 +71,7 @@ description: {description_header}
 This is {name}'s human-owned creative constitution for the **{lane}** lane.
 The native Workshop agent reads these exact bytes after Match. It may propose
 changes from verified outcomes, but it must not silently rewrite what this
-inventor values.
+Inventor values.
 
 ## North star
 
@@ -116,11 +97,11 @@ anything that is effectively the same object for everyone.
 - Make the first delightful moment easy to discover without coaching.
 - Treat printability, assembly, safety, and truthful presentation as part of beauty.
 - Let artifact-bound Playtest evidence improve the product without averaging away
-  this inventor's point of view.
+  this Inventor's point of view.
 
 ## Define before autonomous release
 
-- Which three qualities should make this inventor's work recognizable without a logo?
+- Which three qualities should make this Inventor's work recognizable without a logo?
 - Which familiar themes, shapes, mechanics, or gimmicks are instant rejects?
 - What should a person feel in the first ten seconds and on the tenth play?
 - What physical and human evidence is strong enough to justify a Taste proposal?
@@ -132,34 +113,31 @@ anything that is effectively the same object for everyone.
         lane=lane,
         lane_guidance=_LANE_GUIDANCE[lane],
     )
-    return {
-        "inventor.json": json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        "TASTE.md": generated_taste if taste_content is None else taste_content,
-    }
 
 
-def scaffold_inventor(
-    root: Path,
-    inventor_id: str,
-    name: str,
-    niche: str,
-    *,
-    lane: Optional[str] = None,
-    level: str = "taste-only",
-    template: Optional[str] = None,
-) -> Path:
-    """Compatibility wrapper for the former ``workshop new`` command."""
+def _inventor_skill(inventor_id: str, name: str, lane: str) -> str:
+    skill_name = "%s-inventor" % inventor_id
+    return """---
+name: {skill_name}
+description: Apply {name}'s selected-Inventor method for the {lane} lane inside one Workshop run.
+---
 
-    Path(root).mkdir(parents=True, exist_ok=True)
-    return create_inventor(
-        root,
-        inventor_id,
-        name,
-        niche,
+# {name} Inventor
+
+Read the exact host-materialized `catalog/inventors/{inventor_id}/TASTE.md` as
+the creative constitution. Read the current `STAGE.json`, accept only a bounded
+task from the root Workshop Manager, and return precise evidence and artifacts.
+
+Contribute specialist judgment across Match, Invent, Make, Playtest, and
+Release as requested. Use shared Workshop skills for reusable CAD and other
+domain tooling. Do not invoke the stage finalizer, advance a lifecycle gate,
+launch another orchestrator, perform external effects, or claim evidence that
+was not produced for the exact artifact under review.
+""".format(
+        skill_name=skill_name,
+        inventor_id=inventor_id,
+        name=name,
         lane=lane,
-        level=level,
-        template=template,
-        run_checks=False,
     )
 
 
@@ -193,34 +171,23 @@ def create_inventor(
     description: Optional[str] = None,
     *,
     lane: Optional[str] = None,
-    level: str = "taste-only",
-    template: Optional[str] = None,
     taste_path: Optional[Path] = None,
-    run_checks: bool = True,
 ) -> Path:
-    """Atomically add one validated native persona to an inventor collection.
-
-    A persona is data, not a Python worker: the published folder contains only
-    ``inventor.json`` and exact ``TASTE.md`` bytes. ``run_checks`` remains as a
-    compatibility argument, but all validation is static and executes no
-    contribution code.
-    """
+    """Atomically add ``TASTE.md``, a native skill, and their v7 manifest."""
 
     requested_root = Path(root)
     if requested_root.is_symlink():
         raise ContractError("inventor collection must not be a symlink: %s" % requested_root)
     try:
-        root = requested_root.resolve(strict=True)
+        collection = requested_root.resolve(strict=True)
     except OSError as exc:
         raise ContractError(
             "inventor collection must already exist: %s" % requested_root
         ) from exc
-    if not root.is_dir():
-        raise ContractError("inventor collection must be a directory: %s" % root)
-    if not _ID.fullmatch(inventor_id):
+    if not collection.is_dir():
+        raise ContractError("inventor collection must be a directory: %s" % collection)
+    if _ID.fullmatch(inventor_id) is None:
         raise ContractError("inventor id must match %s" % _ID.pattern)
-    if type(run_checks) is not bool:
-        raise ContractError("run_checks must be a boolean")
 
     source_taste = None
     if taste_path is not None:
@@ -261,28 +228,13 @@ def create_inventor(
 
     name = _display_text(name, "name", 200)
     description = _display_text(description, "description", 500)
-    if template is not None:
-        if template not in _LEGACY_TEMPLATES:
-            raise ContractError(
-                "legacy inventor template must be one of %s"
-                % sorted(_LEGACY_TEMPLATES)
-            )
-        legacy_lane = _LEGACY_TEMPLATES[template]
-        if lane is not None and lane != legacy_lane:
-            raise ContractError("--lane conflicts with legacy --template")
-        lane = legacy_lane
     if lane not in PLAYTHING_LANES:
         raise ContractError(
             "inventor lane must be one of %s" % ", ".join(PLAYTHING_LANES)
         )
-    if level != "taste-only":
-        raise ContractError(
-            "native inventor personas customize only TASTE.md; put reusable "
-            "deterministic tools in the Workshop stage that owns them"
-        )
 
-    destination = root / inventor_id
-    if destination.exists():
+    destination = collection / inventor_id
+    if destination.exists() or destination.is_symlink():
         raise StateConflict("inventor folder already exists: %s" % destination)
 
     has_existing_persona = any(
@@ -294,32 +246,56 @@ def create_inventor(
                 or (child / "TASTE.md").exists()
             )
         )
-        for child in root.iterdir()
+        for child in collection.iterdir()
     )
     if has_existing_persona:
         from workshop.contributors.contribution import validate_inventor_collection
 
-        validate_inventor_collection(root)
+        validate_inventor_collection(collection)
 
-    staging_root = Path(tempfile.mkdtemp(prefix=".%s." % inventor_id, dir=str(root)))
+    staging_root = Path(
+        tempfile.mkdtemp(prefix=".%s." % inventor_id, dir=str(collection))
+    )
     temporary = staging_root / inventor_id
     temporary.mkdir(mode=0o755)
     try:
-        for relative, content in _files(
-            inventor_id,
-            name,
-            description,
-            lane,
-            taste_content=(source_taste.content if source_taste is not None else None),
-        ).items():
-            target = temporary / relative
-            if relative == "TASTE.md":
-                target.write_bytes(content.encode("utf-8"))
-            else:
-                target.write_text(content, encoding="utf-8")
+        taste_content = (
+            source_taste.content
+            if source_taste is not None
+            else _generated_taste(name, description, lane)
+        )
+        (temporary / "TASTE.md").write_bytes(taste_content.encode("utf-8"))
+
+        skill_name = "%s-inventor" % inventor_id
+        skill_root = temporary / "skills" / skill_name
+        skill_root.mkdir(parents=True, mode=0o755)
+        (skill_root / "SKILL.md").write_text(
+            _inventor_skill(inventor_id, name, lane), encoding="utf-8"
+        )
+        fingerprint = fingerprint_extension_skill(
+            skill_root.resolve(strict=True), expected_name=skill_name
+        )
+        manifest_document = {
+            "schema_version": 7,
+            "id": inventor_id,
+            "status": "experimental",
+            "capabilities": [lane],
+            "source": {"kind": "local"},
+            "extensions": [
+                {
+                    "kind": "codex-skill",
+                    "name": skill_name,
+                    "path": "skills/%s" % skill_name,
+                    "artifact_sha256": fingerprint.artifact_sha256,
+                }
+            ],
+        }
+        (temporary / "inventor.json").write_text(
+            json.dumps(manifest_document, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
         from workshop.contributors.contribution import (
-            run_declared_checks,
             validate_contribution,
             validate_inventor_collection,
         )
@@ -341,10 +317,8 @@ def create_inventor(
                 or generated_taste.content != source_taste.content
             ):
                 raise ContractError(
-                    "created inventor did not preserve the existing TASTE.md exactly"
+                    "created Inventor did not preserve the existing TASTE.md exactly"
                 )
-        if not problems and run_checks:
-            problems = run_declared_checks(manifest)
         if problems:
             raise ContractError(
                 "inventor creation failed validation: %s" % "; ".join(problems)
@@ -365,8 +339,4 @@ def create_inventor(
     return destination
 
 
-__all__ = [
-    "create_inventor",
-    "prepare_inventor_collection",
-    "scaffold_inventor",
-]
+__all__ = ["create_inventor", "prepare_inventor_collection"]

@@ -1,1 +1,0 @@
-"""Cross-component integration tests."""

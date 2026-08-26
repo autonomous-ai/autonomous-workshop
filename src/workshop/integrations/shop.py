@@ -42,7 +42,8 @@ from workshop.integrations.factory_contracts import (
     validate_factory_assembly_inventory,
     validate_factory_assembly_parts,
 )
-from workshop.runtime import InventorStore, PublicationOutcome, PublicationReceipt
+from workshop.runtime.contracts import PublicationOutcome, PublicationReceipt
+from workshop.runtime.store import InventorStore
 
 DEFAULT_SHOP_API = "https://panda-social-api.autonomous.ai/api/v1"
 DEFAULT_SHOP_PAGE_BASE = "https://www.autonomous.ai/factory/product"

@@ -21,7 +21,6 @@ COMPONENTS = {
     "match",
     "playtest",
     "product",
-    "reviews",
     "runtime",
     "wish",
     "workflow",

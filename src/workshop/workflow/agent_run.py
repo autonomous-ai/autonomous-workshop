@@ -20,7 +20,15 @@ from types import MappingProxyType
 from typing import Any, Mapping, Optional, Sequence
 
 from workshop.artifacts import assert_packable_content
-from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
+from workshop.contributors.extensions import load_inventor_extension_bundles
+from workshop.contributors.manifest import load_manifest
+from workshop.errors import (
+    ArtifactError,
+    ContractError,
+    ManifestError,
+    StateConflict,
+    TransitionError,
+)
 from workshop._validation import require_sha256
 from workshop.wish import Wish
 
@@ -671,6 +679,7 @@ class AgentRun:
                 domain_files.append((destination, content, mode))
 
         catalog_files: list[tuple[PurePosixPath, bytes, int]] = []
+        inventor_skill_files: list[tuple[PurePosixPath, bytes, int]] = []
         if inventor_catalog_root is not None:
             try:
                 requested_catalog = Path(inventor_catalog_root)
@@ -718,11 +727,38 @@ class AgentRun:
                     or manifest_value.get("id") != entry.name
                 ):
                     raise ArtifactError("inventor manifest id differs from its folder")
+                try:
+                    inventor_manifest = load_manifest(manifest_path)
+                    if inventor_manifest.schema_version != 7:
+                        raise ArtifactError(
+                            "inventor catalog requires native schema_version 7"
+                        )
+                    bundles = load_inventor_extension_bundles(inventor_manifest)
+                except ManifestError as exc:
+                    raise ArtifactError(
+                        "inventor schema_version 7 skill inventory is invalid"
+                    ) from exc
+                if not bundles:
+                    raise ArtifactError(
+                        "inventor schema-v7 catalog entry declares no Codex skill"
+                    )
                 target = PurePosixPath("catalog/inventors") / entry.name
                 for filename, content in (("inventor.json", manifest), ("TASTE.md", taste)):
                     destination = target / filename
                     _reject_private_agent_bytes(destination.as_posix(), content)
                     catalog_files.append((destination, content, 0o400))
+                for bundle in bundles:
+                    files = _source_tree_files(
+                        bundle.root,
+                        label="source %s Inventor skill" % bundle.extension.name,
+                    )
+                    skill_target = (
+                        PurePosixPath(".agents/skills") / bundle.extension.name
+                    )
+                    for relative, content, mode in files:
+                        destination = skill_target / relative
+                        _reject_private_agent_bytes(destination.as_posix(), content)
+                        inventor_skill_files.append((destination, content, mode))
             if not catalog_files:
                 raise ArtifactError("inventor catalog contains no Inventors")
 
@@ -736,6 +772,7 @@ class AgentRun:
             for relative, content, mode in skill_files
         )
         all_input_files.extend(domain_files)
+        all_input_files.extend(inventor_skill_files)
         all_input_files.extend(catalog_files)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]

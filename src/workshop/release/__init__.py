@@ -1,6 +1,6 @@
-"""Public Product Release contracts and publication port."""
+"""Credential-free native Release and host publication contracts."""
 
-from workshop.release.contracts import ReleaseContext, ProductRelease
-from workshop.release.ports import LaunchPort
+from workshop.release.contracts import ProductRelease, ReleaseContext
+from workshop.release.native import NativeRelease
 
-__all__ = ["ReleaseContext", "LaunchPort", "ProductRelease"]
+__all__ = ["NativeRelease", "ProductRelease", "ReleaseContext"]

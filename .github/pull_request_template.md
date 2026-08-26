@@ -18,7 +18,8 @@
 - [ ] Component implementation
 - [ ] Cross-component contract
 - [ ] CLI
-- [ ] Inventor profile or custom hook
+- [ ] Inventor specialist bundle or custom tool
+- [ ] Product-run constitution or workflow skill
 - [ ] Skill or locked dependency
 - [ ] Schema, canonical bytes, or artifact identity
 - [ ] Durable state, event, migration, receipt, or external effect
@@ -58,9 +59,10 @@ Explicitly out of scope:
 ### Inventor
 
 - Inventor ID and Taste lane:
-- Customization level: taste-only / custom Make / custom Playtest
+- Declared Codex skill extensions:
 - [ ] Root `TASTE.md` remains canonical and workflow-bound.
-- [ ] Manifest capability claims match executable behavior and tests.
+- [ ] Manifest capabilities and exact extension inventory match the submitted bytes.
+- [ ] Inventor scripts are deterministic specialist tools, not agent or lifecycle orchestration.
 - [ ] Shared Workshop machinery is reused instead of copied.
 
 ### Skill or dependency
@@ -103,7 +105,7 @@ Explicitly out of scope:
 - [ ] Full repository test suite
 - [ ] Architecture dependency checks
 - [ ] Installed wheel and resource smoke tests when packaging/resources changed
-- [ ] Skill/schema/snapshot locks when applicable
+- [ ] Skill/schema/runtime-asset identities when applicable
 - [ ] Secret and provenance checks
 - [ ] `git diff --check`
 

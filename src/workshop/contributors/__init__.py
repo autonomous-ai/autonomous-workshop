@@ -1,28 +1,27 @@
-"""Inventor manifests, taste profiles, and contribution tooling."""
+"""Strict native Inventor bundles, Taste, and static contribution tooling."""
 
-from workshop.contributors.contracts import (
-    CUSTOMIZATION_LEVELS,
-    ROUTABLE_INVENTOR_STATUSES,
-)
 from workshop.contributors.contribution import (
     check_target,
     manifests_for_target,
-    run_declared_checks,
     validate_contribution,
     validate_inventor_collection,
 )
 from workshop.contributors.manifest import (
     InventorManifest,
-    WORKSHOP_FEATURES,
     discover_inventors,
     inventor_collection,
     load_manifest,
-    validate_entrypoints,
+)
+from workshop.contributors.extensions import (
+    INVENTOR_EXTENSION_KIND,
+    InventorExtension,
+    InventorExtensionBundle,
+    fingerprint_extension_skill,
+    load_inventor_extension_bundles,
 )
 from workshop.contributors.scaffold import (
     create_inventor,
     prepare_inventor_collection,
-    scaffold_inventor,
 )
 from workshop.contributors.taste import (
     Taste,
@@ -32,24 +31,23 @@ from workshop.contributors.taste import (
 )
 
 __all__ = [
-    "CUSTOMIZATION_LEVELS",
-    "ROUTABLE_INVENTOR_STATUSES",
+    "INVENTOR_EXTENSION_KIND",
+    "InventorExtension",
+    "InventorExtensionBundle",
     "InventorManifest",
     "Taste",
     "TasteHeader",
-    "WORKSHOP_FEATURES",
     "check_target",
     "create_inventor",
     "discover_inventors",
+    "fingerprint_extension_skill",
     "inventor_collection",
     "load_manifest",
+    "load_inventor_extension_bundles",
     "load_taste",
     "load_taste_header",
     "manifests_for_target",
     "prepare_inventor_collection",
-    "run_declared_checks",
-    "scaffold_inventor",
     "validate_contribution",
-    "validate_entrypoints",
     "validate_inventor_collection",
 ]

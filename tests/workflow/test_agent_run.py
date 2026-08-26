@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.workflow import (
     AgentArtifact,
@@ -165,8 +166,43 @@ class AgentRunTest(unittest.TestCase):
         catalog = self.root / "inventors"
         alice = catalog / "alice"
         alice.mkdir(parents=True)
+        inventor_skill = alice / "skills" / "alice-inventor"
+        (inventor_skill / "scripts").mkdir(parents=True)
+        (inventor_skill / "SKILL.md").write_text(
+            "---\n"
+            "name: alice-inventor\n"
+            "description: Alice's exact native specialist workflow.\n"
+            "---\n"
+            "# Alice\nApply Alice's Taste to bounded delegated work.\n",
+            encoding="utf-8",
+        )
+        custom_tool = inventor_skill / "scripts" / "custom_tool"
+        custom_tool.write_bytes(b"#!/bin/sh\nexit 0\n")
+        custom_tool.chmod(0o755)
+        fingerprint = fingerprint_extension_skill(
+            inventor_skill.resolve(), expected_name="alice-inventor"
+        )
         (alice / "inventor.json").write_text(
-            '{"id":"alice","schema_version":6}\n', encoding="utf-8"
+            json.dumps(
+                {
+                    "schema_version": 7,
+                    "id": "alice",
+                    "status": "experimental",
+                    "capabilities": ["classics-made-yours"],
+                    "source": {"kind": "local"},
+                    "extensions": [
+                        {
+                            "kind": "codex-skill",
+                            "name": "alice-inventor",
+                            "path": "skills/alice-inventor",
+                            "artifact_sha256": fingerprint.artifact_sha256,
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
         )
         (alice / "TASTE.md").write_text(
             "---\nname: Alice\ndescription: Exact classics.\n---\n",
@@ -181,6 +217,8 @@ class AgentRunTest(unittest.TestCase):
         expected_modes = {
             ".agents/skills/cad/SKILL.md": 0o400,
             ".agents/skills/cad/scripts/check_mesh": 0o500,
+            ".agents/skills/alice-inventor/SKILL.md": 0o400,
+            ".agents/skills/alice-inventor/scripts/custom_tool": 0o500,
             "catalog/inventors/alice/inventor.json": 0o400,
             "catalog/inventors/alice/TASTE.md": 0o400,
         }
@@ -192,11 +230,36 @@ class AgentRunTest(unittest.TestCase):
             stat.S_IMODE((run.run_root / "catalog" / "inventors").stat().st_mode),
             0o500,
         )
+        self.assertFalse(
+            (run.run_root / "catalog" / "inventors" / "alice" / "skills").exists()
+        )
 
         run_checker = run.run_root / ".agents/skills/cad/scripts/check_mesh"
         run_checker.chmod(0o400)
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
             run.snapshot()
+
+    def test_creation_rejects_legacy_schema_six_inventor_catalog(self):
+        catalog = self.root / "inventors"
+        alice = catalog / "alice"
+        alice.mkdir(parents=True)
+        (alice / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 6,
+                    "id": "alice",
+                    "status": "experimental",
+                    "capabilities": ["classics-made-yours"],
+                    "source": {"kind": "local"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        (alice / "TASTE.md").write_text("# Alice\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(ArtifactError, "schema_version 7"):
+            self.create(inventor_catalog_root=catalog)
+        self.assertFalse(self.run_root.exists())
 
     def test_creation_requires_explicit_product_run_constitution_source(self):
         repository_agents = self.root / "AGENTS.md"

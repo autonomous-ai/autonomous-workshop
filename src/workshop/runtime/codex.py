@@ -1,4 +1,4 @@
-"""Safe structured calls and one whole-run native Codex session launcher."""
+"""One whole-run native Codex session launcher."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ from workshop.runtime.execution import codex_subprocess_environment
 ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
 DEFAULT_CODEX_TIMEOUT_SECONDS = 1_200
 MAX_CODEX_EVENT_BYTES = 1 * 1024 * 1024
-MAX_CODEX_OUTPUT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_PROMPT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_MESSAGE_BYTES = 64 * 1024
 MAX_CODEX_STDERR_BYTES = 256 * 1024
@@ -254,183 +253,6 @@ def _runtime_config_sha256(
             "sandbox": "workspace-write",
         }
     )
-
-
-class CodexStructuredRunner:
-    def __init__(
-        self,
-        *,
-        model: str,
-        reasoning_effort: str,
-        binary: Optional[str] = None,
-        timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
-        runner: Any = subprocess.run,
-        cli_version: Optional[str] = None,
-    ) -> None:
-        if model not in ALLOWED_WORKSHOP_MODELS:
-            raise ContractError(
-                "Workshop Codex model must be gpt-5.6-terra or gpt-5.6-luna"
-            )
-        if reasoning_effort not in ("low", "medium", "high", "xhigh"):
-            raise ValueError("unsupported Codex reasoning effort")
-        if (
-            type(timeout_seconds) is not int
-            or not 1 <= timeout_seconds <= 3_600
-        ):
-            raise ValueError("Codex timeout_seconds must be from 1 to 3,600")
-        self.binary = binary or os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
-        self.model = model
-        self.reasoning_effort = reasoning_effort
-        self.timeout_seconds = timeout_seconds
-        self._runner = runner
-        self.cli_version = cli_version or self._read_cli_version()
-        self.last_used_web_search = False
-
-    def _read_cli_version(self) -> str:
-        if not self.binary:
-            return "0.0.0"
-        try:
-            completed = self._runner(
-                [self.binary, "--version"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
-                env=codex_subprocess_environment(),
-            )
-        except (OSError, subprocess.SubprocessError):
-            return "0.0.0"
-        output = completed.stdout if isinstance(completed.stdout, str) else ""
-        match = re.search(r"\d+(?:\.\d+){1,3}(?:[-+][A-Za-z0-9.-]+)?", output)
-        return match.group(0) if match else "0.0.0"
-
-    def invoke(
-        self,
-        *,
-        prompt: str,
-        schema: Mapping[str, Any],
-        workspace: Optional[Path] = None,
-        native_web_search: bool = False,
-    ) -> Mapping[str, Any]:
-        if not self.binary:
-            raise CodexInvocationError("Codex CLI is not installed or on PATH")
-        if type(native_web_search) is not bool:
-            raise ValueError("native_web_search must be a boolean")
-
-        self.last_used_web_search = False
-        deadline = time.monotonic() + self.timeout_seconds
-        for attempt in range(2):
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                raise CodexInvocationError("Codex structured call timed out")
-            try:
-                completed, output_bytes = self._run_attempt(
-                    prompt=prompt,
-                    schema=schema,
-                    workspace=workspace,
-                    native_web_search=native_web_search,
-                    timeout_seconds=remaining,
-                )
-            except subprocess.TimeoutExpired as exc:
-                exc.output = None
-                exc.stderr = None
-                raise CodexInvocationError("Codex structured call timed out") from None
-            except (OSError, subprocess.SubprocessError, TypeError, ValueError) as exc:
-                for attribute in ("output", "stdout", "stderr"):
-                    if hasattr(exc, attribute):
-                        setattr(exc, attribute, None)
-                raise CodexInvocationError(
-                    "Codex could not execute the structured call"
-                ) from None
-
-            stdout = completed.stdout if isinstance(completed.stdout, str) else ""
-            stderr = completed.stderr if isinstance(completed.stderr, str) else ""
-            if completed.returncode != 0:
-                if attempt == 0 and _is_explicit_transient_failure(stdout, stderr):
-                    continue
-                if _is_explicit_transient_failure(stdout, stderr):
-                    raise CodexInvocationError(
-                        "Codex provider transport failed after one retry"
-                    )
-                raise CodexInvocationError("Codex did not complete the structured call")
-
-            used_web_search = _jsonl_used_web_search(stdout)
-            if native_web_search and not used_web_search:
-                raise CodexInvocationError(
-                    "Codex native web research completed without a web search event"
-                )
-            payload = _decode_bounded_payload(output_bytes)
-            self.last_used_web_search = used_web_search
-            return payload
-
-        raise CodexInvocationError("Codex did not complete the structured call")
-
-    def _run_attempt(
-        self,
-        *,
-        prompt: str,
-        schema: Mapping[str, Any],
-        workspace: Optional[Path],
-        native_web_search: bool,
-        timeout_seconds: float,
-    ):
-        with tempfile.TemporaryDirectory(prefix="workshop-codex-") as temporary:
-            control_root = Path(temporary)
-            schema_path = control_root / "output.schema.json"
-            output_path = control_root / "output.json"
-            schema_path.write_text(json.dumps(schema, sort_keys=True), encoding="utf-8")
-            cwd = Path(workspace).resolve() if workspace is not None else control_root
-            cwd.mkdir(parents=True, exist_ok=True)
-            command = [self.binary]
-            if native_web_search:
-                command.append("--search")
-            command.extend(
-                [
-                    "exec",
-                    "--ephemeral",
-                    "--ignore-rules",
-                    "--ignore-user-config",
-                    "--skip-git-repo-check",
-                    "--sandbox",
-                    "read-only",
-                    "--color",
-                    "never",
-                    "--json",
-                    "--config",
-                    'model_reasoning_effort="%s"' % self.reasoning_effort,
-                    "--output-schema",
-                    str(schema_path),
-                    "--output-last-message",
-                    str(output_path),
-                    "-C",
-                    str(cwd),
-                    "--model",
-                    self.model,
-                    "-",
-                ]
-            )
-            completed = self._runner(
-                command,
-                input=prompt,
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-                check=False,
-                env=codex_subprocess_environment(),
-            )
-            output_bytes = None
-            if output_path.is_file():
-                size = output_path.stat().st_size
-                if size > MAX_CODEX_OUTPUT_BYTES:
-                    raise CodexInvocationError(
-                        "Codex structured result exceeded the safe size limit"
-                    )
-                output_bytes = output_path.read_bytes()
-                if len(output_bytes) > MAX_CODEX_OUTPUT_BYTES:
-                    raise CodexInvocationError(
-                        "Codex structured result exceeded the safe size limit"
-                    )
-            return completed, output_bytes
 
 
 @dataclass(frozen=True)
@@ -1100,49 +922,12 @@ def _is_explicit_transient_failure(stdout: str, stderr: str) -> bool:
     return any(marker in diagnostic for marker in _TRANSIENT_DIAGNOSTIC_MARKERS)
 
 
-def _jsonl_used_web_search(stdout: str) -> bool:
-    if len(stdout.encode("utf-8", errors="replace")) > MAX_CODEX_EVENT_BYTES:
-        raise CodexInvocationError("Codex event stream exceeded the safe size limit")
-    for line in stdout.splitlines():
-        try:
-            event = json.loads(line)
-        except (TypeError, ValueError):
-            continue
-        if (
-            isinstance(event, Mapping)
-            and event.get("type") in ("item.started", "item.updated", "item.completed")
-            and isinstance(event.get("item"), Mapping)
-            and event["item"].get("type") == "web_search"
-        ):
-            return True
-    return False
-
-
-def _decode_bounded_payload(encoded: Optional[bytes]) -> Mapping[str, Any]:
-    if encoded is None:
-        raise CodexInvocationError("Codex returned no structured result")
-    try:
-        if len(encoded) > MAX_CODEX_OUTPUT_BYTES:
-            raise CodexInvocationError(
-                "Codex structured result exceeded the safe size limit"
-            )
-        payload = json.loads(encoded.decode("utf-8"))
-    except CodexInvocationError:
-        raise
-    except (OSError, UnicodeError, ValueError):
-        raise CodexInvocationError("Codex returned no valid structured result") from None
-    if not isinstance(payload, dict):
-        raise CodexInvocationError("Codex structured result must be an object")
-    return payload
-
-
 __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
     "CODEX_SESSION_CHECKPOINT_KIND",
     "DEFAULT_CODEX_TIMEOUT_SECONDS",
     "MAX_CODEX_EVENT_BYTES",
     "MAX_CODEX_MESSAGE_BYTES",
-    "MAX_CODEX_OUTPUT_BYTES",
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
@@ -1150,5 +935,4 @@ __all__ = [
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
-    "CodexStructuredRunner",
 ]

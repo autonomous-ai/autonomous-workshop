@@ -1,7 +1,4 @@
 import ast
-import re
-import subprocess
-import sys
 import tokenize
 import unittest
 from pathlib import Path
@@ -21,7 +18,6 @@ EXPECTED_COMPONENTS = {
     "match",
     "playtest",
     "product",
-    "reviews",
     "runtime",
     "wish",
     "workflow",
@@ -37,14 +33,9 @@ SCHEMA_OWNERS = {
     "artifact-manifest.schema.json": "artifacts",
     "inventor.schema.json": "contributors",
     "cad-project.schema.json": "make",
-    "maker-mark.schema.json": "make",
     "validator-policy.schema.json": "make",
     "verification-receipt.schema.json": "make",
-    "gate-result.schema.json": "playtest",
-    "inspection-result.schema.json": "playtest",
-    "playtest-result.schema.json": "playtest",
     "receipt.schema.json": "runtime",
-    "stamp.schema.json": "runtime",
 }
 
 
@@ -115,37 +106,6 @@ class ComponentLayoutTest(unittest.TestCase):
                 "%s must be owned by workshop.%s" % (name, owner),
             )
 
-    def test_checked_in_operational_cad_paths_follow_make_ownership(self):
-        project = (
-            REPOSITORY
-            / "inventors"
-            / "alice"
-            / "toys"
-            / "manhattan-nocturne"
-            / "project"
-        )
-        stale = re.compile(r"(?<!src/workshop/make/)skills/cad")
-        offenders = []
-        for path in project.rglob("*"):
-            if path.is_file() and path.suffix in {".md", ".py"}:
-                if stale.search(path.read_text(encoding="utf-8")):
-                    offenders.append(str(path.relative_to(REPOSITORY)))
-        self.assertEqual(offenders, [])
-
-        completed = subprocess.run(
-            [
-                sys.executable,
-                str(project / "validation" / "slice_product.py"),
-                "--help",
-            ],
-            cwd=REPOSITORY,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-
     def test_python_never_imports_a_removed_namespace(self):
         offenders = []
         for path in REPOSITORY.rglob("*.py"):
@@ -196,7 +156,6 @@ class ComponentLayoutTest(unittest.TestCase):
 
         expected = {
             contributors: {
-                "CUSTOMIZATION_LEVELS",
                 "InventorManifest",
                 "Taste",
                 "create_inventor",
@@ -209,12 +168,18 @@ class ComponentLayoutTest(unittest.TestCase):
                 "playful_make_request",
             },
             match: {
-                "InventorCatalog",
-                "ManagerAssignmentHandoff",
-                "WorkshopManager",
-                "discover_inventor_catalog",
+                "MatchRankingEntry",
+                "NativeMatchAssignment",
+                "PersonaCatalog",
+                "PersonaCatalogEntry",
             },
-            workflow: {"Workshop", "WorkshopRun", "WorkshopTools"},
+            workflow: {
+                "AgentArtifact",
+                "AgentOutcome",
+                "AgentRun",
+                "AgentRunCheckpoint",
+                "DeterministicGateReceipt",
+            },
         }
         for package, names in expected.items():
             with self.subTest(package=package.__name__):

@@ -68,22 +68,11 @@ it could not have existed before your wish.
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
 
-## Build your own inventor
+## Quick start
 
-Every Inventor brings Taste. The Workshop supplies Invent, Make, Playtest,
-Release, and Deliver. Add a custom Make or Playtest only when the shared
-Workshop needs a genuinely different craft.
-
-### Quick start
-
-Requires Python 3.11 or newer and a signed-in Codex CLI.
-
-The runtime is a thin host over one native Codex session per Wish. That
-product-run agent is distinct from coding agents building this repository.
-Codex is the main orchestrator—not a response generator called by a Python
-agent loop. The host launches it before Match, resumes the same session through
-every stage, and independently owns deterministic gates and external-effect
-authority. See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md).
+Requires Python 3.11 or newer and an installed, signed-in Codex CLI. Workshop
+uses the developer's existing Codex subscription; it does not require a second
+model API key.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -94,32 +83,87 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-The Workshop prints the Wish ID immediately, chooses an Inventor, and keeps the
-exact words. It invents, makes, Playtests, and prepares the verified Factory
-page. The page goes public by default; add `--draft` when the Wish should stay
-private. This does not claim the physical toy was printed or delivered.
+Every Wish starts one native Codex session in a private run workspace. The same
+session Matches an Inventor, researches and Invents the concept, builds and
+repairs the CAD, Playtests the exact product, then writes the Release package:
 
-The command prints the exact `workshop status <wish-id>` continuation. If a
-provider is missing, the run waits with one concrete next action instead of
-starting over or pretending it passed.
+```text
+Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+```
 
-To add an Inventor from one existing `TASTE.md`:
+Release is deliberately broader than “instructions.” It contains `MANUAL.md`,
+canonical product facts, evidence-bound claims, page metadata, and the factual
+input for Factory to create the customer-facing product page. The default is
+private. Add `--publish` only when the verified page should be promoted to a
+public Factory listing:
+
+```bash
+uv run workshop wish --publish \
+  "I wish for a pocket-size moon-phase machine I can turn by hand"
+```
+
+Factory credentials remain in the host environment and are never passed into
+Codex. Publication does not claim that a physical toy was printed, packed, or
+delivered. Deliver waits until separately authorized production and shipment
+receipts exist.
+
+The command prints a Wish ID. Use that ID to inspect or continue the same
+session after a process interruption:
+
+```bash
+uv run workshop status <wish-id>
+uv run workshop resume <wish-id>
+```
+
+If a deterministic gate fails or a capability is missing, the run waits with a
+concrete need. It never starts a replacement session or treats model prose as
+proof.
+
+## How the runtime is divided
+
+Codex does nearly all product work: discovery, Match judgment, research,
+concept exploration, design, CAD iteration, artifact inspection, AI Playtest,
+repair, manual writing, and factual product-page content.
+
+The root Codex session is the Workshop Manager. It can use Codex-native
+subagents for bounded Match analysis, the selected Inventor specialist, and
+independent inspection while remaining the one session the host starts and
+resumes. Workshop does not launch a second Codex process or schedule those
+agents in Python.
+
+The Python host is intentionally narrow. It preserves identity and exact
+bytes, enforces lifecycle order and round budgets, launches/resumes the native
+session, validates contracts and deterministic evidence, isolates credentials,
+and performs authorized external effects idempotently. It does not contain a
+parallel Python agent, profile subprocess, prompt chain, semantic judge, or
+reward loop.
+
+See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) for the full
+boundary and [Workshop architecture](docs/ARCHITECTURE.md) for component
+ownership.
+
+## Build your own Inventor
+
+An Inventor is a declared native specialist bundle. Every one has `TASTE.md`
+for creative judgment plus a small `inventor.json` for identity, eligibility,
+capabilities, and exact extension inventory. It may also own a `SKILL.md`,
+within an inventor-prefixed Codex skill tree, with scripts, references, assets,
+or tested deterministic CAD/domain tools. The root Manager dynamically briefs
+a selected native subagent from the exact host-materialized bundle.
+
+Inventor code supplies specialist operations, not orchestration: it cannot
+launch agents, choose Workshop stages, pass gates, or perform authenticated
+effects. Bundled Inventors use concise Codex skills; add scripts or other
+custom logic only when the craft is genuinely specialist.
 
 ```bash
 uv run workshop create inventor \
   --taste ./TASTE.md \
   --lane moving-machines
-
-uv run workshop wish --root . \
-  "I wish my bicycle became a hand-cranked climbing creature"
 ```
 
-The Inventor ID comes from its name. Taste-only is the default, so the Workshop
-supplies every shared stage and there is no custom Python hook to finish.
-
-### Custom `TASTE.md`
-
-`TASTE.md` needs a name, a one-line matching boundary, and a real point of view:
+A useful `TASTE.md` has a name, a discriminating one-line description, and a
+recognizable point of view:
 
 ```markdown
 ---
@@ -138,97 +182,7 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 - [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
 - [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
 
-### Custom Make
-
-Choose `custom-make` only when the Inventor needs a genuinely different way to
-turn the shared Invent concept and Playtest feedback into parts. Implement the
-generated `make(context)` hook; the Workshop still supplies Invent, Playtest,
-Release, and Deliver.
-
-The checked-in showcase Make follows this pattern:
-
-```python
-def showcase_make(context):
-    spec = next(item for item in SPECS if item.slug == context.wish.product_id)
-    artifact = _build_artifact(spec, context)
-    product = json.loads((artifact / "product.json").read_text())
-    return Made.from_root(artifact, product)
-```
-
-See the [complete Make adapter](tools/build_showcase_products.py#L1614-L1626).
-
-### Custom Playtest
-
-Choose `custom-playtest` only when the Inventor also needs genuinely different
-tests. Implement `playtest(context)` to return evidence and feedback; failed
-tests go back to Make. Custom Playtest always includes Custom Make.
-
-Infrastructure is not a custom Inventor. The shared Playtest already includes
-pinned checkers and primitive moving-machine providers. Install authoritative
-science sources or a private consent/reference vault field by field and keep
-the rest of the Workshop:
-
-```python
-from workshop.playtest.agent import LaneAwarePlaytester
-
-playtest = LaneAwarePlaytester(
-    science_provider=workshop_science_sources,
-    world_provider=workshop_consent_vault,
-)
-```
-
-A custom worker may change how a check runs, but never the Workshop release
-bar. Each required capability still needs exact, sealed evidence. Use the
-public proof types to bind its method, measurements, and source bytes to the
-exact Make; put `proof.to_dict()` in that result's `evidence["release_proof"]`:
-
-```python
-from workshop import CapabilityReleaseProof, ReleaseProofSource
-
-
-def showcase_playtest(context):
-    evidence_root = context.workspace.absolute()
-    motion = run_motion_check(context.made, evidence_root)
-    proof = CapabilityReleaseProof(
-        capability="motion-test",
-        artifact_sha256=context.made.artifact_sha256,
-        proof_class="kinematic-motion-proof",
-        sources=(
-            ReleaseProofSource(
-                "step-model", "product", motion.step_ref, motion.step_sha256
-            ),
-            ReleaseProofSource(
-                "motion-receipt",
-                "playtest",
-                motion.receipt_ref,
-                motion.receipt_sha256,
-            ),
-        ),
-        measurements=motion.measurements,
-    )
-    results = run_checks(
-        context.made, evidence_root, release_proof=proof.to_dict()
-    )
-    evidence = build_artifact_manifest(evidence_root, created_at="content-addressed")
-    return Playtested(Playtest(
-        context.made.artifact_manifest,
-        results,
-        evidence_manifest=evidence,
-    ))
-```
-
-Before Release—and again on resume—the Workshop validates every required
-proof against the sealed product and Playtest manifests. A passed label, model
-score, or renamed check cannot lower that bar. Each cited Playtest receipt is a
-`workshop.capability-release-receipt`: it repeats the exact artifact,
-capability, proof class, receipt role, dependency hashes, and measurements,
-plus the adapter's non-empty payload. Print proofs also cite the sealed profile
-files and one sealed G-code output per part; hash strings alone do not pass.
-
-See the [complete Playtest adapter](tools/build_showcase_products.py#L1692-L1895).
-
-Full contracts and examples: [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
-[Workshop architecture](docs/ARCHITECTURE.md).
+Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the catalog contract.
 
 ## Code map
 
@@ -239,10 +193,15 @@ imported accidentally.
 
 Shared code is organized by architecture component under `src/workshop/`:
 `product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
-`deliver`, `reviews`, `workflow`, `artifacts`, `runtime`, `integrations`, and
+`deliver`, `workflow`, `artifacts`, `runtime`, `integrations`, and
 `contributors`. Make owns the single installed copy of its locked skills at
 `src/workshop/make/skills/`; portable schemas live with the component that owns
 their contract. Shared tests mirror those component names under `tests/`.
+
+Runtime also owns the non-Python product-run assets in `.agents/product-run/`
+and `.agents/skills/autonomous-workshop/`. Packaging copies those exact bytes
+into the installed distribution; they are the constitution and workflow skill
+for a product run, not instructions for coding agents building this repository.
 
 See [Workshop architecture](docs/ARCHITECTURE.md#shared-implementation) for the
 ownership and dependency rules.
@@ -250,15 +209,13 @@ ownership and dependency rules.
 ## Check it works
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
-workshop skills list
-workshop schemas list
-workshop inventors --root . --check-entrypoints
-workshop check inventors --run
+uv run workshop doctor
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
+uv run workshop inventors --root inventors
+uv run workshop check inventors
+python .agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
 python tools/verify_skill_locks.py
-python tools/verify_snapshot_locks.py
 python tools/scan_secrets.py
-python tools/evaluate_wish_routing.py
 git diff --check
 ```
 
@@ -268,9 +225,7 @@ Read next:
 - [Workshop architecture](docs/ARCHITECTURE.md)
 - [Build an inventor](docs/BUILD_AN_INVENTOR.md)
 - [Playtest evidence](docs/PLAYTEST_EVIDENCE.md)
-- [Publish the sealed showcase toys](docs/PUBLISH_SHOWCASES.md)
-- [Current adoption](docs/ADOPTION.md)
-- [Migration guide](docs/MIGRATION.md)
+- [Publication boundary](docs/PUBLISH_SEALED_PRODUCT.md)
 - [Contributing](CONTRIBUTING.md)
 
 Never commit credentials, runtime databases, private keys, generated backups, or

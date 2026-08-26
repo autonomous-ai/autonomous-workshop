@@ -55,7 +55,7 @@
     </g>
     <g transform="translate(230 0)">
       <path d="M 0 2 C 6 19, 24 19, 30 2" fill="none" stroke="#d97706" stroke-width="3"/>
-      <text x="40" y="5" class="legend">observe, act, reward, improve</text>
+      <text x="40" y="5" class="legend">inspect, act, verify, improve</text>
     </g>
     <g transform="translate(460 0)">
       <line x1="0" y1="0" x2="30" y2="0" stroke="#1675b8" stroke-width="3"/>
@@ -120,7 +120,7 @@
     <rect class="node-internal" x="220" y="470" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="490" x2="600" y2="590" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="497" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
+  <text x="250" y="497" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
   <text x="250" y="531" class="heading">INVENT</text>
   <text x="250" y="556" class="body">Explore many directions in industrial design.</text>
   <text x="250" y="578" class="body">Choose a concept, then shape its character,</text>
@@ -128,19 +128,19 @@
   <path class="micro" d="M 665 498 C 735 472, 764 525, 730 572 C 700 612, 633 583, 646 536"/>
   <text x="697" y="507" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="529" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="551" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="551" text-anchor="middle" class="micro-copy">VERIFY</text>
   <text x="697" y="573" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Invent gate -->
   <rect x="516" y="626" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="644" text-anchor="middle" class="gate">INVENT GOAL REACHED</text>
+  <text x="588" y="644" text-anchor="middle" class="gate">INVENT VERIFIED</text>
 
   <!-- Make -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="670" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="690" x2="600" y2="790" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="697" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
+  <text x="250" y="697" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
   <text x="250" y="731" class="heading">MAKE</text>
   <text x="250" y="756" class="body">Turn the concept into mechanical + 3D design.</text>
   <text x="250" y="778" class="body">Build printable parts that fit, move,</text>
@@ -148,12 +148,12 @@
   <path class="micro" d="M 665 698 C 735 672, 764 725, 730 772 C 700 812, 633 783, 646 736"/>
   <text x="697" y="707" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="729" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="751" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="751" text-anchor="middle" class="micro-copy">VERIFY</text>
   <text x="697" y="773" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Make gate -->
   <rect x="516" y="826" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="844" text-anchor="middle" class="gate">MAKE GOAL REACHED</text>
+  <text x="588" y="844" text-anchor="middle" class="gate">MAKE VERIFIED</text>
 
   <!-- Playtest -->
   <g filter="url(#shadow)">
@@ -177,19 +177,19 @@
     <rect class="node-internal" x="220" y="1070" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="1090" x2="600" y2="1190" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="1097" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
+  <text x="250" y="1097" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
   <text x="250" y="1131" class="heading">RELEASE</text>
-  <text x="250" y="1158" class="body">Assemble the manual, product page package,</text>
-  <text x="250" y="1180" class="body">media, data, attribution, and publication intent.</text>
+  <text x="250" y="1158" class="body">Assemble the manual, product-page facts,</text>
+  <text x="250" y="1180" class="body">evidence, attribution, and publication intent.</text>
   <path class="micro" d="M 665 1098 C 735 1072, 764 1125, 730 1172 C 700 1212, 633 1183, 646 1136"/>
   <text x="697" y="1107" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="1129" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="1151" text-anchor="middle" class="micro-copy">REWARD</text>
+  <text x="697" y="1151" text-anchor="middle" class="micro-copy">VERIFY</text>
   <text x="697" y="1173" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Release gate -->
   <rect x="504" y="1226" width="168" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="1244" text-anchor="middle" class="gate">RELEASE GOAL REACHED</text>
+  <text x="588" y="1244" text-anchor="middle" class="gate">RELEASE VERIFIED</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">

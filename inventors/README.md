@@ -1,33 +1,50 @@
-# Inventor personas
+# Inventor specialists
 
-Each immediate subfolder is one native-agent persona and contains exactly:
+Each immediate subfolder is one native-agent specialist bundle. Two files are
+required; extensions are optional and must be declared by `inventor.json`:
 
 ```text
 inventors/<id>/
-  inventor.json  bounded catalog identity and one plaything lane
-  TASTE.md       exact human-owned creative constitution
+  inventor.json  identity, eligibility, capabilities, extension inventory
+  TASTE.md       exact human-owned creative judgment
+  skills/<inventor-skill>/  optional inventor-owned Codex skill
+    SKILL.md     optional specialist workflow and tool routing
+    scripts/     optional tested deterministic tools
+    references/  optional specialist reference material
+    assets/       optional templates and static inputs
 ```
 
-An optional concise `README.md` is accepted for contributor explanation, but
-the bundled catalog does not need one. Inventor folders contain no Python
-entrypoint, profile subprocess, prompt loop, tests, configuration, credentials,
-runtime state, or generated toys. One product run uses the shared native Codex
-session; the selected persona supplies Taste, not a second agent framework.
+An optional concise `README.md` may explain the bundle. One product run uses one
+root native Codex session as Workshop Manager. It dynamically briefs a selected
+native Inventor subagent from the exact host-materialized bundle; it does not
+start a profile subprocess, second root Codex session, or Python agent loop.
 
-| Inventor | Lane |
-|---|---|
-| Alice | classics made yours |
-| Bob | moving machines |
-| Eve | little worlds |
-| Ivy | holdable science |
-| Leo | invented games |
+Inventor scripts may implement tested deterministic specialist operations such
+as CAD generation or evaluation. Each optional skill has an Inventor-prefixed
+name and a manifest-bound tree hash. Scripts never auto-run and must not launch
+agents, schedule prompts, choose lifecycle transitions, waive gates, access
+credentials, or perform external effects. Static validation proves structure
+and bytes, not arbitrary-code semantics; the runtime sandbox and host gates
+remain authoritative.
+
+The five bundled schema-v7 Inventors each declare exactly one minimal
+instructions-only skill. They add no scripts or custom code; shared CAD,
+simulation, and evidence tooling remains in Workshop.
+
+| Inventor | Lane | Native skill |
+|---|---|---|
+| Alice | classics made yours | `alice-inventor` |
+| Bob | moving machines | `bob-inventor` |
+| Eve | little worlds | `eve-inventor` |
+| Ivy | holdable science | `ivy-inventor` |
+| Leo | invented games | `leo-inventor` |
 
 `TASTE.md` begins with the bounded `name` and `description` used for Match.
-The complete exact file is materialized into a private product-run workspace
-only after the persona becomes a finalist. Verified outcomes may justify a
-proposed Taste revision, but only a human changes the catalog bytes.
+The complete exact declared bundle is materialized into a private product-run
+workspace under a content-bound manifest. Verified outcomes may justify a
+proposed Taste or skill revision, but only a human changes the catalog bytes.
 
-Create a persona from the repository root:
+Create a base specialist from the repository root:
 
 ```bash
 workshop create inventor pocket-orreries \
@@ -37,6 +54,7 @@ workshop create inventor pocket-orreries \
   --root .
 ```
 
-Reusable deterministic tools belong to the stage that owns them under
-`src/workshop/`; product artifacts belong to the private run workspace and are
-never checked into this catalog.
+Reusable Workshop-wide deterministic tools belong to the stage that owns them
+under `src/workshop/`; genuinely Inventor-specific tools may remain in the
+declared specialist bundle. Product artifacts belong to the private run
+workspace and are never checked into this catalog.

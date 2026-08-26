@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/v6.json",
-  "title": "Autonomous Workshop inventor persona manifest",
+  "$id": "https://autonomous.ai/schemas/inventor/v7.json",
+  "title": "Autonomous Workshop Inventor bundle manifest",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -9,206 +9,28 @@
     "id",
     "status",
     "capabilities",
-    "source"
-  ],
-  "oneOf": [
-    {
-      "properties": {"schema_version": {"const": 1}},
-      "required": [
-        "name", "niche", "summary", "autonomy", "entrypoint", "core_features"
-      ],
-      "not": {
-        "anyOf": [
-          {"required": ["workshop_features"]},
-          {"required": ["foundation_features"]},
-          {"required": ["checks"]}
-        ]
-      }
-    },
-    {
-      "properties": {"schema_version": {"const": 2}},
-      "required": [
-        "name", "niche", "summary", "autonomy", "entrypoint",
-        "foundation_features", "checks"
-      ],
-      "not": {
-        "anyOf": [
-          {"required": ["core_features"]},
-          {"required": ["workshop_features"]}
-        ]
-      }
-    },
-    {
-      "properties": {
-        "schema_version": {"const": 3},
-        "workshop_features": {
-          "items": {
-            "enum": [
-              "clockwork.state",
-              "clockwork.workflow",
-              "doors.delivery",
-              "doors.shop",
-              "inspect.evidence",
-              "make.skills.cad",
-              "make.skills.product-to-cad",
-              "make.skills.step-parts",
-              "make.workbench",
-              "pack.content-addressed",
-              "send.outbox",
-              "taste.content-addressed"
-            ]
-          }
-        }
-      },
-      "required": [
-        "name", "niche", "summary", "autonomy", "entrypoint",
-        "workshop_features", "checks"
-      ],
-      "not": {
-        "anyOf": [
-          {"required": ["core_features"]},
-          {"required": ["foundation_features"]}
-        ]
-      }
-    },
-    {
-      "properties": {"schema_version": {"const": 4}},
-      "required": ["name", "niche", "summary", "autonomy", "entrypoint", "checks"],
-      "not": {
-        "anyOf": [
-          {"required": ["core_features"]},
-          {"required": ["foundation_features"]},
-          {"required": ["workshop_features"]}
-        ]
-      }
-    },
-    {
-      "properties": {"schema_version": {"const": 5}},
-      "required": ["entrypoint", "checks"],
-      "not": {
-        "anyOf": [
-          {"required": ["name"]},
-          {"required": ["niche"]},
-          {"required": ["summary"]},
-          {"required": ["autonomy"]},
-          {"required": ["core_features"]},
-          {"required": ["foundation_features"]},
-          {"required": ["workshop_features"]}
-        ]
-      }
-    },
-    {
-      "properties": {
-        "schema_version": {"const": 6},
-        "capabilities": {
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "enum": [
-              "classics-made-yours",
-              "invented-games",
-              "moving-machines",
-              "holdable-science",
-              "little-worlds"
-            ]
-          }
-        }
-      },
-      "not": {
-        "anyOf": [
-          {"required": ["name"]},
-          {"required": ["niche"]},
-          {"required": ["summary"]},
-          {"required": ["autonomy"]},
-          {"required": ["entrypoint"]},
-          {"required": ["checks"]},
-          {"required": ["core_features"]},
-          {"required": ["foundation_features"]},
-          {"required": ["workshop_features"]}
-        ]
-      }
-    }
+    "source",
+    "extensions"
   ],
   "properties": {
-    "schema_version": {"enum": [1, 2, 3, 4, 5, 6]},
+    "schema_version": {"const": 7},
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
-    "name": {
-      "type": "string", "minLength": 1, "maxLength": 200,
-      "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
-    },
-    "niche": {
-      "type": "string", "minLength": 1, "maxLength": 500,
-      "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
-    },
-    "summary": {
-      "type": "string", "minLength": 1, "maxLength": 2000,
-      "pattern": "^(?=.*\\S)[^\\u0000-\\u001f\\u007f]+$"
-    },
-    "autonomy": {
-      "enum": ["autonomous", "human-checkpointed", "reference"]
-    },
     "status": {
       "enum": ["active", "experimental", "blocked", "reference", "archived"]
-    },
-    "entrypoint": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 100,
-      "uniqueItems": true,
-      "items": {
-        "type": "string", "minLength": 1, "maxLength": 4096,
-        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-      }
     },
     "capabilities": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 100,
+      "maxItems": 1,
       "uniqueItems": true,
       "items": {
-        "type": "string", "minLength": 1, "maxLength": 4096,
-        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-      }
-    },
-    "core_features": {
-      "type": "array",
-      "maxItems": 100,
-      "uniqueItems": true,
-      "items": {
-        "type": "string", "minLength": 1, "maxLength": 4096,
-        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-      }
-    },
-    "foundation_features": {
-      "type": "array",
-      "maxItems": 100,
-      "uniqueItems": true,
-      "items": {
-        "type": "string", "minLength": 1, "maxLength": 4096,
-        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-      }
-    },
-    "workshop_features": {
-      "type": "array",
-      "maxItems": 100,
-      "uniqueItems": true,
-      "items": {
-        "type": "string", "minLength": 1, "maxLength": 4096,
-        "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-      }
-    },
-    "checks": {
-      "type": "array",
-      "maxItems": 20,
-      "uniqueItems": true,
-      "items": {
-        "type": "array",
-        "minItems": 1,
-        "maxItems": 100,
-        "items": {
-          "type": "string", "minLength": 1, "maxLength": 4096,
-          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
-        }
+        "enum": [
+          "classics-made-yours",
+          "invented-games",
+          "moving-machines",
+          "holdable-science",
+          "little-worlds"
+        ]
       }
     },
     "source": {
@@ -241,6 +63,32 @@
           "required": ["kind", "url", "commit", "imported_at"]
         }
       ]
+    },
+    "extensions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "name", "path", "artifact_sha256"],
+        "properties": {
+          "kind": {"const": "codex-skill"},
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^skills/[a-z0-9][a-z0-9-]{1,62}$"
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
     }
   }
 }

@@ -1,217 +1,92 @@
-# Product bytes and Playtest evidence
+# Playtest evidence
 
-Workshop Playtest binds every verdict to the exact Make it tested. Product
-files and evidence files are separate content-addressed artifacts:
+Playtest is a native-agent review of one exact Made revision plus deterministic
+evidence. It is not a Python role process, a model score, a human test, or proof
+that a physical product exists.
+
+## Exact input
+
+The host writes the current Playtest `STAGE.json` with:
+
+- the complete sealed Made contract and product manifest;
+- the selected lane blueprint;
+- the current Make–Playtest round;
+- every required check id;
+- the canonical evidence root and contract path;
+- checkpoint and gate-subject hashes.
+
+Codex must inspect that exact product tree. Evidence from a prior Make revision
+cannot be carried forward.
+
+## Native work, deterministic envelope
+
+The native session may use first-time, optimizing, exploratory, and adversarial
+player perspectives; native search; CAD/render inspection; domain skills; and
+seeded simulations. It records substantive evidence as files, not chat claims.
+
+The authored Playtest source contains exactly:
 
 ```text
-product root  --seal--> artifact_manifest
-                              | artifact_sha256
-                              v
-                         [ Playtest ] ------> Feedback or pass
-                              ^
-                              | evidence_artifact_sha256
-playtest root --seal--> evidence_manifest
+checks, feedback, verdict
 ```
 
-The product manifest owns what the customer may receive: rules, source, STEP,
-per-part meshes, assembly information, and other product assets. The evidence
-manifest owns simulator traces, evaluator output, CAD measurements, slicer
-reports, and supporting media produced by AI agents or deterministic tools.
-Physical production and hands-on QA receipts belong to Deliver. Customer
-feedback belongs to Reviews after delivery.
+Every required check id appears once. Each check records a real evaluator and
+exact version, cites a config file and evidence file inside the Playtest
+evidence tree, records an explicit UTC observation time, and includes non-empty
+observations. `self-report` and `trust-me` are not evaluators.
 
-Keeping them separate prevents internal review files from silently entering the
-customer product while preserving a complete audit link.
+The session then runs:
 
-## Exact binding
-
-Every `PlaytestResult` names:
-
-- one playtest ID;
-- pass or fail;
-- the exact product `artifact_sha256`;
-- a non-empty evidence record;
-- an evaluator and exact non-floating version;
-- the evaluator configuration hash;
-- observation time;
-- a safe evidence path and the SHA-256 of that file.
-
-The evidence path must resolve with the declared hash inside the sealed
-evidence manifest. A CAD release follows the same split: CAD source, STEP, and
-mesh paths resolve in the product manifest; CAD observations resolve in the
-evidence manifest.
-
-Changing the product after Make, changing an evidence file after Playtest, or
-attaching evidence from another revision invalidates the boundary. Re-running
-Make creates a new immutable round and requires new Playtest evidence.
-
-## Routing provenance is not product evidence
-
-Before Make, the Workshop Manager searches the catalog's compact Taste
-descriptions, records a shortlist, compares one exact Wish with each finalist's
-exact `TASTE.md`, and creates one assignment. That assignment binds the catalog
-snapshot, retrieval receipt, complete finalist ranking and Taste hashes, chosen
-inventor, entry point, and trusted Playtest-round allowance. It proves which
-request-scoped decision was made and why; changing relevant catalog metadata,
-a finalist Taste, or the selected manifest invalidates dispatch.
-
-A routing decision does **not** prove that the product matches Taste, works,
-prints, delights anyone, or deserves release. The semantic fit score is an
-independent-model prediction only when its evaluator provenance supports that
-claim. It cannot substitute for artifact-bound CAD, slicer, or simulation
-evidence, authenticated Deliver receipts, or post-delivery Reviews, and
-Instructions must not present “the Manager chose this inventor” as product
-approval.
-
-The assignment is one-shot. Reassignment creates a new routing record; it does
-not bless artifacts or Playtest evidence produced under the old Taste. A future
-continuous-intake adapter may create many independent assignments, but uptime
-and scheduling add no evidence class and do not weaken any Playtest gate.
-
-## Normal Workbench path
-
-Seal the Playtest workspace independently, then pass that manifest to the
-canonical method:
-
-```python
-evidence_manifest = seal_artifact(
-    playtest_root,
-    created_at="content-addressed",
-)
-playtest = workbench.playtest(
-    made,
-    evidence_manifest=evidence_manifest,
-)
+```bash
+python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . playtest \
+  --source <playtest-source.json> \
+  --evidence-root <STAGE evidence_root>
 ```
 
-For compatibility, omitting `evidence_manifest` means the evidence intentionally
-lives inside the product artifact. New production paths should normally keep
-the roots separate. Runtime stores their identities, not the evidence bytes, so
-the operator must retain both sealed artifacts durably.
+The finalizer hashes the entire evidence tree, validates exact check coverage,
+and writes the canonical Playtested contract and bound `agent-outcome.json`.
+It cannot pass the gate. The host rereads the tree, validates the contract, and
+reruns the trusted CAD verifier on an isolated copy of the Made product.
 
-## Failed evidence is useful, not approval
+## Verdicts and feedback
 
-A `Playtest` may contain failed results. They become actionable `Feedback` for
-the next Make round. A pass exists only when every required result for the
-exact artifact passes the pinned policy.
+- `pass` requires every check to pass and no actionable feedback.
+- `improve` or `block` requires at least one failed check or actionable finding
+  plus evidence-linked feedback.
+- Every feedback item identifies its area, severity, observed finding, concrete
+  next change, evidence references, and invalidated stages.
 
-Missing, stale, malformed, timed-out, unsupported, or hash-mismatched evidence
-is not a pass. An optional failure remains visible and cannot be silently
-discarded or presented as approval. Same-model self-confidence cannot satisfy
-an independent gate.
+A failed Playtest proposes a return to Make. The host preserves that exact
+Playtested contract as feedback, advances the bounded round, and invalidates
+downstream evidence. Codex repairs the product in a new Make revision; it does
+not edit the previously sealed Made or Playtest files until they appear to
+pass.
 
-## Evidence boundary limits
+Reaching the configured round limit stops truthfully. It never lowers required
+capabilities or converts an incomplete result into Release.
 
-The boundary determines what Instructions may claim and which stage owns the
-observation:
+## Claim boundaries
 
-| Boundary evidence | Supports | Cannot establish |
+| Evidence class | May support | Must not be stated as |
 |---|---|---|
-| AI simulation | executable rules, termination, traces, balance and pacing proxies | human understanding, delight, or desire for another play |
-| Independent model review | a reproducible prediction about clarity, novelty, coolness, or Taste alignment | observed human preference or physical behavior |
-| CAD/kernel measurement | dimensions, topology, clearances, interference, motion, assembly calculations | that a real print assembled or survived use |
-| Slicer analysis | behavior under an exact printer, material, and profile; predicted time, material, and supports | successful printing or acceptable finish |
-| Deliver receipt | the exact print, hands-on QA, packing, handoff, or delivery event observed | any later event or customer experience |
-| Customer Review | what a verified customer reported after receiving the toy | that AI Playtest predicted it, or that every customer agrees |
+| Seeded rules simulation | termination, trace counts, balance/pacing proxies, observed strategies | “people had fun” |
+| Native/model inspection | a recorded prediction about clarity, novelty, or Taste fit | human preference or physical fact |
+| CAD/kernel check | exact computed topology, dimensions, clearances, interfaces | successful printing or durability |
+| Slicer check | predicted output under an exact printer/material/profile | a successful print |
+| Render inspection | visible properties of an exact digital render | a photograph of a manufactured object |
 
-The first four rows are Playtest evidence. Deliver owns all physical production
-and QA evidence. Reviews begins only after delivery and may feed a future
-revision of the same toy and future Wishes; it does not revise the completed
-Playtest, mutate shipped bytes, or hold the original order.
+Claims must stay attached to their exact evidence class, source file, version,
+configuration, and artifact hash. Unknown, missing, stale, malformed, or
+mismatched evidence fails closed.
 
-For example, “1,000 seeded games terminated” is a strong simulation claim and
-still not evidence that anyone had fun.
+## Release remains bound
 
-## Category evidence
+Release starts only after Playtest passes for the current Made artifact. Its
+canonical `product.json` repeats the exact product artifact hash and Playtest
+evidence artifact hash, and its claim map is derived exactly from the passing
+checks. Release may write a manual and factual page content, but it cannot turn
+simulation into customer response or CAD verification into manufacture.
 
-Every category must first clear the Workshop product bar:
-
-- the result could not have been bought before the Wish;
-- the Wish materially changes the design rather than adding decoration;
-- cool, clever, striking, or satisfying beats merely cute or twee;
-- personalization and design intelligence beat a generic print.
-
-An independent model may predict that a design clears this bar. Playtest must
-label that as a prediction; customer-preference claims come only from Reviews
-after delivery.
-
-Category-specific Playtest then adds the right gates:
-
-- **Classics made yours (`classics-made-yours`)** uses known rules. Verify rules
-  fidelity, personalization, legibility, setup, handling proxies, digital
-  printability, and the exact custom edition. Do not claim familiar gameplay
-  as a new invention.
-- **Games that don't exist yet (`invented-games`)** needs executable AI-player
-  traces to find rule errors, loops, exploits, balance risks, and pacing
-  problems. At least 1,000 complete seeded games must exercise the rules,
-  endings, strategies, and ways to cheat before Instructions.
-- **Machines that move (`moving-machines`)** needs exact motion, interference,
-  wear proxies, assembly, and digital printability evidence.
-- **Science you can hold (`holdable-science`)** needs scientific accuracy plus
-  exact geometry, simulated interaction, and digital printability evidence.
-- **Little worlds (`little-worlds`)** needs evidence that the Wish materially
-  shaped the world, plus legibility, originality, digital printability, and
-  assembly checks.
-
-After Playtest and Instructions, Deliver owns the exact print, hands-on QA,
-packing, and carrier handoff for every category. After delivery, Reviews may
-report delight, confusion, durability, or desire for another play and feed
-those observations into a future revision of the same toy and future Wishes.
-
-Kits and numbered series are later variants. They introduce no V1 Playtest
-class and are not evidence shortcuts.
-
-## Per-Wish round allowance
-
-`playtest_rounds` limits how many immutable Make–Playtest repair rounds one Wish
-may consume. The trusted service boundary records a value from 1 through 100
-before Make and passes the same value into every custom context.
-
-It never changes the evidence policy. A smaller allowance does not remove
-required AI simulation, model-review, CAD, slicer, or result IDs; a larger
-allowance does not turn a prediction into customer feedback. If the allowance
-ends while a required result still fails, the run stops before Instructions
-and Deliver.
-
-The number of AI games, model reviewers, or digital trials inside one Playtest
-round is a separate trusted budget.
-
-## Instructions and Deliver remain bound
-
-Instructions begins only after Playtest passes for the exact product hash. It
-creates both the in-box guide and the site page, then publishes and verifies
-that page as one shared job. Each public claim points back to a result's
-evidence class, path, hash, evaluator, and version. Copy may be delightful, but
-it may not upgrade simulation to fun, slicing to a physical print, or concept
-art to product proof.
-
-Deliver rechecks both the product and Instructions manifests. Production,
-hands-on QA, packing, and USPS/UPS/FedEx receipts must identify those approved
-bytes. A carrier label alone is not handoff or delivery.
-
-After delivery, Reviews may bind customer feedback to the delivered toy and
-offer it to a future revision of that toy and future Wishes. Reviews is not
-another Workshop job, an inventor hook, or retroactive Playtest evidence.
-
-## Persisted compatibility
-
-Workshop 0.5 code uses `Playtest`, `PlaytestResult`, `PlaytestPolicy`, and
-`Workbench.playtest()`. Persisted records intentionally keep a few older field
-names so existing state remains replayable:
-
-- serialized `inspection_id` is the stored spelling of code-facing
-  `playtest_id`;
-- older transition payloads may contain `required_inspection_ids`;
-- the sealed Playtest evidence hash may be stored as
-  `inspection_evidence_sha256`.
-
-The older class and method names remain aliases to the same implementation.
-They are compatibility details, not a second evidence model or an additional
-Workshop job.
-
-Use
-[`playtest-result.schema.json`](../src/workshop/playtest/schemas/playtest-result.schema.json)
-from the Playtest component for the canonical 0.5 persisted result. The older
-[`inspection-result.schema.json`](../src/workshop/playtest/schemas/inspection-result.schema.json)
-remains beside it for persisted-data compatibility. Both ship as package data;
-there is no second root-level schema copy.
+Deliver owns real print, hands-on QA, packing, and carrier evidence. A Factory
+page—even a public one—is not delivery evidence.

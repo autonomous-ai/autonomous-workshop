@@ -85,8 +85,7 @@ class _FakeLauncher:
 
 
 class NativeCliRunTest(unittest.TestCase):
-    def test_wish_starts_native_session_before_any_legacy_or_effect_path(self):
-        repository = Path(__file__).resolve().parents[2]
+    def test_wish_starts_native_session_before_any_effect_path(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -102,17 +101,7 @@ class NativeCliRunTest(unittest.TestCase):
             ), mock.patch(
                 "cli.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
-            ), mock.patch.multiple(
-                "cli.main",
-                CodexSemanticManager=mock.DEFAULT,
-                WorkshopManager=mock.DEFAULT,
-                _save_manager_assignment=mock.DEFAULT,
-                _run_inventor=mock.DEFAULT,
-                _resume_factory_release=mock.DEFAULT,
-                _publish_inventor_draft=mock.DEFAULT,
-            ) as legacy, redirect_stdout(
-                stdout
-            ), redirect_stderr(stderr):
+            ), redirect_stdout(stdout), redirect_stderr(stderr):
                 result = main(
                     (
                         "wish",
@@ -122,8 +111,6 @@ class NativeCliRunTest(unittest.TestCase):
                         "of",
                         "my",
                         "dog",
-                        "--root",
-                        str(repository),
                         "--publish",
                         "--json",
                     )
@@ -176,6 +163,16 @@ class NativeCliRunTest(unittest.TestCase):
                 persona = workspace / "catalog" / "inventors" / inventor_id
                 self.assertTrue((persona / "inventor.json").is_file())
                 self.assertTrue((persona / "TASTE.md").is_file())
+                self.assertFalse((persona / "skills").exists())
+                self.assertTrue(
+                    (
+                        workspace
+                        / ".agents"
+                        / "skills"
+                        / (inventor_id + "-inventor")
+                        / "SKILL.md"
+                    ).is_file()
+                )
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
@@ -188,10 +185,7 @@ class NativeCliRunTest(unittest.TestCase):
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("before Match", stderr.getvalue())
-            for called in legacy.values():
-                called.assert_not_called()
-
-    def test_resume_uses_exact_materialized_binding_before_legacy_fallback(self):
+    def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"
@@ -216,14 +210,9 @@ class NativeCliRunTest(unittest.TestCase):
             ), mock.patch(
                 "cli.native_run.product_run_agent_assets",
                 side_effect=AssertionError("resume must use materialized bytes"),
-            ) as current_assets, mock.patch(
-                "cli.main._catalog_roots",
-                side_effect=AssertionError("native resume must precede legacy lookup"),
-            ), mock.patch(
-                "cli.main._resume_factory_release"
-            ) as factory_resume, redirect_stdout(output), redirect_stderr(StringIO()):
+            ) as current_assets, redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
-                    main(("resume", product_id, "--root", "/obsolete", "--json")),
+                    main(("resume", product_id, "--json")),
                     0,
                 )
             resumed_receipt = json.loads(output.getvalue())
@@ -241,13 +230,9 @@ class NativeCliRunTest(unittest.TestCase):
             self.assertNotIn(str(home), resumed["prompt"])
             self.assertEqual(resumed_receipt["action"], "resumed")
             current_assets.assert_not_called()
-            factory_resume.assert_not_called()
 
             output = StringIO()
-            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "cli.main._catalog_roots",
-                side_effect=AssertionError("native status must precede legacy lookup"),
-            ), redirect_stdout(output):
+            with mock.patch.dict(os.environ, environment, clear=True), redirect_stdout(output):
                 self.assertEqual(main(("status", product_id, "--json")), 0)
             status = json.loads(output.getvalue())
             self.assertEqual(status["kind"], "native-agent-run")

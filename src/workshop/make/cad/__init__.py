@@ -1,19 +1,5 @@
-"""Engine-neutral CAD contracts; modeling engines remain replaceable adapters."""
+"""Host-side STL inspection helpers retained for Factory handoff."""
 
-from workshop.make.cad.contracts import (
-    CadPart,
-    CadProjectManifest,
-    CadReleaseBundle,
-    PhysicalClaim,
-    VerificationCheck,
-    VerificationReceipt,
-    ValidatorRequirement,
-    WORKSHOP_CHECKS,
-    WORKSHOP_CHECK_MEASUREMENTS,
-    WORKSHOP_CHECK_SUBSTRATES,
-    WORKSHOP_REQUIRED_CHECKS,
-    assert_release_ready,
-)
 from workshop.make.cad.mesh import (
     KERNEL_BODY_OBSERVATION_VERSION,
     STL_INSPECTION_RECEIPT_VERSION,
@@ -28,27 +14,10 @@ from workshop.make.cad.mesh import (
     inspect_stl_path,
     inspect_stl_topology,
 )
-from workshop.make.cad.verification import (
-    CadProjectVerifier,
-    CadVerificationBuild,
-    LOCKED_CAD_GENERATOR_ID,
-    LOCKED_CAD_GENERATOR_VERSION,
-    canonical_cad_project_sources,
-    locked_cad_project_verifier,
-    validate_cad_design_action,
-)
 
 __all__ = [
-    "CadPart",
-    "CadProjectVerifier",
-    "CadProjectManifest",
-    "CadReleaseBundle",
-    "CadVerificationBuild",
     "KERNEL_BODY_OBSERVATION_VERSION",
     "KernelBodyObservation",
-    "LOCKED_CAD_GENERATOR_ID",
-    "LOCKED_CAD_GENERATOR_VERSION",
-    "PhysicalClaim",
     "STL_INSPECTION_RECEIPT_VERSION",
     "StlInspectionLimits",
     "StlPathInspectionError",
@@ -56,18 +25,7 @@ __all__ = [
     "UPSTREAM_MIT_NOTICE",
     "UPSTREAM_SOURCE_COMMIT",
     "UPSTREAM_SOURCE_PATHS",
-    "VerificationCheck",
-    "VerificationReceipt",
-    "ValidatorRequirement",
-    "WORKSHOP_CHECKS",
-    "WORKSHOP_CHECK_MEASUREMENTS",
-    "WORKSHOP_CHECK_SUBSTRATES",
-    "WORKSHOP_REQUIRED_CHECKS",
-    "assert_release_ready",
-    "canonical_cad_project_sources",
     "fits_bed_envelope",
     "inspect_stl_path",
     "inspect_stl_topology",
-    "locked_cad_project_verifier",
-    "validate_cad_design_action",
 ]

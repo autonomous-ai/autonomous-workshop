@@ -1,4 +1,4 @@
-"""Static checks for native inventor-persona contributions."""
+"""Entirely static checks for schema-v7 Inventor contributions."""
 
 from __future__ import annotations
 
@@ -6,15 +6,17 @@ import os
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
-from workshop.errors import ManifestError
+from workshop.contributors.extensions import load_inventor_extension_bundles
 from workshop.contributors.manifest import (
     InventorManifest,
     discover_inventors,
     load_manifest,
-    validate_entrypoints,
 )
 from workshop.contributors.taste import load_taste_header
-from workshop.contributors.contracts import ROUTABLE_INVENTOR_STATUSES
+from workshop.errors import ManifestError
+
+
+ROUTABLE_INVENTOR_STATUSES = frozenset(("active", "experimental"))
 
 
 def _regular_file(path: Path) -> bool:
@@ -22,53 +24,53 @@ def _regular_file(path: Path) -> bool:
 
 
 def validate_contribution(manifest: InventorManifest) -> List[str]:
-    """Return actionable, entirely static problems for one persona folder."""
+    """Return actionable problems without importing or executing extension code."""
 
-    problems = list(validate_entrypoints((manifest,)))
     root = manifest.path.parent
-    if manifest.source.get("kind") == "local" and manifest.schema_version != 6:
+    problems: list[str] = []
+    taste = root / "TASTE.md"
+    if not _regular_file(taste):
         problems.append(
-            "%s: local inventors must use native persona schema_version 6"
-            % manifest.inventor_id
+            "%s: Inventor requires a regular TASTE.md" % manifest.inventor_id
         )
-        return problems
-    if not manifest.native_persona:
-        return problems
-    if not _regular_file(root / "TASTE.md"):
-        problems.append(
-            "%s: local inventor requires a regular TASTE.md"
-            % manifest.inventor_id
-        )
-    if _regular_file(root / "TASTE.md"):
+    else:
         try:
             load_taste_header(root)
         except ManifestError as exc:
-            problems.append("%s: invalid TASTE.md discovery header: %s" % (
-                manifest.inventor_id,
-                exc,
-            ))
-    allowed = {"inventor.json", "TASTE.md", "README.md"}
+            problems.append(
+                "%s: invalid TASTE.md discovery header: %s"
+                % (manifest.inventor_id, exc)
+            )
+
     try:
         children = tuple(root.iterdir())
     except OSError as exc:
         problems.append(
-            "%s: cannot inspect native persona folder: %s"
+            "%s: cannot inspect Inventor folder: %s"
             % (manifest.inventor_id, exc)
         )
         return problems
+    allowed = {"inventor.json", "TASTE.md", "README.md", "skills"}
     extras = sorted(child.name for child in children if child.name not in allowed)
     if extras:
         problems.append(
-            "%s: native persona folder may contain only inventor.json, TASTE.md, "
-            "and optional README.md; remove %s"
-            % (manifest.inventor_id, extras)
+            "%s: Inventor folder may contain only inventor.json, TASTE.md, skills, "
+            "and optional README.md; remove %s" % (manifest.inventor_id, extras)
         )
+
+    try:
+        load_inventor_extension_bundles(manifest)
+    except ManifestError as exc:
+        problems.append(
+            "%s: invalid Inventor extension bundle: %s"
+            % (manifest.inventor_id, exc)
+        )
+
     readme = root / "README.md"
     if readme.exists() or readme.is_symlink():
         if not _regular_file(readme):
             problems.append(
-                "%s: optional README.md must be a regular file"
-                % manifest.inventor_id
+                "%s: optional README.md must be a regular file" % manifest.inventor_id
             )
         else:
             try:
@@ -83,18 +85,9 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
     return problems
 
 
-def run_declared_checks(manifest: InventorManifest) -> List[str]:
-    """Compatibility alias for static validation; native personas run no code."""
-
-    return validate_contribution(manifest)
-
-
 def manifests_for_target(target: Path) -> Sequence[InventorManifest]:
-    """Resolve an inventor folder, manifest, repository, or collection."""
+    """Resolve an Inventor folder, manifest, repository, or collection."""
 
-    # Keep paths absolute before loading manifests.
-    # A relative ``.`` otherwise leaves the manifest parent named ``.`` and
-    # breaks the invariant that an inventor id matches its folder name.
     target = Path(os.path.abspath(os.fspath(target)))
     if target.is_symlink():
         raise ManifestError("contribution target must not be a symlink: %s" % target)
@@ -105,27 +98,20 @@ def manifests_for_target(target: Path) -> Sequence[InventorManifest]:
     return tuple(discover_inventors(target))
 
 
-def check_target(target: Path, *, run: bool = False) -> List[str]:
-    problems: List[str] = []
-    for manifest in manifests_for_target(target):
-        observed = (
-            run_declared_checks(manifest)
-            if run
-            else validate_contribution(manifest)
-        )
-        problems.extend(observed)
-    return problems
+def check_target(target: Path) -> List[str]:
+    """Statically validate every Inventor resolved from ``target``."""
+
+    return [
+        problem
+        for manifest in manifests_for_target(target)
+        for problem in validate_contribution(manifest)
+    ]
 
 
 def validate_inventor_collection(
     root: Path, *, required_routable_id: Optional[str] = None
 ) -> Tuple[InventorManifest, ...]:
-    """Validate contributor-owned catalog structure without importing Match.
-
-    Match owns semantic selection. Contributors owns whether a collection
-    contains complete native personas, which is the only fact atomic
-    scaffolding needs before publication.
-    """
+    """Validate a complete contributor-owned Inventor catalog."""
 
     requested = Path(root)
     if requested.is_symlink():
@@ -163,15 +149,13 @@ def validate_inventor_collection(
             raise ManifestError("inventor folder is missing %s" % missing)
 
     manifests = tuple(discover_inventors(collection))
-    contribution_problems = [
+    problems = [
         problem
         for manifest in manifests
         for problem in validate_contribution(manifest)
     ]
-    if contribution_problems:
-        raise ManifestError("; ".join(contribution_problems))
-    for manifest in manifests:
-        load_taste_header(manifest.path.parent)
+    if problems:
+        raise ManifestError("; ".join(problems))
     if required_routable_id is not None:
         selected = next(
             (
@@ -193,7 +177,6 @@ def validate_inventor_collection(
 __all__ = [
     "check_target",
     "manifests_for_target",
-    "run_declared_checks",
-    "validate_inventor_collection",
     "validate_contribution",
+    "validate_inventor_collection",
 ]

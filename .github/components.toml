@@ -83,18 +83,18 @@ tests = ["tests/playtest/**"]
 docs = ["src/workshop/playtest/README.md"]
 
 [[components]]
-id = "instructions"
-name = "Instructions"
-purpose = "Produce exact in-box instructions and the authenticated private content handoff."
-primary_role = "Instructions maintainer"
-backup_role = "Instructions backup maintainer"
+id = "release"
+name = "Release"
+purpose = "Create the product page, manual, and authenticated private publication handoff."
+primary_role = "Release maintainer"
+backup_role = "Release backup maintainer"
 primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "high"
-source = ["src/workshop/instructions/**"]
-tests = ["tests/instructions/**"]
-docs = ["src/workshop/instructions/README.md"]
+source = ["src/workshop/release/**"]
+tests = ["tests/release/**"]
+docs = ["src/workshop/release/README.md"]
 
 [[components]]
 id = "deliver"
@@ -111,20 +111,6 @@ tests = ["tests/deliver/**"]
 docs = ["src/workshop/deliver/README.md"]
 
 [[components]]
-id = "reviews"
-name = "Reviews"
-purpose = "Authenticate post-delivery customer feedback for future work."
-primary_role = "Reviews maintainer"
-backup_role = "Reviews backup maintainer"
-primary_github = ["@deehw"]
-backup_github = []
-backup_status = "vacant"
-risk = "standard"
-source = ["src/workshop/reviews/**"]
-tests = ["tests/reviews/**"]
-docs = ["src/workshop/reviews/README.md"]
-
-[[components]]
 id = "workflow"
 name = "Workflow"
 purpose = "Sequence Workshop stages, retries, feedback, and checkpoints without owning stage behavior."
@@ -134,7 +120,7 @@ primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = ["src/workshop/workflow/**", "src/workshop/bootstrap.py"]
+source = ["src/workshop/workflow/**"]
 tests = ["tests/workflow/**", "tests/integration/**", "tests/end_to_end/**"]
 docs = ["src/workshop/workflow/README.md", "docs/ARCHITECTURE.md"]
 
@@ -169,16 +155,16 @@ docs = ["src/workshop/artifacts/README.md"]
 [[components]]
 id = "runtime"
 name = "Runtime"
-purpose = "Own durable events, leases, budgets, retries, effects, and persistence."
+purpose = "Own native-session adapters, product-run agent assets, durable state, budgets, and host-authorized effects."
 primary_role = "Runtime maintainer"
 backup_role = "Runtime backup maintainer"
 primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = ["src/workshop/runtime/**"]
+source = ["src/workshop/runtime/**", ".agents/product-run/**", ".agents/skills/autonomous-workshop/**"]
 tests = ["tests/runtime/**"]
-docs = ["src/workshop/runtime/README.md", "docs/MIGRATION.md"]
+docs = ["src/workshop/runtime/README.md", "docs/NATIVE_AGENT_RUNTIME.md"]
 
 [[components]]
 id = "integrations"
@@ -197,7 +183,7 @@ docs = ["src/workshop/integrations/README.md"]
 [[components]]
 id = "contributors"
 name = "Contributor SDK"
-purpose = "Own Taste, inventor manifests, discovery, validation, and scaffolding."
+purpose = "Own Taste, inventor manifests, discovery, validation, and inventor-owned Codex skill extensions."
 primary_role = "Contributor SDK maintainer"
 backup_role = "Contributor SDK backup maintainer"
 primary_github = ["@deehw"]
@@ -246,6 +232,6 @@ primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = [".github/**", ".cadgen-budget.json", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "src/workshop/outcomes.py", "docs/**", "tools/**", "web/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "snapshots.lock.json", "upstreams.json", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
+source = [".github/**", ".gitattributes", ".gitignore", "src/workshop/__init__.py", "src/workshop/_validation.py", "src/workshop/errors.py", "docs/**", "tools/**", "web/**", "changes/**", "MANIFEST.in", "setup.py", "pyproject.toml", "uv.lock", "LICENSE", "THIRD_PARTY_NOTICES.md", "CHANGELOG.md", "MAINTAINERS.md", "GOVERNANCE.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "SUPPORT.md"]
 tests = ["tests/architecture/**", "tests/packaging/**", "tests/fixtures/**"]
 docs = ["README.md", "CONTRIBUTING.md", "src/cli/README.md"]

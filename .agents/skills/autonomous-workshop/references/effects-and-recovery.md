@@ -1,8 +1,9 @@
 # Effects, authorization, and recovery
 
-Read this reference before an authenticated external operation, resume, retry,
-ambiguous result, or recovery. The durable workspace and host event store are
-the source of truth; neither chat text nor model memory proves an effect.
+Read this reference on resume, retry, an effect-related wait, ambiguous result,
+or recovery. The durable workspace and host state are the source of truth;
+neither chat text nor model memory proves an effect. The product-run agent does
+not perform authenticated external operations itself.
 
 ## Authorization boundary
 
@@ -16,6 +17,10 @@ before public publication, spending or purchasing, starting manufacture,
 buying postage, shipment, or another irreversible/customer-visible action.
 Private draft creation also stays behind the host boundary and occurs only
 when the recorded run policy permits it.
+
+The CLI defaults to private output. `--publish` records a prospective public
+publication request in host-only state; it never exposes authority or
+credentials to Codex and does not authorize manufacture or delivery.
 
 Authorization is narrow and prospective. Approval for one artifact hash,
 environment, account, price, or shipment does not cover changed bytes, another

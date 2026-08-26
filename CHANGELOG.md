@@ -29,7 +29,7 @@ Keep a Changelog and uses semantic versioning for released distributions.
   graph plus one-way provider boundaries in architecture tests.
 - Move durable receipt and publication contracts, including their byte-identical
   schemas, from Integrations to Runtime; external adapters now implement ports
-  declared by Make, Instructions, Deliver, and Runtime.
+  declared by Make, Release, Deliver, and Runtime.
 - Compose default workers only in `workshop.bootstrap`; bundled and generated
   inventor profiles call that application boundary explicitly.
 - Materialize an installed inventor catalog into a content-addressed,

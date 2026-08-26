@@ -1,6 +1,6 @@
-"""Public Deliver-stage contracts and fulfillment port."""
+"""Typed evidence contracts for a separately authorized physical delivery."""
 
 from workshop.deliver.contracts import DeliverContext, Delivered
-from workshop.deliver.ports import DeliveryDoor, DeliveryPort
+from workshop.deliver.evidence import DeliveryEvidenceReceipt
 
-__all__ = ["DeliverContext", "Delivered", "DeliveryDoor", "DeliveryPort"]
+__all__ = ["DeliverContext", "Delivered", "DeliveryEvidenceReceipt"]

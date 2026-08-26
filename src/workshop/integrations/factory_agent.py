@@ -20,7 +20,7 @@ from workshop.errors import (
     PublishError,
     ReceiptError,
 )
-from workshop.runtime import Receipt
+from workshop.runtime.contracts import Receipt
 from workshop.integrations.shop import (
     DEFAULT_SHOP_API,
     HTTP_TIMEOUT_SECONDS,
@@ -34,7 +34,7 @@ from workshop.integrations.shop import (
     urllib_transport,
     _design_with_normalized_currency,
 )
-from workshop.runtime import InventorStore
+from workshop.runtime.store import InventorStore
 
 
 _INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")

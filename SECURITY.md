@@ -50,7 +50,7 @@ Particularly important reports include:
 - command, prompt, path, archive, or schema input escaping its intended
   sandbox or component boundary;
 - lock, provenance, signature, receipt, canonicalization, or hash bypass;
-- a Playtest, Instructions, delivery, or publishing floor that can be skipped
+- a Playtest, Release, delivery, or publishing floor that can be skipped
   or falsely reported as passed;
 - retries that can duplicate a Factory, carrier, publication, or other outside
   effect after an ambiguous outcome;

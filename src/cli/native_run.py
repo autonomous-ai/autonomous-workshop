@@ -20,11 +20,16 @@ from typing import Any, Mapping, Optional, Sequence
 from workshop.errors import (
     ArtifactError,
     ContractError,
+    ManifestError,
     StateConflict,
     TransitionError,
     WorkshopError,
 )
-from workshop.contributors import load_taste
+from workshop.contributors import (
+    fingerprint_extension_skill,
+    load_manifest,
+    load_taste,
+)
 from workshop.integrations.factory_agent import (
     FactoryAgentReleaseWriter,
     FactoryAgentSession,
@@ -88,11 +93,24 @@ _SESSION_CHECKPOINT_NAME = "codex-session.json"
 _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
+_RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_NATIVE_TURNS = 32
+_FACTORY_CREDENTIALS_NEED = (
+    "Factory credentials for the selected Inventor are missing or malformed; "
+    "configure a complete matching username/password pair, then resume this run."
+)
+
+
+class _FactoryCredentialsUnavailable(Exception):
+    """Internal signal for a host configuration wait before any Factory effect."""
+
+    def __init__(self, inventor_id: str) -> None:
+        self.inventor_id = inventor_id
+        super().__init__(_FACTORY_CREDENTIALS_NEED)
 
 
 @dataclass(frozen=True)
@@ -377,18 +395,52 @@ def _persona_catalog(
             manifest_content = (run_root / manifest_relative).read_bytes()
         except OSError as exc:
             raise StateConflict("materialized inventor manifest is unavailable") from exc
-        manifest = _strict_json_bytes(
+        manifest_document = _strict_json_bytes(
             manifest_content, label="materialized inventor manifest"
         )
-        capabilities = manifest.get("capabilities")
+        try:
+            manifest = load_manifest(run_root / manifest_relative)
+        except ManifestError as exc:
+            raise StateConflict(
+                "materialized inventor manifest is not a native persona"
+            ) from exc
+        capabilities = tuple(manifest.capabilities)
         if (
-            manifest.get("schema_version") != 6
-            or manifest.get("id") != inventor_id
-            or not isinstance(capabilities, list)
+            manifest_document != manifest.to_dict()
+            or manifest.schema_version != 7
+            or manifest.inventor_id != inventor_id
             or len(capabilities) != 1
             or capabilities[0] not in PLAYTHING_LANES
+            or not manifest.extensions
         ):
             raise StateConflict("materialized inventor manifest is not a native persona")
+        for extension in manifest.extensions:
+            skill_prefix = ".agents/skills/%s/" % extension.name
+            try:
+                fingerprint = fingerprint_extension_skill(
+                    run_root / ".agents" / "skills" / extension.name,
+                    expected_name=extension.name,
+                )
+            except ManifestError as exc:
+                raise StateConflict(
+                    "materialized inventor skill differs from its manifest"
+                ) from exc
+            expected = {
+                skill_prefix + entry.path: entry.sha256
+                for entry in fingerprint.entries
+            }
+            observed = {
+                path: sha256
+                for path, sha256 in checkpoint.input_sha256s.items()
+                if path.startswith(skill_prefix)
+            }
+            if (
+                fingerprint.artifact_sha256 != extension.artifact_sha256
+                or observed != expected
+            ):
+                raise StateConflict(
+                    "materialized inventor skill differs from its manifest"
+                )
         personas.append(
             PersonaCatalogEntry(
                 inventor_id=inventor_id,
@@ -678,7 +730,8 @@ def _prepare_stage_input(
                     inputs = {
                         **common,
                         "round": checkpoint.round_index,
-                        "playtested": {
+                        "playtested": playtested.to_dict(),
+                        "playtested_artifact": {
                             **_artifact_binding(playtested_artifact),
                             "playtested_sha256": playtested.playtested_sha256,
                             "evidence_artifact_sha256": (
@@ -1010,6 +1063,116 @@ def _release_effect_path(run: AgentRun) -> Path:
     return run.host_state_root / "release-effect.json"
 
 
+def _release_effect_wait_path(run: AgentRun) -> Path:
+    return run.host_state_root / _RELEASE_EFFECT_WAIT_NAME
+
+
+def _read_release_effect_wait(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    """Read a credential-only Release wait bound to the current checkpoint."""
+
+    path = _release_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return None
+    try:
+        identity = path.lstat()
+        content = path.read_bytes()
+    except OSError as exc:
+        raise StateConflict("Release effect wait is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o600
+    ):
+        raise StateConflict("Release effect wait must be a private file")
+    try:
+        value = _strict_json_bytes(content, label="Release effect wait")
+    except ContractError as exc:
+        raise StateConflict("Release effect wait is invalid") from exc
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256",
+        "proposal_subject_sha256",
+        "proposal_outcome_sha256",
+        "inventor_id",
+        "need",
+    }
+    hash_fields = (
+        "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256",
+        "proposal_subject_sha256",
+        "proposal_outcome_sha256",
+    )
+    if (
+        set(value) != expected
+        or value["schema_version"] != 1
+        or value["kind"] != "autonomous-workshop.release-effect-wait"
+        or value["product_id"] != checkpoint.product_id
+        or value["stage"] != "release"
+        or checkpoint.stage != "release"
+        or checkpoint.status != "waiting"
+        or value["waiting_checkpoint_sha256"] != checkpoint.checkpoint_sha256
+        or not isinstance(value["inventor_id"], str)
+        or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value["inventor_id"])
+        is None
+        or value["need"] != _FACTORY_CREDENTIALS_NEED
+        or any(
+            not isinstance(value[name], str)
+            or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None
+            for name in hash_fields
+        )
+    ):
+        raise StateConflict("Release effect wait belongs to different state")
+    return value
+
+
+def _write_release_effect_wait(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proposal: AgentOutcomeProposal,
+    inventor_id: str,
+) -> None:
+    if checkpoint.stage != "release" or checkpoint.status != "waiting":
+        raise TransitionError("Release effect wait requires a waiting Release")
+    _write_private_json(
+        _release_effect_wait_path(run),
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.release-effect-wait",
+            "product_id": checkpoint.product_id,
+            "stage": "release",
+            "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "proposal_checkpoint_sha256": proposal.checkpoint_sha256,
+            "proposal_subject_sha256": proposal.subject_sha256,
+            "proposal_outcome_sha256": proposal.outcome.sha256,
+            "inventor_id": inventor_id,
+            "need": _FACTORY_CREDENTIALS_NEED,
+        },
+    )
+
+
+def _remove_release_effect_wait(run: AgentRun) -> None:
+    path = _release_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return
+    try:
+        identity = path.lstat()
+    except OSError as exc:
+        raise StateConflict("Release effect wait is unavailable") from exc
+    if path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise StateConflict("Release effect wait must be a regular file")
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("Release effect wait could not be removed") from exc
+
+
 def _read_release_effect(run: AgentRun, release: NativeRelease) -> Optional[Receipt]:
     path = _release_effect_path(run)
     if not path.exists() and not path.is_symlink():
@@ -1109,11 +1272,36 @@ def _execute_release_effect(
         playtested=package.playtested,
         workspace=run.run_root,
     )
-    credentials = _factory_credentials(assignment.selected_inventor_id)
     receipt = _read_release_effect(run, release)
+    credentials: Any = None
+    if receipt is None or (publish_requested and receipt.is_verified_draft):
+        try:
+            credentials = _factory_credentials(assignment.selected_inventor_id)
+        except ContractError:
+            raise _FactoryCredentialsUnavailable(
+                assignment.selected_inventor_id
+            ) from None
     if receipt is None:
+        store = InventorStore(run.host_state_root / "factory.sqlite3")
+        product_id = run.snapshot().product_id
+        try:
+            store.register_product(
+                product_id,
+                "release",
+                artifact_sha256=release.product_artifact_sha256,
+            )
+        except StateConflict:
+            product = store.get_product(product_id)
+            if (
+                product.get("stage") != "release"
+                or product.get("artifact_sha256")
+                != release.product_artifact_sha256
+            ):
+                raise StateConflict(
+                    "Factory publication state belongs to different product bytes"
+                )
         writer = FactoryAgentReleaseWriter(
-            InventorStore(run.host_state_root / "factory.sqlite3"),
+            store,
             assignment.selected_inventor_id,
             credentials,
         )
@@ -1128,7 +1316,7 @@ def _execute_release_effect(
         package.root,
         release.product_artifact_sha256,
         package.manual_path,
-        package.claims,
+        release.to_dict()["product"]["claims"],
         receipt,
     )
     return product_release, receipt
@@ -1261,14 +1449,31 @@ def _process_agent_outcome(
             context=context,
         )
     elif checkpoint.stage == "release":
-        decision, additional = _evaluate_release_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-            publish_requested=publish_requested,
-        )
+        try:
+            decision, additional = _evaluate_release_stage(
+                proposal,
+                run=run,
+                checkpoint=checkpoint,
+                subject_sha256=subject_sha256,
+                context=context,
+                publish_requested=publish_requested,
+            )
+        except _FactoryCredentialsUnavailable as unavailable:
+            waiting = AgentOutcome(
+                stage="release",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(_FACTORY_CREDENTIALS_NEED,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_release_effect_wait(
+                run,
+                updated,
+                proposal=proposal,
+                inventor_id=unavailable.inventor_id,
+            )
+            return updated
     else:  # pragma: no cover - guarded by packet preparation
         raise TransitionError("native stage cannot consume an agent proposal")
 
@@ -1393,7 +1598,16 @@ def _native_receipt(
             "native product-run session."
         ),
     }
+    needs: tuple[str, ...] = ()
     if paths is not None:
+        if checkpoint.stage == "release" and checkpoint.status == "waiting":
+            wait_run = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            )
+            effect_wait = _read_release_effect_wait(wait_run, checkpoint)
+            if effect_wait is not None:
+                needs = (effect_wait["need"],)
+                publication["reason"] = effect_wait["need"]
         effect = paths.host_state / "release-effect.json"
         if effect.exists() or effect.is_symlink():
             try:
@@ -1441,6 +1655,8 @@ def _native_receipt(
         "native_turns": turns,
         "publication": publication,
     }
+    if needs:
+        receipt["needs"] = list(needs)
     if session is not None:
         receipt["session"] = session.to_dict()
     return receipt
@@ -1509,6 +1725,18 @@ def resume_native_run(
         create=False,
     )
     if checkpoint.status == "waiting":
+        effect_wait = _read_release_effect_wait(run, checkpoint)
+        if effect_wait is not None:
+            try:
+                _factory_credentials(effect_wait["inventor_id"])
+            except ContractError:
+                return _native_receipt(
+                    checkpoint,
+                    paths=paths,
+                    action="waiting-for-factory-credentials",
+                    publish_requested=authorization["publish_requested"],
+                )
+            _remove_release_effect_wait(run)
         checkpoint = run.resume()
     elif checkpoint.status in ("failed", "complete"):
         return _native_receipt(

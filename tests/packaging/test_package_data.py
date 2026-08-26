@@ -1,7 +1,11 @@
+import json
+import shutil
+import stat
 import tempfile
 import unittest
 from pathlib import Path
 
+from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.runtime.package_data import (
     BUNDLED_INVENTOR_FILES,
     BUNDLED_INVENTOR_IDS,
@@ -24,14 +28,9 @@ SCHEMA_OWNERS = {
     "artifact-manifest.schema.json": "artifacts",
     "inventor.schema.json": "contributors",
     "cad-project.schema.json": "make",
-    "maker-mark.schema.json": "make",
     "validator-policy.schema.json": "make",
     "verification-receipt.schema.json": "make",
-    "gate-result.schema.json": "playtest",
-    "inspection-result.schema.json": "playtest",
-    "playtest-result.schema.json": "playtest",
     "receipt.schema.json": "runtime",
-    "stamp.schema.json": "runtime",
 }
 
 
@@ -66,14 +65,16 @@ class PackageDataTest(unittest.TestCase):
         catalog = package / "contributors" / "_catalog" / "inventors"
         for inventor_id in BUNDLED_INVENTOR_IDS:
             destination = catalog / inventor_id
-            destination.mkdir(parents=True)
-            for filename in BUNDLED_INVENTOR_FILES:
-                (destination / filename).write_bytes(
-                    (source / inventor_id / filename).read_bytes()
-                )
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(
+                source / inventor_id,
+                destination,
+                copy_function=shutil.copy2,
+                symlinks=True,
+            )
         return package / "runtime" / "package_data.py", catalog
 
-    def test_packaged_catalog_is_validated_without_executing_profiles(self):
+    def test_packaged_catalog_rejects_undeclared_code_without_executing_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             package_file, catalog = self._fake_installed_package(root)
@@ -82,10 +83,8 @@ class PackageDataTest(unittest.TestCase):
                 "from pathlib import Path\nPath(%r).write_text('bad')\n" % str(marker),
                 encoding="utf-8",
             )
-            self.assertEqual(packaged_inventors_root(package_file), catalog.resolve())
-            self.assertEqual(
-                packaged_inventor_catalog_root(package_file), catalog.resolve().parent
-            )
+            with self.assertRaisesRegex(PackageDataError, "schema-v7 inventory"):
+                packaged_inventors_root(package_file)
             self.assertFalse(marker.exists())
 
     def test_read_only_catalog_lookup_never_creates_workshop_home(self):
@@ -134,10 +133,58 @@ class PackageDataTest(unittest.TestCase):
                         (materialized / "inventors" / inventor_id / filename).read_bytes(),
                         (catalog / inventor_id / filename).read_bytes(),
                     )
+                source_folder = catalog / inventor_id
+                target_folder = materialized / "inventors" / inventor_id
+                for source_file in source_folder.rglob("*"):
+                    if not source_file.is_file() or source_file.is_symlink():
+                        continue
+                    relative = source_file.relative_to(source_folder)
+                    target_file = target_folder / relative
+                    self.assertEqual(target_file.read_bytes(), source_file.read_bytes())
+                    self.assertEqual(
+                        bool(stat.S_IMODE(target_file.stat().st_mode) & 0o111),
+                        bool(stat.S_IMODE(source_file.stat().st_mode) & 0o111),
+                    )
             self.assertEqual(
                 materialize_bundled_inventors(destination, package_file=package_file),
                 materialized,
             )
+
+    def test_materialized_catalog_preserves_declared_executable_skill_mode(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package_file, catalog = self._fake_installed_package(root)
+            skill = catalog / "alice" / "skills" / "alice-inventor"
+            script = skill / "scripts" / "shape"
+            script.parent.mkdir()
+            script.write_bytes(b"#!/bin/sh\nexit 0\n")
+            script.chmod(0o755)
+            fingerprint = fingerprint_extension_skill(
+                skill.resolve(), expected_name="alice-inventor"
+            )
+            manifest_path = catalog / "alice" / "inventor.json"
+            document = json.loads(manifest_path.read_text(encoding="utf-8"))
+            document["extensions"][0]["artifact_sha256"] = (
+                fingerprint.artifact_sha256
+            )
+            manifest_path.write_text(
+                json.dumps(document, sort_keys=True) + "\n", encoding="utf-8"
+            )
+
+            materialized = materialize_bundled_inventors(
+                root / "catalogs", package_file=package_file
+            )
+            copied = (
+                materialized
+                / "inventors"
+                / "alice"
+                / "skills"
+                / "alice-inventor"
+                / "scripts"
+                / "shape"
+            )
+            self.assertEqual(copied.read_bytes(), script.read_bytes())
+            self.assertTrue(stat.S_IMODE(copied.stat().st_mode) & 0o111)
 
     def test_materialized_catalog_fails_closed_after_identity_change(self):
         with tempfile.TemporaryDirectory() as temporary:

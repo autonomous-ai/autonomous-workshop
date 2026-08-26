@@ -1,8 +1,8 @@
 # Make and Playtest contracts
 
-The host supplies the native session identity, absolute workspace, durable
-checkpoint, exact sealed upstream artifacts, capability limits, current round,
-round budget, and authorization scope. Verify them before acting.
+Read `STAGE.json`. It binds the exact sealed upstream artifacts, lane blueprint,
+canonical output paths, current round, round limit, and any prior Playtest
+feedback. Verify those bytes before acting.
 
 ## Make
 
@@ -16,17 +16,28 @@ deterministic checkers, and repair concrete findings within the round budget.
 Map mechanisms, rules, dimensions, materials, tolerances, and limitations to
 real artifact bytes rather than prose assertions.
 
-**Artifact and gate:** Leave a complete artifact tree, content-addressed
-manifest, product summary, and required CAD/manufacturing verification
-receipts. Return only compact paths, hashes, gate evidence, needs, and a
-proposed transition. The host seals the exact bytes and validates the canonical
-`Made` and CAD release contracts. A passing narrative never overrides a failed
-or absent measurement.
+**Artifact and gate:** Leave the product tree at the exact `product_root` from
+`STAGE.json`. It must include the required root product metadata, CAD project,
+assembled STEP/STL outputs, and a deterministic CAD verification file. Then
+run:
+
+```bash
+python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . make \
+  --product-root <STAGE product_root> \
+  --cad-project-path <path inside product root> \
+  --cad-verification-path <path inside product root>
+```
+
+The finalizer hashes the complete tree and writes the canonical Made contract.
+The host independently copies the tree into an isolated verifier, reruns the
+trusted CAD gate, compares exact bytes, and seals the accepted tree. A passing
+narrative never overrides a failed or absent measurement.
 
 ## Playtest
 
-**Input:** One sealed Make revision, its exact manifest/hash, lane tasks,
-deterministic evidence, and fixed goal.
+**Input:** One sealed Make revision, its exact manifest/hash, lane tasks, and
+the required check ids in `STAGE.json`.
 
 **Codex work:** Review the exact artifact from first-time, optimizing,
 exploratory, and adversarial player perspectives. Run the required seeded
@@ -34,8 +45,20 @@ simulations and artifact inspections through narrow tools. Keep model judgment
 separate from deterministic observations; never invent physical or human test
 results.
 
-**Artifact and gate:** Leave artifact-bound Playtest evidence plus structured,
-evidence-linked feedback. The host validates the canonical `Playtested`
-contract. Any `improve` or `block` finding returns to Make, consumes a bounded
-round, and invalidates Playtest, Release, and Deliver evidence for the old
-bytes. Only a pass for the current artifact advances.
+**Artifact and gate:** Leave the exact evidence tree requested by `STAGE.json`
+and one authored JSON source with exactly `checks`, `feedback`, and `verdict`.
+Every required check id must appear once and cite its config and evidence file.
+Then run:
+
+```bash
+python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . playtest \
+  --source <playtest-source.json> \
+  --evidence-root <STAGE evidence_root>
+```
+
+The host validates the canonical Playtested contract, exact evidence tree, and
+reruns the trusted CAD gate. Any `improve` or `block` verdict must have
+actionable, evidence-linked feedback and returns to Make. It consumes a bounded
+round and invalidates downstream evidence. Only a pass for the current Made
+artifact advances to Release.

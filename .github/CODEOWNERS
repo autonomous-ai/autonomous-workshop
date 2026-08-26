@@ -15,20 +15,16 @@
 /tests/make/ @deehw
 /src/workshop/playtest/ @deehw
 /tests/playtest/ @deehw
-/src/workshop/instructions/ @deehw
-/tests/instructions/ @deehw
+/src/workshop/release/ @deehw
+/tests/release/ @deehw
 /src/workshop/deliver/ @deehw
 /tests/deliver/ @deehw
-/src/workshop/reviews/ @deehw
-/tests/reviews/ @deehw
 
 # Orchestration and platform
 /src/workshop/workflow/ @deehw
-/src/workshop/bootstrap.py @deehw
 /src/workshop/__init__.py @deehw
 /src/workshop/_validation.py @deehw
 /src/workshop/errors.py @deehw
-/src/workshop/outcomes.py @deehw
 /tests/workflow/ @deehw
 /tests/integration/ @deehw
 /tests/end_to_end/ @deehw
@@ -38,6 +34,8 @@
 /tests/artifacts/ @deehw
 /src/workshop/runtime/ @deehw
 /tests/runtime/ @deehw
+/.agents/product-run/ @deehw
+/.agents/skills/autonomous-workshop/ @deehw
 /src/workshop/integrations/ @deehw
 /tests/integrations/ @deehw
 /src/workshop/contributors/ @deehw
@@ -50,22 +48,19 @@
 /tests/inventors/ @deehw
 /web/ @deehw
 
-# Repository, compatibility, and release controls
+# Repository and release controls
 /.github/ @deehw
 /docs/ @deehw
 /tools/ @deehw
 /tests/architecture/ @deehw
 /tests/packaging/ @deehw
 /tests/fixtures/ @deehw
-/.cadgen-budget.json @deehw
 /.gitattributes @deehw
 /.gitignore @deehw
 /MANIFEST.in @deehw
 /setup.py @deehw
 /pyproject.toml @deehw
 /uv.lock @deehw
-/snapshots.lock.json @deehw
-/upstreams.json @deehw
 /LICENSE @deehw
 /THIRD_PARTY_NOTICES.md @deehw
 /CHANGELOG.md @deehw

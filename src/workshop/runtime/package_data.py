@@ -1,10 +1,10 @@
 """Resolve filesystem-backed data shipped inside the Workshop package.
 
-Schemas and skills are read in place. Bundled Inventors are different: their
-Workshop runs create durable state, so an installed catalog must first be
-copied byte-for-byte out of ``site-packages`` into a user-writable,
-content-addressed home. Discovery in this module only reads identity files; it
-never imports or executes a profile.
+Schemas and shared skills are read in place. Bundled Inventors are different:
+their Workshop runs create durable state, so each exact schema-v7 identity and
+declared Codex skill tree can be copied byte-for-byte out of ``site-packages``
+into a user-writable, content-addressed home. Validation is static; this module
+never imports or executes contributor code.
 """
 
 from __future__ import annotations
@@ -19,14 +19,19 @@ import tempfile
 from types import MappingProxyType
 from typing import Mapping, Optional
 
-from workshop.errors import WorkshopError
+from workshop.contributors.extensions import (
+    MAX_EXTENSION_FILE_BYTES,
+    load_inventor_extension_bundles,
+)
+from workshop.contributors.manifest import load_manifest
+from workshop.errors import ManifestError, WorkshopError
 
 
 BUNDLED_INVENTOR_IDS = ("alice", "bob", "eve", "ivy", "leo")
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 PRODUCT_RUN_DOMAIN_SKILLS = ("cad", "product-to-cad", "step-parts")
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024
-_CATALOG_HASH_DOMAIN = b"autonomous-workshop-bundled-inventors-v1\0"
+_CATALOG_HASH_DOMAIN = b"autonomous-workshop-bundled-inventors-v2\0"
 
 
 class PackageDataError(WorkshopError):
@@ -84,8 +89,10 @@ def product_run_domain_skill_roots(
     return MappingProxyType(selected)
 
 
-def _read_regular_bytes(path: Path) -> bytes:
-    """Read one bounded package asset without following a final symlink."""
+def _read_regular_payload(
+    path: Path, *, maximum: int = _MAX_BUNDLED_FILE_BYTES
+) -> tuple[bytes, int]:
+    """Read one bounded package asset and normalize its executable mode."""
 
     try:
         before = path.lstat()
@@ -93,10 +100,10 @@ def _read_regular_bytes(path: Path) -> bytes:
         raise PackageDataError("missing bundled Inventor file: %s" % path) from exc
     if path.is_symlink() or not stat.S_ISREG(before.st_mode):
         raise PackageDataError("bundled Inventor file is not regular: %s" % path)
-    if before.st_size < 1 or before.st_size > _MAX_BUNDLED_FILE_BYTES:
+    if before.st_size < 1 or before.st_size > maximum:
         raise PackageDataError(
             "bundled Inventor file must contain 1 to %d bytes: %s"
-            % (_MAX_BUNDLED_FILE_BYTES, path)
+            % (maximum, path)
         )
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
     try:
@@ -115,13 +122,13 @@ def _read_regular_bytes(path: Path) -> bytes:
         while True:
             chunk = os.read(
                 descriptor,
-                min(64 * 1024, _MAX_BUNDLED_FILE_BYTES + 1 - observed),
+                min(64 * 1024, maximum + 1 - observed),
             )
             if not chunk:
                 break
             chunks.append(chunk)
             observed += len(chunk)
-            if observed > _MAX_BUNDLED_FILE_BYTES:
+            if observed > maximum:
                 raise PackageDataError("bundled Inventor file is too large: %s" % path)
         after = os.fstat(descriptor)
         if (
@@ -130,24 +137,107 @@ def _read_regular_bytes(path: Path) -> bytes:
             or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
         ):
             raise PackageDataError("bundled Inventor file changed while reading: %s" % path)
-        return b"".join(chunks)
+        mode = 0o500 if opened.st_mode & 0o111 else 0o400
+        return b"".join(chunks), mode
     finally:
         os.close(descriptor)
 
 
-def _catalog_payloads(root: Path) -> tuple[tuple[str, bytes], ...]:
-    """Validate and snapshot the five package-owned Inventor identities."""
+def _catalog_payloads(
+    root: Path, *, allow_runtime_state: bool = False
+) -> tuple[tuple[str, bytes, int], ...]:
+    """Validate and snapshot exact schema-v7 identities and skill trees."""
 
     if root.is_symlink() or not root.is_dir():
         raise PackageDataError("bundled Inventor catalog is not a regular directory: %s" % root)
-    payloads = []
+    try:
+        root_entries = tuple(root.iterdir())
+    except OSError as exc:
+        raise PackageDataError("cannot list bundled Inventor catalog: %s" % root) from exc
+    observed_ids = set()
+    for entry in root_entries:
+        if entry.is_symlink() or not entry.is_dir():
+            raise PackageDataError(
+                "bundled Inventor catalog may contain only real directories: %s"
+                % entry
+            )
+        observed_ids.add(entry.name)
+    if observed_ids != set(BUNDLED_INVENTOR_IDS):
+        raise PackageDataError("bundled Inventor catalog inventory is invalid")
+
+    payloads: list[tuple[str, bytes, int]] = []
     for inventor_id in BUNDLED_INVENTOR_IDS:
         folder = root / inventor_id
         if folder.is_symlink() or not folder.is_dir():
             raise PackageDataError("missing bundled Inventor folder: %s" % folder)
+        try:
+            children = tuple(folder.iterdir())
+        except OSError as exc:
+            raise PackageDataError(
+                "cannot list bundled Inventor folder: %s" % folder
+            ) from exc
+        required = {"TASTE.md", "inventor.json", "skills"}
+        observed = set()
+        for child in children:
+            if child.is_symlink():
+                raise PackageDataError("bundled Inventor folder contains a symlink")
+            if child.name == ".workshop" and allow_runtime_state:
+                if not child.is_dir():
+                    raise PackageDataError("Inventor runtime state must be a directory")
+                continue
+            observed.add(child.name)
+        if observed != required:
+            raise PackageDataError(
+                "bundled Inventor folder differs from its schema-v7 inventory: %s"
+                % folder
+            )
+
         for filename in BUNDLED_INVENTOR_FILES:
             relative = "%s/%s" % (inventor_id, filename)
-            payloads.append((relative, _read_regular_bytes(folder / filename)))
+            content, mode = _read_regular_payload(folder / filename)
+            if mode != 0o400:
+                raise PackageDataError(
+                    "bundled Inventor identity file must not be executable: %s"
+                    % (folder / filename)
+                )
+            payloads.append((relative, content, mode))
+
+        try:
+            manifest = load_manifest(folder / "inventor.json")
+            if manifest.schema_version != 7 or manifest.inventor_id != inventor_id:
+                raise PackageDataError(
+                    "bundled Inventors must use the native schema-v7 skill contract"
+                )
+            bundles = load_inventor_extension_bundles(manifest)
+        except ManifestError as exc:
+            raise PackageDataError(
+                "bundled Inventor extension inventory is invalid: %s" % folder
+            ) from exc
+        if not bundles:
+            raise PackageDataError(
+                "bundled schema-v7 Inventor declares no Codex skill: %s" % folder
+            )
+        for bundle in bundles:
+            for entry in bundle.manifest.entries:
+                path = bundle.root.joinpath(*Path(entry.path).parts)
+                content, mode = _read_regular_payload(
+                    path, maximum=MAX_EXTENSION_FILE_BYTES
+                )
+                expected_mode = 0o500 if entry.executable else 0o400
+                if mode != expected_mode:
+                    raise PackageDataError(
+                        "bundled Inventor skill mode differs from its manifest: %s"
+                        % path
+                    )
+                relative = "%s/%s/%s" % (
+                    inventor_id,
+                    bundle.extension.path,
+                    entry.path,
+                )
+                payloads.append((relative, content, mode))
+    payloads.sort(key=lambda item: item[0])
+    if len(payloads) != len({relative for relative, _, _ in payloads}):
+        raise PackageDataError("bundled Inventor catalog paths collide")
     return tuple(payloads)
 
 
@@ -156,7 +246,7 @@ def packaged_inventors_root(package_file: Optional[Path] = None) -> Optional[Pat
 
     ``None`` means this is an editable/source layout with no embedded catalog.
     A present but incomplete package is an installation error and fails closed.
-    No profile code is imported during validation.
+    No contributor code is imported or executed during validation.
     """
 
     root = packaged_data_root(
@@ -182,12 +272,13 @@ def packaged_inventor_catalog_root(
     return None if collection is None else collection.parent
 
 
-def _payloads_sha256(payloads: tuple[tuple[str, bytes], ...]) -> str:
+def _payloads_sha256(payloads: tuple[tuple[str, bytes, int], ...]) -> str:
     digest = hashlib.sha256(_CATALOG_HASH_DOMAIN)
-    for relative, payload in payloads:
+    for relative, payload, mode in payloads:
         name = relative.encode("utf-8")
         digest.update(len(name).to_bytes(4, "big"))
         digest.update(name)
+        digest.update(mode.to_bytes(2, "big"))
         digest.update(len(payload).to_bytes(8, "big"))
         digest.update(payload)
     return digest.hexdigest()
@@ -222,9 +313,19 @@ def default_workshop_home(environment: Optional[Mapping[str, str]] = None) -> Pa
     return Path.home() / ".local" / "share" / "autonomous-workshop"
 
 
-def _assert_materialized_catalog(root: Path, expected: tuple[tuple[str, bytes], ...]) -> None:
-    actual = dict(_catalog_payloads(root / "inventors"))
-    if actual != dict(expected):
+def _assert_materialized_catalog(
+    root: Path, expected: tuple[tuple[str, bytes, int], ...]
+) -> None:
+    actual = {
+        relative: (payload, mode)
+        for relative, payload, mode in _catalog_payloads(
+            root / "inventors", allow_runtime_state=True
+        )
+    }
+    expected_by_path = {
+        relative: (payload, mode) for relative, payload, mode in expected
+    }
+    if actual != expected_by_path:
         raise PackageDataError(
             "materialized bundled Inventor catalog differs from its installed package: %s"
             % root
@@ -236,12 +337,12 @@ def materialize_bundled_inventors(
     *,
     package_file: Optional[Path] = None,
 ) -> Path:
-    """Return a writable catalog root containing exact installed identities.
+    """Return a writable catalog root containing exact installed Inventors.
 
     The returned path contains an ``inventors/`` collection and is keyed by all
-    identity bytes. Existing files are never overwritten. Inventor runtime state
-    may therefore live below this user-owned root without touching
-    ``site-packages``.
+    identity and skill bytes plus executable modes. Existing files are never
+    overwritten. Inventor runtime state may therefore live below this
+    user-owned root without touching ``site-packages``.
     """
 
     source = packaged_inventors_root(package_file)
@@ -270,11 +371,11 @@ def materialize_bundled_inventors(
     try:
         collection = staging / "inventors"
         collection.mkdir()
-        for relative, payload in payloads:
+        for relative, payload, mode in payloads:
             output = collection / relative
-            output.parent.mkdir(exist_ok=True)
+            output.parent.mkdir(parents=True, exist_ok=True)
             output.write_bytes(payload)
-            output.chmod(0o444)
+            output.chmod(0o555 if mode == 0o500 else 0o444)
         _assert_materialized_catalog(staging, payloads)
         try:
             staging.rename(target)
@@ -298,8 +399,8 @@ def retained_bundled_catalog_roots(
 
     A package upgrade gets a new content-addressed root. Older roots and their
     ``.workshop`` state remain in place so callers can resume against the exact
-    Taste, manifest, and profile bytes that began a Wish. This function never
-    migrates state to the current identity and never imports profile code.
+    Taste, manifest, and skill bytes that began a Wish. This function never
+    migrates state to the current identity and never executes contributor code.
     """
 
     if type(materialize_current) is not bool:
@@ -341,7 +442,9 @@ def retained_bundled_catalog_roots(
             character not in "0123456789abcdef" for character in candidate.name
         ):
             continue
-        payloads = _catalog_payloads(candidate / "inventors")
+        payloads = _catalog_payloads(
+            candidate / "inventors", allow_runtime_state=True
+        )
         if _payloads_sha256(payloads) != candidate.name:
             raise PackageDataError(
                 "retained bundled catalog identity does not match its path: %s"

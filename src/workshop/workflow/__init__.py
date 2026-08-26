@@ -1,4 +1,4 @@
-"""Canonical workshop workflow orchestration."""
+"""Durable protocol for one native coding-agent product run."""
 
 from workshop.workflow.agent_run import (
     AGENT_OUTCOME_STATUSES,
@@ -9,29 +9,6 @@ from workshop.workflow.agent_run import (
     AgentRunCheckpoint,
     DeterministicGateReceipt,
 )
-from workshop.workflow.clockwork import (
-    Clockwork,
-    InspectionPolicy,
-    PlaytestPolicy,
-    Workflow,
-    WorkflowSpec,
-)
-from workshop.workflow.contracts import WorkshopRun
-from workshop.workflow.engine import (
-    CUSTOMIZATION_LEVELS,
-    DeliverJob,
-    ReleaseJob,
-    InventJob,
-    MakeJob,
-    PlaytestJob,
-    Workshop,
-    WorkshopTools,
-)
-from workshop.workflow.lifecycle import (
-    GatePolicy,
-    Pipeline,
-    PipelineSpec,
-)
 
 __all__ = [
     "AGENT_OUTCOME_STATUSES",
@@ -40,22 +17,5 @@ __all__ = [
     "AgentOutcome",
     "AgentRun",
     "AgentRunCheckpoint",
-    "CUSTOMIZATION_LEVELS",
-    "Clockwork",
-    "DeliverJob",
     "DeterministicGateReceipt",
-    "GatePolicy",
-    "InspectionPolicy",
-    "ReleaseJob",
-    "InventJob",
-    "MakeJob",
-    "Pipeline",
-    "PipelineSpec",
-    "PlaytestPolicy",
-    "PlaytestJob",
-    "Workflow",
-    "WorkflowSpec",
-    "Workshop",
-    "WorkshopRun",
-    "WorkshopTools",
 ]

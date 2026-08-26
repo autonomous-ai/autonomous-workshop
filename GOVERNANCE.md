@@ -40,7 +40,7 @@ reviewer who is not the author when another qualified reviewer is available:
 
 - durable state, migrations, event ordering, leases, retries, or budgets;
 - schemas, canonical JSON, hashes, artifact identity, locks, or sealing;
-- Playtest, Instructions, delivery, or other non-bypassable evidence floors;
+- Playtest, Release, delivery, or other non-bypassable evidence floors;
 - credential handling, provider boundaries, network calls, or physical effects;
 - packaging, release automation, dependency provenance, or license changes;
 - component boundary exceptions or new top-level packages.

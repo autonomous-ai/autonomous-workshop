@@ -4,6 +4,9 @@
 - Date: 2026-08-25
 - Owners: Workflow maintainer and all component DRIs
 
+ADR 0012 supersedes this record's Python composition model while preserving
+its component ownership, dependency direction, and workflow-sequencing rules.
+
 ## Context
 
 The flat implementation allowed stage agents to compose later stages, import
@@ -20,15 +23,15 @@ The Workshop applies these dependency rules:
    package boundary.
 2. Components import only another component's documented public contracts.
 3. Components do not invoke the next lifecycle stage.
-4. `workflow` alone sequences Invent, Make, Playtest, Instructions, and Deliver
+4. `workflow` alone sequences Invent, Make, Playtest, Release, and Deliver
    and mediates Playtest feedback back to Make.
-5. `bootstrap.py` is the sole default composition root. Components do not
-   import it.
+5. The trusted host is the sole composition root. Components do not construct
+   the next stage or native agent session.
 6. A component declares ports for model, storage, CAD, Factory, carrier, or
    other outside behavior. `integrations` implements those ports.
 7. Domain components never import a concrete integration.
-8. CLI and inventor profiles call public Workshop services. Workshop never
-   imports CLI or an inventor profile.
+8. CLI calls public Workshop services. Workshop never imports CLI or executable
+   Inventor profile code; Inventors are immutable persona data.
 9. Match produces an immutable assignment before the six-stage Workflow;
    Reviews authenticate feedback after delivery and may inform future work.
 10. Missing capability and ambiguous outcomes remain typed needs or waits, not
@@ -40,7 +43,7 @@ The conceptual flow is:
 Wish -> Match -> Workflow
                   |
                   v
-        Invent -> Make <-> Playtest -> Instructions -> Deliver
+        Invent -> Make <-> Playtest -> Release -> Deliver
                     feedback is mediated by Workflow
 
 Reviews --------------------------------------------> future work

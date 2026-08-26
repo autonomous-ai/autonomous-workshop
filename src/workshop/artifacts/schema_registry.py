@@ -11,22 +11,11 @@ SCHEMA_LOCATIONS = (
     ("artifact-manifest.schema.json", Path("artifacts/schemas/artifact-manifest.schema.json")),
     ("inventor.schema.json", Path("contributors/schemas/inventor.schema.json")),
     ("receipt.schema.json", Path("runtime/schemas/receipt.schema.json")),
-    ("stamp.schema.json", Path("runtime/schemas/stamp.schema.json")),
     ("cad-project.schema.json", Path("make/schemas/cad-project.schema.json")),
-    ("maker-mark.schema.json", Path("make/schemas/maker-mark.schema.json")),
     ("validator-policy.schema.json", Path("make/schemas/validator-policy.schema.json")),
     (
         "verification-receipt.schema.json",
         Path("make/schemas/verification-receipt.schema.json"),
-    ),
-    ("gate-result.schema.json", Path("playtest/schemas/gate-result.schema.json")),
-    (
-        "inspection-result.schema.json",
-        Path("playtest/schemas/inspection-result.schema.json"),
-    ),
-    (
-        "playtest-result.schema.json",
-        Path("playtest/schemas/playtest-result.schema.json"),
     ),
 )
 SCHEMA_NAMES = tuple(name for name, _ in SCHEMA_LOCATIONS)

@@ -29,9 +29,8 @@ src/
 │   ├── invent/
 │   ├── make/
 │   ├── playtest/
-│   ├── instructions/
+│   ├── release/
 │   ├── deliver/
-│   ├── reviews/
 │   ├── workflow/
 │   ├── product/
 │   ├── artifacts/

@@ -29,16 +29,23 @@ if sys.argv[1:] == ["--version"]:
 
 run_root = Path.cwd()
 wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
+stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
 prompt = sys.stdin.read()
 (run_root / "agent-outcome.json").write_text(
     json.dumps(
         {
             "schema_version": 1,
-            "stage": "wish",
-            "status": "waiting",
-            "artifacts": [],
-            "needs": ["fixture stops before the host gate"],
-            "proposed_transition": None,
+            "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "subject_sha256": stage["subject_sha256"],
+            "outcome": {
+                "schema_version": 1,
+                "stage": stage["stage"],
+                "status": "waiting",
+                "artifacts": [],
+                "needs": ["fixture stops before the host gate"],
+                "proposed_transition": None,
+            },
         },
         sort_keys=True,
     ),
@@ -91,8 +98,8 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertEqual(receipt["wish"]["objective"], objective)
             self.assertEqual(receipt["wish"]["context"], {"source": "workshop-cli"})
             self.assertEqual(receipt["kind"], "native-agent-run")
-            self.assertEqual(receipt["stage"], "wish")
-            self.assertEqual(receipt["publication"]["status"], "draft")
+            self.assertEqual(receipt["stage"], "match")
+            self.assertEqual(receipt["publication"]["status"], "not-created")
 
             workspace = home / "runs" / receipt["product_id"] / "workspace"
             observed = json.loads(
@@ -104,9 +111,9 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertFalse(observed["factory_visible"])
             self.assertIn("--search", observed["arguments"])
             self.assertIn("workspace-write", observed["arguments"])
-            self.assertIn("current wish stage", observed["prompt"])
+            self.assertIn("current match stage", observed["prompt"])
             self.assertNotIn(objective, observed["prompt"])
-            self.assertTrue((workspace / "agent-outcome.json").is_file())
+            self.assertFalse((workspace / "agent-outcome.json").exists())
 
 
 if __name__ == "__main__":

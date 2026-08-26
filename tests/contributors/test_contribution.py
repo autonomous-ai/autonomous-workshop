@@ -5,11 +5,12 @@ import unittest
 from pathlib import Path
 
 from workshop.contributors.contribution import (
+    check_target,
     manifests_for_target,
-    run_declared_checks,
     validate_contribution,
     validate_inventor_collection,
 )
+from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.contributors.manifest import load_manifest
 from workshop.errors import ManifestError
 
@@ -25,14 +26,36 @@ def _inventor(root: Path) -> Path:
         "# Taste\nSpecific and useful.\n",
         encoding="utf-8",
     )
+    skill_name = "sample-inventor"
+    skill = folder / "skills" / skill_name
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text(
+        "---\n"
+        "name: sample-inventor\n"
+        "description: Apply Sample's specialist judgment inside one Workshop run.\n"
+        "---\n"
+        "# Sample Inventor\nRead the exact Taste and obey the Manager.\n",
+        encoding="utf-8",
+    )
+    fingerprint = fingerprint_extension_skill(
+        skill.resolve(), expected_name=skill_name
+    )
     (folder / "inventor.json").write_text(
         json.dumps(
             {
-                "schema_version": 6,
+                "schema_version": 7,
                 "id": "sample",
                 "status": "experimental",
                 "capabilities": ["invented-games"],
                 "source": {"kind": "local"},
+                "extensions": [
+                    {
+                        "kind": "codex-skill",
+                        "name": skill_name,
+                        "path": "skills/%s" % skill_name,
+                        "artifact_sha256": fingerprint.artifact_sha256,
+                    }
+                ],
             }
         ),
         encoding="utf-8",
@@ -41,15 +64,17 @@ def _inventor(root: Path) -> Path:
 
 
 class ContributionTest(unittest.TestCase):
-    def test_native_persona_validation_is_static(self):
+    def test_validation_is_static_and_has_no_run_mode(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = _inventor(Path(temporary))
             manifest = load_manifest(folder / "inventor.json")
             self.assertEqual(validate_contribution(manifest), [])
-            self.assertEqual(run_declared_checks(manifest), [])
+            self.assertEqual(check_target(folder), [])
             self.assertEqual(manifests_for_target(folder), (manifest,))
             validated = validate_inventor_collection(folder.parent)
             self.assertEqual([item.inventor_id for item in validated], ["sample"])
+            with self.assertRaises(TypeError):
+                check_target(folder, run=True)
 
     def test_relative_current_folder_is_a_valid_target(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -64,20 +89,17 @@ class ContributionTest(unittest.TestCase):
             finally:
                 os.chdir(previous)
 
-    def test_native_persona_rejects_executable_and_generated_extras(self):
+    def test_inventor_rejects_generated_or_profile_extras(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = _inventor(Path(temporary))
-            for extra in ("profile.py", "run.py"):
-                (folder / extra).write_text("raise RuntimeError('must not run')\n")
-            (folder / "tests").mkdir()
+            (folder / "profile.py").write_text("raise RuntimeError('must not run')\n")
             (folder / "toys").mkdir()
             problems = validate_contribution(load_manifest(folder / "inventor.json"))
             self.assertEqual(len(problems), 1)
-            self.assertIn("native persona folder may contain only", problems[0])
+            self.assertIn("Inventor folder may contain only", problems[0])
             self.assertIn("profile.py", problems[0])
-            self.assertEqual(run_declared_checks(load_manifest(folder / "inventor.json")), problems)
 
-    def test_optional_readme_must_be_regular_concise_text(self):
+    def test_optional_readme_must_be_regular_and_concise(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = _inventor(Path(temporary))
             manifest = load_manifest(folder / "inventor.json")
@@ -89,24 +111,6 @@ class ContributionTest(unittest.TestCase):
                 any("1 to 32768 bytes" in item for item in validate_contribution(manifest))
             )
 
-    def test_legacy_local_manifest_is_readable_but_not_contributable(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = _inventor(Path(temporary))
-            path = folder / "inventor.json"
-            document = json.loads(path.read_text(encoding="utf-8"))
-            document.update(
-                {
-                    "schema_version": 5,
-                    "entrypoint": ["python3", "profile.py"],
-                    "checks": [],
-                }
-            )
-            path.write_text(json.dumps(document), encoding="utf-8")
-            manifest = load_manifest(path)
-            self.assertTrue(
-                any("schema_version 6" in item for item in validate_contribution(manifest))
-            )
-
     def test_contribution_rejects_a_missing_taste_discovery_header(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = _inventor(Path(temporary))
@@ -116,12 +120,12 @@ class ContributionTest(unittest.TestCase):
             problems = validate_contribution(load_manifest(folder / "inventor.json"))
             self.assertTrue(any("discovery header" in item for item in problems))
 
-    def test_collection_rejects_half_personas_and_extra_runtime_files(self):
+    def test_collection_rejects_half_inventors_and_extra_runtime_files(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             folder = _inventor(root)
             (folder / "profile.py").write_text("raise RuntimeError\n", encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "native persona folder"):
+            with self.assertRaisesRegex(ManifestError, "Inventor folder"):
                 validate_inventor_collection(root)
             (folder / "profile.py").unlink()
             (folder / "TASTE.md").unlink()

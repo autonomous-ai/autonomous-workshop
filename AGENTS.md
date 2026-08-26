@@ -18,6 +18,12 @@ coding-agent runtime. One product run gives Codex the cognitive and tool-using
 work. The Workshop host retains lifecycle order, durable state, deterministic
 gates, budgets, and authorized external effects.
 
+The root native Codex session is the Workshop Manager. It may use Codex-native
+subagents for bounded parallel or specialist work, including matching and
+working as the selected Inventor. Those agents remain children of the one
+product-run session; they are not Python workers or separately launched Codex
+processes.
+
 All implementation and product-run work must preserve these boundaries:
 
 - `workshop wish` persists the exact Wish, creates a private run workspace, and
@@ -26,6 +32,17 @@ All implementation and product-run work must preserve these boundaries:
   checkpoints, not separate one-shot model sessions or personas.
 - Native Codex performs Match reasoning, research, concept exploration,
   creation, inspection, and repair with its own tools and applicable skills.
+- An Inventor is a declared specialist bundle. `TASTE.md` governs creative
+  judgment; `inventor.json` identifies the specialist and declares eligible
+  capabilities/extensions; optional inventor-owned Codex skill trees may
+  contain `SKILL.md`, scripts, references, assets, and tested deterministic
+  tools for specialist craft. Custom code may not become an agent scheduler,
+  prompt loop, lifecycle engine, or effect path.
+- The Manager dynamically delegates with the exact host-materialized Inventor
+  bytes. V1 does not depend on an unfinished or undocumented named-role
+  registry. The root session alone receives host stage authority and submits a
+  stage proposal; child agents cannot advance gates or perform external
+  effects.
 - Python is narrow trusted substrate: typed contracts, deterministic tools and
   gates, artifact hashing, checkpoints, leases, budgets, sandbox/session
   boundaries, authorization, idempotency, receipts, and reconciliation.
@@ -40,16 +57,16 @@ All implementation and product-run work must preserve these boundaries:
 This section is for agents building the Workshop itself. It does not tell the
 per-Wish product-run agent how to Invent, Make, or Playtest a product.
 
-Do not add a second Python agent framework. Existing Python stage agents and
-`CodexStructuredRunner` are migration code, not extension points. Never add
-Python prompt chains, browsing strategy, candidate fan-out, model judges,
-stage-role views, or repair reasoning.
+Do not add a second Python agent framework. Python stage agents, structured
+model calls, profile subprocesses, and Python-owned scoring or reward loops are
+not extension points. Never add Python prompt chains, browsing strategy,
+candidate fan-out, model judges, stage-role views, or repair reasoning.
 
 Read `docs/NATIVE_AGENT_RUNTIME.md` and ADR 0012 before changing the CLI,
-runtime, workflow, product-run instructions, or lifecycle orchestration. If
-transitional code conflicts with the accepted architecture, do not copy or
-extend it; move callers toward the native-session path while preserving useful
-deterministic contracts and tests.
+runtime, workflow, product-run instructions, or lifecycle orchestration. The
+native-session path is the production architecture. Preserve useful
+deterministic contracts and tests; do not reintroduce removed cognitive
+orchestration as a compatibility layer.
 
 ## Repository ownership
 
@@ -62,6 +79,9 @@ deterministic contracts and tests.
 - `src/workshop/make/skills/`: reusable domain skills owned by Make.
 - `.agents/product-run/`: constitution materialized only for a product run.
 - `.agents/skills/autonomous-workshop/`: product-run workflow skill.
+- `.agents/skills/autonomous-workshop/scripts/stage_proposal.py`: run-local,
+  standard-library finalizer for exact stage contracts and outcome proposals;
+  it does not reason or advance gates.
 - `tests/<component>/`: tests mirroring the component that owns the behavior.
 
 Keep the `src/` layout and the single `workshop` library namespace. The `cli`
@@ -91,6 +111,8 @@ ordinary repository work.
 
 A product-run agent follows the materialized product-run `AGENTS.md` and the
 `autonomous-workshop` skill in its isolated run root. It performs one Wish's
-cognitive work and proposes compact outcomes to the host. It does not use the
-builder-only section above as a product workflow, modify the Workshop source as
-part of making a toy, or bypass host-owned gates and effect authority.
+cognitive work, reads the current immutable `STAGE.json`, and uses the
+run-local proposal finalizer to propose compact outcomes to the host. It does
+not use the builder-only section above as a product workflow, modify the
+Workshop source as part of making a toy, or bypass host-owned gates and effect
+authority.

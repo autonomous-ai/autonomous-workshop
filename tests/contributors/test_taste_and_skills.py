@@ -11,7 +11,6 @@ from workshop.contributors.taste import (
     MAX_TASTE_DESCRIPTION_CHARS,
     load_taste,
     load_taste_header,
-    load_taste_profile,
 )
 
 
@@ -93,9 +92,6 @@ class TasteTest(unittest.TestCase):
             (root / "TASTE.md").write_text(" \n", encoding="utf-8")
             with self.assertRaises(ManifestError):
                 load_taste(root)
-
-    def test_former_loader_is_the_same_compatibility_function(self):
-        self.assertIs(load_taste_profile, load_taste)
 
 if __name__ == "__main__":
     unittest.main()
