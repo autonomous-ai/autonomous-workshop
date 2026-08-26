@@ -561,12 +561,31 @@ class AgentRun:
                 "product-run constitution source must be the explicit "
                 ".agents/product-run/AGENTS.md file"
             )
+        try:
+            resolved_constitution = constitution.resolve(strict=True)
+        except OSError as exc:
+            raise ArtifactError("product-run constitution source is unavailable") from exc
+        if resolved_constitution != constitution:
+            raise ContractError(
+                "product-run constitution source must not contain symlinks"
+            )
         constitution_bytes = _read_regular(
             constitution, "product-run constitution source", MAX_AGENT_INPUT_BYTES
         )
         _reject_private_agent_bytes("AGENTS.md", constitution_bytes)
-        skill_source = Path(skill_root)
-        if skill_source.is_symlink() or not skill_source.is_dir():
+        try:
+            skill_source = Path(skill_root)
+        except TypeError as exc:
+            raise ContractError("source autonomous-workshop skill must be path-like") from exc
+        if not skill_source.is_absolute() or skill_source.is_symlink():
+            raise ContractError(
+                "source autonomous-workshop skill must be an absolute real directory"
+            )
+        try:
+            resolved_skill = skill_source.resolve(strict=True)
+        except OSError as exc:
+            raise ArtifactError("source autonomous-workshop skill is unavailable") from exc
+        if resolved_skill != skill_source or not skill_source.is_dir():
             raise ArtifactError("source autonomous-workshop skill must be a directory")
         skill_files: list[tuple[PurePosixPath, bytes]] = []
         for directory, dirnames, filenames in os.walk(str(skill_source), followlinks=False):
@@ -886,12 +905,26 @@ class AgentRun:
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
         skill_root = self.run_root / ".agents" / "skills" / "autonomous-workshop"
-        for directory in (
+        skill_directories = [
             self.run_root / ".agents",
             self.run_root / ".agents" / "skills",
             skill_root,
-            *tuple(path for path in skill_root.rglob("*") if path.is_dir()),
-        ):
+        ]
+        actual_skill_files = set()
+        for entry in skill_root.rglob("*"):
+            try:
+                identity = entry.lstat()
+            except OSError as exc:
+                raise StateConflict("agent run skill entry is unavailable") from exc
+            if entry.is_symlink():
+                raise StateConflict("agent run immutable skill tree contains a symlink")
+            if stat.S_ISDIR(identity.st_mode):
+                skill_directories.append(entry)
+            elif stat.S_ISREG(identity.st_mode):
+                actual_skill_files.add(entry.relative_to(self.run_root).as_posix())
+            else:
+                raise StateConflict("agent run immutable skill tree has a special file")
+        for directory in skill_directories:
             try:
                 identity = directory.lstat()
             except OSError as exc:
@@ -902,11 +935,6 @@ class AgentRun:
                 or stat.S_IMODE(identity.st_mode) != 0o500
             ):
                 raise StateConflict("agent run immutable skill directory mode changed")
-        actual_skill_files = {
-            path.relative_to(self.run_root).as_posix()
-            for path in skill_root.rglob("*")
-            if path.is_file()
-        }
         expected_skill_files = {
             path for path in observed_paths if path.startswith(".agents/skills/autonomous-workshop/")
         }
