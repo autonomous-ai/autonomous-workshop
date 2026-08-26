@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
-from workshop.errors import ContractError, StateConflict
+from workshop.errors import ContractError, StateConflict, WorkshopError
 from workshop.match.native import (
     InventorRoster,
     MatchRankingEntry,
@@ -18,9 +18,12 @@ from workshop.match.native import (
 )
 from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
+    _MAX_NATIVE_TURNS,
+    _RECOVERABLE_BACKOFF_MAX_SECONDS,
     NativeRunPaths,
     _NativeProgressTracker,
     _native_run_mutation_lock,
+    _recoverable_native_turn_backoff_seconds,
     canonical_wish_bytes,
     native_run_exists,
     native_run_paths,
@@ -28,10 +31,13 @@ from workshop.workflow.native_run import (
     resume_native_run,
     start_native_run,
 )
-from workshop.runtime import CodexInvocationError
+from workshop.runtime import (
+    CodexInvocationError,
+    CodexRecoverableInvocationError,
+)
 from workshop.runtime.progress import NativeRunProgress
 from workshop.wish import Wish
-from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
+from workshop.workflow.agent_run import AgentArtifact, AgentOutcome, AgentRun
 from workshop.workflow.proposals import AgentOutcomeProposal
 
 
@@ -184,6 +190,59 @@ class _FinalizedMatchThenFailLauncher(_FakeLauncher):
         self._checkpoint(arguments)
         self._write_ready_match(arguments)
         raise CodexInvocationError("fixture failed after finalization")
+
+
+class _RecoverableMatchContinuationLauncher(_FinalizedMatchThenFailLauncher):
+    """Interrupt Match once, then finalize it through the same checkpoint."""
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        raise CodexRecoverableInvocationError("fixture native turn timed out")
+
+    def resume(self, **arguments):
+        self.resumes.append(dict(arguments))
+        stage = json.loads(
+            (Path(arguments["run_root"]) / "STAGE.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        if stage["stage"] == "match":
+            self._write_ready_match(arguments)
+        else:
+            self._write_waiting(arguments)
+        return _FakeOutcome(arguments)
+
+
+class _AlwaysInterruptedLauncher(_FakeLauncher):
+    def __init__(self, *, recoverable=True):
+        super().__init__()
+        self.recoverable = recoverable
+
+    def _raise(self):
+        error = (
+            CodexRecoverableInvocationError
+            if self.recoverable
+            else CodexInvocationError
+        )
+        raise error("fixture native turn interruption")
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        self._raise()
+
+    def resume(self, **arguments):
+        self.resumes.append(dict(arguments))
+        self._raise()
+
+
+class _UnboundRecoverableLauncher(_FakeLauncher):
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        raise CodexRecoverableInvocationError(
+            "fixture interruption before exact thread binding"
+        )
 
 
 class NativeHostTest(unittest.TestCase):
@@ -638,6 +697,175 @@ class NativeHostTest(unittest.TestCase):
                 )
             )
 
+    def test_recoverable_timeout_continues_same_session_inside_one_command(self):
+        launcher = _RecoverableMatchContinuationLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "same-command-timeout-continuation"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.time.sleep"
+            ) as backoff:
+                receipt = start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a resilient toy completed across a transient timeout",
+                    )
+                )
+
+            self.assertEqual(receipt["stage"], "invent")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["native_turns"], 3)
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 2)
+            backoff.assert_called_once()
+            self.assertTrue(
+                0
+                < backoff.call_args.args[0]
+                <= _RECOVERABLE_BACKOFF_MAX_SECONDS
+            )
+            self.assertEqual(
+                {call["product_id"] for call in launcher.starts + launcher.resumes},
+                {product_id},
+            )
+            host_state = home / "state" / product_id
+            progress = json.loads(
+                (host_state / "native-progress.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(progress["native_turns"], 3)
+            self.assertEqual(progress["attempt_stage"], "invent")
+            self.assertEqual(progress["stage_attempt"], 1)
+            self.assertTrue(
+                any(
+                    path.name.endswith("-match.json")
+                    for path in (host_state / "gates").iterdir()
+                )
+            )
+
+    def test_recoverable_interruptions_exhaust_existing_turn_budget(self):
+        launcher = _AlwaysInterruptedLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "bounded-timeout-continuation"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.time.sleep"
+            ) as backoff, self.assertRaisesRegex(
+                WorkshopError, "exhausted its bounded Codex turn budget"
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a bounded toy whose provider stays interrupted",
+                    )
+                )
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                _MAX_NATIVE_TURNS,
+            )
+            self.assertEqual(backoff.call_count, _MAX_NATIVE_TURNS - 1)
+            delays = [call.args[0] for call in backoff.call_args_list]
+            self.assertTrue(
+                all(0 < delay <= _RECOVERABLE_BACKOFF_MAX_SECONDS for delay in delays)
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ):
+                status = native_run_status(product_id)
+                checkpoint = AgentRun.open(
+                    home / "runs" / product_id / "workspace",
+                    host_state_root=home / "state" / product_id,
+                ).snapshot()
+            self.assertEqual(
+                delays,
+                [
+                    _recoverable_native_turn_backoff_seconds(checkpoint, turn)
+                    for turn in range(1, _MAX_NATIVE_TURNS)
+                ],
+            )
+            self.assertEqual(status["stage"], "match")
+            self.assertEqual(status["status"], "active")
+            self.assertEqual(status["native_turns"], _MAX_NATIVE_TURNS)
+            self.assertEqual(
+                status["progress"]["stage_attempt"],
+                {"stage": "match", "number": _MAX_NATIVE_TURNS},
+            )
+            self.assertEqual(status["progress"]["activity"], "failed")
+
+    def test_nonrecoverable_checkpointed_failure_is_not_continued(self):
+        launcher = _AlwaysInterruptedLauncher(recoverable=False)
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "hard-native-turn-failure"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError, "native Codex session did not complete"
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose unknown native failure must stop",
+                    )
+                )
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(launcher.resumes, [])
+
+    def test_recoverable_failure_before_session_binding_fails_closed(self):
+        launcher = _UnboundRecoverableLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "unbound-native-turn-timeout"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(
+                WorkshopError, "native Codex session did not complete"
+            ):
+                start_native_run(
+                    Wish.create(
+                        product_id,
+                        "a toy whose unbound session must not be duplicated",
+                    )
+                )
+
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(launcher.resumes, [])
+            self.assertFalse(
+                (home / "state" / product_id / "codex-session.json").exists()
+            )
+
     def test_launcher_failure_with_stale_proposal_fails_closed(self):
         launcher = _FinalizedMatchThenFailLauncher(stale_proposal=True)
         with tempfile.TemporaryDirectory() as temporary:
@@ -818,7 +1046,7 @@ class NativeHostTest(unittest.TestCase):
                 self.assertEqual(receipt["native_turns"], 0)
                 self.assertEqual(receipt["progress"], {"status": "unavailable"})
                 self.assertEqual(recovered["status"], "waiting")
-                self.assertEqual(recovered["native_turns"], 1)
+                self.assertEqual(recovered["native_turns"], 2)
                 self.assertEqual(recovered["progress"]["status"], "available")
 
     def test_native_commands_default_to_private_draft(self):

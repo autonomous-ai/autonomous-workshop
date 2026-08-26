@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import shutil
 import stat
 import subprocess
@@ -45,15 +46,12 @@ _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
 _CODEX_ACTIVITY_HEARTBEAT_SECONDS = 5.0
 _CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS = 0.25
 _MAX_PENDING_ACTIVITY_CLASSES = 64
-_TRANSIENT_DIAGNOSTIC_MARKERS = (
-    "stream disconnected before completion",
-    "connection reset by peer",
-    "connection closed before completion",
-    "provider connection was closed",
-    "provider stream disconnected",
-    "service temporarily unavailable",
-    "temporarily unavailable",
-    "upstream request timeout",
+_TRANSIENT_DIAGNOSTIC_HEADS = frozenset(
+    (
+        "stream disconnected before completion",
+        "provider connection was closed",
+        "provider stream disconnected",
+    )
 )
 
 _IMMUTABLE_PRODUCT_RUN_PATHS = (
@@ -94,6 +92,16 @@ _CODEX_SUBAGENT_ITEM_TYPES = frozenset(
 
 class CodexInvocationError(RuntimeError):
     pass
+
+
+class CodexRecoverableInvocationError(CodexInvocationError):
+    """A turn-local timeout or explicit provider transport interruption.
+
+    This type is intentionally narrower than ``CodexInvocationError`` so the
+    trusted host can continue an already checkpointed native session without
+    classifying failures by their public, redacted message text.  Callers must
+    still prove that the exact session checkpoint exists before retrying.
+    """
 
 
 @dataclass(frozen=True)
@@ -1359,13 +1367,20 @@ class CodexNativeSessionLauncher:
                 bufsize=1,
                 cwd=str(run_root),
                 env=_codex_run_environment(run_root, run_policy),
+                start_new_session=True,
             )
         except (OSError, subprocess.SubprocessError, TypeError, ValueError):
             raise CodexInvocationError(
                 "Codex native session could not be launched"
             ) from None
-        if process.stdin is None or process.stdout is None or process.stderr is None:
+        process_group_id = _dedicated_process_group_id(process)
+        if isinstance(process, subprocess.Popen) and process_group_id is None:
             _terminate_safely(process)
+            raise CodexInvocationError(
+                "Codex native session could not establish process isolation"
+            )
+        if process.stdin is None or process.stdout is None or process.stderr is None:
+            _terminate_safely(process, process_group_id=process_group_id)
             raise CodexInvocationError(
                 "Codex native session streams are unavailable"
             )
@@ -1391,7 +1406,10 @@ class CodexNativeSessionLauncher:
                     ]
                     if stderr_size > MAX_CODEX_STDERR_BYTES:
                         stderr_overflow.set()
-                        _terminate_safely(process)
+                        _terminate_safely(
+                            process,
+                            process_group_id=process_group_id,
+                        )
                         return
             except (OSError, ValueError, UnicodeError):
                 stderr_overflow.set()
@@ -1407,14 +1425,13 @@ class CodexNativeSessionLauncher:
 
         def expire() -> None:
             timed_out.set()
-            _terminate_safely(process)
+            _terminate_safely(process, process_group_id=process_group_id)
 
         timer = threading.Timer(max(0.001, deadline - time.monotonic()), expire)
         timer.daemon = True
         timer.start()
 
         stdout_size = 0
-        stdout_tail = ""
         used_web_search = False
         observed_thread_id: Optional[str] = None
         turn_completed = False
@@ -1432,9 +1449,6 @@ class CodexNativeSessionLauncher:
             for raw in process.stdout:
                 text = _stream_text(raw)
                 stdout_size += len(text.encode("utf-8", errors="replace"))
-                stdout_tail = (stdout_tail + text)[
-                    -_MAX_TRANSIENT_DIAGNOSTIC_CHARS:
-                ]
                 if stdout_size > MAX_CODEX_EVENT_BYTES:
                     raise CodexInvocationError(
                         "Codex native event stream exceeded its safe size limit"
@@ -1490,7 +1504,7 @@ class CodexNativeSessionLauncher:
         except Exception as exc:
             stream_failure = exc
             activity_reporter.observe("failed")
-            _terminate_safely(process)
+            _terminate_safely(process, process_group_id=process_group_id)
         finally:
             timer.cancel()
 
@@ -1510,10 +1524,10 @@ class CodexNativeSessionLauncher:
                 # emitting it, so give the process a brief chance to exit and
                 # then reap it without waiting for stdout EOF indefinitely.
                 intentionally_terminated = True
-                _terminate_safely(process)
+                _terminate_safely(process, process_group_id=process_group_id)
                 returncode = getattr(process, "returncode", None)
             except (OSError, ValueError):
-                _terminate_safely(process)
+                _terminate_safely(process, process_group_id=process_group_id)
                 returncode = getattr(process, "returncode", None)
                 stream_failure = CodexInvocationError(
                     "Codex native session could not be reaped"
@@ -1523,21 +1537,47 @@ class CodexNativeSessionLauncher:
                 returncode = process.wait(timeout=max(0.001, remaining))
             except (subprocess.TimeoutExpired, OSError, ValueError):
                 timed_out.set()
-                _terminate_safely(process)
+                _terminate_safely(process, process_group_id=process_group_id)
                 returncode = getattr(process, "returncode", None)
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
         activity_reporter.stop()
+        process_tree_reaped = _terminate_safely(
+            process,
+            process_group_id=process_group_id,
+        )
 
         if timed_out.is_set():
             activity_reporter.observe("failed")
             activity_reporter.close()
-            raise CodexInvocationError("Codex native session timed out")
+            stderr_thread.join(timeout=_CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS)
+            if stderr_thread.is_alive() or stderr_overflow.is_set():
+                raise CodexInvocationError(
+                    "Codex native diagnostic stream exceeded its safe size limit"
+                )
+            if stream_failure is not None:
+                if isinstance(stream_failure, (CodexInvocationError, ContractError)):
+                    raise stream_failure from None
+                raise CodexInvocationError(
+                    "Codex native session event stream was invalid"
+                ) from None
+            if not process_tree_reaped:
+                raise CodexInvocationError(
+                    "Codex native session could not be terminated safely"
+                )
+            raise CodexRecoverableInvocationError(
+                "Codex native session timed out"
+            )
         if stderr_thread.is_alive() or stderr_overflow.is_set():
-            _terminate_safely(process)
             activity_reporter.observe("failed")
             activity_reporter.close()
             raise CodexInvocationError(
                 "Codex native diagnostic stream exceeded its safe limit"
+            )
+        if not process_tree_reaped:
+            activity_reporter.observe("failed")
+            activity_reporter.close()
+            raise CodexInvocationError(
+                "Codex native session could not be terminated safely"
             )
         if stream_failure is not None:
             activity_reporter.close()
@@ -1557,10 +1597,13 @@ class CodexNativeSessionLauncher:
         ):
             # Diagnostics are intentionally used only for a safe category and
             # are never attached to the public exception.
-            if _is_explicit_transient_failure(stdout_tail, stderr_tail):
+            if (
+                stderr_size <= _MAX_TRANSIENT_DIAGNOSTIC_CHARS
+                and _is_explicit_transient_failure(stderr_tail)
+            ):
                 activity_reporter.observe("failed")
                 activity_reporter.close()
-                raise CodexInvocationError(
+                raise CodexRecoverableInvocationError(
                     "Codex native provider transport was interrupted"
                 )
             activity_reporter.observe("failed")
@@ -1603,38 +1646,129 @@ def _decode_native_event(line: str) -> Mapping[str, Any]:
     return event
 
 
-def _terminate_safely(process: Any) -> None:
+def _dedicated_process_group_id(process: Any) -> Optional[int]:
+    """Return a safe dedicated group id established by ``start_new_session``."""
+
+    process_id = getattr(process, "pid", None)
+    if (
+        type(process_id) is not int
+        or process_id <= 1
+        or not hasattr(os, "getpgid")
+        or not hasattr(os, "killpg")
+    ):
+        return None
+    try:
+        process_group_id = os.getpgid(process_id)
+        if process_group_id != process_id or process_group_id == os.getpgrp():
+            return None
+    except (AttributeError, OSError):
+        return None
+    return process_group_id
+
+
+def _signal_process_group(process_group_id: int, signal_number: int) -> bool:
+    try:
+        os.killpg(process_group_id, signal_number)
+        return True
+    except ProcessLookupError:
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def _process_group_exists(process_group_id: int) -> bool:
+    try:
+        os.killpg(process_group_id, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except (OSError, ValueError):
+        # Permission or an invalid platform response cannot prove quiescence.
+        return True
+
+
+def _wait_for_process(process: Any, timeout: float) -> bool:
+    try:
+        process.wait(timeout=timeout)
+        return True
+    except (AttributeError, OSError, ValueError, subprocess.SubprocessError):
+        return False
+
+
+def _terminate_safely(
+    process: Any,
+    *,
+    process_group_id: Optional[int] = None,
+) -> bool:
+    """Reap the launcher and prove its dedicated process group is empty."""
+
+    if process_group_id is not None:
+        if (
+            type(process_group_id) is not int
+            or process_group_id <= 1
+            or not hasattr(os, "killpg")
+        ):
+            return False
+        try:
+            if process_group_id == os.getpgrp():
+                return False
+        except (AttributeError, OSError):
+            return False
+        if not _signal_process_group(process_group_id, signal.SIGTERM):
+            return False
+        parent_reaped = _wait_for_process(process, 0.5)
+        if _process_group_exists(process_group_id):
+            if not _signal_process_group(process_group_id, signal.SIGKILL):
+                return False
+            if not parent_reaped:
+                parent_reaped = _wait_for_process(process, 0.5)
+        deadline = time.monotonic() + 0.5
+        while _process_group_exists(process_group_id):
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.01)
+        return parent_reaped
+
+    # Injected deterministic process doubles have no OS group. Production
+    # ``Popen`` objects are rejected before this fallback if group creation
+    # cannot be proved.
     try:
         running = process.poll() is None
     except (AttributeError, OSError, subprocess.SubprocessError):
         running = True
-    if running:
-        try:
-            process.terminate()
-        except (AttributeError, OSError, subprocess.SubprocessError):
-            pass
+    if not running:
+        return True
     try:
-        process.wait(timeout=0.5)
-        return
-    except (AttributeError, OSError, ValueError, subprocess.SubprocessError):
+        process.terminate()
+    except (AttributeError, OSError, subprocess.SubprocessError):
         pass
+    if _wait_for_process(process, 0.5):
+        return True
     try:
         process.kill()
     except (AttributeError, OSError, subprocess.SubprocessError):
         pass
-    try:
-        process.wait(timeout=0.5)
-    except (AttributeError, OSError, ValueError, subprocess.SubprocessError):
-        pass
+    return _wait_for_process(process, 0.5)
 
 
 def _diagnostic_tail(value: str) -> str:
     return value[-_MAX_TRANSIENT_DIAGNOSTIC_CHARS:].casefold()
 
 
-def _is_explicit_transient_failure(stdout: str, stderr: str) -> bool:
-    diagnostic = _diagnostic_tail(stdout) + "\n" + _diagnostic_tail(stderr)
-    return any(marker in diagnostic for marker in _TRANSIENT_DIAGNOSTIC_MARKERS)
+def _is_explicit_transient_failure(stderr: str) -> bool:
+    # Only the launcher's diagnostic channel participates in this category.
+    # Native event bytes can contain model-authored text and must never select
+    # a host retry policy. Require an anchored, adapter-recognized diagnostic
+    # line as well: generic OS errors such as ``temporarily unavailable`` are
+    # deliberately not transport evidence and fail closed.
+    for raw_line in _diagnostic_tail(stderr).splitlines():
+        line = raw_line.strip()
+        head, separator, detail = line.partition(": ")
+        if head not in _TRANSIENT_DIAGNOSTIC_HEADS:
+            continue
+        if not separator or 1 <= len(detail) <= 512:
+            return True
+    return False
 
 
 __all__ = [
@@ -1649,6 +1783,7 @@ __all__ = [
     "MAX_CODEX_STDERR_BYTES",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexInvocationError",
+    "CodexRecoverableInvocationError",
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",

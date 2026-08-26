@@ -1,11 +1,13 @@
 import json
 import os
+import signal
 import stat
 import subprocess
 import sys
 import sysconfig
 import tempfile
 import threading
+import time
 import tomllib
 import unittest
 from dataclasses import replace
@@ -22,6 +24,7 @@ from workshop.runtime.codex import (
     MAX_CODEX_STDERR_BYTES,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexInvocationError,
+    CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     codex_supports_native_workshop,
 )
@@ -187,6 +190,8 @@ class FakeProcess:
 
     def wait(self, timeout=None):
         self.wait_timeouts.append(timeout)
+        if self.script.get("ignore_termination"):
+            raise subprocess.TimeoutExpired("/fixture/codex", timeout)
         if (
             self.script.get("hang_until_terminated")
             and not self._stopped.is_set()
@@ -199,11 +204,15 @@ class FakeProcess:
 
     def terminate(self):
         self.terminated = True
+        if self.script.get("ignore_termination"):
+            return
         self.returncode = -15
         self._stopped.set()
 
     def kill(self):
         self.killed = True
+        if self.script.get("ignore_termination"):
+            return
         self.returncode = -9
         self._stopped.set()
 
@@ -390,6 +399,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("run this exact Wish", command)
             self.assertEqual(factory.processes[0].stdin.value, "run this exact Wish")
             self.assertEqual(call["cwd"], str(root))
+            self.assertIs(call["start_new_session"], True)
             self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
@@ -1146,7 +1156,9 @@ class CodexNativeSessionTest(unittest.TestCase):
                 ]
             )
 
-            with self.assertRaisesRegex(CodexInvocationError, "timed out"):
+            with self.assertRaisesRegex(
+                CodexRecoverableInvocationError, "timed out"
+            ):
                 self.start(launcher, root)
 
             self.assertTrue(factory.processes[0].terminated)
@@ -1184,9 +1196,200 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
 
             with self.assertRaisesRegex(
-                CodexInvocationError, "provider transport was interrupted"
+                CodexRecoverableInvocationError,
+                "provider transport was interrupted",
             ):
                 self.start(launcher, root)
+
+    def test_unrelated_private_stderr_cannot_select_transport_recovery(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stderr": [
+                            "local file operation: resource temporarily unavailable\n",
+                            "tool: provider stream disconnected\n",
+                        ],
+                        "returncode": 1,
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+
+    def test_timeout_is_typed_and_preserves_the_exact_session_for_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events(terminal=False)},
+                    {"stdout": self.start_events()},
+                ]
+            )
+
+            with mock.patch(
+                "workshop.runtime.codex.threading.Timer", ImmediateTimer
+            ), self.assertRaises(CodexRecoverableInvocationError):
+                self.start(launcher, root)
+
+            outcome = self.resume(launcher, root)
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertEqual(len(factory.calls), 2)
+            resume_command = factory.calls[1][0]
+            self.assertIn("resume", resume_command)
+            self.assertIn(THREAD_ID, resume_command)
+
+    def test_timeout_is_not_recoverable_when_process_cannot_be_reaped(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "ignore_termination": True,
+                    }
+                ]
+            )
+
+            with mock.patch(
+                "workshop.runtime.codex.threading.Timer", ImmediateTimer
+            ), self.assertRaisesRegex(
+                CodexInvocationError, "could not be terminated safely"
+            ) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+
+    @unittest.skipUnless(hasattr(os, "killpg"), "POSIX process groups required")
+    def test_group_reap_kills_a_sigterm_ignoring_tool_descendant(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            child_ready = root / "child-ready"
+            forbidden_late_write = root / "late-child-write"
+            child_code = (
+                "import signal,time\n"
+                "from pathlib import Path\n"
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+                "Path(%r).write_text('ready', encoding='utf-8')\n"
+                "time.sleep(0.75)\n"
+                "Path(%r).write_text('survived', encoding='utf-8')\n"
+                % (str(child_ready), str(forbidden_late_write))
+            )
+            parent_code = (
+                "import subprocess,time\n"
+                "subprocess.Popen(%r)\n"
+                "time.sleep(30)\n"
+                % [sys.executable, "-c", child_code]
+            )
+            process = subprocess.Popen(
+                [sys.executable, "-c", parent_code],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            try:
+                deadline = time.monotonic() + 5.0
+                while not child_ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                self.assertTrue(child_ready.exists())
+                process_group_id = codex_runtime._dedicated_process_group_id(
+                    process
+                )
+                self.assertEqual(process_group_id, process.pid)
+
+                self.assertTrue(
+                    codex_runtime._terminate_safely(
+                        process,
+                        process_group_id=process_group_id,
+                    )
+                )
+                time.sleep(1.0)
+
+                self.assertIsNotNone(process.poll())
+                self.assertFalse(forbidden_late_write.exists())
+            finally:
+                if process.poll() is None:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait(timeout=2)
+
+    def test_timeout_does_not_hide_a_concurrent_event_contract_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [{"stdout": ["not-json\n"]}]
+            )
+
+            with mock.patch(
+                "workshop.runtime.codex.threading.Timer", ImmediateTimer
+            ), self.assertRaisesRegex(
+                CodexInvocationError, "event stream was invalid"
+            ) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+
+    def test_unknown_incomplete_exit_is_not_recoverable(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "returncode": 1,
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
+
+    def test_agent_message_cannot_select_the_recoverable_transport_category(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(
+                            message="provider stream disconnected",
+                            terminal=False,
+                        ),
+                        "returncode": 1,
+                    }
+                ]
+            )
+
+            with self.assertRaises(CodexInvocationError) as caught:
+                self.start(launcher, root)
+
+            self.assertNotIsInstance(
+                caught.exception, CodexRecoverableInvocationError
+            )
 
     def test_completed_turn_does_not_weaken_resume_thread_identity(self):
         with tempfile.TemporaryDirectory() as temporary:

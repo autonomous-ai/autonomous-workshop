@@ -145,6 +145,14 @@ class SkillFingerprintTest(unittest.TestCase):
         self.assertEqual(module.SKILL_ROOT, cad.resolve())
         self.assertEqual(module._VERSION_TREES, ("scripts",))
         self.assertGreater(module.compute_version_token(), 0)
+        with tempfile.TemporaryDirectory() as temporary, mock.patch.object(
+            module.subprocess,
+            "Popen",
+            return_value=object(),
+        ) as popen:
+            sock_path = Path(temporary).resolve() / "cadgen.sock"
+            self.assertIsNotNone(module._spawn_daemon(sock_path))
+        self.assertNotIn("start_new_session", popen.call_args.kwargs)
 
 
 if __name__ == "__main__":

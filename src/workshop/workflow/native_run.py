@@ -69,6 +69,7 @@ from workshop.release.public_example import (
 )
 from workshop.runtime import (
     CodexInvocationError,
+    CodexRecoverableInvocationError,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
     EffectLedger,
@@ -88,6 +89,7 @@ from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     NativeRunProgress,
     begin_native_progress,
+    native_progress_turn_floor,
     trusted_native_progress,
     write_native_progress,
 )
@@ -131,6 +133,10 @@ _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_NATIVE_TURNS = 32
+_RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
+_RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
+_RECOVERABLE_BACKOFF_JITTER_MIN = 0.75
+_RECOVERABLE_BACKOFF_JITTER_SPAN = 0.5
 _FACTORY_CREDENTIALS_NEED = (
     "Factory credentials for the selected Inventor are missing or malformed; "
     "configure a complete matching username/password pair, then resume this run."
@@ -143,6 +149,10 @@ class _FactoryCredentialsUnavailable(Exception):
     def __init__(self, inventor_id: str) -> None:
         self.inventor_id = inventor_id
         super().__init__(_FACTORY_CREDENTIALS_NEED)
+
+
+class _RecoverableNativeTurn(WorkshopError):
+    """Internal typed signal for a checkpoint-bound turn continuation."""
 
 
 @dataclass(frozen=True)
@@ -186,8 +196,14 @@ class _NativeProgressTracker:
                 wish_sha256=checkpoint.wish_sha256,
                 checkpoint_sha256=checkpoint.checkpoint_sha256,
                 checkpoint_stage=checkpoint.stage,
+                native_turn_floor=native_progress_turn_floor(path),
             )
-            write_native_progress(path, progress)
+            if not write_native_progress(
+                path,
+                progress,
+                establish_generation=True,
+            ):
+                progress = None
         except (OSError, WorkshopError):
             progress = None
         return cls(path, progress)
@@ -222,7 +238,9 @@ class _NativeProgressTracker:
             return
         try:
             progress = progress.observe(activity)
-            write_native_progress(self.path, progress)
+            if not write_native_progress(self.path, progress):
+                self.progress = None
+                return
         except (OSError, WorkshopError):
             self.progress = None
             return
@@ -250,7 +268,9 @@ class _NativeProgressTracker:
                 checkpoint_stage=checkpoint.stage,
                 activity=activity,
             )
-            write_native_progress(self.path, progress)
+            if not write_native_progress(self.path, progress):
+                self.progress = None
+                return
         except (OSError, WorkshopError):
             self.progress = None
             return
@@ -761,6 +781,44 @@ def native_stage_prompt(stage: str) -> str:
         "the Workshop host gate."
         % stage
     )
+
+
+def _recoverable_native_turn_backoff_seconds(
+    checkpoint: AgentRunCheckpoint,
+    attempted_turns: int,
+) -> float:
+    """Return bounded deterministic jitter for one exact run attempt."""
+
+    if (
+        not isinstance(checkpoint, AgentRunCheckpoint)
+        or type(attempted_turns) is not int
+        or not 1 <= attempted_turns < _MAX_NATIVE_TURNS
+    ):
+        raise ContractError("native continuation backoff input is invalid")
+    exponent = min(attempted_turns - 1, 16)
+    jitter_ceiling = (
+        _RECOVERABLE_BACKOFF_JITTER_MIN
+        + _RECOVERABLE_BACKOFF_JITTER_SPAN
+    )
+    unjittered_cap = _RECOVERABLE_BACKOFF_MAX_SECONDS / jitter_ceiling
+    unjittered = min(
+        unjittered_cap,
+        _RECOVERABLE_BACKOFF_BASE_SECONDS * (2**exponent),
+    )
+    seed = (
+        "%s\0%s\0%d"
+        % (
+            checkpoint.product_id,
+            checkpoint.checkpoint_sha256,
+            attempted_turns,
+        )
+    ).encode("utf-8")
+    fraction = int.from_bytes(hashlib.sha256(seed).digest()[:2], "big") / 65_535
+    jitter = (
+        _RECOVERABLE_BACKOFF_JITTER_MIN
+        + _RECOVERABLE_BACKOFF_JITTER_SPAN * fraction
+    )
+    return unjittered * jitter
 
 
 def _validated_product_id(product_id: str) -> str:
@@ -1545,6 +1603,10 @@ def _launcher_call(
     }
     try:
         return getattr(launcher, method)(**arguments)
+    except CodexRecoverableInvocationError as exc:
+        raise _RecoverableNativeTurn(
+            "native Codex session did not complete: %s" % exc
+        ) from None
     except CodexInvocationError as exc:
         raise WorkshopError("native Codex session did not complete: %s" % exc) from None
 
@@ -2534,6 +2596,22 @@ def _run_native_session(
         turns += 1
         if not _agent_outcome_exists(run.run_root):
             progress.observe("failed")
+            if isinstance(launcher_failure, _RecoverableNativeTurn):
+                # A timeout or recognized provider disconnect is safe to
+                # continue only when the host has already persisted the exact
+                # native session identity.  The unchanged STAGE.json subject,
+                # one mutation lock, and the normal turn budget remain in
+                # force.  An interruption before thread binding fails closed
+                # rather than creating a second root session automatically.
+                if _session_status(paths) == "checkpointed":
+                    if turns < _MAX_NATIVE_TURNS:
+                        time.sleep(
+                            _recoverable_native_turn_backoff_seconds(
+                                checkpoint,
+                                turns,
+                            )
+                        )
+                    continue
             if launcher_failure is not None:
                 raise launcher_failure
             raise WorkshopError(

@@ -59,6 +59,20 @@ handles discovery, research, concept
 work, CAD, inspection, repair, Playtest judgment, manual writing, and
 product-page facts. `workshop resume` continues the exact recorded session id.
 
+Within either command, a timed-out native turn or explicitly recognized
+provider disconnect automatically continues only after Workshop has both
+durably bound that exact session id and proven the old launcher's dedicated
+process group is gone. The host keeps the same mutation lock, stage packet,
+lifecycle gate, and bounded turn/round budgets while applying capped,
+deterministically jittered backoff and resuming the same session for another
+turn. Other failures stop normally. The workflow consumes the launcher's typed
+category rather than reclassifying public exception prose or model-authored
+text; the Codex adapter recognizes transport only from an anchored,
+adapter-recognized diagnostic on the private launcher channel. Product-run
+tools must remain attached to the launcher's process group rather than
+daemonizing or detaching. It never starts a replacement session when identity
+is ambiguous.
+
 That root session plays the Workshop Manager role. In the current adapter it is
 Codex, and it may dynamically delegate bounded matching, specialist creation,
 or independent inspection through standard Codex-native subagents. Those

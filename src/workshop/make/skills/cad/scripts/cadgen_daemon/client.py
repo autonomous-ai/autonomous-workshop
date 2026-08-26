@@ -170,7 +170,10 @@ def _spawn_daemon(sock_path: Path) -> subprocess.Popen | None:
                 stdin=subprocess.DEVNULL,
                 stdout=log_file,
                 stderr=subprocess.STDOUT,
-                start_new_session=True,
+                # Stay inside the Workshop Manager's dedicated process group.
+                # The daemon remains warm for this native turn, while a host
+                # timeout can terminate the complete CAD process tree before
+                # resuming the same Codex session.
                 env=env,
             )
     except OSError:

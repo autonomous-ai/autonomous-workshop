@@ -25,7 +25,9 @@ from workshop.errors import ContractError
 
 NATIVE_PROGRESS_KIND = "autonomous-workshop-native-progress"
 NATIVE_PROGRESS_FILENAME = "native-progress.json"
+_NATIVE_PROGRESS_GENERATION_SUFFIX = ".generation"
 MAX_NATIVE_PROGRESS_BYTES = 4 * 1024
+_MAX_NATIVE_PROGRESS_GENERATION_BYTES = 16
 SAFE_NATIVE_ACTIVITY_CLASSES = (
     "starting",
     "running",
@@ -296,11 +298,17 @@ def begin_native_progress(
     checkpoint_sha256: str,
     checkpoint_stage: str,
     started_at_ms: Optional[int] = None,
+    native_turn_floor: int = 0,
 ) -> NativeRunProgress:
     """Start and durably count one attempted native turn."""
 
     started = _now_ms() if started_at_ms is None else started_at_ms
     _require_timestamp_ms(started, "native progress attempt timestamp")
+    if (
+        type(native_turn_floor) is not int
+        or not 0 <= native_turn_floor <= _MAX_COUNTER
+    ):
+        raise ContractError("native progress turn floor is invalid")
     if previous is not None and (
         previous.product_id != product_id
         or previous.wish_sha256 != wish_sha256
@@ -308,7 +316,12 @@ def begin_native_progress(
         or previous.checkpoint_stage != checkpoint_stage
     ):
         previous = None
-    native_turns = 1 if previous is None else previous.native_turns + 1
+    prior_turns = (
+        native_turn_floor
+        if previous is None
+        else max(native_turn_floor, previous.native_turns)
+    )
+    native_turns = prior_turns + 1
     stage_attempt = (
         previous.stage_attempt + 1
         if previous is not None and previous.attempt_stage == checkpoint_stage
@@ -328,11 +341,137 @@ def begin_native_progress(
     )
 
 
-def write_native_progress(path: Path, progress: NativeRunProgress) -> None:
-    """Atomically replace one private progress record without following links."""
+def _progress_generation_path(path: Path) -> Path:
+    return path.with_name(".%s%s" % (path.name, _NATIVE_PROGRESS_GENERATION_SUFFIX))
+
+
+def _read_progress_generation(path: Path) -> Optional[int]:
+    generation_path = _progress_generation_path(path)
+    try:
+        expected = generation_path.lstat()
+    except FileNotFoundError:
+        return None
+    except OSError:
+        return None
+    if (
+        generation_path.is_symlink()
+        or not stat.S_ISREG(expected.st_mode)
+        or stat.S_IMODE(expected.st_mode) != 0o600
+        or not 2 <= expected.st_size <= _MAX_NATIVE_PROGRESS_GENERATION_BYTES
+    ):
+        return None
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(str(generation_path), flags)
+    except OSError:
+        return None
+    try:
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or stat.S_IMODE(opened.st_mode) != 0o600
+            or (opened.st_dev, opened.st_ino) != (expected.st_dev, expected.st_ino)
+        ):
+            return None
+        content = os.read(descriptor, _MAX_NATIVE_PROGRESS_GENERATION_BYTES + 1)
+        if (
+            len(content) > _MAX_NATIVE_PROGRESS_GENERATION_BYTES
+            or os.read(descriptor, 1)
+        ):
+            return None
+        after = os.fstat(descriptor)
+        if (
+            after.st_size != opened.st_size
+            or after.st_mtime_ns != opened.st_mtime_ns
+            or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            return None
+    except OSError:
+        return None
+    finally:
+        os.close(descriptor)
+    try:
+        text = content.decode("ascii")
+        if not text.endswith("\n") or not text[:-1].isdigit():
+            return None
+        return _require_counter(int(text[:-1]), "native progress generation")
+    except (UnicodeError, ValueError, ContractError):
+        return None
+
+
+def native_progress_turn_floor(path: Path) -> int:
+    """Return the trusted monotonic attempted-turn floor, or zero."""
+
+    generation = _read_progress_generation(path)
+    return 0 if generation is None else generation
+
+
+def _write_progress_generation(path: Path, generation: int) -> None:
+    _require_counter(generation, "native progress generation")
+    generation_path = _progress_generation_path(path)
+    content = ("%d\n" % generation).encode("ascii")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % generation_path.name,
+        suffix=".tmp",
+        dir=str(generation_path.parent),
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        written = 0
+        while written < len(content):
+            written += os.write(descriptor, content[written:])
+        os.fsync(descriptor)
+        os.close(descriptor)
+        descriptor = -1
+        os.replace(temporary, generation_path)
+        directory = os.open(
+            str(generation_path.parent),
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+        )
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def write_native_progress(
+    path: Path,
+    progress: NativeRunProgress,
+    *,
+    establish_generation: bool = False,
+) -> bool:
+    """Atomically write progress only for the current monotonic turn.
+
+    The mutation-locked host establishes each new turn generation before it
+    writes the public record. Reporter callbacks may update only that exact
+    generation. A callback abandoned by an earlier launcher can therefore
+    never make its older counters trusted after the next turn begins.
+    """
 
     if not isinstance(progress, NativeRunProgress):
         raise ContractError("native progress writer requires a progress record")
+    if type(establish_generation) is not bool:
+        raise ContractError("native progress generation policy is invalid")
+    current_generation = _read_progress_generation(path)
+    if establish_generation:
+        if progress.activity != "starting":
+            raise ContractError("new native progress generation must be starting")
+        if (
+            current_generation is not None
+            and current_generation > progress.native_turns
+        ):
+            return False
+        _write_progress_generation(path, progress.native_turns)
+    elif current_generation != progress.native_turns:
+        return False
     content = _canonical_json(progress.to_dict()) + b"\n"
     if len(content) > MAX_NATIVE_PROGRESS_BYTES:
         raise ContractError("native progress exceeded its safe size limit")
@@ -350,6 +489,12 @@ def write_native_progress(path: Path, progress: NativeRunProgress) -> None:
         os.fsync(descriptor)
         os.close(descriptor)
         descriptor = -1
+        # Recheck immediately before installation. If a new host attempt
+        # advanced while this callback was preparing bytes, discard the stale
+        # update. Even an adversarial delay after this check cannot make the
+        # record trusted because readers verify the separate generation floor.
+        if _read_progress_generation(path) != progress.native_turns:
+            return False
         os.replace(temporary, path)
         directory = os.open(
             str(path.parent), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
@@ -365,6 +510,7 @@ def write_native_progress(path: Path, progress: NativeRunProgress) -> None:
             temporary.unlink()
         except FileNotFoundError:
             pass
+    return True
 
 
 def read_native_progress(path: Path) -> NativeRunProgress:
@@ -412,9 +558,12 @@ def read_native_progress(path: Path) -> NativeRunProgress:
         value = json.loads(
             content.decode("utf-8"), object_pairs_hook=_strict_object
         )
-        return NativeRunProgress.from_mapping(value)
+        progress = NativeRunProgress.from_mapping(value)
     except (UnicodeError, ValueError, json.JSONDecodeError, ContractError) as exc:
         raise NativeProgressUnavailable("native progress is unavailable") from exc
+    if _read_progress_generation(path) != progress.native_turns:
+        raise NativeProgressUnavailable("native progress is unavailable")
+    return progress
 
 
 def trusted_native_progress(
@@ -449,6 +598,7 @@ __all__ = [
     "NativeProgressUnavailable",
     "NativeRunProgress",
     "begin_native_progress",
+    "native_progress_turn_floor",
     "read_native_progress",
     "trusted_native_progress",
     "write_native_progress",

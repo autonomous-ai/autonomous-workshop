@@ -97,6 +97,33 @@ project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
 
+A native turn timeout or explicitly recognized provider-transport disconnect
+does not require a person to rerun the command after the session UUID has been
+checkpointed. The launcher reports only those two cases through the typed
+`CodexRecoverableInvocationError` boundary, and only after proving that the
+previous launcher and its dedicated process group are gone, including tool or
+subagent descendants that remain attached to that group. Product-run agents
+and custom tools are forbidden from daemonizing, detaching, creating a new
+session/process group, or intentionally leaving background work behind; the
+portable host boundary cannot prove quiescence for a process that deliberately
+escapes it. While retaining the same exclusive run lock, the host counts the
+failed attempt, preserves the unchanged stage packet, waits a bounded
+exponential delay with deterministic per-run jitter, and resumes that exact
+session for another turn. This continuation consumes the existing
+32-turn command budget and the normal Make-Playtest round budget; it does not
+create a separate retry budget. The delay is capped at 30 seconds and prevents
+a persistent provider outage from becoming a reconnect storm.
+
+An interruption before the exact session identity is bound fails closed rather
+than automatically creating a second root session. Failed-turn events, unknown
+or malformed event streams, unsafe process termination, wrong session identity,
+contracts, gates, authorization, credentials, and external effects are not
+recoverable native-turn categories. If the interrupted turn already wrote a
+checkpoint-bound `agent-outcome.json`, the host evaluates that proposal once
+through the normal gate before considering any continuation. Provider
+transport classification uses only exact anchored diagnostics on the private,
+bounded launcher channel; generic or unrecognized stderr fails closed.
+
 ### Privacy-safe progress status
 
 `workshop status <wish-id>` is read-only and never opens or resumes Codex. While
@@ -127,6 +154,11 @@ otherwise valid lifecycle checkpoint. The next host-owned native attempt may
 replace unusable telemetry safely. `native_turns` is the durable cumulative
 attempt count when trusted progress is available, including from read-only
 status calls, rather than the number of turns launched by the status command.
+Automatic timeout/transport continuations increment both `native_turns` and the
+current stage-attempt number exactly like any other native turn. A separate
+private generation floor makes those counters monotonic: a callback abandoned
+by an earlier launcher may finish late, but its older record is no longer
+trusted and cannot roll status backward.
 
 ## Native subagents and Inventors
 

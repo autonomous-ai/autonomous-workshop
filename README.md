@@ -142,6 +142,16 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
+Once the exact Codex session is checkpointed, the same `wish` or `resume`
+command automatically resumes it after a native-turn timeout or recognized
+provider disconnect. Each continuation uses bounded jittered backoff and is
+counted against the existing turn budget. Workshop first proves the previous
+Codex process group is gone, so no member of that group can overlap the resumed
+turn. Product-run tools are required to remain attached to that group; detached
+or background tool daemons are unsupported. Unknown failures, unsafe
+termination, and interruptions before a session identity is known still stop
+without creating a replacement session.
+
 If a deterministic gate fails or a required tool or authorization is missing,
 the run waits with a concrete need. It never starts a replacement session or
 treats model prose as proof.

@@ -84,6 +84,9 @@ bind its exact source manifest, full Taste, and skill artifacts under
   agents, own loops, decide transitions, bypass checks, or perform effects.
 - Use Codex-native spawning, routing, waiting, and synthesis. Do not launch a
   child `codex` process or recreate those controls in Python.
+- Run every tool subprocess in the foreground and keep it attached to the
+  Manager's process group. Never daemonize, detach, call
+  `setsid`/`start_new_session`, or intentionally leave background work behind.
 - Child agents may author bounded run-local artifacts. The root Manager must
   review them, read the current `STAGE.json`, run the finalizer, and return the
   one stage proposal. Children cannot advance a gate or exercise effect

@@ -10,6 +10,7 @@ from workshop.runtime.progress import (
     NATIVE_PROGRESS_FILENAME,
     NativeProgressUnavailable,
     begin_native_progress,
+    native_progress_turn_floor,
     read_native_progress,
     trusted_native_progress,
     write_native_progress,
@@ -26,7 +27,7 @@ class NativeProgressTest(unittest.TestCase):
             checkpoint_stage="make",
             started_at_ms=started_at_ms,
         )
-        write_native_progress(path, progress)
+        write_native_progress(path, progress, establish_generation=True)
         return progress
 
     def test_private_round_trip_is_bounded_content_free_and_checkpoint_bound(self):
@@ -46,6 +47,9 @@ class NativeProgressTest(unittest.TestCase):
 
             self.assertEqual(observed, progress)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            generation = root / ".native-progress.json.generation"
+            self.assertEqual(stat.S_IMODE(generation.stat().st_mode), 0o600)
+            self.assertEqual(generation.read_bytes(), b"1\n")
             self.assertEqual(
                 observed.public_view(observed_at_ms=5_100),
                 {
@@ -106,6 +110,31 @@ class NativeProgressTest(unittest.TestCase):
             )
             self.assertEqual((third.native_turns, third.stage_attempt), (3, 1))
             self.assertEqual(first.native_turns, 1)
+
+    def test_late_previous_turn_update_cannot_roll_back_current_progress(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary).resolve() / NATIVE_PROGRESS_FILENAME
+            first = self.progress(path)
+            second = begin_native_progress(
+                read_native_progress(path),
+                product_id="wish-progress",
+                wish_sha256="a" * 64,
+                checkpoint_sha256="b" * 64,
+                checkpoint_stage="make",
+                started_at_ms=2_000,
+            )
+            self.assertTrue(
+                write_native_progress(
+                    path,
+                    second,
+                    establish_generation=True,
+                )
+            )
+
+            stale = first.observe("failed", observed_at_ms=3_000)
+            self.assertFalse(write_native_progress(path, stale))
+            self.assertEqual(read_native_progress(path), second)
+            self.assertEqual(native_progress_turn_floor(path), 2)
 
     def test_running_heartbeat_remains_active_and_advances_safe_time(self):
         with tempfile.TemporaryDirectory() as temporary:

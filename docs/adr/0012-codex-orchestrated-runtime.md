@@ -44,6 +44,24 @@ inspection. Codex owns spawning, routing, waiting, and synthesis from the exact
 project-scoped custom agents; Workshop does not launch separate OS-level Codex
 processes or schedule a parallel agent system in Python.
 
+The host may automatically continue a native stage turn only for a typed
+launcher timeout or explicitly recognized provider-transport interruption,
+only after the launcher's dedicated process group is proven empty, and only
+when the exact session UUID is already durably checkpointed. It keeps the
+exclusive run lock, applies bounded deterministic-jitter backoff, resumes that
+same UUID against the unchanged stage subject, and charges the attempt to the
+existing bounded native-turn budget. An unbound interruption, failed-turn
+event, unknown exit, unsafe termination, contract/gate failure, or
+authorization/effect failure remains terminal for that command. This recovery
+is transport control, not a Python reasoning or improvement loop.
+
+The portable cleanup guarantee covers the launcher's dedicated process group.
+Product-run instructions therefore forbid custom tools from daemonizing,
+detaching, creating a new process group/session, or intentionally leaving
+background work behind. The Codex adapter accepts only anchored recognized
+provider diagnostics from its private launcher channel; generic stderr remains
+an unknown failure and fails closed.
+
 Codex uses native inspection, editing, shell, search, rendering, applicable
 skills, and specialist delegation to perform Match reasoning, research,
 concept selection, design, CAD, Playtest, repair, manual writing, and factual

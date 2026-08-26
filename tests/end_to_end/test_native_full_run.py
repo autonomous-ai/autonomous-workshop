@@ -32,7 +32,7 @@ from workshop.release.verification import (
     PRODUCT_VERIFICATION_PATH,
     read_product_verification,
 )
-from workshop.runtime import Receipt
+from workshop.runtime import CodexRecoverableInvocationError, Receipt
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
 
@@ -560,6 +560,18 @@ class _OneSessionProductAgent:
         return self._turn(arguments)
 
 
+class _TimeoutOnceProductAgent(_OneSessionProductAgent):
+    """Checkpoint one session, time out, then finish it on host continuation."""
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        if len(self.starts) != 1 or self.resumes:
+            raise AssertionError("one product run may start only one native session")
+        self._assert_public_arguments(arguments)
+        self._checkpoint(arguments)
+        raise CodexRecoverableInvocationError("fixture native turn timed out")
+
+
 class _FactoryEffects:
     def __init__(self):
         self.secret = "fixture-host-secret"
@@ -817,8 +829,18 @@ class NativeFullRunTest(unittest.TestCase):
                             effects.secret.encode("utf-8"), path.read_bytes()
                         )
 
-    def _run_playtest_routing_case(self, *, playtest_plan, wish_name, context_source):
-        launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
+    def _run_playtest_routing_case(
+        self,
+        *,
+        playtest_plan,
+        wish_name,
+        context_source,
+        launcher=None,
+    ):
+        if launcher is None:
+            launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
+        else:
+            launcher.playtest_plan = list(playtest_plan)
         effects = _FactoryEffects()
 
         def verify_cad(made, **arguments):
@@ -870,6 +892,25 @@ class NativeFullRunTest(unittest.TestCase):
         self.assertEqual(receipt["status"], "waiting")
         self.assertEqual(receipt["stage"], "deliver")
         return launcher, checkpoint
+
+    def test_timeout_continues_same_session_through_the_full_run(self):
+        with mock.patch("workshop.workflow.native_run.time.sleep") as backoff:
+            launcher, checkpoint = self._run_playtest_routing_case(
+                playtest_plan=[],
+                wish_name="orbit-dog-timeout-continuation",
+                context_source="native-timeout-continuation-test",
+                launcher=_TimeoutOnceProductAgent(),
+            )
+
+        self.assertEqual(checkpoint.stage, "deliver")
+        self.assertEqual(checkpoint.status, "waiting")
+        self.assertEqual(len(launcher.starts), 1)
+        self.assertEqual(len(launcher.resumes), 5)
+        backoff.assert_called_once()
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            ["match", "invent", "make", "playtest", "release"],
+        )
 
     def test_design_invalidating_playtest_verdict_routes_back_to_make(self):
         launcher, checkpoint = self._run_playtest_routing_case(

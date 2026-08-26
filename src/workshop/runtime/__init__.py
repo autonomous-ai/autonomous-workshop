@@ -6,6 +6,7 @@ from workshop.runtime.codex import (
     CODEX_PERMISSION_PROFILE,
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexInvocationError,
+    CodexRecoverableInvocationError,
     CodexNativeSessionBinding,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
@@ -19,6 +20,7 @@ from workshop.runtime.credentials import (
 
 __all__ = [
     "CodexInvocationError",
+    "CodexRecoverableInvocationError",
     "CODEX_PERMISSION_PROFILE",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexNativeSessionBinding",
