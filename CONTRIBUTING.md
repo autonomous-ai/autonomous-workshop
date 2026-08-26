@@ -60,7 +60,7 @@ status, source, and exact content hash for every inventor-owned Codex skill
 tree. Match fit comes from the full Taste and Wish, not a product category.
 
 The skill tells a selected native Codex subagent how to apply that Taste
-during bounded Match, Invent, Concept, Make, Playtest, or Release work.
+during bounded Match, Invent, Make, Playtest, or Release work.
 Optional scripts are tools for specialist craft. They may not launch agents,
 sequence stages, submit host gates, access effect credentials, or duplicate
 shared Make and Playtest machinery.
@@ -80,11 +80,11 @@ An Inventor owns:
 
 Workshop owns:
 
-- Wish identity and the Match -> Invent -> Concept -> Make <-> Playtest ->
-  Release -> Deliver lifecycle;
+- Wish identity and the Match -> Invent -> Make <-> Playtest -> Release ->
+  Deliver lifecycle;
 - the root Codex session, checkpoint protocol, invalidation, and round budgets;
-- one native Codex Goal for each active Match, Invent, Concept, Make, Playtest,
-  or Release attempt, with observe -> act -> evaluate -> improve behavior inside
+- one native Codex Goal for each active Match, Invent, Make, Playtest, or
+  Release attempt, with observe -> act -> evaluate -> improve behavior inside
   that Goal rather than in Python;
 - shared CAD, artifact, evidence, schema, and publication contracts;
 - credentials, authenticated effects, idempotency, receipts, and recovery.
@@ -106,9 +106,9 @@ Use these lifecycle names consistently:
 
 - **Wish** preserves the customer's exact intent.
 - **Match** selects and binds one eligible Inventor.
-- **Invent** researches and selects an industrial-design concept.
-- **Concept** researches the Wish and decides the design's exact physical
-  facts, then authors drawing instructions the host draws and seals.
+- **Invent** researches the Wish, explores and selects an industrial-design
+  concept, decides its exact physical facts, and authors one drawing instruction
+  per part.
 - **Make** creates the mechanical, CAD, and printable product artifacts.
 - **Playtest** checks the exact Make and returns bounded repair feedback.
 - **Release** creates the manual and complete evidence-bound, page-ready product
@@ -116,8 +116,11 @@ Use these lifecycle names consistently:
 - **Deliver** waits for separately authorized production, physical QA, packing,
   and carrier receipts.
 
-Taste guides the specialist; it is not another lifecycle stage. Reviews arrive
-after Deliver and may inform future work.
+Concept work is temporarily completed and verified inside Invent, so Concept is
+not a separate active stage. Provider credentials remain host-owned effect
+configuration, not a lifecycle stage. Taste guides the specialist; it is not
+another lifecycle stage. Reviews arrive after Deliver and may inform future
+work.
 
 The distribution, Python namespace, and command are respectively
 `autonomous-workshop`, `workshop`, and `workshop`. The command implementation
