@@ -70,6 +70,18 @@ def permission_arguments(root):
             candidate = Path(value).resolve(strict=True)
             if candidate.is_dir():
                 runtime_paths.add(candidate)
+    library_dir = sysconfig.get_config_var("LIBDIR")
+    library_name = sysconfig.get_config_var(
+        "INSTSONAME"
+    ) or sysconfig.get_config_var("LDLIBRARY")
+    if library_dir and library_name:
+        shared_library = Path(library_dir) / library_name
+        try:
+            resolved_library = shared_library.resolve(strict=True)
+        except OSError:
+            resolved_library = None
+        if resolved_library is not None and resolved_library.is_file():
+            runtime_paths.add(resolved_library)
     entries = [
         '":root"="deny"',
         '":minimal"="read"',

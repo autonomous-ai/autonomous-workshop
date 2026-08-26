@@ -416,6 +416,13 @@ def _python_runtime_permission_identities(
     CAD tools import their packaged Python dependencies.  Code installed in
     those trees is therefore trusted runtime code even though the surrounding
     Workshop checkout remains denied.
+
+    A standalone interpreter build (for example uv's managed CPython) links
+    the executable against a sibling ``libpython*.{dylib,so}`` that lives
+    outside ``stdlib``/``platstdlib``.  Without that shared library granted
+    read-only too, the sandboxed interpreter can be listed but never
+    actually started: dynamic loading fails closed. Grant it by its exact
+    identity, the same way as every other runtime boundary here.
     """
 
     executable = Path(sys.executable)
@@ -451,6 +458,23 @@ def _python_runtime_permission_identities(
             continue
         if resolved_path.is_dir():
             candidates.add(resolved_path)
+    library_dir = sysconfig.get_config_var("LIBDIR")
+    library_name = sysconfig.get_config_var(
+        "INSTSONAME"
+    ) or sysconfig.get_config_var("LDLIBRARY")
+    if (
+        isinstance(library_dir, str)
+        and library_dir
+        and isinstance(library_name, str)
+        and library_name
+    ):
+        shared_library = Path(library_dir) / library_name
+        try:
+            resolved_library = shared_library.resolve(strict=True)
+        except OSError:
+            resolved_library = None
+        if resolved_library is not None and resolved_library.is_file():
+            candidates.add(resolved_library)
     return tuple(
         _trusted_runtime_path_identity(path)
         for path in sorted(candidates, key=lambda candidate: str(candidate))
