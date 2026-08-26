@@ -37,8 +37,8 @@ AGENT_RUN_STAGES = (
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
-MAX_AGENT_INPUT_BYTES = 2 * 1024 * 1024
-MAX_AGENT_INPUT_FILES = 128
+MAX_AGENT_INPUT_BYTES = 4 * 1024 * 1024
+MAX_AGENT_INPUT_FILES = 256
 MAX_AGENT_ARTIFACT_BYTES = 16 * 1024 * 1024
 MAX_AGENT_REFERENCED_BYTES = 64 * 1024 * 1024
 MAX_AGENT_ARTIFACTS_PER_OUTCOME = 16
@@ -65,6 +65,7 @@ _UPSTREAM_STAGE = {
 }
 _DOWNSTREAM_OF_MAKE = ("playtest", "instructions", "deliver")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
+_AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
     rb"(?i)(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token|"
     rb"authorization)\s*[\"']?\s*[:=]\s*[\"']?[^\s,}\"']{4,}"
@@ -212,6 +213,59 @@ def _read_regular(path: Path, label: str, maximum: int) -> bytes:
         return content
     finally:
         os.close(descriptor)
+
+
+def _source_tree_files(
+    root: Path,
+    *,
+    label: str,
+) -> tuple[tuple[PurePosixPath, bytes, int], ...]:
+    """Snapshot one exact, real input tree without following links.
+
+    Product-run skills may contain executable deterministic tools.  Their
+    executable bit is normalized to ``0500`` and bound into the immutable
+    input manifest; every other file is materialized ``0400``.
+    """
+
+    try:
+        requested = Path(root)
+    except TypeError as exc:
+        raise ContractError("%s must be path-like" % label) from exc
+    if not requested.is_absolute() or requested.is_symlink():
+        raise ContractError("%s must be an absolute real directory" % label)
+    try:
+        resolved = requested.resolve(strict=True)
+    except OSError as exc:
+        raise ArtifactError("%s is unavailable" % label) from exc
+    if requested != resolved or not requested.is_dir():
+        raise ArtifactError("%s must be an absolute real directory" % label)
+
+    files: list[tuple[PurePosixPath, bytes, int]] = []
+    for directory, dirnames, filenames in os.walk(str(requested), followlinks=False):
+        base = Path(directory)
+        for dirname in tuple(dirnames):
+            if (base / dirname).is_symlink():
+                raise ArtifactError("%s contains a symlink" % label)
+        for filename in sorted(filenames):
+            source = base / filename
+            if source.is_symlink():
+                raise ArtifactError("%s contains a symlink" % label)
+            relative = PurePosixPath(source.relative_to(requested).as_posix())
+            _safe_relative(relative.as_posix(), "%s path" % label)
+            try:
+                source_mode = stat.S_IMODE(source.lstat().st_mode)
+            except OSError as exc:
+                raise ArtifactError("%s entry is unavailable" % label) from exc
+            mode = 0o500 if source_mode & 0o111 else 0o400
+            files.append(
+                (
+                    relative,
+                    _read_regular(source, "%s file" % label, MAX_AGENT_INPUT_BYTES),
+                    mode,
+                )
+            )
+    files.sort(key=lambda item: item[0].as_posix())
+    return tuple(files)
 
 
 def _read_relative_regular(root: Path, relative: PurePosixPath) -> tuple[bytes, int]:
@@ -508,6 +562,8 @@ class AgentRun:
         wish_bytes: bytes,
         product_run_constitution_source: Path,
         skill_root: Path,
+        domain_skill_roots: Optional[Mapping[str, Path]] = None,
+        inventor_catalog_root: Optional[Path] = None,
         max_rounds: int = 4,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
@@ -573,52 +629,115 @@ class AgentRun:
             constitution, "product-run constitution source", MAX_AGENT_INPUT_BYTES
         )
         _reject_private_agent_bytes("AGENTS.md", constitution_bytes)
-        try:
-            skill_source = Path(skill_root)
-        except TypeError as exc:
-            raise ContractError("source autonomous-workshop skill must be path-like") from exc
-        if not skill_source.is_absolute() or skill_source.is_symlink():
-            raise ContractError(
-                "source autonomous-workshop skill must be an absolute real directory"
-            )
-        try:
-            resolved_skill = skill_source.resolve(strict=True)
-        except OSError as exc:
-            raise ArtifactError("source autonomous-workshop skill is unavailable") from exc
-        if resolved_skill != skill_source or not skill_source.is_dir():
-            raise ArtifactError("source autonomous-workshop skill must be a directory")
-        skill_files: list[tuple[PurePosixPath, bytes]] = []
-        for directory, dirnames, filenames in os.walk(str(skill_source), followlinks=False):
-            base = Path(directory)
-            for dirname in tuple(dirnames):
-                if (base / dirname).is_symlink():
-                    raise ArtifactError("source autonomous-workshop skill contains a symlink")
-            for filename in sorted(filenames):
-                source = base / filename
-                relative = PurePosixPath(source.relative_to(skill_source).as_posix())
-                _safe_relative(relative.as_posix(), "source skill path")
-                skill_files.append(
-                    (
-                        relative,
-                        _read_regular(source, "source skill file", MAX_AGENT_INPUT_BYTES),
-                    )
-                )
-        skill_files.sort(key=lambda item: item[0].as_posix())
-        if not skill_files or skill_files[0][0].as_posix() != "SKILL.md":
-            if not any(relative.as_posix() == "SKILL.md" for relative, _ in skill_files):
-                raise ArtifactError("source autonomous-workshop skill lacks SKILL.md")
-        if len(skill_files) + 2 > MAX_AGENT_INPUT_FILES:
-            raise ArtifactError("agent run has too many input files")
-        total_input_bytes = len(wish_bytes) + len(constitution_bytes) + sum(
-            len(content) for _, content in skill_files
+        skill_files = _source_tree_files(
+            skill_root, label="source autonomous-workshop skill"
         )
-        if total_input_bytes > MAX_AGENT_INPUT_BYTES:
-            raise ArtifactError("agent run inputs exceed their total byte limit")
-        for relative, content in skill_files:
+        if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in skill_files):
+            raise ArtifactError("source autonomous-workshop skill lacks SKILL.md")
+        for relative, content, _ in skill_files:
             _reject_private_agent_bytes(
                 ".agents/skills/autonomous-workshop/%s" % relative.as_posix(),
                 content,
             )
+
+        domain_files: list[tuple[PurePosixPath, bytes, int]] = []
+        selected_domain_skills = domain_skill_roots or {}
+        if not isinstance(selected_domain_skills, Mapping):
+            raise ContractError("domain skill roots must be a mapping")
+        for name, source_root in sorted(selected_domain_skills.items()):
+            if (
+                not isinstance(name, str)
+                or _AGENT_SKILL_NAME.fullmatch(name) is None
+                or name == "autonomous-workshop"
+            ):
+                raise ContractError("domain skill name is invalid")
+            files = _source_tree_files(
+                source_root, label="source %s skill" % name
+            )
+            if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in files):
+                raise ArtifactError("source %s skill lacks SKILL.md" % name)
+            target = PurePosixPath(".agents/skills") / name
+            for relative, content, mode in files:
+                destination = target / relative
+                _reject_private_agent_bytes(destination.as_posix(), content)
+                domain_files.append((destination, content, mode))
+
+        catalog_files: list[tuple[PurePosixPath, bytes, int]] = []
+        if inventor_catalog_root is not None:
+            try:
+                requested_catalog = Path(inventor_catalog_root)
+            except TypeError as exc:
+                raise ContractError("inventor catalog root must be path-like") from exc
+            if not requested_catalog.is_absolute() or requested_catalog.is_symlink():
+                raise ContractError(
+                    "inventor catalog root must be an absolute real directory"
+                )
+            try:
+                resolved_catalog = requested_catalog.resolve(strict=True)
+            except OSError as exc:
+                raise ArtifactError("inventor catalog root is unavailable") from exc
+            if resolved_catalog != requested_catalog or not requested_catalog.is_dir():
+                raise ArtifactError("inventor catalog root must be a real directory")
+            try:
+                entries = sorted(requested_catalog.iterdir(), key=lambda item: item.name)
+            except OSError as exc:
+                raise ArtifactError("inventor catalog cannot be listed") from exc
+            for entry in entries:
+                if entry.is_symlink():
+                    raise ArtifactError("inventor catalog contains a symlink")
+                if not entry.is_dir():
+                    continue
+                if _AGENT_SKILL_NAME.fullmatch(entry.name) is None:
+                    raise ArtifactError("inventor catalog id is not a safe path name")
+                manifest_path = entry / "inventor.json"
+                taste_path = entry / "TASTE.md"
+                if not manifest_path.is_file() or not taste_path.is_file():
+                    raise ArtifactError(
+                        "inventor catalog entry must contain inventor.json and TASTE.md"
+                    )
+                manifest = _read_regular(
+                    manifest_path, "inventor manifest", MAX_AGENT_INPUT_BYTES
+                )
+                taste = _read_regular(taste_path, "inventor Taste", MAX_AGENT_INPUT_BYTES)
+                try:
+                    manifest_value = json.loads(
+                        manifest.decode("utf-8"), object_pairs_hook=_strict_object
+                    )
+                except (UnicodeError, ValueError, json.JSONDecodeError) as exc:
+                    raise ArtifactError("inventor manifest must be strict JSON") from exc
+                if (
+                    not isinstance(manifest_value, Mapping)
+                    or manifest_value.get("id") != entry.name
+                ):
+                    raise ArtifactError("inventor manifest id differs from its folder")
+                target = PurePosixPath("catalog/inventors") / entry.name
+                for filename, content in (("inventor.json", manifest), ("TASTE.md", taste)):
+                    destination = target / filename
+                    _reject_private_agent_bytes(destination.as_posix(), content)
+                    catalog_files.append((destination, content, 0o400))
+            if not catalog_files:
+                raise ArtifactError("inventor catalog contains no Inventors")
+
+        all_input_files: list[tuple[PurePosixPath, bytes, int]] = [
+            (PurePosixPath("WISH.json"), wish_bytes, 0o400),
+            (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
+        ]
+        skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
+        all_input_files.extend(
+            (skill_target / relative, content, mode)
+            for relative, content, mode in skill_files
+        )
+        all_input_files.extend(domain_files)
+        all_input_files.extend(catalog_files)
+        all_input_files.sort(key=lambda item: item[0].as_posix())
+        input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
+        if len(input_paths) != len(set(input_paths)):
+            raise ArtifactError("agent run input paths collide")
+        if len(all_input_files) > MAX_AGENT_INPUT_FILES:
+            raise ArtifactError("agent run has too many input files")
+        total_input_bytes = sum(len(content) for _, content, _ in all_input_files)
+        if total_input_bytes > MAX_AGENT_INPUT_BYTES:
+            raise ArtifactError("agent run inputs exceed their total byte limit")
 
         if selected.exists() or selected.is_symlink():
             raise StateConflict("agent run root already exists")
@@ -648,14 +767,14 @@ class AgentRun:
 
         inputs: list[dict[str, Any]] = []
 
-        def materialize(relative: PurePosixPath, content: bytes) -> None:
+        def materialize(relative: PurePosixPath, content: bytes, mode: int) -> None:
             destination = selected.joinpath(*relative.parts)
             destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
             try:
                 descriptor = os.open(
                     str(destination),
                     os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-                    0o400,
+                    mode,
                 )
             except OSError as exc:
                 raise ArtifactError("agent input could not be materialized") from exc
@@ -666,20 +785,18 @@ class AgentRun:
                 os.fsync(descriptor)
             finally:
                 os.close(descriptor)
-            os.chmod(destination, 0o400)
+            os.chmod(destination, mode)
             inputs.append(
                 {
                     "path": relative.as_posix(),
                     "sha256": _sha256(content),
                     "size": len(content),
+                    "mode": mode,
                 }
             )
 
-        materialize(PurePosixPath("WISH.json"), wish_bytes)
-        materialize(PurePosixPath("AGENTS.md"), constitution_bytes)
-        skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
-        for relative, content in skill_files:
-            materialize(skill_target / relative, content)
+        for relative, content, mode in all_input_files:
+            materialize(relative, content, mode)
         for directory in sorted(
             (
                 path
@@ -691,9 +808,22 @@ class AgentRun:
         ):
             os.chmod(directory, 0o500)
         os.chmod(selected / ".agents", 0o500)
+        catalog_input_root = selected / "catalog"
+        if catalog_input_root.exists():
+            for directory in sorted(
+                (
+                    path
+                    for path in catalog_input_root.rglob("*")
+                    if path.is_dir()
+                ),
+                key=lambda path: len(path.parts),
+                reverse=True,
+            ):
+                os.chmod(directory, 0o500)
+            os.chmod(catalog_input_root, 0o500)
 
         core: dict[str, Any] = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
             "product_id": product_id,
             "run_root_sha256": _sha256(str(selected).encode("utf-8")),
@@ -852,7 +982,7 @@ class AgentRun:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
             type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 1
+            or payload["schema_version"] != 2
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
             or payload["stage"] not in AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
@@ -885,15 +1015,22 @@ class AgentRun:
         observed_paths = []
         total = 0
         for item in inputs:
-            if not isinstance(item, Mapping) or set(item) != {"path", "sha256", "size"}:
+            if not isinstance(item, Mapping) or set(item) != {
+                "path",
+                "sha256",
+                "size",
+                "mode",
+            }:
                 raise StateConflict("agent run input manifest is invalid")
             relative = _safe_relative(item["path"], "agent input path")
             if type(item["size"]) is not int or not 0 <= item["size"] <= MAX_AGENT_INPUT_BYTES:
                 raise StateConflict("agent run input size is invalid")
+            if type(item["mode"]) is not int or item["mode"] not in (0o400, 0o500):
+                raise StateConflict("agent run input mode is invalid")
             require_sha256(item["sha256"], "agent input sha256")
             content, size = _read_relative_regular(self.run_root, relative)
             path = self.run_root.joinpath(*relative.parts)
-            if stat.S_IMODE(path.stat().st_mode) != 0o400:
+            if stat.S_IMODE(path.stat().st_mode) != item["mode"]:
                 raise StateConflict("agent run immutable input mode changed")
             if size != item["size"] or _sha256(content) != item["sha256"]:
                 raise StateConflict("agent run immutable input bytes changed")
@@ -904,42 +1041,64 @@ class AgentRun:
         required = {"WISH.json", "AGENTS.md", ".agents/skills/autonomous-workshop/SKILL.md"}
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
-        skill_root = self.run_root / ".agents" / "skills" / "autonomous-workshop"
-        skill_directories = [
-            self.run_root / ".agents",
-            self.run_root / ".agents" / "skills",
-            skill_root,
-        ]
-        actual_skill_files = set()
-        for entry in skill_root.rglob("*"):
+        immutable_trees = (
+            (self.run_root / ".agents", ".agents/", "skill"),
+            (self.run_root / "catalog", "catalog/", "catalog"),
+        )
+        for tree_root, prefix, label in immutable_trees:
+            expected_files = {path for path in observed_paths if path.startswith(prefix)}
+            if not expected_files:
+                if tree_root.exists() or tree_root.is_symlink():
+                    raise StateConflict(
+                        "agent run immutable %s tree is unexpected" % label
+                    )
+                continue
+            directories = [tree_root]
+            actual_files = set()
             try:
-                identity = entry.lstat()
+                entries = tuple(tree_root.rglob("*"))
             except OSError as exc:
-                raise StateConflict("agent run skill entry is unavailable") from exc
-            if entry.is_symlink():
-                raise StateConflict("agent run immutable skill tree contains a symlink")
-            if stat.S_ISDIR(identity.st_mode):
-                skill_directories.append(entry)
-            elif stat.S_ISREG(identity.st_mode):
-                actual_skill_files.add(entry.relative_to(self.run_root).as_posix())
-            else:
-                raise StateConflict("agent run immutable skill tree has a special file")
-        for directory in skill_directories:
-            try:
-                identity = directory.lstat()
-            except OSError as exc:
-                raise StateConflict("agent run skill directory is unavailable") from exc
-            if (
-                directory.is_symlink()
-                or not stat.S_ISDIR(identity.st_mode)
-                or stat.S_IMODE(identity.st_mode) != 0o500
-            ):
-                raise StateConflict("agent run immutable skill directory mode changed")
-        expected_skill_files = {
-            path for path in observed_paths if path.startswith(".agents/skills/autonomous-workshop/")
-        }
-        if actual_skill_files != expected_skill_files:
-            raise StateConflict("agent run skill tree differs from its input manifest")
+                raise StateConflict(
+                    "agent run immutable %s tree is unavailable" % label
+                ) from exc
+            for entry in entries:
+                try:
+                    identity = entry.lstat()
+                except OSError as exc:
+                    raise StateConflict(
+                        "agent run immutable %s entry is unavailable" % label
+                    ) from exc
+                if entry.is_symlink():
+                    raise StateConflict(
+                        "agent run immutable %s tree contains a symlink" % label
+                    )
+                if stat.S_ISDIR(identity.st_mode):
+                    directories.append(entry)
+                elif stat.S_ISREG(identity.st_mode):
+                    actual_files.add(entry.relative_to(self.run_root).as_posix())
+                else:
+                    raise StateConflict(
+                        "agent run immutable %s tree has a special file" % label
+                    )
+            for directory in directories:
+                try:
+                    identity = directory.lstat()
+                except OSError as exc:
+                    raise StateConflict(
+                        "agent run immutable %s directory is unavailable" % label
+                    ) from exc
+                if (
+                    directory.is_symlink()
+                    or not stat.S_ISDIR(identity.st_mode)
+                    or stat.S_IMODE(identity.st_mode) != 0o500
+                ):
+                    raise StateConflict(
+                        "agent run immutable %s directory mode changed" % label
+                    )
+            if actual_files != expected_files:
+                raise StateConflict(
+                    "agent run immutable %s tree differs from its input manifest" % label
+                )
 
     def _verify_sealed_artifacts(self, payload: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
         sealed = payload.get("sealed_artifacts")

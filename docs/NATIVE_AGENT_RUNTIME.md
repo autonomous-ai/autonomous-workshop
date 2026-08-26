@@ -42,6 +42,8 @@ host creates a private run root
   - exact Wish
   - AGENTS.md
   - .agents/skills/autonomous-workshop/**
+  - .agents/skills/{cad,product-to-cad,step-parts}/**
+  - catalog/inventors/<id>/{inventor.json,TASTE.md}
   - durable host checkpoint
         |
         v
@@ -100,6 +102,8 @@ the private run root:
 <run-root>/AGENTS.md
 <run-root>/.agents/skills/autonomous-workshop/SKILL.md
 <run-root>/.agents/skills/autonomous-workshop/references/**
+<run-root>/.agents/skills/{cad,product-to-cad,step-parts}/**
+<run-root>/catalog/inventors/<id>/{inventor.json,TASTE.md}
 ```
 
 The host copies `.agents/product-run/AGENTS.md` to `<run-root>/AGENTS.md`, then
@@ -107,6 +111,11 @@ hashes all materialized instruction bytes and binds the hash to the run. Resume
 fails closed if the materialized instructions have changed. Do not maintain a
 second hand-edited copy and do not install the project skill globally under a
 user's Codex home.
+
+Make owns the canonical domain-skill sources in `src/workshop/make/skills/`;
+the run tree is a generated immutable snapshot. Inventor folders are personas,
+not subprocess packages: Match reads their exact manifest and Taste bytes, and
+the native session performs the work in that selected point of view.
 
 Substantive output also lives in the run workspace. Agent messages contain only
 a bounded outcome envelope: current stage, status, changed artifact paths and

@@ -56,7 +56,7 @@ class AgentRunTest(unittest.TestCase):
             self.product_id, "Make a clockwork moon."
         )
 
-    def create(self, *, max_rounds=4):
+    def create(self, *, max_rounds=4, **kwargs):
         return AgentRun.create(
             self.run_root,
             host_state_root=self.host_state_root,
@@ -65,6 +65,7 @@ class AgentRunTest(unittest.TestCase):
             product_run_constitution_source=self.product_run_constitution,
             skill_root=self.skill,
             max_rounds=max_rounds,
+            **kwargs,
         )
 
     def artifact(self, run, stage, name=None, content=None):
@@ -152,6 +153,50 @@ class AgentRunTest(unittest.TestCase):
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_create_materializes_catalog_and_executable_domain_skills(self):
+        cad = self.root / "cad-skill"
+        (cad / "scripts").mkdir(parents=True)
+        (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
+        checker = cad / "scripts" / "check_mesh"
+        checker.write_bytes(b"#!/bin/sh\nexit 0\n")
+        checker.chmod(0o755)
+
+        catalog = self.root / "inventors"
+        alice = catalog / "alice"
+        alice.mkdir(parents=True)
+        (alice / "inventor.json").write_text(
+            '{"id":"alice","schema_version":6}\n', encoding="utf-8"
+        )
+        (alice / "TASTE.md").write_text(
+            "---\nname: Alice\ndescription: Exact classics.\n---\n",
+            encoding="utf-8",
+        )
+
+        run = self.create(
+            domain_skill_roots={"cad": cad},
+            inventor_catalog_root=catalog,
+        )
+        checkpoint = run.snapshot()
+        expected_modes = {
+            ".agents/skills/cad/SKILL.md": 0o400,
+            ".agents/skills/cad/scripts/check_mesh": 0o500,
+            "catalog/inventors/alice/inventor.json": 0o400,
+            "catalog/inventors/alice/TASTE.md": 0o400,
+        }
+        for relative, mode in expected_modes.items():
+            path = run.run_root / relative
+            self.assertIn(relative, checkpoint.input_sha256s)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), mode)
+        self.assertEqual(
+            stat.S_IMODE((run.run_root / "catalog" / "inventors").stat().st_mode),
+            0o500,
+        )
+
+        run_checker = run.run_root / ".agents/skills/cad/scripts/check_mesh"
+        run_checker.chmod(0o400)
+        with self.assertRaisesRegex(StateConflict, "immutable input mode"):
+            run.snapshot()
 
     def test_creation_requires_explicit_product_run_constitution_source(self):
         repository_agents = self.root / "AGENTS.md"

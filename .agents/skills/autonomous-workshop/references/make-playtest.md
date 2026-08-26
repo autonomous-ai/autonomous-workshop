@@ -9,11 +9,12 @@ round budget, and authorization scope. Verify them before acting.
 **Input:** Sealed Invent output, exact upstream bindings, prior Playtest
 feedback, lane requirements, and deterministic tool policy.
 
-**Codex work:** Use native editing and the applicable CAD/build skills to create
-the actual product project. Inspect renders and files, run narrow repository
-checkers, and repair concrete findings within the round budget. Map mechanisms,
-rules, dimensions, materials, tolerances, and limitations to real artifact
-bytes rather than prose assertions.
+**Codex work:** Use native editing and the materialized `cad`,
+`product-to-cad`, and `step-parts` skills under `.agents/skills/` to create the
+actual product project. Inspect renders and files, run their narrow
+deterministic checkers, and repair concrete findings within the round budget.
+Map mechanisms, rules, dimensions, materials, tolerances, and limitations to
+real artifact bytes rather than prose assertions.
 
 **Artifact and gate:** Leave a complete artifact tree, content-addressed
 manifest, product summary, and required CAD/manufacturing verification

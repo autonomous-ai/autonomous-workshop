@@ -16,6 +16,7 @@ import shutil
 import stat
 import sys
 import tempfile
+from types import MappingProxyType
 from typing import Mapping, Optional
 
 from workshop.errors import WorkshopError
@@ -23,6 +24,7 @@ from workshop.errors import WorkshopError
 
 BUNDLED_INVENTOR_IDS = ("alice", "bob", "eve", "ivy", "leo")
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json", "profile.py")
+PRODUCT_RUN_DOMAIN_SKILLS = ("cad", "product-to-cad", "step-parts")
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024
 _CATALOG_HASH_DOMAIN = b"autonomous-workshop-bundled-inventors-v1\0"
 
@@ -58,6 +60,28 @@ def packaged_data_root(group: str, package_file: Path) -> Optional[Path]:
     ).is_file():
         return None
     return resolved
+
+
+def product_run_domain_skill_roots(
+    package_file: Optional[Path] = None,
+) -> Mapping[str, Path]:
+    """Return the exact component-owned skills exposed to a product run."""
+
+    root = packaged_data_root(
+        "skills", Path(__file__) if package_file is None else Path(package_file)
+    )
+    if root is None:
+        raise PackageDataError("this Workshop installation has no Make skills")
+    selected: dict[str, Path] = {}
+    for name in PRODUCT_RUN_DOMAIN_SKILLS:
+        candidate = root / name
+        if candidate.is_symlink() or not candidate.is_dir():
+            raise PackageDataError("missing product-run domain skill: %s" % name)
+        skill_file = candidate / "SKILL.md"
+        if skill_file.is_symlink() or not skill_file.is_file():
+            raise PackageDataError("domain skill has no regular SKILL.md: %s" % name)
+        selected[name] = candidate.resolve()
+    return MappingProxyType(selected)
 
 
 def _read_regular_bytes(path: Path) -> bytes:

@@ -12,6 +12,7 @@ from workshop.runtime.package_data import (
     materialize_bundled_inventors,
     packaged_inventor_catalog_root,
     packaged_inventors_root,
+    product_run_domain_skill_roots,
     retained_bundled_catalog_roots,
 )
 from workshop.contributors.manifest import discover_inventors
@@ -35,6 +36,15 @@ SCHEMA_OWNERS = {
 
 
 class PackageDataTest(unittest.TestCase):
+    def test_product_run_domain_skills_resolve_from_make_component(self):
+        roots = product_run_domain_skill_roots()
+
+        self.assertEqual(set(roots), {"cad", "product-to-cad", "step-parts"})
+        for name, root in roots.items():
+            self.assertEqual(root.name, name)
+            self.assertEqual(root.parent.name, "skills")
+            self.assertTrue((root / "SKILL.md").is_file())
+
     def test_every_schema_is_owned_by_its_architecture_component(self):
         expected = {
             name: (

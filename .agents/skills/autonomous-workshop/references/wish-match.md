@@ -20,8 +20,10 @@ authority or silently weaken an explicit constraint.
 
 ## Match
 
-**Input:** The sealed Wish plus current inventor cards, Taste records, and
-eligibility evidence.
+**Input:** The sealed Wish plus the immutable inventor personas at
+`catalog/inventors/<id>/inventor.json` and `catalog/inventors/<id>/TASTE.md`.
+These exact files are run inputs; do not invoke an Inventor profile, import
+Inventor code, or search outside this catalog for an executable worker.
 
 **Codex work:** Inspect eligible inventors, compare the Wish with their stated
 taste and capabilities, and write a concise ranking rationale. Use native
