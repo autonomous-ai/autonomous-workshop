@@ -2,7 +2,7 @@
 
 ## `cad`, `design-reference`, `image-to-cad`, and `step-parts`
 
-- Canonical snapshot: `autonomous-ai/autonomous-text-to-3d` at
+- Canonical snapshot: `autonomous-ai/autonomous-product-to-cad` at
   `0403039457603002739359f620f8c780a2c829dc` (2026-08-26).
 - The reviewed snapshot includes the complete upstream trees for all four
   skills. `cad` includes the vendored `cadgen` 0.4.19 source, bought-part mount
@@ -13,9 +13,10 @@
   `.agents/skills` layout: command examples resolve each package-owned skill
   through `workshop skills path`; the image renderer prints the absolute
   materialized likeness-checker path; the design-reference cache is rooted in
-  the writable invocation workspace rather than the immutable skill tree; CAD
-  warm-daemon identity and staleness are rooted in the materialized CAD skill
-  tree; and the CAD skill documents the now-present sibling image workflow.
+  the writable invocation workspace rather than the immutable skill tree; its
+  HTTP user agent uses the renamed repository identity; CAD warm-daemon
+  identity and staleness are rooted in the materialized CAD skill tree; and the
+  CAD skill documents the now-present sibling image workflow.
   One trailing blank line in `generation_runner.py` and one in
   `catalog-schema.md` are normalized for repository whitespace checks.
   Geometry, measurement, catalog, inspection, validation, export, and `cadgen`

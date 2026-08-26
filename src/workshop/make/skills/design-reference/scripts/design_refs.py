@@ -25,7 +25,7 @@ SOURCE_REGISTRY = SKILL_DIR / "data" / "sources.json"
 # Product-run skill trees are immutable package inputs. Keep downloaded indexes
 # in the writable product workspace from which the client is invoked.
 DEFAULT_CACHE_DIR = Path.cwd().resolve() / ".design-reference-cache"
-USER_AGENT = "text-to-3d-design-reference/1.0"
+USER_AGENT = "autonomous-product-to-cad-design-reference/1.0"
 TOKEN_RE = re.compile(r"[a-z0-9]+")
 MANAGED_FETCH_FILES = {"reference.build123d.txt", "contact-sheet.png", "LICENSE.md", "provenance.json"}
 SELF_CHECK_FIXTURE = b'''"""fixture"""

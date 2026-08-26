@@ -88,7 +88,7 @@ Workshop owns:
 - credentials, authenticated effects, idempotency, receipts, and recovery.
 
 Put reusable implementation in its owning component under `src/workshop/`,
-not in an Inventor. Shared text-to-3D and CAD capabilities belong under
+not in an Inventor. Shared product-to-CAD and CAD capabilities belong under
 `src/workshop/make/skills/`. Provider transport belongs under
 `src/workshop/integrations/`. The CLI only parses user commands and invokes the
 host; it does not perform product reasoning.

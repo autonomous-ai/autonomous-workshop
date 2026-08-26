@@ -3,11 +3,11 @@
 Autonomous Workshop is licensed under Apache-2.0. The following bundled or
 required materials retain their own licenses.
 
-## Peter's text-to-3D tools
+## Peter's product-to-CAD tools
 
 The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills under
 `src/workshop/make/skills/` derive from
-[`autonomous-ai/autonomous-text-to-3d`](https://github.com/autonomous-ai/autonomous-text-to-3d).
+[`autonomous-ai/autonomous-product-to-cad`](https://github.com/autonomous-ai/autonomous-product-to-cad).
 Their exact reviewed revisions and local adaptations are recorded in
 `src/workshop/make/skills/PROVENANCE.md` and their installed byte identities in
 `src/workshop/make/skills/LOCK.json`.
