@@ -320,6 +320,27 @@ toys stay denied. The immutable project-root marker also prevents builder
 never enter the Codex subprocess, prompt, run artifacts, or status output.
 Public publication is not evidence of physical manufacture or delivery.
 
+## Native turn completion
+
+The documented Codex JSONL success boundary is the external
+`turn.completed` event. Workshop breaks and reaps the CLI process promptly
+after receiving that event, even if the process retains background Goal
+resources instead of exiting naturally.
+
+Some observed Codex rollouts have recorded an internal `task_complete` while
+the CLI never emitted external `turn.completed`. As a temporary operational
+band-aid, Workshop may return control after 30 seconds with no external native
+event, but only after it has received a completed agent message and found a
+bounded, strict `agent-outcome.json` envelope bound to the current checkpoint
+and gate subject. Any later native event restarts the quiet period. The host
+still performs the complete proposal, artifact, hash, and stage-gate checks
+after the launcher returns; the fallback grants no gate authority.
+
+This fallback is not the protocol-level fix. A future runtime investigation
+must determine why the internal completion event is not translated into the
+CLI's documented external terminal event, fix that boundary at its source,
+and remove the quiet-period workaround when the external event is reliable.
+
 ## Materialized instructions and skills
 
 Canonical product-run sources live at:

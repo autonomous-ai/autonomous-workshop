@@ -1293,6 +1293,7 @@ def _launcher_call(
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
+    subject_sha256: str,
 ) -> CodexNativeSessionOutcome:
     arguments = {
         "product_id": checkpoint.product_id,
@@ -1301,6 +1302,8 @@ def _launcher_call(
         "run_root": paths.workspace,
         "host_state_root": paths.host_state,
         "prompt": native_stage_prompt(checkpoint.stage),
+        "expected_agent_checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "expected_agent_subject_sha256": subject_sha256,
     }
     try:
         return getattr(launcher, method)(**arguments)
@@ -2391,7 +2394,11 @@ def _run_native_session(
         _remove_agent_outcome(run.run_root)
         method = "resume" if _session_status(paths) == "checkpointed" else "start"
         last_session = _launcher_call(
-            launcher, method, checkpoint=checkpoint, paths=paths
+            launcher,
+            method,
+            checkpoint=checkpoint,
+            paths=paths,
+            subject_sha256=subject,
         )
         turns += 1
         if not _agent_outcome_exists(run.run_root):

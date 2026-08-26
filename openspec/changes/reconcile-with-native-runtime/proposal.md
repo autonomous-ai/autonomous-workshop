@@ -21,6 +21,10 @@ So this change keeps what the branch decided and discards how it executed: the r
 
 ### New Capabilities
 
+- `workshop/native-agent-runtime`: The native turn completion boundary —
+  external `turn.completed` remains authoritative, with a checkpoint-bound
+  30-second quiet fallback documented explicitly as a temporary band-aid
+  pending investigation and repair of the missing CLI event translation.
 - `workshop/concept-stage`: Concept as a host-gated native stage — its position and transitions, the `STAGE.json` inputs it receives, what the native turn must author, the deterministic gate over that output, the sealed `concept_sha256` it produces, how a later round revises rather than restarts, and what it waits for when an effect cannot run.
 - `workshop/concept-image-integration`: The host-side image adapter — that it transports agent-authored drawing instructions rather than composing them, credential isolation and the scrubbed-environment boundary, reference accumulation across roles, writing and sealing returned bytes into the concept tree, and the failure and waiting surfaces that stop a run instead of completing it.
 
@@ -49,6 +53,10 @@ Each is deleted because `main`'s architecture forbids the mechanism it specifies
 
 - **New component** `src/workshop/concept/` (`README.md`, `__init__.py`, `native.py`, `native_gate.py`, `schemas/`), registered in `.github/components.toml`, `tests/architecture/test_component_layout.py`, and `tests/architecture/test_component_import_graph.py`.
 - **Eight hard-coded tables** gain a stage: `AGENT_RUN_STAGES`, `_FORWARD_TRANSITIONS`, `_UPSTREAM_STAGE` (`workflow/agent_run.py`), `_FORWARD` and the gate ids (`workflow/stage_gates.py`), `_prepare_stage_input`, `_process_agent_outcome`, and `native_stage_prompt` (`workflow/native_run.py`).
+- **Native completion fallback**: `runtime/codex.py` waits 30 quiet seconds
+  after a completed agent message and a bounded proposal for the exact current
+  checkpoint and subject when external `turn.completed` is missing. This is a
+  temporary mitigation, not the root-cause fix.
 - **The agent-side finalizer is a second half that must agree byte-for-byte**: `.agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py` gains a `concept` subcommand, `STAGES`/`FORWARD`/`STAGE_FIELDS` entries, and a contract builder producing canonical JSON identical to `concept/native.py`.
 - **Instructions**: a `references/concept.md` in the workflow skill, a routing line in its `SKILL.md`, and a Concept bullet in each of the six Inventors' `<id>-inventor/SKILL.md` stage-contribution lists.
 - `src/workshop/make/` gains `concept_sha256` on `NativeMade` plus the component-correspondence and image-byte checks; `integrations/` gains one adapter, still importable only by `workflow/native_run.py`.

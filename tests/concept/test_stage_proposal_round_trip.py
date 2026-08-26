@@ -9,6 +9,7 @@ import unittest
 from pathlib import Path
 
 from workshop.concept.native import NativeConcept, seal_rendered_concept
+from workshop.concept.native_gate import evaluate_concept_brief
 from workshop.invent.native import NativeInvented
 from workshop.match.native import (
     InventorRoster,
@@ -17,6 +18,7 @@ from workshop.match.native import (
     NativeMatchAssignment,
 )
 from workshop.product import ToyBlueprint
+from workshop.wish import Wish
 from workshop.workflow.proposals import AgentOutcomeProposal
 
 
@@ -329,6 +331,11 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         tree = from_finalizer.validate_concept_tree(self.run_root)
         self.assertEqual(tree.brief["object"], "moon lamp")
         self.assertFalse((tree.root / "images").exists())
+        checks = evaluate_concept_brief(
+            tree,
+            wish=Wish.create("run-local-toy", "a lamp shaped like a moon"),
+        )
+        self.assertEqual(checks["object"], "moon lamp")
 
         for entry in (
             tree.descriptor["front"],
@@ -359,6 +366,27 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         self.assertEqual(
             proposal.outcome.artifacts[0].sha256, sha256(contract_bytes)
         )
+
+    def test_finalizer_rejects_brief_the_host_gate_would_reject(self):
+        concept_root = self.build_concept_tree()
+        brief_path = concept_root / "brief.json"
+        brief = json.loads(brief_path.read_bytes().decode("utf-8"))
+        del brief["object"]
+        brief_path.write_bytes(canonical_json(brief))
+        self.write_stage(FAKE)
+
+        completed = self.run_tool(
+            "concept",
+            "--concept-root",
+            "artifacts/concept/r0001/concept",
+            expected=2,
+        )
+
+        self.assertIn("Concept brief is missing its object", completed.stderr)
+        self.assertFalse(
+            (self.run_root / "artifacts/concept/r0001/concept.json").exists()
+        )
+        self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
 
 if __name__ == "__main__":

@@ -41,6 +41,9 @@ MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
 _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
+_CODEX_PROPOSAL_EXIT_GRACE_SECONDS = 30.0
+_AGENT_OUTCOME_PROPOSAL_KIND = "autonomous-workshop.agent-outcome-proposal"
+_MAX_AGENT_OUTCOME_PROPOSAL_BYTES = 128 * 1024
 _TRANSIENT_DIAGNOSTIC_MARKERS = (
     "stream disconnected before completion",
     "connection reset by peer",
@@ -142,6 +145,27 @@ def _require_sha256(value: Any, label: str) -> str:
     if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
         raise ContractError("%s must be a lowercase sha256" % label)
     return value
+
+
+def _completion_signal_bindings(
+    checkpoint_sha256: Optional[str], subject_sha256: Optional[str]
+) -> tuple[Optional[str], Optional[str]]:
+    if checkpoint_sha256 is None and subject_sha256 is None:
+        return None, None
+    if checkpoint_sha256 is None or subject_sha256 is None:
+        raise ContractError(
+            "Codex proposal completion signal requires checkpoint and subject bindings"
+        )
+    return (
+        _require_sha256(
+            checkpoint_sha256,
+            "Codex proposal completion checkpoint sha256",
+        ),
+        _require_sha256(
+            subject_sha256,
+            "Codex proposal completion subject sha256",
+        ),
+    )
 
 
 def _bounded_identifier(value: Any, label: str) -> str:
@@ -789,6 +813,8 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        expected_agent_checkpoint_sha256: Optional[str] = None,
+        expected_agent_subject_sha256: Optional[str] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -802,6 +828,13 @@ class CodexNativeSessionLauncher:
                 "Codex native session checkpoint already exists; resume it explicitly"
             )
         prompt = _validated_prompt(prompt)
+        (
+            expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256,
+        ) = _completion_signal_bindings(
+            expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256,
+        )
         run_policy = _codex_run_policy(root)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
@@ -839,6 +872,8 @@ class CodexNativeSessionLauncher:
             run_policy=run_policy,
             expected_thread_id=None,
             bind_thread=bind_thread,
+            expected_agent_checkpoint_sha256=expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256=expected_agent_subject_sha256,
         )
         if observed_thread_id is None or persisted_sha256 is None:
             raise CodexInvocationError(
@@ -866,6 +901,8 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        expected_agent_checkpoint_sha256: Optional[str] = None,
+        expected_agent_subject_sha256: Optional[str] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -875,6 +912,13 @@ class CodexNativeSessionLauncher:
             host_state_root=host_state_root,
         )
         prompt = _validated_prompt(prompt)
+        (
+            expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256,
+        ) = _completion_signal_bindings(
+            expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256,
+        )
         run_policy = _codex_run_policy(root)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
@@ -898,6 +942,8 @@ class CodexNativeSessionLauncher:
             run_policy=run_policy,
             expected_thread_id=thread_id,
             bind_thread=None,
+            expected_agent_checkpoint_sha256=expected_agent_checkpoint_sha256,
+            expected_agent_subject_sha256=expected_agent_subject_sha256,
         )
         return CodexNativeSessionOutcome(
             self._public_binding(
@@ -1112,6 +1158,8 @@ class CodexNativeSessionLauncher:
         run_policy: _CodexRunPolicy,
         expected_thread_id: Optional[str],
         bind_thread: Any,
+        expected_agent_checkpoint_sha256: Optional[str],
+        expected_agent_subject_sha256: Optional[str],
     ) -> tuple[bool, Optional[str]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
@@ -1179,7 +1227,37 @@ class CodexNativeSessionLauncher:
         used_web_search = False
         observed_thread_id: Optional[str] = None
         turn_completed = False
+        agent_message_seen = False
+        proposal_completion_elapsed = threading.Event()
+        proposal_timer: Optional[threading.Timer] = None
         stream_failure: Optional[BaseException] = None
+
+        def cancel_proposal_timer() -> None:
+            nonlocal proposal_timer
+            active = proposal_timer
+            proposal_timer = None
+            if active is not None:
+                active.cancel()
+
+        def expire_proposal_completion() -> None:
+            proposal_completion_elapsed.set()
+            _terminate_safely(process)
+
+        def arm_proposal_timer() -> None:
+            nonlocal proposal_timer
+            if not agent_message_seen or not _has_agent_outcome_completion_signal(
+                run_root,
+                expected_checkpoint_sha256=expected_agent_checkpoint_sha256,
+                expected_subject_sha256=expected_agent_subject_sha256,
+            ):
+                return
+            proposal_timer = threading.Timer(
+                _CODEX_PROPOSAL_EXIT_GRACE_SECONDS,
+                expire_proposal_completion,
+            )
+            proposal_timer.daemon = True
+            proposal_timer.start()
+
         try:
             try:
                 process.stdin.write(prompt)
@@ -1191,6 +1269,10 @@ class CodexNativeSessionLauncher:
                 ) from None
 
             for raw in process.stdout:
+                # Any subsequent native event proves the client is still
+                # making observable progress, so restart the quiet-period
+                # fallback only after that event has been handled safely.
+                cancel_proposal_timer()
                 text = _stream_text(raw)
                 stdout_size += len(text.encode("utf-8", errors="replace"))
                 stdout_tail = (stdout_tail + text)[
@@ -1242,18 +1324,26 @@ class CodexNativeSessionLauncher:
                     and item.get("type") == "agent_message"
                 ):
                     _validate_agent_message(item.get("text"))
+                    agent_message_seen = True
                 if event_type == "turn.completed":
                     turn_completed = True
                     break
+                arm_proposal_timer()
         except Exception as exc:
             stream_failure = exc
+            cancel_proposal_timer()
             _terminate_safely(process)
         finally:
             timer.cancel()
 
         remaining = deadline - time.monotonic()
-        intentionally_terminated = False
-        if turn_completed and stream_failure is None and not timed_out.is_set():
+        proposal_completed = proposal_completion_elapsed.is_set()
+        intentionally_terminated = proposal_completed
+        if (
+            (turn_completed or proposal_completed)
+            and stream_failure is None
+            and not timed_out.is_set()
+        ):
             try:
                 returncode = process.wait(
                     timeout=max(
@@ -1282,6 +1372,32 @@ class CodexNativeSessionLauncher:
                 timed_out.set()
                 _terminate_safely(process)
                 returncode = getattr(process, "returncode", None)
+        if (
+            not turn_completed
+            and stream_failure is None
+            and not timed_out.is_set()
+            and (
+                proposal_completion_elapsed.is_set()
+                or (
+                    returncode == 0
+                    and agent_message_seen
+                    and _has_agent_outcome_completion_signal(
+                        run_root,
+                        expected_checkpoint_sha256=expected_agent_checkpoint_sha256,
+                        expected_subject_sha256=expected_agent_subject_sha256,
+                    )
+                )
+            )
+        ):
+            proposal_completed = _has_agent_outcome_completion_signal(
+                run_root,
+                expected_checkpoint_sha256=expected_agent_checkpoint_sha256,
+                expected_subject_sha256=expected_agent_subject_sha256,
+            )
+            intentionally_terminated = (
+                intentionally_terminated or proposal_completion_elapsed.is_set()
+            )
+        cancel_proposal_timer()
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
 
         if timed_out.is_set():
@@ -1301,7 +1417,7 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session could not be terminated safely"
             )
-        if not turn_completed or (
+        if not (turn_completed or proposal_completed) or (
             returncode != 0 and not intentionally_terminated
         ):
             # Diagnostics are intentionally used only for a safe category and
@@ -1316,6 +1432,104 @@ class CodexNativeSessionLauncher:
                 "Codex native session returned no valid session identity"
             )
         return used_web_search, observed_thread_id
+
+
+def _strict_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
+
+
+def _has_agent_outcome_completion_signal(
+    run_root: Path,
+    *,
+    expected_checkpoint_sha256: Optional[str],
+    expected_subject_sha256: Optional[str],
+) -> bool:
+    """Recognize a bounded proposal envelope without granting it authority.
+
+    The workflow host independently validates the full proposal, checkpoint,
+    subject, artifact hashes, and stage gate after the launcher returns. This
+    narrow reader only supplies a safe completion signal when Codex's internal
+    rollout has finished but its JSONL wrapper omits ``turn.completed``.
+    """
+
+    if expected_checkpoint_sha256 is None or expected_subject_sha256 is None:
+        return False
+    path = run_root / "agent-outcome.json"
+    descriptor: Optional[int] = None
+    try:
+        identity = path.lstat()
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+            or not 1 <= identity.st_size <= _MAX_AGENT_OUTCOME_PROPOSAL_BYTES
+        ):
+            return False
+        descriptor = os.open(
+            str(path),
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_NONBLOCK", 0),
+        )
+        opened = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (opened.st_dev, opened.st_ino) != (identity.st_dev, identity.st_ino)
+            or opened.st_size != identity.st_size
+        ):
+            return False
+        chunks: list[bytes] = []
+        remaining = _MAX_AGENT_OUTCOME_PROPOSAL_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(64 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        content = b"".join(chunks)
+        after = os.fstat(descriptor)
+        if (
+            not 1 <= len(content) <= _MAX_AGENT_OUTCOME_PROPOSAL_BYTES
+            or len(content) != opened.st_size
+            or after.st_size != opened.st_size
+            or after.st_mtime_ns != opened.st_mtime_ns
+            or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
+        ):
+            return False
+    except (OSError, ValueError):
+        return False
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+
+    try:
+        document = json.loads(
+            content.decode("utf-8"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError, RecursionError, json.JSONDecodeError):
+        return False
+    if not isinstance(document, dict) or set(document) != {
+        "schema_version",
+        "kind",
+        "checkpoint_sha256",
+        "subject_sha256",
+        "outcome",
+    }:
+        return False
+    return (
+        document["schema_version"] == 1
+        and document["kind"] == _AGENT_OUTCOME_PROPOSAL_KIND
+        and document["checkpoint_sha256"] == expected_checkpoint_sha256
+        and document["subject_sha256"] == expected_subject_sha256
+        and isinstance(document["outcome"], dict)
+    )
 
 
 def _stream_text(value: Any) -> str:

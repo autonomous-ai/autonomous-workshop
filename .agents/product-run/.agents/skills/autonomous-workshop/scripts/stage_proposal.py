@@ -1045,6 +1045,345 @@ _CONCEPT_TREE_FILES = (
     ("derived_wish_path", "derived_wish.json"),
 )
 _CONCEPT_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
+_CONCEPT_IDENTIFIER_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+_CONCEPT_DIMENSION_FIELDS = {"length_mm", "width_mm", "height_mm"}
+_CONCEPT_COMPONENT_FIELDS = {
+    "key",
+    "name",
+    "purpose",
+    "form",
+    "dimensions_mm",
+    "placement",
+    "interfaces",
+}
+_CONCEPT_OVERALL_REFERENCES = {
+    "front": (),
+    "top": ("front",),
+    "bottom": ("front",),
+    "exploded": ("front", "top", "bottom"),
+}
+
+
+def _concept_identifier(value: Any, label: str) -> str:
+    if not isinstance(value, str) or _CONCEPT_IDENTIFIER_RE.fullmatch(value) is None:
+        raise ProposalError("%s must be a bounded lowercase identifier" % label)
+    return value
+
+
+def _concept_positive_number(value: Any, label: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        raise ProposalError("%s must be a positive number" % label)
+    return float(value)
+
+
+def _concept_dimensions(value: Any, label: str) -> dict[str, Any]:
+    dimensions = _mapping(value, label)
+    if set(dimensions) != _CONCEPT_DIMENSION_FIELDS:
+        raise ProposalError(
+            "%s must state length_mm, width_mm, and height_mm" % label
+        )
+    for field in _CONCEPT_DIMENSION_FIELDS:
+        _concept_positive_number(dimensions[field], "%s %s" % (label, field))
+    return dimensions
+
+
+def _normalize_concept_text(value: str) -> str:
+    return " ".join(value.casefold().split())
+
+
+def _concept_bounded_text(
+    value: Any, label: str, maximum: int = 4_000
+) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or len(value) > maximum
+        or any(
+            ord(character) < 32 and character not in "\n\t"
+            for character in value
+        )
+    ):
+        raise ProposalError("%s must be bounded, non-empty text" % label)
+    return value
+
+
+def _validate_concept_source_documents(
+    *,
+    brief: Any,
+    research: Any,
+    drawing_instructions: Any,
+    descriptor: Any,
+    wish_objective: str,
+) -> None:
+    """Mirror the host's deterministic pre-render Concept structure gate."""
+
+    brief = _mapping(brief, "Concept brief", nonempty=True)
+    research = _mapping(research, "Concept research", nonempty=True)
+    drawing_instructions = _mapping(
+        drawing_instructions, "Concept drawing instructions", nonempty=True
+    )
+    descriptor = _mapping(descriptor, "Concept descriptor", nonempty=True)
+
+    for field_name in ("object", "category"):
+        if field_name not in brief:
+            raise ProposalError("Concept brief is missing its %s" % field_name)
+        _concept_bounded_text(
+            brief[field_name], "Concept brief %s" % field_name, 2_000
+        )
+    if "envelope_mm" not in brief:
+        raise ProposalError("Concept brief is missing its envelope_mm")
+    _concept_dimensions(brief["envelope_mm"], "Concept brief envelope_mm")
+    if "wall_thickness_mm" not in brief:
+        raise ProposalError("Concept brief is missing its wall_thickness_mm")
+    _concept_positive_number(
+        brief["wall_thickness_mm"], "Concept brief wall_thickness_mm"
+    )
+
+    print_stance = brief.get("print_stance")
+    if not isinstance(print_stance, dict) or set(print_stance) != {
+        "orientation",
+        "supports_required",
+        "support_notes",
+    }:
+        raise ProposalError(
+            "Concept brief must state a print_stance with orientation and support use"
+        )
+    _concept_bounded_text(
+        print_stance["orientation"],
+        "Concept brief print_stance orientation",
+        1_000,
+    )
+    if type(print_stance["supports_required"]) is not bool:
+        raise ProposalError(
+            "Concept brief print_stance supports_required must be boolean"
+        )
+    _concept_bounded_text(
+        print_stance["support_notes"],
+        "Concept brief print_stance support_notes",
+        2_000,
+    )
+
+    features = brief.get("features")
+    if not isinstance(features, list) or not features:
+        raise ProposalError(
+            "Concept brief must state at least one distinctive feature"
+        )
+    feature_ids: dict[str, str] = {}
+    for feature in features:
+        if not isinstance(feature, dict) or set(feature) != {"id", "text"}:
+            raise ProposalError("Concept brief feature fields are invalid")
+        feature_id = _concept_identifier(feature["id"], "Concept brief feature id")
+        if feature_id in feature_ids:
+            raise ProposalError("Concept brief feature ids must be unique")
+        feature_ids[feature_id] = _concept_bounded_text(
+            feature["text"], "Concept brief feature text", 2_000
+        )
+    if not any(
+        _normalize_concept_text(text)
+        != _normalize_concept_text(wish_objective)
+        for text in feature_ids.values()
+    ):
+        raise ProposalError(
+            "Concept brief's only distinctive feature restates the Wish objective "
+            "and decides nothing"
+        )
+
+    components = brief.get("components")
+    if not isinstance(components, list) or not components:
+        raise ProposalError("Concept brief must name at least one component")
+    component_keys: dict[str, dict[str, Any]] = {}
+    for component in components:
+        if not isinstance(component, dict) or set(component) != _CONCEPT_COMPONENT_FIELDS:
+            raise ProposalError(
+                "Concept brief component must state its form, bounding dimensions, "
+                "placement, and interfaces, not merely a name and purpose"
+            )
+        key = _concept_identifier(component["key"], "Concept brief component key")
+        if key in component_keys:
+            raise ProposalError("Concept brief component keys must be unique")
+        _concept_bounded_text(
+            component["name"], "Concept brief component %s name" % key, 200
+        )
+        for field in ("purpose", "form", "placement", "interfaces"):
+            _concept_bounded_text(
+                component[field],
+                "Concept brief component %s %s" % (key, field),
+                4_000,
+            )
+        _concept_dimensions(
+            component["dimensions_mm"],
+            "Concept brief component %s dimensions_mm" % key,
+        )
+        component_keys[key] = component
+
+    fit_target = brief.get("fit_target")
+    has_fit_target = fit_target is not None
+    if has_fit_target:
+        if not isinstance(fit_target, dict) or set(fit_target) != {
+            "target",
+            "dimensions_mm",
+            "clearance_mm",
+        }:
+            raise ProposalError(
+                "Concept brief fit_target must state its target, dimensions, and clearance"
+            )
+        _concept_bounded_text(
+            fit_target["target"], "Concept brief fit_target target", 2_000
+        )
+        _concept_dimensions(
+            fit_target["dimensions_mm"], "Concept brief fit_target dimensions_mm"
+        )
+        clearance = fit_target["clearance_mm"]
+        if (
+            isinstance(clearance, bool)
+            or not isinstance(clearance, (int, float))
+            or clearance < 0
+        ):
+            raise ProposalError(
+                "Concept brief fit_target clearance_mm must be a non-negative number"
+            )
+
+    sources = research.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise ProposalError("Concept research must record at least one source")
+    source_ids: set[str] = set()
+    for source in sources:
+        if not isinstance(source, dict) or set(source) != {
+            "id",
+            "origin",
+            "excerpt",
+            "excerpt_sha256",
+            "retrieved_at",
+        }:
+            raise ProposalError("Concept research source fields are invalid")
+        source_id = _concept_identifier(source["id"], "Concept research source id")
+        if source_id in source_ids:
+            raise ProposalError("Concept research source ids must be unique")
+        source_ids.add(source_id)
+    findings = research.get("findings")
+    if not isinstance(findings, list) or not findings:
+        raise ProposalError("Concept research must state at least one finding")
+
+    required_facts = {
+        "object",
+        "category",
+        "envelope_mm",
+        "wall_thickness_mm",
+        "print_stance",
+        *("features.%s" % feature_id for feature_id in feature_ids),
+        *("components.%s" % key for key in component_keys),
+    }
+    if has_fit_target:
+        required_facts.add("fit_target")
+    facts = brief.get("facts")
+    if not isinstance(facts, list) or not facts:
+        raise ProposalError("Concept brief must attribute every fact it states")
+    seen_facts: set[str] = set()
+    for fact in facts:
+        if not isinstance(fact, dict) or set(fact) != {
+            "field",
+            "source_id",
+            "assumption_reason",
+        }:
+            raise ProposalError("Concept brief fact fields are invalid")
+        field = fact["field"]
+        if not isinstance(field, str) or field not in required_facts:
+            raise ProposalError(
+                "Concept brief fact names a field this brief does not require: %s"
+                % field
+            )
+        if field in seen_facts:
+            raise ProposalError(
+                "Concept brief fact %s is attributed more than once" % field
+            )
+        seen_facts.add(field)
+        source_id = fact["source_id"]
+        reason = fact["assumption_reason"]
+        has_source = isinstance(source_id, str) and bool(source_id)
+        has_reason = isinstance(reason, str) and bool(reason.strip())
+        if has_source == has_reason:
+            raise ProposalError(
+                "Concept brief fact %s must name exactly one of a recorded source "
+                "or a recorded decision" % field
+            )
+        if has_source and source_id not in source_ids:
+            raise ProposalError(
+                "Concept brief fact %s names a source the research did not record"
+                % field
+            )
+    missing_facts = required_facts - seen_facts
+    if missing_facts:
+        raise ProposalError(
+            "Concept brief leaves facts unattributed: %s" % sorted(missing_facts)
+        )
+
+    expected_roles = set(_CONCEPT_OVERALL_REFERENCES) | {"components"}
+    if set(drawing_instructions) != expected_roles:
+        raise ProposalError(
+            "Concept drawing instructions must cover exactly front, top, bottom, "
+            "exploded, and components"
+        )
+    for role, expected_references in _CONCEPT_OVERALL_REFERENCES.items():
+        entry = drawing_instructions[role]
+        if not isinstance(entry, dict) or set(entry) != {"instruction", "references"}:
+            raise ProposalError("Concept drawing instruction for %s is invalid" % role)
+        _concept_bounded_text(
+            entry["instruction"], "Concept drawing instruction for %s" % role, 8_000
+        )
+        if not isinstance(entry["references"], list) or tuple(
+            entry["references"]
+        ) != expected_references:
+            raise ProposalError(
+                "Concept drawing instruction for %s must reference exactly %s, "
+                "roles drawn before it" % (role, list(expected_references))
+            )
+    component_instructions = drawing_instructions["components"]
+    if not isinstance(component_instructions, dict) or set(
+        component_instructions
+    ) != set(component_keys):
+        raise ProposalError(
+            "Concept must author exactly one drawing instruction per brief component, "
+            "and no instruction for an unknown role"
+        )
+    exploded_text = _normalize_concept_text(
+        drawing_instructions["exploded"]["instruction"]
+    )
+    for key, component in component_keys.items():
+        entry = component_instructions[key]
+        if not isinstance(entry, dict) or set(entry) != {"instruction", "references"}:
+            raise ProposalError(
+                "Concept drawing instruction for component %s is invalid" % key
+            )
+        _concept_bounded_text(
+            entry["instruction"],
+            "Concept drawing instruction for component %s" % key,
+            8_000,
+        )
+        if not isinstance(entry["references"], list) or tuple(
+            entry["references"]
+        ) != ("front",):
+            raise ProposalError(
+                "Concept drawing instruction for component %s must reference exactly "
+                "['front'] for appearance only, and never exploded" % key
+            )
+        if _normalize_concept_text(component["name"]) not in exploded_text:
+            raise ProposalError(
+                "Concept exploded drawing instruction must name every component in "
+                "the brief, missing %s" % key
+            )
+
+    if set(descriptor) != expected_roles:
+        raise ProposalError(
+            "Concept descriptor must cover exactly front, top, bottom, exploded, "
+            "and components"
+        )
+    descriptor_components = descriptor["components"]
+    if not isinstance(descriptor_components, dict) or set(
+        descriptor_components
+    ) != set(component_keys):
+        raise ProposalError(
+            "Concept descriptor must name exactly one image per brief component"
+        )
 
 
 def _walk_descriptor_entries(node: Any, label: str) -> list[dict[str, Any]]:
@@ -1128,6 +1467,14 @@ def _concept_contract(
     derived_wish = _validate_derived_wish(documents["derived_wish_path"])
     if derived_wish["wish_sha256"] != assignment["wish_sha256"]:
         raise ProposalError("Concept derived Wish belongs to another Wish")
+
+    _validate_concept_source_documents(
+        brief=documents["brief_path"],
+        research=documents["research_path"],
+        drawing_instructions=documents["drawing_instructions_path"],
+        descriptor=documents["descriptor_path"],
+        wish_objective=derived_wish["objective"],
+    )
 
     descriptor = documents["descriptor_path"]
     seen_paths: set[str] = set()

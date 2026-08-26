@@ -20,7 +20,7 @@ See `proposal.md` — Why. The constraints that actually shape the approach, all
 
 **Non-Goals**
 
-- No new engine adapter, and no change to the Codex start/resume seam.
+- No new engine adapter.
 - No change to Match, Release, or Deliver.
 - No attempt to restore per-call cost accounting for an agent role — see Risks.
 - No revival of `snapshots.lock.json` or any second provenance mechanism.
@@ -120,6 +120,34 @@ The adapter reads `$WORKSHOP_HOME/credentials/concept-images.env` (0600 inside a
 
 This breaks the README's quick-start promise that Workshop "does not require a second model API key". That promise is now false for any run that reaches Concept, which is every run. The docs task corrects it rather than hiding it: without the credential a run parks at Concept with a concrete need.
 
+### D9 — Missing external turn completion gets a bounded temporary fallback
+
+The Codex JSONL contract's terminal success event remains external
+`turn.completed`. The existing reap path is sufficient when that event is
+emitted, but recorded rollouts show a separate failure: internal
+`task_complete` can be persisted while the CLI never emits external
+`turn.completed`, leaving the host blocked until the whole-turn timeout.
+
+Workshop therefore uses a narrow operational fallback. After a completed
+agent message, a bounded strict `agent-outcome.json` envelope for the exact
+current checkpoint and gate subject arms a 30-second quiet period. Every later
+external event restarts the period. If it expires, the host terminates and
+reaps the CLI, then runs the normal complete proposal and stage-gate
+validation. The file is only a completion signal; it cannot advance a gate.
+Prose alone, a stale proposal, a proposal for another subject, and an invalid
+or unsafe file do not arm the fallback.
+
+Thirty seconds is deliberately conservative: it gives the CLI time to emit
+its documented terminal event or further progress while avoiding a multi-
+minute whole-turn timeout after durable work is already present.
+
+This is a band-aid, not the real fix. The implementation does not observe the
+internal rollout protocol directly and must not make that vendor-private
+format a second public contract. A future runtime investigation must identify
+why internal `task_complete` is not translated into external
+`turn.completed`, repair the CLI or adapter boundary that drops it, and remove
+the quiet-period fallback once terminal delivery is reliable.
+
 ## Risks / Trade-offs
 
 - **Nothing verifies that a drawn image depicts what its instruction asked for** → This is true of every image in the set, not just the exploded view, and it is not fixable within this architecture: the host may not read pixels, and a second model grading the first is the mechanism the rewrite removed. D4 confines the blast radius — no image inherits shape from another, so a bad drawing spoils one image rather than propagating — but a component image that simply does not match its own specification will ship. Mitigation is partial and honest: the brief governs Make, not the pictures, so a wrong image misleads a human reader without corrupting the geometry.
@@ -130,6 +158,12 @@ This breaks the README's quick-start promise that Workshop "does not require a s
 - **Changing the workflow skill invalidates in-flight runs** → Materialized instruction bytes are bound to the run and resume fails closed when they change. Adding `references/concept.md` and a Concept bullet to six Inventor skills changes those bytes. Mitigation: this is a breaking change for any parked run; it must be stated in the changelog fragment, and existing parked runs will need to be restarted rather than resumed.
 - **Per-call cost and duration accounting for an agent role is genuinely lost** → The deleted agent door reported actual spend and wall-clock per role, including on failure. `main` has no equivalent for work done inside the one session, and this change does not add one. Image-adapter calls can be accounted for; the research that precedes them cannot. Stated plainly rather than mitigated.
 - **`InventedV2` still has no structural contract** → This change hardens the *concept*, not Invent's own free-form `concept`/`research` mappings, which continue to exist upstream. That is now a visible redundancy: two places called "concept", one specified and one not. Mitigation: out of scope here, but the Concept turn should derive from Invent's result rather than restate it, and a follow-up should narrow or retire Invent's fields.
+- **The 30-second completion fallback can mask a CLI lifecycle defect** → It is
+  deliberately narrow and cannot pass a gate, but it terminates the wrapper
+  without receiving the documented terminal event. Mitigation: keep
+  `turn.completed` primary, bind the signal to the exact checkpoint and
+  subject, reset on every event, document the workaround as temporary, and
+  track removal behind the deeper event-translation investigation in D9.
 
 ## Migration Plan
 
@@ -146,3 +180,7 @@ This breaks the README's quick-start promise that Workshop "does not require a s
 
 - Which image provider and model to configure by default. The specs assume no vendor, and the adapter takes its configuration explicitly, so this is a deployment choice that changes no requirement and no task.
 - Whether ABO's kept scripts belong in a separate `abo-rules-engine` skill or under `abo-inventor/scripts/`. Both satisfy the manifest; the split only matters if a second ABO specialty appears later. Decide when the trimmed tree's size against the 16 MiB limit is known.
+- Why a persisted internal `task_complete` is sometimes not translated into
+  external `turn.completed`, and whether the durable fix belongs in the Codex
+  CLI, its Goal lifecycle, or Workshop's adapter. Resolving that question and
+  removing D9's quiet-period fallback is explicit future work.

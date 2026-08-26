@@ -92,6 +92,31 @@ into the tree from the finalized instructions. At this point the image paths
 declared in `descriptor.json` are expected not to exist. Run the finalizer now,
 before any rendered image exists:
 
+`brief.json` uses this exact top-level contract (additional explanatory fields
+are allowed, but these names and shapes are mandatory):
+
+```text
+object: non-empty text
+category: non-empty text
+envelope_mm: {length_mm, width_mm, height_mm} positive numbers
+wall_thickness_mm: positive number
+print_stance: {orientation, supports_required, support_notes}
+features: [{id, text}, ...]
+fit_target: null | {target, dimensions_mm, clearance_mm}
+components: [{key, name, purpose, form, dimensions_mm, placement, interfaces}, ...]
+facts: [{field, source_id, assumption_reason}, ...]
+```
+
+Every `dimensions_mm` object uses exactly `length_mm`, `width_mm`, and
+`height_mm`. Component keys and feature ids are bounded lowercase identifiers.
+Every required fact is attributed exactly once: either `source_id` names an id
+from `research.json.sources`, or `assumption_reason` records the design
+decision, never both. `research.json.sources` entries use exactly `id`,
+`origin`, `excerpt`, `excerpt_sha256`, and `retrieved_at`, and `findings` is a
+non-empty array. The finalizer enforces this same structure before it writes a
+proposal; successful finalization therefore cannot defer a structural mismatch
+to the host gate.
+
 ```bash
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . concept --concept-root <STAGE concept_root>

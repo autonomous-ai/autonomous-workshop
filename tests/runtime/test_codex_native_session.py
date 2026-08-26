@@ -31,6 +31,8 @@ OTHER_THREAD_ID = "87654321-4321-6789-8234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
+AGENT_CHECKPOINT_SHA256 = "c" * 64
+AGENT_SUBJECT_SHA256 = "d" * 64
 
 
 def permission_arguments(root):
@@ -139,13 +141,21 @@ class RecordingInput:
 
 
 class ScriptedStream:
-    def __init__(self, values, callbacks=None, stop_event=None):
+    def __init__(
+        self,
+        values,
+        callbacks=None,
+        stop_event=None,
+        *,
+        block_after_values=False,
+    ):
         self.values = list(values)
         self.callbacks = dict(callbacks or {})
         self.stop_event = stop_event
+        self.block_after_values = block_after_values
 
     def __iter__(self):
-        if self.stop_event is not None:
+        if self.stop_event is not None and not self.block_after_values:
             self.stop_event.wait(timeout=2)
             return
         for index, value in enumerate(self.values):
@@ -153,6 +163,8 @@ class ScriptedStream:
             if callback is not None:
                 callback()
             yield value
+        if self.stop_event is not None and self.block_after_values:
+            self.stop_event.wait(timeout=2)
 
 
 class FakeProcess:
@@ -160,10 +172,14 @@ class FakeProcess:
         self.script = dict(script)
         self.stdin = RecordingInput()
         self._stopped = threading.Event()
+        blocks_stdout = self.script.get("block_stdout") or self.script.get(
+            "block_stdout_after_values"
+        )
         self.stdout = ScriptedStream(
             self.script.get("stdout", ()),
             callbacks=self.script.get("stdout_callbacks"),
-            stop_event=self._stopped if self.script.get("block_stdout") else None,
+            stop_event=self._stopped if blocks_stdout else None,
+            block_after_values=self.script.get("block_stdout_after_values", False),
         )
         self.stderr = ScriptedStream(self.script.get("stderr", ()))
         self.returncode = None
@@ -283,6 +299,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             run_root=root,
             host_state_root=host_state_root or self.host_state(root),
             prompt=prompt,
+            expected_agent_checkpoint_sha256=AGENT_CHECKPOINT_SHA256,
+            expected_agent_subject_sha256=AGENT_SUBJECT_SHA256,
         )
 
     def resume(self, launcher, root, **overrides):
@@ -293,6 +311,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             "run_root": root,
             "host_state_root": self.host_state(root),
             "prompt": "continue from durable evidence",
+            "expected_agent_checkpoint_sha256": AGENT_CHECKPOINT_SHA256,
+            "expected_agent_subject_sha256": AGENT_SUBJECT_SHA256,
         }
         values.update(overrides)
         return launcher.resume(**values)
@@ -829,6 +849,78 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.start(launcher, root)
 
             self.assertTrue(factory.processes[0].terminated)
+
+    def test_agent_outcome_ends_a_quiet_turn_when_terminal_event_is_missing(self):
+        self.assertEqual(codex_runtime._CODEX_PROPOSAL_EXIT_GRACE_SECONDS, 30.0)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+
+            def write_outcome():
+                (root / "agent-outcome.json").write_text(
+                    json.dumps(
+                        {
+                            "schema_version": 1,
+                            "kind": "autonomous-workshop.agent-outcome-proposal",
+                            "checkpoint_sha256": AGENT_CHECKPOINT_SHA256,
+                            "subject_sha256": AGENT_SUBJECT_SHA256,
+                            "outcome": {
+                                "schema_version": 1,
+                                "stage": "wish",
+                                "status": "waiting",
+                                "artifacts": [],
+                                "needs": ["fixture wait"],
+                                "proposed_transition": None,
+                            },
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stdout_callbacks": {2: write_outcome},
+                        "block_stdout_after_values": True,
+                        "hang_until_terminated": True,
+                    }
+                ]
+            )
+
+            with mock.patch.object(
+                codex_runtime, "_CODEX_PROPOSAL_EXIT_GRACE_SECONDS", 0.01
+            ):
+                outcome = self.start(launcher, root)
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertTrue(factory.processes[0].terminated)
+            self.assertFalse(factory.processes[0].killed)
+
+    def test_agent_outcome_for_another_subject_does_not_complete_the_turn(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            (root / "agent-outcome.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "kind": "autonomous-workshop.agent-outcome-proposal",
+                        "checkpoint_sha256": AGENT_CHECKPOINT_SHA256,
+                        "subject_sha256": "e" * 64,
+                        "outcome": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            launcher, unused_factory = self.launcher(
+                [{"stdout": self.start_events(terminal=False), "returncode": 0}]
+            )
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "did not complete"
+            ):
+                self.start(launcher, root)
 
     def test_clean_process_exit_without_turn_completed_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
