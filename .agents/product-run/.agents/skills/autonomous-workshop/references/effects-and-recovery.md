@@ -7,9 +7,9 @@ not perform authenticated external operations itself.
 
 ## Authorization boundary
 
-Codex never receives or reads Factory, payment, manufacturing, carrier, or
-other effect credentials. It may prepare local artifacts and a compact effect
-request for the host.
+The selected Manager never receives or reads Factory, payment, manufacturing,
+carrier, or other effect credentials. It may prepare local artifacts and a
+compact effect request for the host.
 
 The host may execute an effect only when the run's recorded authorization
 covers that exact action and target. Explicit human authorization is required
@@ -20,7 +20,8 @@ when the recorded run policy permits it.
 
 The CLI defaults to private output. `--publish` records a prospective public
 publication request in host-only state; it never exposes authority or
-credentials to Codex and does not authorize manufacture or delivery.
+credentials to the selected Manager and does not authorize manufacture or
+delivery.
 
 Authorization is narrow and prospective. Approval for one artifact hash,
 environment, account, price, or shipment does not cover changed bytes, another
@@ -28,7 +29,7 @@ target, a higher cost, or an ambiguous retry.
 
 ## Effect protocol
 
-The trusted host, not Codex:
+The trusted host, not the selected Manager:
 
 1. Revalidates all upstream contracts and exact artifact hashes.
 2. Stores an effect intent and stable idempotency token before crossing the
@@ -39,8 +40,9 @@ The trusted host, not Codex:
 5. Commits the verified receipt and next checkpoint atomically enough that a
    restart can distinguish pending, known-complete, rejected, and unknown.
 
-Codex can inspect a redacted receipt and respond to a typed failure. It cannot
-declare success from a command exit code, URL, prose, or unverified response.
+The selected Manager can inspect a redacted receipt and respond to a typed
+failure. It cannot declare success from a command exit code, URL, prose, or
+unverified response.
 
 ## Ambiguous external outcomes
 
@@ -54,14 +56,15 @@ remote identifier, and exact hashes. Then:
 - otherwise checkpoint an unknown/needs-human state without changing the
   artifact or claiming completion.
 
-## Codex session recovery
+## Manager session recovery
 
-Resume the same native Codex session id for the Wish. On every resume, inspect
-the durable checkpoint, manifests, working tree, and only the redacted effect
-state or receipts the host explicitly provides. Durable intents themselves are
-host-only and outside the product workspace. If session memory conflicts with
-sealed files or host-provided receipts, follow the durable evidence and note
-the discrepancy.
+Resume the exact native session id for the Manager selected by immutable
+`MANAGER.json`. On every resume, re-read `MANAGER.json`, its
+`instruction_entrypoint`, the durable checkpoint, manifests, working tree, and
+only the redacted effect state or receipts the host explicitly provides.
+Durable intents themselves are host-only and outside the product workspace. If
+session memory conflicts with sealed files or host-provided receipts, follow
+the durable evidence and note the discrepancy.
 
 If a Match, Invent, Make, Playtest, or Release Goal is active for that exact
 checkpoint, continue it instead of creating a duplicate. Reestablish its
@@ -91,8 +94,8 @@ artifact; inspect any partial workspace writes and rerun their gates.
   budget. Concurrent work must stop at a typed need instead of racing the
   checkpoint.
 - Keep research, judging, repair, and feedback iteration inside the active
-  native Codex Goal. Do not create a Python retry, reward, judge, or loop
-  controller during recovery.
+  native Goal controlled through the selected Manager's `/goal` support. Do
+  not create a Python retry, reward, judge, or loop controller during recovery.
 - Keep diagnostics bounded and redacted. Record safe failure categories and
   evidence references, never prompts, credentials, authorization headers, or
   large provider streams.

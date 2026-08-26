@@ -1,17 +1,17 @@
 # Release and Deliver contracts
 
-Read `STAGE.json`. It binds the exact Made product, passing Playtest contract
-and evidence, selected Inventor custom agent and Taste hashes, universal
-blueprint, Release package root, and current checkpoint. Verify those bytes
-before acting.
+Read `MANAGER.json` and `STAGE.json`. They bind the selected Manager and its
+runtime projection, exact Made product, passing Playtest contract and evidence,
+selected Inventor-agent path and Taste hashes, universal blueprint, Release
+package root, and current checkpoint. Verify those bytes before acting.
 
 ## Release Goal and validation loop
 
-Create one native Codex Goal for this Release attempt. Its objective is to
-produce a complete, useful manual and page-ready customer product package whose
-claims and creative direction are traceable to the sealed product and passing
-Playtest evidence. Its stopping condition is a successful `release` finalizer
-for the current checkpoint.
+Create one native Goal through the selected Manager's `/goal` control for this
+Release attempt. Its objective is to produce a complete, useful manual and
+page-ready customer product package whose claims and creative direction are
+traceable to the sealed product and passing Playtest evidence. Its stopping
+condition is a successful `release` finalizer for the current checkpoint.
 
 While pursuing the Goal:
 
@@ -33,9 +33,9 @@ While pursuing the Goal:
    missing steps, and rerun validation until the package is internally
    consistent and evidence-complete.
 
-Codex owns the fact-check/write/review/revise loop. Python validates exact
-schema, hashes, and claim bindings; it does not write copy, judge usefulness,
-invent claims, or control the loop.
+The selected Manager owns the fact-check/write/review/revise loop. Python
+validates exact schema, hashes, and claim bindings; it does not write copy,
+judge usefulness, invent claims, or control the loop.
 
 The package must include UTF-8 `MANUAL.md` and canonical schema-v3
 `product.json` with `kind=workshop.release-package`, `status=page-ready`, exact
@@ -45,9 +45,9 @@ product/evidence hashes, exact Playtest claims, `title`, `summary`, `hero`,
 `visual_direction`, and valid `evidence_refs`. Do not invent claims of
 manufacture, physical fit, human response, publication, delivery, or delight.
 Do not place credentials, receipts, images, audio, or video in the local
-package. Codex owns the complete page copy and visual direction; Factory later
-transports the exact sealed page and model bytes rather than creatively
-enriching them.
+package. The selected Manager owns the complete page copy and visual direction;
+Factory later transports the exact sealed page and model bytes rather than
+creatively enriching them.
 
 For the exact `use_case` and `story_blocks` copy to render on the current
 Factory site, keep each `headline` to 1–40 plain-text characters, each `body`
@@ -62,10 +62,13 @@ exact `MANUAL.md` remain authoritative sealed files in the uploaded project.
 Run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+python <skill_directory>/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```
+
+Replace `<skill_directory>` with its exact `MANAGER.json` value; do not type
+the angle brackets literally.
 
 The deterministic finalizer writes `artifacts/release/release.json` and the
 compact outcome. Complete the Release Goal only after it succeeds, then return
@@ -75,9 +78,9 @@ bytes before any Factory effect.
 ## Deliver is a host effect boundary
 
 Do not create a native Goal for Deliver. Stop truthfully after the host accepts
-Release. Codex may summarize what future production, hands-on QA, packing, and
-carrier evidence would be needed, but it must not buy, manufacture, publish,
-ship, or access credentials.
+Release. The selected Manager may summarize what future production, hands-on
+QA, packing, and carrier evidence would be needed, but it must not buy,
+manufacture, publish, ship, or access credentials.
 
 The current Workshop has no Deliver effect adapter or Delivered contract. The
 host returns a durable waiting checkpoint after Release. A future, separately

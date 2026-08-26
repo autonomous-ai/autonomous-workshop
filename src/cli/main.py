@@ -40,9 +40,19 @@ from workshop.make.skill_registry import (
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import factory_credential_environment
+from workshop.runtime.claude import (
+    MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION,
+    claude_subprocess_environment,
+    claude_supports_native_workshop,
+)
 from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     codex_supports_native_workshop,
+)
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    SUPPORTED_MANAGER_IDS,
+    manager_spec,
 )
 from workshop.runtime.package_data import (
     packaged_inventors_root,
@@ -156,7 +166,9 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     product_id = receipt.get("product_id", "unknown")
     status = receipt.get("status", "unknown")
     stage = str(receipt.get("stage", "unknown")).title()
+    manager = manager_spec(receipt.get("manager", DEFAULT_MANAGER_ID))
     print("Wish: %s" % product_id)
+    print("Manager: %s" % manager.display_name)
     print("%s: %s at %s" % (verb, status, stage))
     publication = receipt.get("publication")
     if isinstance(publication, Mapping):
@@ -178,14 +190,23 @@ def _wish(args: argparse.Namespace) -> int:
     )
     progress = sys.stderr if args.json else sys.stdout
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
-    print("Starting one native Codex session before Match...", file=progress, flush=True)
+    manager = manager_spec(args.manager)
+    print(
+        "Starting the %s Workshop Manager before Match..." % manager.display_name,
+        file=progress,
+        flush=True,
+    )
     if not args.publish:
         print(
             "Publication: private by default; use --publish for explicit public authority.",
             file=progress,
             flush=True,
         )
-    receipt = start_native_run(wish, publish_requested=args.publish)
+    receipt = start_native_run(
+        wish,
+        publish_requested=args.publish,
+        manager_id=manager.manager_id,
+    )
     if args.json:
         _print_json(receipt)
     else:
@@ -205,7 +226,8 @@ def _status(args: argparse.Namespace) -> int:
 def _resume(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     print(
-        "Resuming the exact native Codex session for %s..." % args.product_id,
+        "Resuming the exact saved Workshop Manager session for %s..."
+        % args.product_id,
         file=progress,
         flush=True,
     )
@@ -311,6 +333,84 @@ def _doctor_codex() -> dict[str, str]:
     return _check_record("codex", "ready", "Codex CLI is installed and signed in.")
 
 
+def _doctor_claude() -> dict[str, str]:
+    binary = os.environ.get("WORKSHOP_CLAUDE_BIN") or shutil.which("claude")
+    if not binary:
+        return _check_record(
+            "claude",
+            "needs-attention",
+            "Claude Code is not installed or on PATH.",
+            next_step=(
+                "Install Claude Code and set ANTHROPIC_API_KEY for Workshop "
+                "isolated API-key runs."
+            ),
+        )
+    environment = claude_subprocess_environment(os.environ)
+    try:
+        version = subprocess.run(
+            [binary, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            env=environment,
+        )
+    except (OSError, subprocess.SubprocessError):
+        version = None
+    if version is None or version.returncode != 0:
+        return _check_record(
+            "claude",
+            "needs-attention",
+            "The configured Claude Code command could not run.",
+            next_step="Check WORKSHOP_CLAUDE_BIN and the Claude Code installation.",
+        )
+    output = version.stdout if isinstance(version.stdout, str) else ""
+    version_match = re.match(
+        r"\s*(\d+(?:\.\d+){2}(?:[-+][A-Za-z0-9.-]+)?)\b",
+        output if len(output.encode("utf-8", errors="replace")) <= 4 * 1024 else "",
+    )
+    cli_version = version_match.group(1) if version_match else ""
+    if not claude_supports_native_workshop(cli_version):
+        minimum = ".".join(
+            str(part) for part in MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION
+        )
+        return _check_record(
+            "claude",
+            "needs-attention",
+            "Claude Code is too old for Workshop isolation and native agents.",
+            next_step="Upgrade Claude Code to %s or newer." % minimum,
+        )
+    if not environment.get("ANTHROPIC_API_KEY"):
+        return _check_record(
+            "claude",
+            "needs-attention",
+            "Claude Code is installed but Workshop's isolated profile has no API "
+            "credential.",
+            next_step="Set ANTHROPIC_API_KEY in the host environment.",
+        )
+    return _check_record(
+        "claude",
+        "ready",
+        "Claude Code is installed and API authentication is available for the "
+        "isolated profile.",
+    )
+
+
+def _doctor_manager(manager_id: str) -> dict[str, str]:
+    checks = {
+        "codex": _doctor_codex,
+        "claude": _doctor_claude,
+    }
+    try:
+        check = checks[manager_id]
+    except KeyError:
+        # argparse and the runtime registry normally close this path. Keep the
+        # programmatic handler fail-closed if those surfaces ever diverge.
+        manager_spec(manager_id)
+        raise WorkshopError("Workshop Manager doctor registry is incomplete") from None
+    return check()
+
+
 def _doctor_agent_assets() -> dict[str, str]:
     try:
         assets = product_run_agent_assets()
@@ -395,7 +495,7 @@ def _doctor(args: argparse.Namespace) -> int:
     root = _inventor_source_root(args.root)
     checks = [
         _doctor_catalog(root),
-        _doctor_codex(),
+        _doctor_manager(args.manager),
         _doctor_agent_assets(),
         _doctor_factory(),
     ]
@@ -408,12 +508,14 @@ def _doctor(args: argparse.Namespace) -> int:
         "schema_version": 1,
         "kind": "workshop-doctor",
         "status": status,
+        "manager": args.manager,
         "root": str(root),
         "checks": checks,
     }
     if args.json:
         _print_json(receipt)
     else:
+        print("Manager: %s" % manager_spec(args.manager).display_name)
         for item in checks:
             print("%-21s %s — %s" % (item["name"], item["status"], item["detail"]))
             if item.get("next"):
@@ -602,11 +704,20 @@ def _add_publication_options(command: argparse.ArgumentParser) -> None:
     command.set_defaults(publish=False)
 
 
+def _add_manager_option(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--manager",
+        choices=SUPPORTED_MANAGER_IDS,
+        default=DEFAULT_MANAGER_ID,
+        help="select the Workshop Manager runtime (default: %(default)s)",
+    )
+
+
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
         description=(
-            "Turn one Wish into a product through one native Codex session and "
+            "Turn one Wish into a product through one native Manager session and "
             "host-verified Workshop gates."
         ),
         epilog=(
@@ -621,11 +732,12 @@ def parser() -> argparse.ArgumentParser:
     )
 
     wish = subcommands.add_parser(
-        "wish", help="persist one Wish and start its native Codex session"
+        "wish", help="persist one Wish and start its native Manager session"
     )
     wish.add_argument("objective", nargs="+", metavar="WISH")
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
+    _add_manager_option(wish)
     _add_publication_options(wish)
     wish.set_defaults(handler=_wish)
 
@@ -637,7 +749,7 @@ def parser() -> argparse.ArgumentParser:
     status.set_defaults(handler=_status)
 
     resume = subcommands.add_parser(
-        "resume", help="resume the exact native Codex session for one Wish"
+        "resume", help="resume the exact saved Manager session for one Wish"
     )
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
@@ -650,6 +762,7 @@ def parser() -> argparse.ArgumentParser:
     )
     doctor.add_argument("--root", type=Path, help="Workshop checkout or inventor catalog")
     doctor.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    _add_manager_option(doctor)
     doctor.set_defaults(handler=_doctor)
 
     inventors = subcommands.add_parser(

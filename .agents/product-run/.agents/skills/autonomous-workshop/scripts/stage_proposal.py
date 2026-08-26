@@ -331,6 +331,13 @@ def _inventor_id(value: Any, label: str) -> str:
     return value
 
 
+def _valid_agent_path(value: Any, inventor_id: str) -> bool:
+    return value in {
+        ".codex/agents/%s.toml" % inventor_id,
+        ".claude/agents/%s.md" % inventor_id,
+    }
+
+
 def _safe_relative(value: Any, label: str) -> PurePosixPath:
     candidate = PurePosixPath(value) if isinstance(value, str) else PurePosixPath(".")
     if (
@@ -717,7 +724,7 @@ def _validate_roster(value: Any) -> dict[str, Any]:
             "Inventor roster entry",
         )
         inventor_id = _inventor_id(inventor["inventor_id"], "Inventor id")
-        if inventor["agent_path"] != ".codex/agents/%s.toml" % inventor_id:
+        if not _valid_agent_path(inventor["agent_path"], inventor_id):
             raise ProposalError("Inventor custom-agent path is invalid")
         _sha256(inventor["agent_sha256"], "Inventor custom-agent sha256")
         _sha256(
@@ -787,7 +794,7 @@ def _validate_assignment(value: Any) -> dict[str, Any]:
     selected_id = _inventor_id(
         assignment["selected_inventor_id"], "selected inventor_id"
     )
-    if assignment["selected_agent_path"] != ".codex/agents/%s.toml" % selected_id:
+    if not _valid_agent_path(assignment["selected_agent_path"], selected_id):
         raise ProposalError("selected custom-agent path is invalid")
     ranking = _validate_ranking(assignment["ranking"])
     if ranking[0]["inventor_id"] != assignment["selected_inventor_id"]:

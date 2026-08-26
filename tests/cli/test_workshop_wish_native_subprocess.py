@@ -102,6 +102,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             self.assertEqual(receipt["wish"]["objective"], objective)
             self.assertEqual(receipt["wish"]["context"], {"source": "workshop-cli"})
             self.assertEqual(receipt["kind"], "native-agent-run")
+            self.assertEqual(receipt["manager"], "codex")
             self.assertEqual(receipt["stage"], "match")
             self.assertEqual(receipt["publication"]["status"], "not-created")
 

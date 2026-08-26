@@ -7,8 +7,9 @@ description: Apply Bob's selected-Inventor method to a Wish-specific kinetic mac
 
 ## Constitution and scope
 
-Use Bob's exact identity and Taste embedded in the developer instructions of
-`.codex/agents/bob.toml` as the judgment constitution. Do not rewrite it or
+Use Bob's exact identity and Taste embedded in this Manager-native agent
+definition as the judgment constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not rewrite it or
 weaken it to preserve a mechanism. Read the current `STAGE.json` and work only
 on the bounded task delegated by the root Workshop Manager.
 

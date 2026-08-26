@@ -28,6 +28,7 @@ from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
 from workshop.release.native import NativeRelease
 from workshop.runtime import Receipt
+from workshop.runtime.managers import manager_spec
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
 
@@ -88,10 +89,11 @@ def _failed_cad_gate(
         product_artifact_sha256=made.product_manifest.artifact_sha256,
         cad_project_path=made.cad_project_path,
         cad_project_sha256=_sha256(made.made_sha256.encode("ascii")),
+        verifier_path=arguments.get("verifier_path", NATIVE_CAD_VERIFIER_PATH),
         verifier_sha256=arguments["expected_verifier_sha256"],
         command=(
             "<python>",
-            NATIVE_CAD_VERIFIER_PATH,
+            arguments.get("verifier_path", NATIVE_CAD_VERIFIER_PATH),
             "<isolated-cad-project>",
             "--fresh",
             "--exports",
@@ -136,17 +138,21 @@ class _SessionOutcome:
 
 
 class _OneSessionProductAgent:
-    """A deterministic stand-in for one resumed native Codex session."""
+    """A deterministic stand-in for one resumed native Manager session."""
 
-    def __init__(self):
+    def __init__(self, manager_id="codex"):
+        runtime = manager_spec(manager_id)
+        self.manager_id = runtime.manager_id
+        self.session_checkpoint_name = runtime.session_checkpoint_name
+        self.skill_directory = runtime.skill_directory
         self.starts = []
         self.resumes = []
+        self.acknowledgements = []
         self.stage_packets = []
         self.finalizer_commands = []
 
-    @staticmethod
-    def _checkpoint(arguments):
-        path = Path(arguments["host_state_root"]) / "codex-session.json"
+    def _checkpoint(self, arguments):
+        path = Path(arguments["host_state_root"]) / self.session_checkpoint_name
         path.write_bytes(_SESSION_CHECKPOINT)
         os.chmod(path, 0o600)
 
@@ -159,8 +165,7 @@ class _OneSessionProductAgent:
     def _run_finalizer(self, run_root, *arguments):
         script = (
             run_root
-            / ".agents"
-            / "skills"
+            / self.skill_directory
             / "autonomous-workshop"
             / "scripts"
             / "stage_proposal.py"
@@ -511,10 +516,20 @@ class _OneSessionProductAgent:
         self.resumes.append(dict(arguments))
         if len(self.starts) != 1:
             raise AssertionError("resume must continue the already-started session")
-        checkpoint = Path(arguments["host_state_root"]) / "codex-session.json"
+        checkpoint = (
+            Path(arguments["host_state_root"]) / self.session_checkpoint_name
+        )
         if checkpoint.read_bytes() != _SESSION_CHECKPOINT:
             raise AssertionError("resume did not use the original native session checkpoint")
         return self._turn(arguments)
+
+    def goal_disposition(self, **arguments):
+        self._assert_public_arguments(arguments)
+        return "returned"
+
+    def acknowledge_goal(self, **arguments):
+        self._assert_public_arguments(arguments)
+        self.acknowledgements.append(dict(arguments))
 
 
 class _FactoryEffects:
@@ -616,6 +631,97 @@ class _FactoryEffects:
 
 
 class NativeFullRunTest(unittest.TestCase):
+    def test_claude_make_and_playtest_use_projected_cad_verifier(self):
+        launcher = _OneSessionProductAgent(manager_id="claude")
+        effects = _FactoryEffects()
+        cad_calls = []
+        verifier_path = manager_spec("claude").skill_path(
+            "cad", "scripts/verify_project"
+        )
+
+        def verify_cad(made, **arguments):
+            cad_calls.append((made, dict(arguments)))
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(
+                    (made.made_sha256 + str(len(cad_calls))).encode("ascii")
+                ),
+                verifier_path=arguments["verifier_path"],
+                verifier_sha256=arguments["expected_verifier_sha256"],
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "orbit-dog-claude-cad",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-claude-cad-test"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                receipt = start_native_run(
+                    wish,
+                    publish_requested=False,
+                    manager_id="claude",
+                )
+                paths = native_run_paths(wish.product_id)
+                checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+                verifier_materialized = (paths.workspace / verifier_path).is_file()
+                gate_documents = {}
+                for stage in ("make", "playtest"):
+                    gate_paths = tuple(
+                        (paths.host_state / "gates").glob("*-%s.json" % stage)
+                    )
+                    self.assertEqual(len(gate_paths), 1)
+                    gate_documents[stage] = _read_json(gate_paths[0])
+
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stage"], "deliver")
+        self.assertEqual(checkpoint.manager_id, "claude")
+        self.assertTrue(verifier_materialized)
+        self.assertEqual(len(cad_calls), 2)
+        for unused_made, arguments in cad_calls:
+            self.assertEqual(arguments["verifier_path"], verifier_path)
+            self.assertEqual(
+                arguments["expected_verifier_sha256"],
+                checkpoint.input_sha256s[verifier_path],
+            )
+
+        for stage, gate in gate_documents.items():
+            self.assertEqual(
+                gate["evidence"]["checks"]["cad_verifier_path"],
+                verifier_path,
+            )
+            self.assertEqual(
+                gate["evidence"]["checks"]["cad_verifier_sha256"],
+                checkpoint.input_sha256s[verifier_path],
+            )
+
     def test_release_credential_wait_is_durable_and_resumes_same_session(self):
         launcher = _OneSessionProductAgent()
         effects = _FactoryEffects()
@@ -624,6 +730,7 @@ class NativeFullRunTest(unittest.TestCase):
             return SimpleNamespace(
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_path=arguments["verifier_path"],
                 verifier_sha256=arguments["expected_verifier_sha256"],
             )
 
@@ -641,7 +748,7 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad",
@@ -791,6 +898,7 @@ class NativeFullRunTest(unittest.TestCase):
                 receipt_sha256=_sha256(
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
+                verifier_path=arguments["verifier_path"],
                 verifier_sha256=arguments["expected_verifier_sha256"],
             )
 
@@ -808,7 +916,7 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad",
@@ -986,6 +1094,7 @@ class NativeFullRunTest(unittest.TestCase):
                 receipt_sha256=_sha256(
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
+                verifier_path=arguments["verifier_path"],
                 verifier_sha256=arguments["expected_verifier_sha256"],
             )
 
@@ -1003,7 +1112,7 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad",

@@ -515,14 +515,17 @@ class NativeCadGateEvidence:
         ):
             require_sha256(value, label)
         _safe_relative(self.cad_project_path, "native CAD gate project path")
-        if self.verifier_path != NATIVE_CAD_VERIFIER_PATH:
-            raise ContractError("native CAD gate verifier path is invalid")
+        _safe_relative(self.verifier_path, "native CAD gate verifier path")
         if self.verifier_mode != NATIVE_CAD_VERIFIER_MODE:
             raise ContractError("native CAD gate verifier mode is invalid")
         if not isinstance(self.command, tuple) or not self.command or not all(
             isinstance(item, str) and item for item in self.command
         ):
             raise ContractError("native CAD gate command is invalid")
+        if len(self.command) < 2 or self.command[1] != self.verifier_path:
+            raise ContractError(
+                "native CAD gate command differs from its verifier path"
+            )
         if (
             type(self.returncode) is not int
             or type(self.duration_ms) is not int
@@ -642,6 +645,7 @@ def verify_native_made_cad(
     run_root: Path,
     host_state_root: Path,
     expected_verifier_sha256: str,
+    verifier_path: str = NATIVE_CAD_VERIFIER_PATH,
     runner: Optional[VerifierRunner] = None,
     python_executable: str = sys.executable,
     timeout_seconds: float = DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS,
@@ -649,8 +653,10 @@ def verify_native_made_cad(
 ) -> NativeCadGateEvidence:
     """Run the final CAD gate on an isolated copy and persist host evidence.
 
-    ``expected_verifier_sha256`` must come from the trusted AgentRun input
-    checkpoint, not from the agent-writable run tree.
+    ``verifier_path`` and ``expected_verifier_sha256`` must come from the
+    trusted Manager projection and AgentRun input checkpoint, not from the
+    agent-writable run tree.  The Codex projection remains the default for
+    direct callers that predate portable Manager runtimes.
     """
 
     if not isinstance(made, NativeMade):
@@ -700,13 +706,14 @@ def verify_native_made_cad(
         raise ArtifactError("native Made CAD project differs from its declared inventory")
     project_sha256 = _entries_sha256(entries)
 
-    verifier_relative = _safe_relative(NATIVE_CAD_VERIFIER_PATH, "native CAD verifier")
+    verifier_relative = _safe_relative(verifier_path, "native CAD verifier")
+    verifier_relative_path = verifier_relative.as_posix()
     verifier_parent = _checked_directory(
         root, verifier_relative.parent, "native CAD verifier directory"
     )
-    verifier_path = verifier_parent / verifier_relative.name
+    verifier_absolute = verifier_parent / verifier_relative.name
     verifier_bytes, verifier_identity = _read_regular(
-        verifier_path, "native CAD verifier", MAX_NATIVE_CAD_VERIFIER_BYTES
+        verifier_absolute, "native CAD verifier", MAX_NATIVE_CAD_VERIFIER_BYTES
     )
     verifier_sha256 = hashlib.sha256(verifier_bytes).hexdigest()
     if verifier_sha256 != expected_verifier_sha256:
@@ -716,7 +723,7 @@ def verify_native_made_cad(
 
     normalized_command = (
         "<python>",
-        NATIVE_CAD_VERIFIER_PATH,
+        verifier_relative_path,
         "<isolated-cad-project>",
         "--fresh",
         "--exports",
@@ -734,7 +741,7 @@ def verify_native_made_cad(
         _validate_exact_product_tree(made, root)
         command = (
             python_executable,
-            str(verifier_path),
+            str(verifier_absolute),
             str(isolated_project),
             "--fresh",
             "--exports",
@@ -790,6 +797,7 @@ def verify_native_made_cad(
         product_artifact_sha256=made.product_manifest.artifact_sha256,
         cad_project_path=made.cad_project_path,
         cad_project_sha256=project_sha256,
+        verifier_path=verifier_relative_path,
         verifier_sha256=verifier_sha256,
         command=normalized_command,
         returncode=result.returncode,

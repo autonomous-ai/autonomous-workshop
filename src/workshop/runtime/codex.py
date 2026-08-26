@@ -24,6 +24,7 @@ from workshop.runtime.execution import (
     CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
     codex_subprocess_environment,
 )
+from workshop.runtime.managers import NativeManagerInvocationError
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 
 
@@ -66,9 +67,10 @@ _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONNOUSERSITE", "1"),
 )
 _CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
+_GOAL_STAGE = re.compile(r"^(match|invent|make|playtest|release)$")
 
 
-class CodexInvocationError(RuntimeError):
+class CodexInvocationError(NativeManagerInvocationError):
     pass
 
 
@@ -698,8 +700,20 @@ def _validated_prompt(value: Any) -> str:
     return value
 
 
+def _validated_goal_binding(stage: Any, checkpoint_sha256: Any) -> tuple[str, str]:
+    if not isinstance(stage, str) or _GOAL_STAGE.fullmatch(stage) is None:
+        raise ContractError("Codex native Goal stage is invalid")
+    return stage, _require_sha256(
+        checkpoint_sha256,
+        "Codex native Goal stage checkpoint sha256",
+    )
+
+
 class CodexNativeSessionLauncher:
     """Launch or resume the one native Codex session for an entire Wish."""
+
+    manager_id = "codex"
+    session_checkpoint_name = "codex-session.json"
 
     def __init__(
         self,
@@ -765,6 +779,8 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        goal_stage: str,
+        goal_checkpoint_sha256: str,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -773,6 +789,7 @@ class CodexNativeSessionLauncher:
             run_root=run_root,
             host_state_root=host_state_root,
         )
+        _validated_goal_binding(goal_stage, goal_checkpoint_sha256)
         if path.exists() or path.is_symlink():
             raise ContractError(
                 "Codex native session checkpoint already exists; resume it explicitly"
@@ -842,6 +859,8 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        goal_stage: str,
+        goal_checkpoint_sha256: str,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -850,6 +869,7 @@ class CodexNativeSessionLauncher:
             run_root=run_root,
             host_state_root=host_state_root,
         )
+        _validated_goal_binding(goal_stage, goal_checkpoint_sha256)
         prompt = _validated_prompt(prompt)
         run_policy = _codex_run_policy(root)
         runtime_config_sha256 = _runtime_config_sha256(
@@ -886,6 +906,72 @@ class CodexNativeSessionLauncher:
                 checkpoint_sha256=checkpoint_sha256,
             ),
             used_web_search,
+        )
+
+    def goal_disposition(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        constitution_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        prompt: str,
+        goal_stage: str,
+        goal_checkpoint_sha256: str,
+    ) -> str:
+        """Codex has no extra Goal sidecar; validate and report returned."""
+
+        root, state_root, path = self._binding_paths(
+            product_id=product_id,
+            wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256,
+            run_root=run_root,
+            host_state_root=host_state_root,
+        )
+        _validated_prompt(prompt)
+        _validated_goal_binding(goal_stage, goal_checkpoint_sha256)
+        run_policy = _codex_run_policy(root)
+        runtime_config_sha256 = _runtime_config_sha256(
+            self.cli_version,
+            self.model,
+            self.reasoning_effort,
+            run_policy,
+        )
+        self._load_checkpoint(
+            path=path,
+            product_id=product_id,
+            wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256,
+            run_root=root,
+            host_state_root=state_root,
+            runtime_config_sha256=runtime_config_sha256,
+        )
+        return "returned"
+
+    def acknowledge_goal(
+        self,
+        *,
+        product_id: str,
+        wish_sha256: str,
+        constitution_sha256: str,
+        run_root: Path,
+        host_state_root: Path,
+        prompt: str,
+        goal_stage: str,
+        goal_checkpoint_sha256: str,
+    ) -> None:
+        """Validate the generic host binding; Codex needs no extra mutation."""
+
+        self.goal_disposition(
+            product_id=product_id,
+            wish_sha256=wish_sha256,
+            constitution_sha256=constitution_sha256,
+            run_root=run_root,
+            host_state_root=host_state_root,
+            prompt=prompt,
+            goal_stage=goal_stage,
+            goal_checkpoint_sha256=goal_checkpoint_sha256,
         )
 
     def _binding_paths(

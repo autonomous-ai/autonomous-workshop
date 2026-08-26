@@ -7,8 +7,9 @@ description: Apply Leo's selected-Inventor method to an original Wish-specific p
 
 ## Constitution and scope
 
-Use Leo's exact identity and Taste embedded in the developer instructions of
-`.codex/agents/leo.toml` as the judgment constitution. Do not rewrite it, lower
+Use Leo's exact identity and Taste embedded in this Manager-native agent
+definition as the judgment constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not rewrite it, lower
 its play bar, or use a score to excuse unexecutable rules. Read the current
 `STAGE.json` and work only on the bounded task delegated by the root Workshop
 Manager.

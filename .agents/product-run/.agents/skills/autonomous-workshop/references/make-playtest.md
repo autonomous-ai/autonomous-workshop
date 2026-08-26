@@ -1,27 +1,28 @@
 # Make and Playtest contracts
 
-Read `STAGE.json`. It binds the exact sealed upstream artifacts, universal
-blueprint, canonical output paths, current round, round limit, and any prior
-Playtest feedback. Verify those bytes before acting. Host rounds and
-checkpoints bound the work; Codex performs the reasoning and repair.
+Read `MANAGER.json` and `STAGE.json`. They bind the selected Manager and its
+runtime projection, exact sealed upstream artifacts, universal blueprint,
+canonical output paths, current round, round limit, and any prior Playtest
+feedback. Verify those bytes before acting. Host rounds and checkpoints bound
+the work; the selected Manager performs the reasoning and repair.
 
 ## Make Goal and improvement loop
 
-Create one native Codex Goal for the current Make attempt. Its objective is to
-produce the exact buildable, inspectable product artifact required by the
-sealed Invent output and, on a later round, repair the failures cited by the
-prior Playtest. Its stopping condition is a successful `make` finalizer for
-the current checkpoint.
+Create one native Goal through the selected Manager's `/goal` control for the
+current Make attempt. Its objective is to produce the exact buildable,
+inspectable product artifact required by the sealed Invent output and, on a
+later round, repair the failures cited by the prior Playtest. Its stopping
+condition is a successful `make` finalizer for the current checkpoint.
 
 While pursuing the Goal:
 
 1. **Observe:** Inspect the Invent concept, selected Inventor instructions,
    universal blueprint, current revision workspace, deterministic tool policy,
    and every evidence-linked feedback item from a prior Playtest.
-2. **Act:** Use native editing and the materialized `cad`, `product-to-cad`,
-   and `step-parts` skills under `.agents/skills/` to create or repair the
-   actual product artifact. Use native subagents for bounded mechanism, CAD, or
-   review tasks when useful.
+2. **Act:** Use native editing and the host-projected `cad`, `product-to-cad`,
+   and `step-parts` skills under the exact `skill_directory` from
+   `MANAGER.json` to create or repair the actual product artifact. Use native
+   subagents for bounded mechanism, CAD, or review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
    actual STEP/STL and rendered outputs, and compare observed behavior with the
    concept, dimensions, materials, tolerances, assembly, and prior feedback.
@@ -31,9 +32,9 @@ While pursuing the Goal:
    and reinspect the artifact. Keep changes focused enough to know whether the
    evidence improved. Continue within the host-provided round.
 
-Codex owns the build/check/inspect/repair loop. Python tools may generate CAD,
-measure exact geometry, or validate a contract; they do not plan repairs,
-score Taste, route agents, or control the loop.
+The selected Manager owns the build/check/inspect/repair loop. Python tools
+may generate CAD, measure exact geometry, or validate a contract; they do not
+plan repairs, score Taste, route agents, or control the loop.
 
 Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
@@ -42,12 +43,15 @@ dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+python <skill_directory>/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
   --product-root <STAGE product_root> \
   --cad-project-path <path inside product root> \
   --cad-verification-path <path inside product root>
 ```
+
+Replace `<skill_directory>` with its exact `MANAGER.json` value and the other
+placeholders with the bound stage paths; do not type angle brackets literally.
 
 The deterministic finalizer hashes the complete tree and writes the canonical
 Made contract. Complete the Make Goal only after it succeeds, then return to
@@ -57,12 +61,13 @@ or model confidence never overrides a failed or absent measurement.
 
 ## Playtest Goal and independent evidence loop
 
-Create one native Codex Goal for the current Playtest attempt. Its objective is
-to independently evaluate the one sealed Made revision and produce complete,
-reproducible evidence with a truthful `pass`, `improve`, or `block` verdict.
-Its stopping condition is a successful `playtest` finalizer for the current
-checkpoint. Finalizing an evidence-backed failure satisfies the Playtest Goal;
-passing the product is not required when the evidence says it fails.
+Create one native Goal through the selected Manager's `/goal` control for the
+current Playtest attempt. Its objective is to independently evaluate the one
+sealed Made revision and produce complete, reproducible evidence with a
+truthful `pass`, `improve`, or `block` verdict. Its stopping condition is a
+successful `playtest` finalizer for the current checkpoint. Finalizing an
+evidence-backed failure satisfies the Playtest Goal; passing the product is
+not required when the evidence says it fails.
 
 The universal baseline requires exactly these check ids unless the current
 `STAGE.json` states otherwise:
@@ -74,11 +79,10 @@ The universal baseline requires exactly these check ids unless the current
 Product-specific risks may justify additional inspections and evidence, but
 never omit or rename the host-required checks.
 
-All three baseline results are Codex-authored digital assessments unless the
-host supplies replayed deterministic evidence or an authenticated physical
-receipt that explicitly proves more. A digital mechanical or printability
-assessment never proves successful printing, physical fit, durability, or
-human play.
+All three baseline results are AI-authored digital assessments unless the host
+supplies replayed deterministic evidence or an authenticated physical receipt
+that explicitly proves more. A digital mechanical or printability assessment
+never proves successful printing, physical fit, durability, or human play.
 
 While pursuing the Goal:
 
@@ -103,11 +107,15 @@ id must appear once and cite its config and evidence file. Never invent
 physical trials, human players, measurements, or results. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+python <skill_directory>/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <STAGE evidence_root>
 ```
+
+Replace `<skill_directory>` with its exact `MANAGER.json` value and the other
+placeholders with the authored and bound paths; do not type angle brackets
+literally.
 
 The deterministic finalizer validates evidence coverage and writes the
 canonical Playtested contract. Complete the Playtest Goal after it succeeds
@@ -115,6 +123,7 @@ and return to the host, regardless of the truthful verdict.
 
 For `improve` or `block`, the host alone consumes a bounded round, invalidates
 downstream evidence, and checkpoints the transition back to Make. The host
-does not interpret or repair the product. In the next Make Goal, Codex reads
-the exact feedback, decides the repair, and runs the new build/evaluation loop.
-Only a host-verified pass for the current Made bytes can advance to Release.
+does not interpret or repair the product. In the next Make Goal, the selected
+Manager reads the exact feedback, decides the repair, and runs the new
+build/evaluation loop. Only a host-verified pass for the current Made bytes can
+advance to Release.

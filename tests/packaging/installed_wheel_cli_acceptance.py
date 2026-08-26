@@ -492,6 +492,240 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
     path.chmod(0o700)
 
 
+def _write_fake_claude(path: Path, python: Path) -> None:
+    source = """#!__PYTHON__
+import json
+import os
+import sys
+from pathlib import Path
+
+if sys.argv[1:] == ["--version"]:
+    print("2.1.246 (Claude Code)")
+    raise SystemExit(0)
+
+arguments = sys.argv[1:]
+
+def option(name):
+    index = arguments.index(name)
+    return arguments[index + 1]
+
+def private_directory(name):
+    value = os.environ.get(name, "")
+    path = Path(value)
+    return bool(
+        value
+        and path.is_absolute()
+        and path.is_dir()
+        and not path.is_symlink()
+        and path.stat().st_mode & 0o777 == 0o700
+    )
+
+run_root = Path.cwd()
+wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
+stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
+manager = json.loads((run_root / "MANAGER.json").read_text(encoding="utf-8"))
+expected_manager = {
+    "schema_version": 1,
+    "kind": "autonomous-workshop.manager-project",
+    "manager": "claude",
+    "display_name": "Claude Code",
+    "instruction_entrypoint": "CLAUDE.md",
+    "agent_directory": ".claude/agents",
+    "skill_directory": ".claude/skills",
+    "native_work_control": "goal",
+    "agent_namespace": "autonomous-workshop",
+}
+if manager != expected_manager:
+    raise RuntimeError("Claude MANAGER.json projection differs")
+
+plugin_root = run_root / ".claude"
+agent_root = plugin_root / "agents"
+skill_root = plugin_root / "skills"
+agent_entries = tuple(agent_root.iterdir())
+if any(item.is_symlink() or not item.is_file() for item in agent_entries):
+    raise RuntimeError("Claude Inventor agents must be regular files")
+inventor_ids = sorted(item.stem for item in agent_entries if item.suffix == ".md")
+if inventor_ids != list(__INVENTORS__):
+    raise RuntimeError(".claude/agents is not the complete Inventor roster")
+skill_ids = sorted(item.name for item in skill_root.iterdir() if item.is_dir())
+namespace = manager["agent_namespace"]
+session_id = option("--session-id")
+prompt = sys.stdin.read()
+
+(run_root / "agent-outcome.json").write_text(
+    json.dumps(
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "subject_sha256": stage["subject_sha256"],
+            "outcome": {
+                "schema_version": 1,
+                "stage": stage["stage"],
+                "status": "waiting",
+                "artifacts": [],
+                "needs": ["installed-wheel Claude fixture intentionally needs user input"],
+                "proposed_transition": None,
+            },
+        },
+        sort_keys=True,
+    ) + "\\n",
+    encoding="utf-8",
+)
+(run_root / "claude-packaging-probe.json").write_text(
+    json.dumps(
+        {
+            "api_key_visible": (
+                os.environ.get("ANTHROPIC_API_KEY")
+                == "installed-wheel-claude-api-key"
+            ),
+            "arguments": arguments,
+            "blocked_auth_visible": any(
+                name in os.environ
+                for name in ("ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")
+            ),
+            "custom_agent_ids": inventor_ids,
+            "factory_visible": "FACTORY_PASSWORD" in os.environ,
+            "manager": manager,
+            "private_state_environment": {
+                "HOME": os.environ.get("HOME"),
+                "CLAUDE_CONFIG_DIR": os.environ.get("CLAUDE_CONFIG_DIR"),
+                "CLAUDE_CODE_TMPDIR": os.environ.get("CLAUDE_CODE_TMPDIR"),
+                "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": os.environ.get(
+                    "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB"
+                ),
+            },
+            "prelaunch": {
+                "agents": (run_root / "AGENTS.md").is_file(),
+                "claude_entrypoint": (
+                    (run_root / "CLAUDE.md").is_file()
+                    and (run_root / "CLAUDE.md").read_bytes() == b"@AGENTS.md\\n"
+                ),
+                "inventor_agents": agent_root.is_dir(),
+                "inventor_skills": all(
+                    (
+                        skill_root
+                        / (inventor_id + "-inventor")
+                        / "SKILL.md"
+                    ).is_file()
+                    for inventor_id in __INVENTORS__
+                ),
+                "manager": (run_root / "MANAGER.json").is_file(),
+                "no_codex_projection": not (run_root / ".codex").exists(),
+                "no_codex_skills": not (run_root / ".agents").exists(),
+                "no_catalog": not (run_root / "catalog").exists(),
+                "plugin_manifest": (
+                    plugin_root / ".claude-plugin" / "plugin.json"
+                ).is_file(),
+                "private_claude_config": private_directory("CLAUDE_CONFIG_DIR"),
+                "private_claude_home": private_directory("HOME"),
+                "private_claude_temp": private_directory("CLAUDE_CODE_TMPDIR"),
+                "private_temp": (
+                    (run_root / ".tmp").is_dir()
+                    and os.environ.get("TMPDIR") == str(run_root / ".tmp")
+                    and os.environ.get("TMP") == str(run_root / ".tmp")
+                    and os.environ.get("TEMP") == str(run_root / ".tmp")
+                ),
+                "root_marker": (run_root / ".workshop-product-run-root").is_file(),
+                "stage": (run_root / "STAGE.json").is_file(),
+                "workflow": (
+                    skill_root / "autonomous-workshop" / "SKILL.md"
+                ).is_file(),
+                "wish": (run_root / "WISH.json").is_file(),
+            },
+            "product_id": wish["product_id"],
+            "prompt": prompt,
+            "session_id": session_id,
+            "settings": json.loads(option("--settings")),
+        },
+        sort_keys=True,
+    ) + "\\n",
+    encoding="utf-8",
+)
+
+print(
+    json.dumps(
+        {
+            "type": "system",
+            "subtype": "init",
+            "cwd": str(run_root),
+            "session_id": session_id,
+            "claude_code_version": "2.1.246",
+            "model": option("--model"),
+            "permissionMode": option("--permission-mode"),
+            "mcp_servers": [],
+            "tools": [
+                "Task",
+                "Bash",
+                "Edit",
+                "Skill",
+                "WebFetch",
+                "WebSearch",
+                "Write",
+            ],
+            "agents": [namespace + ":" + item for item in inventor_ids],
+            "skills": [namespace + ":" + item for item in skill_ids],
+            "slash_commands": ["goal"] + [
+                namespace + ":" + item for item in skill_ids
+            ],
+            "apiKeySource": "ANTHROPIC_API_KEY",
+            "plugins": [
+                {
+                    "name": namespace,
+                    "path": str(plugin_root),
+                    "source": namespace + "@inline",
+                    "version": "1.0.0",
+                }
+            ],
+        }
+    )
+)
+print(
+    json.dumps(
+        {
+            "type": "assistant",
+            "parent_tool_use_id": None,
+            "session_id": session_id,
+            "message": {
+                "container": None,
+                "context_management": None,
+                "diagnostics": None,
+                "model": "<synthetic>",
+                "role": "assistant",
+                "stop_details": None,
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "type": "message",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Goal set: " + prompt.removeprefix("/goal "),
+                    }
+                ],
+            },
+        }
+    )
+)
+print(
+    json.dumps(
+        {
+            "type": "result",
+            "subtype": "success",
+            "is_error": False,
+            "result": "installed-wheel Claude fixture waiting",
+            "session_id": session_id,
+            "stop_reason": "end_turn",
+        }
+    )
+)
+"""
+    source = source.replace("__PYTHON__", str(python)).replace(
+        "__INVENTORS__", repr(INVENTORS)
+    )
+    path.write_text(source, encoding="utf-8")
+    path.chmod(0o700)
+
+
 def _assert_materialized_tree(source_root: Path, target_root: Path) -> None:
     expected = _source_files(source_root)
     observed = _source_files(target_root)
@@ -568,6 +802,7 @@ def _native_wish_smoke(
         or receipt.get("stage") != "match"
         or receipt.get("native_turns") != 1
         or receipt.get("action") != "started"
+        or receipt.get("manager") != "codex"
     ):
         raise AssertionError("installed Wish did not return a truthful wait: %r" % receipt)
 
@@ -607,7 +842,8 @@ def _native_wish_smoke(
     )
     roster = agent_checkpoint.get("inventor_roster")
     if (
-        agent_checkpoint.get("schema_version") != 3
+        agent_checkpoint.get("schema_version") != 4
+        or agent_checkpoint.get("manager") != "codex"
         or not isinstance(roster, list)
         or tuple(item.get("inventor_id") for item in roster) != INVENTORS
         or tuple(item.get("agent_path") for item in roster)
@@ -618,7 +854,7 @@ def _native_wish_smoke(
         )
         or stat.S_IMODE(agent_checkpoint_path.stat().st_mode) != 0o600
     ):
-        raise AssertionError("installed Wish host roster is not the schema-v3 roster")
+        raise AssertionError("installed Wish host roster is not the schema-v4 roster")
 
     probe = json.loads(
         (workspace / "native-packaging-probe.json").read_text(encoding="utf-8")
@@ -701,7 +937,7 @@ def _native_wish_smoke(
             "synthesis",
         )
     ):
-        raise AssertionError("product-run constitution does not give Codex orchestration")
+        raise AssertionError("product-run constitution does not give Manager orchestration")
     _assert_materialized_tree(
         (
             repository
@@ -790,6 +1026,407 @@ def _native_wish_smoke(
         raise AssertionError("materialized product-run skill inventory differs")
 
 
+def _claude_native_wish_smoke(
+    *,
+    workshop: Path,
+    python: Path,
+    root: Path,
+    repository: Path,
+    away: Path,
+    environment: dict[str, str],
+) -> None:
+    fake_claude = root / "fake-claude"
+    _write_fake_claude(fake_claude, python)
+    environment = dict(environment)
+    workshop_home = root / "workshop-home-claude"
+    environment.update(
+        {
+            "WORKSHOP_HOME": str(workshop_home),
+            "WORKSHOP_CLAUDE_BIN": str(fake_claude),
+            "ANTHROPIC_API_KEY": "installed-wheel-claude-api-key",
+            "ANTHROPIC_AUTH_TOKEN": "must-not-reach-native-claude",
+            "CLAUDE_CODE_OAUTH_TOKEN": "must-not-reach-native-claude",
+            "FACTORY_PASSWORD": "must-not-reach-native-claude",
+        }
+    )
+    receipt = _json(
+        (
+            workshop,
+            "wish",
+            "--manager",
+            "claude",
+            "an installed Claude Workshop packaging probe",
+            "--json",
+        ),
+        cwd=away,
+        environment=environment,
+    )
+    if (
+        receipt.get("kind") != "native-agent-run"
+        or receipt.get("status") != "waiting"
+        or receipt.get("stage") != "match"
+        or receipt.get("native_turns") != 1
+        or receipt.get("action") != "started"
+        or receipt.get("manager") != "claude"
+    ):
+        raise AssertionError(
+            "installed Claude Wish did not return a truthful wait: %r" % receipt
+        )
+
+    product_id = receipt["product_id"]
+    expected_workspace = workshop_home / "toys" / product_id
+    expected_state = workshop_home / "state" / product_id
+    probes = tuple(workshop_home.rglob("claude-packaging-probe.json"))
+    if probes != (expected_workspace / "claude-packaging-probe.json",):
+        raise AssertionError("installed Claude Wish did not launch from its toy project")
+    workspace = probes[0].parent
+    probe = json.loads(probes[0].read_text(encoding="utf-8"))
+    status = _json(
+        (workshop, "status", product_id, "--json"),
+        cwd=away,
+        environment=environment,
+    )
+    if (
+        status.get("status") != "waiting"
+        or status.get("session_status") != "checkpointed"
+        or status.get("manager") != "claude"
+    ):
+        raise AssertionError("installed Claude Wish status lost its native checkpoint")
+
+    claude_checkpoints = tuple(workshop_home.rglob("claude-session.json"))
+    if claude_checkpoints != (expected_state / "claude-session.json",):
+        raise AssertionError(
+            "installed Claude Wish did not record exactly one session checkpoint"
+        )
+    goal_checkpoints = tuple(workshop_home.rglob("claude-goal.json"))
+    if goal_checkpoints != (expected_state / "claude-goal.json",):
+        raise AssertionError(
+            "installed Claude Wish did not record exactly one Goal checkpoint"
+        )
+    if tuple(workshop_home.rglob("codex-session.json")):
+        raise AssertionError("installed Claude Wish created a Codex checkpoint")
+    claude_checkpoint = json.loads(
+        claude_checkpoints[0].read_text(encoding="utf-8")
+    )
+    if (
+        set(claude_checkpoint)
+        != {
+            "schema_version",
+            "kind",
+            "product_id",
+            "wish_sha256",
+            "constitution_sha256",
+            "run_root_sha256",
+            "host_state_root_sha256",
+            "runtime_config_sha256",
+            "cli_version",
+            "permission_mode",
+            "sandbox_required",
+            "session_id",
+            "checkpoint_sha256",
+        }
+        or claude_checkpoint.get("schema_version") != 1
+        or claude_checkpoint.get("kind")
+        != "autonomous-workshop-native-claude-session"
+        or claude_checkpoint.get("product_id") != product_id
+        or claude_checkpoint.get("session_id") != probe.get("session_id")
+        or claude_checkpoint.get("cli_version") != "2.1.246"
+        or claude_checkpoint.get("permission_mode") != "dontAsk"
+        or claude_checkpoint.get("sandbox_required") is not True
+        or stat.S_IMODE(claude_checkpoints[0].stat().st_mode) != 0o600
+        or receipt["session"]["session"]["checkpoint_sha256"]
+        != claude_checkpoint.get("checkpoint_sha256")
+    ):
+        raise AssertionError("installed Claude session checkpoint binding is invalid")
+    goal_checkpoint = json.loads(
+        goal_checkpoints[0].read_text(encoding="utf-8")
+    )
+    stage_packet = json.loads((workspace / "STAGE.json").read_text(encoding="utf-8"))
+    if (
+        set(goal_checkpoint)
+        != {
+            "schema_version",
+            "kind",
+            "session_checkpoint_sha256",
+            "stage",
+            "stage_checkpoint_sha256",
+            "goal_prompt_sha256",
+            "attempt",
+            "status",
+            "revision",
+            "state_sha256",
+        }
+        or goal_checkpoint.get("schema_version") != 1
+        or goal_checkpoint.get("kind") != "autonomous-workshop-native-claude-goal"
+        or goal_checkpoint.get("session_checkpoint_sha256")
+        != claude_checkpoint.get("checkpoint_sha256")
+        or goal_checkpoint.get("stage") != "match"
+        or goal_checkpoint.get("stage_checkpoint_sha256")
+        != stage_packet.get("checkpoint_sha256")
+        or goal_checkpoint.get("goal_prompt_sha256")
+        != hashlib.sha256(probe["prompt"].encode("utf-8")).hexdigest()
+        or goal_checkpoint.get("attempt") != 1
+        or goal_checkpoint.get("status") != "completed"
+        or goal_checkpoint.get("revision") != 2
+        or stat.S_IMODE(goal_checkpoints[0].stat().st_mode) != 0o600
+    ):
+        raise AssertionError("installed Claude Goal checkpoint binding is invalid")
+
+    expected_manager = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.manager-project",
+        "manager": "claude",
+        "display_name": "Claude Code",
+        "instruction_entrypoint": "CLAUDE.md",
+        "agent_directory": ".claude/agents",
+        "skill_directory": ".claude/skills",
+        "native_work_control": "goal",
+        "agent_namespace": "autonomous-workshop",
+    }
+    expected_manager_bytes = (
+        json.dumps(
+            expected_manager,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        + b"\n"
+    )
+    manager_path = workspace / "MANAGER.json"
+    if (
+        probe.get("manager") != expected_manager
+        or manager_path.read_bytes() != expected_manager_bytes
+        or stat.S_IMODE(manager_path.stat().st_mode) != 0o400
+    ):
+        raise AssertionError("installed Claude MANAGER.json projection differs")
+
+    agent_checkpoint_path = expected_state / "agent-run.json"
+    if not agent_checkpoint_path.is_file():
+        raise AssertionError("installed Claude Wish did not persist its host checkpoint")
+    agent_checkpoint = json.loads(
+        agent_checkpoint_path.read_text(encoding="utf-8")
+    )
+    roster = agent_checkpoint.get("inventor_roster")
+    if (
+        agent_checkpoint.get("schema_version") != 4
+        or agent_checkpoint.get("manager") != "claude"
+        or not isinstance(roster, list)
+        or tuple(item.get("inventor_id") for item in roster) != INVENTORS
+        or tuple(item.get("agent_path") for item in roster)
+        != tuple(".claude/agents/%s.md" % item for item in INVENTORS)
+        or any(
+            skill.get("materialized_path")
+            != ".claude/skills/%s/SKILL.md" % skill.get("name")
+            for item in roster
+            for skill in item.get("skills", ())
+        )
+        or any(
+            legacy in agent_checkpoint
+            for legacy in ("catalog", "inventor_catalog", "persona_catalog")
+        )
+        or stat.S_IMODE(agent_checkpoint_path.stat().st_mode) != 0o600
+    ):
+        raise AssertionError(
+            "installed Claude Wish host roster is not the schema-v4 projection"
+        )
+
+    claude_arguments = probe["arguments"]
+    argument_pairs = set(zip(claude_arguments, claude_arguments[1:]))
+    expected_tools = {
+        "Agent",
+        "Bash",
+        "Edit",
+        "Skill",
+        "WebFetch",
+        "WebSearch",
+        "Write",
+    }
+    tool_argument = claude_arguments[claude_arguments.index("--tools") + 1]
+    absolute_root = "/" + expected_workspace.as_posix() + "/**"
+    if (
+        not probe.get("api_key_visible")
+        or probe.get("blocked_auth_visible")
+        or probe.get("factory_visible")
+        or "--bare" in claude_arguments
+        or "-p" not in claude_arguments
+        or ("--input-format", "text") not in argument_pairs
+        or ("--output-format", "stream-json") not in argument_pairs
+        or "--verbose" not in claude_arguments
+        or ("--model", "claude-opus-5") not in argument_pairs
+        or ("--effort", "high") not in argument_pairs
+        or ("--permission-mode", "dontAsk") not in argument_pairs
+        or ("--setting-sources", "") not in argument_pairs
+        or "--strict-mcp-config" not in claude_arguments
+        or ("--mcp-config", '{"mcpServers":{}}') not in argument_pairs
+        or ("--plugin-dir", str(expected_workspace / ".claude"))
+        not in argument_pairs
+        or ("--append-system-prompt-file", str(expected_workspace / "AGENTS.md"))
+        not in argument_pairs
+        or ("--agents", "{}") not in argument_pairs
+        or "--no-chrome" not in claude_arguments
+        or ("--prompt-suggestions", "false") not in argument_pairs
+        or "--session-id" not in claude_arguments
+        or "--resume" in claude_arguments
+        or set(tool_argument.split(",")) != expected_tools
+        or "Edit(%s)" % absolute_root not in claude_arguments
+        or "Write(%s)" % absolute_root not in claude_arguments
+    ):
+        raise AssertionError("installed native Claude launch boundary is incorrect")
+
+    settings = probe["settings"]
+    sandbox = settings.get("sandbox", {})
+    credential_names = {
+        item.get("name")
+        for item in sandbox.get("credentials", {}).get("envVars", ())
+        if item.get("mode") == "deny"
+    }
+    if (
+        settings.get("autoMemoryEnabled") is not False
+        or settings.get("cleanupPeriodDays") != 36_500
+        or "disableAllHooks" in settings
+        or settings.get("disableClaudeAiConnectors") is not True
+        or settings.get("syncClaudeAiSkills") is not False
+        or sandbox.get("enabled") is not True
+        or sandbox.get("failIfUnavailable") is not True
+        or sandbox.get("allowUnsandboxedCommands") is not False
+        or sandbox.get("filesystem", {}).get("denyRead") != ["/"]
+        or sandbox.get("filesystem", {}).get("allowWrite")
+        != [str(expected_workspace)]
+        or sandbox.get("network", {}).get("deniedDomains") != ["*"]
+        or credential_names
+        != {"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"}
+    ):
+        raise AssertionError("installed native Claude sandbox policy is incorrect")
+    expected_private_state_environment = {
+        "HOME": str(expected_state / "claude-home"),
+        "CLAUDE_CONFIG_DIR": str(expected_state / "claude-config"),
+        "CLAUDE_CODE_TMPDIR": str(expected_state / "claude-tmp"),
+        "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "0",
+    }
+    if probe.get("private_state_environment") != expected_private_state_environment:
+        raise AssertionError("installed native Claude private state is incorrect")
+    if (
+        probe.get("product_id") != product_id
+        or tuple(probe.get("custom_agent_ids", ())) != INVENTORS
+        or not all(probe.get("prelaunch", {}).values())
+        or not probe.get("prompt", "").startswith("/goal ")
+        or "current match stage" not in probe.get("prompt", "")
+    ):
+        raise AssertionError("toy project was not populated before Claude launched")
+
+    constitution = repository / ".agents" / "product-run" / "AGENTS.md"
+    if (workspace / "AGENTS.md").read_bytes() != constitution.read_bytes():
+        raise AssertionError("materialized Claude product-run constitution differs")
+    if (
+        (workspace / "CLAUDE.md").read_bytes() != b"@AGENTS.md\n"
+        or stat.S_IMODE((workspace / "CLAUDE.md").stat().st_mode) != 0o400
+    ):
+        raise AssertionError("materialized Claude instruction entrypoint differs")
+    if (workspace / ".agents").exists() or (workspace / ".codex").exists():
+        raise AssertionError("Claude toy contains another Manager projection")
+
+    plugin_root = workspace / ".claude"
+    if (
+        {path.name for path in plugin_root.iterdir()}
+        != {".claude-plugin", "agents", "skills"}
+        or stat.S_IMODE(plugin_root.stat().st_mode) != 0o500
+    ):
+        raise AssertionError("materialized Claude plugin root differs")
+    manifest_path = plugin_root / ".claude-plugin" / "plugin.json"
+    expected_plugin = {
+        "name": "autonomous-workshop",
+        "description": "Host-projected Workshop runtime",
+        "version": "1.0.0",
+        "author": {"name": "Autonomous Workshop"},
+    }
+    if (
+        json.loads(manifest_path.read_text(encoding="utf-8")) != expected_plugin
+        or stat.S_IMODE(manifest_path.stat().st_mode) != 0o400
+    ):
+        raise AssertionError("materialized Claude plugin manifest differs")
+
+    workflow_source = (
+        repository
+        / ".agents"
+        / "product-run"
+        / ".agents"
+        / "skills"
+        / "autonomous-workshop"
+    )
+    _assert_materialized_tree(
+        workflow_source,
+        plugin_root / "skills" / "autonomous-workshop",
+    )
+    expected_skill_names = {"autonomous-workshop", *SKILLS}
+    for skill_name in SKILLS:
+        _assert_materialized_tree(
+            repository / "src" / "workshop" / "make" / "skills" / skill_name,
+            plugin_root / "skills" / skill_name,
+        )
+
+    agent_root = plugin_root / "agents"
+    observed_agent_names = {
+        path.name for path in agent_root.iterdir() if path.is_file()
+    }
+    if observed_agent_names != {"%s.md" % item for item in INVENTORS}:
+        raise AssertionError("materialized .claude/agents roster differs")
+    if stat.S_IMODE(agent_root.stat().st_mode) != 0o500:
+        raise AssertionError("materialized .claude/agents roster is mutable")
+    for inventor_id in INVENTORS:
+        source = repository / "inventors" / inventor_id
+        manifest = json.loads((source / "inventor.json").read_text(encoding="utf-8"))
+        agent_path = agent_root / (inventor_id + ".md")
+        if (
+            agent_path.is_symlink()
+            or not agent_path.is_file()
+            or stat.S_IMODE(agent_path.stat().st_mode) != 0o400
+        ):
+            raise AssertionError("materialized Claude Inventor agent is not immutable")
+        instructions = agent_path.read_text(encoding="utf-8")
+        if not instructions.startswith("---\nname: %s\n" % inventor_id):
+            raise AssertionError("materialized Claude Inventor frontmatter differs")
+        if _exact_custom_agent_block(instructions, "MANIFEST") != (
+            source / "inventor.json"
+        ).read_bytes():
+            raise AssertionError("materialized Claude Inventor manifest bytes differ")
+        if _exact_custom_agent_block(instructions, "TASTE") != (
+            source / "TASTE.md"
+        ).read_bytes():
+            raise AssertionError("materialized Claude Inventor Taste bytes differ")
+        expected_skill_bindings = [
+            {
+                "name": extension["name"],
+                "path": extension["path"],
+                "artifact_sha256": extension["artifact_sha256"],
+            }
+            for extension in manifest["extensions"]
+        ]
+        observed_skill_bindings = json.loads(
+            _exact_custom_agent_block(instructions, "SKILLS")
+        )
+        if observed_skill_bindings != expected_skill_bindings:
+            raise AssertionError("materialized Claude Inventor skill binding differs")
+        for extension in manifest["extensions"]:
+            skill_name = extension["name"]
+            expected_skill_names.add(skill_name)
+            if (
+                "  - autonomous-workshop:%s\n" % skill_name not in instructions
+                or ".claude/skills/%s/SKILL.md" % skill_name not in instructions
+            ):
+                raise AssertionError("Claude Inventor lacks its projected skill path")
+            _assert_materialized_tree(
+                source / extension["path"],
+                plugin_root / "skills" / skill_name,
+            )
+    observed_skill_names = {
+        path.name
+        for path in (plugin_root / "skills").iterdir()
+        if path.is_dir()
+    }
+    if observed_skill_names != expected_skill_names:
+        raise AssertionError("materialized Claude skill inventory differs")
+
+
 def acceptance(
     wheel: Path,
     repository: Path,
@@ -854,6 +1491,14 @@ def acceptance(
         if tuple(item["id"] for item in inventors) != INVENTORS:
             raise AssertionError("installed inventor catalog is incomplete")
         _native_wish_smoke(
+            workshop=workshop,
+            python=python,
+            root=root,
+            repository=repository,
+            away=away,
+            environment=environment,
+        )
+        _claude_native_wish_smoke(
             workshop=workshop,
             python=python,
             root=root,

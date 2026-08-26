@@ -9,12 +9,14 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
-from workshop.errors import StateConflict
+from workshop.errors import ContractError, StateConflict
 from workshop.workflow.native_run import (
     NativeRunPaths,
     _native_run_mutation_lock,
     canonical_wish_bytes,
+    native_stage_prompt,
     native_run_paths,
+    start_native_run,
 )
 from workshop.runtime import CodexInvocationError
 from workshop.wish import Wish
@@ -38,14 +40,30 @@ class _FakeOutcome:
 
 
 class _FakeLauncher:
-    def __init__(self, *, fail_first_start=False):
+    def __init__(
+        self,
+        *,
+        dispositions=(),
+        fail_after_start_outcome=False,
+        fail_first_start=False,
+        manager_id="codex",
+    ):
         self.starts = []
         self.resumes = []
+        self.acknowledgements = []
+        self.disposition_reads = []
+        self.resume_existing_outcomes = []
+        self.events = []
+        self.dispositions = list(dispositions)
+        self.fail_after_start_outcome = fail_after_start_outcome
         self.fail_first_start = fail_first_start
+        self.manager_id = manager_id
+        self.session_checkpoint_name = "%s-session.json" % manager_id
 
-    @staticmethod
-    def _checkpoint(arguments):
-        checkpoint = Path(arguments["host_state_root"]) / "codex-session.json"
+    def _checkpoint(self, arguments):
+        checkpoint = (
+            Path(arguments["host_state_root"]) / self.session_checkpoint_name
+        )
         checkpoint.write_text("{}\n", encoding="utf-8")
         os.chmod(checkpoint, 0o600)
 
@@ -82,15 +100,50 @@ class _FakeLauncher:
             raise CodexInvocationError("fixture interruption before thread.started")
         self._checkpoint(arguments)
         self._write_waiting(arguments)
+        if self.fail_after_start_outcome:
+            self.fail_after_start_outcome = False
+            raise CodexInvocationError("fixture interruption after proposal write")
         return _FakeOutcome(arguments)
 
     def resume(self, **arguments):
         self.resumes.append(dict(arguments))
+        outcome = Path(arguments["run_root"]) / "agent-outcome.json"
+        self.resume_existing_outcomes.append(
+            outcome.read_bytes() if outcome.is_file() else None
+        )
+        self.events.append("resume")
         self._write_waiting(arguments)
         return _FakeOutcome(arguments)
 
+    def goal_disposition(self, **arguments):
+        self.disposition_reads.append(dict(arguments))
+        disposition = self.dispositions.pop(0) if self.dispositions else "returned"
+        self.events.append("disposition:" + disposition)
+        return disposition
+
+    def acknowledge_goal(self, **arguments):
+        self.acknowledgements.append(dict(arguments))
+        self.events.append("acknowledge")
+
 
 class NativeHostTest(unittest.TestCase):
+    def test_legacy_codex_prompt_does_not_trust_an_unbound_manager_file(self):
+        prompt = native_stage_prompt(
+            "match", "codex", manager_project_bound=False
+        )
+        self.assertNotIn("MANAGER.json", prompt)
+        self.assertTrue(prompt.startswith("Create one native goal. "))
+
+    def test_unknown_manager_fails_before_any_run_directory_is_created(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create("unknown-manager", "a bounded Wish")
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), self.assertRaisesRegex(ContractError, "unsupported Workshop Manager"):
+                start_native_run(wish, manager_id="unregistered")
+            self.assertFalse(home.exists())
+
     def test_second_mutating_host_fails_while_run_lock_is_held(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
@@ -148,7 +201,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), redirect_stdout(stdout), redirect_stderr(stderr):
                 result = main(
@@ -230,8 +283,8 @@ class NativeHostTest(unittest.TestCase):
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
             self.assertIn("current match stage", prompt)
-            self.assertIn("Create one native Codex goal", prompt)
-            self.assertIn("successful finalization as its stopping condition", prompt)
+            self.assertIn("Create one native goal", prompt)
+            self.assertIn("successful finalization as the stopping condition", prompt)
             self.assertIn("inspecting, acting, evaluating, and improving", prompt)
             self.assertIn("complete the goal", prompt)
             self.assertIn("STAGE.json", prompt)
@@ -242,6 +295,81 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("before Match", stderr.getvalue())
+
+    def test_claude_manager_projection_and_resume_are_persistently_bound(self):
+        launcher = _FakeLauncher(manager_id="claude")
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            environment = {"WORKSHOP_HOME": str(home)}
+            output = StringIO()
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ) as select_manager, redirect_stdout(output), redirect_stderr(StringIO()):
+                self.assertEqual(
+                    main(
+                        (
+                            "wish",
+                            "a clockwork cloud",
+                            "--manager",
+                            "claude",
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            receipt = json.loads(output.getvalue())
+            product_id = receipt["product_id"]
+            workspace = home / "toys" / product_id
+            self.assertEqual(receipt["manager"], "claude")
+            select_manager.assert_called_once_with("claude")
+            self.assertTrue(launcher.starts[0]["prompt"].startswith("/goal "))
+            self.assertIn("current match stage", launcher.starts[0]["prompt"])
+            self.assertTrue((workspace / "CLAUDE.md").is_file())
+            self.assertTrue((workspace / "MANAGER.json").is_file())
+            self.assertTrue(
+                (workspace / ".claude/.claude-plugin/plugin.json").is_file()
+            )
+            self.assertFalse((workspace / ".codex").exists())
+            self.assertFalse((workspace / ".agents").exists())
+            for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+                self.assertTrue(
+                    (
+                        workspace
+                        / ".claude"
+                        / "agents"
+                        / (inventor_id + ".md")
+                    ).is_file()
+                )
+                self.assertTrue(
+                    (
+                        workspace
+                        / ".claude"
+                        / "skills"
+                        / (inventor_id + "-inventor")
+                        / "SKILL.md"
+                    ).is_file()
+                )
+
+            output = StringIO()
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ) as resume_manager, redirect_stdout(output), redirect_stderr(StringIO()):
+                self.assertEqual(main(("resume", product_id, "--json")), 0)
+            resumed = json.loads(output.getvalue())
+            self.assertEqual(resumed["manager"], "claude")
+            self.assertEqual(resumed["action"], "resumed")
+            resume_manager.assert_called_once_with("claude")
+            self.assertEqual(len(launcher.resumes), 1)
+            self.assertTrue(launcher.resumes[0]["prompt"].startswith("/goal "))
+
     def test_resume_uses_exact_materialized_binding(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -252,7 +380,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
@@ -268,7 +396,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=launcher,
             ), mock.patch(
                 "workshop.workflow.native_run.product_run_agent_assets",
@@ -308,6 +436,89 @@ class NativeHostTest(unittest.TestCase):
                 started["constitution_sha256"],
             )
 
+    def test_active_goal_with_existing_outcome_resumes_before_acknowledgement(self):
+        launcher = _FakeLauncher(dispositions=("active", "returned"))
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            output = StringIO()
+            with mock.patch.dict(
+                os.environ,
+                {"WORKSHOP_HOME": str(home)},
+                clear=True,
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ), redirect_stdout(output), redirect_stderr(StringIO()):
+                self.assertEqual(
+                    main(("wish", "a proposal before terminal return", "--json")),
+                    0,
+                )
+
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["native_turns"], 2)
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 1)
+            self.assertIsNotNone(launcher.resume_existing_outcomes[0])
+            self.assertEqual(len(launcher.acknowledgements), 1)
+            self.assertEqual(
+                launcher.events,
+                [
+                    "disposition:active",
+                    "resume",
+                    "disposition:returned",
+                    "acknowledge",
+                ],
+            )
+
+    def test_returned_existing_outcome_processes_without_another_native_turn(self):
+        launcher = _FakeLauncher(fail_after_start_outcome=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(
+                    main(("wish", "a durable returned proposal", "--json")),
+                    2,
+                )
+
+            product_ids = [path.name for path in (home / "toys").iterdir()]
+            self.assertEqual(len(product_ids), 1)
+            product_id = product_ids[0]
+            workspace = home / "toys" / product_id
+            self.assertTrue((workspace / "agent-outcome.json").is_file())
+
+            output = StringIO()
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.manager_launcher",
+                return_value=launcher,
+            ), redirect_stdout(output), redirect_stderr(StringIO()):
+                self.assertEqual(main(("resume", product_id, "--json")), 0)
+
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["action"], "resumed")
+            self.assertEqual(receipt["native_turns"], 0)
+            self.assertEqual(launcher.resumes, [])
+            self.assertEqual(len(launcher.acknowledgements), 1)
+            self.assertEqual(
+                launcher.events,
+                ["disposition:returned", "acknowledge"],
+            )
+            self.assertFalse((workspace / "agent-outcome.json").exists())
+
     def test_resume_safely_restarts_only_when_no_session_checkpoint_exists(self):
         interrupted = _FakeLauncher(fail_first_start=True)
         with tempfile.TemporaryDirectory() as temporary:
@@ -317,7 +528,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=interrupted,
             ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 self.assertEqual(main(("wish", "a tiny orbit", "--json")), 2)
@@ -335,7 +546,7 @@ class NativeHostTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
-                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.manager_launcher",
                 return_value=recovered,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(main(("resume", product_id, "--json")), 0)

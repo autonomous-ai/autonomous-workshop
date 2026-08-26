@@ -12,7 +12,9 @@ from workshop.runtime.agent_assets import (
     MAX_INVENTOR_CUSTOM_AGENT_BYTES,
     InventorCustomAgentBinding,
     InventorSkillBinding,
+    inventor_agent_bytes,
     inventor_custom_agent_bytes,
+    parse_inventor_agent_bytes,
     parse_inventor_custom_agent_bytes,
     product_run_agent_assets,
 )
@@ -224,6 +226,42 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 manifest_bytes(skills=(skill,)),
                 ALICE_TASTE,
                 skills=(skill,),
+            )
+
+    def test_claude_inventor_projection_is_canonical_namespaced_markdown(self):
+        manifest = manifest_bytes()
+        encoded = inventor_agent_bytes(
+            "claude",
+            "alice",
+            manifest,
+            ALICE_TASTE,
+            skills=ALICE_SKILLS,
+        )
+
+        decoded = encoded.decode("utf-8")
+        self.assertTrue(decoded.startswith("---\nname: alice\n"))
+        self.assertIn("model: inherit\n", decoded)
+        self.assertIn("  - autonomous-workshop:alice-inventor\n", decoded)
+        self.assertIn(".claude/skills/alice-inventor/SKILL.md", decoded)
+        self.assertIn("standard native Claude Code subagent", decoded)
+        binding = parse_inventor_agent_bytes("claude", encoded)
+        self.assertEqual(binding.manager_id, "claude")
+        self.assertEqual(binding.agent_path, ".claude/agents/alice.md")
+        self.assertEqual(binding.manifest_bytes, manifest)
+        self.assertEqual(binding.taste_bytes, ALICE_TASTE)
+        self.assertEqual(binding.skills, ALICE_SKILLS)
+        self.assertEqual(
+            binding.to_host_dict()["skills"][0]["materialized_path"],
+            ".claude/skills/alice-inventor/SKILL.md",
+        )
+        with self.assertRaisesRegex(ContractError, "canonical|frontmatter|skills"):
+            parse_inventor_agent_bytes(
+                "claude",
+                encoded.replace(
+                    b"autonomous-workshop:alice-inventor",
+                    b"alice-inventor",
+                    1,
+                ),
             )
 
     def test_custom_agent_toml_round_trips_backslashes_from_taste(self):

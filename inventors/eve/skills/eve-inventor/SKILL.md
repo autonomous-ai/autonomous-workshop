@@ -7,8 +7,9 @@ description: Apply Eve's selected-Inventor method to a reference-grounded person
 
 ## Constitution and scope
 
-Use Eve's exact identity and Taste embedded in the developer instructions of
-`.codex/agents/eve.toml` as the judgment constitution. Do not rewrite it,
+Use Eve's exact identity and Taste embedded in this Manager-native agent
+definition as the judgment constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not rewrite it,
 invent absent personal details, or weaken it to rescue a scene. Read the
 current `STAGE.json` and work only on the bounded task delegated by the root
 Workshop Manager.

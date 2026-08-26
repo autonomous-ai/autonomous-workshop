@@ -1,9 +1,9 @@
 # Build an Inventor
 
 An Autonomous Workshop Inventor is a standard native subagent specialized by a
-declared source bundle and used by the root Codex Workshop Manager. “Inventor”
-is the friendlier product-language role name; it is not another agent runtime,
-a product category, a subprocess, or a stage owner.
+declared, Manager-neutral source bundle and used by the selected root Workshop
+Manager. “Inventor” is the friendlier product-language role name; it is not
+another agent runtime, a product category, a subprocess, or a stage owner.
 
 Every Inventor contributes Taste, a schema-v8 source manifest, and one primary
 skill. Additional Inventor-prefixed skills and resources are optional:
@@ -12,21 +12,23 @@ skill. Additional Inventor-prefixed skills and resources are optional:
 inventors/<id>/
   TASTE.md                  required creative judgment
   inventor.json             required source metadata and exact skill hashes
-  skills/<id>-inventor/     required primary Codex skill
+  skills/<id>-inventor/     required primary portable skill
     SKILL.md                specialist method and tool routing
     scripts/                optional tested deterministic tools
     references/             optional specialist reference material
     assets/                 optional immutable templates or references
-  skills/<id>-<specialty>/  optional additional Codex skill
+  skills/<id>-<specialty>/  optional additional portable skill
 ```
 
 Workshop supplies the root Manager, lifecycle, contracts, gates, shared skills,
 and effect boundaries. At run creation the host validates reusable Inventor
-sources and materializes each eligible one as an official project-scoped
-`.codex/agents/<id>.toml` custom agent. Those files are the sole Inventor
-identity, Taste, and skill roster in the toy project. The Manager delegates
-through Codex's native controls; it does not launch another OS-level Codex
-process or a Python worker.
+sources and projects each eligible one into exactly one selected runtime layout:
+`.codex/agents/<id>.toml` plus `.agents/skills/**` for Codex, or the explicit
+Claude Code plugin's `.claude/agents/<id>.md` plus `.claude/skills/**`.
+`MANAGER.json` names the authoritative projection. That projected directory is
+the sole Inventor identity, Taste, and skill roster in the toy project. The
+Manager delegates through its own native controls; it does not launch another
+OS-level Manager process or a Python worker.
 
 ## 1. Write `TASTE.md`
 
@@ -97,6 +99,12 @@ bindings:
 }
 ```
 
+`codex-skill` is the historical schema-v8 wire discriminator retained by the
+current contributor contract. The declared `SKILL.md` tree itself is portable
+and is compiled into either supported Manager's native skill directory; the
+field does not authorize Codex-only behavior. A future schema rename must be an
+explicit compatibility migration rather than an in-place reinterpretation.
+
 Keep this file small. Match reasoning comes from the exact Wish, full Taste,
 and specialist method rather than a predeclared product class. The host binds
 the manifest, Taste, and complete skill bytes into the generated custom-agent
@@ -123,11 +131,12 @@ It may accept files and produce files or measurements. It must not:
 - hide reusable Workshop-wide behavior inside one Inventor.
 
 Each active Match, Invent, Make, Playtest, or Release attempt has one native
-Codex Goal owned by the root Manager. The selected Inventor may contribute
-bounded specialist work inside that Goal. Codex observes, acts, evaluates, and
-improves; Inventor Python never implements the reasoning or feedback loop. The
-root Manager reviews the work and submits the stage proposal, and the host
-independently reruns trusted checks and decides the gate.
+Goal owned by the selected root Manager. The selected Inventor may contribute
+bounded specialist work inside that Goal. The Manager observes, acts,
+evaluates, and improves; Inventor Python never implements the reasoning or
+feedback loop. The root Manager reviews the work and submits the stage
+proposal, and the host independently reruns trusted checks and decides the
+gate.
 
 Static contribution validation proves bundle structure and exact hashes, not
 the meaning or safety of arbitrary code. Keep repository tests for every
@@ -145,19 +154,25 @@ python tools/scan_secrets.py
 git diff --check
 ```
 
-Then start a representative private Wish and inspect the Match evidence:
+Then start a representative private Wish with the Manager being validated and
+inspect the Match evidence:
 
 ```bash
 uv run workshop wish \
   "I wish for a hand-cranked creature that climbs the edge of my bookshelf"
+
+# Claude requires ANTHROPIC_API_KEY; keep this run private while live acceptance is pending:
+uv run workshop wish --manager claude \
+  "I wish for a hand-cranked creature that climbs the edge of my bookshelf"
 ```
 
-The root Codex Manager compares every exact custom agent supplied in the
-`STAGE.json` Inventor roster, records an evidence-based ranking, and selects
-one. Where useful, it delegates bounded candidate analysis to native
-subagents. It then uses the selected `.codex/agents/<id>.toml`, whose
-instructions bind the exact manifest, full Taste, and skill resources. There
-is no profile launch, custom Python worker, or second root session to test.
+The root Manager compares every exact native agent supplied in the `STAGE.json`
+Inventor roster, records an evidence-based ranking, and selects one. Where
+useful, it delegates bounded candidate analysis to native subagents. It then
+uses the selected roster entry under the `agent_directory` named by
+`MANAGER.json`; that agent binds the exact manifest, full Taste, and projected
+skill resources. There is no profile launch, custom Python worker, or second
+root session to test.
 
 ## Shared craft belongs to Workshop stages
 

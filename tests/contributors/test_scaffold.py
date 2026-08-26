@@ -74,7 +74,8 @@ class ScaffoldTest(unittest.TestCase):
             skill = (destination / "skills/mira-inventor/SKILL.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn(".codex/agents/mira.toml", skill)
+            self.assertIn("Manager-native agent", skill)
+            self.assertIn("MANAGER.json", skill)
             self.assertIn("identity and Taste embedded", skill)
             self.assertNotIn("catalog/inventors", skill)
             self.assertIn("root Workshop Manager", skill)

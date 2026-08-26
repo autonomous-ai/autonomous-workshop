@@ -1,6 +1,6 @@
 # Runtime
 
-Owns the native Codex engine boundary, scrubbed execution environments, the
+Owns native Manager engine boundaries, allowlisted execution environments, the
 durable Factory effect ledger, and the canonical Factory `Receipt`. It contains
 no creative stage policy, product registry, event stream, lease scheduler,
 budget engine, publication service, or general retry framework.

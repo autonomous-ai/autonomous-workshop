@@ -15,11 +15,14 @@ from cli.main import main, parser
 cli_main = importlib.import_module("cli.main")
 
 
-def native_receipt(*, status="waiting", stage="match", published=False):
+def native_receipt(
+    *, status="waiting", stage="match", published=False, manager="codex"
+):
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "native-agent-run",
         "product_id": "wish-one",
+        "manager": manager,
         "status": status,
         "stage": stage,
         "publication": {
@@ -105,9 +108,10 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, publish_requested):
+        def start(wish, *, publish_requested, manager_id):
             observed["wish"] = wish
             observed["publish_requested"] = publish_requested
+            observed["manager_id"] = manager_id
             return native_receipt()
 
         stdout = StringIO()
@@ -119,11 +123,28 @@ class NativeCommandTest(unittest.TestCase):
 
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
-        self.assertIn("Starting one native Codex session", stderr.getvalue())
+        self.assertIn("Starting the Codex Workshop Manager", stderr.getvalue())
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
         self.assertFalse(observed["publish_requested"])
+        self.assertEqual(observed["manager_id"], "codex")
         native_start.assert_called_once()
+
+    def test_wish_selects_claude_without_changing_the_wish_contract(self):
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+            "cli.main.start_native_run",
+            return_value=native_receipt(manager="claude"),
+        ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", "a moon", "--manager", "claude", "--json"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(json.loads(stdout.getvalue())["manager"], "claude")
+        self.assertIn("Starting the Claude Code Workshop Manager", stderr.getvalue())
+        wish = start.call_args.args[0]
+        self.assertEqual(wish.context, {"source": "workshop-cli"})
+        self.assertEqual(start.call_args.kwargs["manager_id"], "claude")
 
     def test_wish_publish_is_explicit_and_strict_wait_exits_one(self):
         stdout = StringIO()
@@ -134,6 +155,7 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 1)
         start.assert_called_once()
         self.assertTrue(start.call_args.kwargs["publish_requested"])
+        self.assertEqual(start.call_args.kwargs["manager_id"], "codex")
 
     def test_status_is_read_only_native_inspection(self):
         stdout = StringIO()
@@ -144,6 +166,15 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         status.assert_called_once_with("wish-one")
         self.assertEqual(json.loads(stdout.getvalue())["product_id"], "wish-one")
+
+    def test_human_status_displays_the_persisted_manager(self):
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.native_run_status",
+            return_value=native_receipt(status="active", manager="claude"),
+        ), redirect_stdout(stdout):
+            self.assertEqual(main(("status", "wish-one")), 0)
+        self.assertIn("Manager: Claude Code", stdout.getvalue())
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
         stdout = StringIO()
@@ -157,7 +188,21 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 1)
         resume.assert_called_once_with("wish-one", publish_requested=True)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
-        self.assertIn("exact native Codex session", stderr.getvalue())
+        self.assertIn("exact saved Workshop Manager session", stderr.getvalue())
+
+    def test_resume_has_no_manager_selector_and_displays_the_saved_manager(self):
+        command = parser()
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("resume", "wish-one", "--manager", "codex"))
+
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main.resume_native_run",
+            return_value=native_receipt(stage="make", manager="claude"),
+        ) as resume, redirect_stdout(stdout):
+            self.assertEqual(main(("resume", "wish-one")), 0)
+        resume.assert_called_once_with("wish-one", publish_requested=False)
+        self.assertIn("Manager: Claude Code", stdout.getvalue())
 
     def test_failed_native_run_exits_one_even_without_strict(self):
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
@@ -166,11 +211,19 @@ class NativeCommandTest(unittest.TestCase):
         ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             self.assertEqual(main(("wish", "a moon")), 1)
 
-    def test_draft_is_the_parser_default(self):
+    def test_private_codex_is_the_parser_default(self):
         command = parser()
         self.assertFalse(command.parse_args(("wish", "a moon")).publish)
         self.assertFalse(command.parse_args(("resume", "wish-one")).publish)
         self.assertTrue(command.parse_args(("wish", "a moon", "--publish")).publish)
+        self.assertEqual(command.parse_args(("wish", "a moon")).manager, "codex")
+        self.assertEqual(command.parse_args(("doctor",)).manager, "codex")
+        self.assertEqual(
+            command.parse_args(("wish", "a moon", "--manager", "claude")).manager,
+            "claude",
+        )
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("wish", "a moon", "--manager", "unknown"))
 
 
 class DoctorTest(unittest.TestCase):
@@ -218,6 +271,114 @@ class DoctorTest(unittest.TestCase):
         self.assertEqual(check["status"], "needs-attention")
         self.assertIn("goals, subagents, and isolation", check["detail"])
         self.assertIn("0.145.0", check["next"])
+
+    def test_claude_probe_requires_isolated_api_auth_and_scrubs_environment(self):
+        calls = []
+
+        def run(command, **kwargs):
+            calls.append((command, kwargs))
+            return subprocess.CompletedProcess(
+                command, 0, stdout="2.1.246 (Claude Code)", stderr=""
+            )
+
+        environment = {
+            "WORKSHOP_CLAUDE_BIN": "/opt/claude",
+            "HOME": "/tmp/claude-home",
+            "PATH": "/usr/bin",
+            "ANTHROPIC_API_KEY": "claude-api-key",
+            "CLAUDE_CODE_OAUTH_TOKEN": "unsupported-subscription-token",
+            "FACTORY_PASSWORD": "factory-secret",
+            "AWS_SECRET_ACCESS_KEY": "cloud-secret",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+            "cli.main.subprocess.run", side_effect=run
+        ):
+            check = cli_main._doctor_claude()
+
+        self.assertEqual(check["status"], "ready")
+        self.assertEqual(
+            [call[0] for call in calls],
+            [["/opt/claude", "--version"]],
+        )
+        for unused_command, kwargs in calls:
+            self.assertNotIn("HOME", kwargs["env"])
+            self.assertEqual(kwargs["env"]["ANTHROPIC_API_KEY"], "claude-api-key")
+            self.assertNotIn("CLAUDE_CODE_OAUTH_TOKEN", kwargs["env"])
+            self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
+            self.assertNotIn("AWS_SECRET_ACCESS_KEY", kwargs["env"])
+
+    def test_old_or_missing_isolated_api_auth_claude_cannot_pass_doctor(self):
+        def old(command, **unused_kwargs):
+            return subprocess.CompletedProcess(
+                command, 0, stdout="2.1.245 (Claude Code)", stderr=""
+            )
+
+        with mock.patch.dict(
+            os.environ,
+            {"WORKSHOP_CLAUDE_BIN": "/opt/claude", "PATH": "/usr/bin"},
+            clear=True,
+        ), mock.patch("cli.main.subprocess.run", side_effect=old) as process:
+            check = cli_main._doctor_claude()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("2.1.246", check["next"])
+        process.assert_called_once()
+
+        def current(command, **unused_kwargs):
+            return subprocess.CompletedProcess(
+                command, 0, stdout="2.1.246 (Claude Code)", stderr=""
+            )
+
+        with mock.patch.dict(
+            os.environ,
+            {"WORKSHOP_CLAUDE_BIN": "/opt/claude", "PATH": "/usr/bin"},
+            clear=True,
+        ), mock.patch("cli.main.subprocess.run", side_effect=current):
+            check = cli_main._doctor_claude()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("isolated profile", check["detail"])
+        self.assertIn("ANTHROPIC_API_KEY", check["next"])
+
+    def test_claude_version_probe_rejects_oversized_output_without_exposing_it(self):
+        secret = "must-not-be-reported"
+
+        def run(command, **unused_kwargs):
+            stdout = "2.1.246 (Claude Code)" + secret * 8_192
+            return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "WORKSHOP_CLAUDE_BIN": "/opt/claude",
+                "PATH": "/usr/bin",
+                "ANTHROPIC_API_KEY": "api-key",
+            },
+            clear=True,
+        ), mock.patch("cli.main.subprocess.run", side_effect=run):
+            check = cli_main._doctor_claude()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertNotIn(secret, json.dumps(check))
+
+    def test_doctor_dispatches_only_the_selected_manager_probe(self):
+        ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main._inventor_source_root", return_value=Path("/inventors")
+        ), mock.patch(
+            "cli.main._doctor_catalog", return_value=ready("inventor-catalog")
+        ), mock.patch(
+            "cli.main._doctor_claude", return_value=ready("claude")
+        ) as claude, mock.patch(
+            "cli.main._doctor_codex", return_value=ready("codex")
+        ) as codex, mock.patch(
+            "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
+        ), mock.patch(
+            "cli.main._doctor_factory", return_value=ready("factory-credentials")
+        ), redirect_stdout(stdout):
+            self.assertEqual(main(("doctor", "--manager", "claude", "--json")), 0)
+        receipt = json.loads(stdout.getvalue())
+        self.assertEqual(receipt["manager"], "claude")
+        claude.assert_called_once_with()
+        codex.assert_not_called()
 
     def test_missing_factory_credentials_report_release_wait(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}

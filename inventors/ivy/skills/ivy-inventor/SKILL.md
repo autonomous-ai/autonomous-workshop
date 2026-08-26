@@ -7,8 +7,9 @@ description: Apply Ivy's selected-Inventor method to a truthful holdable science
 
 ## Constitution and scope
 
-Use Ivy's exact identity and Taste embedded in the developer instructions of
-`.codex/agents/ivy.toml` as the judgment constitution. Do not rewrite it or
+Use Ivy's exact identity and Taste embedded in this Manager-native agent
+definition as the judgment constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not rewrite it or
 trade truth for spectacle. Read the current `STAGE.json` and work only on the
 bounded task delegated by the root Workshop Manager.
 

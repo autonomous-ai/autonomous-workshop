@@ -287,6 +287,44 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
+    def test_match_accepts_claude_runtime_agent_projection(self):
+        alice = InventorRosterEntry(
+            "alice",
+            ".claude/agents/alice.md",
+            "a" * 64,
+            "1" * 64,
+            "b" * 64,
+        )
+        self.roster = InventorRoster((alice,))
+        self.assignment = NativeMatchAssignment(
+            wish_sha256="e" * 64,
+            inventor_roster_sha256=self.roster.roster_sha256,
+            selected_inventor_id="alice",
+            selected_agent_path=alice.agent_path,
+            selected_agent_sha256=alice.agent_sha256,
+            selected_source_manifest_sha256=alice.source_manifest_sha256,
+            selected_taste_sha256=alice.taste_sha256,
+            blueprint_sha256=self.blueprint.sha256,
+            ranking=(MatchRankingEntry("alice", "Alice is the exact fit."),),
+        )
+        self.write_stage("match", self.match_inputs())
+        self.write_json(
+            "drafts/match.json",
+            {
+                "selected_inventor_id": "alice",
+                "ranking": [item.to_dict() for item in self.assignment.ranking],
+            },
+        )
+
+        self.run_tool("match", "--source", "drafts/match.json")
+        assignment_document, _ = self.assert_canonical_file(
+            "artifacts/match/assignment.json"
+        )
+        self.assertEqual(
+            assignment_document["selected_agent_path"],
+            ".claude/agents/alice.md",
+        )
+
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):
         product_root, _, _, _ = self.create_product()
         self.write_stage(

@@ -131,6 +131,7 @@ class NativeCadGateTest(unittest.TestCase):
         evidence = self._verify(runner)
 
         self.assertTrue(evidence.passed)
+        self.assertEqual(evidence.verifier_path, NATIVE_CAD_VERIFIER_PATH)
         self.assertEqual(evidence.duration_ms, 37)
         self.assertEqual(evidence.stdout.to_dict()["captured_text"], "verification passed\n")
         self.assertEqual(observed["command"][0], sys.executable)
@@ -151,6 +152,34 @@ class NativeCadGateTest(unittest.TestCase):
         payload = json.loads(evidence_path.read_text())
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
+
+    def test_manager_specific_verifier_path_is_invoked_and_attested(self):
+        claude_verifier_path = ".claude/skills/cad/scripts/verify_project"
+        claude_verifier = self.run_root / claude_verifier_path
+        claude_verifier.parent.mkdir(parents=True)
+        claude_verifier.write_bytes(self.verifier_bytes)
+        claude_verifier.chmod(0o500)
+        observed = {}
+
+        def runner(command, **arguments):
+            observed["command"] = tuple(command)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(
+            runner,
+            verifier_path=claude_verifier_path,
+        )
+
+        self.assertEqual(Path(observed["command"][1]), claude_verifier)
+        self.assertEqual(evidence.verifier_path, claude_verifier_path)
+        self.assertEqual(evidence.command[1], claude_verifier_path)
+        persisted = json.loads(
+            (
+                self.host_state_root / "evidence/make/r0001-cad-gate.json"
+            ).read_text()
+        )
+        self.assertEqual(persisted["verifier_path"], claude_verifier_path)
+        self.assertEqual(persisted["receipt_sha256"], evidence.receipt_sha256)
 
     def test_nonzero_and_bounded_output_write_failed_host_evidence(self):
         def runner(command, **arguments):

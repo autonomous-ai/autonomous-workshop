@@ -396,7 +396,7 @@ def _validate_factory_content(product: Mapping[str, Any]) -> None:
 
 
 def validate_release_product(value: Any) -> dict[str, Any]:
-    """Validate the exact Codex-authored customer-page contract.
+    """Validate the exact Manager-authored customer-page contract.
 
     The host can prove byte identity and evidence references, not the semantic
     quality of prose.  Every page section therefore names the immutable Made

@@ -9,6 +9,7 @@ from workshop.match.native import (
     InventorRosterEntry,
 )
 from workshop.product.blueprints import ToyBlueprint
+from workshop.runtime.managers import SUPPORTED_MANAGER_IDS, manager_spec
 
 
 def digest(character):
@@ -84,6 +85,37 @@ class NativeMatchAssignmentTest(unittest.TestCase):
         self.assertEqual(
             set(payload["ranking"][0]), {"inventor_id", "rationale"}
         )
+
+    def test_every_registered_manager_agent_path_uses_the_portable_contract(self):
+        for manager_id in SUPPORTED_MANAGER_IDS:
+            with self.subTest(manager_id=manager_id):
+                alice = InventorRosterEntry(
+                    inventor_id="alice",
+                    agent_path=manager_spec(manager_id).agent_path("alice"),
+                    agent_sha256=digest("a"),
+                    source_manifest_sha256=digest("b"),
+                    taste_sha256=digest("c"),
+                )
+                roster = InventorRoster((alice,))
+                assignment = NativeMatchAssignment(
+                    wish_sha256=self.wish_sha256,
+                    inventor_roster_sha256=roster.roster_sha256,
+                    selected_inventor_id="alice",
+                    selected_agent_path=alice.agent_path,
+                    selected_agent_sha256=alice.agent_sha256,
+                    selected_source_manifest_sha256=alice.source_manifest_sha256,
+                    selected_taste_sha256=alice.taste_sha256,
+                    blueprint_sha256=ToyBlueprint().sha256,
+                    ranking=(MatchRankingEntry("alice", "Alice is the exact fit."),),
+                )
+
+                assignment.assert_context(
+                    wish_sha256=self.wish_sha256, roster=roster
+                )
+                self.assertEqual(
+                    NativeMatchAssignment.from_mapping(assignment.to_dict()),
+                    assignment,
+                )
 
     def test_roster_rejects_noncanonical_or_executable_inventor_fields(self):
         unsorted = self.roster.to_dict()

@@ -72,9 +72,38 @@ one works the same whether there are five of them or a thousand.
 
 ## Quick start
 
-Requires Python 3.11 or newer and a signed-in Codex CLI 0.145.0 or newer. Workshop
-uses the developer's existing Codex subscription; it does not require a second
-model API key.
+Requires Python 3.11 or newer and one supported Manager runtime:
+
+- a signed-in Codex CLI 0.145.0 or newer; or
+- Claude Code 2.1.246 or newer with `ANTHROPIC_API_KEY` available in the host
+  environment.
+
+Codex can use the developer's existing Codex subscription. Claude runs in an
+isolated non-bare profile with empty filesystem setting sources and private
+`0700` home, configuration, and internal-temp directories. Workshop selects
+API-key authentication rather than `claude auth login` or the normal
+keychain/OAuth path, and it does not admit `ANTHROPIC_AUTH_TOKEN` or
+`CLAUDE_CODE_OAUTH_TOKEN` to the bounded process environment. Init must report
+`ANTHROPIC_API_KEY` as its source. Codex is the default, so existing commands
+keep their behavior.
+
+The Claude adapter, CLI selector, projection, isolation policy, and resume
+binding are implemented and covered by deterministic tests. A real private
+Claude Wish has not yet completed the repository's live acceptance bar, so
+treat Claude support as pre-live-validation and start with an unpublished
+private Wish.
+
+Claude's OS-, MDM-, or server-managed policy remains part of the trusted host
+boundary. Managed settings, instructions, plugins, hooks, and administrator
+policy can still apply. Claude's native `/goal` command requires its hook
+machinery, so Workshop cannot set `disableAllHooks`; empty filesystem setting
+sources exclude ordinary user/project hooks, while managed hooks remain in the
+host trust boundary. They run with the host user's authority and, with Claude's
+subprocess scrub disabled for `/goal` compatibility, may inspect the API key or
+other host-readable files. Workshop does not protect a run from a malicious or
+compromised host administrator. Claude session transcripts are plaintext and
+retained in the private Workshop state directory long enough to preserve
+`--resume`; its `0700` filesystem permissions are the at-rest boundary.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -85,36 +114,52 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
+Set `ANTHROPIC_API_KEY` in the host environment, then select Claude Code
+explicitly for both its prerequisite check and a new Wish:
+
+```bash
+uv run workshop doctor --manager claude
+uv run workshop wish --manager claude \
+  "I wish for a wind-up version of my dog that walks across my desk"
+```
+
 Every Wish first creates one persistent toy project under `toys/`, populates
-its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
-native Codex session with that toy project as its working directory. The same
-session Matches an Inventor subagent, researches and Invents the concept,
-builds and repairs the CAD, Playtests the exact product, then writes the Release
-package:
+its Manager-neutral product-run constitution, skills, exact Inventor roster,
+and immutable `MANAGER.json`, and then starts one native session in the
+selected runtime with that project as its working directory. The same session
+Matches an Inventor subagent, researches and Invents the concept, builds and
+repairs the CAD, Playtests the exact product, then writes the Release package:
 
 ```text
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 ```
 
-For each active Match, Invent, Make, Playtest, or Release attempt, Codex creates
-one native Goal with one objective, proof artifacts, and a verifiable stopping
-condition: the current stage finalizer succeeds. Only one Goal is active at a
-time. While pursuing it, Codex observes the current artifact, acts with its
-native tools and subagents, evaluates exact output, and improves it. This is
-Codex's work loop inside the Goal, not a Python loop. The host checkpoint stays
-the durable authority, and Wish and Deliver remain host boundaries. This uses
-the official Codex patterns for [following a durable
-Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
-evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
+For each active Match, Invent, Make, Playtest, or Release attempt, the selected
+Manager creates one native Goal with one objective, proof artifacts, and a
+verifiable stopping condition: the current stage finalizer succeeds. Only one
+Goal is active at a time. While pursuing it, the Manager observes the current
+artifact, acts with its native tools and subagents, evaluates exact output, and
+improves it. This is native coding-agent work inside the Goal, not a Python
+loop. The host checkpoint stays the durable authority, and Wish and Deliver
+remain host boundaries.
+
+For Claude, each new attempt sends the exact text `/goal <condition>` over
+standard input to `claude -p --input-format text` under that isolated profile.
+If the process is
+interrupted, resume sends fixed continuation prose so Claude keeps the restored
+active Goal instead of replacing it with another `/goal`. A private Goal
+sidecar records `prepared`, `active`, `returned`, and `completed`, binds that
+choice to the stage and host checkpoint, and marks completion only after the
+host validates the proposal.
 
 The universal digital Playtest baseline is `agent-playtest`,
-`mechanical-check`, and `printability-check`. These are Codex-authored
+`mechanical-check`, and `printability-check`. These are Manager-authored
 assessments unless the host replays deterministic evidence or a physical
 receipt explicitly proves more. AI evidence never proves a successful print,
 physical fit, durability, or human response.
 
-Release is deliberately broader than “instructions.” Codex writes `MANUAL.md`
-and canonical schema-v3 page-ready product data: evidence-bound hero,
+Release is deliberately broader than “instructions.” The Manager writes
+`MANUAL.md` and canonical schema-v3 page-ready product data: evidence-bound hero,
 cinematic, use-case, story-block, what-arrives, limitation, and claim content.
 Factory transports those exact sealed page and model bytes; it does not own a
 creative enrichment step. The default is private. Add `--publish` only when
@@ -128,9 +173,11 @@ uv run workshop wish --publish \
 Factory credentials live in the host-only
 `$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
 or in a compatible host environment for ephemeral deployments. They are loaded
-only outside a native agent turn and are never passed into Codex. Publication
-does not claim that a physical toy was printed, packed, or delivered. Deliver
-waits until separately authorized production and shipment receipts exist.
+only outside a native agent turn. Workshop does not add them to the selected
+Manager environment, prompt, or sandbox-readable filesystem; trusted managed
+hooks and host administrators are outside that guarantee. Publication does not
+claim that a physical toy was printed, packed, or delivered. Deliver waits
+until separately authorized production and shipment receipts exist.
 
 The command prints a Wish ID. Use that ID to inspect or continue the same
 session after a process interruption:
@@ -139,6 +186,11 @@ session after a process interruption:
 uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
+
+The Manager is selected once, persisted in the run checkpoint, and reported by
+`status`. `resume` deliberately has no Manager selector: it resumes the exact
+Codex or Claude Code session that created the run and fails closed if its
+hash-bound runtime policy or materialized instructions changed.
 
 If a deterministic gate fails or a required tool or authorization is missing,
 the run waits with a concrete need. It never starts a replacement session or
@@ -154,18 +206,22 @@ product-page content. Manager runtime support is deliberately pluggable:
 | Workshop Manager runtime | Status |
 |---|---|
 | Codex | Implemented |
-| Claude Code | Planned adapter |
+| Claude Code | Adapter, CLI, and projection implemented; live private-Wish acceptance pending |
 | Grok Build | Planned adapter |
 
 Every adapter must preserve the same toy-project, stage-objective, checkpoint,
 gate, and effect boundaries.
 
-The root coding-agent session plays the **Workshop Manager** role. With today's
-adapter, that is Codex using standard Codex-native subagents for bounded Match
-analysis, the selected Inventor specialist, and independent inspection. An
-Inventor is our friendly product-language name for one of those normal native
-subagent roles, not a second agent framework. The root remains the one session
-the host starts and resumes; Workshop does not schedule agents in Python.
+The root coding-agent session plays the **Workshop Manager** role. Codex uses
+project-scoped custom agents and Claude Code receives agents and skills from its
+host-generated project plugin. Both adapters expose bounded Match analysis, the
+selected Inventor specialist, and independent inspection through their native
+agent controls. A real Claude turn invoking a projected Inventor agent and a
+projected namespaced skill is still part of the pending live acceptance bar; a
+successful init event alone is not that proof. An Inventor is our friendly
+product-language name for one of those normal native specialist roles, not a
+second agent framework. The root remains the one session the host starts and
+resumes; Workshop does not schedule agents in Python.
 
 The materialized `autonomous-workshop` skill is the Manager's workflow
 playbook—stage order, artifact protocol, gates, and authority boundaries. It is
@@ -173,11 +229,11 @@ not a separate “Workshop Manager agent.”
 
 The Python host is intentionally narrow. It preserves identity and exact
 bytes, enforces lifecycle order and round budgets, launches/resumes the native
-session under an exact-toy-root Codex permission profile, validates contracts
-and deterministic evidence, isolates credentials,
-and performs authorized external effects idempotently. It does not contain a
-parallel Python agent, profile subprocess, prompt chain, semantic judge, or
-reward loop.
+session under an exact-toy-root, fail-closed policy owned by the selected
+runtime adapter, validates contracts and deterministic evidence, isolates
+credentials, and performs authorized external effects idempotently. It does
+not contain a parallel Python agent, profile subprocess, prompt chain,
+semantic judge, or reward loop.
 
 See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) for the full
 boundary and [Workshop architecture](docs/ARCHITECTURE.md) for component
@@ -185,24 +241,26 @@ ownership.
 
 ## Build your own Inventor
 
-An Inventor is a declared specialist bundle materialized as a standard Codex
-project-scoped custom agent under `.codex/agents/`. Every one has `TASTE.md`
-for creative judgment plus a small schema-v8 `inventor.json` for stable source
-metadata and exact skill-tree hashes. Each Inventor owns one required primary
-skill named `<id>-inventor`; it may declare additional Inventor-prefixed skills
-with scripts, references, assets, or tested deterministic CAD/domain tools.
-For a run, `.codex/agents/*.toml` is the sole Inventor identity, Taste, and
-skill roster. The root Manager asks Codex to spawn the selected custom agent
-from those exact host-materialized bytes.
+An Inventor is one canonical specialist source bundle. Every one has
+`TASTE.md` for creative judgment plus a small schema-v8 `inventor.json` for
+stable source metadata and exact skill-tree hashes. Each Inventor owns one
+required primary skill named `<id>-inventor`; it may declare additional
+Inventor-prefixed skills with scripts, references, assets, or tested
+deterministic CAD/domain tools.
 
-This follows Codex's official [subagent and project-scoped custom-agent
-convention](https://learn.chatgpt.com/docs/agent-configuration/subagents); the
-Workshop adds the Inventor name, Taste, product craft, and lifecycle boundary.
+At Wish creation the host deterministically projects that same source into the
+selected runtime's native convention: `.codex/agents/<id>.toml` with skills
+under `.agents/skills/` for Codex, or the generated Claude Code plugin's
+`.claude/agents/<id>.md` with skills under `.claude/skills/`. `MANAGER.json`
+identifies the one projection that is authoritative for the run. The root
+Manager spawns the selected native agent from those exact, hash-bound bytes.
+For Codex, this follows the official [subagent and project-scoped custom-agent
+convention](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
 Inventor code supplies specialist operations, not orchestration: it cannot
 launch agents, choose Workshop stages, pass gates, or perform authenticated
-effects. Bundled Inventors use concise Codex skills; add scripts or other
-custom logic only when the craft is genuinely specialist.
+effects. Bundled Inventors use concise portable skill sources; add scripts or
+other custom logic only when the craft is genuinely specialist.
 
 ```bash
 uv run workshop create inventor \
@@ -231,6 +289,40 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 
 Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 
+## Asset evolution
+
+Today, the canonical source of truth is the root Inventor bundle—its
+`inventor.json`, `TASTE.md`, and declared `skills/**`—together with the
+canonical product-run and Make skill sources. The `.codex/**` or `.claude/**`
+trees and `MANAGER.json` inside a toy project are generated projection files,
+not independent copies to edit. A new Wish uses the latest validated canonical
+bytes available from the current checkout or installed Workshop package.
+
+An active run behaves differently by design today: all of its instructions,
+Taste, skills, native-agent definitions, and Manager selection are hash-pinned
+when the run is created. Resume uses those materialized bytes and fails closed
+if they change. Updating a root Inventor or skill therefore improves future
+Wishes now; it does not yet refresh an established run or rewrite released
+artifacts, evidence, receipts, or publication history.
+
+A controlled upgrade path for active runs is **target work, not implemented
+behavior**. The intended default is `follow-stable`: at each safe host
+checkpoint, resolve the latest validated asset release, seal the prior
+projection, record old and new hashes, and start a new Manager session epoch.
+Projects may explicitly pin a release for reproduction. A compatible skill or
+tool refresh retains the Inventor identity and Taste while invalidating and
+rechecking affected downstream work. A Taste or Inventor-identity change
+forces Match/Invent reassessment; a Manager change is an explicit handoff.
+Released history remains bound to its original bytes, while continued work
+becomes a new product revision. Workshop will never hot-swap unvalidated files
+during a native turn or silently rewrite released evidence and receipts.
+
+Here, “latest validated stable” means a promoted, content-addressed asset
+release—not raw Git `HEAD`. Self-improvements first become candidates, then
+must pass deterministic schema, exact skill-lock, Manager-compatibility, and
+regression checks before atomic promotion. `follow-stable` resolves only that
+promoted channel, never an unreviewed self-edit or branch tip.
+
 ## Repository structure
 
 The installed distribution is `autonomous-workshop`. Python code imports the
@@ -240,11 +332,13 @@ imported accidentally.
 
 - [`toys/`](toys/) contains the persistent toy projects and is the working
   directory for each native runtime session. Every toy project contains its
-  product-run `AGENTS.md`, standard custom Inventors under `.codex/agents/`,
-  workflow and craft skills under `.agents/skills/`, its exact Inventor roster,
-  and its Wish-to-Release artifacts.
-- [`.agents/product-run/`](.agents/product-run/) is the complete isolated
-  template copied into every new toy project before the runtime starts.
+  product-run `AGENTS.md`, immutable `MANAGER.json`, the selected Codex or
+  Claude Code projection, its exact Inventor roster, and its Wish-to-Release
+  artifacts.
+- [`.agents/product-run/`](.agents/product-run/) is the canonical
+  Manager-neutral product-run source bundle. The host copies its constitution
+  to the toy root and projects its workflow skill into the selected runtime's
+  native skill directory before that runtime starts.
 - [`inventors/`](inventors/) contains reusable Inventor sources: manifest,
   Taste, required primary skill, and any additional specialist skills or tools.
 - [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
@@ -274,11 +368,12 @@ The trusted whole-run host is `src/workshop/workflow/native_run.py`; the
 `src/cli/` package only parses commands, presents results, and chooses exit
 codes.
 
-Runtime also owns the complete non-Python product-run template in
+Runtime also owns the canonical non-Python product-run source bundle in
 `.agents/product-run/`, including its nested workflow skill. Packaging copies
-those exact bytes into the installed distribution. Nesting the skill inside the
-template keeps it invisible to coding agents building this repository; it is
-discovered only after the template is materialized as a toy-project root.
+those exact source bytes into the installed distribution. Nesting the skill
+inside that source bundle keeps it invisible to coding agents building this
+repository; the host exposes it only after projecting it into the selected
+Manager's skill directory in an isolated toy-project root.
 
 See [Workshop architecture](docs/ARCHITECTURE.md#shared-implementation) for the
 ownership and dependency rules.
@@ -287,6 +382,7 @@ ownership and dependency rules.
 
 ```bash
 uv run workshop doctor
+uv run workshop doctor --manager claude  # when using Claude Code
 PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
 uv run workshop inventors --root inventors
 uv run workshop check inventors

@@ -8,12 +8,12 @@ agent abstraction or product category.
 inventors/<id>/
   inventor.json             schema-v8 source metadata and exact skill hashes
   TASTE.md                  human-owned creative judgment and Match boundary
-  skills/<id>-inventor/     required primary Codex skill
+  skills/<id>-inventor/     required primary portable agent skill
     SKILL.md                specialist method and tool routing
     scripts/                optional tested deterministic tools
     references/             optional specialist reference material
     assets/                 optional templates and static inputs
-  skills/<id>-<specialty>/  optional additional Codex skill
+  skills/<id>-<specialty>/  optional additional portable agent skill
 ```
 
 `inventor.json` contains only the stable id, status, source, and sorted
@@ -22,15 +22,15 @@ which kinds of product the Inventor is allowed to make. Match compares the
 exact Wish with the full Taste and method of every eligible Inventor.
 
 For each product run, the host validates these source bundles and
-deterministically projects them into official project-scoped
-`.codex/agents/<id>.toml` custom agents. `.codex/agents/*.toml` is the sole
-Inventor identity, Taste, and skill roster inside that toy project; there is no
-second run-local identity tree. One persistent native Codex session acts as
-Workshop Manager and uses Codex's own subagent controls to spawn the selected
-Inventor.
+deterministically projects them into the selected Manager's official
+project-scoped agent and skill layout. `MANAGER.json` names that exact layout;
+the selected projection is the sole Inventor identity, Taste, and skill roster
+inside the toy project. There is no second run-local identity tree. One
+persistent native coding-agent session acts as Workshop Manager and uses its
+own subagent controls to spawn the selected Inventor.
 
 Each Match, Invent, Make, Playtest, or Release attempt has one active native
-Codex Goal. The Manager and its native children observe, act, evaluate, and
+Goal. The Manager and its native children observe, act, evaluate, and
 improve while pursuing that Goal. Inventor scripts do not implement this loop.
 They may provide bounded deterministic specialist operations such as CAD
 generation, simulation, parsing, or evaluation, but they must not launch

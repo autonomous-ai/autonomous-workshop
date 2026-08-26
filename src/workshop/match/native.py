@@ -17,6 +17,7 @@ from typing import Any, Mapping, Sequence
 from workshop._validation import bounded_text, require_sha256
 from workshop.errors import ContractError
 from workshop.product.blueprints import ToyBlueprint
+from workshop.runtime.managers import SUPPORTED_MANAGER_IDS, manager_spec
 
 
 INVENTOR_ROSTER_KIND = "autonomous-workshop.inventor-roster"
@@ -54,6 +55,13 @@ def _sequence(value: Any, label: str) -> Sequence[Any]:
     return value
 
 
+def _valid_agent_paths(inventor_id: str) -> frozenset[str]:
+    return frozenset(
+        manager_spec(manager_id).agent_path(inventor_id)
+        for manager_id in SUPPORTED_MANAGER_IDS
+    )
+
+
 @dataclass(frozen=True)
 class InventorRosterEntry:
     """One exact project-scoped custom agent available to Match."""
@@ -66,9 +74,10 @@ class InventorRosterEntry:
 
     def __post_init__(self) -> None:
         _inventor_id(self.inventor_id, "Inventor id")
-        expected_path = ".codex/agents/%s.toml" % self.inventor_id
-        if self.agent_path != expected_path:
-            raise ContractError("Inventor agent path must use the Codex project convention")
+        if self.agent_path not in _valid_agent_paths(self.inventor_id):
+            raise ContractError(
+                "Inventor agent path must use a supported Manager convention"
+            )
         require_sha256(self.agent_sha256, "Inventor custom-agent sha256")
         require_sha256(
             self.source_manifest_sha256, "Inventor source manifest sha256"
@@ -106,7 +115,7 @@ class InventorRosterEntry:
 
 @dataclass(frozen=True)
 class MatchRankingEntry:
-    """One stable rank position and Codex rationale, never a model score."""
+    """One stable rank position and Manager rationale, never a model score."""
 
     inventor_id: str
     rationale: str
@@ -214,7 +223,9 @@ class NativeMatchAssignment:
             self.inventor_roster_sha256, "native Match inventor roster sha256"
         )
         _inventor_id(self.selected_inventor_id, "selected inventor_id")
-        if self.selected_agent_path != ".codex/agents/%s.toml" % self.selected_inventor_id:
+        if self.selected_agent_path not in _valid_agent_paths(
+            self.selected_inventor_id
+        ):
             raise ContractError("selected custom-agent path differs from its Inventor")
         require_sha256(self.selected_agent_sha256, "selected custom-agent sha256")
         require_sha256(

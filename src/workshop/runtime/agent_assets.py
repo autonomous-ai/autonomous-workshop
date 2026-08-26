@@ -19,6 +19,7 @@ from typing import Any, Mapping, Optional, Sequence
 
 from workshop.contributors.manifest import InventorManifest
 from workshop.errors import ContractError
+from workshop.runtime.managers import DEFAULT_MANAGER_ID, manager_spec
 
 
 PRODUCT_RUN_CONSTITUTION = Path(".agents/product-run/AGENTS.md")
@@ -106,6 +107,9 @@ class InventorSkillBinding:
     def materialized_path(self) -> str:
         return ".agents/skills/%s/SKILL.md" % self.name
 
+    def materialized_path_for(self, manager_id: str) -> str:
+        return manager_spec(manager_id).skill_path(self.name)
+
     def to_dict(self) -> dict[str, str]:
         return {
             "name": self.name,
@@ -127,13 +131,14 @@ class InventorSkillBinding:
 
 @dataclass(frozen=True)
 class InventorCustomAgentBinding:
-    """Exact identity recovered from one canonical custom-agent TOML."""
+    """Exact identity recovered from one canonical Manager-agent projection."""
 
     inventor_id: str
     manifest_bytes: bytes
     taste_bytes: bytes
     skills: tuple[InventorSkillBinding, ...]
     agent_sha256: str
+    manager_id: str = DEFAULT_MANAGER_ID
     source_manifest_sha256: str = field(init=False)
     taste_sha256: str = field(init=False)
     binding_sha256: str = field(init=False)
@@ -144,6 +149,7 @@ class InventorCustomAgentBinding:
             or _INVENTOR_ID.fullmatch(self.inventor_id) is None
         ):
             raise ContractError("Inventor binding id is invalid")
+        manager_spec(self.manager_id)
         if not isinstance(self.manifest_bytes, bytes) or not isinstance(
             self.taste_bytes, bytes
         ):
@@ -169,7 +175,7 @@ class InventorCustomAgentBinding:
 
     @property
     def agent_path(self) -> str:
-        return ".codex/agents/%s.toml" % self.inventor_id
+        return manager_spec(self.manager_id).agent_path(self.inventor_id)
 
     def _identity_dict(self) -> dict[str, Any]:
         return {
@@ -181,7 +187,7 @@ class InventorCustomAgentBinding:
             "skills": [
                 {
                     **item.to_dict(),
-                    "materialized_path": item.materialized_path,
+                    "materialized_path": item.materialized_path_for(self.manager_id),
                 }
                 for item in self.skills
             ],
@@ -358,20 +364,27 @@ def _render_inventor_custom_agent(
     manifest_bytes: bytes,
     taste_bytes: bytes,
     skills: tuple[InventorSkillBinding, ...],
+    *,
+    manager_id: str = DEFAULT_MANAGER_ID,
 ) -> bytes:
+    spec = manager_spec(manager_id)
     name, taste_description = _taste_discovery_fields(taste_bytes)
     description = "%s: %s" % (name, taste_description)
     skill_bytes = _canonical_json([item.to_dict() for item in skills])
     skill_lines = [
         "Read and follow the exact declared specialist skill at %s "
         "(source %s; artifact_sha256 %s)."
-        % (item.materialized_path, item.path, item.artifact_sha256)
+        % (
+            item.materialized_path_for(manager_id),
+            item.path,
+            item.artifact_sha256,
+        )
         for item in skills
     ]
     prefix = [
         "You are %s, an Autonomous Workshop Inventor and a standard native "
-        "Codex subagent."
-        % name,
+        "%s subagent."
+        % (name, spec.display_name),
         "Handle only the bounded candidate or selected-Inventor task delegated "
         "by the root Workshop Manager.",
         "This custom-agent file is the complete materialized identity and Taste "
@@ -414,14 +427,32 @@ def _render_inventor_custom_agent(
         instructions = instruction_bytes.decode("utf-8")
     except UnicodeError as exc:
         raise ContractError("Inventor source blocks must be UTF-8") from exc
-    encoded = (
-        "name = %s\n" % json.dumps(inventor_id, ensure_ascii=False)
-        + "description = %s\n" % json.dumps(description, ensure_ascii=False)
-        + "developer_instructions = %s\n"
-        % json.dumps(instructions, ensure_ascii=False)
-    ).encode("utf-8")
+    if manager_id == "codex":
+        encoded = (
+            "name = %s\n" % json.dumps(inventor_id, ensure_ascii=False)
+            + "description = %s\n" % json.dumps(description, ensure_ascii=False)
+            + "developer_instructions = %s\n"
+            % json.dumps(instructions, ensure_ascii=False)
+        ).encode("utf-8")
+    elif manager_id == "claude":
+        encoded = (
+            "---\n"
+            "name: %s\n" % inventor_id
+            + "description: %s\n" % json.dumps(description, ensure_ascii=False)
+            + "model: inherit\n"
+            + "skills:\n"
+            + "".join(
+                "  - %s:%s\n" % (spec.agent_namespace, item.name)
+                for item in skills
+            )
+            + "---\n"
+            + instructions
+            + "\n"
+        ).encode("utf-8")
+    else:  # manager_spec above closes the registry
+        raise ContractError("unsupported Inventor agent projection")
     if len(encoded) > MAX_INVENTOR_CUSTOM_AGENT_BYTES:
-        raise ContractError("custom Inventor agent TOML exceeds its limit")
+        raise ContractError("custom Inventor agent projection exceeds its limit")
     return encoded
 
 
@@ -440,20 +471,44 @@ def inventor_custom_agent_bytes(
     product-project roster.
     """
 
+    return inventor_agent_bytes(
+        "codex",
+        inventor_id,
+        manifest_bytes,
+        taste_bytes,
+        skills=skills,
+    )
+
+
+def inventor_agent_bytes(
+    manager_id: str,
+    inventor_id: str,
+    manifest_bytes: bytes,
+    taste_bytes: bytes,
+    *,
+    skills: Sequence[InventorSkillBinding],
+) -> bytes:
+    """Compile one source bundle into the selected runtime's exact projection."""
+
+    manager_spec(manager_id)
     if (
         not isinstance(inventor_id, str)
         or _INVENTOR_ID.fullmatch(inventor_id) is None
     ):
-        raise ContractError("Inventor id is not a valid Codex custom-agent name")
+        raise ContractError("Inventor id is not a valid custom-agent name")
     selected_skills = _validated_skills(inventor_id, skills)
     _validated_manifest(inventor_id, manifest_bytes, selected_skills)
     _taste_discovery_fields(taste_bytes)
     return _render_inventor_custom_agent(
-        inventor_id, manifest_bytes, taste_bytes, selected_skills
+        inventor_id,
+        manifest_bytes,
+        taste_bytes,
+        selected_skills,
+        manager_id=manager_id,
     )
 
 
-def parse_inventor_custom_agent_bytes(content: bytes) -> InventorCustomAgentBinding:
+def _parse_codex_inventor_agent_bytes(content: bytes) -> InventorCustomAgentBinding:
     """Recover and validate the exact source binding in canonical agent TOML."""
 
     if (
@@ -505,7 +560,7 @@ def parse_inventor_custom_agent_bytes(content: bytes) -> InventorCustomAgentBind
     if description != "%s: %s" % (name, taste_description):
         raise ContractError("custom Inventor agent description differs from Taste")
     canonical = _render_inventor_custom_agent(
-        inventor_id, manifest_bytes, taste_bytes, skills
+        inventor_id, manifest_bytes, taste_bytes, skills, manager_id="codex"
     )
     if content != canonical:
         raise ContractError("custom Inventor agent TOML is not canonical")
@@ -515,7 +570,109 @@ def parse_inventor_custom_agent_bytes(content: bytes) -> InventorCustomAgentBind
         taste_bytes=taste_bytes,
         skills=skills,
         agent_sha256=hashlib.sha256(content).hexdigest(),
+        manager_id="codex",
     )
+
+
+def _parse_claude_inventor_agent_bytes(content: bytes) -> InventorCustomAgentBinding:
+    if (
+        not isinstance(content, bytes)
+        or not 1 <= len(content) <= MAX_INVENTOR_CUSTOM_AGENT_BYTES
+    ):
+        raise ContractError(
+            "custom Inventor agent Markdown must be non-empty and bounded"
+        )
+    try:
+        decoded = content.decode("utf-8")
+    except UnicodeError as exc:
+        raise ContractError(
+            "custom Inventor agent must contain valid UTF-8 Markdown"
+        ) from exc
+    if not decoded.startswith("---\n") or not decoded.endswith("\n"):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    header, separator, body = decoded[4:].partition("\n---\n")
+    if not separator or not body:
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    lines = header.splitlines()
+    if len(lines) < 5 or not lines[0].startswith("name: "):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    inventor_id = lines[0][len("name: ") :]
+    if _INVENTOR_ID.fullmatch(inventor_id) is None:
+        raise ContractError("custom Inventor agent name is invalid")
+    if not lines[1].startswith("description: "):
+        raise ContractError("custom Inventor agent description is invalid")
+    try:
+        description = json.loads(lines[1][len("description: ") :])
+    except ValueError as exc:
+        raise ContractError("custom Inventor agent description is invalid") from exc
+    if (
+        not isinstance(description, str)
+        or not description
+        or len(description) > 1024
+        or lines[2:] == []
+        or lines[2] != "model: inherit"
+        or lines[3] != "skills:"
+        or any(not line.startswith("  - ") for line in lines[4:])
+    ):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    header_skill_names = tuple(line[len("  - ") :] for line in lines[4:])
+    instruction_bytes = body[:-1].encode("utf-8")
+    if not 1 <= len(instruction_bytes) <= MAX_INVENTOR_AGENT_INSTRUCTIONS_BYTES:
+        raise ContractError("custom Inventor agent instructions are not bounded")
+    manifest_bytes, taste_bytes, skill_bytes = _extract_exact_blocks(
+        instruction_bytes
+    )
+    skill_value = _strict_json_bytes(
+        skill_bytes,
+        label="Inventor skill binding",
+        maximum=MAX_INVENTOR_AGENT_MANIFEST_BYTES,
+    )
+    if not isinstance(skill_value, list):
+        raise ContractError("Inventor skill bindings must be an array")
+    skills = _validated_skills(
+        inventor_id,
+        tuple(InventorSkillBinding.from_mapping(item) for item in skill_value),
+    )
+    namespace = manager_spec("claude").agent_namespace
+    expected_skill_names = tuple("%s:%s" % (namespace, item.name) for item in skills)
+    if header_skill_names != expected_skill_names:
+        raise ContractError("custom Inventor agent skills differ from its binding")
+    _validated_manifest(inventor_id, manifest_bytes, skills)
+    name, taste_description = _taste_discovery_fields(taste_bytes)
+    if description != "%s: %s" % (name, taste_description):
+        raise ContractError("custom Inventor agent description differs from Taste")
+    canonical = _render_inventor_custom_agent(
+        inventor_id, manifest_bytes, taste_bytes, skills, manager_id="claude"
+    )
+    if content != canonical:
+        raise ContractError("custom Inventor agent Markdown is not canonical")
+    return InventorCustomAgentBinding(
+        inventor_id=inventor_id,
+        manifest_bytes=manifest_bytes,
+        taste_bytes=taste_bytes,
+        skills=skills,
+        agent_sha256=hashlib.sha256(content).hexdigest(),
+        manager_id="claude",
+    )
+
+
+def parse_inventor_agent_bytes(
+    manager_id: str, content: bytes
+) -> InventorCustomAgentBinding:
+    """Recover one exact source binding from a runtime-specific projection."""
+
+    manager_spec(manager_id)
+    if manager_id == "codex":
+        return _parse_codex_inventor_agent_bytes(content)
+    if manager_id == "claude":
+        return _parse_claude_inventor_agent_bytes(content)
+    raise ContractError("unsupported Inventor agent projection")
+
+
+def parse_inventor_custom_agent_bytes(content: bytes) -> InventorCustomAgentBinding:
+    """Backward-compatible parser for canonical Codex custom-agent TOML."""
+
+    return parse_inventor_agent_bytes("codex", content)
 
 
 def _regular_bytes(path: Path, *, label: str) -> bytes:

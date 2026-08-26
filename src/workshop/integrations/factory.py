@@ -2000,7 +2000,7 @@ class FactoryReleaseWriter:
         )
         page, page_content = _release_page(release_root)
         # Fail before creating a remote draft when Factory cannot display the
-        # exact Codex-authored use-case/story text without truncation or rewrite.
+        # exact Manager-authored use-case/story text without truncation or rewrite.
         _factory_content_copy(page)
         manual_content, manual_sha256 = _release_manual(
             release_root, sealed_manifest

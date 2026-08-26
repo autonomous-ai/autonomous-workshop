@@ -11,6 +11,7 @@ from pathlib import Path
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
+from workshop.runtime.managers import manager_spec, manager_support_files
 from workshop.workflow import (
     AgentArtifact,
     AgentOutcome,
@@ -128,6 +129,7 @@ class AgentRunTest(unittest.TestCase):
             ".workshop-product-run-root": b"autonomous-workshop-product-run\n",
             "WISH.json": self.wish_bytes,
             "AGENTS.md": b"# Product run constitution\n",
+            "MANAGER.json": manager_spec("codex").project_bytes(),
             ".agents/skills/autonomous-workshop/SKILL.md": b"# Workshop skill\n",
             ".agents/skills/autonomous-workshop/references/make-playtest.md": (
                 b"exact gate guidance\n"
@@ -146,7 +148,9 @@ class AgentRunTest(unittest.TestCase):
         checkpoint_document = json.loads(
             (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(checkpoint_document["schema_version"], 3)
+        self.assertEqual(checkpoint_document["schema_version"], 4)
+        self.assertEqual(checkpoint_document["manager"], "codex")
+        self.assertEqual(checkpoint.manager_id, "codex")
         self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
@@ -267,7 +271,8 @@ class AgentRunTest(unittest.TestCase):
         checkpoint_document = json.loads(
             (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(checkpoint_document["schema_version"], 3)
+        self.assertEqual(checkpoint_document["schema_version"], 4)
+        self.assertEqual(checkpoint_document["manager"], "codex")
         self.assertEqual(
             checkpoint_document["inventor_roster"], [binding.to_host_dict()]
         )
@@ -282,6 +287,69 @@ class AgentRunTest(unittest.TestCase):
         run_checker.chmod(0o400)
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
             run.snapshot()
+
+    def test_claude_manager_materializes_only_its_exact_plugin_projection(self):
+        run = self.create(manager_id="claude")
+        checkpoint = run.snapshot()
+
+        self.assertEqual(checkpoint.manager_id, "claude")
+        expected = {
+            "AGENTS.md": b"# Product run constitution\n",
+            "CLAUDE.md": b"@AGENTS.md\n",
+            "MANAGER.json": manager_spec("claude").project_bytes(),
+            ".claude/skills/autonomous-workshop/SKILL.md": b"# Workshop skill\n",
+            ".claude/skills/autonomous-workshop/references/make-playtest.md": (
+                b"exact gate guidance\n"
+            ),
+            **dict(manager_support_files("claude")),
+        }
+        for relative, content in expected.items():
+            path = run.run_root / relative
+            self.assertEqual(path.read_bytes(), content)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o400)
+            self.assertEqual(
+                checkpoint.input_sha256s[relative], hashlib.sha256(content).hexdigest()
+            )
+        self.assertFalse((run.run_root / ".agents").exists())
+        self.assertFalse((run.run_root / ".codex").exists())
+        self.assertEqual(stat.S_IMODE((run.run_root / ".claude").stat().st_mode), 0o500)
+        manifest = json.loads(
+            (run.run_root / ".claude/.claude-plugin/plugin.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(manifest["name"], "autonomous-workshop")
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_schema_three_checkpoint_opens_as_implicit_codex_without_rewrite(self):
+        run = self.create()
+        checkpoint_path = run.host_state_root / "agent-run.json"
+        payload = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+        payload.pop("checkpoint_sha256")
+        payload.pop("manager")
+        payload["schema_version"] = 3
+        payload["inputs"] = [
+            item for item in payload["inputs"] if item["path"] != "MANAGER.json"
+        ]
+        (run.run_root / "MANAGER.json").unlink()
+        digest = AgentRun._write_checkpoint_file(checkpoint_path, payload)
+
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=digest,
+        )
+        checkpoint = reopened.snapshot()
+        self.assertEqual(checkpoint.manager_id, "codex")
+        self.assertEqual(
+            json.loads(checkpoint_path.read_text(encoding="utf-8"))["schema_version"],
+            3,
+        )
 
     def test_creation_rejects_legacy_schema_seven_inventor_source(self):
         inventor_source = self.root / "inventors"

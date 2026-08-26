@@ -353,9 +353,9 @@ def load_taste(inventor_root: Path) -> Taste:
 def parse_taste_bytes(source: bytes, *, path: Path) -> Taste:
     """Parse exact embedded Taste bytes without requiring a duplicate file.
 
-    Product projects bind Taste inside ``.codex/agents/<inventor>.toml``.  The
-    trusted host uses this parser after validating that custom-agent file,
-    rather than materializing a second Inventor identity tree.
+    Product projects bind Taste inside the selected Manager's project-native
+    Inventor definition. The trusted host uses this parser after validating
+    that agent file, rather than materializing a second identity tree.
     """
 
     selected_path = Path(path)

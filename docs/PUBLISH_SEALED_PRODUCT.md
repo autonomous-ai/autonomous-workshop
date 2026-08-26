@@ -4,8 +4,8 @@ Factory publication is a host effect after Release, not product-run agent work.
 
 ## What Release supplies
 
-The native Codex session writes a complete schema-v3, page-ready package at
-`artifacts/release/package` with at least:
+The selected native Manager session writes a complete schema-v3, page-ready
+package at `artifacts/release/package` with at least:
 
 - `MANUAL.md`;
 - canonical `product.json` with `kind=workshop.release-package`,
@@ -15,25 +15,27 @@ The native Codex session writes a complete schema-v3, page-ready package at
   section carries `headline`, `body`, `visual_direction`, and valid
   `evidence_refs`.
 
-Release is one native Codex Goal whose stopping condition is a successful
-Release finalizer for the current checkpoint. While pursuing it, Codex observes
-the exact Made product and passing Playtest evidence, writes the manual and
-complete product page, evaluates every claim and evidence reference against
+Release is one native Manager Goal whose stopping condition is a successful
+Release finalizer for the current checkpoint. While pursuing it, the Manager
+observes the exact Made product and passing Playtest evidence, writes the manual
+and complete product page, evaluates every claim and evidence reference against
 exact hashes, and improves the package.
 
-That fact-check/write/review loop is native Codex behavior, not Python.
+That fact-check/write/review loop is native Manager behavior, not Python.
 
 The run-local finalizer hashes the package and writes the canonical Release
-contract. After it succeeds, Codex completes the Goal and returns to the host.
-The host rereads and seals the whole tree before contacting Factory. Codex owns
-the complete page copy and visual direction; Factory transports the exact
-sealed page, `MANUAL.md`, and model bytes without creative enrichment. After
-private import, the host copies the exact compatible `use_case` and
-`story_blocks` text through Factory's curated-content endpoints and requires
-authenticated exact readback before optional publication. Factory currently
-accepts 1–40 plain-text characters for each heading, 180–400 for each body,
-and at most 10 story blocks; the handoff fails instead of truncating or
-paraphrasing content outside those limits. The imported cover supplies the
+contract. After it succeeds, the Manager completes the native Release Goal and
+returns to the host. That return does not complete durable host state: the host
+validates the exact checkpoint-bound proposal, acknowledges any adapter Goal
+sidecar, and rereads and seals the whole tree before contacting Factory. The
+Manager owns the complete page copy and visual direction; Factory transports
+the exact sealed page, `MANUAL.md`, and model bytes without creative
+enrichment. After private import, the host copies the exact compatible
+`use_case` and `story_blocks` text through Factory's curated-content endpoints
+and requires authenticated exact readback before optional publication. Factory
+currently accepts 1–40 plain-text characters for each heading, 180–400 for
+each body, and at most 10 story blocks; the handoff fails instead of truncating
+or paraphrasing content outside those limits. The imported cover supplies the
 required use-case image. Hero, cinematic, visual-direction, evidence-reference,
 what-arrives, limitation, and manual presentation have no equivalent rich-page
 fields today; their authoritative exact bytes remain in the downloadable
@@ -52,8 +54,8 @@ uv run workshop wish "I wish for ..."
 
 If Factory authentication is configured, the host can import the validated
 model, manual, and page as a private draft, write the exact compatible rich
-content, and reconcile authenticated readback. Codex does not see credentials
-or perform the import.
+content, and reconcile authenticated readback. The selected Manager does not
+see credentials or perform the import.
 
 ## Explicit public promotion
 
@@ -72,7 +74,7 @@ uv run workshop resume --publish <wish-id>
 The host still validates the exact Release package, performs/reconciles the
 private import, and then promotes the verified remote product. The publication
 receipt is stored in host-only state and bound to exact artifact hashes. It is
-not written by Codex and is not accepted from `agent-outcome.json`.
+not written by the Manager and is not accepted from `agent-outcome.json`.
 
 ## Credentials
 
@@ -81,8 +83,8 @@ Supply Factory credentials through the private
 ephemeral host environment or secret manager. The trusted host loads the
 private file only when no native agent turn is running. Never put credentials
 in a Wish, prompt, `TASTE.md`, product-run
-workspace, Release package, source file, or commit. The Codex subprocess gets a
-scrubbed environment.
+workspace, Release package, source file, or commit. Every selected Manager
+subprocess gets an allowlisted, adapter-bounded environment.
 
 ## Recovery
 

@@ -211,7 +211,7 @@ def _inventor_payloads(root: Path) -> tuple[tuple[str, bytes, int], ...]:
             ) from exc
         if not bundles:
             raise PackageDataError(
-                "bundled schema-v8 Inventor declares no Codex skill: %s" % folder
+                "bundled schema-v8 Inventor declares no Manager skill: %s" % folder
             )
         for bundle in bundles:
             for entry in bundle.manifest.entries:

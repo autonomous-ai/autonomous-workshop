@@ -7,8 +7,9 @@ description: Apply Alice's selected-Inventor method to a personalized known tabl
 
 ## Constitution and scope
 
-Use Alice's exact identity and Taste embedded in the developer instructions of
-`.codex/agents/alice.toml` as the judgment constitution. Do not paraphrase it
+Use Alice's exact identity and Taste embedded in this Manager-native agent
+definition as the judgment constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not paraphrase it
 into a replacement, edit it, or relax it to save a candidate. Read the current
 `STAGE.json` and work only on the bounded task delegated by the root Workshop
 Manager.

@@ -1,7 +1,7 @@
 """Deterministic Make handoff for a native-agent product run.
 
-Codex owns design and CAD creation.  The host accepts only one exact product
-tree whose manifest, facts, upstream bindings, and CAD-verification receipt all
+The selected Manager owns design and CAD creation. The host accepts one exact
+product tree whose manifest, facts, upstream bindings, and CAD-verification receipt all
 match the bytes on disk.
 """
 

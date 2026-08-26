@@ -3,6 +3,7 @@
 - Status: Accepted and implemented
 - Date: 2026-08-26
 - Owners: Workflow, Runtime, and lifecycle component maintainers
+- Amended by: ADR 0013 (portable Manager runtimes)
 
 ## Context
 
@@ -67,7 +68,7 @@ The outer Workshop host owns:
 
 - Wish/run identity, lifecycle order, Make–Playtest rounds, invalidation, one
   exclusive host mutation lock per run, and durable checkpoints;
-- native-session start/resume, scrubbed environment, and an enforced
+- native-session start/resume, an allowlisted environment, and an enforced
   workspace-only filesystem permission profile;
 - contracts, exact-byte manifests, deterministic CAD/evidence gates, and
   artifact sealing;
@@ -150,8 +151,9 @@ agent runtime's own bounded subagents.
 
 Codex can do nearly all creative and diagnostic work with the same tools a
 developer uses, while Workshop remains small and fail-closed. The filesystem
-protocol and host gates provide an adapter seam for future Claude Code,
-OpenCode, Pi, or Hermes runtimes.
+protocol and host gates provided the adapter seam that ADR 0013 subsequently
+used for Claude Code and leave the same seam available to future OpenCode, Pi,
+or Hermes runtimes.
 
 Workshop deliberately inherits improvements to Codex's reasoning, tools,
 Goals, and subagents instead of replacing them with a parallel framework. Its

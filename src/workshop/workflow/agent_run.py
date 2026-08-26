@@ -35,8 +35,15 @@ from workshop.errors import (
 from workshop._validation import require_sha256
 from workshop.runtime.agent_assets import (
     InventorSkillBinding,
-    inventor_custom_agent_bytes,
-    parse_inventor_custom_agent_bytes,
+    inventor_agent_bytes,
+    parse_inventor_agent_bytes,
+)
+from workshop.runtime.managers import (
+    DEFAULT_MANAGER_ID,
+    MANAGER_PROJECT_PATH,
+    manager_support_files,
+    manager_spec,
+    parse_manager_project_bytes,
 )
 from workshop.runtime.project_boundary import (
     PRODUCT_RUN_ROOT_MARKER,
@@ -182,8 +189,11 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
 
 
 def _reject_private_agent_bytes(path: str, content: bytes) -> None:
+    packable_path = path
+    if path == ".claude" or path.startswith(".claude/"):
+        packable_path = "manager-projection/" + path.removeprefix(".claude/")
     try:
-        assert_packable_content(path, content)
+        assert_packable_content(packable_path, content)
     except ArtifactError:
         raise
     if _KEYED_SECRET.search(content) or _BEARER_SECRET.search(content):
@@ -548,6 +558,7 @@ class AgentRunCheckpoint:
     """Redacted view of the authoritative host checkpoint."""
 
     product_id: str
+    manager_id: str
     stage: str
     status: str
     revision: int
@@ -594,7 +605,9 @@ class AgentRun:
         domain_skill_roots: Optional[Mapping[str, Path]] = None,
         inventor_source_root: Optional[Path] = None,
         max_rounds: int = 4,
+        manager_id: str = DEFAULT_MANAGER_ID,
     ) -> "AgentRun":
+        runtime = manager_spec(manager_id)
         _identifier(product_id, "agent run product_id")
         _positive_int(max_rounds, "agent run max_rounds", 100)
         wish_bytes = _canonical_wish_bytes(wish_bytes, product_id)
@@ -665,7 +678,8 @@ class AgentRun:
             raise ArtifactError("source autonomous-workshop skill lacks SKILL.md")
         for relative, content, _ in skill_files:
             _reject_private_agent_bytes(
-                ".agents/skills/autonomous-workshop/%s" % relative.as_posix(),
+                "%s/autonomous-workshop/%s"
+                % (runtime.skill_directory, relative.as_posix()),
                 content,
             )
 
@@ -685,7 +699,7 @@ class AgentRun:
             )
             if not any(relative.as_posix() == "SKILL.md" for relative, _, _ in files):
                 raise ArtifactError("source %s skill lacks SKILL.md" % name)
-            target = PurePosixPath(".agents/skills") / name
+            target = PurePosixPath(runtime.skill_directory) / name
             for relative, content, mode in files:
                 destination = target / relative
                 _reject_private_agent_bytes(destination.as_posix(), content)
@@ -759,7 +773,7 @@ class AgentRun:
                     ) from exc
                 if not bundles:
                     raise ArtifactError(
-                        "Inventor source declares no Codex skill"
+                        "Inventor source declares no Manager skill"
                     )
                 skills = tuple(
                     InventorSkillBinding(
@@ -769,22 +783,21 @@ class AgentRun:
                     )
                     for bundle in bundles
                 )
-                agent_definition = inventor_custom_agent_bytes(
+                agent_definition = inventor_agent_bytes(
+                    manager_id,
                     entry.name,
                     manifest,
                     taste,
                     skills=skills,
                 )
-                agent_destination = (
-                    PurePosixPath(".codex/agents") / (entry.name + ".toml")
-                )
+                agent_destination = PurePosixPath(runtime.agent_path(entry.name))
                 _reject_private_agent_bytes(
                     agent_destination.as_posix(), agent_definition
                 )
                 inventor_agent_files.append(
                     (agent_destination, agent_definition, 0o400)
                 )
-                binding = parse_inventor_custom_agent_bytes(agent_definition)
+                binding = parse_inventor_agent_bytes(manager_id, agent_definition)
                 inventor_roster.append(binding.to_host_dict())
                 for bundle in bundles:
                     files = _source_tree_files(
@@ -792,7 +805,8 @@ class AgentRun:
                         label="source %s Inventor skill" % bundle.extension.name,
                     )
                     skill_target = (
-                        PurePosixPath(".agents/skills") / bundle.extension.name
+                        PurePosixPath(runtime.skill_directory)
+                        / bundle.extension.name
                     )
                     for relative, content, mode in files:
                         destination = skill_target / relative
@@ -809,8 +823,27 @@ class AgentRun:
             ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
+            (
+                PurePosixPath(MANAGER_PROJECT_PATH),
+                runtime.project_bytes(),
+                0o400,
+            ),
         ]
-        skill_target = PurePosixPath(".agents/skills/autonomous-workshop")
+        if runtime.instruction_entrypoint != "AGENTS.md":
+            all_input_files.append(
+                (
+                    PurePosixPath(runtime.instruction_entrypoint),
+                    b"@AGENTS.md\n",
+                    0o400,
+                )
+            )
+        all_input_files.extend(
+            (PurePosixPath(path), content, 0o400)
+            for path, content in manager_support_files(manager_id)
+        )
+        skill_target = (
+            PurePosixPath(runtime.skill_directory) / "autonomous-workshop"
+        )
         all_input_files.extend(
             (skill_target / relative, content, mode)
             for relative, content, mode in skill_files
@@ -886,34 +919,30 @@ class AgentRun:
 
         for relative, content, mode in all_input_files:
             materialize(relative, content, mode)
-        for directory in sorted(
-            (
-                path
-                for path in (selected / ".agents").rglob("*")
-                if path.is_dir()
-            ),
-            key=lambda path: len(path.parts),
-            reverse=True,
-        ):
-            os.chmod(directory, 0o500)
-        os.chmod(selected / ".agents", 0o500)
-        codex_input_root = selected / ".codex"
-        if codex_input_root.exists():
+        immutable_projection_roots = {
+            PurePosixPath(runtime.skill_directory).parts[0],
+            PurePosixPath(runtime.agent_directory).parts[0],
+        }
+        for root_name in sorted(immutable_projection_roots):
+            projection_root = selected / root_name
+            if not projection_root.exists():
+                continue
             for directory in sorted(
                 (
                     path
-                    for path in codex_input_root.rglob("*")
+                    for path in projection_root.rglob("*")
                     if path.is_dir()
                 ),
                 key=lambda path: len(path.parts),
                 reverse=True,
             ):
                 os.chmod(directory, 0o500)
-            os.chmod(codex_input_root, 0o500)
+            os.chmod(projection_root, 0o500)
         core: dict[str, Any] = {
-            "schema_version": 3,
+            "schema_version": 4,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
             "product_id": product_id,
+            "manager": manager_id,
             "run_root_sha256": _sha256(str(selected).encode("utf-8")),
             "host_state_root_sha256": _sha256(
                 str(selected_host).encode("utf-8")
@@ -1070,11 +1099,14 @@ class AgentRun:
             "previous_checkpoint_sha256",
             "checkpoint_sha256",
         }
+        schema_version = payload.get("schema_version")
+        if schema_version == 4:
+            expected_fields.add("manager")
         if set(payload) != expected_fields:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
             type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 3
+            or payload["schema_version"] not in (3, 4)
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
             or payload["stage"] not in AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
@@ -1088,6 +1120,12 @@ class AgentRun:
             or len(payload["history"]) > payload["max_rounds"] * 3 + 16
         ):
             raise StateConflict("agent run checkpoint values are invalid")
+        try:
+            runtime = manager_spec(
+                payload["manager"] if schema_version == 4 else DEFAULT_MANAGER_ID
+            )
+        except ContractError as exc:
+            raise StateConflict("agent run Workshop Manager is invalid") from exc
         _identifier(payload["product_id"], "agent run product_id")
         _positive_int(payload["max_rounds"], "agent run max_rounds", 100)
         expected_root = _sha256(str(self.run_root).encode("utf-8"))
@@ -1096,11 +1134,14 @@ class AgentRun:
         expected_host_root = _sha256(str(self.host_state_root).encode("utf-8"))
         if payload["host_state_root_sha256"] != expected_host_root:
             raise StateConflict("agent run checkpoint belongs to another host-state root")
-        self._verify_inputs(payload)
+        self._verify_inputs(payload, runtime.manager_id)
         self._verify_sealed_artifacts(payload)
         return payload
 
-    def _verify_inputs(self, payload: Mapping[str, Any]) -> None:
+    def _verify_inputs(
+        self, payload: Mapping[str, Any], manager_id: str
+    ) -> None:
+        runtime = manager_spec(manager_id)
         inputs = payload.get("inputs")
         if not isinstance(inputs, list) or not 3 <= len(inputs) <= MAX_AGENT_INPUT_FILES:
             raise StateConflict("agent run input manifest is invalid")
@@ -1136,8 +1177,12 @@ class AgentRun:
             PRODUCT_RUN_ROOT_MARKER,
             "WISH.json",
             "AGENTS.md",
-            ".agents/skills/autonomous-workshop/SKILL.md",
+            runtime.skill_path("autonomous-workshop"),
         }
+        if payload["schema_version"] == 4:
+            required.add(MANAGER_PROJECT_PATH)
+            required.add(runtime.instruction_entrypoint)
+            required.update(path for path, _ in manager_support_files(manager_id))
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
         if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
@@ -1157,7 +1202,9 @@ class AgentRun:
             if not isinstance(agent_path, str) or agent_path not in input_content:
                 raise StateConflict("Inventor roster agent is absent from run inputs")
             try:
-                binding = parse_inventor_custom_agent_bytes(input_content[agent_path])
+                binding = parse_inventor_agent_bytes(
+                    manager_id, input_content[agent_path]
+                )
             except ContractError as exc:
                 raise StateConflict("materialized Inventor custom agent is invalid") from exc
             if binding.to_host_dict() != dict(item):
@@ -1165,7 +1212,9 @@ class AgentRun:
             roster_ids.append(binding.inventor_id)
             expected_agent_paths.add(binding.agent_path)
             for skill in binding.skills:
-                skill_root = self.run_root / ".agents" / "skills" / skill.name
+                skill_root = self.run_root.joinpath(
+                    *PurePosixPath(runtime.skill_directory).parts, skill.name
+                )
                 try:
                     fingerprint = fingerprint_extension_skill(
                         skill_root, expected_name=skill.name
@@ -1181,15 +1230,34 @@ class AgentRun:
         if roster_ids != sorted(roster_ids) or len(roster_ids) != len(set(roster_ids)):
             raise StateConflict("agent run Inventor roster is not canonical")
         observed_agent_paths = {
-            path for path in observed_paths if path.startswith(".codex/agents/")
+            path
+            for path in observed_paths
+            if path.startswith(runtime.agent_directory + "/")
         }
         if expected_agent_paths != observed_agent_paths:
             raise StateConflict(
-                "project-scoped Codex Inventor agents differ from the roster"
+                "project-scoped Inventor agents differ from the roster"
             )
-        immutable_trees = (
-            (self.run_root / ".agents", ".agents/", "skill"),
-            (self.run_root / ".codex", ".codex/", "Codex agent"),
+        if payload["schema_version"] == 4:
+            try:
+                manager_binding = parse_manager_project_bytes(
+                    input_content[MANAGER_PROJECT_PATH]
+                )
+            except ContractError as exc:
+                raise StateConflict("materialized Manager binding is invalid") from exc
+            if manager_binding.manager_id != manager_id:
+                raise StateConflict("materialized Manager differs from checkpoint")
+        immutable_tree_names = {
+            PurePosixPath(runtime.skill_directory).parts[0],
+            PurePosixPath(runtime.agent_directory).parts[0],
+        }
+        immutable_trees = tuple(
+            (
+                self.run_root / name,
+                name + "/",
+                "Manager projection",
+            )
+            for name in sorted(immutable_tree_names)
         )
         for tree_root, prefix, label in immutable_trees:
             expected_files = {path for path in observed_paths if path.startswith(prefix)}
@@ -1313,6 +1381,11 @@ class AgentRun:
         by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
         return AgentRunCheckpoint(
             product_id=payload["product_id"],
+            manager_id=(
+                payload["manager"]
+                if payload["schema_version"] == 4
+                else DEFAULT_MANAGER_ID
+            ),
             stage=payload["stage"],
             status=payload["status"],
             revision=payload["revision"],

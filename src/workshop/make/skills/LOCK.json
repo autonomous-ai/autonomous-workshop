@@ -22,7 +22,7 @@
       "source": "local"
     },
     "step-parts": {
-      "sha256": "aee167b76132b6799b62f31e7d09bd78d2a2c152f010ec4b7bb033dccd9767ee",
+      "sha256": "e4f14fa9b6f83851e3c75aafa817e38d1f63eccc87d38a21999dd17154849387",
       "source_commit": "0403039457603002739359f620f8c780a2c829dc",
       "source_url": "https://github.com/autonomous-ai/autonomous-product-to-cad"
     }

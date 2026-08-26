@@ -90,7 +90,7 @@ def _safe_path(value: Any, label: str) -> PurePosixPath:
 
 @dataclass(frozen=True)
 class InventorExtension:
-    """One exact Codex skill declared by a schema-v8 Inventor."""
+    """One exact portable agent skill declared by a schema-v8 Inventor."""
 
     kind: str
     name: str

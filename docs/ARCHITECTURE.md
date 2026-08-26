@@ -2,8 +2,10 @@
 
 Autonomous Workshop turns one person's Wish into one evidence-backed physical
 product design. It is a thin workflow harness over a pluggable coding-agent
-runtime, not a Python agent framework. Codex is implemented first; Claude Code
-and Grok Build are future adapters to the same boundary.
+runtime, not a Python agent framework. Codex is the default Manager. The Claude
+Code adapter, CLI selection, and native projection are implemented and covered
+by deterministic tests; a real private Claude Wish has not yet completed the
+live acceptance bar. Grok Build remains a future adapter to the same boundary.
 
 ## Product scope
 
@@ -12,7 +14,7 @@ what they want in their own words; they do not choose a product class before
 the Workshop can begin. A universal toy blueprint supplies the shared contract
 and baseline Playtest checks: `agent-playtest`, `mechanical-check`, and
 `printability-check`. The host derives that exact tuple from
-`ToyBlueprint.required_playtest_checks()`. These checks are Codex-authored
+`ToyBlueprint.required_playtest_checks()`. These checks are Manager-authored
 digital assessments unless host-replayed evidence or a physical receipt
 explicitly proves more; they never establish a successful print or physical
 fit by themselves. The Wish, selected Inventor, and evolving artifact determine
@@ -47,8 +49,9 @@ Wish -> Match -> Invent -> Make -> Playtest -> Release -> Deliver
   receipts bound to the exact approved bytes.
 
 Release replaces the old instruction-only name because the output is broader
-than a manual. Codex owns the complete page copy and visual direction while the
-host keeps authenticated Factory transport and publication outside the agent.
+than a manual. The selected Manager owns the complete page copy and visual
+direction while the host keeps authenticated Factory transport and publication
+outside the agent.
 
 Customer Reviews happen after delivery and may inform a later Wish or revision.
 They do not mutate a completed run.
@@ -61,23 +64,37 @@ directory before Match. The same session handles discovery, research, concept
 work, CAD, inspection, repair, Playtest judgment, manual writing, and
 product-page facts. `workshop resume` continues the exact recorded session id.
 
-That root session plays the Workshop Manager role. In the current adapter it is
-Codex, and it may dynamically delegate bounded matching, specialist creation,
-or independent inspection through standard Codex-native subagents. Those
+That root session plays the Workshop Manager role. The Wish checkpoint records
+one selected runtime: Codex by default or Claude Code when requested at Wish
+creation. It may dynamically delegate bounded matching, specialist creation,
+or independent inspection through that runtime's native subagents. Those
 children are part of the Manager's native agent tree; they are not separately
-launched OS-level Codex processes, Python workers, or lifecycle sessions. The
+launched OS-level Manager processes, Python workers, or lifecycle sessions. The
 root Manager receives each host stage packet, synthesizes child work, and
 submits the one proposal the host verifies.
 
 Stage names are host checkpoints, not Python workers or model roles. During
 Match, the Manager may ask native children for bounded candidate-fit analysis,
 then makes one evidence-based selection. The host materializes every eligible
-Inventor through Codex's documented project-scoped custom-agent convention;
-Codex owns native spawning, routing, waiting, and synthesis.
+Inventor through the selected runtime's project-scoped agent convention; the
+Manager owns native spawning, routing, waiting, and synthesis.
 
 “Inventor” is the Workshop's friendly domain name for a standard native
-subagent role. For Codex, every eligible bundle is materialized as an official
-project-scoped custom agent under `.codex/agents/`.
+subagent role. Codex receives official project-scoped custom agents under
+`.codex/agents/`; Claude Code receives namespaced agents in the explicit
+host-generated plugin under `.claude/agents/`.
+
+The Claude adapter starts `claude -p` with empty filesystem setting sources,
+private `0700` home/configuration/internal-temp directories, one exact plugin,
+and strict empty MCP configuration. It sends the exact current
+`/goal <condition>` over standard input for each new attempt. An interrupted
+attempt resumes the restored Goal with fixed continuation prose; a private
+stage/checkpoint-bound sidecar prevents accidental replacement. Workshop
+selects `ANTHROPIC_API_KEY` rather than the normal keychain/OAuth login path,
+and init must attest that API-key source.
+OS-, MDM-, and server-managed Claude settings, instructions, plugins, hooks,
+and administrator policy remain part of the host trusted computing base;
+Workshop does not defend against a malicious host administrator.
 
 That directory is the sole run roster. The reusable source bundle behind each
 generated custom agent contains:
@@ -85,7 +102,7 @@ generated custom agent contains:
 - `TASTE.md` defines creative judgment, preferences, and rejection boundaries;
 - schema-v8 `inventor.json` defines stable source metadata and exact skill-tree
   hashes;
-- the required `<id>-inventor` Codex skill tree contains `SKILL.md` for the
+- the required `<id>-inventor` portable skill tree contains `SKILL.md` for the
   specialist's primary workflow and tool routing;
 - additional Inventor-prefixed skill trees are optional;
 - their optional scripts, references, assets, CAD generators, evaluators, and
@@ -104,28 +121,30 @@ files, manifests, gate receipts, or effect receipts.
 ## One native Goal per active stage attempt
 
 For each host-authorized Match, Invent, Make, Playtest, or Release attempt, the
-root Codex session creates one native Goal. Only one Goal is active at a time.
-It names one objective, the exact inputs to inspect, proof artifacts and checks,
-and a verifiable stopping condition: the current stage finalizer succeeds and
-writes the bound proposal.
+root Manager session creates one native Goal using the selected runtime's goal
+control. Only one Goal is active at a time. It names one objective, the exact
+inputs to inspect, proof artifacts and checks, and a verifiable stopping
+condition: the current stage finalizer succeeds and writes the bound proposal.
 
-While pursuing the Goal, Codex works as observe -> act -> evaluate -> improve:
-it inspects the current artifact, makes focused changes with native tools and
-subagents, runs deterministic checks and independent native review, inspects
-the actual output, and repeats. This is agent behavior inside the Goal, not a
-separate loop primitive or Python program. The Goal completes only after the
-finalizer succeeds; Codex then returns to the host instead of starting the next
-stage.
+While pursuing the Goal, the Manager works as observe -> act -> evaluate ->
+improve: it inspects the current artifact, makes focused changes with native
+tools and subagents, runs deterministic checks and independent native review,
+inspects the actual output, and repeats. This is agent behavior inside the Goal,
+not a separate loop primitive or Python program. The Manager completes the
+native Goal only after the finalizer succeeds, then returns to the host instead
+of starting the next stage. That native return does not complete durable host
+state: the host validates the exact checkpoint-bound proposal and acknowledges
+any adapter Goal sidecar before mutating a gate.
 
 Wish is sealed by the host before Match, and Deliver is a host effect boundary,
-so neither is an agent Goal. A failed Playtest Goal still completes after it
-finalizes truthful evidence. The host applies the round budget, invalidates
-downstream evidence, and checkpoints the return to Make. Codex interprets the
-feedback and repairs the product inside the next Make Goal.
+so neither is an agent Goal. A failed native Playtest Goal still completes after
+it finalizes truthful evidence. The host applies the round budget, invalidates
+downstream evidence, and checkpoints the return to Make. The Manager interprets
+the feedback and repairs the product inside the next Make Goal.
 
 ## Trust boundary
 
-### Native Codex owns
+### The selected native Manager owns
 
 - root-session Workshop management, native subagent delegation, and synthesis;
 - one active native Goal per cognitive stage attempt and the
@@ -147,7 +166,8 @@ feedback and repairs the product inside the next Make Goal.
   bundle and declared skill tree;
 - legal transition order, one exclusive host mutation lock per run, round
   budgets, and invalidation;
-- Codex session start/resume and environment scrubbing;
+- selected-Manager session start/resume, policy binding, and an allowlisted
+  environment;
 - public contracts, exact-byte manifests, deterministic CAD/evidence gates,
   and artifact sealing;
 - authorization, credential isolation, idempotency, external adapters,
@@ -155,14 +175,17 @@ feedback and repairs the product inside the next Make Goal.
 
 Python never performs creative candidate generation, semantic judging, prompt
 chaining, specialist simulation, repair reasoning, or a score/reward/feedback
-loop. Codex does not advance its own gate or perform credential-bearing
+loop. The Manager does not advance its own gate or perform credential-bearing
 effects.
 
 ## Workspace protocol
 
 The host materializes the product-run constitution, workflow skill, Make domain
-skills, Wish, generated `.codex/agents/` roster, and its hash-bound Inventor
-skill trees into the persistent toy project. The workflow skill is the
+skills, Wish, immutable `MANAGER.json`, and exactly one selected-runtime
+projection into the persistent toy project. Codex uses `.codex/agents/` and
+`.agents/skills/`; Claude Code uses the explicit `.claude/` plugin with
+`.claude/agents/` and `.claude/skills/`. Each projection binds the same exact
+Inventor identity, Taste, and skill source bytes. The workflow skill is the
 Manager's playbook, not a separate Manager agent. Before each native turn the
 host writes read-only `STAGE.json` with:
 
@@ -172,11 +195,12 @@ subject_sha256, next_transition, round, max_rounds, inputs
 ```
 
 The packet binds exact upstream contracts and canonical output paths for only
-the current stage. Codex authors substantive files and then invokes the
-run-local, standard-library finalizer:
+the current stage. The Manager authors substantive files and then invokes the
+run-local, standard-library finalizer at the path recorded by `MANAGER.json`:
 
 ```text
-.agents/skills/autonomous-workshop/scripts/stage_proposal.py
+Codex:       .agents/skills/autonomous-workshop/scripts/stage_proposal.py
+Claude Code: .claude/skills/autonomous-workshop/scripts/stage_proposal.py
 ```
 
 The finalizer validates authored input, hashes exact bytes, writes the
@@ -234,33 +258,39 @@ The CLI default is private. `--publish` records explicit prospective authority
 for the host to promote the exact verified Factory page after private import
 and authenticated readback. Factory credentials are stored outside the run in
 the private Workshop home, loaded only between native turns, and never copied
-into the run workspace or Codex process. A public page is not a Deliver receipt.
+into the run workspace or selected Manager process. A public page is not a
+Deliver receipt.
 
 ## Shared implementation
 
 ```text
 toys/<toy-id>/              persistent toy project and coding-agent CWD
-  .workshop-product-run-root exact Codex project/instruction boundary
-  AGENTS.md                 product-run constitution
-  .codex/agents/            sole run roster of project-scoped Inventor agents
-  .agents/skills/           materialized workflow, Make, and Inventor skills
+  .workshop-product-run-root exact project/instruction boundary
+  AGENTS.md                 Manager-neutral product-run constitution
+  MANAGER.json              selected runtime and projection map
+  Codex projection:
+    .codex/agents/          sole run roster of Inventor agents
+    .agents/skills/         workflow, Make, and Inventor skills
+  Claude Code projection:
+    CLAUDE.md               native pointer to AGENTS.md
+    .claude/                explicit plugin with agents and skills
   artifacts/                product work and evidence
 
 inventors/<id>/
-  TASTE.md                 immutable creative point of view
+  TASTE.md                 canonical creative point of view
   inventor.json            schema-v8 source metadata and skill-tree hashes
-  skills/<id>-inventor/    required primary Codex skill tree
+  skills/<id>-inventor/    required primary portable skill tree
     SKILL.md               specialist workflow and tool routing
-  skills/<id>-<specialty>/ optional additional Codex skill tree
+  skills/<id>-<specialty>/ optional additional portable skill tree
     scripts/               optional deterministic specialist tools
     references/            optional specialist reference material
     assets/                optional immutable templates and references
 
 .agents/
-  product-run/             complete run-only toy-project template
+  product-run/             canonical Manager-neutral source bundle
     AGENTS.md              product-run constitution
     .agents/skills/autonomous-workshop/
-                           run workflow and proposal finalizer
+                           portable workflow and proposal-finalizer source
 
 src/
   cli/                     parsing, presentation, and exit codes only
@@ -305,11 +335,11 @@ Manager runtime support is intentionally pluggable:
 | Manager runtime | Status |
 |---|---|
 | Codex | Implemented |
-| Claude Code | Planned adapter |
+| Claude Code | Adapter, CLI, and projection implemented; live private-Wish acceptance pending |
 | Grok Build | Planned adapter |
 
 The adapter seam is session start/resume, native specialist delegation, and the
-toy-project protocol—not the content of Codex prompts or one vendor's custom
+toy-project protocol—not one runtime's prompt syntax, command flags, or custom
 agent format. Every future adapter must preserve the root Manager role, exact
 Inventor binding, stage objective and proof condition, `STAGE.json`, exact-byte
 gates, authorization, and effect isolation.

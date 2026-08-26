@@ -30,6 +30,7 @@ THREAD_ID = "12345678-1234-5678-9234-567812345678"
 OTHER_THREAD_ID = "87654321-4321-6789-8234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
+GOAL_CHECKPOINT_SHA256 = "c" * 64
 ROOT_MARKER = ".workshop-product-run-root"
 
 
@@ -271,6 +272,8 @@ class CodexNativeSessionTest(unittest.TestCase):
             run_root=root,
             host_state_root=host_state_root or self.host_state(root),
             prompt=prompt,
+            goal_stage="match",
+            goal_checkpoint_sha256=GOAL_CHECKPOINT_SHA256,
         )
 
     def resume(self, launcher, root, **overrides):
@@ -281,9 +284,25 @@ class CodexNativeSessionTest(unittest.TestCase):
             "run_root": root,
             "host_state_root": self.host_state(root),
             "prompt": "continue from durable evidence",
+            "goal_stage": "invent",
+            "goal_checkpoint_sha256": GOAL_CHECKPOINT_SHA256,
         }
         values.update(overrides)
         return launcher.resume(**values)
+
+    def goal_disposition(self, launcher, root, **overrides):
+        values = {
+            "product_id": "wish-001",
+            "wish_sha256": WISH_SHA256,
+            "constitution_sha256": CONSTITUTION_SHA256,
+            "run_root": root,
+            "host_state_root": self.host_state(root),
+            "prompt": "run this exact Wish",
+            "goal_stage": "match",
+            "goal_checkpoint_sha256": GOAL_CHECKPOINT_SHA256,
+        }
+        values.update(overrides)
+        return launcher.goal_disposition(**values)
 
     def test_start_streams_exact_native_command_and_checkpoints_before_completion(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -426,6 +445,14 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(private["wish_sha256"], WISH_SHA256)
             self.assertEqual(
                 private["constitution_sha256"], CONSTITUTION_SHA256
+            )
+            self.assertEqual(
+                self.goal_disposition(
+                    launcher,
+                    root,
+                    host_state_root=state_root,
+                ),
+                "returned",
             )
 
     def test_resume_uses_the_exact_private_thread_and_redacts_it_publicly(self):

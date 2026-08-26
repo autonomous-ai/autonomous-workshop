@@ -7,7 +7,7 @@ Public API: `workshop.contributors`.
 
 An Inventor source bundle contains `inventor.json`, `TASTE.md`, `skills/`, and
 at most an optional concise `README.md`. Its v8 manifest records the stable id,
-status, source, and an exact sorted inventory of namespaced Codex skills. Each
+status, source, and an exact sorted inventory of portable agent skills. Each
 skill has a root `SKILL.md` and may include `scripts/`, `references/`, and
 `assets/`; the manifest binds the complete tree by SHA-256. Older manifests are
 rejected.
@@ -19,9 +19,10 @@ launcher, effect authority, or credential channel. Runtime sandboxing and host
 gates remain authoritative.
 
 Contributors does not perform Match reasoning, route agents, or own a product
-loop. The host validates reusable source bytes and materializes each eligible
-Inventor into `.codex/agents/<id>.toml`; that directory is the sole Inventor
-roster inside a toy project. One native Codex Goal owns each active Match,
-Invent, Make, Playtest, or Release attempt, and Codex performs the
+loop. The host validates reusable source bytes and projects each eligible
+Inventor into the selected Manager-native layout recorded in `MANAGER.json`;
+that projection is the sole Inventor roster inside a toy project. One native
+Goal owns each active Match, Invent, Make, Playtest, or Release attempt, and
+the selected Manager performs the
 observe -> act -> evaluate -> improve behavior while pursuing it. Shared
 deterministic tools remain owned by their Workshop stages.

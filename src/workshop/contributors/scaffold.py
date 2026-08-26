@@ -93,9 +93,10 @@ description: Apply {name}'s selected-Inventor method to an exact Wish inside one
 
 # {name} Inventor
 
-Use the exact Inventor identity and Taste embedded in the developer instructions
-of `.codex/agents/{inventor_id}.toml` as the creative constitution. Do not
-rediscover or substitute identity from another file. Read the current
+Use the exact Inventor identity and Taste embedded in this Manager-native agent
+definition as the creative constitution. `MANAGER.json` identifies the active
+runtime projection if its path must be inspected. Do not rediscover or
+substitute identity from another file. Read the current
 `STAGE.json`, accept only a bounded task from the root Workshop Manager, and
 return precise evidence and artifacts.
 

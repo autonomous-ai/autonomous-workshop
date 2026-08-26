@@ -1,8 +1,9 @@
 # Contributing
 
-Autonomous Workshop is one native Codex workflow with a small trusted Python
-host. Contributions should make that shared system or one declared Inventor
-specialist better without creating another agent framework.
+Autonomous Workshop is one native coding-agent workflow with a small trusted
+Python host and selected Manager adapters. Contributions should make that
+shared system or one declared Inventor specialist better without creating
+another agent framework.
 
 Read [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) and
 [Workshop architecture](docs/ARCHITECTURE.md) before changing the CLI, runtime,
@@ -11,9 +12,14 @@ workflow, lifecycle contracts, or product-run instructions. Read
 
 ## Set up the repository
 
-Workshop requires Python 3.11 or newer. A signed-in Codex CLI is needed for a
-real Wish, but repository tests are deterministic and need no model account,
-Factory credential, network service, CAD service, or printer.
+Workshop requires Python 3.11 or newer. A real Wish needs either a signed-in
+Codex CLI 0.145.0 or newer, or Claude Code 2.1.246 or newer selected with
+`--manager claude` and `ANTHROPIC_API_KEY` set in the host environment. Claude
+runs in `--bare` mode; Workshop deliberately does not use Claude subscription,
+OAuth, or keychain login state. Repository tests are deterministic and need no
+model account, Factory credential, network service, CAD service, or printer.
+The Claude adapter, selector, and projection have deterministic coverage; live
+private-Wish acceptance remains pending.
 
 ```bash
 git clone https://github.com/<your-user>/autonomous-workshop.git
@@ -56,14 +62,16 @@ recognizable qualities, explicit rejects, a signature product moment, and the
 external evidence that could motivate a human-approved revision.
 
 `inventor.json` is a schema-v8 source manifest. It records the stable id,
-status, source, and exact content hash for every inventor-owned Codex skill
+status, source, and exact content hash for every Inventor-owned portable skill
 tree. Match fit comes from the full Taste and Wish, not a product category.
+The current `codex-skill` discriminator is the historical schema-v8 wire value;
+the host projects those exact skill bytes into either supported Manager layout.
 
-The skill tells a selected native Codex subagent how to apply that Taste during
-bounded Match, Invent, Make, Playtest, or Release work. Optional scripts are
-tools for specialist craft. They may not launch agents, sequence stages, submit
-host gates, access effect credentials, or duplicate shared Make and Playtest
-machinery.
+The skill tells a selected native Inventor subagent how to apply that Taste
+during bounded Match, Invent, Make, Playtest, or Release work. Optional scripts
+are tools for specialist craft. They may not launch agents, sequence stages,
+submit host gates, access effect credentials, or duplicate shared Make and
+Playtest machinery.
 
 Start with instructions alone. Add scripts, dependencies, or large assets only
 when they provide a genuine specialist operation and have deterministic tests,
@@ -75,15 +83,16 @@ An Inventor owns:
 
 - who the specialist is for and which Wishes it should reject;
 - its distinctive judgment in `TASTE.md`;
-- its concise Codex specialist skill;
+- its concise portable specialist skill;
 - genuinely niche deterministic tools and their tests.
 
 Workshop owns:
 
 - Wish identity and the Match -> Invent -> Make <-> Playtest -> Release ->
   Deliver lifecycle;
-- the root Codex session, checkpoint protocol, invalidation, and round budgets;
-- one native Codex Goal for each active Match, Invent, Make, Playtest, or
+- the selected root Manager session, checkpoint protocol, invalidation, and
+  round budgets;
+- one native Manager Goal for each active Match, Invent, Make, Playtest, or
   Release attempt, with observe -> act -> evaluate -> improve behavior inside
   that Goal rather than in Python;
 - shared CAD, artifact, evidence, schema, and publication contracts;
