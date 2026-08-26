@@ -8,6 +8,7 @@ from workshop.artifacts.core import (
     MAX_FILE_BYTES,
     MAX_PACK_BYTES,
     assert_packable_content,
+    artifact_manifest_from_mapping,
     build_artifact_manifest,
     build_pack,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "MAX_PACK_BYTES",
     "PackedArtifact",
     "assert_packable_content",
+    "artifact_manifest_from_mapping",
     "build_artifact_manifest",
     "build_pack",
     "bundle_artifact",

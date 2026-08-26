@@ -12,7 +12,7 @@ import tempfile
 import zipfile
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 from workshop.errors import ArtifactError
 from workshop._validation import require_sha256, require_utc_timestamp, utc_now
@@ -567,6 +567,55 @@ class ArtifactManifest:
         finally:
             if os.path.exists(temporary):
                 os.unlink(temporary)
+
+
+def artifact_manifest_from_mapping(value: Any) -> ArtifactManifest:
+    """Strictly reconstruct one canonical content-addressed manifest.
+
+    Native product runs exchange JSON, but deterministic gates operate on
+    typed manifests.  Keeping the decoder beside the owning contract avoids
+    private copies in orchestration modules.
+    """
+
+    expected = {
+        "schema_version",
+        "artifact_sha256",
+        "entries",
+        "total_bytes",
+        "created_at",
+    }
+    if not isinstance(value, Mapping) or set(value) != expected:
+        raise ArtifactError("artifact manifest fields are invalid")
+    raw_entries = value["entries"]
+    if isinstance(raw_entries, (str, bytes)) or not isinstance(raw_entries, Sequence):
+        raise ArtifactError("artifact manifest entries must be an array")
+    entries = []
+    for raw in raw_entries:
+        if not isinstance(raw, Mapping) or set(raw) != {
+            "path",
+            "bytes",
+            "sha256",
+            "executable",
+        }:
+            raise ArtifactError("artifact manifest entry fields are invalid")
+        entries.append(
+            ArtifactEntry(
+                path=raw["path"],
+                bytes=raw["bytes"],
+                sha256=raw["sha256"],
+                executable=raw["executable"],
+            )
+        )
+    manifest = ArtifactManifest(
+        schema_version=value["schema_version"],
+        artifact_sha256=value["artifact_sha256"],
+        entries=tuple(entries),
+        total_bytes=value["total_bytes"],
+        created_at=value["created_at"],
+    )
+    if dict(value) != manifest.to_dict():
+        raise ArtifactError("artifact manifest is not canonical")
+    return manifest
 
 
 def _excluded(relative: Path, extra_excludes: Set[str]) -> bool:
