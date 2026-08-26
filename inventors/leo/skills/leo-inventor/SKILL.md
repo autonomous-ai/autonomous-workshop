@@ -31,7 +31,7 @@ advance a gate, or perform an external effect.
   attributed facts drawn from the chosen rule system, not restyled defaults.
 - **Make:** Build the complete executable rules and physical information system
   together. Use shared Workshop simulation/testing capabilities for traces and
-  the `cad`, `product-to-cad`, and `step-parts` skills for printable geometry.
+  the `cad`, `image-to-cad`, and `step-parts` skills for printable geometry.
 - **Playtest:** Exercise the exact Made revision with the required seeded AI
   player perspectives. Preserve configurations and traces; test termination,
   legality, dominant strategies, first-player effects, ambiguity, teachability,

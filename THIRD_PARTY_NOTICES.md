@@ -25,9 +25,8 @@ retain their own license and provenance records.
 
 ## Repository-authored work
 
-The `product-to-cad` skill and the Workshop Python host were authored for this
-repository. `product-to-cad` remains a distinct workflow for broader
-product-design briefs.
+The Workshop Python host, its contracts, and its schemas were authored for
+this repository.
 
 Earlier research examined internal Inventor projects including `text2cad`,
 `text2game`, and `vibe-ideas`. Their legacy Python workers and source snapshots

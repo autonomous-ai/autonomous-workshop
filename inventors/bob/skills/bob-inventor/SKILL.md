@@ -30,7 +30,7 @@ gate, or perform an external effect.
   every part of the architecture so its assembly reads at a glance.
 - **Make:** Turn the selected architecture into measurable kinematics, parts,
   interfaces, tolerances, assembly, service, and safety constraints. Use the
-  shared `cad`, `product-to-cad`, and `step-parts` Workshop skills for geometry,
+  shared `cad`, `image-to-cad`, and `step-parts` Workshop skills for geometry,
   CAD generation, and part sourcing.
 - **Playtest:** Inspect the exact Made revision for understandable invitation,
   complete motion, interference, clearance, load, reset, pinch/shear risk, and

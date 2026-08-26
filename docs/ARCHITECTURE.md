@@ -137,8 +137,8 @@ feedback and repairs the product inside the next Make Goal.
 - understanding the Wish and Match reasoning;
 - native search and source provenance;
 - concept exploration and design decisions;
-- use of CAD, product-to-CAD, STEP-parts, rendering, and other materialized
-  skills;
+- use of CAD, image-to-CAD, design-reference, STEP-parts, rendering, and other
+  materialized skills;
 - creation and repair of product files;
 - AI Playtest perspectives and evidence-linked feedback;
 - `MANUAL.md`, evidence-bound claims, and complete page-ready Release content;

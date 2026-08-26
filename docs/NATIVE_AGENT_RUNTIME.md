@@ -325,7 +325,7 @@ Canonical product-run sources live at:
 ```text
 .agents/product-run/AGENTS.md
 .agents/product-run/.agents/skills/autonomous-workshop/**
-src/workshop/make/skills/{cad,design-reference,image-to-cad,product-to-cad,step-parts}/**
+src/workshop/make/skills/{cad,design-reference,image-to-cad,step-parts}/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
 

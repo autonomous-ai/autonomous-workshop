@@ -32,7 +32,7 @@ advance a gate, or perform an external effect.
   for evidence that recognition was actually achieved.
 - **Make:** Translate the composition into hierarchy, silhouette, scale,
   modular interfaces, print-safe details, views, and assembly constraints. Use
-  the shared `cad`, `product-to-cad`, and `step-parts` Workshop skills for
+  the shared `cad`, `image-to-cad`, and `step-parts` Workshop skills for
   geometry and CAD work.
 - **Playtest:** Inspect the exact Made revision for uncued recognition,
   specificity, composition from multiple views, reference fidelity,

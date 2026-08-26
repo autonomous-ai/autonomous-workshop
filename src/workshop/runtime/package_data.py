@@ -28,7 +28,6 @@ PRODUCT_RUN_DOMAIN_SKILLS = (
     "cad",
     "design-reference",
     "image-to-cad",
-    "product-to-cad",
     "step-parts",
 )
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024

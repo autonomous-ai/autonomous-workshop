@@ -30,9 +30,9 @@ While pursuing the Goal:
    and its component breakdown — the selected Inventor instructions,
    universal blueprint, current revision workspace, deterministic tool policy,
    and every evidence-linked feedback item from a prior Playtest.
-2. **Act:** Use native editing and the materialized `cad`, `product-to-cad`,
-   and `step-parts` skills under `.agents/skills/` to create or repair the
-   actual product artifact. Use native subagents for bounded mechanism, CAD, or
+2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
+   `design-reference`, and `step-parts` skills under `.agents/skills/` to
+   create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
    review tasks when useful.
 3. **Evaluate:** Build the artifact, run narrow deterministic checkers, inspect
    actual STEP/STL and rendered outputs, and compare observed behavior with the

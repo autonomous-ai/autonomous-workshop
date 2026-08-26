@@ -32,7 +32,7 @@ finalizer, advance a gate, or perform an external effect.
   right, and keep the design recognizable without asserting new rights.
 - **Make:** Translate the concept into exact piece families, hierarchy, board,
   storage, handling, and recognition constraints. Use the shared `cad`,
-  `product-to-cad`, and `step-parts` Workshop skills for geometry and CAD work.
+  `image-to-cad`, and `step-parts` Workshop skills for geometry and CAD work.
 - **Playtest:** Inspect the exact Made revision for recognizability,
   legibility, setup, handling, complete inventory, and storage. Do not claim
   that an established game's rules or enjoyment were newly proven.

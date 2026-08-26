@@ -16,7 +16,8 @@
   the writable invocation workspace rather than the immutable skill tree; its
   HTTP user agent uses the renamed repository identity; CAD warm-daemon
   identity and staleness are rooted in the materialized CAD skill tree; and the
-  CAD skill documents the now-present sibling image workflow.
+  CAD skill documents the now-present sibling image workflow and no longer
+  points at the removed repository-authored `product-to-cad` skill.
   One trailing blank line in `generation_runner.py` and one in
   `catalog-schema.md` are normalized for repository whitespace checks.
   Geometry, measurement, catalog, inspection, validation, export, and `cadgen`
@@ -38,13 +39,9 @@ These scripts are diagnostics. Several current checks can pass empty or
 inconclusive geometry, degrade boolean errors, or omit slicer/physical evidence.
 Do not use their exit status alone as a Workshop release receipt.
 
-## `product-to-cad`
+## Removed trees
 
-Authored in this repository as a clean creation workflow. It applies general
-measurement-provenance, multi-view form, manufacturing, and fail-closed evidence
-principles and remains a distinct workflow for product-design briefs rather
-than direct reference-image reconstruction.
-
-The 2026-08-24 review separated AI-agent Playtest evidence from physical
-production: digital CAD, simulation, and slicer checks gate Release;
-exact printing and hands-on QA are recorded later by Deliver.
+The repository-authored `product-to-cad` skill was removed on 2026-08-26. The
+Concept stage now owns the build spec, the frozen visual target, and the
+researched physical facts it used to restate, and Make reaches CAD through the
+`cad`, `image-to-cad`, `design-reference`, and `step-parts` skills directly.

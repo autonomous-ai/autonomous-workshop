@@ -127,9 +127,7 @@ visual impression.
 
 Autonomous Workshop materializes the sibling `image-to-cad` and
 `design-reference` skills beside this tree. Use `image-to-cad` for a direct
-reference-image reconstruction and its required likeness evidence. The
-repository-authored `product-to-cad` remains available for broader product
-design briefs that are not a direct reconstruction of one reference image.
+reference-image reconstruction and its required likeness evidence.
 
 ## Non-negotiables
 

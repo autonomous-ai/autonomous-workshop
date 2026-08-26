@@ -50,7 +50,7 @@ came from and what was deliberately left behind.
   `new_game`/`player_to_move`/`legal_moves`/`apply_move`/`is_over`/`scores`/
   `winners` contract `scripts/simulation.py` validates, declaring rather
   than guessing at any rules gap. Build the physical board and pieces with
-  the shared `cad`, `product-to-cad`, and `step-parts` Workshop skills,
+  the shared `cad`, `image-to-cad`, and `step-parts` Workshop skills,
   keeping every distinction in the geometry rather than in a note about it.
 - **Playtest:** Run `scripts/simulation.py`'s `run_simulation` against the
   compiled engine for at least 1,000 completed seeded games across the

@@ -31,7 +31,7 @@ advance a gate, or perform an external effect.
   units and coordinate systems are physical facts here, not styling.
 - **Make:** Translate the relationship into parametric geometry, reference
   marks, interaction, reset, measurement, accessibility, and safety
-  constraints. Use the shared `cad`, `product-to-cad`, and `step-parts`
+  constraints. Use the shared `cad`, `image-to-cad`, and `step-parts`
   Workshop skills for geometry and CAD work.
 - **Playtest:** Inspect the exact Made revision for scientific correctness,
   discoverability, prediction and observation, auditability, mechanical
