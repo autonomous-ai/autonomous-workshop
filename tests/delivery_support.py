@@ -7,6 +7,10 @@ def fixture_delivery_evidence(
     product_artifact_sha256,
     instructions_sha256,
     *,
+    product_id,
+    wish_sha256,
+    deliver_provider_id,
+    deliver_attempt_id,
     carrier="USPS",
     service="Priority Mail",
     tracking_id="9400100000000000000000",
@@ -19,6 +23,10 @@ def fixture_delivery_evidence(
         "provider_config_sha256": "d" * 64,
         "product_artifact_sha256": product_artifact_sha256,
         "instructions_sha256": instructions_sha256,
+        "product_id": product_id,
+        "wish_sha256": wish_sha256,
+        "deliver_provider_id": deliver_provider_id,
+        "deliver_attempt_id": deliver_attempt_id,
         "observed_at": observed_at,
     }
     printed = DeliveryEvidenceReceipt(

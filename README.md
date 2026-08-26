@@ -89,15 +89,61 @@ uv run workshop wish \
 
 The Workshop prints the Wish ID immediately, chooses an Inventor, and keeps the
 exact words. It invents, makes, Playtests, and prepares the verified Factory
-page. The page goes public by default; add `--draft` when the Wish should stay
-private. Factory may also list a public page at its platform-estimated price;
-that is a storefront effect, not proof that the toy was printed, packed, or
-delivered.
+draft. Public visibility is authorized by default; add `--draft` to opt out.
+The draft stays private until shared Deliver records exact production, QA,
+packing, and carrier evidence. Only then may the CLI perform the separately
+verified public transition. Because Factory may list a public page at its
+platform-estimated price, the Workshop never publishes an unfulfilled toy.
 
 The command prints the exact `workshop status <wish-id>` tracker. If a provider
 is missing or a worker stops, `workshop resume <wish-id>` continues the saved
 stage without rerunning completed work. Legacy runs without the required exact
 checkpoint stay read-only and say why instead of guessing or pretending.
+Every semantic Match call is also recorded as an append-only, content-addressed
+attempt. If Match waits, its typed Need, attempt id, and retry command remain in
+later `status` and batch output instead of living only in the original process.
+After assignment, status keeps showing that latest immutable Match event beside
+the current Manager handoff digest. An explicit draft-to-public authorization
+may change the latter without rewriting or making the original Match audit look
+corrupt.
+Use `workshop resume <wish-id> --strict` when automation should exit nonzero on
+a truthful wait or stop.
+If fulfillment crossed its effect boundary but no receipt was durably saved,
+`workshop status <wish-id>` prints the exact `workshop reconcile <wish-id>`
+command. Reconciliation uses only the persisted provider and attempt for
+authenticated readback; it never resends fulfillment.
+
+Once Workshop state has started, status exposes its persisted public five-stage
+engine provenance: each effective Invent, Make, Playtest, Instructions, and
+Deliver provider has its own digest. The aggregate digest is explicitly
+informational; resume fences only completed stages and an active stage whose
+external effect may already have started. `workshop doctor` prints the
+prospective common-stage manifest before an Inventor is selected, without
+calling any provider effect.
+Production deployments select one trusted Manager service composition for
+research, classic rules, private world evidence, per-Inventor Factory accounts,
+and physical fulfillment. See [Operating production services](docs/MANAGER_SERVICES.md).
+
+To stage many independent Wishes without granting accidental mass publication,
+use a durable batch plan. Visibility is always explicit, submission writes every
+exact Wish before launching anything, and workers are bounded:
+
+```bash
+uv run workshop batch submit ./wishes.txt --draft
+uv run workshop batch resume <batch-id> --concurrency 4
+uv run workshop batch status <batch-id>
+```
+
+One non-empty Wish is read from each line. Use `--format jsonl` for stable caller
+keys. Customer-visible ids are opaque inside one private Manager namespace, so
+the same file submitted to another Workshop cannot alias its Factory products.
+An exact resubmission reuses its durable plan, including across retained
+installed catalog generations. A batch never retries itself and never changes a
+Wish's saved draft/public policy; rerun `batch resume` only after addressing the
+typed Needs and next commands shown by `batch status`. One nonblocking supervisor
+owns every child process group, and interruption terminates those children before
+releasing the batch. `--strict` also requires every public-authorized Factory page
+to be live, not merely physically delivered.
 
 To add an Inventor from one existing `TASTE.md`:
 

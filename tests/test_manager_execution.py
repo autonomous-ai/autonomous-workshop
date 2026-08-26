@@ -91,6 +91,49 @@ def assignment_for(root: Path, inventor_id: str, wish: Wish):
 
 
 class ManagerExecutionTest(unittest.TestCase):
+    def test_reconcile_action_dispatches_only_deliver_readback(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            assignment = assignment_for(
+                ROOT,
+                "alice",
+                Wish.create(
+                    "manager-reconcile-only",
+                    "A saved toy whose carrier handoff needs readback",
+                ),
+            )
+            calls = []
+
+            class Result:
+                @staticmethod
+                def to_dict():
+                    return {
+                        "product_id": assignment.wish.product_id,
+                        "status": "working",
+                        "job": "deliver",
+                    }
+
+            class FakeWorkshop:
+                def run(self, *args, **kwargs):
+                    del args, kwargs
+                    raise AssertionError("reconciliation must not run stages")
+
+                def resume(self, *args, **kwargs):
+                    del args, kwargs
+                    raise AssertionError("reconciliation must not resume stages")
+
+                def reconcile_deliver(self, wish):
+                    calls.append(wish)
+                    return Result()
+
+            result = execute_manager_workshop(
+                assignment,
+                action="reconcile",
+                runtime_root=Path(temporary).resolve(),
+                workshop_factory=lambda *args, **kwargs: FakeWorkshop(),
+            )
+            self.assertEqual(calls, [assignment.wish])
+            self.assertEqual((result["status"], result["job"]), ("working", "deliver"))
+
     def test_manager_password_never_configures_factory_during_the_initial_engine_pass(self):
         with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(
             os.environ,
@@ -136,8 +179,10 @@ class ManagerExecutionTest(unittest.TestCase):
             self.assertIsNone(engine.tools.instructions.site_writer)
             self.assertEqual(
                 dict(engine.provider_ids)["instructions"],
-                "workshop.local-rewarded-instructions-v1",
+                "workshop.rewarded-instructions-v1",
             )
+            self.assertEqual(len(engine.provider_ids), 5)
+            self.assertIsNotNone(engine.provenance)
 
     def test_hostile_profile_can_mint_a_registry_but_workshop_wish_never_executes_it(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -188,6 +233,11 @@ class ManagerExecutionTest(unittest.TestCase):
         ), mock.patch(
             "subprocess.Popen",
             side_effect=AssertionError("taste-only execution must not spawn a profile"),
+        ), mock.patch(
+            "inventor_workshop.manager_execution.manager_service_forbidden_read_paths",
+            side_effect=AssertionError(
+                "taste-only execution must not inspect Manager service distributions"
+            ),
         ):
             runtime = Path(temporary).resolve()
             for inventor_id in IDS:
@@ -223,6 +273,11 @@ class ManagerExecutionTest(unittest.TestCase):
                 level="custom-make",
             )
             profile_marker = inventor / "profile-executed"
+            provider_code = root / "manager-provider.py"
+            provider_code.write_text(
+                "raise AssertionError('Manager provider must not run in child')\n",
+                encoding="utf-8",
+            )
             (inventor / "run.py").write_text(
                 "from pathlib import Path\n"
                 "(Path(__file__).resolve().parent / 'profile-executed').write_text('bad')\n",
@@ -234,18 +289,28 @@ class ManagerExecutionTest(unittest.TestCase):
                 "custom-worker",
                 Wish.create("custom-worker-wish-2", "A custom mechanical surprise"),
             )
+            observed = {}
+
+            def isolated(command, context):
+                observed["forbidden"] = context.forbidden_read_paths
+                return tuple(command)
+
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_AGENT_WORKERS": "disabled"}, clear=True
+            ), mock.patch(
+                "inventor_workshop.manager_execution.manager_service_forbidden_read_paths",
+                return_value=(provider_code,),
             ):
                 result = execute_manager_workshop(
                     assignment,
                     runtime_root=root / "manager-runtime",
                     trusted_engine=invent_engine(),
-                    contribution_isolation=trusted_test_isolation,
+                    contribution_isolation=isolated,
                 )
             self.assertEqual((result["status"], result["job"]), ("waiting", "make"))
             self.assertEqual(result["needs"][0]["capability"], "inventor-make")
             self.assertFalse(profile_marker.exists())
+            self.assertEqual(observed["forbidden"], (provider_code,))
 
     def test_custom_playtest_still_passes_through_common_release_policy(self):
         with tempfile.TemporaryDirectory() as temporary:

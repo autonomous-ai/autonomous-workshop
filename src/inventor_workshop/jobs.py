@@ -25,6 +25,8 @@ _SEVERITIES = frozenset(("note", "improve", "block"))
 _RUN_STATUSES = frozenset(("working", "waiting", "ready", "delivered", "stopped"))
 _CARRIERS = frozenset(("USPS", "UPS", "FedEx"))
 _DELIVERY_STATUSES = frozenset(("handed-off", "delivered"))
+DEFAULT_DELIVER_PROVIDER_ID = "workshop.default-deliver-v1"
+_DELIVER_ATTEMPT_ID = re.compile(r"^deliver-[0-9a-f]{64}$")
 _FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES = frozenset(
     (
         ".avi", ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg",
@@ -73,6 +75,93 @@ def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
     if current.to_dict() != manifest.to_dict():
         raise ArtifactError("artifact bytes changed after the job completed")
     return current
+
+
+def _deliver_provider_id(value: Any) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 500
+        or any(
+            character.isspace()
+            or ord(character) < 33
+            or ord(character) == 127
+            for character in value
+        )
+    ):
+        raise ContractError(
+            "Deliver provider identity must be a bounded single token"
+        )
+    return value
+
+
+def deliver_wish_sha256(wish: Wish) -> str:
+    """Return the canonical identity of the complete Deliver Wish."""
+
+    if not isinstance(wish, Wish):
+        raise ContractError("Deliver Wish identity requires a Wish")
+    wish.assert_valid()
+    return hashlib.sha256(
+        json.dumps(
+            wish.to_dict(),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+def derive_deliver_attempt_id(
+    wish: Wish,
+    made: "Made",
+    instructions: "ProductInstructions",
+    provider_identity: str,
+    inventor_id: str,
+) -> str:
+    """Derive one stable provider idempotency key from exact approved inputs."""
+
+    if not isinstance(made, Made) or not isinstance(
+        instructions, ProductInstructions
+    ):
+        raise ContractError(
+            "Deliver attempt identity requires Made and ProductInstructions"
+        )
+    provider = _deliver_provider_id(provider_identity)
+    inventor = _text(inventor_id, "Deliver inventor_id", 256)
+    if any(character.isspace() for character in inventor):
+        raise ContractError("Deliver inventor_id must be a single token")
+    made.assert_current()
+    instructions.assert_current()
+    if instructions.product_artifact_sha256 != made.artifact_sha256:
+        raise ContractError("Deliver attempt Instructions describe different bytes")
+    receipt = instructions.site_receipt
+    payload = {
+        "schema_version": 1,
+        "kind": "workshop.deliver-attempt",
+        "product_id": wish.product_id,
+        "wish_sha256": deliver_wish_sha256(wish),
+        "inventor_id": inventor,
+        "product_artifact_sha256": made.artifact_sha256,
+        "instructions_sha256": instructions.instructions_sha256,
+        "deliver_provider_id": provider,
+        "site": {
+            "owner_id": receipt.owner_id,
+            "design_id": receipt.design_id,
+            "root_id": receipt.root_id,
+            "history_id": receipt.current_history_id,
+        },
+    }
+    digest = hashlib.sha256(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    return "deliver-" + digest
 
 
 @dataclass(frozen=True)
@@ -735,6 +824,9 @@ class DeliverContext:
     wish: Wish
     made: Made
     instructions: ProductInstructions
+    provider_identity: str = DEFAULT_DELIVER_PROVIDER_ID
+    inventor_id: str = "workshop-local"
+    attempt_id: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.wish, Wish):
@@ -747,7 +839,38 @@ class DeliverContext:
             )
         if self.instructions.product_artifact_sha256 != self.made.artifact_sha256:
             raise ContractError("Deliver Instructions describe different artifact bytes")
+        provider_identity = _deliver_provider_id(self.provider_identity)
+        inventor_id = _text(self.inventor_id, "Deliver inventor_id", 256)
+        if any(character.isspace() for character in inventor_id):
+            raise ContractError("Deliver inventor_id must be a single token")
+        expected_attempt_id = derive_deliver_attempt_id(
+            self.wish,
+            self.made,
+            self.instructions,
+            provider_identity,
+            inventor_id,
+        )
+        if self.attempt_id is not None and self.attempt_id != expected_attempt_id:
+            raise ContractError(
+                "Deliver attempt id differs from its exact Wish, provider, or approved bytes"
+            )
+        object.__setattr__(self, "provider_identity", provider_identity)
+        object.__setattr__(self, "inventor_id", inventor_id)
+        object.__setattr__(self, "attempt_id", expected_attempt_id)
         self.assert_current()
+
+    @property
+    def product_id(self) -> str:
+        return self.wish.product_id
+
+    @property
+    def wish_sha256(self) -> str:
+        return deliver_wish_sha256(self.wish)
+
+    @property
+    def idempotency_key(self) -> str:
+        assert isinstance(self.attempt_id, str)
+        return self.attempt_id
 
     def assert_current(self) -> None:
         """Recheck both exact inputs at every external Deliver boundary."""
@@ -768,12 +891,21 @@ class Delivered:
     status: str
     observed_at: str
     evidence: Mapping[str, Any]
+    product_id: str
+    wish_sha256: str
+    deliver_provider_id: str
+    deliver_attempt_id: str
 
     def __post_init__(self) -> None:
         require_sha256(self.product_artifact_sha256, "Delivered product artifact sha256")
         require_sha256(
             self.instructions_sha256, "Delivered instructions sha256"
         )
+        _text(self.product_id, "Delivered product_id", 256)
+        require_sha256(self.wish_sha256, "Delivered Wish sha256")
+        _deliver_provider_id(self.deliver_provider_id)
+        if _DELIVER_ATTEMPT_ID.fullmatch(self.deliver_attempt_id) is None:
+            raise ContractError("Delivered attempt id is malformed")
         if self.carrier not in _CARRIERS:
             raise ContractError("Delivered carrier must be USPS, UPS, or FedEx")
         _text(self.service, "Delivered service", 200)
@@ -781,43 +913,96 @@ class Delivered:
         if self.status not in _DELIVERY_STATUSES:
             raise ContractError("Delivered status must be handed-off or delivered")
         require_utc_timestamp(self.observed_at, "Delivered observed_at")
-        evidence = validate_delivery_evidence_chain(
+        evidence = self._validated_evidence()
+        object.__setattr__(self, "evidence", evidence)
+
+    def _validated_evidence(self) -> Dict[str, Any]:
+        """Recheck the mutable JSON envelope at every trust boundary."""
+
+        return validate_delivery_evidence_chain(
             self.evidence,
             product_artifact_sha256=self.product_artifact_sha256,
             instructions_sha256=self.instructions_sha256,
+            product_id=self.product_id,
+            wish_sha256=self.wish_sha256,
+            deliver_provider_id=self.deliver_provider_id,
+            deliver_attempt_id=self.deliver_attempt_id,
             carrier=self.carrier,
             service=self.service,
             tracking_id=self.tracking_id,
             status=self.status,
             observed_at=self.observed_at,
         )
-        object.__setattr__(self, "evidence", evidence)
 
     def assert_context(self, context: DeliverContext) -> None:
         if not isinstance(context, DeliverContext):
             raise ContractError("Delivered requires a DeliverContext")
         context.assert_current()
+        self._validated_evidence()
         if (
             self.product_artifact_sha256 != context.made.artifact_sha256
             or self.instructions_sha256
             != context.instructions.instructions_sha256
+            or self.product_id != context.product_id
+            or self.wish_sha256 != context.wish_sha256
+            or self.deliver_provider_id != context.provider_identity
+            or self.deliver_attempt_id != context.attempt_id
         ):
             raise ContractError(
-                "Delivered receipt identifies different product or Instructions bytes"
+                "Delivered receipt identifies different product or Instructions "
+                "bytes, Wish, provider, or attempt"
             )
 
     def to_dict(self) -> Dict[str, Any]:
+        evidence = self._validated_evidence()
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "product_artifact_sha256": self.product_artifact_sha256,
             "instructions_sha256": self.instructions_sha256,
+            "product_id": self.product_id,
+            "wish_sha256": self.wish_sha256,
+            "deliver_provider_id": self.deliver_provider_id,
+            "deliver_attempt_id": self.deliver_attempt_id,
             "carrier": self.carrier,
             "service": self.service,
             "tracking_id": self.tracking_id,
             "status": self.status,
             "observed_at": self.observed_at,
-            "evidence": dict(self.evidence),
+            "evidence": evidence,
         }
+
+    @classmethod
+    def from_dict(cls, value: Any) -> "Delivered":
+        if not isinstance(value, Mapping) or set(value) != {
+            "schema_version",
+            "product_artifact_sha256",
+            "instructions_sha256",
+            "product_id",
+            "wish_sha256",
+            "deliver_provider_id",
+            "deliver_attempt_id",
+            "carrier",
+            "service",
+            "tracking_id",
+            "status",
+            "observed_at",
+            "evidence",
+        } or value.get("schema_version") != 2:
+            raise ContractError("persisted Delivered record is malformed")
+        return cls(
+            product_artifact_sha256=value["product_artifact_sha256"],
+            instructions_sha256=value["instructions_sha256"],
+            carrier=value["carrier"],
+            service=value["service"],
+            tracking_id=value["tracking_id"],
+            status=value["status"],
+            observed_at=value["observed_at"],
+            evidence=value["evidence"],
+            product_id=value["product_id"],
+            wish_sha256=value["wish_sha256"],
+            deliver_provider_id=value["deliver_provider_id"],
+            deliver_attempt_id=value["deliver_attempt_id"],
+        )
 
 
 @dataclass(frozen=True)
@@ -951,8 +1136,11 @@ class WorkshopRun:
 
 __all__ = [
     "CustomerReview",
+    "DEFAULT_DELIVER_PROVIDER_ID",
     "DeliverContext",
     "Delivered",
+    "deliver_wish_sha256",
+    "derive_deliver_attempt_id",
     "InstructionsContext",
     "InventContext",
     "Invented",

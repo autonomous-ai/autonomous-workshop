@@ -85,6 +85,7 @@ def _install_offline_boundary(python: Path, root: Path, marker: Path) -> None:
         ).stdout.strip()
     )
     source = """\
+import os
 from pathlib import Path
 
 import inventor_workshop.cli as workshop_cli
@@ -93,6 +94,7 @@ from inventor_workshop.agent_invent import (
     PublicHTTPResearchProvider,
 )
 from inventor_workshop.manager import TasteFit, create_shortlist
+from inventor_workshop.jobs import Need, WaitingFor
 
 
 class AcceptanceSemanticManager:
@@ -101,6 +103,15 @@ class AcceptanceSemanticManager:
     judge_config_sha256 = "a" * 64
 
     def retrieve(self, context):
+        if os.environ.get("WORKSHOP_ACCEPTANCE_MATCH_WAIT") == "1":
+            raise WaitingFor(
+                Need(
+                    "wish",
+                    "semantic-inventor-retriever",
+                    "The installed acceptance Manager is deliberately unavailable.",
+                    "Restore the semantic Manager and resume this exact Wish.",
+                )
+            )
         return create_shortlist(
             context,
             ("alice", "bob"),
@@ -217,6 +228,146 @@ def acceptance(wheel: Path) -> None:
             raise AssertionError("installed no-root Inventor discovery is incomplete")
         if home.exists():
             raise AssertionError("read-only Inventor discovery initialized WORKSHOP_HOME")
+
+        waiting_environment = dict(environment)
+        waiting_environment["WORKSHOP_ACCEPTANCE_MATCH_WAIT"] = "1"
+        first_wait = subprocess.run(
+            (
+                str(workshop),
+                "wish",
+                "a patient clockwork moon for my desk",
+                "--draft",
+                "--strict",
+                "--json",
+            ),
+            cwd=str(away),
+            env=waiting_environment,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+        if first_wait.returncode != 1:
+            raise AssertionError(
+                "installed strict Match wait returned %d: %s"
+                % (first_wait.returncode, first_wait.stderr)
+            )
+        first_wait_receipt = json.loads(first_wait.stdout)
+        waiting_product_id = first_wait_receipt["wish"]["product_id"]
+        waiting_status = _json_command(
+            (workshop, "status", waiting_product_id, "--json"),
+            cwd=away,
+            environment=waiting_environment,
+        )
+        if (
+            waiting_status.get("status") != "waiting"
+            or waiting_status.get("needs") != first_wait_receipt.get("needs")
+            or waiting_status.get("match_attempt")
+            != first_wait_receipt.get("match_attempt")
+        ):
+            raise AssertionError(
+                "installed status lost its durable Match wait: %s"
+                % json.dumps(waiting_status, sort_keys=True)
+            )
+        resumed_wait = subprocess.run(
+            (
+                str(workshop),
+                "resume",
+                waiting_product_id,
+                "--strict",
+                "--json",
+            ),
+            cwd=str(away),
+            env=waiting_environment,
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+        resumed_wait_receipt = json.loads(resumed_wait.stdout)
+        if (
+            resumed_wait.returncode != 1
+            or resumed_wait_receipt.get("status") != "waiting"
+            or resumed_wait_receipt.get("match_attempt", {}).get(
+                "attempt_number"
+            )
+            != 2
+            or resumed_wait_receipt.get("match_attempt", {}).get("attempt_id")
+            == first_wait_receipt.get("match_attempt", {}).get("attempt_id")
+        ):
+            raise AssertionError(
+                "installed strict Match resume was not a new durable wait: %s"
+                % json.dumps(resumed_wait_receipt, sort_keys=True)
+            )
+
+        batch_input = away / "wishes.txt"
+        batch_input.write_text(
+            "a checkers set shaped by our mountain memories\n"
+            "a tiny hand-cranked creature for my desk\n",
+            encoding="utf-8",
+        )
+        batch = _json_command(
+            (
+                workshop,
+                "batch",
+                "submit",
+                batch_input,
+                "--draft",
+                "--json",
+            ),
+            cwd=away,
+            environment=environment,
+        )
+        if batch.get("count") != 2 or batch.get("status") != "ready":
+            raise AssertionError("installed batch did not stage every exact Wish")
+        batch_status = _json_command(
+            (
+                workshop,
+                "batch",
+                "status",
+                batch["batch_id"],
+                "--json",
+            ),
+            cwd=away,
+            environment=environment,
+        )
+        if (
+            batch_status.get("plan_sha256") != batch.get("plan_sha256")
+            or [item["position"] for item in batch_status.get("items", [])]
+            != [1, 2]
+        ):
+            raise AssertionError("installed batch status lost its exact saved plan")
+        resumed_batch = _json_command(
+            (
+                workshop,
+                "batch",
+                "resume",
+                batch["batch_id"],
+                "--concurrency",
+                "2",
+                "--json",
+            ),
+            cwd=away,
+            environment=environment,
+        )
+        if (
+            resumed_batch.get("plan_sha256") != batch.get("plan_sha256")
+            or resumed_batch.get("status") != "needs-attention"
+            or [
+                item.get("launch", {}).get("status")
+                for item in resumed_batch.get("items", [])
+            ]
+            != ["succeeded", "succeeded"]
+            or [
+                item.get("status", {}).get("job")
+                for item in resumed_batch.get("items", [])
+            ]
+            != ["invent", "invent"]
+        ):
+            raise AssertionError(
+                "installed batch resume did not run the exact wheel module: %s"
+                % json.dumps(resumed_batch, sort_keys=True)
+            )
 
         wish_completed = _run(
             (

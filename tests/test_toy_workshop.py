@@ -1597,7 +1597,15 @@ class ToyWorkshopTest(unittest.TestCase):
             fixture_delivery_evidence(
                 context.made.artifact_sha256,
                 context.instructions.instructions_sha256,
+                product_id=context.product_id,
+                wish_sha256=context.wish_sha256,
+                deliver_provider_id=context.provider_identity,
+                deliver_attempt_id=context.attempt_id,
             ),
+            context.product_id,
+            context.wish_sha256,
+            context.provider_identity,
+            context.attempt_id,
         )
 
     @staticmethod

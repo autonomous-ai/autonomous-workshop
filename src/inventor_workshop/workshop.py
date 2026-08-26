@@ -39,17 +39,30 @@ from .cad import (
     VerificationReceipt,
 )
 from .deliver import DefaultDeliver
+from .engine_provenance import (
+    EngineProvenanceManifest,
+    StageComponentManifest,
+    compare_engine_for_resume,
+    describe_effective_engine,
+)
 from .instructions import (
     DefaultInstructions,
     INSTRUCTIONS_MANIFEST_FILENAME,
     sealed_instructions_manifest,
 )
 from .lease_guard import LeaseGuard
-from .errors import ArtifactError, ContractError, StateConflict
+from .errors import (
+    AmbiguousEffectError,
+    ArtifactError,
+    ContractError,
+    StateConflict,
+)
 from .jobs import (
     CustomerReview,
+    DEFAULT_DELIVER_PROVIDER_ID,
     DeliverContext,
     Delivered,
+    deliver_wish_sha256,
     Feedback,
     InstructionsContext,
     InventContext,
@@ -65,7 +78,7 @@ from .jobs import (
 )
 from .make import Wish
 from .manifest import load_manifest
-from .models import PlaytestResult
+from .models import PlaytestResult, Receipt
 from .playtest import Playtest
 from .playtest_release import playtest_release_needs
 from .runtime import Runtime
@@ -165,21 +178,38 @@ def _delivery_from_events(runtime: Runtime, product_id: str) -> Delivered:
         value = payload.get("delivery")
         if not isinstance(value, Mapping):
             continue
-        try:
-            return Delivered(
-                product_artifact_sha256=value["product_artifact_sha256"],
-                instructions_sha256=value["instructions_sha256"],
-                carrier=value["carrier"],
-                service=value["service"],
-                tracking_id=value["tracking_id"],
-                status=value["status"],
-                observed_at=value["observed_at"],
-                evidence=value["evidence"],
-            )
-        except KeyError as exc:
+        delivered = Delivered.from_dict(value)
+        product = runtime.get_product(product_id)
+        metadata = product.get("metadata")
+        raw_wish = metadata.get("wish") if isinstance(metadata, Mapping) else None
+        if not isinstance(raw_wish, Mapping) or set(raw_wish) != {
+            "schema_version",
+            "product_id",
+            "objective",
+            "constraints",
+            "context",
+        }:
+            raise ContractError("persisted delivery Wish binding is malformed")
+        bound_wish = Wish(
+            raw_wish["schema_version"],
+            raw_wish["product_id"],
+            raw_wish["objective"],
+            raw_wish["constraints"],
+            raw_wish["context"],
+        )
+        if (
+            delivered.product_id != product_id
+            or delivered.product_id != bound_wish.product_id
+            or delivered.wish_sha256 != deliver_wish_sha256(bound_wish)
+            or payload.get("deliver_provider_id")
+            != delivered.deliver_provider_id
+            or payload.get("deliver_attempt_id")
+            != delivered.deliver_attempt_id
+        ):
             raise ContractError(
-                "persisted delivery is missing %s" % exc.args[0]
-            ) from exc
+                "persisted delivery identifies a different Wish, provider, or attempt"
+            )
+        return delivered
     raise ContractError("customer Reviews require a completed Deliver result")
 
 
@@ -254,7 +284,7 @@ def _canonical_json(value: Any) -> bytes:
             allow_nan=False,
         ).encode("utf-8")
     except (TypeError, ValueError) as exc:
-        raise ContractError("Instructions checkpoint accepts only finite JSON") from exc
+        raise ContractError("Workshop checkpoint accepts only finite JSON") from exc
 
 
 _MAX_CHECKPOINT_BYTES = 64 * 1024 * 1024
@@ -1079,10 +1109,25 @@ def _write_stage_checkpoint(
     kind: str,
     round_number: int,
     payload: Mapping[str, Any],
+    *,
+    engine_stage: Optional[StageComponentManifest] = None,
 ) -> tuple[str, str]:
-    if kind not in {"made", "playtested", "instructions"}:
+    if kind not in {
+        "made",
+        "playtested",
+        "instructions",
+        "deliver",
+        "deliver_attempt",
+    }:
         raise ContractError("unknown Workshop checkpoint kind")
-    digest = hashlib.sha256(_canonical_json(payload)).hexdigest()
+    sealed_payload = dict(payload)
+    if engine_stage is not None:
+        if not isinstance(engine_stage, StageComponentManifest):
+            raise ContractError(
+                "Workshop checkpoint engine stage must be a component manifest"
+            )
+        sealed_payload["_engine_stage"] = engine_stage.to_dict()
+    digest = hashlib.sha256(_canonical_json(sealed_payload)).hexdigest()
     checkpoint_root = run_root / _CHECKPOINT_DIRECTORY
     _mkdir_durable(checkpoint_root)
     filename = "%s-r%03d-%s.json" % (kind, round_number, digest)
@@ -1090,17 +1135,17 @@ def _write_stage_checkpoint(
         "schema_version": _CHECKPOINT_SCHEMA_VERSION,
         "kind": kind,
         "checkpoint_sha256": digest,
-        "payload": payload,
+        "payload": sealed_payload,
     }
     _write_json_once(checkpoint_root / filename, document)
     return "%s/%s" % (_CHECKPOINT_DIRECTORY, filename), digest
 
 
-def _read_stage_checkpoint(
+def _read_stage_checkpoint_with_engine(
     run_root: Path,
     event: Mapping[str, Any],
     kind: str,
-) -> tuple[Mapping[str, Any], str]:
+) -> tuple[Mapping[str, Any], str, Optional[StageComponentManifest]]:
     event_payload = event.get("payload")
     if not isinstance(event_payload, Mapping):
         raise ContractError("Workshop checkpoint event payload is malformed")
@@ -1145,7 +1190,38 @@ def _read_stage_checkpoint(
     digest = hashlib.sha256(_canonical_json(payload)).hexdigest()
     if document.get("checkpoint_sha256") != digest or expected_digest != digest:
         raise ContractError("%s checkpoint identity changed" % kind)
-    return payload, digest
+    business_payload = dict(payload)
+    engine_value = business_payload.pop("_engine_stage", None)
+    engine_stage = (
+        None
+        if engine_value is None
+        else StageComponentManifest.from_dict(engine_value)
+    )
+    return business_payload, digest, engine_stage
+
+
+def _read_stage_checkpoint(
+    run_root: Path,
+    event: Mapping[str, Any],
+    kind: str,
+) -> tuple[Mapping[str, Any], str]:
+    business_payload, digest, _ = (
+        _read_stage_checkpoint_with_engine(run_root, event, kind)
+    )
+    return business_payload, digest
+
+
+def _read_checkpoint_engine_stage(
+    run_root: Path,
+    event: Mapping[str, Any],
+    kind: str,
+) -> Optional[StageComponentManifest]:
+    """Return the content-addressed stage manifest embedded in a checkpoint."""
+
+    _, _, engine_stage = (
+        _read_stage_checkpoint_with_engine(run_root, event, kind)
+    )
+    return engine_stage
 
 
 def _rebuild_made_value(run_root: Path, value: Any) -> Made:
@@ -1208,9 +1284,19 @@ def _rebuild_playtested_value(
 
 
 def _write_instructions_checkpoint(
-    run_root: Path, round_number: int, payload: Mapping[str, Any]
+    run_root: Path,
+    round_number: int,
+    payload: Mapping[str, Any],
+    *,
+    engine_stage: Optional[StageComponentManifest] = None,
 ) -> tuple[str, str]:
-    return _write_stage_checkpoint(run_root, "instructions", round_number, payload)
+    return _write_stage_checkpoint(
+        run_root,
+        "instructions",
+        round_number,
+        payload,
+        engine_stage=engine_stage,
+    )
 
 
 def _read_instructions_checkpoint(
@@ -1309,6 +1395,74 @@ def _rebuild_checkpoint_results(
     return made, playtested, evidence_root
 
 
+def _product_instructions_value(
+    run_root: Path,
+    product_instructions: ProductInstructions,
+) -> Mapping[str, Any]:
+    """Persist the exact sealed Instructions result needed by Deliver only."""
+
+    if not isinstance(product_instructions, ProductInstructions):
+        raise ContractError("Deliver checkpoint requires ProductInstructions")
+    product_instructions.assert_current()
+    sealed = sealed_instructions_manifest(product_instructions.root)
+    if sealed.to_dict() != product_instructions.manifest.to_dict():
+        raise ContractError(
+            "ProductInstructions differ from their durable Instructions seal"
+        )
+    return {
+        "root": _relative_tree(
+            run_root, product_instructions.root, "ProductInstructions"
+        ),
+        "manifest": product_instructions.manifest.to_dict(),
+        "product_artifact_sha256": (
+            product_instructions.product_artifact_sha256
+        ),
+        "instructions_path": product_instructions.instructions_path,
+        "claims": dict(product_instructions.claims),
+        "site_receipt": product_instructions.site_receipt.to_dict(),
+    }
+
+
+def _rebuild_product_instructions_value(
+    run_root: Path,
+    value: Any,
+    made: Made,
+) -> ProductInstructions:
+    """Rebuild one sealed Instructions result without rerunning Instructions."""
+
+    if not isinstance(value, Mapping) or set(value) != {
+        "root",
+        "manifest",
+        "product_artifact_sha256",
+        "instructions_path",
+        "claims",
+        "site_receipt",
+    }:
+        raise ContractError("Deliver checkpoint ProductInstructions are malformed")
+    root = _checkpoint_tree(run_root, value["root"], "ProductInstructions")
+    manifest = _manifest_from_dict(
+        value["manifest"], "ProductInstructions"
+    )
+    sealed = sealed_instructions_manifest(root)
+    if sealed.to_dict() != manifest.to_dict():
+        raise ContractError(
+            "Deliver checkpoint differs from the durable Instructions seal"
+        )
+    product_instructions = ProductInstructions(
+        root,
+        manifest,
+        value["product_artifact_sha256"],
+        value["instructions_path"],
+        value["claims"],
+        Receipt.from_dict(value["site_receipt"]),
+    )
+    if product_instructions.product_artifact_sha256 != made.artifact_sha256:
+        raise ContractError(
+            "Deliver checkpoint Instructions describe different Made bytes"
+        )
+    return product_instructions
+
+
 @dataclass(frozen=True)
 class WorkshopTools:
     """Shared capabilities installed once for every inventor in one Workshop."""
@@ -1349,7 +1503,15 @@ def _provider_identity(provider: Any) -> str:
         raise ContractError(
             "trusted Workshop providers require an explicit provider id"
         )
-    return "%s.%s" % (module, qualname)
+    identity = "%s.%s" % (module, qualname)
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:+-]{0,499}", identity):
+        return identity
+    # Local fixture functions and dynamically generated callables commonly
+    # contain ``<locals>`` in their qualified name.  Keep the automatically
+    # assigned registry id public and stable without publishing that raw name.
+    return "python-callable.%s" % hashlib.sha256(
+        identity.encode("utf-8")
+    ).hexdigest()
 
 
 @dataclass(frozen=True, init=False)
@@ -1371,6 +1533,7 @@ class TrustedWorkshopEngine:
     tools: WorkshopTools
     provider_ids: Tuple[Tuple[str, str], ...]
     registry_sha256: str
+    provenance: Optional[EngineProvenanceManifest]
     _seal: object = field(repr=False, compare=False)
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -1384,6 +1547,7 @@ class TrustedWorkshopEngine:
         cls,
         tools: WorkshopTools,
         provider_ids: Optional[Mapping[str, str]] = None,
+        provenance: Optional[EngineProvenanceManifest] = None,
     ) -> "TrustedWorkshopEngine":
         if not isinstance(tools, WorkshopTools):
             raise ContractError(
@@ -1424,6 +1588,20 @@ class TrustedWorkshopEngine:
                     )
                 identities[name] = value
         pairs = tuple(sorted(identities.items()))
+        if provenance is not None:
+            if not isinstance(provenance, EngineProvenanceManifest):
+                raise ContractError(
+                    "trusted Workshop provenance must be an engine manifest"
+                )
+            for name in present:
+                component = provenance.component(name)
+                if (
+                    component.state != "configured"
+                    or component.provider_id != identities[name]
+                ):
+                    raise ContractError(
+                        "trusted Workshop provenance differs from an installed provider"
+                    )
         digest = hashlib.sha256(
             _canonical_json({"schema_version": 1, "providers": dict(pairs)})
         ).hexdigest()
@@ -1431,6 +1609,7 @@ class TrustedWorkshopEngine:
         object.__setattr__(instance, "tools", tools)
         object.__setattr__(instance, "provider_ids", pairs)
         object.__setattr__(instance, "registry_sha256", digest)
+        object.__setattr__(instance, "provenance", provenance)
         object.__setattr__(instance, "_seal", _TRUSTED_ENGINE_SEAL)
         return instance
 
@@ -1444,6 +1623,16 @@ class TrustedWorkshopEngine:
         ).hexdigest()
         if expected != self.registry_sha256:
             raise ContractError("Workshop engine registry identity changed")
+        if self.provenance is not None:
+            for name, provider_id in self.provider_ids:
+                component = self.provenance.component(name)
+                if (
+                    component.state != "configured"
+                    or component.provider_id != provider_id
+                ):
+                    raise ContractError(
+                        "Workshop engine provenance identity changed"
+                    )
 
 
 def _declared_customization_level(root: Path) -> Optional[str]:
@@ -1523,6 +1712,7 @@ class Workshop:
         trusted_engine: Optional[TrustedWorkshopEngine] = None,
         make: Optional[MakeJob] = None,
         playtest: Optional[PlaytestJob] = None,
+        custom_component_sha256: Optional[Mapping[str, str]] = None,
         review_authenticator: Optional[ReviewAuthenticator] = None,
         runtime_root: Optional[Path] = None,
         max_rounds: int = 4,
@@ -1543,6 +1733,24 @@ class Workshop:
         _callable_or_none(review_authenticator, "Workshop Review authenticator")
         if playtest is not None and make is None:
             raise ContractError("custom Playtest requires custom Make")
+        custom_jobs = {
+            stage
+            for stage, value in (("make", make), ("playtest", playtest))
+            if value is not None
+        }
+        custom_configs = (
+            {}
+            if custom_component_sha256 is None
+            else dict(custom_component_sha256)
+        )
+        if set(custom_configs) - custom_jobs or any(
+            not isinstance(value, str)
+            or re.fullmatch(r"[0-9a-f]{64}", value) is None
+            for value in custom_configs.values()
+        ):
+            raise ContractError(
+                "custom component provenance must bind only exact custom stage bytes"
+            )
         if type(max_rounds) is not int or not 1 <= max_rounds <= 100:
             raise ContractError("max_rounds must be an integer from 1 to 100")
 
@@ -1611,10 +1819,12 @@ class Workshop:
             requested_tools = trusted_engine.tools
             self.engine_registry_sha256 = trusted_engine.registry_sha256
             self.engine_provider_ids = dict(trusted_engine.provider_ids)
+            trusted_provenance = trusted_engine.provenance
         else:
             requested_tools = tools or WorkshopTools()
             self.engine_registry_sha256 = None
             self.engine_provider_ids = {}
+            trusted_provenance = None
         from .agent_invent import configured_workshop_tools
 
         selected_tools = configured_workshop_tools(
@@ -1632,6 +1842,56 @@ class Workshop:
             selected_tools.instructions or DefaultInstructions()
         )
         self.deliver_job: DeliverJob = selected_tools.deliver or DefaultDeliver()
+        effective_components = {
+            "invent": selected_tools.invent,
+            "make": make or selected_tools.make,
+            "playtest": playtest or selected_tools.playtest,
+            "instructions": selected_tools.instructions or self.instructions_job,
+            "deliver": selected_tools.deliver or self.deliver_job,
+        }
+        effective_provider_ids = dict(self.engine_provider_ids)
+        for stage in custom_jobs:
+            effective_provider_ids[stage] = "inventor-contribution.%s.%s" % (
+                self.inventor_id,
+                stage,
+            )
+        described_provenance = describe_effective_engine(
+            effective_components,
+            provider_ids=effective_provider_ids,
+            custom_stages=custom_jobs,
+            configuration_sha256=custom_configs,
+        )
+        if trusted_provenance is not None:
+            merged = []
+            for stage in _WORKSHOP_TOOL_NAMES:
+                described = described_provenance.component(stage)
+                trusted = trusted_provenance.component(stage)
+                if stage in custom_jobs or trusted.state == "missing":
+                    merged.append(described)
+                    continue
+                if (
+                    trusted.state != described.state
+                    or trusted.provider_id != described.provider_id
+                    or trusted.implementation_id != described.implementation_id
+                    or trusted.configuration_sha256
+                    != described.configuration_sha256
+                ):
+                    raise ContractError(
+                        "trusted Workshop provenance differs from its effective %s component"
+                        % stage
+                    )
+                merged.append(trusted)
+            self.engine_provenance = EngineProvenanceManifest(tuple(merged))
+        else:
+            self.engine_provenance = described_provenance
+        self.engine_provider_ids = {
+            stage: self.engine_provenance.component(stage).provider_id
+            for stage in _WORKSHOP_TOOL_NAMES
+            if self.engine_provenance.component(stage).provider_id is not None
+        }
+        self.deliver_provider_id = self.engine_provider_ids.get(
+            "deliver", DEFAULT_DELIVER_PROVIDER_ID
+        )
         self.review_authenticator = review_authenticator
         self.runtime_root = selected_runtime
         self.max_rounds = max_rounds
@@ -1818,8 +2078,8 @@ class Workshop:
         finally:
             runtime.release_lease(product_id, lease)
 
-    @staticmethod
     def _advance(
+        self,
         runtime: Runtime,
         product_id: str,
         to_job: str,
@@ -1840,15 +2100,51 @@ class Workshop:
         }
         if to_job not in legal.get(source, ()):
             raise ContractError("illegal Workshop job move %s -> %s" % (source, to_job))
+        event_payload = dict(payload)
+        if "engine_active_stage" in event_payload:
+            raise ContractError(
+                "Workshop transition engine stage is Manager-owned"
+            )
+        event_payload["engine_active_stage"] = self.engine_provenance.component(
+            to_job
+        ).to_dict()
         return runtime._transition(
             product_id,
             source,
             to_job,
             product["revision"],
             artifact_sha256,
-            dict(payload),
+            event_payload,
             _lease_token(lease_token),
         )
+
+    def _completed_stage_binding(self, stage: str) -> Mapping[str, Any]:
+        return {
+            "engine_completed_stage": self.engine_provenance.component(
+                stage
+            ).to_dict()
+        }
+
+    @staticmethod
+    def _event_engine_stage(
+        event: Mapping[str, Any],
+        key: str,
+        expected_stage: str,
+        *,
+        required: bool,
+    ) -> Optional[StageComponentManifest]:
+        payload = event.get("payload")
+        if not isinstance(payload, Mapping):
+            raise ContractError("Workshop event payload is malformed")
+        value = payload.get(key)
+        if value is None and not required:
+            return None
+        if value is None:
+            raise ContractError("Workshop event lacks its engine stage provenance")
+        manifest = StageComponentManifest.from_dict(value)
+        if manifest.stage != expected_stage:
+            raise ContractError("Workshop event engine provenance belongs to another stage")
+        return manifest
 
     def _wait(
         self,
@@ -1874,6 +2170,8 @@ class Workshop:
             "round": round_number,
             "needs": [need.to_dict() for need in waiting.needs],
         }
+        if instructions_sha256 is not None:
+            wait_payload["instructions_sha256"] = instructions_sha256
         if checkpoint_refs is not None:
             allowed = {
                 "made_checkpoint_path",
@@ -1882,6 +2180,17 @@ class Workshop:
                 "playtested_checkpoint_path",
                 "playtested_checkpoint_sha256",
                 "playtested_checkpoint_round",
+                "instructions_checkpoint_path",
+                "instructions_checkpoint_sha256",
+                "instructions_checkpoint_round",
+                "deliver_checkpoint_path",
+                "deliver_checkpoint_sha256",
+                "deliver_checkpoint_round",
+                "deliver_attempt_checkpoint_path",
+                "deliver_attempt_checkpoint_sha256",
+                "deliver_attempt_checkpoint_round",
+                "deliver_provider_id",
+                "deliver_attempt_id",
             }
             if not set(checkpoint_refs) <= allowed:
                 raise ContractError("Workshop wait checkpoint references are malformed")
@@ -1971,6 +2280,54 @@ class Workshop:
             invented=invented,
         )
 
+    def _prepare_deliver_attempt(
+        self,
+        run_root: Path,
+        wish: Wish,
+        made: Made,
+        product_instructions: ProductInstructions,
+        round_number: int,
+        playtest_rounds: int,
+        deliver_checkpoint_sha256: str,
+    ) -> tuple[DeliverContext, Mapping[str, Any]]:
+        """Seal one provider-specific effect attempt over approved inputs."""
+
+        deliver_context = DeliverContext(
+            wish,
+            made,
+            product_instructions,
+            self.deliver_provider_id,
+            self.inventor_id,
+        )
+        attempt_payload = {
+            **_checkpoint_bindings(
+                wish,
+                self.inventor_id,
+                self.taste.sha256,
+                self.blueprint,
+                self.customization_level,
+                playtest_rounds,
+            ),
+            "round": round_number,
+            "deliver_checkpoint_sha256": deliver_checkpoint_sha256,
+            "deliver_provider_id": deliver_context.provider_identity,
+            "deliver_attempt_id": deliver_context.attempt_id,
+        }
+        attempt_path, attempt_sha256 = _write_stage_checkpoint(
+            run_root,
+            "deliver_attempt",
+            round_number,
+            attempt_payload,
+            engine_stage=self.engine_provenance.component("deliver"),
+        )
+        return deliver_context, {
+            "deliver_attempt_checkpoint_path": attempt_path,
+            "deliver_attempt_checkpoint_sha256": attempt_sha256,
+            "deliver_attempt_checkpoint_round": round_number,
+            "deliver_provider_id": deliver_context.provider_identity,
+            "deliver_attempt_id": deliver_context.attempt_id,
+        }
+
     def _finish_instructions(
         self,
         runtime: Runtime,
@@ -2014,6 +2371,80 @@ class Workshop:
             raise ContractError(
                 "Instructions must bind their exact sealed root and hash before the site effect or Deliver"
             )
+        instructions_checkpoint, instructions_checkpoint_sha256 = (
+            _read_instructions_checkpoint(run_root, latest)
+        )
+        checkpoint_made, checkpoint_playtested, _ = _rebuild_checkpoint_results(
+            run_root, instructions_checkpoint
+        )
+        if (
+            checkpoint_made.artifact_root != made.artifact_root
+            or checkpoint_made.artifact_manifest.to_dict()
+            != made.artifact_manifest.to_dict()
+            or checkpoint_made.product != made.product
+            or not checkpoint_playtested.passed
+        ):
+            raise ContractError(
+                "Deliver preparation differs from its approved Instructions checkpoint"
+            )
+        instructions_refs = {
+            "instructions_checkpoint_path": latest_payload.get(
+                "instructions_checkpoint_path"
+            ),
+            "instructions_checkpoint_sha256": instructions_checkpoint_sha256,
+            "instructions_checkpoint_round": latest_payload.get(
+                "instructions_checkpoint_round", round_number
+            ),
+        }
+        if (
+            not isinstance(instructions_refs["instructions_checkpoint_path"], str)
+            or instructions_refs["instructions_checkpoint_round"] != round_number
+        ):
+            raise ContractError(
+                "Instructions result lacks its exact approved checkpoint reference"
+            )
+        deliver_checkpoint = {
+            **_checkpoint_bindings(
+                wish,
+                self.inventor_id,
+                self.taste.sha256,
+                self.blueprint,
+                self.customization_level,
+                playtest_rounds,
+            ),
+            "round": round_number,
+            "instructions_checkpoint_sha256": instructions_checkpoint_sha256,
+            "made_artifact_sha256": made.artifact_sha256,
+            "playtested_evidence_artifact_sha256": (
+                checkpoint_playtested.evidence.evidence_artifact_sha256
+            ),
+            "product_instructions": _product_instructions_value(
+                run_root, product_instructions
+            ),
+        }
+        deliver_path, deliver_sha256 = _write_stage_checkpoint(
+            run_root,
+            "deliver",
+            round_number,
+            deliver_checkpoint,
+            engine_stage=self.engine_provenance.component("instructions"),
+        )
+        deliver_context, attempt_refs = self._prepare_deliver_attempt(
+            run_root,
+            wish,
+            made,
+            product_instructions,
+            round_number,
+            playtest_rounds,
+            deliver_sha256,
+        )
+        checkpoint_refs = {
+            **instructions_refs,
+            "deliver_checkpoint_path": deliver_path,
+            "deliver_checkpoint_sha256": deliver_sha256,
+            "deliver_checkpoint_round": round_number,
+            **attempt_refs,
+        }
         self._advance(
             runtime,
             wish.product_id,
@@ -2023,10 +2454,48 @@ class Workshop:
                 "status": "working",
                 "round": round_number,
                 "instructions_sha256": product_instructions.instructions_sha256,
+                **self._completed_stage_binding("instructions"),
+                **checkpoint_refs,
             },
             lease_token=lease_token,
         )
-        deliver_context = DeliverContext(wish, made, product_instructions)
+        return self._finish_delivery(
+            runtime,
+            deliver_context,
+            round_number,
+            playtest_rounds,
+            lease_token,
+            checkpoint_refs,
+            invented,
+        )
+
+    def _finish_delivery(
+        self,
+        runtime: Runtime,
+        deliver_context: DeliverContext,
+        round_number: int,
+        playtest_rounds: int,
+        lease_token: Any,
+        checkpoint_refs: Mapping[str, Any],
+        invented: Optional[Invented] = None,
+    ) -> WorkshopRun:
+        """Attempt Deliver from an already fenced ``working`` boundary."""
+
+        if not isinstance(deliver_context, DeliverContext):
+            raise ContractError("Deliver effect requires a DeliverContext")
+        wish = deliver_context.wish
+        made = deliver_context.made
+        product_instructions = deliver_context.instructions
+        if (
+            checkpoint_refs.get("deliver_provider_id")
+            != deliver_context.provider_identity
+            or checkpoint_refs.get("deliver_attempt_id")
+            != deliver_context.attempt_id
+        ):
+            raise ContractError(
+                "Deliver effect differs from its exact provider or attempt binding"
+            )
+        self.taste.assert_current()
         _lease_token(lease_token)
         try:
             delivered = self.deliver_job(deliver_context)
@@ -2043,6 +2512,7 @@ class Workshop:
                 instructions_sha256=product_instructions.instructions_sha256,
                 page_url=product_instructions.page_url,
                 invented=invented,
+                checkpoint_refs=checkpoint_refs,
             )
         self.taste.assert_current()
         if not isinstance(delivered, Delivered):
@@ -2058,6 +2528,8 @@ class Workshop:
                 "round": round_number,
                 "instructions_sha256": product_instructions.instructions_sha256,
                 "delivery": delivered.to_dict(),
+                **self._completed_stage_binding("deliver"),
+                **dict(checkpoint_refs),
             },
             lease_token=lease_token,
         )
@@ -2073,6 +2545,417 @@ class Workshop:
             page_url=product_instructions.page_url,
             invented=invented,
         )
+
+    def _working_deliver_reconciliation_state(
+        self,
+        product: Mapping[str, Any],
+        wish: Wish,
+        selected_rounds: int,
+        run_root: Path,
+        events: list[Mapping[str, Any]],
+    ) -> Mapping[str, Any]:
+        """Rebuild the exact effect-started Deliver attempt without retrying it."""
+
+        latest = events[-1]
+        latest_payload = latest.get("payload")
+        if (
+            product.get("stage") != "deliver"
+            or latest.get("to_stage") != "deliver"
+            or not isinstance(latest_payload, Mapping)
+            or latest_payload.get("status") != "working"
+        ):
+            raise ContractError(
+                "Deliver reconciliation requires one exact working attempt"
+            )
+        round_number = latest_payload.get("round")
+        if (
+            type(round_number) is not int
+            or round_number < 1
+            or round_number > selected_rounds
+        ):
+            raise ContractError(
+                "persisted Deliver reconciliation round is outside its allowance"
+            )
+
+        deliver_checkpoint, deliver_checkpoint_sha256 = (
+            _read_stage_checkpoint(run_root, latest, "deliver")
+        )
+        expected_deliver_keys = set(
+            _checkpoint_bindings(
+                wish,
+                self.inventor_id,
+                self.taste.sha256,
+                self.blueprint,
+                self.customization_level,
+                selected_rounds,
+            )
+        ) | {
+            "round",
+            "instructions_checkpoint_sha256",
+            "made_artifact_sha256",
+            "playtested_evidence_artifact_sha256",
+            "product_instructions",
+        }
+        if set(deliver_checkpoint) != expected_deliver_keys:
+            raise ContractError("Deliver checkpoint payload is malformed")
+        self._assert_checkpoint_bindings(
+            deliver_checkpoint, wish, selected_rounds, round_number
+        )
+
+        instructions_checkpoint, instructions_checkpoint_sha256 = (
+            _read_instructions_checkpoint(run_root, latest)
+        )
+        expected_instructions_keys = set(
+            _checkpoint_bindings(
+                wish,
+                self.inventor_id,
+                self.taste.sha256,
+                self.blueprint,
+                self.customization_level,
+                selected_rounds,
+            )
+        ) | {"round", "made", "playtested"}
+        if set(instructions_checkpoint) != expected_instructions_keys:
+            raise ContractError("Instructions checkpoint payload is malformed")
+        self._assert_checkpoint_bindings(
+            instructions_checkpoint, wish, selected_rounds, round_number
+        )
+        if (
+            deliver_checkpoint.get("instructions_checkpoint_sha256")
+            != instructions_checkpoint_sha256
+        ):
+            raise ContractError(
+                "Deliver checkpoint cites different approved Instructions inputs"
+            )
+
+        attempt_checkpoint, attempt_checkpoint_sha256 = (
+            _read_stage_checkpoint(run_root, latest, "deliver_attempt")
+        )
+        expected_attempt_keys = set(
+            _checkpoint_bindings(
+                wish,
+                self.inventor_id,
+                self.taste.sha256,
+                self.blueprint,
+                self.customization_level,
+                selected_rounds,
+            )
+        ) | {
+            "round",
+            "deliver_checkpoint_sha256",
+            "deliver_provider_id",
+            "deliver_attempt_id",
+        }
+        if set(attempt_checkpoint) != expected_attempt_keys:
+            raise ContractError("Deliver attempt checkpoint payload is malformed")
+        self._assert_checkpoint_bindings(
+            attempt_checkpoint, wish, selected_rounds, round_number
+        )
+        if (
+            attempt_checkpoint.get("deliver_checkpoint_sha256")
+            != deliver_checkpoint_sha256
+        ):
+            raise ContractError(
+                "Deliver attempt cites different approved input bytes"
+            )
+
+        approval_event = next(
+            (
+                event
+                for event in reversed(events[:-1])
+                if event.get("from_stage") == "playtest"
+                and event.get("to_stage") == "instructions"
+                and isinstance(event.get("payload"), Mapping)
+                and event["payload"].get("resume_checkpoint_sha256")
+                == instructions_checkpoint_sha256
+            ),
+            None,
+        )
+        if approval_event is None:
+            raise ContractError(
+                "Deliver checkpoint is not bound to an approved Playtest event"
+            )
+        invented_event = next(
+            (
+                event
+                for event in reversed(events[:-1])
+                if event.get("from_stage") == "invent"
+                and event.get("to_stage") == "make"
+                and isinstance(event.get("payload"), Mapping)
+                and "invented" in event["payload"]
+            ),
+            None,
+        )
+        if invented_event is None:
+            raise ContractError(
+                "working Deliver attempt has no accepted Invent result"
+            )
+        invented_payload = invented_event["payload"]
+        assert isinstance(invented_payload, Mapping)
+        invented = _invented_from_dict(invented_payload.get("invented"))
+        invented.assert_context(
+            InventContext(wish, self.taste, self.blueprint, run_root / "invent")
+        )
+        if (
+            not invented.passed
+            or invented_payload.get("concept_sha256")
+            != invented.concept_sha256
+            or invented_payload.get("invent_score") != invented.score
+            or invented_payload.get("invent_target_score")
+            != invented.target_score
+        ):
+            raise ContractError(
+                "working Deliver attempt has a different accepted Invent result"
+            )
+
+        checkpoint_refs = {
+            key: latest_payload.get(key)
+            for key in (
+                "instructions_checkpoint_path",
+                "instructions_checkpoint_sha256",
+                "instructions_checkpoint_round",
+                "deliver_checkpoint_path",
+                "deliver_checkpoint_sha256",
+                "deliver_checkpoint_round",
+                "deliver_attempt_checkpoint_path",
+                "deliver_attempt_checkpoint_sha256",
+                "deliver_attempt_checkpoint_round",
+                "deliver_provider_id",
+                "deliver_attempt_id",
+            )
+        }
+        if (
+            checkpoint_refs["instructions_checkpoint_sha256"]
+            != instructions_checkpoint_sha256
+            or checkpoint_refs["deliver_checkpoint_sha256"]
+            != deliver_checkpoint_sha256
+            or checkpoint_refs["deliver_attempt_checkpoint_sha256"]
+            != attempt_checkpoint_sha256
+            or checkpoint_refs["deliver_provider_id"]
+            != attempt_checkpoint.get("deliver_provider_id")
+            or checkpoint_refs["deliver_attempt_id"]
+            != attempt_checkpoint.get("deliver_attempt_id")
+            or checkpoint_refs["instructions_checkpoint_round"] != round_number
+            or checkpoint_refs["deliver_checkpoint_round"] != round_number
+            or checkpoint_refs["deliver_attempt_checkpoint_round"]
+            != round_number
+        ):
+            raise ContractError(
+                "working Deliver event cites different checkpoint bytes"
+            )
+
+        made, playtested, unused_evidence_root = _rebuild_checkpoint_results(
+            run_root, instructions_checkpoint
+        )
+        del unused_evidence_root
+        if not playtested.passed:
+            raise ContractError(
+                "working Deliver attempt has no approved Playtest result"
+            )
+        if (
+            deliver_checkpoint.get("made_artifact_sha256")
+            != made.artifact_sha256
+            or deliver_checkpoint.get("playtested_evidence_artifact_sha256")
+            != playtested.evidence.evidence_artifact_sha256
+        ):
+            raise ContractError(
+                "Deliver checkpoint identifies different Make or Playtest bytes"
+            )
+        product_instructions = _rebuild_product_instructions_value(
+            run_root, deliver_checkpoint.get("product_instructions"), made
+        )
+        deliver_context = DeliverContext(
+            wish,
+            made,
+            product_instructions,
+            attempt_checkpoint.get("deliver_provider_id"),
+            self.inventor_id,
+            attempt_checkpoint.get("deliver_attempt_id"),
+        )
+        approval_payload = approval_event.get("payload")
+        assert isinstance(approval_payload, Mapping)
+        if (
+            product.get("artifact_sha256") != made.artifact_sha256
+            or latest.get("artifact_sha256") != made.artifact_sha256
+            or approval_event.get("artifact_sha256") != made.artifact_sha256
+            or latest_payload.get("instructions_sha256")
+            != product_instructions.instructions_sha256
+            or approval_payload.get("round") != round_number
+            or approval_payload.get("evidence_artifact_sha256")
+            != playtested.evidence.evidence_artifact_sha256
+        ):
+            raise ContractError(
+                "working Deliver state identifies different approved bytes"
+            )
+        return {
+            "round": round_number,
+            "playtest_rounds": selected_rounds,
+            "context": deliver_context,
+            "checkpoint_refs": checkpoint_refs,
+            "invented": invented,
+        }
+
+    def _completed_engine_stage_from_events(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        stage: str,
+        run_root: Path,
+    ) -> StageComponentManifest:
+        event = next(
+            (
+                item
+                for item in reversed(events)
+                if isinstance(item.get("payload"), Mapping)
+                and isinstance(
+                    item["payload"].get("engine_completed_stage"), Mapping
+                )
+                and item["payload"]["engine_completed_stage"].get("stage")
+                == stage
+            ),
+            None,
+        )
+        if event is None:
+            raise ContractError(
+                "accepted %s has no durable engine provenance" % stage
+            )
+        manifest = self._event_engine_stage(
+            event, "engine_completed_stage", stage, required=True
+        )
+        assert manifest is not None
+        checkpoint_kind = {
+            "make": "made",
+            "playtest": "playtested",
+            "instructions": "deliver",
+            "deliver": "deliver_attempt",
+        }.get(stage)
+        if checkpoint_kind is not None:
+            checkpoint_manifest = _read_checkpoint_engine_stage(
+                run_root, event, checkpoint_kind
+            )
+            if checkpoint_manifest is None:
+                raise ContractError(
+                    "%s checkpoint has no durable engine provenance"
+                    % checkpoint_kind
+                )
+            if checkpoint_manifest.to_dict() != manifest.to_dict():
+                raise ContractError(
+                    "%s checkpoint and event identify different engine components"
+                    % checkpoint_kind
+                )
+        return manifest
+
+    def _assert_resume_engine_provenance(
+        self,
+        product: Mapping[str, Any],
+        metadata: Mapping[str, Any],
+        run_root: Path,
+        events: Sequence[Mapping[str, Any]],
+    ) -> None:
+        """Fence only accepted or possibly effectful stage components."""
+
+        raw = metadata.get("engine_provenance")
+        if raw is None:
+            # Pre-provenance runs retain their existing exact checkpoint gates.
+            return
+        recorded_registration = EngineProvenanceManifest.from_dict(raw)
+        stage = product.get("stage")
+        if stage not in {"invent", "make", "playtest", "instructions", "deliver"}:
+            raise ContractError("persisted Workshop stage is malformed")
+        latest = events[-1]
+        latest_payload = latest.get("payload")
+        if not isinstance(latest_payload, Mapping):
+            raise ContractError("persisted Workshop state payload is malformed")
+        active_manifest = self._event_engine_stage(
+            latest, "engine_active_stage", stage, required=True
+        )
+        assert active_manifest is not None
+        if stage == "deliver" and latest_payload.get("status") == "delivered":
+            # Deliver is terminal. The public completed manifest remains in the
+            # event for audit, but a caller cannot turn a different provider
+            # selection into another effect attempt.
+            return
+        if stage in {"instructions", "deliver"} and latest_payload.get(
+            "status"
+        ) == "waiting":
+            # These waits may retain approved/sealed output and retry only a
+            # provider-specific no-effect seam.  Permit service/provider
+            # installation or rotation, but never relabel those retained bytes
+            # as having been produced by a different model, prompt, reward,
+            # toolchain, implementation, or core configuration.
+            current_active = self.engine_provenance.component(stage)
+            recorded_nonservice = tuple(
+                item
+                for item in active_manifest.dependencies
+                if item.kind != "services"
+            )
+            current_nonservice = tuple(
+                item
+                for item in current_active.dependencies
+                if item.kind != "services"
+            )
+            if (
+                active_manifest.state != current_active.state
+                or active_manifest.implementation_id
+                != current_active.implementation_id
+                or active_manifest.configuration_sha256
+                != current_active.configuration_sha256
+                or recorded_nonservice != current_nonservice
+            ):
+                raise ContractError(
+                    "effective Workshop component changed beyond a provider/service "
+                    "update for no-effect waiting stage: %s" % stage
+                )
+        protected_by_stage = {
+            "invent": (),
+            "make": ("invent",),
+            "playtest": ("invent", "make"),
+            "instructions": ("invent", "make", "playtest"),
+            "deliver": ("invent", "make", "playtest", "instructions"),
+        }
+        completed = protected_by_stage[stage]
+        effect_started = ()
+        if stage == "instructions" and (
+            latest_payload.get("status") == "working"
+            and latest_payload.get("phase") == "sealed"
+        ):
+            effect_started = ("instructions",)
+        elif stage == "deliver" and latest_payload.get("status") in {
+            "working",
+            "delivered",
+        }:
+            effect_started = ("deliver",)
+
+        recorded_components = {
+            name: recorded_registration.component(name)
+            for name in _WORKSHOP_TOOL_NAMES
+        }
+        for name in completed:
+            recorded_components[name] = self._completed_engine_stage_from_events(
+                events, name, run_root
+            )
+        for name in effect_started:
+            active = self._event_engine_stage(
+                latest, "engine_active_stage", name, required=True
+            )
+            assert active is not None
+            recorded_components[name] = active
+        recorded_effective = EngineProvenanceManifest(
+            tuple(recorded_components[name] for name in _WORKSHOP_TOOL_NAMES)
+        )
+        try:
+            compare_engine_for_resume(
+                recorded_effective,
+                self.engine_provenance,
+                completed_stages=completed,
+                effect_started_stages=effect_started,
+            )
+        except ContractError:
+            if stage == "deliver" and latest_payload.get("status") == "working":
+                raise AmbiguousEffectError(
+                    "Deliver has a working attempt with an unknown external "
+                    "outcome; reconcile it instead of retrying"
+                ) from None
+            raise
 
     def _resume_state(
         self, runtime: Runtime, wish: Wish
@@ -2114,6 +2997,9 @@ class Workshop:
         latest_payload = events[-1].get("payload")
         if not isinstance(latest_payload, Mapping):
             raise ContractError("persisted Workshop state payload is malformed")
+        self._assert_resume_engine_provenance(
+            product, metadata, run_root, events
+        )
         return product, selected_rounds, run_root, events
 
     def _assert_checkpoint_bindings(
@@ -2456,7 +3342,11 @@ class Workshop:
                 )
                 lease.assert_current()
                 made_path, made_sha256 = _write_stage_checkpoint(
-                    run_root, "made", round_number, made_payload
+                    run_root,
+                    "made",
+                    round_number,
+                    made_payload,
+                    engine_stage=self.engine_provenance.component("make"),
                 )
                 made_refs = {
                     "made_checkpoint_path": made_path,
@@ -2472,6 +3362,7 @@ class Workshop:
                         "status": "working",
                         "round": round_number,
                         "artifact_sha256": made.artifact_sha256,
+                        **self._completed_stage_binding("make"),
                         **made_refs,
                     },
                     lease_token=lease,
@@ -2537,7 +3428,11 @@ class Workshop:
             )
             lease.assert_current()
             playtested_path, playtested_sha256 = _write_stage_checkpoint(
-                run_root, "playtested", round_number, playtested_payload
+                run_root,
+                "playtested",
+                round_number,
+                playtested_payload,
+                engine_stage=self.engine_provenance.component("playtest"),
             )
             playtested_refs = {
                 "playtested_checkpoint_path": playtested_path,
@@ -2590,7 +3485,10 @@ class Workshop:
                 )
                 lease.assert_current()
                 checkpoint_path, checkpoint_sha256 = _write_instructions_checkpoint(
-                    run_root, round_number, checkpoint_payload
+                    run_root,
+                    round_number,
+                    checkpoint_payload,
+                    engine_stage=self.engine_provenance.component("playtest"),
                 )
                 self._advance(
                     runtime,
@@ -2607,6 +3505,7 @@ class Workshop:
                         "instructions_checkpoint_path": checkpoint_path,
                         "instructions_checkpoint_sha256": checkpoint_sha256,
                         "instructions_checkpoint_round": round_number,
+                        **self._completed_stage_binding("playtest"),
                         **all_refs,
                     },
                     lease_token=lease,
@@ -2712,14 +3611,448 @@ class Workshop:
             invented,
         )
 
+    def reconcile_deliver(self, wish: Wish) -> WorkshopRun:
+        """Resolve one ambiguous working attempt by authenticated readback only.
+
+        This method never calls Deliver preflight or fulfillment. It reconstructs
+        the provider-specific context already sealed before the external effect,
+        forbids provider rotation, and accepts only exact ``Delivered`` evidence.
+        A still-unknown readback leaves the durable working state untouched.
+        """
+
+        if not isinstance(wish, Wish):
+            raise ContractError("Workshop.reconcile_deliver requires a Wish")
+        wish.assert_valid()
+        self.taste.assert_current()
+        runtime = self._runtime()
+        product = runtime.get_product(wish.product_id)
+        if product["stage"] != "deliver":
+            raise ContractError(
+                "reconcile_deliver requires a run working at Deliver"
+            )
+
+        with LeaseGuard.acquire(
+            runtime, wish.product_id, "toy-workshop-deliver-reconcile"
+        ) as lease:
+            product, selected_rounds, run_root, events = self._resume_state(
+                runtime, wish
+            )
+            if product["stage"] != "deliver":
+                raise StateConflict(
+                    "Workshop stage advanced while Deliver reconciliation was acquiring its lease"
+                )
+            latest_payload = events[-1].get("payload")
+            if not isinstance(latest_payload, Mapping):
+                raise ContractError("persisted Deliver state is malformed")
+            if latest_payload.get("status") == "delivered":
+                raise ContractError("a delivered Workshop run is terminal")
+            if latest_payload.get("status") != "working":
+                raise ContractError(
+                    "reconcile_deliver requires an ambiguous working attempt"
+                )
+
+            rebuilt = self._working_deliver_reconciliation_state(
+                product, wish, selected_rounds, run_root, events
+            )
+            deliver_context = rebuilt["context"]
+            checkpoint_refs = rebuilt["checkpoint_refs"]
+            round_number = rebuilt["round"]
+            invented = rebuilt["invented"]
+            if not isinstance(deliver_context, DeliverContext) or not isinstance(
+                checkpoint_refs, Mapping
+            ) or not isinstance(invented, Invented):
+                raise ContractError(
+                    "persisted Deliver reconciliation context is malformed"
+                )
+            if self.deliver_provider_id != deliver_context.provider_identity:
+                raise AmbiguousEffectError(
+                    "The configured Deliver provider differs from the working attempt; select its exact persisted provider before readback."
+                )
+            reconciler = getattr(self.deliver_job, "reconcile", None)
+            if not callable(reconciler):
+                raise ContractError(
+                    "the exact Deliver provider has no authenticated reconciliation readback"
+                )
+
+            self.taste.assert_current()
+            lease.assert_current()
+            deliver_context.assert_current()
+            try:
+                delivered = reconciler(deliver_context)
+            except Exception:
+                raise AmbiguousEffectError(
+                    "Deliver readback did not prove this exact working attempt; retry reconciliation without fulfilling."
+                ) from None
+            self.taste.assert_current()
+            lease.assert_current()
+            deliver_context.assert_current()
+            if delivered is None:
+                return WorkshopRun(
+                    wish.product_id,
+                    "working",
+                    "deliver",
+                    round_number,
+                    deliver_context.made.artifact_sha256,
+                    deliver_context.instructions.instructions_sha256,
+                    playtest_rounds=selected_rounds,
+                    page_url=deliver_context.instructions.page_url,
+                    invented=invented,
+                )
+            if not isinstance(delivered, Delivered):
+                raise AmbiguousEffectError(
+                    "Deliver readback returned no typed evidence for this exact working attempt."
+                )
+            try:
+                delivered.assert_context(deliver_context)
+            except Exception:
+                raise AmbiguousEffectError(
+                    "Deliver readback returned evidence for a different working attempt."
+                ) from None
+            self._advance(
+                runtime,
+                wish.product_id,
+                "deliver",
+                artifact_sha256=deliver_context.made.artifact_sha256,
+                payload={
+                    "status": "delivered",
+                    "round": round_number,
+                    "instructions_sha256": (
+                        deliver_context.instructions.instructions_sha256
+                    ),
+                    "delivery": delivered.to_dict(),
+                    **self._completed_stage_binding("deliver"),
+                    **dict(checkpoint_refs),
+                },
+                lease_token=lease,
+            )
+            return WorkshopRun(
+                wish.product_id,
+                "delivered",
+                "deliver",
+                round_number,
+                deliver_context.made.artifact_sha256,
+                deliver_context.instructions.instructions_sha256,
+                delivery=delivered,
+                playtest_rounds=selected_rounds,
+                page_url=deliver_context.instructions.page_url,
+                invented=invented,
+            )
+
+    def resume_deliver(self, wish: Wish) -> WorkshopRun:
+        """Resume only a proven no-effect Deliver wait from exact checkpoints.
+
+        A ``waiting`` event means the previous provider explicitly reported that
+        production/shipping was unavailable. Before calling a newly configured
+        provider, this method durably records ``working``. A crash after that
+        boundary is intentionally ambiguous and may be reconciled, but never
+        retried by this method.
+        """
+
+        if not isinstance(wish, Wish):
+            raise ContractError("Workshop.resume_deliver requires a Wish")
+        wish.assert_valid()
+        self.taste.assert_current()
+        runtime = self._runtime()
+        product = runtime.get_product(wish.product_id)
+        if product["stage"] != "deliver":
+            raise ContractError("resume_deliver requires a run waiting at Deliver")
+
+        with LeaseGuard.acquire(
+            runtime, wish.product_id, "toy-workshop-deliver-resume"
+        ) as lease:
+            product, selected_rounds, run_root, events = self._resume_state(
+                runtime, wish
+            )
+            if product["stage"] != "deliver":
+                raise StateConflict(
+                    "Workshop stage advanced while Deliver resume was acquiring its lease"
+                )
+            latest = events[-1]
+            latest_payload = latest.get("payload")
+            assert isinstance(latest_payload, Mapping)
+            status = latest_payload.get("status")
+            if status == "delivered":
+                raise ContractError("a delivered Workshop run is terminal")
+            if status == "working":
+                raise AmbiguousEffectError(
+                    "Deliver has a working attempt with an unknown external "
+                    "outcome; reconcile it instead of retrying"
+                )
+            if status != "waiting":
+                raise ContractError(
+                    "resume_deliver requires an explicit no-effect Deliver wait"
+                )
+            round_number = latest_payload.get("round")
+            if (
+                type(round_number) is not int
+                or round_number < 1
+                or round_number > selected_rounds
+            ):
+                raise ContractError("persisted Deliver round is outside its allowance")
+
+            deliver_checkpoint, deliver_checkpoint_sha256 = (
+                _read_stage_checkpoint(run_root, latest, "deliver")
+            )
+            expected_deliver_keys = set(
+                _checkpoint_bindings(
+                    wish,
+                    self.inventor_id,
+                    self.taste.sha256,
+                    self.blueprint,
+                    self.customization_level,
+                    selected_rounds,
+                )
+            ) | {
+                "round",
+                "instructions_checkpoint_sha256",
+                "made_artifact_sha256",
+                "playtested_evidence_artifact_sha256",
+                "product_instructions",
+            }
+            if set(deliver_checkpoint) != expected_deliver_keys:
+                raise ContractError("Deliver checkpoint payload is malformed")
+            self._assert_checkpoint_bindings(
+                deliver_checkpoint, wish, selected_rounds, round_number
+            )
+            instructions_checkpoint, instructions_checkpoint_sha256 = (
+                _read_instructions_checkpoint(run_root, latest)
+            )
+            expected_instructions_keys = set(
+                _checkpoint_bindings(
+                    wish,
+                    self.inventor_id,
+                    self.taste.sha256,
+                    self.blueprint,
+                    self.customization_level,
+                    selected_rounds,
+                )
+            ) | {"round", "made", "playtested"}
+            if set(instructions_checkpoint) != expected_instructions_keys:
+                raise ContractError("Instructions checkpoint payload is malformed")
+            self._assert_checkpoint_bindings(
+                instructions_checkpoint, wish, selected_rounds, round_number
+            )
+            if (
+                deliver_checkpoint.get("instructions_checkpoint_sha256")
+                != instructions_checkpoint_sha256
+            ):
+                raise ContractError(
+                    "Deliver checkpoint cites different approved Instructions inputs"
+                )
+            prior_attempt, prior_attempt_sha256 = _read_stage_checkpoint(
+                run_root, latest, "deliver_attempt"
+            )
+            expected_attempt_keys = set(
+                _checkpoint_bindings(
+                    wish,
+                    self.inventor_id,
+                    self.taste.sha256,
+                    self.blueprint,
+                    self.customization_level,
+                    selected_rounds,
+                )
+            ) | {
+                "round",
+                "deliver_checkpoint_sha256",
+                "deliver_provider_id",
+                "deliver_attempt_id",
+            }
+            if set(prior_attempt) != expected_attempt_keys:
+                raise ContractError("Deliver attempt checkpoint payload is malformed")
+            self._assert_checkpoint_bindings(
+                prior_attempt, wish, selected_rounds, round_number
+            )
+            if (
+                prior_attempt.get("deliver_checkpoint_sha256")
+                != deliver_checkpoint_sha256
+            ):
+                raise ContractError(
+                    "Deliver attempt cites different approved input bytes"
+                )
+
+            approval_event = next(
+                (
+                    event
+                    for event in reversed(events)
+                    if event.get("from_stage") == "playtest"
+                    and event.get("to_stage") == "instructions"
+                    and isinstance(event.get("payload"), Mapping)
+                    and event["payload"].get("resume_checkpoint_sha256")
+                    == instructions_checkpoint_sha256
+                ),
+                None,
+            )
+            if approval_event is None:
+                raise ContractError(
+                    "Deliver checkpoint is not bound to an approved Playtest event"
+                )
+            working_event = events[-2] if len(events) >= 2 else None
+            if (
+                not isinstance(working_event, Mapping)
+                or working_event.get("to_stage") != "deliver"
+                or not isinstance(working_event.get("payload"), Mapping)
+                or working_event["payload"].get("status") != "working"
+                or working_event["payload"].get(
+                    "deliver_attempt_checkpoint_sha256"
+                )
+                != prior_attempt_sha256
+            ):
+                raise ContractError(
+                    "Deliver wait is not immediately bound to its working attempt"
+                )
+
+            checkpoint_refs = {
+                key: latest_payload.get(key)
+                for key in (
+                    "instructions_checkpoint_path",
+                    "instructions_checkpoint_sha256",
+                    "instructions_checkpoint_round",
+                    "deliver_checkpoint_path",
+                    "deliver_checkpoint_sha256",
+                    "deliver_checkpoint_round",
+                    "deliver_attempt_checkpoint_path",
+                    "deliver_attempt_checkpoint_sha256",
+                    "deliver_attempt_checkpoint_round",
+                    "deliver_provider_id",
+                    "deliver_attempt_id",
+                )
+            }
+            working_payload = working_event["payload"]
+            assert isinstance(working_payload, Mapping)
+            if (
+                any(working_payload.get(key) != value for key, value in checkpoint_refs.items())
+                or working_payload.get("status") != "working"
+                or working_payload.get("round") != round_number
+                or checkpoint_refs["instructions_checkpoint_sha256"]
+                != instructions_checkpoint_sha256
+                or checkpoint_refs["deliver_checkpoint_sha256"]
+                != deliver_checkpoint_sha256
+                or checkpoint_refs["deliver_attempt_checkpoint_sha256"]
+                != prior_attempt_sha256
+                or checkpoint_refs["deliver_provider_id"]
+                != prior_attempt.get("deliver_provider_id")
+                or checkpoint_refs["deliver_attempt_id"]
+                != prior_attempt.get("deliver_attempt_id")
+                or checkpoint_refs["instructions_checkpoint_round"] != round_number
+                or checkpoint_refs["deliver_checkpoint_round"] != round_number
+                or checkpoint_refs["deliver_attempt_checkpoint_round"]
+                != round_number
+            ):
+                raise ContractError(
+                    "latest Deliver wait cites different checkpoint bytes"
+                )
+
+            made, playtested, evidence_root = _rebuild_checkpoint_results(
+                run_root, instructions_checkpoint
+            )
+            invented = self._accepted_invented(events, wish, run_root)
+            self._assert_world_made(wish, invented, made)
+            if not playtested.passed or _playtest_policy_needs(
+                self.blueprint,
+                made,
+                playtested,
+                evidence_root,
+                wish=wish,
+                world_inputs=self.world_inputs,
+                world_evidence=self.world_evidence,
+            ):
+                raise ContractError(
+                    "Deliver checkpoint no longer satisfies Playtest release policy"
+                )
+            if (
+                deliver_checkpoint.get("made_artifact_sha256")
+                != made.artifact_sha256
+                or deliver_checkpoint.get("playtested_evidence_artifact_sha256")
+                != playtested.evidence.evidence_artifact_sha256
+            ):
+                raise ContractError(
+                    "Deliver checkpoint identifies different Make or Playtest bytes"
+                )
+            product_instructions = _rebuild_product_instructions_value(
+                run_root, deliver_checkpoint.get("product_instructions"), made
+            )
+            DeliverContext(
+                wish,
+                made,
+                product_instructions,
+                prior_attempt.get("deliver_provider_id"),
+                self.inventor_id,
+                prior_attempt.get("deliver_attempt_id"),
+            )
+            if (
+                product.get("artifact_sha256") != made.artifact_sha256
+                or latest.get("artifact_sha256") != made.artifact_sha256
+                or approval_event.get("artifact_sha256") != made.artifact_sha256
+                or working_event.get("artifact_sha256") != made.artifact_sha256
+                or latest_payload.get("instructions_sha256")
+                != product_instructions.instructions_sha256
+                or working_payload.get("instructions_sha256")
+                != product_instructions.instructions_sha256
+                or approval_event["payload"].get("round") != round_number
+                or approval_event["payload"].get("evidence_artifact_sha256")
+                != playtested.evidence.evidence_artifact_sha256
+            ):
+                raise ContractError(
+                    "persisted Deliver state identifies different approved bytes"
+                )
+
+            self.taste.assert_current()
+            lease.assert_current()
+            deliver_context, current_attempt_refs = self._prepare_deliver_attempt(
+                run_root,
+                wish,
+                made,
+                product_instructions,
+                round_number,
+                selected_rounds,
+                deliver_checkpoint_sha256,
+            )
+            current_refs = {
+                key: checkpoint_refs[key]
+                for key in (
+                    "instructions_checkpoint_path",
+                    "instructions_checkpoint_sha256",
+                    "instructions_checkpoint_round",
+                    "deliver_checkpoint_path",
+                    "deliver_checkpoint_sha256",
+                    "deliver_checkpoint_round",
+                )
+            }
+            current_refs.update(current_attempt_refs)
+            self._advance(
+                runtime,
+                wish.product_id,
+                "deliver",
+                artifact_sha256=made.artifact_sha256,
+                payload={
+                    "status": "working",
+                    "round": round_number,
+                    "instructions_sha256": (
+                        product_instructions.instructions_sha256
+                    ),
+                    **current_refs,
+                },
+                lease_token=lease,
+            )
+            return self._finish_delivery(
+                runtime,
+                deliver_context,
+                round_number,
+                selected_rounds,
+                lease,
+                current_refs,
+                invented,
+            )
+
     def resume(self, wish: Wish) -> WorkshopRun:
         """Continue the first incomplete Workshop stage from exact durable state.
 
         Resume never reruns an accepted prior stage. Shared Invent, Make, and
         pre-seal Instructions continue after their last sealed reward transition
         in a fresh execution workspace. Playtest currently restarts its incomplete
-        loop. Sealed Instructions keeps its separate page reconciliation. Stopped
-        and physically effectful Deliver states deliberately fail closed.
+        loop. Sealed Instructions keeps its separate page reconciliation. Only
+        an explicit no-effect Deliver wait may resume; ambiguous and completed
+        physical effects deliberately fail closed.
         """
 
         if not isinstance(wish, Wish):
@@ -2739,9 +4072,7 @@ class Workshop:
         if product["stage"] == "instructions":
             return self.resume_instructions(wish)
         if product["stage"] in {"deliver"}:
-            raise ContractError(
-                "Workshop resume does not retry Deliver or delivered physical effects"
-            )
+            return self.resume_deliver(wish)
         if product["stage"] not in {"invent", "make", "playtest"}:
             raise ContractError(
                 "Workshop resume requires an incomplete Invent, Make, Playtest, or Instructions stage"
@@ -2751,6 +4082,10 @@ class Workshop:
         with LeaseGuard.acquire(
             runtime, wish.product_id, "toy-workshop-resume"
         ) as lease:
+            if runtime.get_product(wish.product_id).get("stage") != requested_stage:
+                raise StateConflict(
+                    "Workshop stage advanced while resume was acquiring its lease; inspect and resume the new exact stage"
+                )
             product, selected_rounds, run_root, events = self._resume_state(
                 runtime, wish
             )
@@ -2852,6 +4187,7 @@ class Workshop:
                         "concept_sha256": invented.concept_sha256,
                         "invent_score": invented.score,
                         "invent_target_score": invented.target_score,
+                        **self._completed_stage_binding("invent"),
                         **(
                             {"world_inputs_sha256": self._world_inputs_sha256()}
                             if self.lane == "little-worlds"
@@ -3344,27 +4680,54 @@ class Workshop:
             "lane": self.lane,
             "customization_level": self.customization_level,
             "playtest_rounds": selected_rounds,
+            "engine_provenance": self.engine_provenance.to_dict(),
         }
         try:
             runtime.register_product(wish.product_id, "wish", registration)
         except StateConflict as exc:
             product = runtime.get_product(wish.product_id)
             events = runtime.events(wish.product_id)
+            persisted_registration = product.get("metadata")
+            registration_without_engine = {
+                key: value
+                for key, value in registration.items()
+                if key != "engine_provenance"
+            }
+            persisted_without_engine = (
+                {
+                    key: value
+                    for key, value in persisted_registration.items()
+                    if key != "engine_provenance"
+                }
+                if isinstance(persisted_registration, Mapping)
+                else None
+            )
             if (
                 not runtime.verify_event_chain(wish.product_id)
                 or product.get("stage") != "wish"
                 or product.get("revision") != 0
                 or product.get("artifact_sha256") is not None
-                or product.get("metadata") != registration
+                or persisted_without_engine != registration_without_engine
                 or len(events) != 1
                 or events[0].get("kind") != "registered"
                 or events[0].get("from_stage") is not None
                 or events[0].get("to_stage") != "wish"
-                or events[0].get("payload") != registration
+                or events[0].get("payload") != persisted_registration
             ):
                 raise ContractError(
                     "existing Workshop product is not this exact registered Wish boundary"
                 ) from exc
+            if isinstance(persisted_registration, Mapping) and isinstance(
+                persisted_registration.get("engine_provenance"), Mapping
+            ):
+                recorded_engine = EngineProvenanceManifest.from_dict(
+                    persisted_registration["engine_provenance"]
+                )
+                compare_engine_for_resume(
+                    recorded_engine,
+                    self.engine_provenance,
+                    completed_stages=(),
+                )
         with LeaseGuard.acquire(runtime, wish.product_id, "toy-workshop") as lease:
             run_root = _workshop_run_root(
                 self.runtime_root, wish.product_id, create=True
@@ -3451,6 +4814,7 @@ class Workshop:
                     "concept_sha256": invented.concept_sha256,
                     "invent_score": invented.score,
                     "invent_target_score": invented.target_score,
+                    **self._completed_stage_binding("invent"),
                     **(
                         {"world_inputs_sha256": self._world_inputs_sha256()}
                         if self.lane == "little-worlds"

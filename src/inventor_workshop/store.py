@@ -8,12 +8,14 @@ silently bypassed it.
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
 import re
 import secrets
 import sqlite3
+import stat
 import urllib.parse
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -472,8 +474,126 @@ class InventorStore:
         self.path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
         if parent_missing:
             os.chmod(str(self.path.parent), 0o700)
-        self._initialize()
+        with self._initialization_lock():
+            self._initialize()
         self._secure_permissions()
+
+    @contextmanager
+    def _initialization_lock(self) -> Iterator[None]:
+        """Serialize the one schema/WAL transition across local processes."""
+
+        try:
+            expected_parent = self.path.parent.lstat()
+        except OSError as exc:
+            raise ContractError("cannot inspect state initialization directory") from exc
+        directory_flags = (
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        try:
+            parent_descriptor = os.open(str(self.path.parent), directory_flags)
+        except OSError as exc:
+            raise ContractError("cannot safely open state initialization directory") from exc
+        descriptor = None
+        locked = False
+        try:
+            opened_parent = os.fstat(parent_descriptor)
+            if (
+                not stat.S_ISDIR(opened_parent.st_mode)
+                or stat.S_ISLNK(expected_parent.st_mode)
+                or (opened_parent.st_dev, opened_parent.st_ino)
+                != (expected_parent.st_dev, expected_parent.st_ino)
+                or opened_parent.st_uid != os.geteuid()
+                or stat.S_IMODE(opened_parent.st_mode) & 0o022
+            ):
+                raise ContractError(
+                    "state initialization directory must not be writable by other users"
+                )
+            canonical_database = os.fsencode(
+                self.path.parent.resolve(strict=True) / self.path.name
+            )
+            name = ".workshop-store-init-%s.lock" % hashlib.sha256(
+                canonical_database
+            ).hexdigest()
+            nofollow = getattr(os, "O_NOFOLLOW", 0)
+            nonblocking = getattr(os, "O_NONBLOCK", 0)
+            last_open_error = None
+            created = False
+            for _ in range(3):
+                try:
+                    descriptor = os.open(
+                        name,
+                        os.O_RDWR
+                        | os.O_CREAT
+                        | os.O_EXCL
+                        | nofollow
+                        | nonblocking,
+                        0o600,
+                        dir_fd=parent_descriptor,
+                    )
+                    created = True
+                except FileExistsError:
+                    try:
+                        descriptor = os.open(
+                            name,
+                            os.O_RDWR | nofollow | nonblocking,
+                            dir_fd=parent_descriptor,
+                        )
+                    except FileNotFoundError as exc:
+                        # The pathname changed between exclusive create and
+                        # open. Retry from the exclusive boundary, then verify
+                        # the final inode after acquiring the advisory lock.
+                        last_open_error = exc
+                        continue
+                    except OSError as exc:
+                        raise ContractError(
+                            "cannot safely open state initialization lock"
+                        ) from exc
+                except OSError as exc:
+                    last_open_error = exc
+                    break
+                else:
+                    break
+                if descriptor is not None:
+                    break
+            if descriptor is None:
+                raise ContractError(
+                    "cannot safely open state initialization lock"
+                ) from last_open_error
+            if created:
+                os.fchmod(descriptor, 0o600)
+            opened = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or opened.st_uid != os.geteuid()
+                or opened.st_nlink != 1
+                or stat.S_IMODE(opened.st_mode) != 0o600
+            ):
+                raise ContractError(
+                    "state initialization lock must be private, single-linked, and owned by this user"
+                )
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            locked = True
+            current = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+            if (
+                not stat.S_ISREG(current.st_mode)
+                or current.st_uid != opened.st_uid
+                or current.st_nlink != 1
+                or (current.st_dev, current.st_ino)
+                != (opened.st_dev, opened.st_ino)
+                or stat.S_IMODE(current.st_mode) != 0o600
+            ):
+                raise ContractError("state initialization lock changed while opening")
+            yield
+        finally:
+            if descriptor is not None:
+                try:
+                    if locked:
+                        fcntl.flock(descriptor, fcntl.LOCK_UN)
+                finally:
+                    os.close(descriptor)
+            os.close(parent_descriptor)
 
     def _secure_permissions(self) -> None:
         for candidate in (
@@ -543,7 +663,9 @@ class InventorStore:
                 connection.execute(
                     "ALTER TABLE core_meta RENAME TO workshop_meta"
                 )
-            connection.execute("PRAGMA journal_mode = WAL")
+            journal = connection.execute("PRAGMA journal_mode").fetchone()
+            if journal is None or str(journal[0]).lower() != "wal":
+                connection.execute("PRAGMA journal_mode = WAL")
             connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS products (

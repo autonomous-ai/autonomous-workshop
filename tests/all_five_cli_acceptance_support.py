@@ -6,9 +6,9 @@ shared stage workers, release policy, durable store, Instructions handoff, and
 Factory adapters in the path.  Only external boundaries are replaced:
 
 * Terra/Luna structured model responses;
-* public Invent research;
 * the locked-CAD command transport and exact slicer process;
-* deterministic raw-free world-reference and World-Playtest envelopes; and
+* deterministic Manager service providers installed through the production
+  service registry; and
 * Factory HTTP.
 
 Every fake returns the real production schema.  The production Manager,
@@ -33,28 +33,32 @@ import zipfile
 
 from workshop_all_five_acceptance_config import LOG_PATH
 
-from inventor_workshop.agent_instructions import RewardedInstructions
 from inventor_workshop.agent_invent import (
-    CodexInventor,
     InventResearch,
     InventResearchSource,
-    PublicHTTPResearchProvider,
 )
 import inventor_workshop.agent_invent as agent_invent
 import inventor_workshop.agent_playtest as agent_playtest
 from inventor_workshop.agent_make import (
-    CodexMaker,
     LockedCadSkillBuilder,
 )
-from inventor_workshop.agent_playtest import LaneAwarePlaytester
 from inventor_workshop.codex_runtime import CodexStructuredRunner
+from inventor_workshop.delivery_evidence import DeliveryEvidenceReceipt
 from inventor_workshop.factory_agent import FactoryAgentSession
+from inventor_workshop.factory_agent import FactoryAgentCredentials
 import inventor_workshop.factory_agent as factory_agent
-from inventor_workshop.moving_machine import WorkshopMovingMachineVerifier
+from inventor_workshop.jobs import Delivered
+from inventor_workshop.lane_playtest_providers import PinnedCheckersRulesProvider
+from inventor_workshop.manager_services import (
+    ManagerProviderIdentity,
+    ManagerServiceBinding,
+    ManagerServices,
+)
 from inventor_workshop.reward_loop import json_sha256
 from inventor_workshop.semantic_manager import CodexSemanticManager
 from inventor_workshop.shop import HttpResponse
 from inventor_workshop.world_reference_vault import (
+    AuthorizedWorldReference,
     WorldReferenceDescriptor,
     WorldReferenceReceipt,
     WorldReferenceScope,
@@ -63,9 +67,7 @@ from inventor_workshop.world_service import (
     WorldEvidenceCase,
     WorldEvidenceReference,
     WorldPlaytestEvidence,
-    WorldProviderIdentity,
 )
-from inventor_workshop.workshop import WorkshopTools
 
 
 LANE_BY_INVENTOR = {
@@ -941,12 +943,18 @@ def _research(context):
     return value
 
 
-def _public_research_boundary(self, context):
-    del self
-    return _research(context)
+class _WishResearchService:
+    """Installed Manager provider for exact-Wish public research evidence."""
 
-
-PublicHTTPResearchProvider.__call__ = _public_research_boundary
+    def research(self, wish, context):
+        if context.wish != wish:
+            raise AssertionError("Manager research received a different Wish")
+        _log(
+            "manager-service",
+            capability="research",
+            product_id=wish.product_id,
+        )
+        return _research(context)
 
 
 def _tetra_triangles(offset: float):
@@ -1150,6 +1158,10 @@ def _slicer_command_runner(
     return _completed(stdout="sliced\n")
 
 
+_WORLD_REFERENCE_BYTES = b"\x89PNG\r\n\x1a\nacceptance-world-reference"
+_WORLD_CONSENT_BYTES = b"acceptance customer authorization"
+
+
 class _WorldReferenceService:
     @staticmethod
     def _descriptor(wish):
@@ -1182,10 +1194,10 @@ class _WorldReferenceService:
                 wish_sha256,
                 scope.reference_id,
                 json_sha256(admission),
-                "4" * 64,
-                128,
-                "5" * 64,
-                64,
+                hashlib.sha256(_WORLD_REFERENCE_BYTES).hexdigest(),
+                len(_WORLD_REFERENCE_BYTES),
+                hashlib.sha256(_WORLD_CONSENT_BYTES).hexdigest(),
+                len(_WORLD_CONSENT_BYTES),
                 "image/png",
                 scope.subject_kind,
                 scope.reviewer_id,
@@ -1219,85 +1231,400 @@ class _WorldReferenceService:
             reference_id=expected_reference_id,
         )
 
+    def authorized_provider_inputs(
+        self,
+        wish,
+        personalization_map,
+        *,
+        expected_reviewer_id,
+        provider_id,
+    ):
+        descriptor = self._descriptor(wish)
+        if (
+            personalization_map != _world_personalization()
+            or expected_reviewer_id != descriptor.scope.reviewer_id
+            or provider_id != "acceptance-world-comparison-service"
+        ):
+            raise AssertionError("world provider authorization changed context")
+        authorization = {
+            "schema_version": 1,
+            "kind": "acceptance-world-provider-authorization",
+            "wish_sha256": json_sha256(wish.to_dict()),
+            "reference_id": descriptor.scope.reference_id,
+            "provider_id": provider_id,
+            "personalization_sha256": json_sha256(personalization_map),
+        }
+        selected = AuthorizedWorldReference(
+            scope=descriptor.scope,
+            product_id=wish.product_id,
+            wish_sha256=json_sha256(wish.to_dict()),
+            media_type=descriptor.receipt.media_type,
+            content_sha256=descriptor.receipt.content_sha256,
+            consent_sha256=descriptor.receipt.consent_sha256,
+            record_sha256=descriptor.receipt.record_sha256,
+            authorization=authorization,
+            reference_bytes=_WORLD_REFERENCE_BYTES,
+            consent_bytes=_WORLD_CONSENT_BYTES,
+        )
+        _log(
+            "world-reference-service",
+            operation="authorize-provider-inputs",
+            product_id=wish.product_id,
+            reference_id=descriptor.scope.reference_id,
+            provider_id=provider_id,
+        )
+        return (selected,)
+
+    def verify_authorization(
+        self,
+        authorization,
+        wish,
+        personalization_map,
+        *,
+        expected_reviewer_id,
+        provider_id,
+    ):
+        expected = self.authorized_provider_inputs(
+            wish,
+            personalization_map,
+            expected_reviewer_id=expected_reviewer_id,
+            provider_id=provider_id,
+        )[0].public_attestation()
+        if authorization != expected:
+            raise AssertionError("world provider authorization is not replayable")
+        _log(
+            "world-reference-service",
+            operation="verify-authorization",
+            product_id=wish.product_id,
+            reference_id=expected["reference_id"],
+            provider_id=provider_id,
+        )
+
 
 _WORLD_REFERENCE_SERVICE = _WorldReferenceService()
-_WORLD_REFERENCE_IDENTITY = WorldProviderIdentity(
+_WORLD_REFERENCE_MANAGER_IDENTITY = ManagerProviderIdentity(
     "acceptance-world-reference-service",
     "1.0.0",
     "7" * 64,
 )
+_WORLD_PLAYTEST_MANAGER_IDENTITY = ManagerProviderIdentity(
+    "acceptance-world-comparison-service",
+    "1.0.0",
+    "8" * 64,
+)
+_WORLD_PLAYTEST_IDENTITY = _WORLD_PLAYTEST_MANAGER_IDENTITY.world_identity()
 
 
-def _configured_world_reference_service(assignment):
-    if assignment.inventor_id != "eve":
-        raise AssertionError("world service was requested for a non-world lane")
-    return _WORLD_REFERENCE_SERVICE, _WORLD_REFERENCE_IDENTITY
-
-
-def _configured_world_playtest_evidence(assignment, result):
-    if assignment.inventor_id != "eve":
-        raise AssertionError("world evidence was requested for a non-world lane")
-    world_inputs = assignment.world_inputs
-    artifact_sha256 = result.get("artifact_sha256")
-    if not isinstance(artifact_sha256, str) or len(artifact_sha256) != 64:
-        raise AssertionError("world evidence request lacks the exact Made artifact")
-    admitted = tuple(world_inputs.references)
-    if len(admitted) != 1:
-        raise AssertionError("acceptance expected one admitted world reference")
-    reference = admitted[0]
-    personalization = _world_personalization()
-    evidence = WorldPlaytestEvidence(
-        product_id=assignment.wish.product_id,
-        wish_sha256=json_sha256(assignment.wish.to_dict()),
-        artifact_sha256=artifact_sha256,
-        personalization_sha256=json_sha256(personalization),
-        invent_inputs_sha256=world_inputs.binding_sha256,
-        provider=WorldProviderIdentity(
-            "acceptance-world-comparison-service",
-            "1.0.0",
-            "8" * 64,
-        ),
-        references=(
-            WorldEvidenceReference(
-                reference.scope.reference_id,
-                reference.record_sha256,
-                reference.content_sha256,
-                reference.content_bytes,
-                reference.consent_sha256,
-                reference.consent_bytes,
-                reference.media_type,
-                "authenticated-customer-supplied-scope-record",
-                "2026-08-26T01:02:03Z",
-                {"authorization_sha256": "9" * 64},
+class _WorldPlaytestService:
+    def evaluate(self, wish, artifact_sha256, personalization_map, invent_inputs):
+        if not isinstance(artifact_sha256, str) or len(artifact_sha256) != 64:
+            raise AssertionError("world evidence request lacks the exact Made artifact")
+        admitted = tuple(invent_inputs.references)
+        if len(admitted) != 1:
+            raise AssertionError("acceptance expected one admitted world reference")
+        reference = admitted[0]
+        authorized = _WORLD_REFERENCE_SERVICE.authorized_provider_inputs(
+            wish,
+            personalization_map,
+            expected_reviewer_id=invent_inputs.reviewer_id,
+            provider_id=_WORLD_PLAYTEST_IDENTITY.provider_id,
+        )[0]
+        authorization = authorized.public_attestation()
+        _WORLD_REFERENCE_SERVICE.verify_authorization(
+            authorization,
+            wish,
+            personalization_map,
+            expected_reviewer_id=invent_inputs.reviewer_id,
+            provider_id=_WORLD_PLAYTEST_IDENTITY.provider_id,
+        )
+        evidence = WorldPlaytestEvidence(
+            product_id=wish.product_id,
+            wish_sha256=json_sha256(wish.to_dict()),
+            artifact_sha256=artifact_sha256,
+            personalization_sha256=json_sha256(personalization_map),
+            invent_inputs_sha256=invent_inputs.binding_sha256,
+            provider=_WORLD_PLAYTEST_IDENTITY,
+            references=(
+                WorldEvidenceReference(
+                    reference.scope.reference_id,
+                    reference.record_sha256,
+                    reference.content_sha256,
+                    reference.content_bytes,
+                    reference.consent_sha256,
+                    reference.consent_bytes,
+                    reference.media_type,
+                    "authenticated-customer-supplied-scope-record",
+                    "2026-08-26T01:02:03Z",
+                    {"authorization_sha256": json_sha256(authorization)},
+                ),
             ),
-        ),
-        cases=(
-            WorldEvidenceCase(
-                "customer-market",
-                "violet lantern arch",
-                "The arch remains recognizable without a caption.",
-                reference.content_sha256,
-                True,
-                True,
-                "deterministic-feature-comparison",
+            cases=(
+                WorldEvidenceCase(
+                    "customer-market",
+                    "violet lantern arch",
+                    "The arch remains recognizable without a caption.",
+                    reference.content_sha256,
+                    True,
+                    True,
+                    "deterministic-feature-comparison",
+                ),
             ),
-        ),
-        provider_attestation={"attestation_sha256": "a" * 64},
-    )
-    evidence.assert_context(
-        assignment.wish,
+            provider_attestation={"attestation_sha256": "a" * 64},
+        )
+        evidence.assert_context(
+            wish,
+            artifact_sha256,
+            personalization_map,
+            invent_inputs,
+        )
+        _log(
+            "world-playtest-service",
+            operation="evaluate",
+            product_id=wish.product_id,
+            artifact_sha256=artifact_sha256,
+            invent_inputs_sha256=invent_inputs.binding_sha256,
+            evidence_sha256=evidence.evidence_sha256,
+        )
+        return evidence
+
+    def verify(
+        self,
+        evidence,
+        wish,
         artifact_sha256,
-        personalization,
-        world_inputs,
+        personalization_map,
+        invent_inputs,
+    ):
+        evidence.assert_context(
+            wish,
+            artifact_sha256,
+            personalization_map,
+            invent_inputs,
+        )
+        if evidence.provider != _WORLD_PLAYTEST_IDENTITY:
+            raise AssertionError("world evidence names another installed provider")
+        _log(
+            "world-playtest-service",
+            operation="verify",
+            product_id=wish.product_id,
+            artifact_sha256=artifact_sha256,
+            evidence_sha256=evidence.evidence_sha256,
+        )
+
+
+_WORLD_PLAYTEST_SERVICE = _WorldPlaytestService()
+
+
+_CLASSIC_PROVIDER = PinnedCheckersRulesProvider()
+
+
+class _ClassicRulesRegistry:
+    def provider_for(self, wish, context):
+        if context.wish != wish or context.blueprint.lane != "classics-made-yours":
+            raise AssertionError("classic registry received another lane or Wish")
+        _log(
+            "manager-service",
+            capability="classic_rules",
+            product_id=wish.product_id,
+        )
+        return _CLASSIC_PROVIDER
+
+
+class _FactoryCredentialBroker:
+    def credentials_for(self, inventor_id):
+        if "FACTORY_PASSWORD" in os.environ or "FACTORY_USERNAME" in os.environ:
+            raise AssertionError("acceptance bypassed the installed credential broker")
+        if inventor_id != _PROCESS_SELECTED_INVENTOR:
+            raise AssertionError("credential broker received another Inventor")
+        _log(
+            "manager-service",
+            capability="factory_credentials",
+            inventor_id=inventor_id,
+        )
+        return FactoryAgentCredentials(
+            inventor_id,
+            ACCEPTANCE_FACTORY_PASSWORD,
+        )
+
+
+_DELIVERY_PROVIDER_ID = "acceptance-fulfillment-service"
+_DELIVERY_PROVIDER_VERSION = "1.0.0"
+_DELIVERY_PROVIDER_CONFIG_SHA256 = "d" * 64
+
+
+def _delivery_receipt(context, stage, receipt_id, observed_at, details):
+    return DeliveryEvidenceReceipt(
+        stage=stage,
+        provider=_DELIVERY_PROVIDER_ID,
+        provider_version=_DELIVERY_PROVIDER_VERSION,
+        provider_config_sha256=_DELIVERY_PROVIDER_CONFIG_SHA256,
+        receipt_id=receipt_id,
+        product_id=context.product_id,
+        wish_sha256=context.wish_sha256,
+        product_artifact_sha256=context.made.artifact_sha256,
+        instructions_sha256=context.instructions.instructions_sha256,
+        deliver_provider_id=context.provider_identity,
+        deliver_attempt_id=context.attempt_id,
+        observed_at=observed_at,
+        details=details,
+    )
+
+
+class _DeliverService:
+    """Deterministic typed fulfillment service; no physical claim escapes it."""
+
+    def preflight(self, context):
+        context.assert_current()
+
+    def fulfill(self, context):
+        context.assert_current()
+        short_id = context.wish.product_id[-16:]
+        printed = _delivery_receipt(
+            context,
+            "print",
+            "acceptance-print-%s" % short_id,
+            "2026-08-26T01:00:00Z",
+            {
+                "job_id": "acceptance-print-job-%s" % short_id,
+                "status": "completed",
+                "quantity": 1,
+                "material": "PLA",
+                "output_lot_id": "acceptance-lot-%s" % short_id,
+            },
+        )
+        qa = _delivery_receipt(
+            context,
+            "qa",
+            "acceptance-qa-%s" % short_id,
+            "2026-08-26T01:01:00Z",
+            {
+                "inspection_id": "acceptance-inspection-%s" % short_id,
+                "status": "passed",
+                "print_receipt_sha256": printed.receipt_sha256,
+                "checks": ["artifact identity", "fit", "finish", "safety"],
+            },
+        )
+        packed = _delivery_receipt(
+            context,
+            "packing",
+            "acceptance-pack-%s" % short_id,
+            "2026-08-26T01:02:00Z",
+            {
+                "package_id": "acceptance-box-%s" % short_id,
+                "status": "sealed",
+                "print_receipt_sha256": printed.receipt_sha256,
+                "qa_receipt_sha256": qa.receipt_sha256,
+                "contents_count": 2,
+            },
+        )
+        tracking_id = "9400ACCEPT%s" % short_id.upper()
+        carrier = _delivery_receipt(
+            context,
+            "carrier",
+            "acceptance-carrier-%s" % short_id,
+            "2026-08-26T01:03:00Z",
+            {
+                "carrier": "USPS",
+                "service": "Priority Mail",
+                "tracking_id": tracking_id,
+                "status": "handed-off",
+                "package_id": "acceptance-box-%s" % short_id,
+                "packing_receipt_sha256": packed.receipt_sha256,
+                "acceptance_scan_id": "acceptance-scan-%s" % short_id,
+            },
+        )
+        delivered = Delivered(
+            product_artifact_sha256=context.made.artifact_sha256,
+            instructions_sha256=context.instructions.instructions_sha256,
+            carrier="USPS",
+            service="Priority Mail",
+            tracking_id=tracking_id,
+            status="handed-off",
+            observed_at=carrier.observed_at,
+            product_id=context.product_id,
+            wish_sha256=context.wish_sha256,
+            deliver_provider_id=context.provider_identity,
+            deliver_attempt_id=context.attempt_id,
+            evidence={
+                "print_receipt": printed.to_dict(),
+                "qa_receipt": qa.to_dict(),
+                "packing_receipt": packed.to_dict(),
+                "carrier_receipt": carrier.to_dict(),
+            },
+        )
+        delivered.assert_context(context)
+        _log(
+            "manager-service",
+            capability="deliver",
+            product_id=context.wish.product_id,
+            product_artifact_sha256=context.made.artifact_sha256,
+            instructions_sha256=context.instructions.instructions_sha256,
+            receipt_sha256=carrier.receipt_sha256,
+        )
+        return delivered
+
+    def reconcile(self, context):
+        context.assert_current()
+        return None
+
+
+def _manager_binding(identity, service):
+    return ManagerServiceBinding(identity, service)
+
+
+def manager_services():
+    """Entry point loaded by ``autonomous_workshop.manager_services``."""
+
+    classic_identity = _CLASSIC_PROVIDER.identity
+    services = ManagerServices(
+        "installed-acceptance",
+        research=_manager_binding(
+            ManagerProviderIdentity(
+                "acceptance-public-research",
+                "1.0.0",
+                "a" * 64,
+            ),
+            _WishResearchService(),
+        ),
+        classic_rules=_manager_binding(
+            ManagerProviderIdentity(
+                classic_identity.name,
+                classic_identity.version,
+                classic_identity.config_sha256,
+            ),
+            _ClassicRulesRegistry(),
+        ),
+        world_reference=_manager_binding(
+            _WORLD_REFERENCE_MANAGER_IDENTITY,
+            _WORLD_REFERENCE_SERVICE,
+        ),
+        world_playtest=_manager_binding(
+            _WORLD_PLAYTEST_MANAGER_IDENTITY,
+            _WORLD_PLAYTEST_SERVICE,
+        ),
+        factory_credentials=_manager_binding(
+            ManagerProviderIdentity(
+                "acceptance-factory-credential-broker",
+                "1.0.0",
+                "c" * 64,
+            ),
+            _FactoryCredentialBroker(),
+        ),
+        deliver=_manager_binding(
+            ManagerProviderIdentity(
+                _DELIVERY_PROVIDER_ID,
+                _DELIVERY_PROVIDER_VERSION,
+                _DELIVERY_PROVIDER_CONFIG_SHA256,
+            ),
+            _DeliverService(),
+        ),
     )
     _log(
-        "world-playtest-service",
-        product_id=assignment.wish.product_id,
-        artifact_sha256=artifact_sha256,
-        invent_inputs_sha256=world_inputs.binding_sha256,
-        evidence_sha256=evidence.evidence_sha256,
+        "manager-services-loaded",
+        configuration_id=services.configuration_id,
+        capabilities=list(services.capabilities),
     )
-    return evidence
+    return services
 
 
 # Inject only processes and infrastructure that live outside the Workshop
@@ -1344,68 +1671,6 @@ def _acceptance_slicer_from_environment(cls):
 agent_playtest.PrusaSlicerPrintCheck.from_environment = classmethod(
     _acceptance_slicer_from_environment
 )
-
-_ORIGINAL_CONFIGURED_TOOLS = agent_invent.configured_workshop_tools
-_OBSERVED_PROFILE_CONFIGURATIONS = set()
-
-
-def _observed_configured_tools(
-    existing=None,
-    *,
-    inventor_id=None,
-    runtime_root=None,
-):
-    selected = _ORIGINAL_CONFIGURED_TOOLS(
-        existing,
-        inventor_id=inventor_id,
-        runtime_root=runtime_root,
-    )
-    if inventor_id not in _OBSERVED_PROFILE_CONFIGURATIONS:
-        observed = {
-            name: (
-                None
-                if getattr(selected, name) is None
-                else type(getattr(selected, name)).__name__
-            )
-            for name in ("invent", "make", "playtest", "instructions", "deliver")
-        }
-        expected = {
-            "invent": "CodexInventor",
-            "make": "CodexMaker",
-            "playtest": "LaneAwarePlaytester",
-            "instructions": "RewardedInstructions",
-            "deliver": None,
-        }
-        if observed != expected:
-            raise AssertionError(
-                "production configured_workshop_tools omitted a shared stage: %s"
-                % observed
-            )
-        _OBSERVED_PROFILE_CONFIGURATIONS.add(inventor_id)
-        _log(
-            "shared-tools",
-            inventor_id=inventor_id,
-            lane=LANE_BY_INVENTOR[inventor_id],
-            composition="production-configured_workshop-tools",
-            customization="taste-only",
-            execution="manager-owned",
-            types=observed,
-            make_cad_builder=type(selected.make.cad_builder).__name__,
-            make_cad_command_runner=getattr(
-                selected.make.cad_builder.command_runner, "__name__", None
-            ),
-            playtest_lane_providers=type(selected.playtest.lane_providers).__name__,
-            playtest_moving_verifier=type(
-                selected.playtest.moving_machine_verifier
-            ).__name__,
-        )
-    return selected
-
-
-# This wrapper observes and asserts the production result; it never supplies or
-# changes a Workshop stage.
-agent_invent.configured_workshop_tools = _observed_configured_tools
-
 
 def _multipart(headers, body):
     message = BytesParser(policy=email_policy).parsebytes(
@@ -1648,16 +1913,6 @@ def _session_init(self, credentials, *, transport=None, sleeper=None):
 
 FactoryAgentSession.__init__ = _session_init
 factory_agent.FactoryAgentSession.__init__ = _session_init
-
-
-import inventor_workshop.cli as _acceptance_cli
-
-_acceptance_cli._configured_world_reference_service = (
-    _configured_world_reference_service
-)
-_acceptance_cli._configured_world_playtest_evidence = (
-    _configured_world_playtest_evidence
-)
 
 # Keep ``_run_inventor`` on its production default.  Replacing its ``runner``
 # keyword would deliberately select the legacy profile-subprocess compatibility

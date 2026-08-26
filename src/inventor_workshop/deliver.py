@@ -41,5 +41,33 @@ class DefaultDeliver:
         receipt.assert_context(context)
         return receipt
 
+    def reconcile(self, context: DeliverContext) -> Optional[Delivered]:
+        """Read back one already-started attempt without fulfilling it again.
+
+        Manager service adapters expose their authenticated, GET-only readback
+        as a method on the same configured fulfiller whose identity was sealed
+        for the effect attempt. ``None`` is the only valid still-unknown result.
+        """
+
+        if not isinstance(context, DeliverContext):
+            raise ContractError("DefaultDeliver reconciliation requires a DeliverContext")
+        context.assert_current()
+        candidate = getattr(self.fulfiller, "reconcile", None)
+        selected = candidate if callable(candidate) else None
+        if selected is None:
+            raise ContractError(
+                "Deliver provider has no authenticated reconciliation readback"
+            )
+        receipt = selected(context)
+        context.assert_current()
+        if receipt is None:
+            return None
+        if not isinstance(receipt, Delivered):
+            raise ContractError(
+                "Deliver reconciliation must return Delivered evidence or None"
+            )
+        receipt.assert_context(context)
+        return receipt
+
 
 __all__ = ["DefaultDeliver"]

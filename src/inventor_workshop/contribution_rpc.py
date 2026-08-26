@@ -6,6 +6,12 @@ one reserved output directory, and accepts only a typed result descriptor.  The
 child receives no Factory credentials, no Codex credentials, and no shared
 Invent/Instructions/Deliver provider objects.
 
+The child needs a readable Python runtime, which may also contain installed
+Manager-service plugins.  Manager execution therefore resolves every such
+entry point's import code and distribution metadata without loading it, passes
+those paths into this boundary, and requires the OS preflight to prove they are
+unreadable despite the broader runtime allow rules.
+
 Custom code is never launched without a Manager-owned OS isolation adapter.
 The built-in adapter uses a verified macOS ``sandbox-exec`` profile that denies
 network access and grants writes only to the one stage workspace and response
@@ -66,9 +72,13 @@ RPC_KIND_RESPONSE = "workshop.contribution-hook-response"
 RPC_STAGES = ("make", "playtest")
 MAX_RPC_BYTES = 8 * 1024 * 1024
 MAX_HOOK_BYTES = 1024 * 1024
+MAX_CONTRIBUTION_SOURCE_FILES = 5_000
+MAX_CONTRIBUTION_SOURCE_FILE_BYTES = 8 * 1024 * 1024
+MAX_CONTRIBUTION_SOURCE_BYTES = 64 * 1024 * 1024
 DEFAULT_HOOK_TIMEOUT_SECONDS = 60 * 60
 DEFAULT_ISOLATION_PROBE_TIMEOUT_SECONDS = 15
 ISOLATION_CAPABILITY = "contribution-os-isolation"
+MAX_FORBIDDEN_READ_PATHS = 512
 _SHA256 = __import__("re").compile(r"^[0-9a-f]{64}$")
 
 
@@ -121,6 +131,7 @@ def _read_private_file(path: Path, label: str, maximum: int) -> bytes:
         requested.is_symlink()
         or not stat.S_ISREG(expected.st_mode)
         or expected.st_uid != os.getuid()
+        or expected.st_nlink != 1
         or not 1 <= expected.st_size <= maximum
     ):
         raise ContractError(
@@ -138,6 +149,7 @@ def _read_private_file(path: Path, label: str, maximum: int) -> bytes:
         if (
             not stat.S_ISREG(opened.st_mode)
             or opened.st_uid != os.getuid()
+            or opened.st_nlink != 1
             or (opened.st_dev, opened.st_ino)
             != (expected.st_dev, expected.st_ino)
             or opened.st_size > maximum
@@ -159,11 +171,143 @@ def _read_private_file(path: Path, label: str, maximum: int) -> bytes:
             or after.st_size != opened.st_size
             or after.st_mtime_ns != opened.st_mtime_ns
             or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
+            or after.st_nlink != 1
         ):
             raise ContractError("%s changed while reading" % label)
         return source
     finally:
         os.close(descriptor)
+
+
+def _contribution_source_snapshot(root: Path) -> tuple[tuple[Any, ...], ...]:
+    """Seal every child-readable contribution byte and reject inode aliases."""
+
+    resolved_root = Path(root).resolve(strict=True)
+    records: list[tuple[Any, ...]] = []
+    total_bytes = 0
+
+    def add_file(path: Path, relative: str, maximum: int) -> None:
+        nonlocal total_bytes
+        try:
+            expected = path.lstat()
+        except OSError as exc:
+            raise ContractError("custom contribution source is unavailable") from exc
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(expected.st_mode)
+            or expected.st_uid != os.getuid()
+            or expected.st_nlink != 1
+            or expected.st_size < 0
+            or expected.st_size > maximum
+        ):
+            raise ContractError(
+                "custom contribution source must be a bounded same-user "
+                "single-link regular file"
+            )
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(
+            os, "O_NONBLOCK", 0
+        )
+        try:
+            descriptor = os.open(str(path), flags)
+        except OSError as exc:
+            raise ContractError("cannot safely open custom contribution source") from exc
+        try:
+            opened = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or opened.st_uid != os.getuid()
+                or opened.st_nlink != 1
+                or (opened.st_dev, opened.st_ino)
+                != (expected.st_dev, expected.st_ino)
+                or opened.st_size != expected.st_size
+            ):
+                raise ContractError("custom contribution source changed while opening")
+            digest = hashlib.sha256()
+            observed = 0
+            while observed <= maximum:
+                chunk = os.read(descriptor, min(1024 * 1024, maximum + 1 - observed))
+                if not chunk:
+                    break
+                digest.update(chunk)
+                observed += len(chunk)
+            after = os.fstat(descriptor)
+            if (
+                observed > maximum
+                or observed != opened.st_size
+                or after.st_size != opened.st_size
+                or after.st_mtime_ns != opened.st_mtime_ns
+                or after.st_nlink != 1
+                or (after.st_dev, after.st_ino) != (opened.st_dev, opened.st_ino)
+            ):
+                raise ContractError("custom contribution source changed while reading")
+        finally:
+            os.close(descriptor)
+        total_bytes += observed
+        if total_bytes > MAX_CONTRIBUTION_SOURCE_BYTES:
+            raise ContractError("custom contribution source exceeds its byte limit")
+        records.append(
+            (
+                relative,
+                opened.st_dev,
+                opened.st_ino,
+                opened.st_size,
+                opened.st_mtime_ns,
+                digest.hexdigest(),
+            )
+        )
+        if len(records) > MAX_CONTRIBUTION_SOURCE_FILES:
+            raise ContractError("custom contribution source has too many files")
+
+    add_file(resolved_root / "hook.py", "hook.py", MAX_HOOK_BYTES)
+    add_file(resolved_root / "inventor.json", "inventor.json", 256 * 1024)
+    add_file(resolved_root / "TASTE.md", "TASTE.md", 256 * 1024)
+    for source_name in ("src", "contribution_src"):
+        source_root = resolved_root / source_name
+        if not source_root.exists():
+            continue
+        try:
+            root_metadata = source_root.lstat()
+        except OSError as exc:
+            raise ContractError("custom contribution source is unavailable") from exc
+        if (
+            source_root.is_symlink()
+            or not stat.S_ISDIR(root_metadata.st_mode)
+            or root_metadata.st_uid != os.getuid()
+        ):
+            raise ContractError("custom contribution source root is invalid")
+        for directory, dirnames, filenames in os.walk(
+            str(source_root), followlinks=False
+        ):
+            base = Path(directory)
+            try:
+                base_metadata = base.lstat()
+            except OSError as exc:
+                raise ContractError("custom contribution source changed") from exc
+            if (
+                base.is_symlink()
+                or not stat.S_ISDIR(base_metadata.st_mode)
+                or base_metadata.st_uid != os.getuid()
+            ):
+                raise ContractError("custom contribution source directory is invalid")
+            for name in sorted(dirnames):
+                child = base / name
+                try:
+                    child_metadata = child.lstat()
+                except OSError as exc:
+                    raise ContractError("custom contribution source changed") from exc
+                if (
+                    child.is_symlink()
+                    or not stat.S_ISDIR(child_metadata.st_mode)
+                    or child_metadata.st_uid != os.getuid()
+                ):
+                    raise ContractError(
+                        "custom contribution source directory is invalid"
+                    )
+            for name in sorted(filenames):
+                path = base / name
+                relative = path.relative_to(resolved_root).as_posix()
+                add_file(path, relative, MAX_CONTRIBUTION_SOURCE_FILE_BYTES)
+    return tuple(sorted(records))
 
 
 def _read_json_file(path: Path, label: str) -> Mapping[str, Any]:
@@ -262,9 +406,14 @@ def _sealed_output_manifest(root: Path, label: str) -> ArtifactManifest:
                 raise ArtifactError(
                     "%s changed while enumerating %s" % (label, relative)
                 ) from exc
-            if path.is_symlink() or not stat.S_ISREG(metadata.st_mode):
+            if (
+                path.is_symlink()
+                or not stat.S_ISREG(metadata.st_mode)
+                or metadata.st_nlink != 1
+            ):
                 raise ArtifactError(
-                    "%s contains a non-regular entry: %s" % (label, relative)
+                    "%s contains a non-regular or multiply-linked entry: %s"
+                    % (label, relative)
                 )
             observed_paths.add(relative)
     if observed_paths != first_paths:
@@ -719,6 +868,7 @@ class ContributionIsolationContext:
     response_path: Path
     product_root: Optional[Path]
     environment: Mapping[str, str]
+    forbidden_read_paths: tuple[Path, ...] = ()
 
     def __post_init__(self) -> None:
         if self.stage not in RPC_STAGES:
@@ -746,6 +896,41 @@ class ContributionIsolationContext:
             for key, value in self.environment.items()
         ):
             raise ContractError("contribution isolation environment is malformed")
+        forbidden = self.forbidden_read_paths
+        if isinstance(forbidden, (str, bytes)) or not isinstance(
+            forbidden, Sequence
+        ):
+            raise ContractError("contribution isolation forbidden paths are malformed")
+        normalized = []
+        for index, value in enumerate(forbidden):
+            if index >= MAX_FORBIDDEN_READ_PATHS:
+                raise ContractError("too many contribution isolation forbidden paths")
+            try:
+                path = Path(value)
+            except TypeError:
+                raise ContractError(
+                    "contribution isolation forbidden paths are malformed"
+                ) from None
+            if not path.is_absolute() or path == Path("/"):
+                raise ContractError(
+                    "contribution isolation forbidden paths must be narrow absolute paths"
+                )
+            try:
+                resolved = path.resolve(strict=True)
+            except OSError:
+                raise ContractError(
+                    "contribution isolation forbidden path is unavailable"
+                ) from None
+            if resolved == Path("/"):
+                raise ContractError(
+                    "contribution isolation forbidden paths must be narrow absolute paths"
+                )
+            normalized.append(resolved)
+        object.__setattr__(
+            self,
+            "forbidden_read_paths",
+            tuple(sorted(set(normalized), key=str)),
+        )
 
 
 IsolationAdapter = Callable[
@@ -788,6 +973,21 @@ def _macos_isolation_profile(context: ContributionIsolationContext) -> str:
         launcher_root,
         Path(__file__).resolve().parents[1],
     }
+    resolved_executable = Path(sys.executable).resolve(strict=True)
+    for brew_prefix in (Path("/usr/local"), Path("/opt/homebrew")):
+        cellar = brew_prefix / "Cellar"
+        opt = brew_prefix / "opt"
+        try:
+            resolved_executable.relative_to(cellar)
+        except ValueError:
+            continue
+        if opt.is_dir() and not opt.is_symlink() and cellar.is_dir():
+            # Homebrew extension modules link their pinned dylibs through
+            # ``opt`` aliases into sibling Cellar formulae.  Both trees are
+            # read-only, while explicit later Manager-service denies still
+            # override provider package paths.
+            runtime_roots.add(opt.resolve(strict=True))
+            runtime_roots.add(cellar.resolve(strict=True))
     if launcher_root.parent.name == "opt" and str(launcher_root.parent).startswith(
         ("/usr/local/", "/opt/homebrew/")
     ):
@@ -851,28 +1051,63 @@ def _macos_isolation_profile(context: ContributionIsolationContext) -> str:
             "(literal %s)" % _sbpl_string(context.response_path),
         )
     )
+    forbidden_filters = "\n       ".join(
+        filter_expression
+        for path in context.forbidden_read_paths
+        for filter_expression in (
+            "(literal %s)" % _sbpl_string(path),
+            "(subpath %s)" % _sbpl_string(path),
+        )
+    )
     # ``system.sb`` supplies only the platform runtime primitives needed to
     # start Python.  Explicit network denial overrides its local logging rule;
     # default denial leaves Manager state unwritable and other user files
     # unreadable.  Child processes inherit the same profile.
-    return "\n".join(
-        (
-            "(version 1)",
-            "(deny default)",
-            '(import "system.sb")',
-            "(deny network*)",
-            "(allow process-exec)",
-            "(allow process-info* (target self))",
-            "(allow file-read-metadata file-test-existence",
-            "       %s)" % metadata_filters,
-            "(allow file-read* file-test-existence",
-            "       %s)" % read_filters,
-            "(allow file-map-executable",
-            "       %s)" % read_filters,
-            "(allow file-write*",
-            "       %s)" % write_filters,
+    rules = [
+        "(version 1)",
+        "(deny default)",
+        '(import "system.sb")',
+        # ``system.sb``'s version-1 compatibility block otherwise grants every
+        # XPC service name.  Custom contributions require no Manager/user
+        # broker, so revoke all bootstrap discovery and registration again.
+        "(deny mach-lookup)",
+        '(deny mach-lookup (xpc-service-name-prefix ""))',
+        '(deny mach-lookup (xpc-service-name-regex #".*"))',
+        '(deny mach-lookup (global-name-regex #".*"))',
+        "(deny mach-lookup",
+        '       (global-name "com.apple.cfprefsd.agent")',
+        '       (global-name "com.apple.cfprefsd.daemon")',
+        '       (global-name "com.apple.secinitd")',
+        '       (global-name "com.apple.securityd")',
+        '       (global-name "com.apple.trustd")',
+        '       (global-name "com.apple.trustd.agent")',
+        '       (local-name "com.apple.cfprefsd.agent"))',
+        "(deny mach-register)",
+        '(deny mach-register (local-name-prefix ""))',
+        "(deny mach-bootstrap)",
+        "(deny network*)",
+        "(allow process-exec)",
+        "(allow process-info* (target self))",
+        "(allow file-read-metadata file-test-existence",
+        "       %s)" % metadata_filters,
+        "(allow file-read* file-test-existence",
+        "       %s)" % read_filters,
+        "(allow file-map-executable",
+        "       %s)" % read_filters,
+        "(allow file-write*",
+        "       %s)" % write_filters,
+    ]
+    if forbidden_filters:
+        # These rules deliberately follow every broad runtime allow.  The
+        # preflight below proves that each path remains unreadable before a
+        # request file exists or custom code can execute.
+        rules.extend(
+            (
+                "(deny file-read* file-map-executable file-test-existence",
+                "       %s)" % forbidden_filters,
+            )
         )
-    )
+    return "\n".join(rules)
 
 
 class MacOSSandboxIsolation:
@@ -934,16 +1169,32 @@ class MacOSSandboxIsolation:
         if forbidden.exists() or forbidden.is_symlink():
             raise ContractError("contribution isolation probe path is not fresh")
         probe_source = (
-            "import errno,os,sys\n"
+            "import ctypes,errno,os,sys\n"
             "path=sys.argv[1]\n"
             "try:\n"
             "    fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)\n"
             "except OSError as exc:\n"
-            "    raise SystemExit(0 if exc.errno in (errno.EACCES,errno.EPERM) else 8)\n"
+            "    if exc.errno not in (errno.EACCES,errno.EPERM):\n"
+            "        raise SystemExit(8)\n"
             "else:\n"
             "    os.close(fd)\n"
             "    os.unlink(path)\n"
             "    raise SystemExit(9)\n"
+            "for path in sys.argv[2:]:\n"
+            "    try:\n"
+            "        fd=os.open(path,os.O_RDONLY)\n"
+            "    except OSError as exc:\n"
+            "        if exc.errno not in (errno.EACCES,errno.EPERM):\n"
+            "            raise SystemExit(10)\n"
+            "    else:\n"
+            "        os.close(fd)\n"
+            "        raise SystemExit(11)\n"
+            "libsystem=ctypes.CDLL('/usr/lib/libSystem.B.dylib')\n"
+            "libsystem.sandbox_check.argtypes=(ctypes.c_int,ctypes.c_char_p,ctypes.c_int,ctypes.c_char_p)\n"
+            "libsystem.sandbox_check.restype=ctypes.c_int\n"
+            "if libsystem.sandbox_check(os.getpid(),b'mach-lookup',2,b'com.apple.cfprefsd.daemon')==0:\n"
+            "    raise SystemExit(12)\n"
+            "raise SystemExit(0)\n"
         )
         probe_command = (
             str(sandbox),
@@ -953,6 +1204,7 @@ class MacOSSandboxIsolation:
             "-c",
             probe_source,
             str(forbidden),
+            *(str(path) for path in context.forbidden_read_paths),
         )
         try:
             completed = self.probe_runner(
@@ -978,7 +1230,7 @@ class MacOSSandboxIsolation:
         ):
             raise _isolation_need(
                 context.stage,
-                "Custom contributions are disabled because the OS isolation probe did not prove write denial.",
+                "Custom contributions are disabled because the OS isolation probe did not prove write and Manager-service read denial.",
             )
         return (str(sandbox), "-p", profile, *tuple(command))
 
@@ -1042,6 +1294,7 @@ class ContributionHookClient:
         *,
         runner: Callable[..., subprocess.CompletedProcess] = _default_runner,
         isolation: Optional[IsolationAdapter] = None,
+        forbidden_read_paths: Sequence[Path] = (),
         timeout: float = DEFAULT_HOOK_TIMEOUT_SECONDS,
     ) -> None:
         root = Path(inventor_root)
@@ -1077,6 +1330,13 @@ class ContributionHookClient:
         self.isolation = (
             _default_isolation_adapter if isolation is None else isolation
         )
+        if isinstance(forbidden_read_paths, (str, bytes)) or not isinstance(
+            forbidden_read_paths, Sequence
+        ):
+            raise ContractError("custom contribution forbidden paths are malformed")
+        if len(forbidden_read_paths) > MAX_FORBIDDEN_READ_PATHS:
+            raise ContractError("too many custom contribution forbidden paths")
+        self.forbidden_read_paths = tuple(forbidden_read_paths)
         self.timeout = float(timeout)
 
     def _hook_bytes(self) -> tuple[Path, bytes]:
@@ -1092,6 +1352,7 @@ class ContributionHookClient:
             raise ContractError("custom hook context belongs to another lane")
         if stage == "make" and context.inventor_id != self.inventor_id:
             raise ContractError("custom Make context belongs to another Inventor")
+        source_before = _contribution_source_snapshot(self.root)
         hook_path, hook_before = self._hook_bytes()
         workspace = Path(context.workspace)
         if (
@@ -1140,6 +1401,7 @@ class ContributionHookClient:
                 else None
             ),
             environment=environment,
+            forbidden_read_paths=self.forbidden_read_paths,
         )
         isolated = self.isolation(command, isolation_context)
         if (
@@ -1176,6 +1438,8 @@ class ContributionHookClient:
         _, hook_after = self._hook_bytes()
         if hook_after != hook_before:
             raise ContractError("custom contribution hook changed while executing")
+        if _contribution_source_snapshot(self.root) != source_before:
+            raise ContractError("custom contribution source changed while executing")
         try:
             after_request_metadata = request_path.lstat()
         except OSError as exc:

@@ -205,10 +205,17 @@ class ContributionRpcTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             inventor, _, context = self.fixture(temporary)
             profiles = []
+            provider_code = (
+                Path(__file__).resolve().parents[1]
+                / "src/inventor_workshop/manager_services.py"
+            ).resolve(strict=True)
 
             def probe(command, **kwargs):
                 del kwargs
                 profiles.append(command[2])
+                self.assertIn("sandbox_check", command[5])
+                self.assertIn("com.apple.cfprefsd.daemon", command[5])
+                self.assertIn(str(provider_code), command[7:])
                 return subprocess.CompletedProcess(command, 0)
 
             adapter = MacOSSandboxIsolation(probe_runner=probe)
@@ -247,6 +254,7 @@ class ContributionRpcTest(unittest.TestCase):
                     "custom-make",
                     runner=sandbox_runner,
                     isolation=adapter,
+                    forbidden_read_paths=(provider_code,),
                 )
                 with self.assertRaises(WaitingFor):
                     client.make(context)
@@ -254,6 +262,13 @@ class ContributionRpcTest(unittest.TestCase):
             profile = profiles[0]
             self.assertIn("(deny default)", profile)
             self.assertIn("(deny network*)", profile)
+            self.assertIn("(deny mach-lookup)", profile)
+            self.assertIn("(deny mach-register)", profile)
+            self.assertIn("(deny mach-bootstrap)", profile)
+            self.assertGreater(
+                profile.index("(deny mach-lookup)"),
+                profile.index('(import "system.sb")'),
+            )
             self.assertNotIn(
                 "(subpath %s)" % json.dumps(str(inventor)), profile
             )
@@ -277,6 +292,72 @@ class ContributionRpcTest(unittest.TestCase):
             self.assertIn(str(context.workspace), write_clause)
             self.assertIn("response.json", write_clause)
             self.assertNotIn(str(inventor), write_clause)
+            deny_clause = profile.split(
+                "(deny file-read* file-map-executable file-test-existence", 1
+            )[1]
+            self.assertIn(
+                "(literal %s)" % json.dumps(str(provider_code)), deny_clause
+            )
+            self.assertIn(
+                "(subpath %s)" % json.dumps(str(provider_code)), deny_clause
+            )
+            self.assertGreater(
+                profile.index(
+                    "(deny file-read* file-map-executable file-test-existence"
+                ),
+                profile.index("(allow file-map-executable"),
+            )
+
+    def test_hard_link_alias_into_contribution_source_fails_before_isolation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor, _, context = self.fixture(temporary)
+            provider_secret = Path(temporary) / "manager-provider-secret.py"
+            provider_secret.write_text(
+                "PROVIDER_TOKEN = 'must-not-cross'\n", encoding="utf-8"
+            )
+            contribution_source = inventor / "contribution_src"
+            contribution_source.mkdir(exist_ok=True)
+            os.link(provider_secret, contribution_source / "innocent.py")
+            runner = mock.Mock(
+                side_effect=AssertionError("multiply-linked source must not run")
+            )
+            isolation = mock.Mock(
+                side_effect=AssertionError("multiply-linked source must not isolate")
+            )
+            client = ContributionHookClient(
+                inventor,
+                "custom-make",
+                runner=runner,
+                isolation=isolation,
+                forbidden_read_paths=(provider_secret,),
+            )
+            with self.assertRaisesRegex(ContractError, "single-link"):
+                client.make(context)
+            runner.assert_not_called()
+            isolation.assert_not_called()
+            self.assertEqual(tuple(context.workspace.parent.iterdir()), ())
+
+    def test_missing_manager_service_forbidden_path_fails_before_custom_code(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            inventor, _, context = self.fixture(temporary)
+            runner = mock.Mock(
+                side_effect=AssertionError("custom code must not run")
+            )
+            isolation = mock.Mock(
+                side_effect=AssertionError("an incomplete profile must not run")
+            )
+            client = ContributionHookClient(
+                inventor,
+                "custom-make",
+                runner=runner,
+                isolation=isolation,
+                forbidden_read_paths=(Path(temporary) / "missing-provider.py",),
+            )
+            with self.assertRaisesRegex(ContractError, "forbidden path is unavailable"):
+                client.make(context)
+            runner.assert_not_called()
+            isolation.assert_not_called()
+            self.assertEqual(tuple(context.workspace.parent.iterdir()), ())
 
     def test_failed_macos_probe_returns_typed_need_and_never_runs_hook(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -316,6 +397,10 @@ class ContributionRpcTest(unittest.TestCase):
             self.skipTest("macOS sandbox-exec is not installed")
         with tempfile.TemporaryDirectory() as temporary:
             inventor, hook, context = self.fixture(temporary)
+            provider_secret = inventor.parent / "provider-private.txt"
+            provider_secret.write_text(
+                "manager-provider-secret\n", encoding="utf-8"
+            )
             toys = inventor / "toys"
             toys.mkdir()
             (toys / "unbound-secret.txt").write_text(
@@ -326,6 +411,7 @@ class ContributionRpcTest(unittest.TestCase):
                 """from pathlib import Path
 import json
 import socket
+import ctypes
 
 from inventor_workshop.contribution_rpc import contribution_hook_main
 from inventor_workshop.jobs import Made
@@ -346,6 +432,27 @@ def make(context):
         observations["toys_read"] = "blocked"
     else:
         observations["toys_read"] = "allowed"
+    try:
+        (ROOT.parent / "provider-private.txt").read_text(encoding="utf-8")
+    except OSError:
+        observations["provider_read"] = "blocked"
+    else:
+        observations["provider_read"] = "allowed"
+    libsystem = ctypes.CDLL("/usr/lib/libSystem.B.dylib")
+    bootstrap_port = ctypes.c_uint.in_dll(libsystem, "bootstrap_port").value
+    service_port = ctypes.c_uint(0)
+    libsystem.bootstrap_look_up.argtypes = (
+        ctypes.c_uint, ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint)
+    )
+    libsystem.bootstrap_look_up.restype = ctypes.c_int
+    broker_result = libsystem.bootstrap_look_up(
+        bootstrap_port,
+        b"com.apple.cfprefsd.daemon",
+        ctypes.byref(service_port),
+    )
+    observations["manager_broker"] = (
+        "allowed" if broker_result == 0 else "blocked"
+    )
     try:
         connection = socket.socket()
         connection.settimeout(0.2)
@@ -397,11 +504,34 @@ raise SystemExit(contribution_hook_main(ROOT, make=make))
                     )
                 return completed
 
+            def diagnostic_probe(command, **kwargs):
+                completed = subprocess.run(
+                    list(command),
+                    cwd=kwargs["cwd"],
+                    env=kwargs["env"],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=kwargs["timeout"],
+                    check=False,
+                    text=True,
+                )
+                if completed.returncode != 0 and required:
+                    self.fail(
+                        "isolated fixture preflight failed (%d): %s"
+                        % (completed.returncode, completed.stderr[-4_000:])
+                    )
+                return completed
+
             try:
                 made = ContributionHookClient(
                     inventor,
                     "custom-make",
                     runner=diagnostic_runner,
+                    forbidden_read_paths=(provider_secret,),
+                    isolation=MacOSSandboxIsolation(
+                        probe_runner=diagnostic_probe
+                    ),
                 ).make(context)
             except WaitingFor as waiting:
                 if any(
@@ -424,7 +554,9 @@ raise SystemExit(contribution_hook_main(ROOT, make=make))
                 observed,
                 {
                     "manager_write": "blocked",
+                    "manager_broker": "blocked",
                     "network": "blocked",
+                    "provider_read": "blocked",
                     "toys_read": "blocked",
                 },
             )

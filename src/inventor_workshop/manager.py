@@ -291,6 +291,11 @@ def _implementation_sha256(root: Path) -> str:
                     MAX_IMPLEMENTATION_FILE_BYTES,
                     allow_empty=True,
                 )
+                if listed.st_nlink != 1 or metadata.st_nlink != 1:
+                    raise ManifestError(
+                        "inventor contribution files must not be hard linked: %s"
+                        % path
+                    )
                 total += len(source)
                 if total > MAX_IMPLEMENTATION_BYTES:
                     raise ManifestError(
@@ -1484,7 +1489,7 @@ class WorkshopManager:
         return create_assignment(self.route(wish), playtest_rounds=playtest_rounds)
 
 
-def register_workshop_engine(tools, *, provider_ids=None):
+def register_workshop_engine(tools, *, provider_ids=None, provenance=None):
     """Seal explicit shared providers as Manager/system-owned infrastructure.
 
     Inventor profiles receive neither this registry nor a way to encode it in a
@@ -1495,7 +1500,7 @@ def register_workshop_engine(tools, *, provider_ids=None):
 
     from .workshop import TrustedWorkshopEngine
 
-    return TrustedWorkshopEngine._register(tools, provider_ids)
+    return TrustedWorkshopEngine._register(tools, provider_ids, provenance)
 
 
 __all__ = [

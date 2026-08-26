@@ -12,6 +12,17 @@ from .artifacts import (
     build_publish_packet,
 )
 from .attribution import attribute_product_description
+from .batch import (
+    BatchManagerIdentity,
+    BatchPlan,
+    BatchPlanItem,
+    BatchPlanStore,
+    BatchRequest,
+    generate_batch_id,
+    load_or_create_batch_manager_identity,
+    parse_batch_file,
+    parse_batch_input,
+)
 from .agent_invent import (
     CodexInventor,
     InventResearch,
@@ -35,6 +46,19 @@ from .clockwork import (
     PlaytestPolicy,
     Workflow,
     WorkflowSpec,
+)
+from .engine_provenance import (
+    COMPONENT_STATES,
+    DEFAULT_STAGE_PROVIDER_IDS,
+    DEPENDENCY_KINDS,
+    MANIFEST_COMPLETENESS,
+    WORKSHOP_STAGES,
+    EngineProvenanceManifest,
+    PublicDependency,
+    ResumeEngineCompatibility,
+    StageComponentManifest,
+    compare_engine_for_resume,
+    describe_effective_engine,
 )
 from .make import (
     CadBuildResult,
@@ -159,6 +183,19 @@ from .manager import (
     select_inventor,
     shortlist_all,
 )
+from .manager_services import (
+    MANAGER_SERVICES_ENTRY_POINT_GROUP,
+    ClassicRulesRegistry,
+    DeliverFulfiller,
+    FactoryCredentialBroker,
+    ManagerProviderIdentity,
+    ManagerServiceBinding,
+    ManagerServices,
+    WishResearchProvider,
+    configured_manager_services,
+    discover_manager_service_configurations,
+    load_manager_services,
+)
 from .toys import (
     PLAYTHING_LANES,
     POST_DELIVERY_REVIEWS,
@@ -280,6 +317,17 @@ from .taste import (
 
 __all__ = [
     # Toy Workshop 0.5 canonical surface.
+    "COMPONENT_STATES",
+    "DEFAULT_STAGE_PROVIDER_IDS",
+    "DEPENDENCY_KINDS",
+    "MANIFEST_COMPLETENESS",
+    "WORKSHOP_STAGES",
+    "EngineProvenanceManifest",
+    "PublicDependency",
+    "ResumeEngineCompatibility",
+    "StageComponentManifest",
+    "compare_engine_for_resume",
+    "describe_effective_engine",
     "ClassicEvidenceProvider",
     "AuthorizedWorldReference",
     "CONSENT_CLAIM_BOUNDARY",

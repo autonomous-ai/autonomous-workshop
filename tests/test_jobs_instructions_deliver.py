@@ -147,23 +147,35 @@ class WorkshopJobFixture(unittest.TestCase):
 
     def delivery_evidence(
         self,
+        instructions,
         instructions_sha256=None,
         *,
         product_artifact_sha256=None,
+        product_id=None,
+        wish_sha256=None,
+        deliver_provider_id=None,
+        deliver_attempt_id=None,
         carrier="USPS",
         service="Priority Mail",
         tracking_id="9400100000000000000000",
         status="handed-off",
         observed_at="2026-08-23T12:00:00+00:00",
     ):
+        context = DeliverContext(self.wish, self.made, instructions)
         product_sha256 = product_artifact_sha256 or self.made.artifact_sha256
-        instructions_sha256 = instructions_sha256 or self._delivery_instructions_sha256
+        instructions_sha256 = instructions_sha256 or instructions.instructions_sha256
         common = {
             "provider": "fixture-fulfillment-bench",
             "provider_version": "1.0.0",
             "provider_config_sha256": "d" * 64,
             "product_artifact_sha256": product_sha256,
             "instructions_sha256": instructions_sha256,
+            "product_id": product_id or context.product_id,
+            "wish_sha256": wish_sha256 or context.wish_sha256,
+            "deliver_provider_id": (
+                deliver_provider_id or context.provider_identity
+            ),
+            "deliver_attempt_id": deliver_attempt_id or context.attempt_id,
             "observed_at": observed_at,
         }
         printed = DeliveryEvidenceReceipt(
@@ -225,7 +237,7 @@ class WorkshopJobFixture(unittest.TestCase):
     def delivered(
         self, instructions: ProductInstructions, **changes
     ) -> Delivered:
-        self._delivery_instructions_sha256 = instructions.instructions_sha256
+        context = DeliverContext(self.wish, self.made, instructions)
         values = {
             "product_artifact_sha256": self.made.artifact_sha256,
             "instructions_sha256": instructions.instructions_sha256,
@@ -234,12 +246,21 @@ class WorkshopJobFixture(unittest.TestCase):
             "tracking_id": "9400100000000000000000",
             "status": "handed-off",
             "observed_at": "2026-08-23T12:00:00+00:00",
+            "product_id": context.product_id,
+            "wish_sha256": context.wish_sha256,
+            "deliver_provider_id": context.provider_identity,
+            "deliver_attempt_id": context.attempt_id,
         }
         values.update(changes)
         if "evidence" not in values:
             values["evidence"] = self.delivery_evidence(
+                instructions,
                 values["instructions_sha256"],
                 product_artifact_sha256=values["product_artifact_sha256"],
+                product_id=values["product_id"],
+                wish_sha256=values["wish_sha256"],
+                deliver_provider_id=values["deliver_provider_id"],
+                deliver_attempt_id=values["deliver_attempt_id"],
                 carrier=values["carrier"],
                 service=values["service"],
                 tracking_id=values["tracking_id"],
@@ -506,6 +527,52 @@ class InstructionsJobTest(WorkshopJobFixture):
 
 
 class DeliverJobTest(WorkshopJobFixture):
+    def test_deliver_context_exposes_one_exact_stable_idempotency_key(self):
+        instructions = self.generated_instructions("attempt-bound-instructions")
+        first = DeliverContext(
+            self.wish,
+            self.made,
+            instructions,
+            "manager-services.production.deliver.fixture.1.0.0." + "d" * 64,
+            "alice",
+        )
+        repeated = DeliverContext(
+            self.wish,
+            self.made,
+            instructions,
+            first.provider_identity,
+            "alice",
+            first.attempt_id,
+        )
+        rotated = DeliverContext(
+            self.wish,
+            self.made,
+            instructions,
+            "manager-services.production.deliver.fixture.1.0.0." + "e" * 64,
+            "alice",
+        )
+        other_inventor = DeliverContext(
+            self.wish,
+            self.made,
+            instructions,
+            first.provider_identity,
+            "bob",
+        )
+
+        self.assertEqual(first.attempt_id, repeated.attempt_id)
+        self.assertEqual(first.idempotency_key, first.attempt_id)
+        self.assertNotEqual(first.attempt_id, rotated.attempt_id)
+        self.assertNotEqual(first.attempt_id, other_inventor.attempt_id)
+        with self.assertRaisesRegex(ContractError, "attempt id differs"):
+            DeliverContext(
+                self.wish,
+                self.made,
+                instructions,
+                first.provider_identity,
+                "alice",
+                rotated.attempt_id,
+            )
+
     def test_deliver_waits_truthfully_without_real_fulfiller(self):
         instructions = self.generated_instructions("waiting-delivery-instructions")
         context = DeliverContext(self.wish, self.made, instructions)
@@ -521,11 +588,11 @@ class DeliverJobTest(WorkshopJobFixture):
         with self.assertRaisesRegex(ContractError, "unsupported carrier"):
             self.delivered(instructions, carrier="DHL")
         self._delivery_instructions_sha256 = instructions.instructions_sha256
-        evidence = self.delivery_evidence()
+        evidence = self.delivery_evidence(instructions)
         del evidence["qa_receipt"]
         with self.assertRaisesRegex(ContractError, "four receipts"):
             self.delivered(instructions, evidence=evidence)
-        evidence = self.delivery_evidence()
+        evidence = self.delivery_evidence(instructions)
         evidence["packing_receipt"] = {}
         with self.assertRaisesRegex(ContractError, "envelope"):
             self.delivered(instructions, evidence=evidence)
@@ -561,6 +628,64 @@ class DeliverJobTest(WorkshopJobFixture):
             result.instructions_sha256, instructions.instructions_sha256
         )
 
+    def test_delivered_v2_rejects_cross_wish_replay_even_for_same_bytes(self):
+        instructions = self.generated_instructions("cross-wish-instructions")
+        first_context = DeliverContext(self.wish, self.made, instructions)
+        first = self.delivered(instructions)
+        first.assert_context(first_context)
+        self.assertEqual(Delivered.from_dict(first.to_dict()), first)
+
+        other_wishes = (
+            Wish.create(
+                "another-order-for-same-bytes",
+                self.wish.objective,
+                self.wish.constraints,
+                self.wish.context,
+            ),
+            Wish.create(
+                self.wish.product_id,
+                "A different request reusing the same order id",
+                self.wish.constraints,
+                self.wish.context,
+            ),
+        )
+        for other_wish in other_wishes:
+            with self.subTest(other_wish=other_wish.to_dict()):
+                other_context = DeliverContext(other_wish, self.made, instructions)
+                with self.assertRaisesRegex(
+                    ContractError, "Wish, provider, or attempt"
+                ):
+                    first.assert_context(other_context)
+
+        other_context = DeliverContext(other_wishes[0], self.made, instructions)
+        with self.assertRaisesRegex(ContractError, "Wish, provider, or attempt"):
+            Delivered(
+                product_artifact_sha256=self.made.artifact_sha256,
+                instructions_sha256=instructions.instructions_sha256,
+                carrier=first.carrier,
+                service=first.service,
+                tracking_id=first.tracking_id,
+                status=first.status,
+                observed_at=first.observed_at,
+                evidence=first.evidence,
+                product_id=other_context.product_id,
+                wish_sha256=other_context.wish_sha256,
+                deliver_provider_id=other_context.provider_identity,
+                deliver_attempt_id=other_context.attempt_id,
+            )
+
+        legacy = first.to_dict()
+        legacy["schema_version"] = 1
+        for key in (
+            "product_id",
+            "wish_sha256",
+            "deliver_provider_id",
+            "deliver_attempt_id",
+        ):
+            legacy.pop(key)
+        with self.assertRaisesRegex(ContractError, "malformed"):
+            Delivered.from_dict(legacy)
+
     def test_delivery_rejects_truthy_legacy_placeholders_and_broken_chain(self):
         instructions = self.generated_instructions("strict-receipt-instructions")
         placeholders = {
@@ -571,8 +696,7 @@ class DeliverJobTest(WorkshopJobFixture):
         }
         with self.assertRaisesRegex(ContractError, "envelope"):
             self.delivered(instructions, evidence=placeholders)
-        self._delivery_instructions_sha256 = instructions.instructions_sha256
-        evidence = self.delivery_evidence()
+        evidence = self.delivery_evidence(instructions)
         evidence["carrier_receipt"]["details"]["packing_receipt_sha256"] = "0" * 64
         # Recomputeing only the self-hash still cannot break cross-receipt binding.
         carrier = DeliveryEvidenceReceipt(
@@ -581,14 +705,28 @@ class DeliverJobTest(WorkshopJobFixture):
             provider_version=evidence["carrier_receipt"]["provider_version"],
             provider_config_sha256=evidence["carrier_receipt"]["provider_config_sha256"],
             receipt_id=evidence["carrier_receipt"]["receipt_id"],
+            product_id=evidence["carrier_receipt"]["product_id"],
+            wish_sha256=evidence["carrier_receipt"]["wish_sha256"],
             product_artifact_sha256=evidence["carrier_receipt"]["product_artifact_sha256"],
             instructions_sha256=evidence["carrier_receipt"]["instructions_sha256"],
+            deliver_provider_id=evidence["carrier_receipt"]["deliver_provider_id"],
+            deliver_attempt_id=evidence["carrier_receipt"]["deliver_attempt_id"],
             observed_at=evidence["carrier_receipt"]["observed_at"],
             details=evidence["carrier_receipt"]["details"],
         )
         evidence["carrier_receipt"] = carrier.to_dict()
         with self.assertRaisesRegex(ContractError, "exact sealed package"):
             self.delivered(instructions, evidence=evidence)
+
+        delivered = self.delivered(instructions)
+        delivered.evidence["carrier_receipt"]["details"]["tracking_id"] = (
+            "mutated-after-validation"
+        )
+        context = DeliverContext(self.wish, self.made, instructions)
+        with self.assertRaisesRegex(ContractError, "identity is inconsistent"):
+            delivered.assert_context(context)
+        with self.assertRaisesRegex(ContractError, "identity is inconsistent"):
+            delivered.to_dict()
 
     def test_deliver_detects_instructions_tampering_before_calling_fulfiller(self):
         instructions = self.generated_instructions(

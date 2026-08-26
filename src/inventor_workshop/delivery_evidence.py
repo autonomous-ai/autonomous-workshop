@@ -31,8 +31,12 @@ _COMMON_FIELDS = frozenset(
         "provider_version",
         "provider_config_sha256",
         "receipt_id",
+        "product_id",
+        "wish_sha256",
         "product_artifact_sha256",
         "instructions_sha256",
+        "deliver_provider_id",
+        "deliver_attempt_id",
         "observed_at",
         "details",
         "receipt_sha256",
@@ -124,17 +128,21 @@ class DeliveryEvidenceReceipt:
     provider_version: str
     provider_config_sha256: str
     receipt_id: str
+    product_id: str
+    wish_sha256: str
     product_artifact_sha256: str
     instructions_sha256: str
+    deliver_provider_id: str
+    deliver_attempt_id: str
     observed_at: str
     details: Mapping[str, Any]
-    schema_version: int = 1
+    schema_version: int = 2
     kind: str = DELIVERY_EVIDENCE_KIND
     receipt_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("Deliver evidence schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version != 2:
+            raise ContractError("Deliver evidence schema_version must be 2")
         if self.kind != DELIVERY_EVIDENCE_KIND:
             raise ContractError("Deliver evidence kind is invalid")
         if self.stage not in DELIVERY_EVIDENCE_STAGES:
@@ -147,12 +155,32 @@ class DeliveryEvidenceReceipt:
             self.provider_config_sha256, "Deliver evidence provider config sha256"
         )
         _text(self.receipt_id, "Deliver evidence receipt_id", 512)
+        _text(self.product_id, "Deliver evidence product_id", 256)
+        require_sha256(self.wish_sha256, "Deliver evidence Wish sha256")
         require_sha256(
             self.product_artifact_sha256, "Deliver evidence product artifact sha256"
         )
         require_sha256(
             self.instructions_sha256, "Deliver evidence Instructions sha256"
         )
+        selected_provider = _text(
+            self.deliver_provider_id,
+            "Deliver evidence selected provider identity",
+            500,
+        )
+        if any(character.isspace() for character in selected_provider):
+            raise ContractError(
+                "Deliver evidence selected provider identity must be one token"
+            )
+        if (
+            len(self.deliver_attempt_id) != len("deliver-") + 64
+            or not self.deliver_attempt_id.startswith("deliver-")
+            or any(
+                character not in "0123456789abcdef"
+                for character in self.deliver_attempt_id[len("deliver-") :]
+            )
+        ):
+            raise ContractError("Deliver evidence attempt id is malformed")
         require_utc_timestamp(self.observed_at, "Deliver evidence observed_at")
         details = _detail_copy(self.details, self.stage)
         self._validate_details(details)
@@ -223,8 +251,12 @@ class DeliveryEvidenceReceipt:
             "provider_version": self.provider_version,
             "provider_config_sha256": self.provider_config_sha256,
             "receipt_id": self.receipt_id,
+            "product_id": self.product_id,
+            "wish_sha256": self.wish_sha256,
             "product_artifact_sha256": self.product_artifact_sha256,
             "instructions_sha256": self.instructions_sha256,
+            "deliver_provider_id": self.deliver_provider_id,
+            "deliver_attempt_id": self.deliver_attempt_id,
             "observed_at": self.observed_at,
             "details": dict(self.details),
         }
@@ -244,8 +276,12 @@ class DeliveryEvidenceReceipt:
             provider_version=value["provider_version"],
             provider_config_sha256=value["provider_config_sha256"],
             receipt_id=value["receipt_id"],
+            product_id=value["product_id"],
+            wish_sha256=value["wish_sha256"],
             product_artifact_sha256=value["product_artifact_sha256"],
             instructions_sha256=value["instructions_sha256"],
+            deliver_provider_id=value["deliver_provider_id"],
+            deliver_attempt_id=value["deliver_attempt_id"],
             observed_at=value["observed_at"],
             details=value["details"],
             schema_version=value["schema_version"],
@@ -261,6 +297,10 @@ def validate_delivery_evidence_chain(
     *,
     product_artifact_sha256: str,
     instructions_sha256: str,
+    product_id: str,
+    wish_sha256: str,
+    deliver_provider_id: str,
+    deliver_attempt_id: str,
     carrier: str,
     service: str,
     tracking_id: str,
@@ -284,9 +324,14 @@ def validate_delivery_evidence_chain(
         if (
             receipt.product_artifact_sha256 != product_artifact_sha256
             or receipt.instructions_sha256 != instructions_sha256
+            or receipt.product_id != product_id
+            or receipt.wish_sha256 != wish_sha256
+            or receipt.deliver_provider_id != deliver_provider_id
+            or receipt.deliver_attempt_id != deliver_attempt_id
         ):
             raise ContractError(
-                "Deliver evidence identifies different product or Instructions bytes"
+                "Deliver evidence identifies different product or Instructions "
+                "bytes, Wish, provider, or attempt"
             )
     if any(
         later < earlier

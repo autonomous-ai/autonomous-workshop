@@ -522,6 +522,17 @@ class WorkshopManagerTest(unittest.TestCase):
         with self.assertRaisesRegex(ManifestError, "must not contain symlinks"):
             manager_module._implementation_sha256(root)
 
+    def test_hard_link_in_inventor_owned_contribution_fails_closed(self):
+        root = self.collection / "game-maker"
+        provider_source = self.repo / "provider-owned.py"
+        provider_source.write_text(
+            "# bytes owned outside the inventor contribution\n", encoding="utf-8"
+        )
+        (root / "provider-alias.py").hardlink_to(provider_source)
+
+        with self.assertRaisesRegex(ManifestError, "must not be hard linked"):
+            manager_module._implementation_sha256(root)
+
     def test_canonical_bob_shared_skill_links_remain_outside_his_contribution(self):
         wish = Wish.create(
             "canonical-bob-fingerprint",

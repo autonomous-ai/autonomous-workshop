@@ -16,6 +16,7 @@ from .contribution_rpc import ContributionHookClient, IsolationAdapter
 from .errors import ContractError
 from .handoff import ManagerAssignmentHandoff
 from .manifest import load_manifest
+from .manager_services import manager_service_forbidden_read_paths
 from .toys import PLAYTHING_LANES
 from .workshop import (
     CUSTOMIZATION_LEVELS,
@@ -23,6 +24,43 @@ from .workshop import (
     Workshop,
     WorkshopTools,
 )
+
+
+def default_trusted_workshop_engine() -> TrustedWorkshopEngine:
+    """Materialize the exact effect-free built-in Manager engine composition."""
+
+    from .agent_instructions import RewardedInstructions
+    from .agent_invent import CodexInventor
+    from .agent_make import CodexMaker
+    from .agent_playtest import LaneAwarePlaytester
+    from .deliver import DefaultDeliver
+    from .engine_provenance import (
+        DEFAULT_STAGE_PROVIDER_IDS,
+        describe_effective_engine,
+    )
+    from .manager import register_workshop_engine
+
+    tools = WorkshopTools(
+        invent=CodexInventor(),
+        make=CodexMaker(),
+        playtest=LaneAwarePlaytester(),
+        instructions=RewardedInstructions(None),
+        deliver=DefaultDeliver(),
+    )
+    components = {
+        "invent": tools.invent,
+        "make": tools.make,
+        "playtest": tools.playtest,
+        "instructions": tools.instructions,
+        "deliver": tools.deliver,
+    }
+    return register_workshop_engine(
+        tools,
+        provider_ids=DEFAULT_STAGE_PROVIDER_IDS,
+        provenance=describe_effective_engine(
+            components, provider_ids=DEFAULT_STAGE_PROVIDER_IDS
+        ),
+    )
 
 
 def manager_workshop_shape(card: Any) -> tuple[str, str]:
@@ -71,15 +109,18 @@ def execute_manager_workshop(
 ) -> Mapping[str, Any]:
     """Run one assignment without executing its full profile.
 
-    ``action`` supports the same durable ``run``/``resume`` split as the former
-    profile path. Declared custom hooks receive only their exact Make or
-    Playtest context in a credential-free child. The exact assignment is
-    checked before and after shared-engine work, and the returned result retains
-    the Manager handoff binding expected by later continuations.
+    ``action`` supports durable ``run``/``resume`` plus a Deliver-only
+    ``reconcile`` readback. Declared custom hooks receive only their exact Make
+    or Playtest context in a credential-free child, and reconciliation installs
+    inert seams that cannot invoke them. The exact assignment is checked before
+    and after shared-engine work, and the returned result retains the Manager
+    handoff binding expected by later continuations.
     """
 
-    if action not in ("run", "resume"):
-        raise ContractError("Manager Workshop action must be run or resume")
+    if action not in ("run", "resume", "reconcile"):
+        raise ContractError(
+            "Manager Workshop action must be run, resume, or reconcile"
+        )
     assert_current = getattr(assignment, "assert_current", None)
     if not callable(assert_current):
         raise ContractError("Manager execution requires a current sealed assignment")
@@ -119,15 +160,7 @@ def execute_manager_workshop(
         # explicit local-only Instructions worker prevents a Manager-held
         # password (whose username is not known until after Match) from being
         # mistaken for a partial worker credential configuration.
-        from .agent_instructions import RewardedInstructions
-        from .manager import register_workshop_engine
-
-        trusted_engine = register_workshop_engine(
-            WorkshopTools(instructions=RewardedInstructions(None)),
-            provider_ids={
-                "instructions": "workshop.local-rewarded-instructions-v1"
-            },
-        )
+        trusted_engine = default_trusted_workshop_engine()
     else:
         if not isinstance(trusted_engine, TrustedWorkshopEngine):
             raise ContractError(
@@ -135,29 +168,50 @@ def execute_manager_workshop(
             )
     kwargs["trusted_engine"] = trusted_engine
     if level in ("custom-make", "custom-playtest"):
-        contribution = ContributionHookClient(
-            card.root,
-            level,
-            isolation=contribution_isolation,
-        )
+        # Resolve every installed Manager-service entry point without loading
+        # it.  The child can read the Python runtime, so its OS profile must
+        # explicitly hide both provider import targets and the metadata that
+        # would disclose them.  Resolution failure is deliberately fatal for
+        # custom code; Taste-only inventors never enter this branch.
+        contribution = None
+        if action != "reconcile":
+            manager_service_paths = manager_service_forbidden_read_paths()
+            contribution = ContributionHookClient(
+                card.root,
+                level,
+                isolation=contribution_isolation,
+                forbidden_read_paths=manager_service_paths,
+            )
 
         def custom_make(context):
             assert_current()
+            if contribution is None:
+                raise ContractError(
+                    "Deliver reconciliation attempted to rerun custom Make"
+                )
             try:
                 return contribution.make(context)
             finally:
                 assert_current()
 
         kwargs["make"] = custom_make
+        implementation_sha256 = assignment.decision.selected.implementation_sha256
+        custom_component_sha256 = {"make": implementation_sha256}
         if level == "custom-playtest":
             def custom_playtest(context):
                 assert_current()
+                if contribution is None:
+                    raise ContractError(
+                        "Deliver reconciliation attempted to rerun custom Playtest"
+                    )
                 try:
                     return contribution.playtest(context)
                 finally:
                     assert_current()
 
             kwargs["playtest"] = custom_playtest
+            custom_component_sha256["playtest"] = implementation_sha256
+        kwargs["custom_component_sha256"] = custom_component_sha256
     if lane == "little-worlds":
         kwargs.update(
             {
@@ -167,12 +221,12 @@ def execute_manager_workshop(
         )
 
     workshop = workshop_factory(card.root, lane, **kwargs)
-    operation = workshop.run if action == "run" else workshop.resume
-    result = (
-        operation(wish, playtest_rounds=playtest_rounds)
-        if action == "run"
-        else operation(wish)
-    )
+    if action == "run":
+        result = workshop.run(wish, playtest_rounds=playtest_rounds)
+    elif action == "resume":
+        result = workshop.resume(wish)
+    else:
+        result = workshop.reconcile_deliver(wish)
     to_dict = getattr(result, "to_dict", None)
     if not callable(to_dict):
         raise ContractError("Manager Workshop must return a typed WorkshopRun")

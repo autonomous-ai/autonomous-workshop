@@ -2,9 +2,10 @@
 """Exercise installed all-five orchestration with deterministic external boundaries.
 
 This proves packaging, Taste-based routing, Manager-owned shared execution,
-Workshop-owned stage composition, release contracts, resumable Instructions,
-and synthetic Factory request/readback state. It does not call a live routing
-model, real CAD kernel/slicer, live Factory, or physical production.
+Workshop-owned stage composition, the installed Manager service registry,
+release contracts, exact Deliver evidence, resumable Instructions, and
+synthetic Factory request/readback state. It does not call a live routing
+model, real CAD kernel/slicer, live Factory, or actual physical production.
 """
 
 from __future__ import annotations
@@ -134,6 +135,22 @@ def _install_boundaries(repository, python, root, log_path):
     (purelib / "workshop_all_five_acceptance.pth").write_text(
         "import workshop_all_five_acceptance_support\n", encoding="utf-8"
     )
+    dist_info = (
+        purelib / "workshop_all_five_acceptance_provider-1.0.0.dist-info"
+    )
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\n"
+        "Name: workshop-all-five-acceptance-provider\n"
+        "Version: 1.0.0\n",
+        encoding="utf-8",
+    )
+    (dist_info / "entry_points.txt").write_text(
+        "[autonomous_workshop.manager_services]\n"
+        "installed-acceptance = "
+        "workshop_all_five_acceptance_support:manager_services\n",
+        encoding="utf-8",
+    )
 
 
 def _fake_codex(path):
@@ -215,9 +232,7 @@ def acceptance(repository, wheel):
             {
                 "WORKSHOP_CODEX_BIN": str(codex),
                 "WORKSHOP_HOME": str(home),
-                # A synthetic acceptance value. It never enters the repo, logs,
-                # CLI stdout, or the inventor subprocess environment.
-                "FACTORY_PASSWORD": ACCEPTANCE_FACTORY_PASSWORD,
+                "WORKSHOP_MANAGER_SERVICES": "installed-acceptance",
             }
         )
 
@@ -242,19 +257,30 @@ def acceptance(repository, wheel):
             if receipt["match"]["inventor_id"] != inventor_id:
                 raise AssertionError("Wish routed to the wrong Inventor")
             result = receipt["result"]
-            if (result["status"], result["job"]) != ("waiting", "deliver"):
+            if (result["status"], result["job"]) != ("delivered", "deliver"):
                 raise AssertionError(
-                    "%s site completion was confused with physical Deliver: %s"
+                    "%s did not complete through the registered Deliver service: %s"
                     % (inventor_id, json.dumps(result, sort_keys=True))
                 )
-            needs = {(item["job"], item["capability"]) for item in result["needs"]}
-            if needs != {("deliver", "production-and-shipping")}:
-                raise AssertionError(
-                    "Deliver did not retain its physical production boundary: %s"
-                    % sorted(needs)
-                )
-            if result.get("delivery") is not None:
-                raise AssertionError("acceptance fabricated a physical delivery")
+            if result["needs"]:
+                raise AssertionError("completed registered Deliver retained a Need")
+            delivery = result.get("delivery")
+            if (
+                not isinstance(delivery, dict)
+                or delivery.get("status") != "handed-off"
+                or delivery.get("product_artifact_sha256")
+                != result.get("artifact_sha256")
+                or delivery.get("instructions_sha256")
+                != result.get("instructions_sha256")
+                or set(delivery.get("evidence", {}))
+                != {
+                    "print_receipt",
+                    "qa_receipt",
+                    "packing_receipt",
+                    "carrier_receipt",
+                }
+            ):
+                raise AssertionError("registered Deliver returned inexact evidence")
             publication = result.get("publication")
             if not isinstance(publication, dict) or publication.get("status") != "public":
                 raise AssertionError("synthetic Factory publication was not verified public")
@@ -327,10 +353,38 @@ def acceptance(repository, wheel):
             metadata = _json(product["metadata_json"])
             if metadata["inventor_id"] != inventor_id or metadata["lane"] != LANES[inventor_id]:
                 raise AssertionError("durable run lost selected identity")
+            status_receipt = json.loads(
+                _run(
+                    (workshop, "status", product_id, "--json"),
+                    cwd=away,
+                    environment=environment,
+                ).stdout
+            )
+            provenance = status_receipt.get("engine_provenance")
+            if (
+                not isinstance(provenance, dict)
+                or provenance != metadata.get("engine_provenance")
+                or [item.get("stage") for item in provenance.get("components", [])]
+                != ["invent", "make", "playtest", "instructions", "deliver"]
+                or not isinstance(
+                    provenance.get("informational_engine_sha256"), str
+                )
+                or len(provenance["informational_engine_sha256"]) != 64
+            ):
+                raise AssertionError(
+                    "installed status lost exact five-stage engine provenance"
+                )
             transitions = [event["to_stage"] for event in events]
             for stage in ("wish", "invent", "make", "playtest", "instructions", "deliver"):
                 if stage not in transitions:
                     raise AssertionError("durable event chain missed %s" % stage)
+            final_event = _json(events[-1]["payload_json"])
+            if (
+                product.get("stage") != "deliver"
+                or final_event.get("status") != "delivered"
+                or final_event.get("delivery") != delivery
+            ):
+                raise AssertionError("durable Deliver evidence differs from the CLI receipt")
             if intent["state"] != "live":
                 raise AssertionError("Factory outbox did not record verified public state")
             persisted_receipt = _json(intent["receipt_json"])
@@ -367,76 +421,26 @@ def acceptance(repository, wheel):
             for line in log_path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-        tool_records = [item for item in records if item["event"] == "shared-tools"]
-        if {item["inventor_id"] for item in tool_records} != set(CASES):
-            raise AssertionError("not every selected Inventor used the shared Manager engine")
-        for item in tool_records:
-            if (
-                item["customization"] != "taste-only"
-                or item.get("composition")
-                != "production-configured_workshop-tools"
-                or item.get("execution") != "manager-owned"
-            ):
-                raise AssertionError(
-                    "acceptance did not observe production shared composition: %s"
-                    % json.dumps(item, sort_keys=True)
-                )
-            if item["types"] != {
-                "invent": "CodexInventor",
-                "make": "CodexMaker",
-                "playtest": "LaneAwarePlaytester",
-                "instructions": "RewardedInstructions",
-                "deliver": None,
-            }:
-                raise AssertionError("the Manager did not use the shared production stage types")
-            if item.get("make_cad_builder") != "LockedCadSkillBuilder":
-                raise AssertionError("production Make did not retain its shared CAD builder")
-            if item.get("make_cad_command_runner") != "_cad_command_runner":
-                raise AssertionError("acceptance did not inject only the CAD process boundary")
-            if item.get("playtest_lane_providers") != "WorkshopLanePlaytestProviders":
-                raise AssertionError("production Playtest lost its shared lane providers")
-            if item.get("playtest_moving_verifier") != "WorkshopMovingMachineVerifier":
-                raise AssertionError("production Playtest lost its shared moving verifier")
-            argv = item["argv"]
-            if "wish" not in argv or "--assignment-stdin" in argv:
-                raise AssertionError(
-                    "shared workers escaped the authoritative Manager-owned wish path"
-                )
-        for inventor_id in CASES:
-            engine_pids = {
-                item["pid"]
-                for item in tool_records
-                if item["inventor_id"] == inventor_id
-            }
-            cad_commands = {
-                record.get("command_id")
-                for record in records
-                if record["event"] == "cad-command"
-                and record["pid"] in engine_pids
-            }
-            if not {
-                "runtime-probe",
-                "check_layout",
-                "gen",
-                "export",
-                "inspect",
-                "check_fit",
-                "check_mesh",
-                "check_thickness",
-            } <= cad_commands:
-                raise AssertionError("production CAD orchestration did not reach every process seam")
-            slicers = [
-                record
-                for record in records
-                if record["event"] == "slicer-boundary"
-                and record["pid"] in engine_pids
-            ]
-            if not slicers or any(
-                record.get("checker") != "PrusaSlicerPrintCheck"
-                or record.get("command_runner") != "_slicer_command_runner"
-                for record in slicers
-            ):
-                raise AssertionError("production slicer adapter was replaced instead of its process")
+        registry_records = [
+            item for item in records if item["event"] == "manager-services-loaded"
+        ]
+        expected_capabilities = {
+            "research",
+            "classic_rules",
+            "world_reference",
+            "world_playtest",
+            "factory_credentials",
+            "deliver",
+        }
+        if (
+            len(registry_records) != len(CASES)
+            or any(
+                item.get("configuration_id") != "installed-acceptance"
+                or set(item.get("capabilities", ())) != expected_capabilities
+                for item in registry_records
+            )
+        ):
+            raise AssertionError("installed Manager service entry point was not exact")
         models = {item["model"] for item in records if item["event"] == "structured-model"}
         if models != {"gpt-5.6-terra", "gpt-5.6-luna"}:
             raise AssertionError("acceptance did not stay on Terra/Luna")
@@ -451,10 +455,48 @@ def acceptance(repository, wheel):
         }
         if set(manager_pids) != set(CASES):
             raise AssertionError("semantic Manager process identity is incomplete")
-        for item in tool_records:
-            if item["pid"] != manager_pids[item["inventor_id"]]:
+        if {item["pid"] for item in registry_records} != set(manager_pids.values()):
+            raise AssertionError("Manager services loaded outside the Wish Manager processes")
+        for item in registry_records:
+            argv = item["argv"]
+            if "wish" not in argv or "--assignment-stdin" in argv:
                 raise AssertionError(
-                    "shared engine ran outside the semantic Manager process"
+                    "shared services escaped the authoritative Manager-owned wish path"
+                )
+        for inventor_id, engine_pid in manager_pids.items():
+            cad_commands = {
+                record.get("command_id")
+                for record in records
+                if record["event"] == "cad-command"
+                and record["pid"] == engine_pid
+            }
+            if not {
+                "runtime-probe",
+                "check_layout",
+                "gen",
+                "export",
+                "inspect",
+                "check_fit",
+                "check_mesh",
+                "check_thickness",
+            } <= cad_commands:
+                raise AssertionError(
+                    "%s did not reach every shared CAD process seam" % inventor_id
+                )
+            slicers = [
+                record
+                for record in records
+                if record["event"] == "slicer-boundary"
+                and record["pid"] == engine_pid
+            ]
+            if not slicers or any(
+                record.get("checker") != "PrusaSlicerPrintCheck"
+                or record.get("command_runner") != "_slicer_command_runner"
+                for record in slicers
+            ):
+                raise AssertionError(
+                    "%s replaced the shared slicer adapter instead of its process"
+                    % inventor_id
                 )
         for inventor_id in CASES:
             routed = [
@@ -483,12 +525,56 @@ def acceptance(repository, wheel):
                 ):
                     raise AssertionError("actual Taste content did not uniquely select the route")
         eve_pid = manager_pids["eve"]
+        service_records = [
+            item for item in records if item["event"] == "manager-service"
+        ]
+        research_records = [
+            item for item in service_records if item.get("capability") == "research"
+        ]
+        if (
+            len(research_records) != len(CASES)
+            or {item["pid"] for item in research_records}
+            != set(manager_pids.values())
+        ):
+            raise AssertionError("Wish-aware research did not use the installed registry")
+        classic_records = [
+            item for item in service_records if item.get("capability") == "classic_rules"
+        ]
+        if len(classic_records) != 1 or classic_records[0]["pid"] != manager_pids["alice"]:
+            raise AssertionError("classic rules did not use the installed registry")
+        deliver_records = [
+            item for item in service_records if item.get("capability") == "deliver"
+        ]
+        if (
+            len(deliver_records) != len(CASES)
+            or {item["pid"] for item in deliver_records}
+            != set(manager_pids.values())
+        ):
+            raise AssertionError("not every Wish completed registered Deliver")
+        credential_records = [
+            item
+            for item in service_records
+            if item.get("capability") == "factory_credentials"
+        ]
+        if (
+            {item.get("inventor_id") for item in credential_records} != set(CASES)
+            or any(
+                item["pid"] != manager_pids[item["inventor_id"]]
+                for item in credential_records
+            )
+        ):
+            raise AssertionError("Factory credentials bypassed the installed broker")
         world_reference_records = [
             item for item in records if item["event"] == "world-reference-service"
         ]
         if (
             {item.get("operation") for item in world_reference_records}
-            != {"descriptors", "verify-admission"}
+            != {
+                "descriptors",
+                "verify-admission",
+                "authorize-provider-inputs",
+                "verify-authorization",
+            }
             or any(item["pid"] != eve_pid for item in world_reference_records)
             or any(item.get("reference_id") != "customer-market" for item in world_reference_records)
         ):
@@ -498,12 +584,19 @@ def acceptance(repository, wheel):
         ]
         eve_binding = receipts["eve"]["result"]["manager_assignment"]
         if (
-            len(world_playtest_records) != 1
-            or world_playtest_records[0]["pid"] != eve_pid
-            or world_playtest_records[0].get("invent_inputs_sha256")
-            != eve_binding["world_inputs_sha256"]
-            or world_playtest_records[0].get("evidence_sha256")
-            != eve_binding["world_evidence_sha256"]
+            {item.get("operation") for item in world_playtest_records}
+            != {"evaluate", "verify"}
+            or any(item["pid"] != eve_pid for item in world_playtest_records)
+            or any(
+                item.get("evidence_sha256")
+                != eve_binding["world_evidence_sha256"]
+                for item in world_playtest_records
+            )
+            or not any(
+                item.get("invent_inputs_sha256")
+                == eve_binding["world_inputs_sha256"]
+                for item in world_playtest_records
+            )
         ):
             raise AssertionError("world evidence did not bind the resumed v3 Handoff")
         for inventor_id, receipt in receipts.items():
@@ -535,6 +628,23 @@ def acceptance(repository, wheel):
                 raise AssertionError("Factory draft was not read back before publication")
             if not any(index > publishes[0] for index in readbacks):
                 raise AssertionError("Factory public state was not read back after publication")
+            deliver_index = next(
+                index
+                for index, item in enumerate(records)
+                if item["event"] == "manager-service"
+                and item.get("capability") == "deliver"
+                and item["pid"] == pid
+            )
+            publish_index = next(
+                index
+                for index, item in enumerate(records)
+                if item["event"] == "factory-http"
+                and item["pid"] == pid
+                and item.get("method") == "POST"
+                and item.get("path") == "/designs/%s/publish" % product_id
+            )
+            if deliver_index >= publish_index:
+                raise AssertionError("Factory publication happened before exact Deliver")
             inventories = [
                 item
                 for item in records

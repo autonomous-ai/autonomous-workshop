@@ -15,6 +15,7 @@ from inventor_workshop.handoff import PublicationPolicy
 from inventor_workshop.jobs import Need, WaitingFor
 from inventor_workshop.manager import TasteFit, create_shortlist, discover_inventor_catalog
 from inventor_workshop.make import Wish
+from inventor_workshop.match_attempt import MatchAttemptStore
 from inventor_workshop.pending_wish import PendingWish, PendingWishStore
 from tests import test_cli as cli_fixtures
 
@@ -97,6 +98,30 @@ class PendingWishStoreTest(unittest.TestCase):
             playtest_rounds=4,
         )
 
+    @staticmethod
+    def _replace_with_legacy_record(store: PendingWishStore, record: PendingWish):
+        """Install the exact pre-full-TASTE wire shape used by old checkouts."""
+
+        payload = json.loads(record.object_bytes().decode("utf-8"))
+        payload["catalog"].pop("taste_sha256s")
+        source = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        digest = hashlib.sha256(source).hexdigest()
+        object_path = store.path / "objects" / (digest + ".json")
+        object_path.write_bytes(source)
+        object_path.chmod(0o600)
+        index_path = store.path / "by-wish" / (
+            hashlib.sha256(record.wish.product_id.encode("utf-8")).hexdigest()
+            + ".json"
+        )
+        index_path.write_bytes(store._index_bytes(record.wish.product_id, digest))
+        index_path.chmod(0o600)
+        return source, digest
+
     def test_content_addressed_record_round_trips_exact_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -116,6 +141,49 @@ class PendingWishStoreTest(unittest.TestCase):
                 record.record_sha256,
             )
             self.assertEqual(object_path.read_bytes(), record.object_bytes())
+
+    def test_save_rereads_an_existing_index_at_its_commit_boundary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record = self._record(root)
+            store = PendingWishStore(record.catalog_collection)
+            index = store.save(record)
+            from inventor_workshop import pending_wish as pending_module
+
+            real_write = pending_module._write_atomic_exclusive
+
+            def race_pointer(*args, **kwargs):
+                if kwargs.get("label") != "Manager pending Wish index":
+                    return real_write(*args, **kwargs)
+                index.write_bytes(
+                    store._index_bytes(record.wish.product_id, "f" * 64)
+                )
+                index.chmod(0o600)
+                return False
+
+            with mock.patch.object(
+                pending_module,
+                "_write_atomic_exclusive",
+                side_effect=race_pointer,
+            ), self.assertRaisesRegex(WorkshopError, "different pending record"):
+                store.save(record)
+
+    def test_legacy_record_is_readable_but_cannot_be_rematched(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            record = self._record(root)
+            store = PendingWishStore(record.catalog_collection)
+            store.save(record)
+            source, digest = self._replace_with_legacy_record(store, record)
+
+            legacy = store.load(record.wish.product_id)
+            self.assertFalse(legacy.catalog_taste_identity_bound)
+            self.assertEqual(legacy.catalog_taste_sha256s, ())
+            self.assertEqual(legacy.record_sha256, digest)
+            self.assertEqual(legacy.object_bytes(), source)
+            self.assertEqual(store.list(), (legacy,))
+            with self.assertRaisesRegex(WorkshopError, "legacy.*full-TASTE"):
+                legacy.assert_catalog_current(discover_inventor_catalog(root))
 
     def test_tamper_symlink_duplicate_and_content_collision_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -284,7 +352,7 @@ class PendingWishCliTest(unittest.TestCase):
             )
         return result, json.loads(output.getvalue()), progress.getvalue()
 
-    def test_wish_is_durable_before_first_model_call_and_status_is_matching(self):
+    def test_wish_is_durable_before_first_model_call_and_wait_is_status_visible(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self._root(Path(temporary))
             catalog = discover_inventor_catalog(root)
@@ -321,7 +389,11 @@ class PendingWishCliTest(unittest.TestCase):
             self.assertEqual(observed["policy"], receipt["publication_policy"])
             self.assertEqual(observed["catalog"], catalog.catalog_sha256)
             self.assertEqual(receipt["job"], "match")
-            self.assertEqual(receipt["durable_status"], "matching")
+            self.assertEqual(receipt["durable_status"], "waiting")
+            self.assertEqual(receipt["match_attempt"]["status"], "waiting")
+            self.assertEqual(
+                receipt["match_attempt"]["needs"], receipt["needs"]
+            )
             self.assertIn("resume %s" % self.product_id, receipt["next_command"])
             self.assertNotIn("workshop wish", receipt["next_command"])
 
@@ -350,8 +422,12 @@ class PendingWishCliTest(unittest.TestCase):
                     0,
                 )
             status = json.loads(status_output.getvalue())
-            self.assertEqual(status["status"], "matching")
+            self.assertEqual(status["status"], "waiting")
             self.assertEqual(status["job"], "match")
+            self.assertEqual(status["needs"], receipt["needs"])
+            self.assertEqual(
+                status["match_attempt"], receipt["match_attempt"]
+            )
             self.assertIsNone(status["inventor_id"])
             self.assertEqual(status["wish"]["objective"], self.objective)
             self.assertEqual(status["resume"]["kind"], "match")
@@ -366,6 +442,74 @@ class PendingWishCliTest(unittest.TestCase):
                 if path.is_file()
             }
             self.assertEqual(after, before)
+
+    def test_status_lists_legacy_pending_wish_without_advertising_unsafe_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(Path(temporary))
+            catalog = discover_inventor_catalog(root)
+            record = PendingWish.create(
+                Wish.create(
+                    self.product_id,
+                    self.objective,
+                    context={"source": "workshop-cli"},
+                ),
+                PublicationPolicy.for_wish(publish=False),
+                catalog,
+                playtest_rounds=4,
+            )
+            store = PendingWishStore(catalog.collection)
+            store.save(record)
+            PendingWishStoreTest._replace_with_legacy_record(store, record)
+
+            single_output = StringIO()
+            with redirect_stdout(single_output):
+                self.assertEqual(
+                    main(
+                        (
+                            "status",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            single = json.loads(single_output.getvalue())
+            self.assertEqual(single["status"], "matching")
+            self.assertFalse(single["catalog"]["full_taste_bound"])
+            self.assertEqual(single["resume"]["status"], "unavailable")
+            self.assertEqual(single["resume"]["kind"], "legacy-match")
+            self.assertIn("start a new Wish", single["resume"]["reason"])
+
+            list_output = StringIO()
+            with redirect_stdout(list_output):
+                self.assertEqual(
+                    main(("status", "--root", str(root), "--json")),
+                    0,
+                )
+            listing = json.loads(list_output.getvalue())
+            self.assertEqual(listing["count"], 1)
+            self.assertEqual(listing["wishes"][0], single)
+
+            error = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli.CodexSemanticManager"
+            ) as semantic, redirect_stderr(error):
+                self.assertEqual(
+                    main(
+                        (
+                            "resume",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    2,
+                )
+            semantic.assert_not_called()
+            self.assertIn("legacy pending Wish", error.getvalue())
 
     def test_resume_matches_same_id_once_and_preserves_exact_why(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -440,6 +584,265 @@ class PendingWishCliTest(unittest.TestCase):
             self.assertEqual(status["resume"]["kind"], "assigned")
             self.assertEqual(len(assignments), 1)
 
+    def test_strict_resume_returns_one_for_a_durable_match_wait(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(Path(temporary))
+            result, first, unused_progress = self._wish_waiting_at_match(root)
+            self.assertEqual(result, 0)
+            output = StringIO()
+            progress = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli.CodexSemanticManager",
+                return_value=_UnavailableSemanticManager(),
+            ), redirect_stdout(output), redirect_stderr(progress):
+                code = main(
+                    (
+                        "resume",
+                        self.product_id,
+                        "--root",
+                        str(root),
+                        "--strict",
+                        "--json",
+                    )
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(code, 1)
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["durable_status"], "waiting")
+            self.assertEqual(receipt["match_attempt"]["attempt_number"], 2)
+            self.assertNotEqual(
+                receipt["match_attempt"]["attempt_id"],
+                first["match_attempt"]["attempt_id"],
+            )
+
+    def test_saved_handoff_is_authoritative_if_assigned_event_append_crashes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(Path(temporary))
+            self._wish_waiting_at_match(root)
+            error = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli.CodexSemanticManager",
+                return_value=_MiraSemanticManager(),
+            ), mock.patch(
+                "inventor_workshop.cli.MatchAttemptStore.record_assigned",
+                side_effect=WorkshopError("fixture crash after handoff fsync"),
+            ), redirect_stderr(error):
+                self.assertEqual(
+                    main(
+                        (
+                            "resume",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    2,
+                )
+            self.assertIn("after handoff fsync", error.getvalue())
+
+            catalog = discover_inventor_catalog(root)
+            latest = MatchAttemptStore(catalog.collection).load(self.product_id)
+            self.assertEqual(latest.status, "working")
+            status_output = StringIO()
+            with redirect_stdout(status_output):
+                self.assertEqual(
+                    main(
+                        (
+                            "status",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            status = json.loads(status_output.getvalue())
+            self.assertEqual(status["status"], "assigned")
+            self.assertEqual(status["match_attempt"]["status"], "working")
+            self.assertRegex(status["manager_handoff_sha256"], r"^[0-9a-f]{64}$")
+
+            child_result = {
+                "product_id": self.product_id,
+                "status": "waiting",
+                "job": "invent",
+                "needs": [],
+                "playtest_rounds": 4,
+            }
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli.CodexSemanticManager"
+            ) as semantic, mock.patch(
+                "inventor_workshop.cli._run_inventor",
+                return_value=child_result,
+            ), redirect_stdout(output):
+                self.assertEqual(
+                    main(
+                        (
+                            "resume",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            semantic.assert_not_called()
+
+    def test_publication_upgrade_preserves_immutable_assigned_match_history(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(Path(temporary))
+            self._wish_waiting_at_match(root)
+            child_result = {
+                "product_id": self.product_id,
+                "status": "waiting",
+                "job": "invent",
+                "needs": [],
+                "playtest_rounds": 4,
+            }
+            with mock.patch(
+                "inventor_workshop.cli.CodexSemanticManager",
+                return_value=_MiraSemanticManager(),
+            ), mock.patch(
+                "inventor_workshop.cli._run_inventor",
+                return_value=child_result,
+            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertEqual(
+                    main(
+                        (
+                            "resume",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            catalog = discover_inventor_catalog(root)
+            attempts = MatchAttemptStore(catalog.collection)
+            before = attempts.load_chain(self.product_id)
+            self.assertEqual(before[-1].status, "assigned")
+
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._run_inventor",
+                return_value=child_result,
+            ), redirect_stdout(output), redirect_stderr(StringIO()):
+                self.assertEqual(
+                    main(
+                        (
+                            "resume",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--publish",
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(receipt["publication_policy"]["visibility"], "public")
+            self.assertEqual(attempts.load_chain(self.product_id), before)
+
+            status_output = StringIO()
+            with redirect_stdout(status_output):
+                self.assertEqual(
+                    main(
+                        (
+                            "status",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            status = json.loads(status_output.getvalue())
+            self.assertEqual(status["status"], "assigned")
+            self.assertEqual(status["publication_policy"]["visibility"], "public")
+            self.assertEqual(
+                status["match_attempt"]["event_sha256"],
+                before[-1].event_sha256,
+            )
+            self.assertEqual(
+                status["match_attempt"]["manager_handoff_sha256"],
+                before[-1].manager_handoff_sha256,
+            )
+            self.assertNotEqual(
+                status["manager_handoff_sha256"],
+                status["match_attempt"]["manager_handoff_sha256"],
+            )
+
+    def test_status_retries_old_pending_new_match_pair_without_taking_write_lock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = self._root(Path(temporary))
+            self._wish_waiting_at_match(root)
+            catalog = discover_inventor_catalog(root)
+            pending_store = PendingWishStore(catalog.collection)
+            attempts = MatchAttemptStore(catalog.collection)
+            original = pending_store.load(self.product_id)
+            original_attempt = attempts.load(self.product_id)
+            upgraded = original.with_publication_policy(
+                original.publication_policy.authorize_public()
+            )
+            original_load = PendingWishStore.load
+            raced = False
+
+            def load_with_one_publication_race(
+                selected_store, product_id, *, allow_missing=False
+            ):
+                nonlocal raced
+                observed = original_load(
+                    selected_store,
+                    product_id,
+                    allow_missing=allow_missing,
+                )
+                if not raced and product_id == self.product_id:
+                    raced = True
+                    with pending_store.lock(product_id):
+                        pending_store.replace(original, upgraded)
+                        working = attempts.begin(upgraded)
+                        attempts.record_waiting(
+                            working, original_attempt.needs
+                        )
+                return observed
+
+            output = StringIO()
+            with mock.patch.object(
+                PendingWishStore,
+                "load",
+                load_with_one_publication_race,
+            ), redirect_stdout(output):
+                self.assertEqual(
+                    main(
+                        (
+                            "status",
+                            self.product_id,
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            status = json.loads(output.getvalue())
+            self.assertTrue(raced)
+            self.assertEqual(
+                status["publication_policy"]["visibility"], "public"
+            )
+            self.assertEqual(
+                status["match_attempt"]["pending_wish_sha256"],
+                upgraded.record_sha256,
+            )
+            self.assertEqual(
+                status["needs"], status["match_attempt"]["needs"]
+            )
+
     def test_pending_resume_publication_upgrade_is_durable_across_match_waits(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self._root(Path(temporary))
@@ -487,7 +890,10 @@ class PendingWishCliTest(unittest.TestCase):
                     0,
                 )
             status = json.loads(status_output.getvalue())
-            self.assertEqual(status["status"], "matching")
+            self.assertEqual(status["status"], "waiting")
+            self.assertEqual(
+                status["needs"][0]["capability"], "semantic-manager"
+            )
             self.assertEqual(status["publication_policy"]["visibility"], "public")
 
             error = StringIO()

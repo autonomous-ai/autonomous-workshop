@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
+from contextlib import contextmanager, nullcontext
 import hashlib
 import json
 import os
@@ -15,10 +17,13 @@ import sqlite3
 import stat
 import subprocess
 import sys
+import threading
+import time
 import unicodedata
+from functools import lru_cache
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 from ._package_data import (
     existing_bundled_catalog_roots,
@@ -27,11 +32,21 @@ from ._package_data import (
     packaged_inventors_root,
 )
 from .artifacts import MAX_PACK_BYTES
+from .batch import (
+    BatchPlan,
+    BatchPlanItem,
+    BatchPlanStore,
+    load_or_create_batch_manager_identity,
+    parse_batch_file,
+)
 from .clockwork import Clockwork
 from .codex_runtime import ALLOWED_WORKSHOP_MODELS
 from .contribution import check_target, manifests_for_target
+from .deliver import DefaultDeliver
+from .engine_provenance import EngineProvenanceManifest
 from .errors import AmbiguousEffectError, EffectError, WorkshopError
 from .factory_agent import (
+    FactoryAgentCredentials,
     FactoryAgentInstructionsWriter,
     FactoryAgentSession,
     FactoryPublicTransition,
@@ -44,7 +59,15 @@ from .handoff import (
     validate_manager_assignment_result,
 )
 from .instructions import sealed_instructions_manifest
-from .jobs import Delivered, Feedback, Invented, Need, WaitingFor, WorkshopRun
+from .jobs import (
+    Delivered,
+    Feedback,
+    Invented,
+    Need,
+    WaitingFor,
+    WorkshopRun,
+    deliver_wish_sha256,
+)
 from .execution_env import codex_subprocess_environment, minimal_tool_environment
 from .agent_instructions import (
     DEFAULT_INSTRUCTIONS_CREATOR_MODEL,
@@ -52,6 +75,7 @@ from .agent_instructions import (
     RewardedInstructions,
 )
 from .make import Wish, generate_wish_id
+from .match_attempt import MatchAttemptEvent, MatchAttemptStore
 from .manifest import (
     discover_inventors,
     inventor_collection,
@@ -66,7 +90,11 @@ from .manager import (
     discover_inventor_catalog,
     register_workshop_engine,
 )
-from .semantic_manager import CodexSemanticManager
+from .manager_services import (
+    ManagerServices,
+    configured_manager_services,
+)
+from .semantic_manager import CodexSemanticManager, DEFAULT_MANAGER_MODEL
 from .scaffold import (
     create_inventor,
     prepare_inventor_collection,
@@ -142,7 +170,13 @@ def _configured_world_reference_service(assignment: Any):
     """
 
     del assignment
-    return None
+    services = _selected_manager_services()
+    if services is None or services.world_reference_service is None:
+        return None
+    binding = services.binding("world_reference")
+    if binding is None:  # pragma: no cover - property and binding are atomic
+        raise WorkshopError("Manager world reference binding is inconsistent")
+    return services.world_reference_service, binding.identity.world_identity()
 
 
 def _configured_world_playtest_evidence(
@@ -155,8 +189,42 @@ def _configured_world_playtest_evidence(
     cannot measure private references and therefore returns no evidence.
     """
 
-    del assignment, result
-    return None
+    services = _selected_manager_services()
+    if services is None or services.world_playtest_service is None:
+        return None
+    personalization = _durable_world_personalization(assignment, result)
+    world_inputs = getattr(assignment, "world_inputs", None)
+    if not isinstance(world_inputs, WorldInventInputs):
+        raise WorkshopError(
+            "Manager world Playtest service requires exact Invent inputs"
+        )
+    return services.prepare_world_evidence(
+        assignment.wish,
+        result.get("artifact_sha256"),
+        personalization,
+        world_inputs,
+    )
+
+
+def _selected_manager_services(
+    source: Optional[Mapping[str, str]] = None,
+) -> Optional[ManagerServices]:
+    """Load one explicitly selected trusted Manager composition."""
+
+    values = os.environ if source is None else source
+    selected = values.get("WORKSHOP_MANAGER_SERVICES")
+    if selected is None:
+        return None
+    if not isinstance(selected, str) or not selected:
+        return configured_manager_services(values)
+    return _cached_manager_services(selected)
+
+
+@lru_cache(maxsize=8)
+def _cached_manager_services(configuration_id: str) -> ManagerServices:
+    return configured_manager_services(
+        {"WORKSHOP_MANAGER_SERVICES": configuration_id}
+    )
 
 
 def _has_inventor_catalog(root: Path) -> bool:
@@ -503,6 +571,35 @@ def _factory_credential_environment(
     return {"FACTORY_USERNAME": inventor_id, "FACTORY_PASSWORD": password}
 
 
+def _factory_credentials_for(
+    inventor_id: str,
+    source: Optional[Mapping[str, str]] = None,
+):
+    """Resolve one opaque Factory secret inside the Manager process only.
+
+    An explicit ``source`` is the backward-compatible test/operator seam. In a
+    normal command, a selected Manager service broker is authoritative; only
+    installations without that capability use the legacy shared password.
+    """
+
+    if source is not None:
+        environment = _factory_credential_environment(inventor_id, source)
+        return (
+            None
+            if environment is None
+            else factory_credentials_from_environment(inventor_id, environment)
+        )
+    services = _selected_manager_services()
+    if services is not None and services.binding("factory_credentials") is not None:
+        return services.factory_credentials_for(inventor_id)
+    environment = _factory_credential_environment(inventor_id, os.environ)
+    return (
+        None
+        if environment is None
+        else factory_credentials_from_environment(inventor_id, environment)
+    )
+
+
 def _manifest_workshop_shape(card: Any) -> tuple[str, str]:
     """Read one exact lane/contribution pair from the selected manifest."""
 
@@ -551,28 +648,13 @@ def _invented_from_event(value: Any) -> Invented:
 
 
 def _delivered_from_event(value: Any) -> Delivered:
-    if not isinstance(value, Mapping) or set(value) != {
-        "schema_version",
-        "product_artifact_sha256",
-        "instructions_sha256",
-        "carrier",
-        "service",
-        "tracking_id",
-        "status",
-        "observed_at",
-        "evidence",
-    } or value.get("schema_version") != 1:
-        raise WorkshopError("persisted Deliver result is malformed")
-    return Delivered(
-        product_artifact_sha256=value["product_artifact_sha256"],
-        instructions_sha256=value["instructions_sha256"],
-        carrier=value["carrier"],
-        service=value["service"],
-        tracking_id=value["tracking_id"],
-        status=value["status"],
-        observed_at=value["observed_at"],
-        evidence=value["evidence"],
-    )
+    try:
+        delivered = Delivered.from_dict(value)
+    except WorkshopError as exc:
+        raise WorkshopError("persisted Deliver result is malformed") from exc
+    if delivered.to_dict() != dict(value):
+        raise WorkshopError("persisted Deliver result identity is inconsistent")
+    return delivered
 
 
 def _validate_child_workshop_state(
@@ -580,6 +662,7 @@ def _validate_child_workshop_state(
     child_result: Mapping[str, Any],
     *,
     allow_durable_factory_page: bool = False,
+    allow_ambiguous_deliver: bool = False,
 ) -> Mapping[str, Any]:
     """Derive the child result from the trusted event chain, never stdout claims."""
 
@@ -615,17 +698,49 @@ def _validate_child_workshop_state(
         "customization_level": level,
         "playtest_rounds": assignment.playtest_rounds,
     }
-    if product.get("metadata") != expected_metadata:
+    metadata = product.get("metadata")
+    allowed_metadata_shapes = (
+        set(expected_metadata),
+        set(expected_metadata) | {"engine_provenance"},
+    )
+    if (
+        not isinstance(metadata, Mapping)
+        or set(metadata) not in allowed_metadata_shapes
+        or any(metadata.get(key) != value for key, value in expected_metadata.items())
+    ):
         raise WorkshopError(
             "durable Workshop state differs from the exact Manager assignment"
         )
+    if "engine_provenance" in metadata:
+        try:
+            EngineProvenanceManifest.from_dict(metadata["engine_provenance"])
+        except (KeyError, TypeError, ValueError, WorkshopError) as exc:
+            raise WorkshopError(
+                "durable Workshop engine provenance is malformed"
+            ) from exc
     job = product.get("stage")
     if latest.get("to_stage") != job:
         raise WorkshopError("latest Workshop event differs from product state")
     status = payload.get("status")
-    if status not in ("waiting", "stopped", "delivered"):
+    allowed_statuses = {"waiting", "stopped", "delivered"}
+    if allow_ambiguous_deliver:
+        allowed_statuses.add("working")
+    if status not in allowed_statuses:
         raise WorkshopError(
             "selected Inventor stopped without a terminal Workshop event"
+        )
+    if status == "working" and (
+        job != "deliver"
+        or not isinstance(payload.get("deliver_provider_id"), str)
+        or not payload.get("deliver_provider_id")
+        or re.fullmatch(
+            r"deliver-[0-9a-f]{64}",
+            str(payload.get("deliver_attempt_id")),
+        )
+        is None
+    ):
+        raise WorkshopError(
+            "ambiguous Deliver state has no exact provider attempt identity"
         )
     round_number = payload.get("round")
     if type(round_number) is not int:
@@ -700,8 +815,15 @@ def _validate_child_workshop_state(
         if (
             delivery.product_artifact_sha256 != artifact_sha256
             or delivery.instructions_sha256 != instructions_sha256
+            or delivery.product_id != product_id
+            or delivery.wish_sha256 != deliver_wish_sha256(assignment.wish)
+            or delivery.deliver_provider_id
+            != payload.get("deliver_provider_id")
+            or delivery.deliver_attempt_id != payload.get("deliver_attempt_id")
         ):
-            raise WorkshopError("persisted Deliver result has different exact inputs")
+            raise WorkshopError(
+                "persisted Deliver result has different exact Wish or inputs"
+            )
     page_url = None
     if allow_durable_factory_page:
         intent = runtime.latest_publish_intent(product_id)
@@ -817,6 +939,7 @@ def _resume_factory_instructions(
     result: Mapping[str, Any],
     *,
     environment: Optional[Mapping[str, str]] = None,
+    credentials: Optional[FactoryAgentCredentials] = None,
     store_factory: Any = InventorStore,
     writer_factory: Any = FactoryAgentInstructionsWriter,
     workshop_factory: Any = Workshop,
@@ -848,11 +971,19 @@ def _resume_factory_instructions(
     if not is_factory_wait:
         return dict(result)
     inventor_id = assignment.decision.selected.card.inventor_id
-    selected_environment = _factory_credential_environment(
-        inventor_id, os.environ if environment is None else environment
+    if credentials is not None and environment is not None:
+        raise WorkshopError(
+            "Factory resume accepts credentials or an environment, not both"
+        )
+    selected_credentials = (
+        credentials
+        if credentials is not None
+        else _factory_credentials_for(inventor_id, environment)
     )
-    if selected_environment is None:
+    if selected_credentials is None:
         return dict(result)
+    if not isinstance(selected_credentials, FactoryAgentCredentials):
+        raise WorkshopError("Factory resume credentials are not typed")
     assert_current = getattr(assignment, "assert_current", None)
     if callable(assert_current):
         assert_current()
@@ -871,14 +1002,11 @@ def _resume_factory_instructions(
                 assignment
             ).result_binding(),
         }
-    credentials = factory_credentials_from_environment(
-        inventor_id, selected_environment
-    )
     runtime_root = Path(card.root) / ".workshop"
     writer = writer_factory(
         store_factory(runtime_root / "workshop.sqlite3"),
         inventor_id,
-        credentials,
+        selected_credentials,
     )
     instructions = RewardedInstructions(
         writer,
@@ -894,15 +1022,31 @@ def _resume_factory_instructions(
         del context
         raise WorkshopError("Instructions resume attempted an earlier Workshop stage")
 
+    services = _selected_manager_services() if environment is None else None
     resume_tools = WorkshopTools(
         invent=unavailable,
         make=unavailable,
         playtest=unavailable,
         instructions=instructions,
+        deliver=(
+            None
+            if services is None or services.deliver_fulfiller is None
+            else DefaultDeliver(services.deliver_fulfiller)
+        ),
     )
+    provider_ids = {
+        "invent": "workshop.resume-unavailable-invent-v1",
+        "make": "workshop.resume-unavailable-make-v1",
+        "playtest": "workshop.resume-unavailable-playtest-v1",
+        "instructions": "workshop.factory-resume-instructions-v1",
+    }
+    if resume_tools.deliver is not None:
+        provider_ids["deliver"] = services.stage_provider_id("deliver", "deliver")
     workshop_kwargs = {
         "inventor_id": inventor_id,
-        "trusted_engine": register_workshop_engine(resume_tools),
+        "trusted_engine": register_workshop_engine(
+            resume_tools, provider_ids=provider_ids
+        ),
         "runtime_root": runtime_root,
     }
     if lane == "little-worlds":
@@ -955,7 +1099,15 @@ def _run_inventor(
 
         if not callable(state_validator):
             raise WorkshopError("Workshop state validator must be callable")
-        bound = execute_manager_workshop(assignment, action=action)
+        services = _selected_manager_services()
+        execution_options = {}
+        if services is not None:
+            execution_options["trusted_engine"] = (
+                services.trusted_workshop_engine()
+            )
+        bound = execute_manager_workshop(
+            assignment, action=action, **execution_options
+        )
         return state_validator(assignment, bound)
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     command = list(assignment.entrypoint)
@@ -1505,14 +1657,17 @@ def _replace_manager_assignment_publication_policy(
     return verified
 
 
-def _find_durable_wish(
+def _find_durable_wish_once(
     root: Path, product_id: str, *, allow_missing: bool = False
 ) -> Optional[Mapping[str, Any]]:
-    """Locate one Manager Wish or Inventor product without mutation."""
+    """Observe one Manager Wish or Inventor product without mutation."""
 
     catalog = discover_inventor_catalog(root)
     pending_store = PendingWishStore(catalog.collection)
     pending = pending_store.load(product_id, allow_missing=True)
+    match_attempt = MatchAttemptStore(catalog.collection).load(
+        product_id, allow_missing=True
+    )
     matches = []
     for card in catalog.cards:
         assignment_path = _assignment_file(card.root, product_id)
@@ -1572,7 +1727,8 @@ def _find_durable_wish(
             }
         )
     if not matches and pending is not None:
-        pending.assert_catalog_current(catalog)
+        if pending.catalog_taste_identity_bound:
+            pending.assert_catalog_current(catalog)
         return {
             "card": None,
             "database": None,
@@ -1583,8 +1739,13 @@ def _find_durable_wish(
             "handoff": None,
             "pending": pending,
             "pending_store": pending_store,
+            "match_attempt": match_attempt,
         }
     if not matches:
+        if match_attempt is not None:
+            raise WorkshopError(
+                "saved Match attempt has no PendingWish or Manager assignment"
+            )
         if allow_missing:
             return None
         raise WorkshopError(
@@ -1601,6 +1762,11 @@ def _find_durable_wish(
         # Once Match has sealed an assignment, that assignment is authoritative
         # even if the catalog later changes.  The stale pending record must still
         # agree byte-for-byte on every input it bound before Match.
+        # ``match_attempt`` remains an immutable audit of the original Match
+        # handoff.  Its handoff digest is deliberately not compared with the
+        # current handoff here: a later explicit draft-to-public authorization
+        # replaces only the saved handoff's publication policy and must not
+        # rewrite or invalidate completed Match history.
         handoff = located.get("handoff")
         if not isinstance(handoff, ManagerAssignmentHandoff):
             raise WorkshopError(
@@ -1631,7 +1797,71 @@ def _find_durable_wish(
         **located,
         "pending": pending,
         "pending_store": pending_store,
+        "match_attempt": match_attempt,
     }
+
+
+def _find_durable_wish(
+    root: Path, product_id: str, *, allow_missing: bool = False
+) -> Optional[Mapping[str, Any]]:
+    """Locate one stable Manager Wish snapshot without taking its write lock.
+
+    PendingWish publication upgrades and append-only Match heads live in
+    separate durable stores. Read both again after the broader assignment and
+    runtime discovery so status can never combine an old policy with a newer
+    attempt. Their heads are monotonic, making equal before/after digests a
+    stable observation; a bounded retry handles a writer crossing the read.
+    """
+
+    for unused_attempt in range(3):
+        located = _find_durable_wish_once(
+            root, product_id, allow_missing=True
+        )
+        observed_pending = None if located is None else located.get("pending")
+        observed_match = (
+            None if located is None else located.get("match_attempt")
+        )
+        catalog = discover_inventor_catalog(root)
+        current_pending = PendingWishStore(catalog.collection).load(
+            product_id, allow_missing=True
+        )
+        current_match = MatchAttemptStore(catalog.collection).load(
+            product_id, allow_missing=True
+        )
+        if (
+            (
+                None
+                if observed_pending is None
+                else observed_pending.record_sha256
+            )
+            == (
+                None
+                if current_pending is None
+                else current_pending.record_sha256
+            )
+            and (
+                None
+                if observed_match is None
+                else observed_match.event_sha256
+            )
+            == (
+                None
+                if current_match is None
+                else current_match.event_sha256
+            )
+        ):
+            if located is not None:
+                return located
+            if allow_missing:
+                return None
+            raise WorkshopError(
+                "no saved Wish %r was found under %s; use the id printed by "
+                "'workshop wish'" % (product_id, Path(root))
+            )
+    raise WorkshopError(
+        "saved Manager Wish changed repeatedly during a read-only observation; "
+        "retry status or resume"
+    )
 
 
 def _root_for_durable_wish(
@@ -1744,11 +1974,24 @@ def _resume_binding_problem(located: Mapping[str, Any]) -> Optional[str]:
         "customization_level": level,
         "playtest_rounds": handoff.playtest_rounds,
     }
-    if metadata != expected:
+    allowed_metadata_shapes = (
+        set(expected),
+        set(expected) | {"engine_provenance"},
+    )
+    if (
+        not isinstance(metadata, Mapping)
+        or set(metadata) not in allowed_metadata_shapes
+        or any(metadata.get(key) != value for key, value in expected.items())
+    ):
         return (
             "durable Workshop bindings differ from the exact saved Manager assignment, "
             "Inventor identity, Taste, lane, customization, or Playtest allowance"
         )
+    if "engine_provenance" in metadata:
+        try:
+            EngineProvenanceManifest.from_dict(metadata["engine_provenance"])
+        except (KeyError, TypeError, ValueError, WorkshopError) as exc:
+            return "durable Workshop engine provenance is invalid: %s" % exc
     return None
 
 
@@ -1833,7 +2076,12 @@ def _exact_playtest_checkpoint_problem(
             run_root, made_event, "made"
         )
         metadata = located["product"]["metadata"]
-        expected_keys = set(metadata) | {
+        business_metadata = {
+            key: value
+            for key, value in metadata.items()
+            if key != "engine_provenance"
+        }
+        expected_keys = set(business_metadata) | {
             "product_id",
             "round",
             "invented",
@@ -1843,7 +2091,10 @@ def _exact_playtest_checkpoint_problem(
         # ``wish`` already lives in metadata; checkpoint bindings add product_id.
         if set(checkpoint) != expected_keys:
             return "Made checkpoint payload shape is not exact"
-        if any(checkpoint.get(key) != value for key, value in metadata.items()):
+        if any(
+            checkpoint.get(key) != value
+            for key, value in business_metadata.items()
+        ):
             return "Made checkpoint bindings differ from the durable Workshop"
         if (
             checkpoint.get("product_id") != located["product"]["id"]
@@ -1866,7 +2117,7 @@ def _exact_playtest_checkpoint_problem(
             completed, completed_digest = _read_stage_checkpoint(
                 run_root, located["latest"], "playtested"
             )
-            expected_completed_keys = set(metadata) | {
+            expected_completed_keys = set(business_metadata) | {
                 "product_id",
                 "round",
                 "made_checkpoint_sha256",
@@ -1875,7 +2126,10 @@ def _exact_playtest_checkpoint_problem(
             }
             if set(completed) != expected_completed_keys:
                 return "Playtested checkpoint payload shape is not exact"
-            if any(completed.get(key) != value for key, value in metadata.items()):
+            if any(
+                completed.get(key) != value
+                for key, value in business_metadata.items()
+            ):
                 return "Playtested checkpoint bindings differ from the durable Workshop"
             if (
                 completed.get("product_id") != located["product"]["id"]
@@ -1916,7 +2170,12 @@ def _exact_instructions_checkpoint_problem(
             run_root, latest
         )
         metadata = located["product"]["metadata"]
-        expected_keys = set(metadata) | {
+        business_metadata = {
+            key: value
+            for key, value in metadata.items()
+            if key != "engine_provenance"
+        }
+        expected_keys = set(business_metadata) | {
             "product_id",
             "round",
             "made",
@@ -1924,7 +2183,10 @@ def _exact_instructions_checkpoint_problem(
         }
         if set(checkpoint) != expected_keys:
             return "Instructions checkpoint payload shape is not exact"
-        if any(checkpoint.get(key) != value for key, value in metadata.items()):
+        if any(
+            checkpoint.get(key) != value
+            for key, value in business_metadata.items()
+        ):
             return "Instructions checkpoint bindings differ from the durable Workshop"
         round_number = latest_payload.get("round")
         if (
@@ -2024,13 +2286,6 @@ def _resume_availability(
             "wish",
             "the registered Wish can restart before Invent without changing identity",
         )
-    if (
-        stage != "instructions"
-        and isinstance(page, Mapping)
-        and page.get("status") in ("draft", "unknown")
-    ):
-        return True, "factory-page", "the exact Factory page can be continued"
-
     card = located.get("card")
     card_root = getattr(card, "root", None)
     run_root = (
@@ -2054,6 +2309,17 @@ def _resume_availability(
     if not isinstance(payload, Mapping):
         return False, "malformed", "the latest Workshop checkpoint is malformed"
     status = payload.get("status")
+    if (
+        stage == "deliver"
+        and status == "delivered"
+        and isinstance(page, Mapping)
+        and page.get("status") in ("draft", "unknown")
+    ):
+        return (
+            True,
+            "factory-page",
+            "the delivered toy's exact Factory page can be published or reconciled",
+        )
     if status not in ("working", "waiting"):
         return (
             False,
@@ -2128,6 +2394,35 @@ def _resume_availability(
             "legacy-instructions",
             "Instructions has no exact waiting checkpoint that can be continued safely",
         )
+    if stage == "deliver":
+        if status == "working":
+            return (
+                False,
+                "ambiguous-deliver",
+                "Deliver has a working external effect with an unknown outcome; reconcile it instead of retrying",
+            )
+        exact = (
+            status == "waiting"
+            and isinstance(payload.get("deliver_checkpoint_path"), str)
+            and bool(payload["deliver_checkpoint_path"])
+            and _valid_sha256(payload.get("deliver_checkpoint_sha256"))
+            and payload.get("deliver_checkpoint_round") == payload.get("round")
+            and isinstance(payload.get("instructions_checkpoint_path"), str)
+            and bool(payload["instructions_checkpoint_path"])
+            and _valid_sha256(payload.get("instructions_checkpoint_sha256"))
+            and payload.get("instructions_checkpoint_round") == payload.get("round")
+        )
+        if exact:
+            return (
+                True,
+                "deliver",
+                "Deliver can continue from its exact approved Instructions and no-effect wait",
+            )
+        return (
+            False,
+            "legacy-deliver",
+            "Deliver has no exact no-effect checkpoint that can be continued safely",
+        )
     return (
         False,
         "unsupported-stage",
@@ -2145,34 +2440,77 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
         and located.get("handoff") is None
         and located.get("product") is None
     ):
-        return {
+        attempt = located.get("match_attempt")
+        if attempt is not None and not isinstance(attempt, MatchAttemptEvent):
+            raise WorkshopError("saved Match attempt is not typed")
+        if isinstance(attempt, MatchAttemptEvent) and attempt.status == "assigned":
+            raise WorkshopError(
+                "Match attempt claims an assignment but its sealed handoff is missing"
+            )
+        status = (
+            "waiting"
+            if isinstance(attempt, MatchAttemptEvent)
+            and attempt.status == "waiting"
+            else "matching"
+        )
+        needs = (
+            [item.to_dict() for item in attempt.needs]
+            if isinstance(attempt, MatchAttemptEvent)
+            and attempt.status == "waiting"
+            else []
+        )
+        receipt = {
             "schema_version": 1,
             "catalog_root": str(Path(root).resolve()),
             "product_id": product_id,
-            "status": "matching",
+            "status": status,
             "job": "match",
             "round": None,
             "inventor_id": None,
             "inventor_name": None,
             "artifact_sha256": None,
-            "updated_at": None,
+            "updated_at": (
+                attempt.recorded_at
+                if isinstance(attempt, MatchAttemptEvent)
+                else None
+            ),
             "wish": pending.wish.to_dict(),
-            "needs": [],
+            "needs": needs,
             "event_chain": "not-started",
             "publication_policy": pending.publication_policy.to_dict(),
             "catalog": {
                 "collection": str(pending.catalog_collection),
                 "catalog_sha256": pending.catalog_sha256,
                 "total": pending.catalog_total,
+                "full_taste_bound": pending.catalog_taste_identity_bound,
             },
-            "resume": {
+        }
+        if isinstance(attempt, MatchAttemptEvent):
+            receipt["match_attempt"] = attempt.public_status()
+        if pending.catalog_taste_identity_bound:
+            receipt["resume"] = {
                 "status": "available",
                 "kind": "match",
                 "command": _resume_command(product_id, root),
-            },
-        }
+            }
+        else:
+            receipt["resume"] = {
+                "status": "unavailable",
+                "kind": "legacy-match",
+                "reason": (
+                    "this legacy pending Wish predates the full-TASTE catalog "
+                    "snapshot; start a new Wish instead of rematching it under "
+                    "changed creative constitutions"
+                ),
+            }
+        return receipt
     card = located["card"]
     saved_handoff = located.get("handoff")
+    match_attempt = located.get("match_attempt")
+    if match_attempt is not None and not isinstance(
+        match_attempt, MatchAttemptEvent
+    ):
+        raise WorkshopError("saved Match attempt is not typed")
     publication_policy = (
         saved_handoff.publication_policy
         if isinstance(saved_handoff, ManagerAssignmentHandoff)
@@ -2200,7 +2538,10 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
             "needs": [],
             "event_chain": "not-started",
             "publication_policy": publication_policy.to_dict(),
+            "manager_handoff_sha256": handoff.handoff_sha256,
         }
+        if isinstance(match_attempt, MatchAttemptEvent):
+            receipt["match_attempt"] = match_attempt.public_status()
         available, kind, reason = _resume_availability(located)
         if available:
             receipt["resume"] = {
@@ -2259,12 +2600,99 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
         "event_chain": "valid",
         "publication_policy": publication_policy.to_dict(),
     }
+    if isinstance(saved_handoff, ManagerAssignmentHandoff):
+        # The Match event binds the handoff originally sealed at assignment.
+        # This digest describes the current handoff, whose publication policy
+        # may later be upgraded without rewriting that immutable Match audit.
+        receipt["manager_handoff_sha256"] = saved_handoff.handoff_sha256
+    if isinstance(match_attempt, MatchAttemptEvent):
+        receipt["match_attempt"] = match_attempt.public_status()
+    raw_engine_provenance = metadata.get("engine_provenance")
+    if raw_engine_provenance is not None:
+        try:
+            engine_provenance = EngineProvenanceManifest.from_dict(
+                raw_engine_provenance
+            )
+        except (KeyError, TypeError, ValueError, WorkshopError) as exc:
+            raise WorkshopError(
+                "saved Workshop engine provenance is malformed"
+            ) from exc
+        receipt["engine_provenance"] = engine_provenance.to_dict()
+    if product.get("stage") == "deliver":
+        deliver_provider_id = payload.get("deliver_provider_id")
+        deliver_attempt_id = payload.get("deliver_attempt_id")
+        if (
+            not isinstance(deliver_provider_id, str)
+            or not deliver_provider_id
+            or len(deliver_provider_id) > 500
+            or any(
+                character.isspace()
+                or ord(character) < 33
+                or ord(character) == 127
+                for character in deliver_provider_id
+            )
+            or not isinstance(deliver_attempt_id, str)
+            or re.fullmatch(r"deliver-[0-9a-f]{64}", deliver_attempt_id) is None
+        ):
+            raise WorkshopError(
+                "persisted Deliver state has no exact provider attempt identity"
+            )
+        receipt["deliver_provider_id"] = deliver_provider_id
+        receipt["deliver_attempt_id"] = deliver_attempt_id
+        if status == "working":
+            receipt["reconcile"] = {
+                "status": "required",
+                "kind": "authenticated-deliver-readback",
+                "command": _reconcile_command(product_id, root),
+            }
+    if status == "delivered":
+        raw_delivery = next(
+            (
+                event_payload.get("delivery")
+                for event in reversed(located["events"])
+                if isinstance(
+                    (event_payload := event.get("payload")), Mapping
+                )
+                and event_payload.get("status") == "delivered"
+                and event_payload.get("delivery") is not None
+            ),
+            None,
+        )
+        delivered = _delivered_from_event(raw_delivery)
+        try:
+            persisted_wish = Wish(**dict(wish))
+        except (TypeError, WorkshopError) as exc:
+            raise WorkshopError("saved Deliver Wish is malformed") from exc
+        if persisted_wish.to_dict() != dict(wish):
+            raise WorkshopError("saved Deliver Wish identity is inconsistent")
+        if (
+            delivered.product_artifact_sha256 != product.get("artifact_sha256")
+            or delivered.product_id != product_id
+            or delivered.wish_sha256 != deliver_wish_sha256(persisted_wish)
+            or delivered.deliver_provider_id
+            != receipt.get("deliver_provider_id")
+            or delivered.deliver_attempt_id != receipt.get("deliver_attempt_id")
+        ):
+            raise WorkshopError(
+                "persisted Deliver result identifies another Wish or product"
+            )
+        receipt["delivery"] = delivered.to_dict()
     active = located["runtime"].active_lease(product_id)
     if active is not None:
         receipt["worker"] = {
             "status": "active",
             "expires_at": active["expires_at"],
         }
+        reconciliation = receipt.get("reconcile")
+        if isinstance(reconciliation, Mapping):
+            receipt["reconcile"] = {
+                **dict(reconciliation),
+                "status": "blocked",
+                "reason": (
+                    "another Workshop worker owns this attempt until %s"
+                    % active["expires_at"]
+                ),
+            }
     intent = _ReadOnlyWorkshopStore(located["database"]).latest_publish_intent(
         product_id
     )
@@ -2345,10 +2773,17 @@ def _promote_factory_intent(
     credentials: Any,
     *,
     product_id: str,
+    assert_current: Callable[[], None],
     session_factory: Any,
     transition_factory: Any,
 ) -> Receipt:
     """Fence one public effect and reconcile crash ambiguity by GET only."""
+
+    if not callable(assert_current):
+        raise WorkshopError(
+            "Factory publication requires a current Manager assignment"
+        )
+    assert_current()
 
     intent_id = intent.get("id")
     if not isinstance(intent_id, str) or not intent_id:
@@ -2377,6 +2812,7 @@ def _promote_factory_intent(
             intent = store.get_publish_intent(intent_id)
         intent_state = intent.get("state")
         if intent_state == "live":
+            assert_current()
             public = Receipt.from_dict(intent.get("receipt"))
             if not public.is_verified_public:
                 raise WorkshopError("durable Factory live receipt is not verified")
@@ -2388,6 +2824,7 @@ def _promote_factory_intent(
         if intent_state == "live_unknown":
             # Authenticated readback is the only effect allowed here. A draft
             # does not prove whether a prior publish crossed the boundary.
+            assert_current()
             identity = session.login()
             draft.assert_owner(identity.owner_id)
             door = ShopDoor(
@@ -2437,6 +2874,7 @@ def _promote_factory_intent(
             raise WorkshopError(
                 "authenticated Factory draft lacks exact Instructions, Playtest, or page proof"
             )
+        assert_current()
         publishing = store.begin_live(
             intent_id,
             {
@@ -2450,20 +2888,29 @@ def _promote_factory_intent(
         if not isinstance(effect_token, str) or not effect_token:
             raise WorkshopError("durable Factory publication fence is malformed")
         try:
-            public = transition.publish(draft)
-        except AmbiguousEffectError as exc:
-            store.mark_live_unknown(
-                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+            assert_current()
+        except Exception:
+            store.restore_draft_after_publish_rejection(
+                intent_id,
+                effect_token,
+                "manager-assignment-changed-before-publication",
             )
             raise
-        except EffectError as exc:
+        try:
+            public = transition.publish(draft)
+        except AmbiguousEffectError:
+            store.mark_live_unknown(
+                intent_id, effect_token, "ambiguous-factory-publication-effect"
+            )
+            raise
+        except EffectError:
             store.restore_draft_after_publish_rejection(
-                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+                intent_id, effect_token, "factory-publication-rejected"
             )
             raise
         except Exception as exc:
             store.mark_live_unknown(
-                intent_id, effect_token, "%s: %s" % (type(exc).__name__, exc)
+                intent_id, effect_token, "unexpected-factory-publication-error"
             )
             raise AmbiguousEffectError(
                 "Factory publication outcome is unknown; reconcile before retry"
@@ -2472,7 +2919,7 @@ def _promote_factory_intent(
             store.mark_live_unknown(
                 intent_id,
                 effect_token,
-                "Factory transition returned no verified public receipt",
+                "unverified-factory-publication-receipt",
             )
             raise AmbiguousEffectError(
                 "Factory publication returned no verified public readback; reconcile before retry"
@@ -2502,19 +2949,41 @@ def _publish_inventor_draft(
             "status": "waiting",
             "reason": "Instructions has not produced an authenticated Factory draft yet.",
         }
-    environment = _factory_credential_environment(inventor_id)
-    if environment is None:
+    if result.get("status") != "delivered" or not isinstance(
+        result.get("delivery"), Mapping
+    ):
+        return {
+            "status": "waiting",
+            "reason": (
+                "The authenticated Factory draft remains private until exact "
+                "production, QA, packing, and carrier evidence proves this toy "
+                "can be fulfilled. Factory publication may activate a sale listing."
+            ),
+        }
+    delivered = _delivered_from_event(result["delivery"])
+    if (
+        not isinstance(artifact_sha256, str)
+        or delivered.product_id != product_id
+        or delivered.wish_sha256 != deliver_wish_sha256(assignment.wish)
+        or delivered.product_artifact_sha256 != artifact_sha256
+    ):
+        raise WorkshopError(
+            "the physical Deliver receipt belongs to another Wish or artifact"
+        )
+    credentials = _factory_credentials_for(inventor_id)
+    if credentials is None:
         catalog_root = Path(assignment.decision.selected.card.root).parent
         return {
             "status": "waiting",
             "reason": (
-                "FACTORY_PASSWORD is not configured in the trusted Manager. Set it, "
-                "then run: %s. The value is never printed or passed to Inventor code."
+                "The trusted Manager has no Factory credential for this Inventor. "
+                "Configure its factory_credentials service (recommended), or the "
+                "legacy FACTORY_PASSWORD, then run: %s. The secret is never printed "
+                "or passed to Inventor code."
                 % _resume_command(product_id, catalog_root)
             ),
         }
     try:
-        credentials = factory_credentials_from_environment(inventor_id, environment)
         runtime_root = Path(assignment.decision.selected.card.root) / ".workshop"
         store = store_factory(runtime_root / "workshop.sqlite3")
         intent = store.latest_publish_intent(product_id)
@@ -2524,16 +2993,29 @@ def _publish_inventor_draft(
             raise WorkshopError(
                 "the Factory draft URL differs from the Workshop Instructions receipt"
             )
-        if isinstance(artifact_sha256, str):
-            draft.assert_artifact(artifact_sha256)
+        draft.assert_artifact(artifact_sha256)
+        if (
+            draft.details.get("instructions_sha256")
+            != delivered.instructions_sha256
+        ):
+            raise WorkshopError(
+                "the physical Deliver receipt identifies different Instructions"
+            )
         if not isinstance(intent, Mapping):
             raise WorkshopError("the selected Inventor has no durable Factory intent")
+        assert_current = getattr(assignment, "assert_current", None)
+        if not callable(assert_current):
+            raise WorkshopError(
+                "Factory publication requires a current Manager assignment"
+            )
+        assert_current()
         public = _promote_factory_intent(
             store,
             intent,
             draft,
             credentials,
             product_id=product_id,
+            assert_current=assert_current,
             session_factory=session_factory,
             transition_factory=transition_factory,
         )
@@ -2564,14 +3046,23 @@ def _waiting_receipt(wish: Wish, waiting: WaitingFor) -> Mapping[str, Any]:
 
 
 def _pending_match_waiting_receipt(
-    pending: PendingWish, waiting: WaitingFor, root: Path
+    pending: PendingWish,
+    waiting: WaitingFor,
+    root: Path,
+    attempt: MatchAttemptEvent,
 ) -> Mapping[str, Any]:
     """One retryable Match wait, bound to the already-printed Wish id."""
+
+    if attempt.status != "waiting" or tuple(attempt.needs) != tuple(
+        waiting.needs
+    ):
+        raise WorkshopError("durable Match attempt differs from its typed wait")
 
     return {
         **_waiting_receipt(pending.wish, waiting),
         "job": "match",
-        "durable_status": "matching",
+        "durable_status": "waiting",
+        "match_attempt": attempt.public_status(),
         "publication_policy": pending.publication_policy.to_dict(),
         "next_command": _resume_command(pending.wish.product_id, root),
     }
@@ -2688,6 +3179,12 @@ def _resume_command(product_id: str, root: Path) -> str:
     return _shell_command("workshop", "resume", product_id, "--root", Path(root))
 
 
+def _reconcile_command(product_id: str, root: Path) -> str:
+    return _shell_command(
+        "workshop", "reconcile", product_id, "--root", Path(root)
+    )
+
+
 def _wish_command(objective: str, root: Path, *, draft: bool = False) -> str:
     parts = ["workshop", "wish", objective, "--root", Path(root)]
     if draft:
@@ -2755,7 +3252,7 @@ def _print_wish_receipt(
 
 def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
     print("Wish: %s" % receipt["product_id"])
-    if receipt.get("status") == "matching" and receipt.get("inventor_name") is None:
+    if receipt.get("job") == "match" and receipt.get("inventor_name") is None:
         print("Inventor: matching your Wish")
     else:
         print("Inventor: %s" % receipt["inventor_name"])
@@ -2773,6 +3270,18 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
         print("Need: %s" % need["capability"])
         print("Why: %s" % need["reason"])
         print("Next: %s" % need["instructions"])
+    match_attempt = receipt.get("match_attempt")
+    if isinstance(match_attempt, Mapping):
+        print(
+            "Match attempt: %s (%s, event %s)"
+            % (
+                match_attempt.get("attempt_id"),
+                match_attempt.get("status"),
+                match_attempt.get("event_sequence"),
+            )
+        )
+    if isinstance(receipt.get("manager_handoff_sha256"), str):
+        print("Manager handoff: %s" % receipt["manager_handoff_sha256"])
     page = receipt.get("page")
     if isinstance(page, Mapping):
         label = {
@@ -2785,6 +3294,44 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
     worker = receipt.get("worker")
     if isinstance(worker, Mapping) and worker.get("status") == "active":
         print("Worker: active until %s" % worker["expires_at"])
+    if isinstance(receipt.get("deliver_provider_id"), str):
+        print("Deliver provider: %s" % receipt["deliver_provider_id"])
+    if isinstance(receipt.get("deliver_attempt_id"), str):
+        print("Deliver attempt: %s" % receipt["deliver_attempt_id"])
+    reconciliation = receipt.get("reconcile")
+    if (
+        isinstance(reconciliation, Mapping)
+        and reconciliation.get("status") == "required"
+        and isinstance(reconciliation.get("command"), str)
+    ):
+        print("Reconcile: %s" % reconciliation["command"])
+    elif (
+        isinstance(reconciliation, Mapping)
+        and reconciliation.get("status") == "blocked"
+    ):
+        print("Reconcile: unavailable — %s" % reconciliation.get("reason"))
+        if isinstance(reconciliation.get("command"), str):
+            print("After the worker stops: %s" % reconciliation["command"])
+    provenance = receipt.get("engine_provenance")
+    if isinstance(provenance, Mapping):
+        print(
+            "Engine provenance: %s (informational aggregate)"
+            % provenance.get("informational_engine_sha256")
+        )
+        components = provenance.get("components")
+        if isinstance(components, list):
+            for component in components:
+                if not isinstance(component, Mapping):
+                    continue
+                print(
+                    "Engine %-12s %s  provider=%s  stage=%s"
+                    % (
+                        str(component.get("stage")).title() + ":",
+                        component.get("state"),
+                        component.get("provider_id") or "missing",
+                        component.get("stage_sha256"),
+                    )
+                )
     print("Event chain: %s" % receipt["event_chain"])
     resume = receipt.get("resume")
     if isinstance(resume, Mapping) and resume.get("status") == "available":
@@ -2864,6 +3411,90 @@ def _status(args: argparse.Namespace) -> int:
     else:
         _print_status_receipt(receipt, root=selected_root)
     return 0
+
+
+def _reconcile(args: argparse.Namespace) -> int:
+    """Read back one exact working Deliver attempt without fulfilling again."""
+
+    roots = _catalog_roots(args.root, include_retained=args.root is None)
+    selected_root, _ = _root_for_durable_wish(roots, args.product_id)
+    assignment, located = _resume_assignment(selected_root, args.product_id)
+    status = _status_receipt(selected_root, args.product_id)
+    if status.get("job") != "deliver" or status.get("status") != "working":
+        raise WorkshopError(
+            "Deliver reconciliation requires an exact ambiguous working attempt"
+        )
+    reconciliation = status.get("reconcile")
+    if (
+        isinstance(reconciliation, Mapping)
+        and reconciliation.get("status") == "blocked"
+    ):
+        raise WorkshopError(str(reconciliation.get("reason")))
+    if located.get("product") is None:
+        raise WorkshopError("Deliver reconciliation has no durable Workshop state")
+
+    services = _selected_manager_services()
+    if services is None or services.binding("deliver") is None:
+        raise WorkshopError(
+            "the exact Manager Deliver provider is not configured for authenticated readback"
+        )
+    selected_provider_id = services.stage_provider_id("deliver", "deliver")
+    if selected_provider_id != status.get("deliver_provider_id"):
+        raise AmbiguousEffectError(
+            "The selected Manager Deliver provider differs from the working attempt; select its exact persisted provider before reconciliation."
+        )
+
+    from .manager_execution import execute_manager_workshop
+
+    result = execute_manager_workshop(
+        assignment,
+        action="reconcile",
+        trusted_engine=services.trusted_workshop_engine(),
+    )
+    result = _validate_child_workshop_state(
+        assignment,
+        result,
+        allow_durable_factory_page=True,
+        allow_ambiguous_deliver=True,
+    )
+    if result.get("status") == "working":
+        result = {
+            **result,
+            "reconciliation": {
+                "status": "still-unknown",
+                "provider_id": status["deliver_provider_id"],
+                "attempt_id": status["deliver_attempt_id"],
+                "command": _reconcile_command(args.product_id, selected_root),
+            },
+        }
+    publication_policy = getattr(assignment, "publication_policy", None)
+    if not isinstance(publication_policy, PublicationPolicy):
+        publication_policy = PublicationPolicy.legacy_fail_safe()
+    receipt = {
+        "schema_version": 1,
+        "status": result.get("status"),
+        "wish": assignment.wish.to_dict(),
+        "match": {
+            "inventor_id": assignment.inventor_id,
+            "name": assignment.decision.selected.card.name,
+            "explanation": (
+                "Reconciling the exact persisted Manager Deliver attempt."
+            ),
+        },
+        "publication_policy": publication_policy.to_dict(),
+        "result": result,
+    }
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_wish_receipt(receipt, root=selected_root)
+        reconciliation = result.get("reconciliation")
+        if isinstance(reconciliation, Mapping):
+            print(
+                "Reconciliation: still unknown; no fulfillment retry was sent."
+            )
+            print("Read back again: %s" % reconciliation["command"])
+    return 0 if result.get("status") == "delivered" else 1
 
 
 def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, Any]]:
@@ -2978,9 +3609,13 @@ def _prepare_assignment_world_inputs(
         raise WorkshopError(
             "configured world reference service must return (service, WorldProviderIdentity)"
         )
-    world_inputs = prepare_world_invent_inputs(
-        assignment.wish, configured[0], configured[1]
-    )
+    services = _selected_manager_services()
+    if services is not None and services.binding("world_reference") is not None:
+        world_inputs = services.prepare_world_inputs(assignment.wish)
+    else:
+        world_inputs = prepare_world_invent_inputs(
+            assignment.wish, configured[0], configured[1]
+        )
     return _world_assignment_view(assignment, world_inputs=world_inputs)
 
 
@@ -3076,6 +3711,125 @@ def _durable_world_instructions_results(
     return made, playtested, evidence_root, personalization, None
 
 
+def _durable_world_personalization(
+    assignment: Any, result: Mapping[str, Any]
+) -> Mapping[str, Any]:
+    """Reopen the exact Made checkpoint before an isolated World service call."""
+
+    if not isinstance(result, Mapping):
+        raise WorkshopError("world Playtest evidence request is malformed")
+    if result.get("job") == "instructions":
+        made, unused_playtested, unused_root, personalization, need = (
+            _durable_world_instructions_results(assignment, result)
+        )
+        del unused_playtested, unused_root
+        if need is not None or made is None or personalization is None:
+            raise WorkshopError(
+                "world Instructions lacks exact durable personalization"
+            )
+        return personalization
+
+    card = assignment.decision.selected.card
+    located = _find_durable_wish(Path(card.root).parent, assignment.wish.product_id)
+    product = located.get("product")
+    latest = located.get("latest")
+    if result.get("job") == "deliver":
+        if (
+            not isinstance(product, Mapping)
+            or product.get("stage") != "deliver"
+            or not isinstance(latest, Mapping)
+            or not isinstance(latest.get("payload"), Mapping)
+        ):
+            raise WorkshopError(
+                "world evidence requires an exact durable Deliver wait"
+            )
+        run_root = (
+            Path(card.root)
+            / ".workshop"
+            / "runs"
+            / assignment.wish.product_id
+        )
+        if run_root.is_symlink() or not run_root.is_dir():
+            raise WorkshopError("world Deliver workspace is missing or unsafe")
+        resolved_root = run_root.resolve(strict=True)
+        deliver_checkpoint, deliver_digest = _read_stage_checkpoint(
+            resolved_root, latest, "deliver"
+        )
+        instructions_checkpoint, instructions_digest = (
+            _read_instructions_checkpoint(resolved_root, latest)
+        )
+        made, playtested, unused_evidence_root = _rebuild_checkpoint_results(
+            resolved_root, instructions_checkpoint
+        )
+        del unused_evidence_root
+        payload = latest["payload"]
+        if (
+            payload.get("status") != "waiting"
+            or payload.get("deliver_checkpoint_sha256") != deliver_digest
+            or payload.get("instructions_checkpoint_sha256")
+            != instructions_digest
+            or deliver_checkpoint.get("instructions_checkpoint_sha256")
+            != instructions_digest
+            or deliver_checkpoint.get("made_artifact_sha256")
+            != made.artifact_sha256
+            or deliver_checkpoint.get("playtested_evidence_artifact_sha256")
+            != playtested.evidence.evidence_artifact_sha256
+            or result.get("artifact_sha256") != made.artifact_sha256
+        ):
+            raise WorkshopError(
+                "world Deliver cites different approved checkpoint bytes"
+            )
+        return world_personalization_from_made(made)
+    if (
+        not isinstance(product, Mapping)
+        or product.get("stage") != "playtest"
+        or not isinstance(latest, Mapping)
+        or not isinstance(latest.get("payload"), Mapping)
+    ):
+        raise WorkshopError(
+            "world evidence requires an exact durable Playtest wait"
+        )
+    run_root = (
+        Path(card.root)
+        / ".workshop"
+        / "runs"
+        / assignment.wish.product_id
+    )
+    if run_root.is_symlink() or not run_root.is_dir():
+        raise WorkshopError("world Playtest workspace is missing or unsafe")
+    resolved_root = run_root.resolve(strict=True)
+    checkpoint_problem = _exact_playtest_checkpoint_problem(
+        located, resolved_root, latest["payload"]
+    )
+    if checkpoint_problem is not None:
+        raise WorkshopError(checkpoint_problem)
+    round_number = latest["payload"].get("round")
+    made_event = next(
+        (
+            event
+            for event in reversed(located.get("events", ()))
+            if event.get("from_stage") == "make"
+            and event.get("to_stage") == "playtest"
+            and isinstance(event.get("payload"), Mapping)
+            and event["payload"].get("round") == round_number
+        ),
+        None,
+    )
+    if made_event is None:
+        raise WorkshopError("world Playtest has no exact Made checkpoint")
+    checkpoint, unused_digest = _read_stage_checkpoint(
+        resolved_root, made_event, "made"
+    )
+    del unused_digest
+    made = _rebuild_made_value(resolved_root, checkpoint.get("made"))
+    made.assert_current()
+    if result.get("artifact_sha256") != made.artifact_sha256:
+        raise WorkshopError(
+            "world evidence request identifies different Made bytes"
+        )
+    return world_personalization_from_made(made)
+
+
 def _refresh_world_instructions_evidence(
     assignment: Any,
     result: Mapping[str, Any],
@@ -3128,6 +3882,53 @@ def _refresh_world_instructions_evidence(
         raise WorkshopError(
             "durable world Playtest no longer satisfies exact Manager release policy"
         )
+    return (
+        _world_assignment_view(
+            assignment,
+            world_inputs=world_inputs,
+            world_evidence=evidence,
+        ),
+        None,
+    )
+
+
+def _refresh_world_deliver_evidence(
+    assignment: Any, result: Mapping[str, Any]
+) -> tuple[Any, Optional[Need]]:
+    """Restore exact raw-free World evidence before a Deliver continuation."""
+
+    card = assignment.decision.selected.card
+    lane, unused_level = _manifest_workshop_shape(card)
+    del unused_level
+    if lane != "little-worlds" or result.get("job") != "deliver":
+        return assignment, None
+    world_inputs = getattr(assignment, "world_inputs", None)
+    if not isinstance(world_inputs, WorldInventInputs):
+        return assignment, Need(
+            "deliver",
+            "world-playtest-evidence",
+            "The Manager cannot reconstruct the exact admitted little-world reference scope for Deliver.",
+            "Reconnect the Manager WorldReferenceService and resume this exact Wish.",
+        )
+    evidence = getattr(assignment, "world_evidence", None)
+    if evidence is None:
+        evidence = _configured_world_playtest_evidence(assignment, result)
+    if evidence is None:
+        return assignment, Need(
+            "deliver",
+            "world-playtest-evidence",
+            "The Manager cannot re-verify the exact private-reference Playtest envelope before physical Deliver.",
+            "Reconnect the isolated WorldPlaytestService and resume this exact Wish; no earlier Workshop stage will rerun.",
+        )
+    if not isinstance(evidence, WorldPlaytestEvidence):
+        raise WorkshopError("configured world evidence is not typed")
+    personalization = _durable_world_personalization(assignment, result)
+    evidence.assert_context(
+        assignment.wish,
+        result.get("artifact_sha256"),
+        personalization,
+        world_inputs,
+    )
     return (
         _world_assignment_view(
             assignment,
@@ -3204,7 +4005,8 @@ def _factory_authentication_wait(
                 "capability": "factory-authentication",
                 "reason": "This Manager process has no Factory credential for the matched Inventor.",
                 "instructions": (
-                    "Set FACTORY_PASSWORD in the trusted Manager environment, then run: "
+                    "Configure the Manager factory_credentials service (recommended), "
+                    "or set the legacy FACTORY_PASSWORD, then run: "
                     + _resume_command(assignment.wish.product_id, root)
                     + ". This Wish will inherit its saved %s policy. The value is "
                     "never passed to Inventor code or printed."
@@ -3227,14 +4029,17 @@ def _continue_instructions_as_manager(
 ) -> Mapping[str, Any]:
     if not _is_site_wait(result):
         return dict(result)
-    if _factory_credential_environment(assignment.inventor_id) is None:
+    credentials = _factory_credentials_for(assignment.inventor_id)
+    if credentials is None:
         return _factory_authentication_wait(
             assignment,
             root,
             result,
             publication_policy=publication_policy,
         )
-    return _resume_factory_instructions(assignment, result)
+    return _resume_factory_instructions(
+        assignment, result, credentials=credentials
+    )
 
 
 def _resolve_resume_publication_policy(
@@ -3287,8 +4092,15 @@ def _resume_pending_match(
 ) -> int:
     """Retry Match for the exact pre-Match Wish id, then start its assignment."""
 
+    if not initial.catalog_taste_identity_bound:
+        raise WorkshopError(
+            "this legacy pending Wish predates the full-TASTE catalog snapshot; "
+            "start a new Wish instead of rematching it under changed creative constitutions"
+        )
+
     progress = sys.stderr if args.json else sys.stdout
     store = PendingWishStore(initial.catalog_collection)
+    attempts = MatchAttemptStore(initial.catalog_collection)
     assignment = None
     receipt = None
     policy_change = None
@@ -3332,17 +4144,30 @@ def _resume_pending_match(
                 file=progress,
                 flush=True,
             )
+            working_attempt = attempts.begin(current)
             try:
                 assignment = _match_pending_wish(root, current)
             except WaitingFor as waiting:
-                receipt = _pending_match_waiting_receipt(current, waiting, root)
+                waiting_attempt = attempts.record_waiting(
+                    working_attempt, waiting.needs
+                )
+                receipt = _pending_match_waiting_receipt(
+                    current, waiting, root, waiting_attempt
+                )
             else:
                 observed = store.load(current.wish.product_id)
                 if not isinstance(observed, PendingWish) or (
                     observed.record_sha256 != current.record_sha256
                 ):
                     raise WorkshopError("Manager pending Wish changed during Match resume")
-                _save_manager_assignment(assignment)
+                assignment_path = _save_manager_assignment(assignment)
+                verified_handoff = _read_saved_handoff(
+                    assignment_path, assignment.inventor_id
+                )
+                attempts.record_assigned(
+                    working_attempt,
+                    verified_handoff.handoff_sha256,
+                )
     if assignment_won_race:
         return _resume(args)
     if assignment is not None:
@@ -3365,7 +4190,7 @@ def _resume_pending_match(
             root=root,
             show_match=assignment is not None,
         )
-    return 0
+    return _wish_exit_code(receipt, strict=getattr(args, "strict", False))
 
 
 def _resume(args: argparse.Namespace) -> int:
@@ -3386,44 +4211,63 @@ def _resume(args: argparse.Namespace) -> int:
             file=progress,
             flush=True,
         )
-    assignment = _prepare_assignment_world_inputs(
-        assignment,
-        allow_same_user_local_vault=args.allow_same_user_local_vault,
-    )
     status = _status_receipt(selected_root, args.product_id)
     needs = status.get("needs", [])
-    evidence_probe = {
-        "status": status.get("status"),
-        "job": status.get("job"),
-        "needs": needs,
-        "artifact_sha256": status.get("artifact_sha256"),
-    }
-    assignment, world_instructions_need = _refresh_world_instructions_evidence(
-        assignment,
-        evidence_probe,
-        located=located,
+    terminal_or_ambiguous_deliver = (
+        status.get("job") == "deliver"
+        and status.get("status") in ("working", "delivered")
     )
-    if world_instructions_need is None:
+    world_resume_need = None
+    if terminal_or_ambiguous_deliver:
+        # A completed Deliver needs only its exact durable receipt for a later
+        # page transition. A working Deliver is effect-ambiguous. Neither case
+        # may invoke World reference/comparison services merely to decide that.
         available, kind, unavailable_reason = _resume_availability(
             located,
             status.get("page"),
             manager_assignment=assignment,
         )
     else:
-        available, kind, unavailable_reason = (
-            False,
-            "world-playtest-evidence",
-            world_instructions_need.reason,
+        assignment = _prepare_assignment_world_inputs(
+            assignment,
+            allow_same_user_local_vault=args.allow_same_user_local_vault,
         )
+        evidence_probe = {
+            "status": status.get("status"),
+            "job": status.get("job"),
+            "needs": needs,
+            "artifact_sha256": status.get("artifact_sha256"),
+        }
+        assignment, world_instructions_need = _refresh_world_instructions_evidence(
+            assignment,
+            evidence_probe,
+            located=located,
+        )
+        assignment, world_deliver_need = _refresh_world_deliver_evidence(
+            assignment, evidence_probe
+        )
+        world_resume_need = world_instructions_need or world_deliver_need
+        if world_resume_need is None:
+            available, kind, unavailable_reason = _resume_availability(
+                located,
+                status.get("page"),
+                manager_assignment=assignment,
+            )
+        else:
+            available, kind, unavailable_reason = (
+                False,
+                "world-playtest-evidence",
+                world_resume_need.reason,
+            )
     result: Mapping[str, Any]
-    if world_instructions_need is not None:
+    if world_resume_need is not None:
         result = {
             "product_id": args.product_id,
             "status": "waiting",
-            "job": "instructions",
+            "job": world_resume_need.job,
             "playtest_rounds": assignment.playtest_rounds,
             "artifact_sha256": status.get("artifact_sha256"),
-            "needs": [world_instructions_need.to_dict()],
+            "needs": [world_resume_need.to_dict()],
             "manager_assignment": ManagerAssignmentHandoff.from_assignment(
                 assignment
             ).result_binding(),
@@ -3447,6 +4291,7 @@ def _resume(args: argparse.Namespace) -> int:
             "job": status["job"],
             "artifact_sha256": status.get("artifact_sha256"),
             "page_url": page.get("page_url"),
+            "delivery": status.get("delivery"),
             "needs": needs,
         }
     elif kind == "instructions" and _is_site_wait(
@@ -3531,7 +4376,620 @@ def _resume(args: argparse.Namespace) -> int:
         _print_wish_receipt(receipt, root=selected_root)
         if result.get("resume") == "not-available":
             print("Resume: unavailable — %s" % result["reason"])
-    return 1 if result.get("resume") == "not-available" else 0
+    if result.get("resume") == "not-available":
+        return 1
+    return _wish_exit_code(receipt, strict=getattr(args, "strict", False))
+
+
+def _batch_concurrency(value: str) -> int:
+    try:
+        selected = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("concurrency must be an integer from 1 to 8") from exc
+    if not 1 <= selected <= 8:
+        raise argparse.ArgumentTypeError("concurrency must be an integer from 1 to 8")
+    return selected
+
+
+def _batch_location(
+    roots: Sequence[Path], batch_id: str
+) -> tuple[Path, BatchPlanStore, BatchPlan]:
+    matches = []
+    for root in roots:
+        catalog = discover_inventor_catalog(root)
+        store = BatchPlanStore(catalog.collection)
+        plan = store.load(batch_id, allow_missing=True)
+        if plan is not None:
+            matches.append((Path(root).resolve(), store, plan))
+    if not matches:
+        raise WorkshopError("this batch has no saved Manager plan")
+    if len(matches) != 1:
+        raise WorkshopError(
+            "this batch id exists in more than one retained catalog; pass --root explicitly"
+        )
+    return matches[0]
+
+
+def _batch_manager_scope(catalog_collection: Path) -> Path:
+    """Return one stable Manager scope, including across installed generations."""
+
+    collection = Path(catalog_collection).resolve(strict=True)
+    parent = collection.parent
+    if (
+        collection.name == "inventors"
+        and len(parent.name) == 64
+        and all(character in "0123456789abcdef" for character in parent.name)
+        and parent.parent.name == "bundled-catalogs"
+    ):
+        return parent.parent.parent.resolve(strict=True)
+    return (parent if collection.name == "inventors" else collection).resolve(
+        strict=True
+    )
+
+
+def _batch_policy_compatible(
+    planned: PublicationPolicy, actual: PublicationPolicy
+) -> bool:
+    return planned.to_dict() == actual.to_dict() or (
+        planned.visibility == "draft"
+        and actual.visibility == "public"
+        and actual.authorization == "explicit-resume-publish"
+    )
+
+
+def _batch_same_submission(existing: BatchPlan, proposed: BatchPlan) -> bool:
+    """Compare every catalog-independent Wish and publication input exactly."""
+
+    return (
+        existing.batch_id == proposed.batch_id
+        and existing.manager_scope_id == proposed.manager_scope_id
+        and existing.submission_sha256 == proposed.submission_sha256
+        and existing.playtest_rounds == proposed.playtest_rounds
+        and len(existing.items) == len(proposed.items)
+        and all(
+            prior.wish.to_dict() == current.wish.to_dict()
+            and prior.publication_policy.to_dict()
+            == current.publication_policy.to_dict()
+            for prior, current in zip(existing.items, proposed.items)
+        )
+    )
+
+
+def _batch_item_status(
+    root: Path, plan: BatchPlan, item: BatchPlanItem
+) -> Mapping[str, Any]:
+    product_id = item.wish.product_id
+    try:
+        receipt = _status_receipt(root, product_id)
+    except WorkshopError as original:
+        # Catalog drift is fatal only to Wishes that never completed Match.
+        # Represent that item as unavailable so already-assigned siblings can
+        # still continue under their sealed Manager handoffs.
+        pending = PendingWishStore(plan.catalog_collection).load(
+            product_id, allow_missing=True
+        )
+        if not isinstance(pending, PendingWish) or (
+            pending.wish.to_dict() != item.wish.to_dict()
+        ):
+            raise
+        catalog = discover_inventor_catalog(root)
+        try:
+            pending.assert_catalog_current(catalog)
+        except WorkshopError as catalog_problem:
+            if str(original) != str(catalog_problem):
+                raise original
+            return {
+                "schema_version": 1,
+                "catalog_root": str(Path(root).resolve()),
+                "product_id": product_id,
+                "status": "stopped",
+                "job": "match",
+                "round": None,
+                "inventor_id": None,
+                "inventor_name": None,
+                "artifact_sha256": None,
+                "updated_at": None,
+                "wish": pending.wish.to_dict(),
+                "needs": [
+                    Need(
+                        job="wish",
+                        capability="exact-catalog-snapshot",
+                        reason=(
+                            "this Wish has not completed Match and its saved "
+                            "Inventor catalog identity changed"
+                        ),
+                        instructions=(
+                            "Restore the exact saved catalog snapshot, or start a "
+                            "new Wish under the current catalog."
+                        ),
+                    ).to_dict()
+                ],
+                "event_chain": "not-started",
+                "publication_policy": pending.publication_policy.to_dict(),
+                "resume": {
+                    "status": "unavailable",
+                    "kind": "catalog-drift",
+                    "reason": (
+                        "Match cannot run after the exact saved catalog changed"
+                    ),
+                },
+            }
+        raise original
+    if receipt.get("product_id") != product_id:
+        raise WorkshopError("batch status returned another Wish identity")
+    if receipt.get("wish") != item.wish.to_dict():
+        raise WorkshopError("batch status returned different Wish content")
+    raw_policy = receipt.get("publication_policy")
+    if not isinstance(raw_policy, Mapping):
+        raise WorkshopError("batch status has no exact publication policy")
+    try:
+        actual_policy = PublicationPolicy.from_dict(dict(raw_policy))
+    except (TypeError, WorkshopError) as exc:
+        raise WorkshopError("batch status publication policy is malformed") from exc
+    if not _batch_policy_compatible(item.publication_policy, actual_policy):
+        raise WorkshopError(
+            "batch status publication policy conflicts with its immutable plan"
+        )
+    return receipt
+
+
+def _terminate_batch_process(process: subprocess.Popen, *, force: bool = False) -> None:
+    selected_signal = signal.SIGKILL if force else signal.SIGTERM
+    try:
+        os.killpg(process.pid, selected_signal)
+    except (AttributeError, ProcessLookupError, PermissionError):
+        try:
+            process.kill() if force else process.terminate()
+        except ProcessLookupError:
+            pass
+
+
+class _BatchInterrupted(RuntimeError):
+    pass
+
+
+class _BatchProcessSupervisor:
+    """Own every batch child process group and cancel it as one unit."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._processes: dict[int, subprocess.Popen] = {}
+        self._cancelled = threading.Event()
+
+    def cancel(self) -> None:
+        self._cancelled.set()
+        with self._lock:
+            processes = tuple(self._processes.values())
+        for process in processes:
+            _terminate_batch_process(process)
+
+    def run(self, product_id: str, root: Path) -> subprocess.CompletedProcess:
+        command = (
+            sys.executable,
+            "-m",
+            "inventor_workshop",
+            "resume",
+            product_id,
+            "--root",
+            str(root),
+            "--json",
+        )
+        # Executor shutdown drains tasks submitted before a signal.  Once
+        # cancelled, those queued tasks must be inert rather than briefly
+        # creating and then terminating fresh process groups.
+        if self._cancelled.is_set():
+            raise WorkshopError("batch process supervisor is already cancelled")
+        process = subprocess.Popen(
+            list(command),
+            cwd=str(root),
+            env=dict(os.environ),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        with self._lock:
+            self._processes[process.pid] = process
+        if self._cancelled.is_set():
+            _terminate_batch_process(process)
+        deadline = time.monotonic() + 4 * 60 * 60
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    _terminate_batch_process(process)
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        _terminate_batch_process(process, force=True)
+                        process.wait()
+                    raise subprocess.TimeoutExpired(
+                        list(command), 4 * 60 * 60
+                    )
+                try:
+                    process.wait(timeout=min(0.5, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    if self._cancelled.is_set():
+                        _terminate_batch_process(process)
+                        try:
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            _terminate_batch_process(process, force=True)
+                            process.wait()
+                        break
+            return subprocess.CompletedProcess(
+                list(command), process.returncode, stdout=None, stderr=None
+            )
+        finally:
+            with self._lock:
+                self._processes.pop(process.pid, None)
+
+
+@contextmanager
+def _batch_signal_guard(supervisor: _BatchProcessSupervisor):
+    if threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    installed = []
+
+    def interrupt(signum, unused_frame):
+        del unused_frame
+        supervisor.cancel()
+        raise _BatchInterrupted("signal %s" % signum)
+
+    for selected in (signal.SIGINT, signal.SIGTERM):
+        previous = signal.getsignal(selected)
+        signal.signal(selected, interrupt)
+        installed.append((selected, previous))
+    try:
+        yield
+    finally:
+        for selected, previous in reversed(installed):
+            signal.signal(selected, previous)
+
+
+def _run_batch_resume_child(
+    product_id: str, root: Path
+) -> subprocess.CompletedProcess:
+    """Run one trusted Manager continuation in a separately reaped process."""
+
+    command = (
+        sys.executable,
+        "-m",
+        "inventor_workshop",
+        "resume",
+        product_id,
+        "--root",
+        str(root),
+        "--json",
+    )
+    return _managed_child_run(
+        command,
+        cwd=str(root),
+        env=os.environ,
+        input="",
+        capture_output=True,
+        text=True,
+        timeout=4 * 60 * 60,
+        check=False,
+    )
+
+
+def _batch_status_payload(
+    plan: BatchPlan,
+    root: Path,
+    *,
+    launches: Optional[Mapping[str, Mapping[str, Any]]] = None,
+) -> Mapping[str, Any]:
+    launch_values = launches or {}
+    items = []
+    with PendingWishStore(plan.catalog_collection).validated_batch_reads():
+        for position, item in enumerate(plan.items, 1):
+            status = _batch_item_status(root, plan, item)
+            entry = {
+                "position": position,
+                "product_id": item.wish.product_id,
+                "batch_key": item.wish.context.get("batch_key"),
+                "publication_policy": item.publication_policy.to_dict(),
+                "status": status,
+            }
+            if item.wish.product_id in launch_values:
+                entry["launch"] = dict(launch_values[item.wish.product_id])
+            items.append(entry)
+    def item_complete(entry: Mapping[str, Any]) -> bool:
+        status = entry["status"]
+        if status.get("status") != "delivered":
+            return False
+        raw_policy = status.get("publication_policy")
+        if not isinstance(raw_policy, Mapping):
+            return False
+        actual = PublicationPolicy.from_dict(dict(raw_policy))
+        if actual.visibility == "draft":
+            return True
+        page = status.get("page")
+        return isinstance(page, Mapping) and page.get("status") == "public"
+
+    complete = all(item_complete(item) for item in items)
+    blocked = any(
+        item["status"].get("status") in ("waiting", "stopped")
+        or (
+            isinstance(item["status"].get("resume"), Mapping)
+            and item["status"]["resume"].get("status") == "unavailable"
+            and item["status"].get("status") != "delivered"
+        )
+        or (
+            isinstance(item.get("launch"), Mapping)
+            and item["launch"].get("status") in ("failed", "timed-out")
+        )
+        or (
+            item["status"].get("status") == "delivered"
+            and isinstance(item["status"].get("page"), Mapping)
+            and item["status"]["page"].get("status") == "unknown"
+        )
+        for item in items
+    )
+    return {
+        "schema_version": 1,
+        "batch_id": plan.batch_id,
+        "plan_sha256": plan.plan_sha256,
+        "catalog_root": str(root),
+        "count": len(items),
+        "status": "complete" if complete else "needs-attention" if blocked else "ready",
+        "items": items,
+    }
+
+
+def _execute_batch(
+    plan: BatchPlan,
+    root: Path,
+    store: BatchPlanStore,
+    *,
+    concurrency: int,
+    runner: Any = None,
+) -> Mapping[str, Any]:
+    """Launch each currently resumable item once; derive truth from durable state."""
+
+    selected_runner = _run_batch_resume_child if runner is None else runner
+    if not callable(selected_runner):
+        raise WorkshopError("batch worker runner must be callable")
+    launches: dict[str, Mapping[str, Any]] = {}
+    supervisor = _BatchProcessSupervisor() if runner is None else None
+    if supervisor is not None:
+        selected_runner = supervisor.run
+    try:
+        signal_guard = (
+            _batch_signal_guard(supervisor)
+            if supervisor is not None
+            else nullcontext()
+        )
+        with signal_guard, store.supervise(plan):
+            with PendingWishStore(
+                plan.catalog_collection
+            ).validated_batch_reads():
+                initial = {
+                    item.wish.product_id: _batch_item_status(root, plan, item)
+                    for item in plan.items
+                }
+            scheduled = []
+            for item in plan.items:
+                product_id = item.wish.product_id
+                resume = initial[product_id].get("resume")
+                if (
+                    isinstance(resume, Mapping)
+                    and resume.get("status") == "available"
+                ):
+                    scheduled.append(item)
+                else:
+                    launches[product_id] = {
+                        "status": "skipped",
+                        "reason": (
+                            resume.get("reason")
+                            if isinstance(resume, Mapping)
+                            else "this Wish has no resumable durable boundary"
+                        ),
+                    }
+
+            def run_one(item):
+                command = _resume_command(item.wish.product_id, root)
+                try:
+                    completed = selected_runner(item.wish.product_id, root)
+                    if not isinstance(completed, subprocess.CompletedProcess):
+                        raise WorkshopError(
+                            "batch worker returned an untyped process result"
+                        )
+                    if type(completed.returncode) is not int:
+                        raise WorkshopError("batch worker returned no exit status")
+                    if completed.returncode == 0:
+                        return {"status": "succeeded", "returncode": 0}
+                    return {
+                        "status": "failed",
+                        "returncode": completed.returncode,
+                        "reason": "the worker exited nonzero before this Wish completed",
+                        "next": command,
+                    }
+                except subprocess.TimeoutExpired:
+                    return {
+                        "status": "timed-out",
+                        "reason": "the worker exceeded four hours; inspect durable state before resuming",
+                        "next": command,
+                    }
+                except (OSError, ValueError, WorkshopError):
+                    return {
+                        "status": "failed",
+                        "reason": "the worker did not complete; inspect its durable state before resuming",
+                        "next": command,
+                    }
+
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=concurrency,
+                thread_name_prefix="workshop-batch",
+            ) as pool:
+                future_items = {
+                    pool.submit(run_one, item): item for item in scheduled
+                }
+                for future in concurrent.futures.as_completed(future_items):
+                    item = future_items[future]
+                    launches[item.wish.product_id] = future.result()
+    except _BatchInterrupted as exc:
+        if supervisor is not None:
+            supervisor.cancel()
+        raise WorkshopError(
+            "batch supervision was interrupted; every owned worker was terminated; inspect durable status before resuming"
+        ) from exc
+    return _batch_status_payload(plan, root, launches=launches)
+
+
+def _print_batch_receipt(receipt: Mapping[str, Any]) -> None:
+    print("Batch: %s" % receipt["batch_id"])
+    print("Wishes: %s" % receipt["count"])
+    print("Status: %s" % receipt["status"])
+    for item in receipt["items"]:
+        status = item["status"]
+        print(
+            "%-4s %-42s %s/%s  key=%s  visibility=%s"
+            % (
+                item["position"],
+                item["product_id"],
+                status.get("job"),
+                status.get("status"),
+                item.get("batch_key"),
+                (
+                    status.get("publication_policy", {}).get("visibility")
+                    if isinstance(status.get("publication_policy"), Mapping)
+                    else "unknown"
+                ),
+            )
+        )
+        launch = item.get("launch")
+        if isinstance(launch, Mapping) and launch.get("status") != "succeeded":
+            print(
+                "     Launch: %s%s"
+                % (
+                    launch.get("status"),
+                    " — %s" % launch["reason"]
+                    if isinstance(launch.get("reason"), str)
+                    else "",
+                )
+            )
+            if isinstance(launch.get("next"), str):
+                print("     Next: %s" % launch["next"])
+        needs = status.get("needs")
+        if isinstance(needs, list):
+            for need in needs:
+                if isinstance(need, Mapping):
+                    print(
+                        "     Need: %s — %s"
+                        % (need.get("capability"), need.get("reason"))
+                    )
+                    if isinstance(need.get("instructions"), str):
+                        print("     Next: %s" % need["instructions"])
+        resume = status.get("resume")
+        if (
+            isinstance(resume, Mapping)
+            and resume.get("status") == "unavailable"
+            and not needs
+            and isinstance(resume.get("reason"), str)
+        ):
+            print("     Next: %s" % resume["reason"])
+        elif (
+            isinstance(resume, Mapping)
+            and resume.get("status") == "available"
+            and status.get("status") == "delivered"
+            and isinstance(resume.get("command"), str)
+        ):
+            print("     Next: %s" % resume["command"])
+
+
+def _batch_submit(args: argparse.Namespace) -> int:
+    root = _catalog_roots(args.root)[0]
+    catalog = discover_inventor_catalog(root)
+    visibility = "public" if args.publish else "draft"
+    requests = parse_batch_file(
+        args.file,
+        input_format=args.format,
+        default_visibility=visibility,
+    )
+    identity = load_or_create_batch_manager_identity(
+        _batch_manager_scope(catalog.collection)
+    )
+    proposed = BatchPlan.from_requests(
+        catalog,
+        requests,
+        playtest_rounds=args.playtest_rounds,
+        manager_identity=identity,
+    )
+    search_roots = _catalog_roots(
+        args.root, include_retained=args.root is None
+    )
+    existing = []
+    for candidate in search_roots:
+        candidate_catalog = discover_inventor_catalog(candidate)
+        candidate_store = BatchPlanStore(candidate_catalog.collection)
+        candidate_plan = candidate_store.load(
+            proposed.batch_id, allow_missing=True
+        )
+        if candidate_plan is not None:
+            existing.append(
+                (Path(candidate).resolve(), candidate_store, candidate_plan)
+            )
+    if len(existing) > 1:
+        raise WorkshopError(
+            "this exact submission exists in more than one retained catalog; pass --root explicitly"
+        )
+    if existing:
+        root, store, plan = existing[0]
+        if not _batch_same_submission(plan, proposed):
+            raise WorkshopError(
+                "Manager batch id is already bound to different exact Wishes or publication policies"
+            )
+    else:
+        plan = proposed
+        store = BatchPlanStore(catalog.collection)
+    store.stage(plan)
+    if args.run:
+        receipt = _execute_batch(
+            plan, root, store, concurrency=args.concurrency
+        )
+    else:
+        receipt = _batch_status_payload(plan, root)
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_batch_receipt(receipt)
+        if not args.run:
+            print(
+                "Run: %s"
+                % _shell_command(
+                    "workshop", "batch", "resume", plan.batch_id, "--root", root
+                )
+            )
+    return 0
+
+
+def _batch_status(args: argparse.Namespace) -> int:
+    roots = _catalog_roots(args.root, include_retained=args.root is None)
+    root, unused_store, plan = _batch_location(roots, args.batch_id)
+    del unused_store
+    receipt = _batch_status_payload(plan, root)
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_batch_receipt(receipt)
+    return 0
+
+
+def _batch_resume(args: argparse.Namespace) -> int:
+    roots = _catalog_roots(args.root, include_retained=args.root is None)
+    root, store, plan = _batch_location(roots, args.batch_id)
+    receipt = _execute_batch(
+        plan, root, store, concurrency=args.concurrency
+    )
+    if args.json:
+        print(json.dumps(receipt, indent=2, sort_keys=True))
+    else:
+        _print_batch_receipt(receipt)
+    return 1 if args.strict and receipt["status"] != "complete" else 0
 
 
 def _doctor(args: argparse.Namespace) -> int:
@@ -3560,6 +5018,7 @@ def _doctor(args: argparse.Namespace) -> int:
         )
 
     binary = os.environ.get("WORKSHOP_CODEX_BIN") or shutil.which("codex")
+    codex_authenticated = False
     if not binary:
         checks.append(
             {
@@ -3570,6 +5029,10 @@ def _doctor(args: argparse.Namespace) -> int:
             }
         )
     else:
+        selected_probe_model = os.environ.get(
+            "WORKSHOP_MANAGER_MODEL", DEFAULT_MANAGER_MODEL
+        )
+        probe_nonce = secrets.token_hex(16)
         try:
             completed = subprocess.run(
                 [binary, "login", "status"],
@@ -3604,6 +5067,7 @@ def _doctor(args: argparse.Namespace) -> int:
                 }
             )
         else:
+            codex_authenticated = True
             checks.append(
                 {
                     "name": "codex",
@@ -3611,6 +5075,82 @@ def _doctor(args: argparse.Namespace) -> int:
                     "detail": "Codex CLI is installed and signed in.",
                 }
             )
+
+    if not getattr(args, "deep", False):
+        checks.append(
+            {
+                "name": "codex-structured-call",
+                "status": "not-probed",
+                "detail": (
+                    "Codex authentication was checked, but the exact tool-free "
+                    "structured runtime was not invoked."
+                ),
+                "next": (
+                    "Run 'workshop doctor --deep' to spend one small selected-model call "
+                    "and prove the actual Workshop model boundary."
+                ),
+            }
+        )
+    elif not codex_authenticated:
+        checks.append(
+            {
+                "name": "codex-structured-call",
+                "status": "needs-attention",
+                "detail": "The structured runtime cannot be probed until Codex is signed in.",
+                "next": "Repair the Codex check, then rerun 'workshop doctor --deep'.",
+            }
+        )
+    else:
+        try:
+            from .codex_runtime import CodexStructuredRunner
+
+            probe = CodexStructuredRunner(
+                model=selected_probe_model,
+                reasoning_effort="low",
+                binary=binary,
+                timeout_seconds=90,
+            ).invoke(
+                prompt=(
+                    "Autonomous Workshop readiness probe. Return exactly one "
+                    "JSON object with ok=true and nonce=%s." % probe_nonce
+                ),
+                schema={
+                    "type": "object",
+                    "properties": {
+                        "ok": {"type": "boolean", "const": True},
+                        "nonce": {"type": "string", "const": probe_nonce},
+                    },
+                    "required": ["ok", "nonce"],
+                    "additionalProperties": False,
+                },
+            )
+            structured_ready = probe == {"ok": True, "nonce": probe_nonce}
+        except Exception:
+            structured_ready = False
+        checks.append(
+            {
+                "name": "codex-structured-call",
+                "status": "ready" if structured_ready else "needs-attention",
+                "detail": (
+                    "The exact tool-free structured model call completed."
+                    if structured_ready
+                    else "The exact tool-free structured model call did not complete."
+                ),
+                "model": selected_probe_model,
+                "reasoning_effort": "low",
+                **(
+                    {}
+                    if structured_ready
+                    else {
+                        "next": (
+                            "Run the configured Codex CLI outside a nested sandbox, "
+                            "verify its version/config compatibility, and retry "
+                            "'workshop doctor --deep'."
+                        )
+                    }
+                ),
+            }
+        )
 
     model_variables = (
         "WORKSHOP_MANAGER_MODEL",
@@ -3730,36 +5270,218 @@ def _doctor(args: argparse.Namespace) -> int:
             ),
         }
     )
-    factory_ready = bool(os.environ.get("FACTORY_PASSWORD"))
+    try:
+        services = _selected_manager_services()
+        service_error = None
+    except WorkshopError as exc:
+        services = None
+        service_error = str(exc)
+    if service_error is not None:
+        checks.append(
+            {
+                "name": "manager-services",
+                "status": "needs-attention",
+                "detail": "The selected Manager service configuration could not load.",
+                "next": (
+                    "Install or repair the named autonomous_workshop.manager_services "
+                    "entry point, then rerun Doctor."
+                ),
+            }
+        )
+    elif services is None:
+        checks.append(
+            {
+                "name": "manager-services",
+                "status": "needs-attention",
+                "detail": (
+                    "No production service composition is selected; only the "
+                    "Workshop's bounded built-in providers are available."
+                ),
+                "next": (
+                    "Install a trusted Manager service package and set "
+                    "WORKSHOP_MANAGER_SERVICES to its entry-point name."
+                ),
+            }
+        )
+    else:
+        checks.append(
+            {
+                "name": "manager-services",
+                "status": "ready",
+                "detail": (
+                    "Loaded trusted Manager service configuration '%s'."
+                    % services.configuration_id
+                ),
+                "providers": services.public_summary()["capabilities"],
+            }
+        )
+
+    engine_scope = "manager-common-defaults-before-inventor-selection"
+    engine_provenance = None
+    if service_error is None:
+        try:
+            if services is None:
+                from .manager_execution import default_trusted_workshop_engine
+
+                selected_engine = default_trusted_workshop_engine()
+            else:
+                selected_engine = services.trusted_workshop_engine()
+            if not isinstance(
+                selected_engine.provenance, EngineProvenanceManifest
+            ):
+                raise WorkshopError(
+                    "selected Manager engine has no public provenance"
+                )
+            engine_provenance = selected_engine.provenance
+        except Exception:
+            engine_provenance = None
+    checks.append(
+        {
+            "name": "engine-provenance",
+            "status": "ready" if engine_provenance is not None else "needs-attention",
+            "detail": (
+                "All five prospective Manager-owned shared stages have a public, secret-free component manifest."
+                if engine_provenance is not None
+                else "The prospective Manager engine provenance could not be materialized."
+            ),
+            "scope": engine_scope,
+            **(
+                {
+                    "informational_engine_sha256": (
+                        engine_provenance.informational_engine_sha256
+                    ),
+                    "stage_sha256": engine_provenance.stage_sha256,
+                }
+                if engine_provenance is not None
+                else {
+                    "next": (
+                        "Repair the selected Manager service composition, then rerun Doctor."
+                    )
+                }
+            ),
+        }
+    )
+
+    research_ready = services is not None and services.binding("research") is not None
+    checks.append(
+        {
+            "name": "wish-aware-research",
+            "status": "ready" if research_ready else "needs-attention",
+            "detail": (
+                "A versioned Wish-aware research provider is configured."
+                if research_ready
+                else (
+                    "Only the privacy-preserving lane baseline is available; "
+                    "specific science and prior-art Wishes may wait for relevant sources."
+                )
+            ),
+            **(
+                {}
+                if research_ready
+                else {
+                    "next": "Configure the Manager research capability for broad, source-backed Wishes."
+                }
+            ),
+        }
+    )
+    classic_ready = (
+        services is not None and services.binding("classic_rules") is not None
+    )
+    checks.append(
+        {
+            "name": "classic-rules",
+            "status": "ready" if classic_ready else "needs-attention",
+            "detail": (
+                "A versioned classic-rules registry is configured."
+                if classic_ready
+                else "The built-in conformance provider covers checkers only."
+            ),
+            **(
+                {}
+                if classic_ready
+                else {
+                    "next": "Configure independent rules/conformance providers for every classic Alice may select."
+                }
+            ),
+        }
+    )
+    world_ready = (
+        services is not None
+        and services.binding("world_reference") is not None
+        and services.binding("world_playtest") is not None
+    )
+    checks.append(
+        {
+            "name": "little-worlds",
+            "status": "ready" if world_ready else "needs-attention",
+            "detail": (
+                "External isolated World reference and Playtest services are configured."
+                if world_ready
+                else "Little worlds lack the complete external isolated reference-and-comparison service pair."
+            ),
+            **(
+                {}
+                if world_ready
+                else {
+                    "next": "Configure both world_reference and world_playtest Manager capabilities; local same-user storage is development-only."
+                }
+            ),
+        }
+    )
+
+    broker_ready = (
+        services is not None
+        and services.binding("factory_credentials") is not None
+    )
+    legacy_factory_ready = bool(os.environ.get("FACTORY_PASSWORD"))
+    factory_ready = broker_ready or legacy_factory_ready
     checks.append(
         {
             "name": "factory-page",
             "status": "ready" if factory_ready else "needs-attention",
             "detail": (
-                "A Factory credential is supplied to this Manager; it is verified only during the exact handoff."
+                (
+                    "A per-inventor Factory credential broker is configured; each account is verified only during its exact handoff."
+                    if broker_ready
+                    else "A legacy shared Factory password is supplied; it is verified only during the exact handoff."
+                )
                 if factory_ready
-                else "FACTORY_PASSWORD is not configured; a verified page cannot go live."
+                else "No Manager Factory credential provider is configured; a verified page cannot be created."
             ),
             **(
                 {}
                 if factory_ready
                 else {
-                    "next": "Set FACTORY_PASSWORD only in the trusted Manager environment; never commit it."
+                    "next": (
+                        "Configure the Manager factory_credentials broker (recommended), "
+                        "or set the legacy FACTORY_PASSWORD only in the trusted Manager environment."
+                    )
                 }
             ),
         }
     )
+    delivery_ready = services is not None and services.binding("deliver") is not None
     checks.append(
         {
             "name": "physical-delivery",
-            "status": "needs-attention",
+            "status": "ready" if delivery_ready else "needs-attention",
             "detail": (
-                "No Workshop production, hands-on QA, packing, and carrier "
-                "provider is configured."
+                "A Manager-owned production, QA, packing, and carrier provider is configured."
+                if delivery_ready
+                else (
+                    "No Workshop production, hands-on QA, packing, and carrier "
+                    "provider is configured."
+                )
             ),
-            "next": (
-                "Connect a Manager-owned Deliver provider before treating a public "
-                "Factory listing as fulfillable."
+            **(
+                {}
+                if delivery_ready
+                else {
+                    "next": (
+                        "Connect a Manager-owned Deliver provider before treating a public "
+                        "Factory listing as fulfillable."
+                    )
+                }
             ),
         }
     )
@@ -3772,15 +5494,46 @@ def _doctor(args: argparse.Namespace) -> int:
         ),
         "root": str(root),
         "checks": checks,
+        "engine_scope": engine_scope,
+        "engine_customization_note": (
+            "A selected Inventor may replace only its declared custom Make or Playtest after Match."
+        ),
+        "engine_provenance": (
+            engine_provenance.to_dict()
+            if engine_provenance is not None
+            else None
+        ),
     }
     if args.json:
         print(json.dumps(receipt, indent=2, sort_keys=True))
     else:
         for item in checks:
-            marker = "ready" if item["status"] == "ready" else "needs attention"
+            marker = {
+                "ready": "ready",
+                "not-probed": "not probed",
+                "needs-attention": "needs attention",
+            }[item["status"]]
             print("%-18s %s — %s" % (item["name"], marker, item["detail"]))
             if item.get("next"):
                 print("  Next: %s" % item["next"])
+        if engine_provenance is not None:
+            print(
+                "Engine provenance: %s (informational aggregate; %s)"
+                % (
+                    engine_provenance.informational_engine_sha256,
+                    engine_scope,
+                )
+            )
+            for component in engine_provenance.components:
+                print(
+                    "  %-12s %s  provider=%s  stage=%s"
+                    % (
+                        component.stage.title() + ":",
+                        component.state,
+                        component.provider_id or "missing",
+                        component.stage_sha256,
+                    )
+                )
         print("Workshop: %s" % receipt["status"])
     return 0 if receipt["status"] == "ready" else 1
 
@@ -3913,14 +5666,15 @@ def _wish(args: argparse.Namespace) -> int:
         playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS,
     )
     pending_store = PendingWishStore(catalog.collection)
+    match_attempts = MatchAttemptStore(catalog.collection)
     # This fsynced record is the point at which the id becomes customer-visible.
     # No semantic Manager object exists, and therefore no model can be called,
     # until the exact Wish, policy, and catalog identity are durable.
     pending_store.save(pending)
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
-        "Page: after exact verification Factory will make it public and may list "
-        "it for sale; physical Deliver is separate (--draft keeps it private)."
+        "Page: after exact verification and physical Deliver, Factory will make "
+        "it public and may list it for sale (--draft keeps it private)."
         if args.publish
         else "Page: will remain a private authenticated draft.",
         file=progress,
@@ -3946,10 +5700,16 @@ def _wish(args: argparse.Namespace) -> int:
         located = _find_durable_wish(root, wish.product_id)
         if located.get("handoff") is not None:
             raise WorkshopError("this Wish id already has a Manager assignment")
+        working_attempt = match_attempts.begin(current)
         try:
             assignment = _match_pending_wish(root, current)
         except WaitingFor as waiting:
-            receipt = _pending_match_waiting_receipt(current, waiting, root)
+            waiting_attempt = match_attempts.record_waiting(
+                working_attempt, waiting.needs
+            )
+            receipt = _pending_match_waiting_receipt(
+                current, waiting, root, waiting_attempt
+            )
         else:
             # Revalidate the immutable pre-Match bytes after the model returns,
             # then fsync the one selected Inventor handoff before launching it.
@@ -3958,7 +5718,14 @@ def _wish(args: argparse.Namespace) -> int:
                 observed.record_sha256 != current.record_sha256
             ):
                 raise WorkshopError("Manager pending Wish changed during Match")
-            _save_manager_assignment(assignment)
+            assignment_path = _save_manager_assignment(assignment)
+            verified_handoff = _read_saved_handoff(
+                assignment_path, assignment.inventor_id
+            )
+            match_attempts.record_assigned(
+                working_attempt,
+                verified_handoff.handoff_sha256,
+            )
     if assignment is not None:
         # Keep Invent/Make outside the Match lock so read-only status and a later
         # exact resume are never blocked by a long-running child.
@@ -3980,11 +5747,15 @@ def _wish(args: argparse.Namespace) -> int:
             show_wish=False,
             show_match=not showed_match,
         )
-    return (
-        1
-        if getattr(args, "strict", False) and receipt.get("status") == "waiting"
-        else 0
-    )
+    return _wish_exit_code(receipt, strict=getattr(args, "strict", False))
+
+
+def _wish_exit_code(receipt: Mapping[str, Any], *, strict: bool) -> int:
+    """Translate one truthful Wish terminal state into automation semantics."""
+
+    if not isinstance(receipt, Mapping) or type(strict) is not bool:
+        raise WorkshopError("Wish exit status requires a typed receipt and strict flag")
+    return int(strict and receipt.get("status") in ("waiting", "stopped"))
 
 
 def _registry(args: argparse.Namespace) -> int:
@@ -4207,7 +5978,8 @@ def parser() -> argparse.ArgumentParser:
         prog="workshop",
         description=(
             "Make one Wish and let the Autonomous Workshop match an Inventor, "
-            "invent the toy, make it, Playtest it, and publish its verified Factory page."
+            "invent the toy, make it, Playtest it, physically Deliver it, and only "
+            "then publish its verified Factory page when authorized."
         ),
         epilog=(
             "Start here:\n"
@@ -4223,18 +5995,21 @@ def parser() -> argparse.ArgumentParser:
 
     wish = subcommands.add_parser(
         "wish",
-        help="wish for a toy; matching and a verified public page are automatic",
+        help="wish for a toy; matching and the Deliver-gated page flow are automatic",
         description=(
             "Say what you wish existed. The Manager reads Inventor Tastes, chooses "
             "one exact match, and starts the shared Workshop. The run includes up to "
-            "four AI Playtest-to-Make improvement passes. A verified Factory page goes public by "
-            "default; this never claims the physical toy was printed or delivered."
+            "four AI Playtest-to-Make improvement passes. Public visibility is authorized "
+            "by default, but the verified Factory draft remains private until exact "
+            "production, QA, packing, and carrier evidence completes physical Deliver."
         ),
         epilog=(
             "Prerequisites: a discoverable Inventor catalog, an installed and signed-in "
-            "Codex CLI, the shared CAD/printability runtime, and FACTORY_PASSWORD for a "
-            "live page. Run 'workshop doctor' first. A truthful waiting result exits 0; "
-            "use --strict when automation should exit 1 on a wait."
+            "Codex CLI, the shared CAD/printability runtime, and Manager Factory "
+            "credential and physical Deliver providers. Run 'workshop doctor' first. A "
+            "truthful waiting or stopped "
+            "result exits 0; use --strict when automation should exit 1 unless the "
+            "Workshop reaches its successful terminal state."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -4258,7 +6033,7 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument(
         "--strict",
         action="store_true",
-        help="exit 1 instead of 0 when the Workshop truthfully waits for a capability",
+        help="exit 1 instead of 0 when the Workshop truthfully waits or stops",
     )
     publication = wish.add_mutually_exclusive_group()
     publication.add_argument(
@@ -4266,18 +6041,115 @@ def parser() -> argparse.ArgumentParser:
         dest="publish",
         action="store_true",
         help=(
-            "make the exact authenticated Instructions page public (default); "
-            "Factory may also list it at a platform-estimated price, which is not "
-            "proof that physical Deliver is configured"
+            "authorize the exact authenticated page to become public after Deliver "
+            "(default); Factory may then list it at a platform-estimated price"
         ),
     )
     publication.add_argument(
         "--draft",
         dest="publish",
         action="store_false",
-        help="stop after the exact authenticated private draft; do not make it public",
+        help=(
+            "keep the exact authenticated page private, including after physical "
+            "Deliver; do not make it public"
+        ),
     )
     wish.set_defaults(handler=_wish, publish=True)
+
+    batch = subcommands.add_parser(
+        "batch",
+        help="durably stage and run a bounded file of Wishes",
+        description=(
+            "Save every Wish and its full-TASTE catalog snapshot before any model "
+            "runs, then supervise bounded parallel continuations. Mass visibility "
+            "must be chosen explicitly."
+        ),
+    )
+    batch_commands = batch.add_subparsers(
+        dest="batch_command", required=True, metavar="ACTION"
+    )
+    batch_submit = batch_commands.add_parser(
+        "submit",
+        help="stage every Wish before optionally starting workers",
+    )
+    batch_submit.add_argument("file", type=Path, metavar="WISHES")
+    batch_submit.add_argument(
+        "--format",
+        choices=("lines", "jsonl"),
+        default="lines",
+        help="one Wish per line, or strict key/wish/visibility JSONL",
+    )
+    batch_visibility = batch_submit.add_mutually_exclusive_group(required=True)
+    batch_visibility.add_argument(
+        "--draft",
+        dest="publish",
+        action="store_false",
+        help="bind every row to private-draft visibility",
+    )
+    batch_visibility.add_argument(
+        "--publish",
+        dest="publish",
+        action="store_true",
+        help=(
+            "authorize every row for public visibility after physical Deliver; "
+            "Factory may then list it for sale"
+        ),
+    )
+    batch_submit.add_argument(
+        "--run",
+        action="store_true",
+        help="start resumable items after all plans and PendingWishes are durable",
+    )
+    batch_submit.add_argument(
+        "--concurrency",
+        type=_batch_concurrency,
+        default=1,
+        metavar="N",
+        help="maximum trusted Manager workers, from 1 to 8 (default: 1)",
+    )
+    batch_submit.add_argument(
+        "--playtest-rounds",
+        type=int,
+        choices=range(1, 101),
+        default=4,
+        metavar="N",
+        help="maximum Make/Playtest rounds per Wish (default: 4)",
+    )
+    batch_submit.add_argument("--root", type=Path)
+    batch_submit.add_argument("--json", action="store_true")
+    batch_submit.set_defaults(handler=_batch_submit)
+
+    batch_status = batch_commands.add_parser(
+        "status", help="read every item from durable Workshop state"
+    )
+    batch_status.add_argument("batch_id", metavar="BATCH_ID")
+    batch_status.add_argument("--root", type=Path)
+    batch_status.add_argument("--json", action="store_true")
+    batch_status.set_defaults(handler=_batch_status)
+
+    batch_resume = batch_commands.add_parser(
+        "resume",
+        help="run each currently resumable item at most once in this invocation",
+    )
+    batch_resume.add_argument("batch_id", metavar="BATCH_ID")
+    batch_resume.add_argument(
+        "--concurrency",
+        type=_batch_concurrency,
+        default=1,
+        metavar="N",
+        help="maximum trusted Manager workers, from 1 to 8 (default: 1)",
+    )
+    batch_resume.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "exit 1 unless every Wish is physically delivered and every "
+            "public-authorized page is live"
+        ),
+    )
+    batch_resume.add_argument("--root", type=Path)
+    batch_resume.add_argument("--json", action="store_true")
+    batch_resume.set_defaults(handler=_batch_resume)
 
     status = subcommands.add_parser(
         "status",
@@ -4302,6 +6174,28 @@ def parser() -> argparse.ArgumentParser:
     status.add_argument("--json", action="store_true", help="emit one JSON status receipt")
     status.set_defaults(handler=_status)
 
+    reconcile = subcommands.add_parser(
+        "reconcile",
+        help="read back one ambiguous Deliver attempt without retrying it",
+        description=(
+            "Use the exact persisted Manager fulfillment provider and attempt id "
+            "to perform authenticated GET-only readback. This command never calls "
+            "Deliver preflight or fulfillment, never rotates providers, and never "
+            "reruns an earlier Workshop stage."
+        ),
+    )
+    reconcile.add_argument("product_id", help="Wish id working at Deliver")
+    reconcile.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Workshop checkout or inventor collection (default: find the exact retained run)",
+    )
+    reconcile.add_argument(
+        "--json", action="store_true", help="emit one JSON reconciliation receipt"
+    )
+    reconcile.set_defaults(handler=_reconcile)
+
     resume = subcommands.add_parser(
         "resume",
         help="continue an exact saved Workshop stage",
@@ -4313,7 +6207,8 @@ def parser() -> argparse.ArgumentParser:
             "checkpoint. Completed stages are never rerun. Legacy runs without the "
             "required checkpoint fail with a concrete next action. A bare resume "
             "inherits the Wish's saved draft/public policy; only explicit --publish can "
-            "upgrade a saved draft."
+            "upgrade a saved draft. --strict changes only the process exit code: a "
+            "truthful waiting or stopped continuation exits 1."
         ),
     )
     resume.add_argument("product_id", help="saved Wish id")
@@ -4324,6 +6219,13 @@ def parser() -> argparse.ArgumentParser:
         help="Workshop checkout or inventor collection (default: find the exact retained run)",
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
+    resume.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "exit 1 instead of 0 when the resumed Workshop truthfully waits or stops"
+        ),
+    )
     resume.add_argument(
         "--allow-same-user-local-vault",
         action="store_true",
@@ -4466,8 +6368,9 @@ def parser() -> argparse.ArgumentParser:
         description=(
             "Check the Inventor catalog, Codex sign-in and model policy, shared "
             "CAD/printability runtime, Factory authentication, and physical Deliver "
-            "readiness. No model, product import, publication, or delivery action is "
-            "performed."
+            "readiness. By default no model, product import, publication, or delivery "
+            "action is performed. --deep spends one small selected Manager-model call to prove the exact "
+            "tool-free structured runtime; it still creates no product or external effect."
         ),
     )
     doctor.add_argument(
@@ -4477,6 +6380,14 @@ def parser() -> argparse.ArgumentParser:
         help="Workshop checkout or inventor collection (default: auto-detected)",
     )
     doctor.add_argument("--json", action="store_true", help="emit one JSON preflight receipt")
+    doctor.add_argument(
+        "--deep",
+        action="store_true",
+        help=(
+            "spend one small selected Manager-model call to prove the exact structured-model boundary; "
+            "does not create, import, publish, or deliver a product"
+        ),
+    )
     doctor.set_defaults(handler=_doctor)
 
     registry = subcommands.add_parser(
@@ -4690,3 +6601,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except (WorkshopError, OSError, ValueError, KeyError) as exc:
         print("workshop: %s" % exc, file=sys.stderr)
         return 2
+    finally:
+        # A normal CLI process executes one command. Tests and embedded callers
+        # may execute several; never retain live provider objects across those
+        # command boundaries or silently miss a rotated configuration.
+        _cached_manager_services.cache_clear()

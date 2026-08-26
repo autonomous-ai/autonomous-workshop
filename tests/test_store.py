@@ -1,7 +1,11 @@
+import hashlib
 import os
 import sqlite3
 import stat
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
@@ -28,6 +32,129 @@ class StoreTest(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.store = InventorStore(Path(self.temp.name) / "state.sqlite")
         self.store.register_product("game", "idea", {"title": "Game"}, SHA)
+
+    def test_two_processes_can_initialize_one_fresh_inventor_database(self):
+        database = Path(self.temp.name) / "same-inventor.sqlite3"
+        start = Path(self.temp.name) / "start-two-initializers"
+        source_root = Path(__file__).resolve().parents[1] / "src"
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.pathsep.join(
+            value
+            for value in (
+                str(source_root),
+                environment.get("PYTHONPATH", ""),
+            )
+            if value
+        )
+        program = (
+            "import sys,time; from pathlib import Path; "
+            "from inventor_workshop.store import InventorStore; "
+            "start=Path(sys.argv[2]); "
+            "\nwhile not start.exists(): time.sleep(0.001)\n"
+            "InventorStore(Path(sys.argv[1]))\n"
+        )
+        processes = [
+            subprocess.Popen(
+                (sys.executable, "-c", program, str(database), str(start)),
+                cwd=str(source_root.parent),
+                env=environment,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            for _ in range(2)
+        ]
+        start.write_text("start\n", encoding="utf-8")
+        results = [process.communicate(timeout=30) for process in processes]
+
+        self.assertEqual(
+            [process.returncode for process in processes],
+            [0, 0],
+            msg=repr(results),
+        )
+        lock_files = tuple(Path(self.temp.name).glob(".workshop-store-init-*.lock"))
+        self.assertGreaterEqual(len(lock_files), 2)
+        self.assertTrue(
+            all(stat.S_IMODE(path.stat().st_mode) == 0o600 for path in lock_files)
+        )
+        self.assertTrue(all(path.stat().st_nlink == 1 for path in lock_files))
+
+    def test_initialization_lock_rejects_symlink_special_and_multilink_paths(self):
+        kinds = ["symlink", "hardlink", "public-mode"]
+        if hasattr(os, "mkfifo"):
+            kinds.append("fifo")
+        for kind in kinds:
+            with self.subTest(kind=kind):
+                parent = Path(self.temp.name) / ("lock-" + kind)
+                parent.mkdir(mode=0o700)
+                database = parent / "state.sqlite3"
+                digest = hashlib.sha256(
+                    os.fsencode(parent.resolve(strict=True) / database.name)
+                ).hexdigest()
+                lock = parent / (".workshop-store-init-%s.lock" % digest)
+                target = parent / "target"
+                target.write_text("not a lock\n", encoding="utf-8")
+                target.chmod(0o600)
+                if kind == "symlink":
+                    lock.symlink_to(target)
+                elif kind == "hardlink":
+                    os.link(target, lock)
+                elif kind == "public-mode":
+                    lock.write_text("not private\n", encoding="utf-8")
+                    lock.chmod(0o644)
+                else:
+                    os.mkfifo(lock, 0o600)
+
+                with self.assertRaisesRegex(
+                    ContractError, "initialization lock"
+                ):
+                    InventorStore(database)
+
+    def test_initialization_lock_is_released_when_its_process_dies(self):
+        parent = Path(self.temp.name) / "crashed-initializer"
+        parent.mkdir(mode=0o700)
+        database = parent / "state.sqlite3"
+        held = parent / "lock-held"
+        source_root = Path(__file__).resolve().parents[1] / "src"
+        environment = dict(os.environ)
+        environment["PYTHONPATH"] = os.pathsep.join(
+            value
+            for value in (str(source_root), environment.get("PYTHONPATH", ""))
+            if value
+        )
+        program = (
+            "import sys,time; from pathlib import Path; "
+            "from inventor_workshop.store import InventorStore; "
+            "guard=InventorStore.__new__(InventorStore); "
+            "guard.path=Path(sys.argv[1]); marker=Path(sys.argv[2]); "
+            "\nwith guard._initialization_lock():\n"
+            " marker.write_text('held\\n', encoding='utf-8')\n"
+            " time.sleep(60)\n"
+        )
+        process = subprocess.Popen(
+            (sys.executable, "-c", program, str(database), str(held)),
+            cwd=str(source_root.parent),
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            deadline = time.monotonic() + 5
+            while (
+                not held.exists()
+                and process.poll() is None
+                and time.monotonic() < deadline
+            ):
+                time.sleep(0.01)
+            self.assertTrue(held.exists())
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.communicate(timeout=5)
+
+        reopened = InventorStore(database)
+        self.assertEqual(reopened.path, database)
 
     def receipt(self, status="draft"):
         return PublicationReceipt(

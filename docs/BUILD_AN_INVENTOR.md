@@ -489,9 +489,10 @@ is a separate downstream responsibility. The draft records
 copy, or video were generated.
 Instructions does not make the page public and does not require an active
 listing. The customer CLI performs the separate, owner-controlled transition
-after exact draft verification: `workshop wish` makes it public by default and
-`--draft` opts out. Publication remains outside the six-job pipeline and never
-counts as Deliver proof.
+only after exact draft verification and authenticated Deliver evidence:
+`workshop wish` authorizes public visibility by default and `--draft` opts out.
+Publication remains outside the six-job pipeline and never counts as, precedes,
+or replaces Deliver proof.
 
 If a run waits here, resume the exact sealed work instead of starting over:
 

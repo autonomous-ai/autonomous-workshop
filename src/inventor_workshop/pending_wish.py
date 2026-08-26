@@ -9,6 +9,7 @@ resume do not need to guess which Inventor might eventually own the work.
 
 from __future__ import annotations
 
+import contextvars
 import fcntl
 import hashlib
 import json
@@ -39,6 +40,9 @@ _LOCK_DIRECTORY = "locks"
 _DIRECTORY_FLAGS = (
     os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
 )
+_BATCH_INDEX_SNAPSHOTS: contextvars.ContextVar[
+    Mapping[Path, Tuple[Tuple[int, int, int, int], Mapping[str, str]]]
+] = contextvars.ContextVar("workshop_pending_batch_indexes", default={})
 
 
 def _canonical_json(value: Mapping[str, Any]) -> bytes:
@@ -152,7 +156,7 @@ def _read_exact_file(
         os.close(descriptor)
 
 
-def _write_exclusive(
+def _write_private_exclusive(
     directory_descriptor: int,
     name: str,
     source: bytes,
@@ -181,6 +185,52 @@ def _write_exclusive(
     return True
 
 
+def _write_atomic_exclusive(
+    staging_descriptor: int,
+    target_descriptor: int,
+    name: str,
+    source: bytes,
+    *,
+    label: str,
+) -> bool:
+    """Publish fully-fsynced immutable bytes without exposing partial finals."""
+
+    temporary_name = ".pending-%s.tmp" % secrets.token_hex(16)
+    if not _write_private_exclusive(
+        staging_descriptor,
+        temporary_name,
+        source,
+        label="%s staging file" % label,
+    ):  # pragma: no cover - a 128-bit random collision
+        raise WorkshopError("cannot reserve %s staging file" % label)
+    linked = False
+    try:
+        try:
+            os.link(
+                temporary_name,
+                name,
+                src_dir_fd=staging_descriptor,
+                dst_dir_fd=target_descriptor,
+                follow_symlinks=False,
+            )
+        except FileExistsError:
+            return False
+        except OSError as exc:
+            raise WorkshopError("cannot atomically save %s" % label) from exc
+        linked = True
+        os.fsync(target_descriptor)
+        return True
+    finally:
+        try:
+            os.unlink(temporary_name, dir_fd=staging_descriptor)
+            os.fsync(staging_descriptor)
+        except FileNotFoundError:  # pragma: no cover
+            pass
+        except OSError as exc:
+            if linked:
+                raise WorkshopError("cannot clean %s staging file" % label) from exc
+
+
 @dataclass(frozen=True)
 class PendingWish:
     """The exact pre-Match input and catalog snapshot for one Wish id."""
@@ -192,6 +242,11 @@ class PendingWish:
     catalog_sha256: str
     catalog_total: int
     catalog_taste_sha256s: Sequence[Tuple[str, str]]
+    # Records written before the full-TASTE snapshot was added are still
+    # useful for read-only status and for correlating an already-sealed Manager
+    # assignment.  They may never be sent back through Match: their compact
+    # catalog digest did not bind the complete creative constitutions.
+    catalog_taste_identity_bound: bool = True
     schema_version: int = 1
     kind: str = PENDING_WISH_KIND
     record_sha256: str = field(init=False)
@@ -218,17 +273,24 @@ class PendingWish:
         require_sha256(self.catalog_sha256, "pending Wish catalog_sha256")
         if type(self.catalog_total) is not int or not 1 <= self.catalog_total <= 10_000:
             raise ContractError("pending Wish catalog_total is invalid")
+        if type(self.catalog_taste_identity_bound) is not bool:
+            raise ContractError("pending Wish catalog Taste binding flag is invalid")
         taste_sha256s = tuple(self.catalog_taste_sha256s)
-        if (
-            len(taste_sha256s) != self.catalog_total
-            or tuple(sorted(taste_sha256s)) != taste_sha256s
-            or len({item[0] for item in taste_sha256s}) != len(taste_sha256s)
-        ):
-            raise ContractError("pending Wish catalog Taste identities are invalid")
-        for inventor_id, digest in taste_sha256s:
-            if not isinstance(inventor_id, str) or not inventor_id:
-                raise ContractError("pending Wish catalog inventor id is invalid")
-            require_sha256(digest, "pending Wish catalog Taste sha256")
+        if self.catalog_taste_identity_bound:
+            if (
+                len(taste_sha256s) != self.catalog_total
+                or tuple(sorted(taste_sha256s)) != taste_sha256s
+                or len({item[0] for item in taste_sha256s}) != len(taste_sha256s)
+            ):
+                raise ContractError("pending Wish catalog Taste identities are invalid")
+            for inventor_id, digest in taste_sha256s:
+                if not isinstance(inventor_id, str) or not inventor_id:
+                    raise ContractError("pending Wish catalog inventor id is invalid")
+                require_sha256(digest, "pending Wish catalog Taste sha256")
+        elif taste_sha256s:
+            raise ContractError(
+                "legacy pending Wish cannot claim unbound catalog Taste identities"
+            )
         object.__setattr__(self, "catalog_taste_sha256s", taste_sha256s)
         object.__setattr__(
             self,
@@ -266,21 +328,23 @@ class PendingWish:
         )
 
     def _identity_dict(self) -> Dict[str, Any]:
+        catalog = {
+            "collection": str(self.catalog_collection),
+            "catalog_sha256": self.catalog_sha256,
+            "total": self.catalog_total,
+        }
+        if self.catalog_taste_identity_bound:
+            catalog["taste_sha256s"] = [
+                {"inventor_id": inventor_id, "taste_sha256": digest}
+                for inventor_id, digest in self.catalog_taste_sha256s
+            ]
         return {
             "schema_version": self.schema_version,
             "kind": self.kind,
             "wish": self.wish.to_dict(),
             "publication_policy": self.publication_policy.to_dict(),
             "playtest_rounds": self.playtest_rounds,
-            "catalog": {
-                "collection": str(self.catalog_collection),
-                "catalog_sha256": self.catalog_sha256,
-                "total": self.catalog_total,
-                "taste_sha256s": [
-                    {"inventor_id": inventor_id, "taste_sha256": digest}
-                    for inventor_id, digest in self.catalog_taste_sha256s
-                ],
-            },
+            "catalog": catalog,
         }
 
     def object_bytes(self) -> bytes:
@@ -328,14 +392,17 @@ class PendingWish:
         except TypeError as exc:
             raise ContractError("pending Wish Wish is malformed") from exc
         catalog = _copy_mapping(payload["catalog"], "pending Wish catalog")
-        if set(catalog) != {
+        current_catalog_fields = {
             "collection",
             "catalog_sha256",
             "total",
             "taste_sha256s",
-        }:
+        }
+        legacy_catalog_fields = current_catalog_fields - {"taste_sha256s"}
+        if set(catalog) not in (current_catalog_fields, legacy_catalog_fields):
             raise ContractError("pending Wish catalog fields are invalid")
-        raw_tastes = catalog["taste_sha256s"]
+        taste_identity_bound = "taste_sha256s" in catalog
+        raw_tastes = catalog.get("taste_sha256s", [])
         if not isinstance(raw_tastes, list):
             raise ContractError("pending Wish catalog Taste identities are malformed")
         taste_sha256s = []
@@ -361,6 +428,7 @@ class PendingWish:
             catalog_sha256=catalog["catalog_sha256"],
             catalog_total=catalog["total"],
             catalog_taste_sha256s=tuple(taste_sha256s),
+            catalog_taste_identity_bound=taste_identity_bound,
             schema_version=payload["schema_version"],
             kind=payload["kind"],
         )
@@ -369,6 +437,11 @@ class PendingWish:
         return record
 
     def assert_catalog_current(self, catalog: Any) -> None:
+        if not self.catalog_taste_identity_bound:
+            raise ContractError(
+                "this legacy pending Wish predates the full-TASTE catalog snapshot; "
+                "start a new Wish instead of rematching it under changed creative constitutions"
+            )
         assert_current = getattr(catalog, "assert_current", None)
         if not callable(assert_current):
             raise ContractError("pending Wish requires one typed catalog snapshot")
@@ -399,6 +472,7 @@ class PendingWish:
             catalog_sha256=self.catalog_sha256,
             catalog_total=self.catalog_total,
             catalog_taste_sha256s=self.catalog_taste_sha256s,
+            catalog_taste_identity_bound=self.catalog_taste_identity_bound,
         )
 
 
@@ -645,7 +719,8 @@ class PendingWishStore:
     @staticmethod
     def _save_object(objects: int, record: PendingWish) -> None:
         name = record.record_sha256 + ".json"
-        if _write_exclusive(
+        if _write_atomic_exclusive(
+            objects,
             objects,
             name,
             record.object_bytes(),
@@ -665,21 +740,29 @@ class PendingWishStore:
             raise ContractError("Manager pending Wish belongs to a different catalog root")
         with self._layout(create=True) as layout:
             existing_indexes = self._validated_indexes(layout.indexes)
+            current_sha256 = existing_indexes.get(record.wish.product_id)
+            if (
+                current_sha256 is not None
+                and current_sha256 != record.record_sha256
+            ):
+                raise WorkshopError(
+                    "this Wish id is already bound to a different pending record"
+                )
             self._save_object(layout.objects, record)
             name = _product_key(record.wish.product_id) + ".json"
             source = self._index_bytes(record.wish.product_id, record.record_sha256)
-            if not _write_exclusive(
+            if not _write_atomic_exclusive(
+                layout.objects,
                 layout.indexes,
                 name,
                 source,
                 label="Manager pending Wish index",
             ):
-                current_sha256 = existing_indexes.get(record.wish.product_id)
-                if current_sha256 is None:
-                    # A non-cooperating writer raced the exclusive create.
-                    current_sha256 = self._read_index(
-                        layout.indexes, record.wish.product_id, allow_missing=False
-                    )
+                # Always reread the final pointer.  Even an index that existed
+                # at the start may have been replaced before this link attempt.
+                current_sha256 = self._read_index(
+                    layout.indexes, record.wish.product_id, allow_missing=False
+                )
                 if current_sha256 != record.record_sha256:
                     raise WorkshopError(
                         "this Wish id is already bound to a different pending record"
@@ -690,7 +773,86 @@ class PendingWishStore:
         _product_key(product_id)
         try:
             with self._layout(create=False) as layout:
-                record_sha256 = self._validated_indexes(layout.indexes).get(product_id)
+                snapshot = _BATCH_INDEX_SNAPSHOTS.get().get(self.collection)
+                observed = os.fstat(layout.indexes)
+                identity = (
+                    observed.st_dev,
+                    observed.st_ino,
+                    observed.st_mtime_ns,
+                    observed.st_ctime_ns,
+                )
+                if snapshot is not None:
+                    if snapshot[0] != identity:
+                        raise WorkshopError(
+                            "Manager pending Wish index changed during batch status"
+                        )
+                    indexes = snapshot[1]
+                else:
+                    indexes = self._validated_indexes(layout.indexes)
+                record_sha256 = indexes.get(product_id)
+                if record_sha256 is None:
+                    if allow_missing:
+                        return None
+                    raise WorkshopError("Manager pending Wish index is missing")
+                if self._read_index(
+                    layout.indexes, product_id, allow_missing=False
+                ) != record_sha256:
+                    raise WorkshopError("Manager pending Wish index changed during load")
+                record = self._read_object(layout.objects, record_sha256)
+        except _MissingStore:
+            if allow_missing:
+                return None
+            raise WorkshopError("this Wish has no saved Manager pending record")
+        if record.wish.product_id != product_id:
+            raise WorkshopError("Manager pending Wish object belongs to another Wish")
+        return record
+
+    @contextmanager
+    def validated_batch_reads(self) -> Iterator[None]:
+        """Validate the global index once for one bounded, read-only batch view."""
+
+        with self._layout(create=False) as layout:
+            before = os.fstat(layout.indexes)
+            identity = (
+                before.st_dev,
+                before.st_ino,
+                before.st_mtime_ns,
+                before.st_ctime_ns,
+            )
+            records = self._validated_indexes(layout.indexes)
+            current = dict(_BATCH_INDEX_SNAPSHOTS.get())
+            current[self.collection] = (identity, dict(records))
+            token = _BATCH_INDEX_SNAPSHOTS.set(current)
+            try:
+                yield
+                if self._validated_indexes(layout.indexes) != records:
+                    raise WorkshopError(
+                        "Manager pending Wish index changed during batch status"
+                    )
+                after = os.fstat(layout.indexes)
+                if (
+                    after.st_dev,
+                    after.st_ino,
+                    after.st_mtime_ns,
+                    after.st_ctime_ns,
+                ) != identity:
+                    raise WorkshopError(
+                        "Manager pending Wish index changed during batch status"
+                    )
+            finally:
+                _BATCH_INDEX_SNAPSHOTS.reset(token)
+
+    def _batch_load(
+        self, product_id: str, *, allow_missing: bool = False
+    ) -> Optional[PendingWish]:
+        """Direct exact lookup for a caller holding the per-Wish batch lock."""
+
+        _product_key(product_id)
+        try:
+            with self._layout(create=False) as layout:
+                record_sha256 = self._read_index(
+                    layout.indexes, product_id, allow_missing=True
+                )
                 if record_sha256 is None:
                     if allow_missing:
                         return None
@@ -703,6 +865,40 @@ class PendingWishStore:
         if record.wish.product_id != product_id:
             raise WorkshopError("Manager pending Wish object belongs to another Wish")
         return record
+
+    def _batch_save(self, record: PendingWish) -> Path:
+        """O(1) exact save for a caller holding the per-Wish batch lock."""
+
+        if not isinstance(record, PendingWish):
+            raise ContractError("Manager pending Wish store requires a typed record")
+        if record.catalog_collection != self.collection:
+            raise ContractError("Manager pending Wish belongs to a different catalog root")
+        with self._layout(create=True) as layout:
+            current_sha256 = self._read_index(
+                layout.indexes, record.wish.product_id, allow_missing=True
+            )
+            if current_sha256 is not None and current_sha256 != record.record_sha256:
+                raise WorkshopError(
+                    "this Wish id is already bound to a different pending record"
+                )
+            self._save_object(layout.objects, record)
+            name = _product_key(record.wish.product_id) + ".json"
+            source = self._index_bytes(record.wish.product_id, record.record_sha256)
+            if not _write_atomic_exclusive(
+                layout.objects,
+                layout.indexes,
+                name,
+                source,
+                label="Manager pending Wish index",
+            ):
+                observed = self._read_index(
+                    layout.indexes, record.wish.product_id, allow_missing=False
+                )
+                if observed != record.record_sha256:
+                    raise WorkshopError(
+                        "this Wish id is already bound to a different pending record"
+                    )
+        return self.path / _INDEX_DIRECTORY / name
 
     def list(self) -> Tuple[PendingWish, ...]:
         try:
@@ -745,7 +941,7 @@ class PendingWishStore:
             source = self._index_bytes(
                 replacement.wish.product_id, replacement.record_sha256
             )
-            created = _write_exclusive(
+            created = _write_private_exclusive(
                 layout.objects,
                 temporary_name,
                 source,

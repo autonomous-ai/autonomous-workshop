@@ -1215,11 +1215,19 @@ class DeterministicWorkshopFakes:
                 fixture_delivery_evidence(
                     selected.made.artifact_sha256,
                     selected.instructions.instructions_sha256,
+                    product_id=selected.product_id,
+                    wish_sha256=selected.wish_sha256,
+                    deliver_provider_id=selected.provider_identity,
+                    deliver_attempt_id=selected.attempt_id,
                     carrier="UPS",
                     service="Ground",
                     tracking_id="1Z999AA10123456784",
                     observed_at=FIXED_TIME,
                 ),
+                selected.product_id,
+                selected.wish_sha256,
+                selected.provider_identity,
+                selected.attempt_id,
             )
         )(context)
 

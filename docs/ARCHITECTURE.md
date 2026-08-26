@@ -92,9 +92,11 @@ already shipped.
 The owner-facing transition from private draft to public page is deliberately
 outside those six jobs. Calling `workshop wish` authorizes that separately
 verified transition by default; `--draft` keeps the page private for review.
-Factory may also list a public page at its platform-estimated price. That
-storefront effect does not delay Instructions or Deliver, prove physical
-fulfillment, or introduce a seventh job.
+The transition runs only after shared Deliver has authenticated exact
+production, QA, packing, and carrier evidence. Factory may also list a public
+page at its platform-estimated price, so an Instructions draft is never made
+sellable merely because its digital files passed Playtest. Publication remains
+a separate owner authorization, not a seventh job or a substitute for Deliver.
 
 ## The Workshop Manager
 
@@ -161,6 +163,24 @@ truthfully. If no finalist genuinely fits, it waits for clarification, a wider
 shortlist, or a new inventor instead of forcing the Wish into the least-wrong
 category.
 
+The immutable PendingWish and batch plan never absorb mutable retry state.
+Instead, each Match invocation appends a content-addressed Manager event before
+the semantic call, then appends either the exact typed wait or the digest of the
+fsynced Manager handoff. A per-Wish head points at that validated predecessor
+chain. Consequently a later `workshop status` retains the Match Need and attempt
+identity, while a crashed working attempt can be superseded under the same
+per-Wish lock without rewriting the Wish, its complete-Taste snapshot, or its
+publication authorization.
+
+Status reads the independent PendingWish and Match heads twice without taking
+their creating lock; if a publication upgrade or append crosses the read, it
+retries a bounded number of times rather than projecting a mixed snapshot.
+After assignment it exposes both the latest immutable Match event and the
+current handoff digest. A crash after the handoff fsync can therefore show a
+still-working Match audit while the authoritative handoff remains resumable,
+and a later publication-policy upgrade can show a changed current handoff
+without rewriting the original assigned event.
+
 The Manager is typed Workshop engine code, not a skill, a sixth Workshop job,
 or a creative supervisor once work begins. Making it a skill would leave the
 host to select the selector and would hide routing behind prompt behavior. Its
@@ -168,6 +188,17 @@ assignment enters the same six-job contract as every other Wish. A future
 continuous service may repeatedly call this one-Wish interface, but scheduling,
 polling, and 24/7 operation stay outside an inventor profile and outside the V1
 Workshop promise.
+
+Every started product also persists a secret-free manifest for the effective
+Invent, Make, Playtest, Instructions, and Deliver components. Each stage binds
+its public provider, implementation, configuration, and declared model, prompt,
+reward, toolchain, and service dependencies to a stage digest. The ordered
+whole-engine digest is informational, not a global resume fence: completed
+stages and effect-started stages must keep their exact component, while an
+incomplete no-effect waiting stage may acquire a newly configured provider.
+Status returns the exact persisted manifest; Doctor returns the prospective
+Manager common-stage manifest and labels it as pre-Match because a selected
+Inventor may still declare a custom Make or Playtest.
 
 ## Alice on the shared Workshop
 
@@ -432,6 +463,12 @@ External effects use durable intent, stable idempotency, scoped credentials,
 and authenticated receipts. A timeout or ambiguous response is held for
 reconciliation. It is not blindly retried and it never becomes a fabricated
 receipt.
+
+An effect-started Deliver attempt is reconciled with `workshop reconcile
+<wish-id>`. The Manager reconstructs the exact sealed context, requires the
+same provider identity, and invokes only authenticated GET/readback. An unknown
+readback leaves state unchanged; only exact `Delivered` evidence advances the
+event chain.
 
 ## Reviews improve the next Make
 

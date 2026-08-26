@@ -24,6 +24,7 @@ from inventor_workshop.cli import (
     _run_inventor,
     _save_manager_assignment,
     _status_receipt,
+    _wish_exit_code,
     main,
     parser,
 )
@@ -33,7 +34,7 @@ from inventor_workshop.handoff import (
 )
 from inventor_workshop.instructions import DefaultInstructions
 from inventor_workshop.errors import AmbiguousEffectError, WorkshopError
-from inventor_workshop.jobs import Need, WaitingFor
+from inventor_workshop.jobs import Delivered, Need, WaitingFor, deliver_wish_sha256
 from inventor_workshop.manager import (
     TasteFit,
     create_shortlist,
@@ -46,10 +47,42 @@ from inventor_workshop.runtime import Runtime
 from inventor_workshop.taste import load_taste
 from inventor_workshop.toys import ToyBlueprint
 from inventor_workshop.workshop import Workshop, WorkshopTools
+from tests.delivery_support import fixture_delivery_evidence
 from tests.test_toy_workshop import ToyWorkshopTest
 
 
 class CliTest(unittest.TestCase):
+    @staticmethod
+    def delivered_fixture(
+        wish: Wish,
+        *,
+        artifact_sha256: str = "f" * 64,
+        instructions_sha256: str = "b" * 64,
+    ) -> Delivered:
+        provider = "fixture-fulfillment-bench.1.0.0"
+        attempt = "deliver-" + "e" * 64
+        return Delivered(
+            product_artifact_sha256=artifact_sha256,
+            instructions_sha256=instructions_sha256,
+            carrier="USPS",
+            service="Priority Mail",
+            tracking_id="9400100000000000000000",
+            status="handed-off",
+            observed_at="2026-08-23T12:00:00+00:00",
+            evidence=fixture_delivery_evidence(
+                artifact_sha256,
+                instructions_sha256,
+                product_id=wish.product_id,
+                wish_sha256=deliver_wish_sha256(wish),
+                deliver_provider_id=provider,
+                deliver_attempt_id=attempt,
+            ),
+            product_id=wish.product_id,
+            wish_sha256=deliver_wish_sha256(wish),
+            deliver_provider_id=provider,
+            deliver_attempt_id=attempt,
+        )
+
     @staticmethod
     def inventor_identity(
         root: Path,
@@ -127,6 +160,9 @@ class CliTest(unittest.TestCase):
         transition=True,
         assignment_rounds=4,
         metadata_rounds=None,
+        deliver_provider_id=None,
+        deliver_attempt_id=None,
+        engine_provenance=None,
     ):
         inventor_id = "mira"
         inventor_root = root / "inventors" / inventor_id
@@ -177,24 +213,27 @@ class CliTest(unittest.TestCase):
         (
             inventor_root / ".workshop" / "runs" / product_id
         ).mkdir(parents=True)
+        metadata = {
+            "wish": wish.to_dict(),
+            "inventor_id": inventor_id,
+            "taste_sha256": taste.sha256,
+            "blueprint_sha256": ToyBlueprint.for_lane(
+                "moving-machines"
+            ).sha256,
+            "lane": "moving-machines",
+            "customization_level": "taste-only",
+            "playtest_rounds": (
+                assignment_rounds
+                if metadata_rounds is None
+                else metadata_rounds
+            ),
+        }
+        if engine_provenance is not None:
+            metadata["engine_provenance"] = engine_provenance
         runtime.register_product(
             product_id,
             "wish",
-            {
-                "wish": wish.to_dict(),
-                "inventor_id": inventor_id,
-                "taste_sha256": taste.sha256,
-                "blueprint_sha256": ToyBlueprint.for_lane(
-                    "moving-machines"
-                ).sha256,
-                "lane": "moving-machines",
-                "customization_level": "taste-only",
-                "playtest_rounds": (
-                    assignment_rounds
-                    if metadata_rounds is None
-                    else metadata_rounds
-                ),
-            },
+            metadata,
         )
         lease = runtime.acquire_lease(product_id, "fixture")
         product = runtime.get_product(product_id)
@@ -212,6 +251,10 @@ class CliTest(unittest.TestCase):
             payload["instructions_sha256"] = instructions_sha256
         if resume_checkpoint_sha256 is not None:
             payload["resume_checkpoint_sha256"] = resume_checkpoint_sha256
+        if deliver_provider_id is not None:
+            payload["deliver_provider_id"] = deliver_provider_id
+        if deliver_attempt_id is not None:
+            payload["deliver_attempt_id"] = deliver_attempt_id
         if transition:
             runtime._transition(
                 product_id,
@@ -1009,8 +1052,10 @@ class CliTest(unittest.TestCase):
         public = Receipt.from_dict(public_value)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
+            wish = Wish.create("wish-one", "A rolling pocket duel")
             assignment = SimpleNamespace(
-                wish=SimpleNamespace(product_id="wish-one"),
+                wish=wish,
+                assert_current=mock.Mock(),
                 decision=SimpleNamespace(
                     selected=SimpleNamespace(
                         card=SimpleNamespace(inventor_id="alice", root=root)
@@ -1038,7 +1083,14 @@ class CliTest(unittest.TestCase):
             ):
                 publication = _publish_inventor_draft(
                     assignment,
-                    {"page_url": page_url, "artifact_sha256": "a" * 64},
+                    {
+                        "status": "delivered",
+                        "delivery": self.delivered_fixture(
+                            wish, artifact_sha256="a" * 64
+                        ).to_dict(),
+                        "page_url": page_url,
+                        "artifact_sha256": "a" * 64,
+                    },
                     store_factory=mock.Mock(return_value=store),
                     session_factory=mock.Mock(return_value=session),
                     transition_factory=mock.Mock(return_value=transition),
@@ -1049,6 +1101,7 @@ class CliTest(unittest.TestCase):
             "intent-one", "effect-one", public
         )
         store.release_lease.assert_called_once_with("wish-one", "lease-one")
+        self.assertEqual(assignment.assert_current.call_count, 4)
         self.assertEqual(publication["status"], "public")
         self.assertTrue(publication["verified"])
         self.assertEqual(publication["page_url"], page_url)
@@ -1083,6 +1136,7 @@ class CliTest(unittest.TestCase):
                 draft,
                 object(),
                 product_id="wish-one",
+                assert_current=mock.Mock(),
                 session_factory=mock.Mock(return_value=session),
                 transition_factory=mock.Mock(return_value=transition),
             )
@@ -1096,6 +1150,78 @@ class CliTest(unittest.TestCase):
         )
         transition.publish.assert_not_called()
         store.resolve_live_as_public.assert_called_once_with("intent-one", public)
+        store.release_lease.assert_called_once_with("wish-one", "lease-one")
+
+    def test_unexpected_factory_error_text_is_never_persisted(self):
+        draft = self.factory_receipt("draft")
+        intent = {
+            "id": "intent-one",
+            "state": "succeeded",
+            "receipt": draft.to_dict(),
+            "request": {"_workshop_api_origin": "https://api.example.test"},
+        }
+        store = mock.Mock()
+        store.acquire_lease.return_value = "lease-one"
+        store.get_publish_intent.return_value = intent
+        store.begin_live.return_value = {"effect_token": "effect-one"}
+        transition = mock.Mock()
+        transition.publish.side_effect = RuntimeError(
+            "provider leaked super-sensitive-fixture-value"
+        )
+        with self.assertRaisesRegex(AmbiguousEffectError, "outcome is unknown"):
+            _promote_factory_intent(
+                store,
+                intent,
+                draft,
+                object(),
+                product_id="wish-one",
+                assert_current=mock.Mock(),
+                session_factory=mock.Mock(return_value=object()),
+                transition_factory=mock.Mock(return_value=transition),
+            )
+        store.mark_live_unknown.assert_called_once_with(
+            "intent-one",
+            "effect-one",
+            "unexpected-factory-publication-error",
+        )
+        self.assertNotIn(
+            "super-sensitive-fixture-value", repr(store.method_calls)
+        )
+
+    def test_assignment_is_revalidated_after_fence_and_before_publish_effect(self):
+        draft = self.factory_receipt("draft")
+        intent = {
+            "id": "intent-one",
+            "state": "succeeded",
+            "receipt": draft.to_dict(),
+            "request": {"_workshop_api_origin": "https://api.example.test"},
+        }
+        store = mock.Mock()
+        store.acquire_lease.return_value = "lease-one"
+        store.get_publish_intent.return_value = intent
+        store.begin_live.return_value = {"effect_token": "effect-one"}
+        transition = mock.Mock()
+        assert_current = mock.Mock(
+            side_effect=(None, None, WorkshopError("saved assignment changed"))
+        )
+        with self.assertRaisesRegex(WorkshopError, "assignment changed"):
+            _promote_factory_intent(
+                store,
+                intent,
+                draft,
+                object(),
+                product_id="wish-one",
+                assert_current=assert_current,
+                session_factory=mock.Mock(return_value=object()),
+                transition_factory=mock.Mock(return_value=transition),
+            )
+        transition.publish.assert_not_called()
+        store.restore_draft_after_publish_rejection.assert_called_once_with(
+            "intent-one",
+            "effect-one",
+            "manager-assignment-changed-before-publication",
+        )
+        store.mark_live_unknown.assert_not_called()
         store.release_lease.assert_called_once_with("wish-one", "lease-one")
 
     def test_live_unknown_draft_readback_never_republishes(self):
@@ -1127,6 +1253,7 @@ class CliTest(unittest.TestCase):
                     draft,
                     object(),
                     product_id="wish-one",
+                    assert_current=mock.Mock(),
                     session_factory=mock.Mock(return_value=session),
                     transition_factory=mock.Mock(return_value=transition),
                 )
@@ -1152,6 +1279,7 @@ class CliTest(unittest.TestCase):
                 draft,
                 object(),
                 product_id="wish-one",
+                assert_current=mock.Mock(),
                 session_factory=mock.Mock(),
                 transition_factory=mock.Mock(),
             )
@@ -1172,8 +1300,9 @@ class CliTest(unittest.TestCase):
         self.assertIn("Instructions", publication["reason"])
 
     def test_publish_draft_without_factory_secret_returns_an_exact_safe_wait(self):
+        wish = Wish.create("wish-one", "A tiny rolling moon")
         assignment = SimpleNamespace(
-            wish=SimpleNamespace(product_id="wish-one"),
+            wish=wish,
             decision=SimpleNamespace(
                 selected=SimpleNamespace(
                     card=SimpleNamespace(
@@ -1188,6 +1317,10 @@ class CliTest(unittest.TestCase):
             publication = _publish_inventor_draft(
                 assignment,
                 {
+                    "status": "delivered",
+                    "delivery": self.delivered_fixture(
+                        wish, artifact_sha256="a" * 64
+                    ).to_dict(),
                     "page_url": "https://www.autonomous.ai/factory/product/moon",
                     "artifact_sha256": "a" * 64,
                 },
@@ -1198,6 +1331,407 @@ class CliTest(unittest.TestCase):
         self.assertIn("workshop resume wish-one", publication["reason"])
         self.assertNotIn("alice", publication["reason"])
         store.assert_not_called()
+
+    def test_public_factory_listing_waits_for_exact_physical_deliver(self):
+        assignment = SimpleNamespace(
+            wish=SimpleNamespace(product_id="wish-one"),
+            decision=SimpleNamespace(
+                selected=SimpleNamespace(
+                    card=SimpleNamespace(
+                        inventor_id="alice",
+                        root=Path("/workshop/inventors/alice"),
+                    )
+                )
+            ),
+        )
+        store = mock.Mock()
+        publication = _publish_inventor_draft(
+            assignment,
+            {
+                "status": "waiting",
+                "job": "deliver",
+                "page_url": "https://www.autonomous.ai/factory/product/moon",
+                "artifact_sha256": "a" * 64,
+            },
+            store_factory=store,
+        )
+        self.assertEqual(publication["status"], "waiting")
+        self.assertIn("remains private", publication["reason"])
+        self.assertIn("sale listing", publication["reason"])
+        store.assert_not_called()
+
+    def test_publication_rejects_a_delivery_replayed_from_another_wish(self):
+        original = Wish.create("wish-original", "A rolling moon")
+        selected = Wish.create("wish-selected", "A different rolling moon")
+        assignment = SimpleNamespace(
+            wish=selected,
+            decision=SimpleNamespace(
+                selected=SimpleNamespace(
+                    card=SimpleNamespace(
+                        inventor_id="alice",
+                        root=Path("/workshop/inventors/alice"),
+                    )
+                )
+            ),
+        )
+        store = mock.Mock()
+        with self.assertRaisesRegex(WorkshopError, "another Wish"):
+            _publish_inventor_draft(
+                assignment,
+                {
+                    "status": "delivered",
+                    "delivery": self.delivered_fixture(original).to_dict(),
+                    "page_url": "https://www.autonomous.ai/factory/product/moon",
+                    "artifact_sha256": "f" * 64,
+                },
+                store_factory=store,
+            )
+        store.assert_not_called()
+
+    def test_delivered_draft_status_preserves_delivery_and_offers_page_resume(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            assignment, runtime, _ = self.durable_wait_fixture(
+                root,
+                stage="deliver",
+                capability="production-and-shipping",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+            )
+            delivery = self.delivered_fixture(assignment.wish)
+            lease = runtime.acquire_lease("wish-one", "deliver-fixture")
+            product = runtime.get_product("wish-one")
+            runtime._transition(
+                "wish-one",
+                "deliver",
+                "deliver",
+                product["revision"],
+                "f" * 64,
+                {
+                    "status": "delivered",
+                    "round": 1,
+                    "instructions_sha256": "b" * 64,
+                    "deliver_provider_id": delivery.deliver_provider_id,
+                    "deliver_attempt_id": delivery.deliver_attempt_id,
+                    "delivery": delivery.to_dict(),
+                },
+                lease,
+            )
+            runtime.release_lease("wish-one", lease)
+
+            draft = self.factory_receipt("draft")
+            page_store = mock.Mock()
+            page_store.latest_publish_intent.return_value = {
+                "state": "succeeded",
+                "receipt": draft.to_dict(),
+            }
+            calls = 0
+            read_only = _ReadOnlyWorkshopStore
+
+            def projection(database):
+                nonlocal calls
+                calls += 1
+                return read_only(database) if calls == 1 else page_store
+
+            with mock.patch(
+                "inventor_workshop.cli._ReadOnlyWorkshopStore",
+                side_effect=projection,
+            ):
+                receipt = _status_receipt(root, "wish-one")
+            self.assertEqual(receipt["status"], "delivered")
+            self.assertEqual(receipt["delivery"], delivery.to_dict())
+            self.assertEqual(
+                receipt["deliver_provider_id"], delivery.deliver_provider_id
+            )
+            self.assertEqual(
+                receipt["deliver_attempt_id"], delivery.deliver_attempt_id
+            )
+            self.assertEqual(receipt["page"]["status"], "draft")
+            self.assertEqual(receipt["resume"]["kind"], "factory-page")
+
+    def test_resume_publish_routes_delivered_draft_or_unknown_page_only(self):
+        for page_status in ("draft", "unknown"):
+            with self.subTest(page_status=page_status), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                assignment, runtime, _ = self.durable_wait_fixture(
+                    root,
+                    stage="deliver",
+                    capability="production-and-shipping",
+                    artifact_sha256="f" * 64,
+                    instructions_sha256="b" * 64,
+                )
+                delivery = self.delivered_fixture(assignment.wish)
+                lease = runtime.acquire_lease("wish-one", "deliver-fixture")
+                product = runtime.get_product("wish-one")
+                runtime._transition(
+                    "wish-one",
+                    "deliver",
+                    "deliver",
+                    product["revision"],
+                    "f" * 64,
+                    {
+                        "status": "delivered",
+                        "round": 1,
+                        "instructions_sha256": "b" * 64,
+                        "deliver_provider_id": delivery.deliver_provider_id,
+                        "deliver_attempt_id": delivery.deliver_attempt_id,
+                        "delivery": delivery.to_dict(),
+                    },
+                    lease,
+                )
+                runtime.release_lease("wish-one", lease)
+                durable_status = {
+                    "status": "delivered",
+                    "job": "deliver",
+                    "artifact_sha256": "f" * 64,
+                    "needs": [],
+                    "delivery": delivery.to_dict(),
+                    "page": {
+                        "status": page_status,
+                        "page_url": "https://www.autonomous.ai/factory/product/rolling-moon",
+                    },
+                }
+                publication = mock.Mock(
+                    return_value={"status": "public", "verified": True}
+                )
+                output = StringIO()
+                with mock.patch(
+                    "inventor_workshop.cli._status_receipt",
+                    return_value=durable_status,
+                ), mock.patch(
+                    "inventor_workshop.cli._publish_inventor_draft",
+                    publication,
+                ), mock.patch(
+                    "inventor_workshop.cli._prepare_assignment_world_inputs"
+                ) as world_inputs, redirect_stdout(output):
+                    code = main(
+                        (
+                            "resume",
+                            "wish-one",
+                            "--root",
+                            str(root),
+                            "--publish",
+                            "--json",
+                        )
+                    )
+                receipt = json.loads(output.getvalue())
+                self.assertEqual(code, 0)
+                self.assertEqual(receipt["result"]["status"], "delivered")
+                self.assertEqual(receipt["result"]["delivery"], delivery.to_dict())
+                published_result = publication.call_args.args[1]
+                self.assertEqual(published_result["status"], "delivered")
+                self.assertEqual(published_result["delivery"], delivery.to_dict())
+                world_inputs.assert_not_called()
+
+    def test_ambiguous_deliver_is_classified_before_any_world_service(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.durable_wait_fixture(
+                root,
+                stage="deliver",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+                state_status="working",
+            )
+            status = {
+                "status": "working",
+                "job": "deliver",
+                "artifact_sha256": "f" * 64,
+                "needs": [],
+                "page": {
+                    "status": "draft",
+                    "page_url": "https://www.autonomous.ai/factory/product/rolling-moon",
+                },
+            }
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._status_receipt", return_value=status
+            ), mock.patch(
+                "inventor_workshop.cli._prepare_assignment_world_inputs"
+            ) as world_inputs, mock.patch(
+                "inventor_workshop.cli._configured_world_playtest_evidence"
+            ) as world_evidence, redirect_stdout(output):
+                code = main(
+                    (
+                        "resume",
+                        "wish-one",
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(code, 1)
+            self.assertEqual(receipt["result"]["resume"], "not-available")
+            self.assertIn("unknown outcome", receipt["result"]["reason"])
+            world_inputs.assert_not_called()
+            world_evidence.assert_not_called()
+
+    def test_status_exposes_the_ambiguous_delivery_correlation_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            provider = (
+                "manager-services.production.deliver.acme.1.0.0."
+                + "d" * 64
+            )
+            attempt = "deliver-" + "e" * 64
+            self.durable_wait_fixture(
+                root,
+                stage="deliver",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+                state_status="working",
+                deliver_provider_id=provider,
+                deliver_attempt_id=attempt,
+            )
+            receipt = _status_receipt(root, "wish-one")
+            self.assertEqual(receipt["status"], "working")
+            self.assertEqual(receipt["deliver_provider_id"], provider)
+            self.assertEqual(receipt["deliver_attempt_id"], attempt)
+            self.assertEqual(receipt["resume"]["kind"], "ambiguous-deliver")
+            self.assertEqual(receipt["reconcile"]["status"], "required")
+            self.assertIn(
+                "workshop reconcile wish-one",
+                receipt["reconcile"]["command"],
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(
+                    main(("status", "wish-one", "--root", str(root))), 0
+                )
+            self.assertIn("Deliver provider: %s" % provider, output.getvalue())
+            self.assertIn("Deliver attempt: %s" % attempt, output.getvalue())
+            self.assertIn("Reconcile: workshop reconcile wish-one", output.getvalue())
+
+    def test_reconcile_dispatches_only_exact_manager_readback_and_reports_unknown(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            provider = (
+                "manager-services.production.deliver.acme.1.0.0."
+                + "d" * 64
+            )
+            attempt = "deliver-" + "e" * 64
+            assignment, _, _ = self.durable_wait_fixture(
+                root,
+                stage="deliver",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+                state_status="working",
+                deliver_provider_id=provider,
+                deliver_attempt_id=attempt,
+            )
+
+            class Services:
+                @staticmethod
+                def binding(capability):
+                    return object() if capability == "deliver" else None
+
+                @staticmethod
+                def stage_provider_id(capability, stage):
+                    self.assertEqual((capability, stage), ("deliver", "deliver"))
+                    return provider
+
+                @staticmethod
+                def trusted_workshop_engine():
+                    return object()
+
+            manager_binding = ManagerAssignmentHandoff.from_assignment(
+                assignment
+            ).result_binding()
+            reconciled = {
+                "product_id": "wish-one",
+                "status": "working",
+                "job": "deliver",
+                "round": 1,
+                "playtest_rounds": 4,
+                "artifact_sha256": "f" * 64,
+                "instructions_sha256": "b" * 64,
+                "page_url": "https://www.autonomous.ai/factory/product/rolling-moon",
+                "invented": None,
+                "needs": [],
+                "delivery": None,
+                "manager_assignment": manager_binding,
+            }
+            output = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._selected_manager_services",
+                return_value=Services(),
+            ), mock.patch(
+                "inventor_workshop.manager_execution.execute_manager_workshop",
+                return_value=reconciled,
+            ) as execute, mock.patch(
+                "inventor_workshop.cli._validate_child_workshop_state",
+                return_value=reconciled,
+            ) as validate, mock.patch(
+                "inventor_workshop.cli._prepare_assignment_world_inputs"
+            ) as world_inputs, redirect_stdout(output):
+                code = main(
+                    (
+                        "reconcile",
+                        "wish-one",
+                        "--root",
+                        str(root),
+                        "--json",
+                    )
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(code, 1)
+            self.assertEqual(
+                receipt["result"]["reconciliation"]["status"],
+                "still-unknown",
+            )
+            self.assertEqual(
+                receipt["result"]["reconciliation"]["attempt_id"], attempt
+            )
+            self.assertEqual(execute.call_args.kwargs["action"], "reconcile")
+            self.assertTrue(
+                validate.call_args.kwargs["allow_ambiguous_deliver"]
+            )
+            world_inputs.assert_not_called()
+
+    def test_reconcile_rejects_manager_provider_rotation_before_dispatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            persisted_provider = (
+                "manager-services.production.deliver.acme.1.0.0."
+                + "d" * 64
+            )
+            self.durable_wait_fixture(
+                root,
+                stage="deliver",
+                artifact_sha256="f" * 64,
+                instructions_sha256="b" * 64,
+                state_status="working",
+                deliver_provider_id=persisted_provider,
+                deliver_attempt_id="deliver-" + "e" * 64,
+            )
+
+            class RotatedServices:
+                @staticmethod
+                def binding(capability):
+                    return object() if capability == "deliver" else None
+
+                @staticmethod
+                def stage_provider_id(capability, stage):
+                    del capability, stage
+                    return (
+                        "manager-services.production.deliver.rotated.1.0.0."
+                        + "a" * 64
+                    )
+
+            errors = StringIO()
+            with mock.patch(
+                "inventor_workshop.cli._selected_manager_services",
+                return_value=RotatedServices(),
+            ), mock.patch(
+                "inventor_workshop.manager_execution.execute_manager_workshop"
+            ) as execute, redirect_stderr(errors):
+                code = main(
+                    ("reconcile", "wish-one", "--root", str(root), "--json")
+                )
+            self.assertEqual(code, 2)
+            self.assertIn("differs from the working attempt", errors.getvalue())
+            execute.assert_not_called()
 
     def test_wish_is_the_simple_customer_command(self):
         root = Path(__file__).resolve().parents[1]
@@ -1250,8 +1784,6 @@ class CliTest(unittest.TestCase):
                 ],
             },
         ), mock.patch(
-            "inventor_workshop.cli._save_manager_assignment"
-        ), mock.patch(
             "inventor_workshop.cli._publish_inventor_draft",
             return_value={
                 "status": "waiting",
@@ -1293,7 +1825,8 @@ class CliTest(unittest.TestCase):
         )
         self.assertIn("Track: workshop status", progress.getvalue())
         self.assertIn("may list it for sale", progress.getvalue())
-        self.assertIn("physical Deliver is separate", progress.getvalue())
+        self.assertIn("physical Deliver", progress.getvalue())
+        self.assertIn("after exact verification", progress.getvalue())
         self.assertIn("up to 60 minutes", progress.getvalue())
         self.assertNotIn("Wish:", output.getvalue().splitlines()[0])
 
@@ -1306,10 +1839,12 @@ class CliTest(unittest.TestCase):
         )
         help_text = subcommands.choices["wish"].format_help()
         self.assertIn("public", help_text)
-        self.assertIn("platform-estimated", help_text)
+        self.assertIn("estimated price", help_text)
         self.assertIn("price", help_text)
         self.assertIn("physical Deliver", help_text)
         self.assertIn("--draft", help_text)
+        self.assertIn("keep the exact authenticated page private", help_text)
+        self.assertNotIn("stop after the exact authenticated private draft", help_text)
         self.assertIn("--strict", help_text)
         self.assertIn("progress goes to stderr", help_text)
         self.assertIn("four", help_text)
@@ -1317,6 +1852,26 @@ class CliTest(unittest.TestCase):
         self.assertFalse(
             command.parse_args(("wish", "a moon", "--draft")).publish
         )
+
+    def test_strict_wish_fails_on_wait_or_stopped_playtest(self):
+        self.assertEqual(_wish_exit_code({"status": "waiting"}, strict=True), 1)
+        self.assertEqual(_wish_exit_code({"status": "stopped"}, strict=True), 1)
+        self.assertEqual(_wish_exit_code({"status": "delivered"}, strict=True), 0)
+        self.assertEqual(_wish_exit_code({"status": "stopped"}, strict=False), 0)
+
+    def test_resume_strict_and_doctor_selected_model_are_explicit_in_help(self):
+        command = parser()
+        subcommands = next(
+            action
+            for action in command._actions
+            if hasattr(action, "choices") and action.choices
+        )
+        resume_help = subcommands.choices["resume"].format_help()
+        doctor_help = subcommands.choices["doctor"].format_help()
+        self.assertIn("--strict", resume_help)
+        self.assertIn("waiting or stopped", resume_help)
+        self.assertIn("selected Manager-model", doctor_help)
+        self.assertNotIn("small Luna call", doctor_help)
 
     def test_empty_working_directory_auto_detects_the_source_checkout(self):
         expected = Path(__file__).resolve().parents[1]
@@ -1462,6 +2017,49 @@ class CliTest(unittest.TestCase):
             self.assertEqual(listing["count"], 1)
             self.assertEqual(listing["wishes"][0]["product_id"], "wish-one")
 
+    def test_status_projects_the_exact_public_stage_engine_provenance(self):
+        from inventor_workshop.manager_execution import (
+            default_trusted_workshop_engine,
+        )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = default_trusted_workshop_engine().provenance
+            self.assertIsNotNone(manifest)
+            self.durable_wait_fixture(
+                root, engine_provenance=manifest.to_dict()
+            )
+            output = StringIO()
+            with redirect_stdout(output):
+                self.assertEqual(
+                    main(
+                        (
+                            "status",
+                            "wish-one",
+                            "--root",
+                            str(root),
+                            "--json",
+                        )
+                    ),
+                    0,
+                )
+            receipt = json.loads(output.getvalue())
+            self.assertEqual(
+                receipt["engine_provenance"], manifest.to_dict()
+            )
+            self.assertEqual(
+                [item["stage"] for item in receipt["engine_provenance"]["components"]],
+                ["invent", "make", "playtest", "instructions", "deliver"],
+            )
+
+            plain = StringIO()
+            with redirect_stdout(plain):
+                self.assertEqual(
+                    main(("status", "wish-one", "--root", str(root))), 0
+                )
+            self.assertIn("informational aggregate", plain.getvalue())
+            self.assertIn("Engine Deliver:", plain.getvalue())
+
     def test_status_never_follows_runtime_or_assignment_parent_symlinks(self):
         for replaced_parent in ("runtime", "assignments"):
             with self.subTest(replaced_parent=replaced_parent), tempfile.TemporaryDirectory() as temporary:
@@ -1501,7 +2099,7 @@ class CliTest(unittest.TestCase):
                 receipt["wishes"][0]["product_id"], assignment.wish.product_id
             )
 
-    def test_resume_saved_assignment_retries_run_with_the_same_wish(self):
+    def test_resume_saved_assignment_retries_same_wish_and_strict_waits_nonzero(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             assignment, _, inventor_root = self.durable_wait_fixture(root)
@@ -1523,9 +2121,16 @@ class CliTest(unittest.TestCase):
                 "inventor_workshop.cli._resume_inventor"
             ) as resumed_child, redirect_stdout(output):
                 result = main(
-                    ("resume", "wish-one", "--root", str(root), "--json")
+                    (
+                        "resume",
+                        "wish-one",
+                        "--root",
+                        str(root),
+                        "--strict",
+                        "--json",
+                    )
                 )
-            self.assertEqual(result, 0)
+            self.assertEqual(result, 1)
             called_assignment = child.call_args.args[0]
             self.assertEqual(
                 called_assignment.wish.to_dict(), assignment.wish.to_dict()
@@ -1884,8 +2489,9 @@ class CliTest(unittest.TestCase):
                 observed["input_sha256"] = selected.world_inputs.binding_sha256
                 return evidence
 
-            def factory_resume(selected, result):
+            def factory_resume(selected, result, *, credentials=None):
                 observed["factory_evidence"] = selected.world_evidence
+                observed["factory_credentials"] = credentials
                 return {
                     **dict(result),
                     "status": "waiting",
@@ -2050,9 +2656,93 @@ class CliTest(unittest.TestCase):
             item for item in receipt["checks"] if item["name"] == "factory-page"
         )
         codex = next(item for item in receipt["checks"] if item["name"] == "codex")
+        structured = next(
+            item
+            for item in receipt["checks"]
+            if item["name"] == "codex-structured-call"
+        )
         self.assertIn("could not run", codex["detail"])
+        self.assertEqual(structured["status"], "not-probed")
         self.assertEqual(factory["status"], "ready")
         self.assertIn("verified only", factory["detail"])
+        engine = next(
+            item
+            for item in receipt["checks"]
+            if item["name"] == "engine-provenance"
+        )
+        self.assertEqual(engine["status"], "ready")
+        self.assertEqual(
+            receipt["engine_scope"],
+            "manager-common-defaults-before-inventor-selection",
+        )
+        self.assertEqual(
+            [
+                item["stage"]
+                for item in receipt["engine_provenance"]["components"]
+            ],
+            ["invent", "make", "playtest", "instructions", "deliver"],
+        )
+        self.assertEqual(
+            engine["informational_engine_sha256"],
+            receipt["engine_provenance"]["informational_engine_sha256"],
+        )
+
+    def test_doctor_deep_proves_the_exact_structured_runtime(self):
+        root = Path(__file__).resolve().parents[1]
+        output = StringIO()
+        structured = mock.Mock()
+        structured.invoke.side_effect = lambda **value: {
+            "ok": True,
+            "nonce": value["schema"]["properties"]["nonce"]["const"],
+        }
+
+        def runner(command, **kwargs):
+            if command[-2:] == ["login", "status"]:
+                return subprocess.CompletedProcess(command, 0, stdout="Logged in")
+            self.assertEqual(command, ["/fixture/PrusaSlicer", "--help"])
+            return subprocess.CompletedProcess(
+                command, 0, stdout="PrusaSlicer-2.9.6\n"
+            )
+
+        with mock.patch.dict(
+            "os.environ",
+            {
+                "WORKSHOP_CODEX_BIN": "/fixture/codex",
+                "WORKSHOP_PRUSASLICER_BIN": "/fixture/PrusaSlicer",
+            },
+            clear=True,
+        ), mock.patch(
+            "inventor_workshop.cli.subprocess.run", side_effect=runner
+        ), mock.patch(
+            "inventor_workshop.codex_runtime.CodexStructuredRunner",
+            return_value=structured,
+        ) as runner_factory, mock.patch(
+            "inventor_workshop.agent_make.LockedCadSkillBuilder.ensure_available",
+            return_value={"cad": "a" * 64, "product-to-cad": "b" * 64},
+        ), redirect_stdout(output):
+            self.assertEqual(
+                main(("doctor", "--root", str(root), "--deep", "--json")), 1
+            )
+
+        receipt = json.loads(output.getvalue())
+        probe = next(
+            item
+            for item in receipt["checks"]
+            if item["name"] == "codex-structured-call"
+        )
+        self.assertEqual(probe["status"], "ready")
+        runner_factory.assert_called_once_with(
+            model="gpt-5.6-terra",
+            reasoning_effort="low",
+            binary="/fixture/codex",
+            timeout_seconds=90,
+        )
+        invoked = structured.invoke.call_args.kwargs
+        self.assertEqual(invoked["schema"]["properties"]["ok"]["const"], True)
+        nonce = invoked["schema"]["properties"]["nonce"]["const"]
+        self.assertEqual(len(nonce), 32)
+        self.assertIn(nonce, invoked["prompt"])
+        self.assertNotIn("workspace", invoked)
 
     def test_doctor_never_exposes_codex_or_factory_secrets_to_slicer_probe(self):
         root = Path(__file__).resolve().parents[1]
