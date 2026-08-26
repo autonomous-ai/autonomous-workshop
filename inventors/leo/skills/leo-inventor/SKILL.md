@@ -26,6 +26,9 @@ advance a gate, or perform an external effect.
 - **Invent:** Explore genuinely different rule systems before choosing one.
   Specify components, setup, legal actions, information, state transitions,
   ending, scoring, player counts, and how the intended table changes play.
+- **Concept:** Decide the game's envelope, wall thickness, and every game
+  piece's form, dimensions, placement, and interfaces as researched,
+  attributed facts drawn from the chosen rule system, not restyled defaults.
 - **Make:** Build the complete executable rules and physical information system
   together. Use shared Workshop simulation/testing capabilities for traces and
   the `cad`, `product-to-cad`, and `step-parts` skills for printable geometry.

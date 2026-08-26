@@ -11,7 +11,9 @@ from workshop.playtest.service import Playtest
 
 
 _SEVERITIES = frozenset(("note", "improve", "block"))
-_FEEDBACK_INVALIDATION_STAGES = frozenset(("playtest", "release", "deliver"))
+_FEEDBACK_INVALIDATION_STAGES = frozenset(
+    ("concept", "playtest", "release", "deliver")
+)
 
 
 @dataclass(frozen=True)

@@ -26,6 +26,10 @@ advance a gate, or perform an external effect.
 - **Invent:** Explore materially different compositions grounded in consented
   reference facts. Choose one transformation and record which visible details
   support recognition, which are assumptions, and which must remain private.
+- **Concept:** Decide the piece's envelope, wall thickness, and recognizable
+  details as researched or deliberately decided facts, never a private
+  reference fact itself. Concept art directs the build; it never stands in
+  for evidence that recognition was actually achieved.
 - **Make:** Translate the composition into hierarchy, silhouette, scale,
   modular interfaces, print-safe details, views, and assembly constraints. Use
   the shared `cad`, `product-to-cad`, and `step-parts` Workshop skills for

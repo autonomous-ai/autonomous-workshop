@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=agentic-runtime-toys-v2)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Concept, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=agentic-runtime-toys-v3)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
@@ -73,8 +73,11 @@ one works the same whether there are five of them or a thousand.
 ## Quick start
 
 Requires Python 3.11 or newer and a signed-in Codex CLI 0.145.0 or newer. Workshop
-uses the developer's existing Codex subscription; it does not require a second
-model API key.
+uses the developer's existing Codex subscription for all reasoning and tool use,
+but Concept's images are drawn by a separately configured image provider, so
+Workshop also needs a second credential at
+`$WORKSHOP_HOME/credentials/concept-images.env`. Without it, a run parks at
+Concept with a concrete need instead of failing outright.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
@@ -88,18 +91,19 @@ uv run workshop wish \
 Every Wish first creates one persistent toy project under `toys/`, populates
 its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
 native Codex session with that toy project as its working directory. The same
-session Matches an Inventor subagent, researches and Invents the concept,
-builds and repairs the CAD, Playtests the exact product, then writes the Release
+session Matches an Inventor subagent, researches and Invents the idea,
+researches and decides the exact Concept and its drawing instructions, builds
+and repairs the CAD, Playtests the exact product, then writes the Release
 package:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> Release -> Deliver
 ```
 
-For each active Match, Invent, Make, Playtest, or Release attempt, Codex creates
-one native Goal with one objective, proof artifacts, and a verifiable stopping
-condition: the current stage finalizer succeeds. Only one Goal is active at a
-time. While pursuing it, Codex observes the current artifact, acts with its
+For each active Match, Invent, Concept, Make, Playtest, or Release attempt,
+Codex creates one native Goal with one objective, proof artifacts, and a
+verifiable stopping condition: the current stage finalizer succeeds. Only one
+Goal is active at a time. While pursuing it, Codex observes the current artifact, acts with its
 native tools and subagents, evaluates exact output, and improves it. This is
 Codex's work loop inside the Goal, not a Python loop. The host checkpoint stays
 the durable authority, and Wish and Deliver remain host boundaries. This uses
@@ -223,6 +227,7 @@ description: Choose Ada for hand-cranked creatures; not static models or games.
 I love mechanisms whose motion tells the story. I reject decoration without play.
 ```
 
+- [ABO](inventors/abo/TASTE.md) — original abstract strategy games, judged on rules and structure, not theme
 - [Alice](inventors/alice/TASTE.md) — personal heirloom editions of known games
 - [Leo](inventors/leo/TASTE.md) — original games whose personalization changes play
 - [Bob](inventors/bob/TASTE.md) — kinetic machines where the mechanism is the spectacle
@@ -249,8 +254,8 @@ imported accidentally.
   Taste, required primary skill, and any additional specialist skills or tools.
 - [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
 - [`src/workshop/`](src/workshop/) is the narrow trusted host, organized by
-  Wish, Match, Invent, Make, Playtest, Release, Deliver, workflow, runtime,
-  contracts, gates, and integrations.
+  Wish, Match, Invent, Concept, Make, Playtest, Release, Deliver, workflow,
+  runtime, contracts, gates, and integrations.
 - [`src/workshop/make/skills/`](src/workshop/make/skills/) holds the canonical
   shared CAD and making skills.
 - [`tests/`](tests/) mirrors the component ownership and contains the full
@@ -265,7 +270,7 @@ runtime-created toy projects are ignored by Git by default; only explicitly
 reviewed showcase or historical projects should be allowlisted for a commit.
 
 Shared code is organized by architecture component under `src/workshop/`:
-`product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
+`product`, `wish`, `match`, `invent`, `concept`, `make`, `playtest`, `release`,
 `deliver`, `workflow`, `artifacts`, `runtime`, `integrations`, and
 `contributors`. Make owns the single installed copy of its locked skills at
 `src/workshop/make/skills/`; portable schemas live with the component that owns

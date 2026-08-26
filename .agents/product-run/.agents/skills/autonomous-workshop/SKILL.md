@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Make, Playtest, Release, and Deliver using native Codex Goals, tools, and subagents while preserving deterministic host gates and human-controlled effects.
+description: Run, resume, or diagnose one Autonomous Workshop Wish through Match, Invent, Concept, Make, Playtest, Release, and Deliver using native Codex Goals, tools, and subagents while preserving deterministic host gates and human-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -23,6 +23,7 @@ skill is your workflow playbook, not a separate agent process.
 4. Read only the reference for the current stage:
    - Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
+   - Concept: [references/concept.md](references/concept.md)
    - Make or Playtest: [references/make-playtest.md](references/make-playtest.md)
    - Release or Deliver:
      [references/release-deliver.md](references/release-deliver.md)
@@ -122,8 +123,9 @@ python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 
-Use `--help` for exact arguments. The commands are `match`, `invent`, `make`,
-`playtest`, and `release`; the stage references describe their inputs. The
+Use `--help` for exact arguments. The commands are `match`, `invent`,
+`concept`, `make`, `playtest`, and `release`; the stage references describe
+their inputs. The
 finalizer validates and hashes exact bytes, writes the canonical contract under
 `artifacts/`, and atomically writes `agent-outcome.json` bound to the current
 checkpoint and gate subject. It does no reasoning, runs no improvement loop,
@@ -143,14 +145,18 @@ large pasted JSON object for run-local evidence.
 The host alone sequences:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> Release -> Deliver
 ```
 
 A finalized `improve` or `block` Playtest returns to the host. The host applies
 the round budget and invalidates downstream evidence before checkpointing a
-new Make attempt. Codex then creates the new Make Goal, interprets the exact
-feedback, and performs the repair. Reviews after delivery may inform a future
-Wish but never rewrite a completed run.
+new Make attempt. Where the feedback invalidates the design itself, the host
+routes back through a new Concept turn first, carrying the standing concept
+and that feedback, before Make runs again; where it invalidates only the
+build, the standing concept carries forward unchanged and no Concept turn
+runs for that round. Codex then creates the new Make Goal, interprets the
+exact feedback, and performs the repair. Reviews after delivery may inform a
+future Wish but never rewrite a completed run.
 
 Release prepares `MANUAL.md` and canonical schema-v3 page-ready product data,
 including evidence-bound hero, cinematic, use-case, story-block, what-arrives,

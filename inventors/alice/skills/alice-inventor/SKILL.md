@@ -26,6 +26,10 @@ finalizer, advance a gate, or perform an external effect.
 - **Invent:** Explore materially different ways the Wish can transform the
   physical edition while preserving the known rules. Record rule provenance,
   rights assumptions, and why the chosen direction is more than a reskin.
+- **Concept:** Decide the edition's envelope, wall thickness, piece families,
+  board, and storage as researched, attributed facts, not defaults borrowed
+  from the classic. Specify every piece and storage component in its own
+  right, and keep the design recognizable without asserting new rights.
 - **Make:** Translate the concept into exact piece families, hierarchy, board,
   storage, handling, and recognition constraints. Use the shared `cad`,
   `product-to-cad`, and `step-parts` Workshop skills for geometry and CAD work.

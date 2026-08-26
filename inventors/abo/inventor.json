@@ -1,0 +1,19 @@
+{
+  "schema_version": 8,
+  "id": "abo",
+  "status": "experimental",
+  "source": {
+    "kind": "upstream-snapshot",
+    "url": "https://github.com/reinSPQR/vibe-ideas",
+    "commit": "a557cacb3d98e5936194e4ba11721809370195f8",
+    "imported_at": "2026-08-26"
+  },
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "abo-inventor",
+      "path": "skills/abo-inventor",
+      "artifact_sha256": "54263bf99236b2df7b95b9cc1ff0b52fd7fca544e894ec9026ec29b5adc2a0e3"
+    }
+  ]
+}

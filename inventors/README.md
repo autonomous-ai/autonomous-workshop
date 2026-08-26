@@ -42,6 +42,7 @@ skill each. Shared CAD, simulation, and evidence tooling stays in Workshop.
 
 | Inventor | Native skill |
 |---|---|
+| ABO | `abo-inventor` |
 | Alice | `alice-inventor` |
 | Bob | `bob-inventor` |
 | Eve | `eve-inventor` |

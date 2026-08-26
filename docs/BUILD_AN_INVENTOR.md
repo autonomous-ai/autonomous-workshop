@@ -122,12 +122,27 @@ It may accept files and produce files or measurements. It must not:
 - read credentials or call credential-bearing effects;
 - hide reusable Workshop-wide behavior inside one Inventor.
 
-Each active Match, Invent, Make, Playtest, or Release attempt has one native
-Codex Goal owned by the root Manager. The selected Inventor may contribute
-bounded specialist work inside that Goal. Codex observes, acts, evaluates, and
-improves; Inventor Python never implements the reasoning or feedback loop. The
-root Manager reviews the work and submits the stage proposal, and the host
-independently reruns trusted checks and decides the gate.
+Each active Match, Invent, Concept, Make, Playtest, or Release attempt has one
+native Codex Goal owned by the root Manager. The selected Inventor may
+contribute bounded specialist work inside that Goal. Codex observes, acts,
+evaluates, and improves; Inventor Python never implements the reasoning or
+feedback loop. The root Manager reviews the work and submits the stage
+proposal, and the host independently reruns trusted checks and decides the
+gate.
+
+Give the primary `<id>-inventor` skill a "Stage contributions" section with
+one bullet per stage the Inventor's judgment actually shapes, matching the
+pattern already established across the bundled Inventors (see, for example,
+`inventors/leo/skills/leo-inventor/SKILL.md`). Every Inventor needs a
+**Concept** bullet: it names the specialist facts this Inventor's Taste and
+domain make it responsible for getting right when the Concept stage
+researches the Wish and decides the design's envelope, wall thickness,
+features, print stance, and per-component form, dimensions, placement, and
+interfaces — as researched, attributed facts, never restyled defaults. The
+bullet describes judgment the Inventor brings to that stage; it does not
+grant the Inventor code any role in drawing, scoring, or sealing the
+concept — Concept's structural gate and the host's image integration remain
+exclusively Workshop's.
 
 Static contribution validation proves bundle structure and exact hashes, not
 the meaning or safety of arbitrary code. Keep repository tests for every

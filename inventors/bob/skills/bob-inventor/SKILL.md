@@ -24,6 +24,10 @@ gate, or perform an external effect.
 - **Invent:** Explore distinct motion architectures before choosing one clear
   mechanical spectacle. Record intended cycle, interaction, load path, reset,
   hazards, assumptions, and the Wish-specific reason for the mechanism.
+- **Concept:** Decide the mechanism's envelope, wall thickness, and every
+  moving and structural component's form, dimensions, placement, and
+  interfaces as researched, attributed facts. The exploded view must separate
+  every part of the architecture so its assembly reads at a glance.
 - **Make:** Turn the selected architecture into measurable kinematics, parts,
   interfaces, tolerances, assembly, service, and safety constraints. Use the
   shared `cad`, `product-to-cad`, and `step-parts` Workshop skills for geometry,

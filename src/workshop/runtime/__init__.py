@@ -13,6 +13,8 @@ from workshop.runtime.codex import (
 )
 from workshop.runtime.effects import EffectIntent, EffectLedger
 from workshop.runtime.credentials import (
+    concept_images_credential_environment,
+    concept_images_credential_file,
     factory_credential_environment,
     factory_credential_file,
 )
@@ -28,6 +30,8 @@ __all__ = [
     "EffectLedger",
     "Receipt",
     "codex_supports_native_workshop",
+    "concept_images_credential_environment",
+    "concept_images_credential_file",
     "factory_credential_environment",
     "factory_credential_file",
     "inventor_custom_agent_bytes",

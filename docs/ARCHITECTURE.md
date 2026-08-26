@@ -24,16 +24,20 @@ decorated, and be represented no more strongly than its evidence permits.
 ## Lifecycle
 
 ```text
-Wish -> Match -> Invent -> Make -> Playtest -> Release -> Deliver
-                            ^          |
-                            +----------+
-                              feedback
+Wish -> Match -> Invent -> Concept -> Make -> Playtest -> Release -> Deliver
+                                        ^          |
+                                        +----------+
+                                          feedback
 ```
 
 - **Wish** preserves the person's exact words and explicit constraints.
 - **Match** selects and binds one Inventor for that Wish.
 - **Invent** explores and records one bounded product concept with research
   provenance where needed.
+- **Concept** researches the Wish and decides the design's exact physical
+  facts, then authors one drawing instruction per image role; a host
+  integration draws the images between turns and seals the whole tree,
+  binding Make to that exact `concept_sha256`.
 - **Make** creates the actual product tree, CAD project, assemblies, and
   deterministic CAD verification.
 - **Playtest** inspects and simulates that exact Made revision. Evidence-linked
@@ -103,11 +107,11 @@ files, manifests, gate receipts, or effect receipts.
 
 ## One native Goal per active stage attempt
 
-For each host-authorized Match, Invent, Make, Playtest, or Release attempt, the
-root Codex session creates one native Goal. Only one Goal is active at a time.
-It names one objective, the exact inputs to inspect, proof artifacts and checks,
-and a verifiable stopping condition: the current stage finalizer succeeds and
-writes the bound proposal.
+For each host-authorized Match, Invent, Concept, Make, Playtest, or Release
+attempt, the root Codex session creates one native Goal. Only one Goal is
+active at a time. It names one objective, the exact inputs to inspect, proof
+artifacts and checks, and a verifiable stopping condition: the current stage
+finalizer succeeds and writes the bound proposal.
 
 While pursuing the Goal, Codex works as observe -> act -> evaluate -> improve:
 it inspects the current artifact, makes focused changes with native tools and
@@ -269,6 +273,7 @@ src/
     wish/                  exact customer-intent contract
     match/                 Inventor roster and assignment contract/gate
     invent/                concept contract/gate
+    concept/               ConceptBrief/research/image contract and gate
     make/                  Made/CAD contracts and deterministic gates
       skills/              canonical reusable Make domain skills
     playtest/              evidence, feedback, and Playtested contract/gate

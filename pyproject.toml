@@ -33,6 +33,7 @@ workshop = [
   "contributors/schemas/*.json",
   "runtime/schemas/*.json",
   "make/schemas/*.json",
+  "concept/schemas/*.json",
   "make/skills/*",
   "make/skills/**/*",
 ]

@@ -24,7 +24,7 @@ then launches one native Codex session in that directory before Match. That
 same session performs all cognitive and tool-using work through Release:
 
 ```text
-Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> Release -> Deliver
 ```
 
 Codex owns understanding, native search, concept exploration, design, CAD and
@@ -36,8 +36,8 @@ The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
 
-For each active Match, Invent, Make, Playtest, or Release attempt, the Manager
-creates one native Codex Goal. Only one Goal is active. It binds one objective,
+For each active Match, Invent, Concept, Make, Playtest, or Release attempt,
+the Manager creates one native Codex Goal. Only one Goal is active. It binds one objective,
 the current `STAGE.json`, proof artifacts and checks, and the verifiable
 stopping condition that the stage finalizer succeeds. Codex observes, acts,
 evaluates the actual artifact, and improves while pursuing that Goal. This is
@@ -175,7 +175,7 @@ themselves.
 
 The Wish gate is host-validated before the first native Match turn. Deliver is
 also host/effect work; native stage packets currently cover Match, Invent,
-Make, Playtest, and Release.
+Concept, Make, Playtest, and Release.
 
 ## Run-local proposal finalizer
 
@@ -194,6 +194,9 @@ python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
 
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
+
+python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+  --run-root . concept --concept-root <concept-root>
 
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
@@ -223,7 +226,64 @@ Playtest is the only backward transition: a verdict of `improve` or `block`
 proposes Make and preserves exact evidence as feedback. The host applies the
 round budget and invalidation; Codex interprets the feedback and performs the
 repair in the next Make Goal. A new Make revision invalidates old Playtest and
-Release evidence.
+Release evidence. When a `Feedback` item names `concept` in its `invalidates`
+list, the host routes back through a fresh Concept turn first — carrying the
+standing concept and that exact feedback — before Make runs again; feedback
+that invalidates only the build leaves the standing concept unchanged and no
+Concept turn runs for that round.
+
+## Concept and image drawing
+
+Concept sits between Invent and Make. Its `STAGE.json` binds the exact Wish,
+Match assignment, selected Taste, universal blueprint, and sealed Invent
+result; on a round that revises a standing design it also carries that
+standing concept and the Playtest feedback that invalidated it. Codex
+researches the Wish through its own web search — the sandbox has no other
+network access — decides the design's physical facts (object, category,
+envelope in millimetres, wall thickness, features, print stance, and each
+component's form, dimensions, placement, and interfaces), and writes the
+concept tree at the exact `concept_root` named in `STAGE.json`:
+
+- `brief.json` — the decided design, with every fact traced to research or to
+  a recorded assumption;
+- `research.json` — each finding bound to a source with an excerpt hash and
+  retrieval time, or a recorded decision with its reason;
+- `prompts.json` — one drawing instruction per image role
+  (`front`/`top`/`bottom`/`exploded`/`components.<key>`), written by Codex
+  and sent verbatim; the host never composes, templates, or extends this
+  text;
+- `descriptor.json` — each image's eventual path, mirroring the same role
+  keys;
+- `derived_wish.json` — the routed Wish's own identifier, objective, and
+  context together with the researched constraints, never altering the
+  Wish's own words.
+
+Codex does not draw images itself. After it runs the `concept` finalizer, the
+host's `evaluate_concept_stage` (gate `concept.sealed-v1`) re-checks the
+brief, research, and drawing instructions structurally — refusing here, before
+any image spend, if the brief decided nothing or a role is missing — then
+calls `src/workshop/integrations/concept_images.py` to draw each image from
+its exact authored instruction, attaching only the references the concept
+itself named (`front` for `top`/`bottom`/`exploded`; `front` alone for each
+component's material, finish, and form language, never its shape). Only after
+every image is drawn does the gate build evidence over the whole tree and seal
+one `concept_sha256` covering the brief, research, drawing instructions, and
+every image together, exactly as the Release gate seals its package. Make's
+sealed `NativeMade` is bound to that exact `concept_sha256` and cannot proceed
+without it.
+
+The adapter reads the image-provider credential from the host-only
+`$WORKSHOP_HOME/credentials/concept-images.env` file (0600 inside a 0700
+directory), loaded lazily only after the native turn exits and never passed
+into the Codex subprocess — the same isolation the Factory adapter uses for
+`factory.env`. When that credential is absent, the missing-credential
+exception propagates out of gate evaluation and the host converts the
+otherwise-accepted proposal into a `waiting` outcome with a concrete `Need`,
+writing a wait file bound to the checkpoint exactly like
+`release-effect-wait.json`. The accepted brief and research are not
+re-derived: `workshop resume` re-checks the credential, draws the remaining
+images, and continues in the same session once it is configured. A run never
+skips Concept or proceeds to Make without a sealed concept.
 
 ## Release and publication
 
@@ -298,6 +358,7 @@ src/workshop/runtime/                        session and trusted effect boundari
 src/workshop/workflow/native_run.py          trusted whole-run host composition
 src/workshop/workflow/                       lifecycle and checkpoint protocol
 src/workshop/<stage>/                        contracts and deterministic gates
+src/workshop/concept/                        Concept contract, structure gate
 src/workshop/make/skills/                    reusable Make domain skills
 src/workshop/integrations/                   credential-bearing host adapters
 tests/<component>/                           component tests
@@ -315,12 +376,16 @@ private Wish demonstrate that:
 2. stale checkpoint or subject hashes are rejected;
 3. changed artifact bytes fail their next gate;
 4. failed Playtest evidence returns to a new Make round and invalidates
-   downstream work;
-5. Release claims exactly match passing evidence;
-6. no credential reaches the native subprocess or its readable filesystem;
-7. `--publish` is required for public promotion and the remote receipt binds
+   downstream work, routing back through a new Concept turn first when the
+   feedback names `concept`;
+5. every sealed `NativeMade` binds `concept_sha256` to the exact concept it
+   was built from, and a missing image credential parks the run waiting at
+   Concept rather than skipping it;
+6. Release claims exactly match passing evidence;
+7. no credential reaches the native subprocess or its readable filesystem;
+8. `--publish` is required for public promotion and the remote receipt binds
    the exact Release package; and
-8. the run does not claim Deliver without physical receipts.
+9. the run does not claim Deliver without physical receipts.
 
 ## Engine portability
 

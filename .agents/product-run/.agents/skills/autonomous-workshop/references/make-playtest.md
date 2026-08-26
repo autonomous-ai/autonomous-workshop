@@ -9,13 +9,25 @@ checkpoints bound the work; Codex performs the reasoning and repair.
 
 Create one native Codex Goal for the current Make attempt. Its objective is to
 produce the exact buildable, inspectable product artifact required by the
-sealed Invent output and, on a later round, repair the failures cited by the
-prior Playtest. Its stopping condition is a successful `make` finalizer for
-the current checkpoint.
+sealed Concept and Invent output and, on a later round, repair the failures
+cited by the prior Playtest. Its stopping condition is a successful `make`
+finalizer for the current checkpoint.
+
+The sealed Concept is the primary reference for form, proportion,
+construction, and component breakdown; `STAGE.json`'s `concept_images` names
+every image by role so you never have to guess which is which. Where an image
+and the brief's stated envelope, wall thickness, or clearance imply different
+geometry, the brief's numbers govern — a picture is an impression of a shape
+and a millimetre is a commitment. Declare `product.json`'s `components` as
+exactly the component keys the concept's brief named, one to one; the host
+gate refuses a mismatch in either direction. Never let a file in the product
+tree carry a concept image's own bytes — the product must show what was
+actually built, not the drawing of what to build.
 
 While pursuing the Goal:
 
-1. **Observe:** Inspect the Invent concept, selected Inventor instructions,
+1. **Observe:** Inspect the sealed Concept — its brief, its images by role,
+   and its component breakdown — the selected Inventor instructions,
    universal blueprint, current revision workspace, deterministic tool policy,
    and every evidence-linked feedback item from a prior Playtest.
 2. **Act:** Use native editing and the materialized `cad`, `product-to-cad`,
@@ -100,7 +112,12 @@ While pursuing the Goal:
 Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
 source with exactly `checks`, `feedback`, and `verdict`. Every required check
 id must appear once and cite its config and evidence file. Never invent
-physical trials, human players, measurements, or results. Then run:
+physical trials, human players, measurements, or results. Where a failing
+check or finding traces to the design itself — the wrong shape, a missing
+component, a fit that was never going to work — rather than only the build,
+name `concept` in that feedback item's `invalidates`; where the design is
+sound and only the build fell short, invalidate `playtest` and its downstream
+stages but leave `concept` out. Then run:
 
 ```bash
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
@@ -114,7 +131,10 @@ canonical Playtested contract. Complete the Playtest Goal after it succeeds
 and return to the host, regardless of the truthful verdict.
 
 For `improve` or `block`, the host alone consumes a bounded round, invalidates
-downstream evidence, and checkpoints the transition back to Make. The host
-does not interpret or repair the product. In the next Make Goal, Codex reads
-the exact feedback, decides the repair, and runs the new build/evaluation loop.
-Only a host-verified pass for the current Made bytes can advance to Release.
+downstream evidence, and checkpoints the transition back to Make — or, where
+the feedback named `concept` as invalidated, back to a new Concept turn
+first, whose revised design that round's Make then builds to. The host does
+not interpret or repair the product or the design. In the next Make Goal,
+Codex reads the exact feedback, decides the repair, and runs the new
+build/evaluation loop. Only a host-verified pass for the current Made bytes
+can advance to Release.

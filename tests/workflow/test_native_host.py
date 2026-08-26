@@ -212,7 +212,7 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
-            for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+            for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo"):
                 self.assertTrue(
                     (workspace / ".codex" / "agents" / (inventor_id + ".toml")).is_file()
                 )

@@ -232,7 +232,7 @@ class NativeStageGateTest(unittest.TestCase):
         invent_subject = invent_gate_subject_sha256(self.assignment)
         invent_proposal = self.ready_proposal(
             "invent",
-            "make",
+            "concept",
             invent_artifact,
             invent_subject,
             checkpoint=digest("9"),
@@ -244,7 +244,7 @@ class NativeStageGateTest(unittest.TestCase):
             assignment=self.assignment,
         )
         self.assertTrue(invent_decision.passed)
-        self.assertEqual(invent_decision.transition, "make")
+        self.assertEqual(invent_decision.transition, "concept")
         self.assertEqual(invent_decision.receipt.gate_id, INVENT_GATE_ID)
         self.assertEqual(invent_decision.receipt.subject_sha256, invent_subject)
         self.assertEqual(

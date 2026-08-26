@@ -9,6 +9,7 @@ SOURCE = REPOSITORY / "src"
 WORKSHOP = SOURCE / "workshop"
 EXPECTED_COMPONENTS = {
     "artifacts",
+    "concept",
     "contributors",
     "deliver",
     "release",
@@ -36,6 +37,7 @@ SCHEMA_OWNERS = {
     "validator-policy.schema.json": "make",
     "verification-receipt.schema.json": "make",
     "receipt.schema.json": "runtime",
+    "concept.schema.json": "concept",
 }
 
 

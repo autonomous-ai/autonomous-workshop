@@ -113,6 +113,7 @@ class NativeReleaseTest(unittest.TestCase):
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
             invented_sha256=self.invented.invented_sha256,
+            concept_sha256="f" * 64,
             product_root="artifacts/make/r0001/product",
             cad_project_path="cad/project",
             product_manifest=build_artifact_manifest(

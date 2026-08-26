@@ -20,6 +20,7 @@ from workshop.artifacts import (
     artifact_manifest_from_mapping,
     build_artifact_manifest,
 )
+from workshop.concept.native import NativeConcept
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
 from workshop.make.contracts import Made
@@ -106,6 +107,7 @@ class NativeMade:
     taste_sha256: str
     blueprint_sha256: str
     invented_sha256: str
+    concept_sha256: str
     product_root: str
     cad_project_path: str
     product_manifest: ArtifactManifest
@@ -130,6 +132,7 @@ class NativeMade:
             (self.taste_sha256, "native Made TASTE sha256"),
             (self.blueprint_sha256, "native Made blueprint sha256"),
             (self.invented_sha256, "native Made Invented sha256"),
+            (self.concept_sha256, "native Made Concept sha256"),
             (self.product_json_sha256, "native Made product.json sha256"),
             (self.cad_verification_sha256, "native Made CAD verification sha256"),
         ):
@@ -172,6 +175,7 @@ class NativeMade:
             "taste_sha256": self.taste_sha256,
             "blueprint_sha256": self.blueprint_sha256,
             "invented_sha256": self.invented_sha256,
+            "concept_sha256": self.concept_sha256,
             "product_root": self.product_root,
             "cad_project_path": self.cad_project_path,
             "product_manifest": self.product_manifest.to_dict(),
@@ -197,6 +201,7 @@ class NativeMade:
             "taste_sha256",
             "blueprint_sha256",
             "invented_sha256",
+            "concept_sha256",
             "product_root",
             "cad_project_path",
             "product_manifest",
@@ -217,6 +222,7 @@ class NativeMade:
             taste_sha256=value["taste_sha256"],
             blueprint_sha256=value["blueprint_sha256"],
             invented_sha256=value["invented_sha256"],
+            concept_sha256=value["concept_sha256"],
             product_root=value["product_root"],
             cad_project_path=value["cad_project_path"],
             product_manifest=artifact_manifest_from_mapping(value["product_manifest"]),
@@ -233,13 +239,16 @@ class NativeMade:
         self,
         assignment: NativeMatchAssignment,
         invented: NativeInvented,
+        concept: NativeConcept,
         *,
         expected_round: int,
     ) -> None:
-        if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
-            invented, NativeInvented
+        if (
+            not isinstance(assignment, NativeMatchAssignment)
+            or not isinstance(invented, NativeInvented)
+            or not isinstance(concept, NativeConcept)
         ):
-            raise ContractError("native Made context requires Match and Invent")
+            raise ContractError("native Made context requires Match, Invent, and Concept")
         invented.assert_context(assignment)
         if (
             self.round != expected_round
@@ -248,6 +257,8 @@ class NativeMade:
             or self.taste_sha256 != assignment.selected_taste_sha256
             or self.blueprint_sha256 != assignment.blueprint_sha256
             or self.invented_sha256 != invented.invented_sha256
+            or self.concept_sha256 != concept.concept_sha256
+            or concept.round > expected_round
         ):
             raise ContractError("native Made belongs to different Workshop inputs")
 

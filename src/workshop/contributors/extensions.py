@@ -314,6 +314,14 @@ def fingerprint_extension_skill(
         for dirname in sorted(dirnames):
             child = base / dirname
             relative = PurePosixPath((relative_base / dirname).as_posix())
+            if dirname.casefold() == "__pycache__":
+                # A regenerable Python bytecode cache, not authored content: an
+                # installed package's own interpreter recreates this on import
+                # (e.g. as a side effect of `pip install`'s default
+                # bytecompilation), so it must be ignored here on the same
+                # terms as the domain-skill registry already ignores it,
+                # rather than treated as tampering with the sealed tree.
+                continue
             if child.is_symlink() or not child.is_dir():
                 raise ManifestError(
                     "Inventor extension contains a linked or special directory: %s"
@@ -321,7 +329,6 @@ def fingerprint_extension_skill(
                 )
             if (
                 dirname.startswith(".")
-                or dirname.casefold() == "__pycache__"
                 or any(ord(character) < 32 or ord(character) == 127 for character in dirname)
             ):
                 raise ManifestError(

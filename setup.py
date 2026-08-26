@@ -111,7 +111,7 @@ class build_py(_build_py):
         if destination.exists():
             shutil.rmtree(destination)
         destination.mkdir(parents=True)
-        for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+        for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo"):
             source = project / "inventors" / inventor_id
             target = destination / inventor_id
             target.mkdir()
@@ -202,6 +202,9 @@ class build_py(_build_py):
                     "bundled Inventor skills differ from the declared inventory: %s"
                     % source
                 )
+
+        for stray in destination.rglob("__pycache__"):
+            shutil.rmtree(stray)
 
 
 setup(cmdclass={"build_py": build_py, "egg_info": egg_info})

@@ -11,11 +11,14 @@ from types import SimpleNamespace
 from unittest import mock
 
 from workshop.workflow.native_run import (
+    _MAX_NATIVE_TURNS,
     native_run_paths,
     resume_native_run,
     start_native_run,
 )
+from workshop.concept.native import NativeConcept
 from workshop.errors import ArtifactError, StateConflict
+from workshop.integrations.concept_images import ConceptImagesConfig
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -36,6 +39,11 @@ _OBSERVED_AT = "2026-08-26T00:00:00+00:00"
 _PAGE_URL = "https://www.autonomous.ai/factory/product/orbit-dog"
 _COVER_URL = "https://cdn.autonomous.ai/products/orbit-dog/cover.webp"
 _SESSION_CHECKPOINT = b'{"session_id":"fixture-native-session"}\n'
+_FAKE_CONCEPT_IMAGES_CONFIG = ConceptImagesConfig(
+    endpoint="https://concept-images.fixture.test/draw",
+    api_key="fixture-concept-images-key",
+    model="fixture-concept-model",
+)
 
 
 def _canonical_json(value):
@@ -135,14 +143,36 @@ class _SessionOutcome:
         }
 
 
+def _concept_fixture_components():
+    return {
+        "board": {
+            "name": "Board",
+            "purpose": "the playing surface",
+            "form": "flat concentric-ringed square panel",
+            "dimensions_mm": {"length_mm": 200.0, "width_mm": 200.0, "height_mm": 5.0},
+            "placement": "centered on the table",
+            "interfaces": "pieces rest in orbital waypoint recesses",
+        },
+        "pieces": {
+            "name": "Pieces",
+            "purpose": "the two draughts piece families",
+            "form": "stackable dog-silhouette discs",
+            "dimensions_mm": {"length_mm": 20.0, "width_mm": 20.0, "height_mm": 8.0},
+            "placement": "set out on the board's waypoints",
+            "interfaces": "seat into the board's waypoint recesses",
+        },
+    }
+
+
 class _OneSessionProductAgent:
     """A deterministic stand-in for one resumed native Codex session."""
 
-    def __init__(self):
+    def __init__(self, *, playtest_plan=None):
         self.starts = []
         self.resumes = []
         self.stage_packets = []
         self.finalizer_commands = []
+        self.playtest_plan = list(playtest_plan) if playtest_plan else []
 
     @staticmethod
     def _checkpoint(arguments):
@@ -253,6 +283,196 @@ class _OneSessionProductAgent:
         )
         self._run_finalizer(run_root, "invent", "--source", source)
 
+    def _author_concept(self, run_root, stage):
+        inputs = stage["inputs"]
+        concept_root_value = inputs["concept_root"]
+        concept_root = run_root / concept_root_value
+        (concept_root / "images/components").mkdir(parents=True, exist_ok=True)
+        wish = _read_json(run_root / "WISH.json")
+        objective = wish["objective"]
+
+        for name, content in (
+            ("front.png", b"front-pixels"),
+            ("top.png", b"top-pixels"),
+            ("bottom.png", b"bottom-pixels"),
+            ("exploded.png", b"exploded-pixels"),
+        ):
+            (concept_root / "images" / name).write_bytes(content)
+        components = _concept_fixture_components()
+        for key in components:
+            (concept_root / "images/components" / ("%s.png" % key)).write_bytes(
+                ("%s-pixels" % key).encode("ascii")
+            )
+
+        def sha(relative):
+            return _sha256((concept_root / relative).read_bytes())
+
+        brief = {
+            "object": "orbit dog draughts set",
+            "category": "board game",
+            "envelope_mm": {"length_mm": 200.0, "width_mm": 200.0, "height_mm": 20.0},
+            "wall_thickness_mm": 2.0,
+            "print_stance": {
+                "orientation": "flat, board face up",
+                "supports_required": False,
+                "support_notes": "flat geometry needs no supports",
+            },
+            "features": [
+                {
+                    "id": "orbital_waypoints",
+                    "text": "concentric orbital waypoints mark every playable square",
+                }
+            ],
+            "fit_target": None,
+            "components": [
+                {"key": key, **fields} for key, fields in components.items()
+            ],
+            "facts": [
+                {
+                    "field": "object",
+                    "source_id": None,
+                    "assumption_reason": "decided a draughts set matches the wish",
+                },
+                {
+                    "field": "category",
+                    "source_id": None,
+                    "assumption_reason": "board games are the natural category",
+                },
+                {"field": "envelope_mm", "source_id": "s1", "assumption_reason": None},
+                {
+                    "field": "wall_thickness_mm",
+                    "source_id": "s1",
+                    "assumption_reason": None,
+                },
+                {
+                    "field": "print_stance",
+                    "source_id": None,
+                    "assumption_reason": "flat boards need no supports",
+                },
+                {
+                    "field": "features.orbital_waypoints",
+                    "source_id": "s1",
+                    "assumption_reason": None,
+                },
+                {
+                    "field": "components.board",
+                    "source_id": None,
+                    "assumption_reason": "draughts needs a board and pieces",
+                },
+                {
+                    "field": "components.pieces",
+                    "source_id": None,
+                    "assumption_reason": "draughts needs a board and pieces",
+                },
+            ],
+        }
+        if objective.strip().casefold() == "orbital waypoints".casefold():
+            raise AssertionError("fixture feature accidentally restates the objective")
+        research = {
+            "sources": [
+                {
+                    "id": "s1",
+                    "origin": "https://www.fmjd.org/",
+                    "excerpt": "draughts boards are traditionally flat 8x8 grids",
+                    "excerpt_sha256": _sha256(
+                        b"draughts boards are traditionally flat 8x8 grids"
+                    ),
+                    "retrieved_at": _OBSERVED_AT,
+                }
+            ],
+            "findings": [
+                {
+                    "finding": "draughts is played on a flat grid of squares",
+                    "source_ids": ["s1"],
+                }
+            ],
+        }
+        drawing_instructions = {
+            "front": {
+                "instruction": (
+                    "The orbit dog draughts set, front view, neutral flat "
+                    "design-study presentation."
+                ),
+                "references": [],
+            },
+            "top": {
+                "instruction": "Same object as the reference, unchanged, from above.",
+                "references": ["front"],
+            },
+            "bottom": {
+                "instruction": "Same object as the reference, unchanged, from below.",
+                "references": ["front"],
+            },
+            "exploded": {
+                "instruction": (
+                    "Show the Board and the Pieces fully separated along the "
+                    "vertical axis, each wholly visible, none hidden."
+                ),
+                "references": ["front", "top", "bottom"],
+            },
+            "components": {
+                "board": {
+                    "instruction": (
+                        "The Board alone, matching the reference's material and "
+                        "finish."
+                    ),
+                    "references": ["front"],
+                },
+                "pieces": {
+                    "instruction": (
+                        "The Pieces alone, matching the reference's material and "
+                        "finish."
+                    ),
+                    "references": ["front"],
+                },
+            },
+        }
+        descriptor = {
+            "front": {"path": "images/front.png", "sha256": sha("images/front.png")},
+            "top": {"path": "images/top.png", "sha256": sha("images/top.png")},
+            "bottom": {
+                "path": "images/bottom.png",
+                "sha256": sha("images/bottom.png"),
+            },
+            "exploded": {
+                "path": "images/exploded.png",
+                "sha256": sha("images/exploded.png"),
+            },
+            "components": {
+                key: {
+                    "path": "images/components/%s.png" % key,
+                    "sha256": sha("images/components/%s.png" % key),
+                }
+                for key in components
+            },
+        }
+        derived_wish = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.concept-derived-wish",
+            "wish_sha256": inputs["assignment"]["wish_sha256"],
+            "product_id": wish["product_id"],
+            "objective": objective,
+            "context": wish.get("context", {}),
+            "constraints": {
+                "envelope_mm": brief["envelope_mm"],
+                "wall_thickness_mm": brief["wall_thickness_mm"],
+            },
+        }
+        derived_wish["derived_wish_sha256"] = _sha256(
+            _canonical_json(dict(derived_wish))
+        )
+
+        _write_json(concept_root / "brief.json", brief)
+        _write_json(concept_root / "research.json", research)
+        _write_json(concept_root / "prompts.json", drawing_instructions)
+        _write_json(concept_root / "descriptor.json", descriptor)
+        _write_json(concept_root / "derived_wish.json", derived_wish)
+
+        self._run_finalizer(
+            run_root, "concept", "--concept-root", concept_root_value
+        )
+
+
     def _author_make(self, run_root, stage):
         inputs = stage["inputs"]
         product_root_value = inputs["product_root"]
@@ -274,7 +494,7 @@ class _OneSessionProductAgent:
             ),
             "wish": wish,
             "inventor": {"id": "alice", "name": "Alice"},
-            "components": ["folding orbital board", "24 pack pieces", "storage sleeve"],
+            "components": sorted(_concept_fixture_components()),
             "instructions": (
                 "Set up and play English draughts normally; the orbital graphic changes "
                 "the object, never the rules."
@@ -371,10 +591,14 @@ class _OneSessionProductAgent:
                     },
                 }
             )
+        if self.playtest_plan:
+            verdict, feedback = self.playtest_plan.pop(0)
+        else:
+            verdict, feedback = "pass", []
         source = "authored/playtest.json"
         _write_json(
             run_root / source,
-            {"checks": checks, "feedback": [], "verdict": "pass"},
+            {"checks": checks, "feedback": feedback, "verdict": verdict},
         )
         self._run_finalizer(
             run_root,
@@ -641,6 +865,9 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
+                "workshop.workflow.native_run._concept_images_credentials",
+                return_value=_FAKE_CONCEPT_IMAGES_CONFIG,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
@@ -665,7 +892,7 @@ class NativeFullRunTest(unittest.TestCase):
 
                 self.assertEqual(waiting["status"], "waiting")
                 self.assertEqual(waiting["stage"], "release")
-                self.assertEqual(waiting["native_turns"], 5)
+                self.assertEqual(waiting["native_turns"], 6)
                 self.assertEqual(waiting["publication"]["status"], "not-created")
                 self.assertEqual(len(waiting["needs"]), 1)
                 self.assertIn("missing or malformed", waiting["needs"][0])
@@ -729,10 +956,10 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(final_checkpoint.stage, "deliver")
             self.assertEqual(final_checkpoint.status, "waiting")
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 5)
+            self.assertEqual(len(launcher.resumes), 6)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release", "release"],
+                ["match", "invent", "concept", "make", "playtest", "release", "release"],
             )
             second_release_packet = launcher.stage_packets[-1]
             self.assertNotEqual(
@@ -743,7 +970,7 @@ class NativeFullRunTest(unittest.TestCase):
                 first_release_packet["subject_sha256"],
                 second_release_packet["subject_sha256"],
             )
-            self.assertEqual(len(launcher.finalizer_commands), 6)
+            self.assertEqual(len(launcher.finalizer_commands), 7)
             self.assertEqual(len(effects.writer_calls), 2)
             self.assertEqual(len(effects.publish_calls), 1)
             self.assertFalse((paths.host_state / "release-effect-wait.json").exists())
@@ -755,6 +982,402 @@ class NativeFullRunTest(unittest.TestCase):
                         self.assertNotIn(
                             effects.secret.encode("utf-8"), path.read_bytes()
                         )
+
+    def test_concept_credential_wait_is_durable_and_resumes_same_session(self):
+        launcher = _OneSessionProductAgent()
+        effects = _FactoryEffects()
+        concept_secret = "fixture-concept-images-secret-key"
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                "orbit-dog-concept-credential-wait",
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": "native-concept-credential-wait-test"},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                waiting = start_native_run(wish, publish_requested=False)
+                paths = native_run_paths(wish.product_id)
+                run = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                )
+                waiting_checkpoint = run.snapshot()
+
+                self.assertEqual(waiting["status"], "waiting")
+                self.assertEqual(waiting["stage"], "concept")
+                self.assertEqual(waiting["native_turns"], 3)
+                self.assertEqual(len(waiting["needs"]), 1)
+                self.assertIn(
+                    "Concept image provider credentials", waiting["needs"][0]
+                )
+                self.assertEqual(waiting_checkpoint.status, "waiting")
+                self.assertEqual(waiting_checkpoint.stage, "concept")
+                self.assertFalse((paths.workspace / "agent-outcome.json").exists())
+                wait_path = paths.host_state / "concept-effect-wait.json"
+                self.assertTrue(wait_path.is_file())
+                self.assertEqual(stat.S_IMODE(wait_path.stat().st_mode), 0o600)
+                wait_document = _read_json(wait_path)
+                self.assertEqual(
+                    wait_document["waiting_checkpoint_sha256"],
+                    waiting_checkpoint.checkpoint_sha256,
+                )
+                first_concept_packet = launcher.stage_packets[-1]
+                self.assertEqual(first_concept_packet["stage"], "concept")
+                first_call_count = len(launcher.starts) + len(launcher.resumes)
+
+                still_waiting = resume_native_run(wish.product_id)
+                self.assertEqual(still_waiting["status"], "waiting")
+                self.assertEqual(still_waiting["stage"], "concept")
+                self.assertEqual(still_waiting["native_turns"], 0)
+                self.assertEqual(
+                    still_waiting["action"],
+                    "waiting-for-concept-images-credentials",
+                )
+                self.assertEqual(
+                    still_waiting["checkpoint_sha256"],
+                    waiting_checkpoint.checkpoint_sha256,
+                )
+                self.assertEqual(
+                    len(launcher.starts) + len(launcher.resumes), first_call_count
+                )
+                self.assertTrue(wait_path.is_file())
+
+                os.environ["CONCEPT_IMAGES_API_KEY"] = concept_secret
+                os.environ["CONCEPT_IMAGES_ENDPOINT"] = (
+                    "https://concept-images.fixture.test/draw"
+                )
+                os.environ["CONCEPT_IMAGES_MODEL"] = "fixture-concept-model"
+                completed = resume_native_run(wish.product_id, publish_requested=False)
+                final_checkpoint = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                ).snapshot()
+
+            self.assertEqual(completed["status"], "waiting")
+            self.assertEqual(completed["stage"], "deliver")
+            self.assertEqual(completed["native_turns"], 4)
+            self.assertEqual(final_checkpoint.stage, "deliver")
+            self.assertEqual(final_checkpoint.status, "waiting")
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 6)
+            self.assertEqual(
+                [packet["stage"] for packet in launcher.stage_packets],
+                [
+                    "match",
+                    "invent",
+                    "concept",
+                    "concept",
+                    "make",
+                    "playtest",
+                    "release",
+                ],
+            )
+            second_concept_packet = launcher.stage_packets[3]
+            self.assertEqual(second_concept_packet["stage"], "concept")
+            self.assertNotEqual(
+                first_concept_packet["checkpoint_sha256"],
+                second_concept_packet["checkpoint_sha256"],
+            )
+            self.assertEqual(
+                first_concept_packet["subject_sha256"],
+                second_concept_packet["subject_sha256"],
+            )
+            self.assertFalse(
+                (paths.host_state / "concept-effect-wait.json").exists()
+            )
+            self.assertIn("concept", final_checkpoint.stage_artifacts)
+
+            # 6.6: the concept-images credential never reaches a launcher
+            # argument, a stage packet, a prompt, an artifact, or status
+            # output — mirroring the existing _FactoryEffects assertion.
+            for arguments in launcher.starts + launcher.resumes:
+                rendered = repr(arguments)
+                self.assertNotIn(concept_secret, rendered)
+                self.assertNotIn("CONCEPT_IMAGES", rendered)
+            for packet in launcher.stage_packets:
+                self.assertNotIn(concept_secret, json.dumps(packet))
+            for root in (paths.workspace, paths.host_state):
+                for path in root.rglob("*"):
+                    if path.is_file():
+                        self.assertNotIn(
+                            concept_secret.encode("utf-8"), path.read_bytes()
+                        )
+            for receipt in (waiting, still_waiting, completed):
+                self.assertNotIn(concept_secret, json.dumps(receipt))
+
+    def _run_playtest_routing_case(self, *, playtest_plan, wish_name, context_source):
+        launcher = _OneSessionProductAgent(playtest_plan=playtest_plan)
+        effects = _FactoryEffects()
+
+        def verify_cad(made, **arguments):
+            return SimpleNamespace(
+                passed=True,
+                receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
+                verifier_sha256=arguments["expected_verifier_sha256"],
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            wish = Wish.create(
+                wish_name,
+                "Build a pocket draughts set inspired by my orbit-loving dog.",
+                constraints={"audience": "14+", "manufacture": "not-authorized"},
+                context={"source": context_source},
+            )
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run._concept_images_credentials",
+                return_value=_FAKE_CONCEPT_IMAGES_CONFIG,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), mock.patch(
+                "workshop.workflow.native_run.verify_native_made_cad",
+                side_effect=verify_cad,
+            ), mock.patch(
+                "workshop.workflow.native_run._factory_credentials",
+                side_effect=effects.credentials,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryReleaseWriter",
+                side_effect=effects.writer,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryAgentSession",
+                side_effect=effects.session,
+            ), mock.patch(
+                "workshop.workflow.native_run.FactoryPublicTransition",
+                side_effect=effects.transition,
+            ):
+                receipt = start_native_run(wish, publish_requested=False)
+                paths = native_run_paths(wish.product_id)
+                run = AgentRun.open(
+                    paths.workspace, host_state_root=paths.host_state
+                )
+                checkpoint = run.snapshot()
+
+        self.assertEqual(receipt["status"], "waiting")
+        self.assertEqual(receipt["stage"], "deliver")
+        return launcher, checkpoint
+
+    def test_design_invalidating_playtest_verdict_routes_back_through_concept(self):
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[
+                (
+                    "block",
+                    [
+                        {
+                            "code": "waypoint-misalignment",
+                            "area": "concept",
+                            "severity": "block",
+                            "finding": (
+                                "The orbital waypoints do not align with the "
+                                "draughts grid, so legal jumps are ambiguous."
+                            ),
+                            "change": (
+                                "Redraw the concept with waypoints centered on "
+                                "every playable square."
+                            ),
+                            "evidence_refs": ["results/mechanical-check.json"],
+                            "invalidates": [
+                                "concept",
+                                "playtest",
+                                "release",
+                                "deliver",
+                            ],
+                        }
+                    ],
+                )
+            ],
+            wish_name="orbit-dog-concept-revision",
+            context_source="native-playtest-concept-revision-test",
+        )
+
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "match",
+                "invent",
+                "concept",
+                "make",
+                "playtest",
+                "concept",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        first_concept_packet = launcher.stage_packets[2]
+        second_concept_packet = launcher.stage_packets[5]
+        self.assertEqual(first_concept_packet["round"], 1)
+        self.assertEqual(second_concept_packet["round"], 2)
+        self.assertNotEqual(
+            first_concept_packet["checkpoint_sha256"],
+            second_concept_packet["checkpoint_sha256"],
+        )
+        concept_artifacts = checkpoint.stage_artifacts["concept"]
+        self.assertTrue(
+            any("r0002" in artifact.path for artifact in concept_artifacts)
+        )
+        make_artifacts = checkpoint.stage_artifacts["make"]
+        self.assertTrue(any("r0002" in artifact.path for artifact in make_artifacts))
+
+    def test_build_only_playtest_verdict_does_not_route_back_through_concept(self):
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[
+                (
+                    "improve",
+                    [
+                        {
+                            "code": "fit-tolerance",
+                            "area": "make",
+                            "severity": "improve",
+                            "finding": (
+                                "The piece pegs are slightly loose in the "
+                                "waypoint recesses."
+                            ),
+                            "change": (
+                                "Tighten the peg-to-recess clearance in the "
+                                "next Make revision."
+                            ),
+                            "evidence_refs": ["results/printability-check.json"],
+                            "invalidates": ["playtest", "release", "deliver"],
+                        }
+                    ],
+                )
+            ],
+            wish_name="orbit-dog-make-revision",
+            context_source="native-playtest-make-revision-test",
+        )
+
+        self.assertEqual(checkpoint.round_index, 2)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "match",
+                "invent",
+                "concept",
+                "make",
+                "playtest",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        concept_packets = [
+            packet
+            for packet in launcher.stage_packets
+            if packet["stage"] == "concept"
+        ]
+        self.assertEqual(len(concept_packets), 1)
+        self.assertEqual(concept_packets[0]["round"], 1)
+        concept_artifacts = checkpoint.stage_artifacts["concept"]
+        self.assertTrue(
+            all("r0001" in artifact.path for artifact in concept_artifacts)
+        )
+        make_artifacts = checkpoint.stage_artifacts["make"]
+        self.assertTrue(any("r0002" in artifact.path for artifact in make_artifacts))
+
+    def test_worst_case_design_invalidating_rounds_stay_under_the_turn_ceiling(self):
+        # design.md's own risk callout: "design-invalidating feedback re-runs
+        # Concept each round" is the worst case for turn budget, since it costs
+        # a Concept turn every round that a build-only revision would skip.
+        # Exhaust every refine round (max_rounds=4) with design-invalidating
+        # feedback except the last, which must pass or the round budget is
+        # exhausted before Playtest can advance at all.
+        design_invalidating_feedback = [
+            {
+                "code": "waypoint-misalignment",
+                "area": "concept",
+                "severity": "block",
+                "finding": (
+                    "The orbital waypoints do not align with the draughts "
+                    "grid, so legal jumps are ambiguous."
+                ),
+                "change": (
+                    "Redraw the concept with waypoints centered on every "
+                    "playable square."
+                ),
+                "evidence_refs": ["results/mechanical-check.json"],
+                "invalidates": ["concept", "playtest", "release", "deliver"],
+            }
+        ]
+        launcher, checkpoint = self._run_playtest_routing_case(
+            playtest_plan=[
+                ("block", design_invalidating_feedback),
+                ("block", design_invalidating_feedback),
+                ("block", design_invalidating_feedback),
+            ],
+            wish_name="orbit-dog-worst-case-rounds",
+            context_source="native-turn-ceiling-worst-case-test",
+        )
+
+        self.assertEqual(checkpoint.round_index, 4)
+        self.assertEqual(checkpoint.max_rounds, 4)
+        total_turns = len(launcher.starts) + len(launcher.resumes)
+        self.assertEqual(len(launcher.stage_packets), total_turns)
+        # match + invent, then 4 rounds of concept/make/playtest, then release.
+        self.assertEqual(total_turns, 2 + 4 * 3 + 1)
+        self.assertLess(total_turns, _MAX_NATIVE_TURNS)
+        self.assertEqual(
+            [packet["stage"] for packet in launcher.stage_packets],
+            [
+                "match",
+                "invent",
+                "concept",
+                "make",
+                "playtest",
+                "concept",
+                "make",
+                "playtest",
+                "concept",
+                "make",
+                "playtest",
+                "concept",
+                "make",
+                "playtest",
+                "release",
+            ],
+        )
+        concept_packets = [
+            packet
+            for packet in launcher.stage_packets
+            if packet["stage"] == "concept"
+        ]
+        self.assertEqual([packet["round"] for packet in concept_packets], [1, 2, 3, 4])
 
     def test_cad_gate_rejections_resume_with_hash_bound_same_stage_feedback(self):
         launcher = _OneSessionProductAgent()
@@ -808,6 +1431,9 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
+                "workshop.workflow.native_run._concept_images_credentials",
+                return_value=_FAKE_CONCEPT_IMAGES_CONFIG,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
@@ -834,16 +1460,17 @@ class NativeFullRunTest(unittest.TestCase):
 
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 8)
+            self.assertEqual(receipt["native_turns"], 9)
             self.assertEqual(checkpoint.stage, "deliver")
             self.assertEqual(checkpoint.status, "waiting")
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 7)
+            self.assertEqual(len(launcher.resumes), 8)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
                 [
                     "match",
                     "invent",
+                    "concept",
                     "make",
                     "make",
                     "make",
@@ -856,9 +1483,9 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertFalse((paths.workspace / "agent-outcome.json").exists())
 
             make_initial, make_retry, make_second_retry = (
-                launcher.stage_packets[2:5]
+                launcher.stage_packets[3:6]
             )
-            playtest_initial, playtest_retry = launcher.stage_packets[5:7]
+            playtest_initial, playtest_retry = launcher.stage_packets[6:8]
             rejection_pairs = (
                 (
                     make_initial,
@@ -1003,6 +1630,9 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._source_checkout_root",
                 return_value=None,
             ), mock.patch(
+                "workshop.workflow.native_run._concept_images_credentials",
+                return_value=_FAKE_CONCEPT_IMAGES_CONFIG,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
@@ -1055,7 +1685,7 @@ class NativeFullRunTest(unittest.TestCase):
 
             self.assertEqual(draft_receipt["status"], "waiting")
             self.assertEqual(draft_receipt["stage"], "deliver")
-            self.assertEqual(draft_receipt["native_turns"], 5)
+            self.assertEqual(draft_receipt["native_turns"], 6)
             self.assertEqual(draft_receipt["publication"]["status"], "draft")
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "deliver")
@@ -1072,15 +1702,15 @@ class NativeFullRunTest(unittest.TestCase):
             )
 
             self.assertEqual(len(launcher.starts), 1)
-            self.assertEqual(len(launcher.resumes), 4)
+            self.assertEqual(len(launcher.resumes), 5)
             self.assertEqual(
                 [packet["stage"] for packet in launcher.stage_packets],
-                ["match", "invent", "make", "playtest", "release"],
+                ["match", "invent", "concept", "make", "playtest", "release"],
             )
-            self.assertEqual(len(launcher.finalizer_commands), 5)
+            self.assertEqual(len(launcher.finalizer_commands), 6)
             self.assertEqual(
                 len({packet["checkpoint_sha256"] for packet in launcher.stage_packets}),
-                5,
+                6,
             )
             session_calls = launcher.starts + launcher.resumes
             for field in (
@@ -1158,6 +1788,14 @@ class NativeFullRunTest(unittest.TestCase):
                 "wish": {"artifacts/wish/wish.json"},
                 "match": {"artifacts/match/assignment.json"},
                 "invent": {"artifacts/invent/invented.json"},
+                "concept": {
+                    "artifacts/concept/r0001/concept.json",
+                    "artifacts/concept/r0001/concept/brief.json",
+                    "artifacts/concept/r0001/concept/research.json",
+                    "artifacts/concept/r0001/concept/prompts.json",
+                    "artifacts/concept/r0001/concept/descriptor.json",
+                    "artifacts/concept/r0001/concept/derived_wish.json",
+                },
                 "make": {
                     "artifacts/make/r0001/made.json",
                     "artifacts/make/r0001/product/product.json",
@@ -1194,6 +1832,9 @@ class NativeFullRunTest(unittest.TestCase):
             invented = NativeInvented.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["invent"][0].path)
             )
+            concept = NativeConcept.from_mapping(
+                _read_json(paths.workspace / checkpoint.stage_artifacts["concept"][0].path)
+            )
             made = NativeMade.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["make"][0].path)
             )
@@ -1204,7 +1845,7 @@ class NativeFullRunTest(unittest.TestCase):
                 _read_json(paths.workspace / checkpoint.stage_artifacts["release"][0].path)
             )
             invented.assert_context(assignment)
-            made.assert_context(assignment, invented, expected_round=1)
+            made.assert_context(assignment, invented, concept, expected_round=1)
             release.validate_package_tree(paths.workspace, made, playtested)
 
             tamper_targets = (
@@ -1244,14 +1885,15 @@ class NativeFullRunTest(unittest.TestCase):
                     "0000-wish.json",
                     "0001-match.json",
                     "0002-invent.json",
-                    "0003-make.json",
-                    "0004-playtest.json",
-                    "0005-release.json",
+                    "0003-concept.json",
+                    "0004-make.json",
+                    "0005-playtest.json",
+                    "0006-release.json",
                 ],
             )
-            make_gate = _read_json(paths.host_state / "gates/0003-make.json")
-            playtest_gate = _read_json(paths.host_state / "gates/0004-playtest.json")
-            release_gate = _read_json(paths.host_state / "gates/0005-release.json")
+            make_gate = _read_json(paths.host_state / "gates/0004-make.json")
+            playtest_gate = _read_json(paths.host_state / "gates/0005-playtest.json")
+            release_gate = _read_json(paths.host_state / "gates/0006-release.json")
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]

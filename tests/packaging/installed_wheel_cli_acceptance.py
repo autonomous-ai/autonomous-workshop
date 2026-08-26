@@ -24,6 +24,7 @@ SCHEMA_OWNERS = {
     "validator-policy.schema.json": "make",
     "verification-receipt.schema.json": "make",
     "receipt.schema.json": "runtime",
+    "concept.schema.json": "concept",
 }
 SKILLS = (
     "cad",
@@ -32,7 +33,7 @@ SKILLS = (
     "product-to-cad",
     "step-parts",
 )
-INVENTORS = ("alice", "bob", "eve", "ivy", "leo")
+INVENTORS = ("abo", "alice", "bob", "eve", "ivy", "leo")
 CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
 
 
@@ -237,6 +238,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
 
         runtime_data_roots = (
             "workshop/artifacts/schemas/",
+            "workshop/concept/schemas/",
             "workshop/contributors/_inventors/",
             "workshop/contributors/schemas/",
             "workshop/make/schemas/",
@@ -460,7 +462,7 @@ for inventor_id in inventor_ids:
                         / (inventor_id + "-inventor")
                         / "SKILL.md"
                     ).is_file()
-                    for inventor_id in ("alice", "bob", "eve", "ivy", "leo")
+                    for inventor_id in ("abo", "alice", "bob", "eve", "ivy", "leo")
                 ),
                 "no_catalog": not (run_root / "catalog").exists(),
                 "private_temp": (

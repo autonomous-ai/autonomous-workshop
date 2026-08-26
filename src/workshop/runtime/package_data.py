@@ -22,7 +22,7 @@ from workshop.contributors.manifest import load_manifest
 from workshop.errors import ManifestError, WorkshopError
 
 
-BUNDLED_INVENTOR_IDS = ("alice", "bob", "eve", "ivy", "leo")
+BUNDLED_INVENTOR_IDS = ("abo", "alice", "bob", "eve", "ivy", "leo")
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
 PRODUCT_RUN_DOMAIN_SKILLS = (
     "cad",

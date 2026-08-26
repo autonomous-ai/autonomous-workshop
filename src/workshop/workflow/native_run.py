@@ -30,8 +30,13 @@ from workshop.errors import (
     TransitionError,
     WorkshopError,
 )
+from workshop.concept.native import ConceptTree, NativeConcept
 from workshop.contributors import (
     parse_taste_bytes,
+)
+from workshop.integrations.concept_images import (
+    ConceptImagesAdapter,
+    ConceptImagesConfig,
 )
 from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
@@ -45,6 +50,8 @@ from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
+    assert_concept_component_correspondence,
+    assert_no_concept_pixels_in_product,
     verify_native_made_cad,
 )
 from workshop.match.native import (
@@ -68,6 +75,7 @@ from workshop.runtime import (
     CodexNativeSessionOutcome,
     EffectLedger,
     Receipt,
+    concept_images_credential_environment,
     factory_credential_environment,
 )
 from workshop.runtime.agent_assets import (
@@ -95,6 +103,8 @@ from workshop.workflow.proposals import (
 from workshop.workflow.stage_gates import (
     StageGateDecision,
     StageGateEvidence,
+    concept_gate_subject_sha256,
+    evaluate_concept_stage,
     evaluate_invent_stage,
     evaluate_match_stage,
     invent_gate_subject_sha256,
@@ -130,6 +140,19 @@ class _FactoryCredentialsUnavailable(Exception):
     def __init__(self, inventor_id: str) -> None:
         self.inventor_id = inventor_id
         super().__init__(_FACTORY_CREDENTIALS_NEED)
+
+
+_CONCEPT_IMAGES_CREDENTIALS_NEED = (
+    "Concept image provider credentials are missing or malformed; configure "
+    "$WORKSHOP_HOME/credentials/concept-images.env, then resume this run."
+)
+
+
+class _ConceptImagesCredentialsUnavailable(Exception):
+    """Internal signal for a host configuration wait before any Concept draw."""
+
+    def __init__(self) -> None:
+        super().__init__(_CONCEPT_IMAGES_CREDENTIALS_NEED)
 
 
 @dataclass(frozen=True)
@@ -627,6 +650,7 @@ def native_stage_prompt(stage: str) -> str:
         "wish",
         "match",
         "invent",
+        "concept",
         "make",
         "playtest",
         "release",
@@ -924,13 +948,16 @@ def _prepare_stage_input(
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
     normal_transition = {
         "match": "invent",
-        "invent": "make",
+        "invent": "concept",
+        "concept": "make",
         "make": "playtest",
         "playtest": "release",
         "release": "deliver",
     }[stage]
     round_value: Optional[int] = (
-        checkpoint.round_index if stage in ("make", "playtest", "release") else None
+        checkpoint.round_index
+        if stage in ("concept", "make", "playtest", "release")
+        else None
     )
 
     if stage == "match":
@@ -1008,11 +1035,16 @@ def _prepare_stage_input(
                 **_artifact_binding(invented_artifact),
                 "invented_sha256": invented.invented_sha256,
             }
-            if stage == "make":
-                feedback_artifact: Optional[AgentArtifact] = None
-                prior = checkpoint.stage_artifacts.get("playtest")
-                if prior and "playtest" in checkpoint.invalidated_stages:
-                    feedback_artifact = prior[0]
+            if stage == "concept":
+                is_revision = "concept" in checkpoint.invalidated_stages
+                prior_concept = checkpoint.stage_artifacts.get("concept")
+                standing_concept_artifact: Optional[AgentArtifact] = (
+                    prior_concept[0] if is_revision and prior_concept else None
+                )
+                prior_playtest = checkpoint.stage_artifacts.get("playtest")
+                feedback_artifact: Optional[AgentArtifact] = (
+                    prior_playtest[0] if is_revision and prior_playtest else None
+                )
                 subject_inputs = {
                     "wish_sha256": checkpoint.wish_sha256,
                     "assignment_sha256": assignment.assignment_sha256,
@@ -1020,135 +1052,213 @@ def _prepare_stage_input(
                     "blueprint_sha256": blueprint.sha256,
                     "invented_sha256": invented.invented_sha256,
                     "round": checkpoint.round_index,
+                    "standing_concept_sha256": (
+                        standing_concept_artifact.sha256
+                        if standing_concept_artifact
+                        else None
+                    ),
                     "feedback_sha256": (
                         feedback_artifact.sha256 if feedback_artifact else None
                     ),
-                    "host_cad_gate_rejection_sha256": (
-                        cad_gate_rejection["rejection_sha256"]
-                        if cad_gate_rejection is not None
-                        else None
-                    ),
                 }
-                subject = _stage_subject("make", subject_inputs)
+                context["concept_standing_sha256"] = subject_inputs[
+                    "standing_concept_sha256"
+                ]
+                context["concept_feedback_sha256"] = subject_inputs["feedback_sha256"]
+                subject = concept_gate_subject_sha256(
+                    assignment,
+                    invented,
+                    round=checkpoint.round_index,
+                    standing_concept_sha256=subject_inputs["standing_concept_sha256"],
+                    feedback_sha256=subject_inputs["feedback_sha256"],
+                )
                 inputs = {
                     **common,
                     "round": checkpoint.round_index,
-                    "previous_playtest": (
+                    "standing_concept": (
+                        _artifact_binding(standing_concept_artifact)
+                        if standing_concept_artifact is not None
+                        else None
+                    ),
+                    "feedback": (
                         _artifact_binding(feedback_artifact)
                         if feedback_artifact is not None
                         else None
                     ),
-                    "host_cad_gate_rejection": cad_gate_rejection,
-                    "product_root": "artifacts/make/r%04d/product"
+                    "concept_root": "artifacts/concept/r%04d/concept"
                     % checkpoint.round_index,
-                    "contract_path": "artifacts/make/r%04d/made.json"
+                    "contract_path": "artifacts/concept/r%04d/concept.json"
                     % checkpoint.round_index,
-                    "required_root_files": [
-                        "product.json",
-                        "assembled.step",
-                        "assembled.step.json",
-                        "assembled.stl",
-                    ],
+                    "required_overall_image_roles": ["front", "top", "bottom", "exploded"],
                 }
             else:
-                made_artifact = _stage_primary(checkpoint, "make")
-                made = _read_contract(
+                concept_artifact = _stage_primary(checkpoint, "concept")
+                concept = _read_contract(
                     run.run_root,
-                    made_artifact,
-                    NativeMade,
-                    label="native Made contract",
+                    concept_artifact,
+                    NativeConcept,
+                    label="native Concept contract",
                 )
-                made.assert_context(
-                    assignment, invented, expected_round=checkpoint.round_index
-                )
-                context["made"] = made
-                common["made"] = made.to_dict()
-                common["made_artifact"] = {
-                    **_artifact_binding(made_artifact),
-                    "made_sha256": made.made_sha256,
-                    "product_artifact_sha256": made.product_manifest.artifact_sha256,
-                    "product_root": made.product_root,
+                wish = _load_wish(run.run_root)
+                concept.assert_context(assignment, invented, wish)
+                context["concept"] = concept
+                common["concept"] = concept.to_dict()
+                common["concept_artifact"] = {
+                    **_artifact_binding(concept_artifact),
+                    "concept_sha256": concept.concept_sha256,
                 }
-                if stage == "playtest":
+                if stage == "make":
+                    feedback_artifact: Optional[AgentArtifact] = None
+                    prior = checkpoint.stage_artifacts.get("playtest")
+                    if prior and "playtest" in checkpoint.invalidated_stages:
+                        feedback_artifact = prior[0]
                     subject_inputs = {
-                        "made_sha256": made.made_sha256,
-                        "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                        "wish_sha256": checkpoint.wish_sha256,
+                        "assignment_sha256": assignment.assignment_sha256,
+                        "taste_sha256": assignment.selected_taste_sha256,
                         "blueprint_sha256": blueprint.sha256,
+                        "invented_sha256": invented.invented_sha256,
+                        "concept_sha256": concept.concept_sha256,
                         "round": checkpoint.round_index,
+                        "feedback_sha256": (
+                            feedback_artifact.sha256 if feedback_artifact else None
+                        ),
                         "host_cad_gate_rejection_sha256": (
                             cad_gate_rejection["rejection_sha256"]
                             if cad_gate_rejection is not None
                             else None
                         ),
                     }
-                    subject = _stage_subject("playtest", subject_inputs)
+                    subject = _stage_subject("make", subject_inputs)
                     inputs = {
                         **common,
                         "round": checkpoint.round_index,
-                        "host_cad_gate_rejection": cad_gate_rejection,
-                        "required_check_ids": list(
-                            blueprint.required_playtest_checks()
+                        "previous_playtest": (
+                            _artifact_binding(feedback_artifact)
+                            if feedback_artifact is not None
+                            else None
                         ),
-                        "evidence_root": "artifacts/playtest/r%04d/evidence"
+                        "host_cad_gate_rejection": cad_gate_rejection,
+                        "product_root": "artifacts/make/r%04d/product"
                         % checkpoint.round_index,
-                        "contract_path": "artifacts/playtest/r%04d/playtested.json"
+                        "contract_path": "artifacts/make/r%04d/made.json"
                         % checkpoint.round_index,
+                        "concept_images": {
+                            **concept.to_dict()["descriptor"],
+                            "roles_meaning": {
+                                "front": "establishes form and proportion",
+                                "top": "establishes form and proportion",
+                                "bottom": "establishes form and proportion",
+                                "exploded": "establishes the part breakdown",
+                                "components": "each image establishes one part",
+                            },
+                        },
+                        "required_root_files": [
+                            "product.json",
+                            "assembled.step",
+                            "assembled.step.json",
+                            "assembled.stl",
+                        ],
                     }
                 else:
-                    playtested_artifact = _stage_primary(checkpoint, "playtest")
-                    playtested = _read_contract(
+                    made_artifact = _stage_primary(checkpoint, "make")
+                    made = _read_contract(
                         run.run_root,
-                        playtested_artifact,
-                        NativePlaytested,
-                        label="native Playtested contract",
+                        made_artifact,
+                        NativeMade,
+                        label="native Made contract",
                     )
-                    playtested.assert_context(made, blueprint)
-                    if playtested.verdict != "pass":
-                        raise TransitionError("Release requires a passing Playtest")
-                    context["playtested"] = playtested
-                    subject_inputs = {
-                        "wish_sha256": checkpoint.wish_sha256,
-                        "taste_sha256": assignment.selected_taste_sha256,
-                        "blueprint_sha256": blueprint.sha256,
+                    made.assert_context(
+                        assignment, invented, concept, expected_round=checkpoint.round_index
+                    )
+                    context["made"] = made
+                    common["made"] = made.to_dict()
+                    common["made_artifact"] = {
+                        **_artifact_binding(made_artifact),
                         "made_sha256": made.made_sha256,
                         "product_artifact_sha256": made.product_manifest.artifact_sha256,
-                        "playtested_sha256": playtested.playtested_sha256,
-                        "evidence_artifact_sha256": (
-                            playtested.evidence_manifest.artifact_sha256
-                        ),
-                        "round": checkpoint.round_index,
+                        "product_root": made.product_root,
                     }
-                    subject = _stage_subject("release", subject_inputs)
-                    inputs = {
-                        **common,
-                        "round": checkpoint.round_index,
-                        "playtested": playtested.to_dict(),
-                        "playtested_artifact": {
-                            **_artifact_binding(playtested_artifact),
+                    if stage == "playtest":
+                        subject_inputs = {
+                            "made_sha256": made.made_sha256,
+                            "product_artifact_sha256": made.product_manifest.artifact_sha256,
+                            "blueprint_sha256": blueprint.sha256,
+                            "round": checkpoint.round_index,
+                            "host_cad_gate_rejection_sha256": (
+                                cad_gate_rejection["rejection_sha256"]
+                                if cad_gate_rejection is not None
+                                else None
+                            ),
+                        }
+                        subject = _stage_subject("playtest", subject_inputs)
+                        inputs = {
+                            **common,
+                            "round": checkpoint.round_index,
+                            "host_cad_gate_rejection": cad_gate_rejection,
+                            "required_check_ids": list(
+                                blueprint.required_playtest_checks()
+                            ),
+                            "evidence_root": "artifacts/playtest/r%04d/evidence"
+                            % checkpoint.round_index,
+                            "contract_path": "artifacts/playtest/r%04d/playtested.json"
+                            % checkpoint.round_index,
+                        }
+                    else:
+                        playtested_artifact = _stage_primary(checkpoint, "playtest")
+                        playtested = _read_contract(
+                            run.run_root,
+                            playtested_artifact,
+                            NativePlaytested,
+                            label="native Playtested contract",
+                        )
+                        playtested.assert_context(made, blueprint)
+                        if playtested.verdict != "pass":
+                            raise TransitionError("Release requires a passing Playtest")
+                        context["playtested"] = playtested
+                        subject_inputs = {
+                            "wish_sha256": checkpoint.wish_sha256,
+                            "taste_sha256": assignment.selected_taste_sha256,
+                            "blueprint_sha256": blueprint.sha256,
+                            "made_sha256": made.made_sha256,
+                            "product_artifact_sha256": made.product_manifest.artifact_sha256,
                             "playtested_sha256": playtested.playtested_sha256,
                             "evidence_artifact_sha256": (
                                 playtested.evidence_manifest.artifact_sha256
                             ),
-                        },
-                        "package_root": "artifacts/release/package",
-                        "contract_path": "artifacts/release/release.json",
-                        "required_package_files": ["MANUAL.md", "product.json"],
-                        "factory_content_constraints": {
-                            "plain_text": True,
-                            "forbidden_characters": ["<", ">"],
-                            "headline_characters": {
-                                "minimum": 1,
-                                "maximum": FACTORY_CONTENT_LABEL_MAX,
+                            "round": checkpoint.round_index,
+                        }
+                        subject = _stage_subject("release", subject_inputs)
+                        inputs = {
+                            **common,
+                            "round": checkpoint.round_index,
+                            "playtested": playtested.to_dict(),
+                            "playtested_artifact": {
+                                **_artifact_binding(playtested_artifact),
+                                "playtested_sha256": playtested.playtested_sha256,
+                                "evidence_artifact_sha256": (
+                                    playtested.evidence_manifest.artifact_sha256
+                                ),
                             },
-                            "body_characters": {
-                                "minimum": FACTORY_CONTENT_BODY_MIN,
-                                "maximum": FACTORY_CONTENT_BODY_MAX,
+                            "package_root": "artifacts/release/package",
+                            "contract_path": "artifacts/release/release.json",
+                            "required_package_files": ["MANUAL.md", "product.json"],
+                            "factory_content_constraints": {
+                                "plain_text": True,
+                                "forbidden_characters": ["<", ">"],
+                                "headline_characters": {
+                                    "minimum": 1,
+                                    "maximum": FACTORY_CONTENT_LABEL_MAX,
+                                },
+                                "body_characters": {
+                                    "minimum": FACTORY_CONTENT_BODY_MIN,
+                                    "maximum": FACTORY_CONTENT_BODY_MAX,
+                                },
+                                "story_blocks_maximum": (
+                                    FACTORY_CONTENT_STORY_BLOCKS_MAX
+                                ),
                             },
-                            "story_blocks_maximum": (
-                                FACTORY_CONTENT_STORY_BLOCKS_MAX
-                            ),
-                        },
-                    }
+                        }
 
     packet = {
         "schema_version": 1,
@@ -1347,10 +1457,14 @@ def _evaluate_make_stage(
     )
     assignment = context["assignment"]
     invented = context["invented"]
+    concept = context["concept"]
     made.assert_context(
-        assignment, invented, expected_round=checkpoint.round_index
+        assignment, invented, concept, expected_round=checkpoint.round_index
     )
     canonical = made.validate_product_tree(run.run_root)
+    concept_tree = concept.validate_concept_tree(run.run_root)
+    assert_concept_component_correspondence(concept_tree, canonical.product)
+    assert_no_concept_pixels_in_product(concept_tree, made.product_manifest)
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -1376,7 +1490,11 @@ def _evaluate_make_stage(
         checks={
             "made_sha256": made.made_sha256,
             "product_artifact_sha256": canonical.artifact_sha256,
+            "concept_sha256": made.concept_sha256,
             "product_tree_rehashed": True,
+            "concept_tree_rehashed": True,
+            "concept_component_correspondence_valid": True,
+            "no_concept_pixels_in_product": True,
             "upstream_bindings_valid": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verifier_sha256": cad_evidence.verifier_sha256,
@@ -1400,7 +1518,7 @@ def _evaluate_playtest_stage(
     artifact = _ready_contract_artifact(
         proposal,
         stage="playtest",
-        transitions=("release", "make"),
+        transitions=("release", "make", "concept"),
         path=contract_path,
     )
     playtested = _read_contract(
@@ -1423,7 +1541,12 @@ def _evaluate_playtest_stage(
         expected_verifier_sha256=verifier_sha256,
     )
     passed = playtested.verdict == "pass"
-    transition = "release" if passed else "make"
+    invalidates_concept = any(
+        "concept" in item.invalidates for item in playtested.feedback
+    )
+    transition = (
+        "release" if passed else ("concept" if invalidates_concept else "make")
+    )
     if proposal.outcome.proposed_transition != transition:
         raise ContractError("Playtest transition differs from its evidence verdict")
     additional = _manifest_agent_artifacts(
@@ -1450,6 +1573,142 @@ def _evaluate_playtest_stage(
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
+
+
+_CONCEPT_EFFECT_WAIT_NAME = "concept-effect-wait.json"
+
+
+def _concept_effect_wait_path(run: AgentRun) -> Path:
+    return run.host_state_root / _CONCEPT_EFFECT_WAIT_NAME
+
+
+def _read_concept_effect_wait(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    """Read a credential-only Concept wait bound to the current checkpoint."""
+
+    path = _concept_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return None
+    try:
+        identity = path.lstat()
+        content = path.read_bytes()
+    except OSError as exc:
+        raise StateConflict("Concept effect wait is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o600
+    ):
+        raise StateConflict("Concept effect wait must be a private file")
+    try:
+        value = _strict_json_bytes(content, label="Concept effect wait")
+    except ContractError as exc:
+        raise StateConflict("Concept effect wait is invalid") from exc
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256",
+        "proposal_subject_sha256",
+        "proposal_outcome_sha256",
+        "need",
+    }
+    hash_fields = (
+        "waiting_checkpoint_sha256",
+        "proposal_checkpoint_sha256",
+        "proposal_subject_sha256",
+        "proposal_outcome_sha256",
+    )
+    if (
+        set(value) != expected
+        or value["schema_version"] != 1
+        or value["kind"] != "autonomous-workshop.concept-effect-wait"
+        or value["product_id"] != checkpoint.product_id
+        or value["stage"] != "concept"
+        or checkpoint.stage != "concept"
+        or checkpoint.status != "waiting"
+        or value["waiting_checkpoint_sha256"] != checkpoint.checkpoint_sha256
+        or value["need"] != _CONCEPT_IMAGES_CREDENTIALS_NEED
+        or any(
+            not isinstance(value[name], str)
+            or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None
+            for name in hash_fields
+        )
+    ):
+        raise StateConflict("Concept effect wait belongs to different state")
+    return value
+
+
+def _write_concept_effect_wait(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proposal: AgentOutcomeProposal,
+) -> None:
+    if checkpoint.stage != "concept" or checkpoint.status != "waiting":
+        raise TransitionError("Concept effect wait requires a waiting Concept")
+    _write_private_json(
+        _concept_effect_wait_path(run),
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.concept-effect-wait",
+            "product_id": checkpoint.product_id,
+            "stage": "concept",
+            "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "proposal_checkpoint_sha256": proposal.checkpoint_sha256,
+            "proposal_subject_sha256": proposal.subject_sha256,
+            "proposal_outcome_sha256": proposal.outcome.sha256,
+            "need": _CONCEPT_IMAGES_CREDENTIALS_NEED,
+        },
+    )
+
+
+def _remove_concept_effect_wait(run: AgentRun) -> None:
+    path = _concept_effect_wait_path(run)
+    if not path.exists() and not path.is_symlink():
+        return
+    try:
+        identity = path.lstat()
+    except OSError as exc:
+        raise StateConflict("Concept effect wait is unavailable") from exc
+    if path.is_symlink() or not stat.S_ISREG(identity.st_mode):
+        raise StateConflict("Concept effect wait must be a regular file")
+    try:
+        path.unlink()
+    except OSError as exc:
+        raise StateConflict("Concept effect wait could not be removed") from exc
+
+
+def _concept_images_credentials() -> ConceptImagesConfig:
+    values = concept_images_credential_environment()
+    api_key = values.get("CONCEPT_IMAGES_API_KEY")
+    endpoint = values.get("CONCEPT_IMAGES_ENDPOINT")
+    model = values.get("CONCEPT_IMAGES_MODEL")
+    if not api_key or not endpoint or not model:
+        raise ContractError("concept image provider credentials are incomplete")
+    return ConceptImagesConfig(endpoint=endpoint, api_key=api_key, model=model)
+
+
+def _execute_concept_image_effect(
+    tree: ConceptTree, concept: NativeConcept
+) -> Mapping[str, Any]:
+    """Draw the concept's whole image set between turns, or park on no credential.
+
+    Raises :class:`_ConceptImagesCredentialsUnavailable` when the provider is
+    unconfigured, converted by the caller into a waiting outcome — the same
+    shape as the Factory release wait (design decision D2).
+    """
+
+    try:
+        config = _concept_images_credentials()
+    except ContractError:
+        raise _ConceptImagesCredentialsUnavailable() from None
+    adapter = ConceptImagesAdapter(config)
+    drawn = adapter.draw_concept(tree, concept)
+    return {"images_drawn": sorted(drawn)}
 
 
 def _factory_credentials(inventor_id: str) -> Any:
@@ -1732,6 +1991,12 @@ def _existing_release_for_promotion(
         label="native Invented contract",
     )
     invented.assert_context(assignment)
+    concept = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "concept"),
+        NativeConcept,
+        label="native Concept contract",
+    )
     made = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "make"),
@@ -1739,7 +2004,7 @@ def _existing_release_for_promotion(
         label="native Made contract",
     )
     made.assert_context(
-        assignment, invented, expected_round=checkpoint.round_index
+        assignment, invented, concept, expected_round=checkpoint.round_index
     )
     blueprint = ToyBlueprint()
     playtested = _read_contract(
@@ -1963,6 +2228,31 @@ def _process_agent_outcome(
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
             assignment=context["assignment"],
         )
+    elif checkpoint.stage == "concept":
+        try:
+            decision, additional = evaluate_concept_stage(
+                proposal,
+                run_root=run.run_root,
+                expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+                assignment=context["assignment"],
+                invented=context["invented"],
+                wish=_load_wish(run.run_root),
+                round=checkpoint.round_index,
+                standing_concept_sha256=context["concept_standing_sha256"],
+                feedback_sha256=context["concept_feedback_sha256"],
+                execute_image_effect=_execute_concept_image_effect,
+            )
+        except _ConceptImagesCredentialsUnavailable:
+            waiting = AgentOutcome(
+                stage="concept",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(_CONCEPT_IMAGES_CREDENTIALS_NEED,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_concept_effect_wait(run, updated, proposal=proposal)
+            return updated
     elif checkpoint.stage == "make":
         try:
             decision, additional = _evaluate_make_stage(
@@ -2151,6 +2441,13 @@ def _native_receipt(
                 if effect_wait["need"] not in needs:
                     needs.append(effect_wait["need"])
                 publication["reason"] = effect_wait["need"]
+        if checkpoint.stage == "concept" and checkpoint.status == "waiting":
+            wait_run = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            )
+            concept_wait = _read_concept_effect_wait(wait_run, checkpoint)
+            if concept_wait is not None and concept_wait["need"] not in needs:
+                needs.append(concept_wait["need"])
         effect = paths.host_state / "release-effect.json"
         if effect.exists() or effect.is_symlink():
             effect_run = AgentRun.open(
@@ -2306,6 +2603,18 @@ def _resume_native_run_locked(
                     publish_requested=authorization["publish_requested"],
                 )
             _remove_release_effect_wait(run)
+        concept_wait = _read_concept_effect_wait(run, checkpoint)
+        if concept_wait is not None:
+            try:
+                _concept_images_credentials()
+            except ContractError:
+                return _native_receipt(
+                    checkpoint,
+                    paths=paths,
+                    action="waiting-for-concept-images-credentials",
+                    publish_requested=authorization["publish_requested"],
+                )
+            _remove_concept_effect_wait(run)
         checkpoint = run.resume()
     elif checkpoint.status in ("failed", "complete"):
         return _native_receipt(
