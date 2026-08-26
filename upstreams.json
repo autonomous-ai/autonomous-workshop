@@ -13,6 +13,6 @@
     {"repository": "peterat617/text-to-3d", "commit": "54804a8da4b462ab055c522d46c1a3f099bc21e2", "role": "canonical-cad-skills"},
     {"repository": "nohope88/text2cad", "commit": "0cb635eb868bd54408c97d45604704fc9bc8edd4", "role": "inventor-snapshot"},
     {"repository": "nohope88/text2game", "commit": "9b007f65e83bc79e3c9b78a6228942b6354b3019", "role": "inventor-snapshot"},
-    {"repository": "reinSPQR/vibe-ideas", "commit": "ed3d1e876faed95b1bf785af2fae2a8133354517", "role": "inventor-snapshot"}
+    {"repository": "reinSPQR/vibe-ideas", "commit": "a557cacb3d98e5936194e4ba11721809370195f8", "role": "abstract-boardgame-donor"}
   ]
 }

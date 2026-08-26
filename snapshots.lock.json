@@ -2,5 +2,12 @@
   "algorithm": "canonical-files-v1",
   "schema_version": 1,
   "scope": "local-monorepo-snapshot-trees-with-reviewed-overlays",
-  "snapshots": {}
+  "snapshots": {
+    "abo": {
+      "bytes": 623781,
+      "commit": "a557cacb3d98e5936194e4ba11721809370195f8",
+      "files": 52,
+      "tree_sha256": "8e0828c3833a8c46a66171befb13fc18022957d757ed71d454b29b763474c67d"
+    }
+  }
 }

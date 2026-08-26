@@ -80,10 +80,17 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
 
 
 def run_declared_checks(manifest: InventorManifest) -> List[str]:
-    """Run one inventor's declared checks without shell interpolation."""
+    """Run one inventor's declared checks without shell interpolation.
+
+    An inventor built from a reviewed upstream snapshot runs its checks like
+    any other. Skipping them made the command report a pass it had not
+    observed, which is the one thing this repository's checks may never do: an
+    imported tree is exactly where a declared check earns its keep, and the
+    snapshot lock already proves the reviewed bytes are the bytes being run.
+    """
 
     problems = validate_contribution(manifest)
-    if problems or manifest.source.get("kind") != "local":
+    if problems:
         return problems
     root = manifest.path.parent
     workshop_src = Path(__file__).resolve().parents[1]

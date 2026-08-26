@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autonomous-abo"
+version = "0.1.0"
+description = "Abstract Boardgame Oracle: invents original abstract strategy games and measures them"
+requires-python = ">=3.11"
+
+# ABO's own adapters need nothing beyond the standard library and the Workshop.
+# What is declared here is what the *imported harness* reaches for that neither
+# of those supplies.
+dependencies = [
+  "inventor-workshop==0.4.0",
+
+  # `harness/gate.py`, `harness/ergonomics_check.py` and `harness/preview.py`
+  # measure geometry through these. They are how the imported gate reads a
+  # mesh; the CAD that produces the mesh comes from the repository's locked
+  # `skills/cad` and is never vendored here.
+  "trimesh>=4",
+  "numpy>=1.26",
+
+  # `check_mesh` and `check_thickness` inside the locked CAD skill import scipy
+  # directly, and that skill's own `requirements.txt` does not declare it. The
+  # upstream pin of the same skill does. Rather than edit a locked skill, the
+  # dependency is declared by the thing that needs it — see `cad_compat.py`.
+  "scipy>=1.11",
+
+  # `harness/preview.py` renders contact sheets from built geometry. Nothing in
+  # ABO's evidence rests on a render: a picture is never offered in support of
+  # topology, fit, interference, or printability.
+  "pillow>=10",
+]
+
+# The model-seat endpoint is reached with `urllib` from the standard library.
+# No HTTP client is added, and no model SDK: one plain HTTPS call per decision
+# is the whole transport, which is what keeps the seat boundary auditable.
+
+[project.optional-dependencies]
+# Slicing under a pinned printer, material and profile needs an external CLI
+# (`ORCASLICER_CLI` and `ORCA_PROFILE`). It is not a Python dependency and is
+# deliberately not vendored; absent it, `print-test` reports print time and
+# material as unmeasured and does not pass.
+slicing = []
+
+[tool.setuptools]
+py-modules = [
+  "profile",
+  "config",
+  "cad_compat",
+  "game",
+  "research",
+  "concept",
+  "make",
+  "simulation",
+  "model_seats",
+  "manufacturing",
+  "feedback",
+  "playtest_job",
+]
+
+[tool.setuptools.data-files]
+"share/autonomous-abo" = ["TASTE.md", "inventor.json", "UPSTREAM.md"]
+
+[tool.uv.sources]
+inventor-workshop = { path = "../..", editable = true }

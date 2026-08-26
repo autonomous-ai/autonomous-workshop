@@ -12,16 +12,26 @@ inventor. Every toy the inventor makes lives under
 | Inventor | Makes | `TASTE.md` | Custom Make | Custom Playtest |
 |---|---|:---:|:---:|:---:|
 | [Alice](alice/) | classics made yours | ✅ | ⬜ | ⬜ |
-| [Leo](leo/) | games that don't exist yet | ✅ | ✅ | ✅ |
+| [Leo](leo/) | games that don't exist yet, built for one table | ✅ | ✅ | ✅ |
+| [ABO](abo/) | abstract strategy games | ✅ | ✅ | ✅ |
 | [Bob](bob/) | machines that move | ✅ | ✅ | ⬜ |
 | [Ivy](ivy/) | science you can hold | ✅ | ⬜ | ⬜ |
 | [Eve](eve/) | little worlds | ✅ | ⬜ | ⬜ |
 
-Every inventor owns a `TASTE.md`. Leo also owns his own Make and Playtest,
-because inventing rules and simulating a table are his alone; Bob owns his
-Make, because a machine that moves is designed differently from anything else.
-Leo's and Bob's Make seams are typed and waiting — a run stops and says so
-rather than faking a result.
+Every inventor owns a `TASTE.md`. Leo and ABO also own their own Make and
+Playtest, because inventing rules and measuring a table are theirs alone; Bob
+owns his Make, because a machine that moves is designed differently from
+anything else. Leo's and Bob's Make seams are typed and waiting — a run stops
+and says so rather than faking a result.
+
+Leo and ABO share the `invented-games` lane and are separated by Taste, not by
+category. Leo builds a game around the people who will play it: their
+obsessions, memories and private jokes become mechanism. ABO refuses exactly
+that Wish and invents abstract structure instead — few piece types, depth from
+combinatorial complexity, every distinction carried by shape. ABO is also the
+repository's first `source.kind=upstream-snapshot` inventor: its simulation and
+manufacturing harness was imported from a pinned external commit and is locked
+byte-for-byte, with the provenance recorded in [`abo/UPSTREAM.md`](abo/UPSTREAM.md).
 
 ## Five Workshop toys
 

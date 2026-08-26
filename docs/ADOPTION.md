@@ -31,6 +31,7 @@ required to run 24/7, poll a queue, or schedule itself.
 |---|---|---|---|
 | Alice | classics made yours (`classics-made-yours`) | Taste only | Alice deliberately demonstrates the minimum extension level and delegates Make and Playtest to shared tools. Her Blindcap laboratory is provenance that taught Workshop, not her active profile or a second invented-game inventor. |
 | Leo | games that don't exist yet (`invented-games`) | custom Make + custom Playtest | Leo is the bundled invented-game example. His AI players must execute the pinned simulation policy before Instructions; customer response arrives later through Reviews. |
+| ABO | games that don't exist yet (`invented-games`) | custom Concept + Make + Playtest | The first inventor here that can produce the lane's evidence rather than wait for it. Concept invents the game and seals the rules under `concept_sha256`; Make compiles them into an executable engine inside the product and builds STEP-first CAD; Playtest runs the imported seeded harness against those exact engine bytes. Today a run parks with four truthful `Need`s: no game inventor, no rules-engine compiler, no model-seat endpoint, and no CAD mesh toolchain on this machine, so every geometry measurement reports itself unmeasured and does not pass. Built from a locked upstream snapshot — see `inventors/abo/UPSTREAM.md`. |
 | Bob | machines that move (`moving-machines`) | custom Make | His profile, machine Taste, Wish, preview, and typed seam work. A run waits at Bob's typed custom-Make seam; the preserved board-game laboratory is not a moving-machine Make adapter. |
 | Ivy | science you can hold (`holdable-science`) | Taste only | Her science profile delegates Make and Playtest to shared tools. Without configured shared model/CAD and scientific-evidence tools, a run truthfully waits at Make or Playtest. |
 | Eve | little worlds (`little-worlds`) | Taste only | Her fresh personalized-world profile delegates Make and Playtest to shared tools. Without configured shared tools, a run truthfully waits at Make. This profile does not restore the old Eve implementation. |
@@ -75,7 +76,8 @@ add another Workshop job. A future continuous-intake adapter may repeatedly
 invoke the same one-Wish contract without adding queue or daemon machinery to
 the inventors themselves.
 
-Leo and Bob are blocked at their unfinished custom typed seams. Alice, Eve, and
+Leo and Bob are blocked at their unfinished custom typed seams; ABO's seams are
+written and park on absent capabilities rather than on absent code. Alice, Eve, and
 Ivy are Taste-only and wait for real shared capabilities when those are not
 configured. Mature legacy code remains useful migration material, but it is not
 silently invoked through a bundled profile. That separation prevents an
@@ -157,6 +159,10 @@ wait explicitly:
 ```text
 Leo: MakeContext -> Made -> PlaytestContext -> Playtested   WAITING
 Bob: MakeContext -> Made                                    WAITING
+ABO: ConceptContext -> ConceptImages                        WAITING (no game inventor)
+ABO: MakeContext -> Made                                    WAITING (no engine compiler)
+ABO: PlaytestContext -> Playtested                          WAITING (no model seats,
+                                                            no mesh toolchain, floor unmet)
 all: ConceptContext -> ConceptImages                        WAITING
 ```
 
@@ -216,8 +222,14 @@ model credential, catalog credential, printer, carrier, or paid service.
    close-margin, stale, and all-rejected shortlists.
 2. Keep Alice's classics profile Taste-only and prove shared Make and Playtest
    can preserve known rules while producing a genuinely personal edition.
-3. Implement Leo's invented-game `Made`, `Playtested`, and `Feedback` adapters,
-   including executable, seeded AI-player simulation and the 1,000-game gate.
+3. Configure ABO's capabilities so the `invented-games` lane can actually
+   produce its evidence: a game inventor, a rules-engine compiler, a model-seat
+   endpoint, and the locked CAD skill's mesh toolchain. The adapters, the
+   1,000-completed-game gate, the four player styles and the manufacturing
+   measurement are written and checked offline; what is missing is the
+   capabilities behind them, not the code. Leo's own `Made`, `Playtested` and
+   `Feedback` adapters remain unwritten, but the lane's evidence requirement no
+   longer waits on them.
 4. Implement Bob's new moving-machine `MakeContext -> Made` path; do not route
    machine Wishes into the preserved board-game laboratory.
 5. Configure and test shared Make and Playtest tools for the Taste-only
