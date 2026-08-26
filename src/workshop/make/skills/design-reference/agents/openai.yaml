@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design References"
+  short_description: "Search cited parametric CAD design examples"
+  default_prompt: "Use $design-reference to find analogous parametric CAD designs and fetch selected references with provenance."

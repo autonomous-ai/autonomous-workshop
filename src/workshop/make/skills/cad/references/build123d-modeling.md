@@ -417,6 +417,23 @@ Chained 2D unions are fragile in three stacked ways, all silent:
   Apply the `& clip` intersection exactly once, LAST, on the single fused
   profile.
 
+**State the extrude direction rather than inheriting it.** `extrude(sketch,
+amount, dir=(0, 1, 0))` takes the sign out of the winding's hands, and that
+matters most on `Plane.XZ`, whose normal is **−Y**: `extrude(Plane.XZ * sk, +t)`
+runs *toward −Y*, so a barrel you meant to build rearward along a +Y bore axis
+lands in front of the cover instead — and a clockwise polygon in the same file
+then runs the opposite way again, so two prisms written identically end up in
+different half-spaces. Put it in one helper:
+
+```python
+def _prism(sketch, y0, length):
+    return Pos(0, y0, 0) * extrude(Plane.XZ * sketch, length, dir=(0, 1, 0))
+```
+
+The failure this prevents is quiet: each part builds, has positive volume and
+passes `validate`; only the assembly is wrong, and only where two parts happen
+to overlap does `interfere` notice.
+
 ## `align=(None, None, None)` is the raw OCC datum, not "centered"
 
 `Cylinder`/`Cone` with `align=(None, None, None)` sit base-at-z=0 (XY

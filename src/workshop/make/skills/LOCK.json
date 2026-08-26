@@ -3,8 +3,18 @@
   "schema_version": 1,
   "skills": {
     "cad": {
-      "sha256": "9b158b2871413ac365f440f963b15ea43e795c194920001f3611249c9e0240d3",
-      "source_commit": "40667dec4f1ae1ab630062964cb08085990b0d04",
+      "sha256": "653d5fcda68ae34ee0c90d2dcf59fc9b84cb1565cc782ec0eadd65f5934257e7",
+      "source_commit": "0403039457603002739359f620f8c780a2c829dc",
+      "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
+    },
+    "design-reference": {
+      "sha256": "3fa2b527c659e928e77f71bc9b267bda295d2e71e17b8719f96b8fd256a86e9f",
+      "source_commit": "0403039457603002739359f620f8c780a2c829dc",
+      "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
+    },
+    "image-to-cad": {
+      "sha256": "e0cc20d1b770f39109a904015d4739b37f9f7366d9f5837eb76a40916e693710",
+      "source_commit": "0403039457603002739359f620f8c780a2c829dc",
       "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
     },
     "product-to-cad": {
@@ -13,7 +23,7 @@
     },
     "step-parts": {
       "sha256": "aee167b76132b6799b62f31e7d09bd78d2a2c152f010ec4b7bb033dccd9767ee",
-      "source_commit": "40667dec4f1ae1ab630062964cb08085990b0d04",
+      "source_commit": "0403039457603002739359f620f8c780a2c829dc",
       "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
     }
   }

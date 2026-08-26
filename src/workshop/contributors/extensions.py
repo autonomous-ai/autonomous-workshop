@@ -42,7 +42,14 @@ _FORBIDDEN_NAMES = frozenset(
     ("agents.md", "claude.md", "stage.json", "agent-outcome.json")
 )
 _RESERVED_SKILL_NAMES = frozenset(
-    ("autonomous-workshop", "cad", "product-to-cad", "step-parts")
+    (
+        "autonomous-workshop",
+        "cad",
+        "design-reference",
+        "image-to-cad",
+        "product-to-cad",
+        "step-parts",
+    )
 )
 
 

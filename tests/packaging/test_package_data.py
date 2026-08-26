@@ -38,7 +38,16 @@ class PackageDataTest(unittest.TestCase):
     def test_product_run_domain_skills_resolve_from_make_component(self):
         roots = product_run_domain_skill_roots()
 
-        self.assertEqual(set(roots), {"cad", "product-to-cad", "step-parts"})
+        self.assertEqual(
+            set(roots),
+            {
+                "cad",
+                "design-reference",
+                "image-to-cad",
+                "product-to-cad",
+                "step-parts",
+            },
+        )
         for name, root in roots.items():
             self.assertEqual(root.name, name)
             self.assertEqual(root.parent.name, "skills")

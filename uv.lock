@@ -508,10 +508,14 @@ version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "cadgen" },
+    { name = "pillow" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "cadgen", specifier = "==0.4.19" }]
+requires-dist = [
+    { name = "cadgen", specifier = "==0.4.19" },
+    { name = "pillow", specifier = ">=10.0" },
+]
 
 [[package]]
 name = "ipython"

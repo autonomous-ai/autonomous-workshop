@@ -125,12 +125,11 @@ not substitute for any geometry gate. Report the checks that actually ran and
 their results; a claim needs the check that produced it, never an unaudited
 visual impression.
 
-Autonomous Workshop does not vendor upstream `image-to-cad` because that tree
-does not include a license. The integrated image-derived mode therefore fails
-closed unless a separately authorized compatible sibling skill is installed.
-Use the repository-authored `product-to-cad` skill for Workshop's image-guided
-design and evidence workflow; do not copy missing upstream renderer code into
-this skill.
+Autonomous Workshop materializes the sibling `image-to-cad` and
+`design-reference` skills beside this tree. Use `image-to-cad` for a direct
+reference-image reconstruction and its required likeness evidence. The
+repository-authored `product-to-cad` remains available for broader product
+design briefs that are not a direct reconstruction of one reference image.
 
 ## Non-negotiables
 

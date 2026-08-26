@@ -5,28 +5,29 @@ required materials retain their own licenses.
 
 ## Peter's text-to-3D tools
 
-The `cad` and `step-parts` skills under `src/workshop/make/skills/` derive from
+The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills under
+`src/workshop/make/skills/` derive from
 [`autonomous-ai/autonomous-text-to-3d`](https://github.com/autonomous-ai/autonomous-text-to-3d).
 Their exact reviewed revisions and local adaptations are recorded in
 `src/workshop/make/skills/PROVENANCE.md` and their installed byte identities in
 `src/workshop/make/skills/LOCK.json`.
 
-Each skill includes its MIT license, copyright 2026 Thompson Labs LLC. The
-complete vendored `cadgen` 0.4.19 source inside the CAD skill, and the pinned
-`cadgen==0.4.19` distribution dependency, carry the same included MIT notice.
+The `cad` and `step-parts` skills include their MIT licenses, copyright 2026
+Thompson Labs LLC. The complete vendored `cadgen` 0.4.19 source inside the CAD
+skill, and the pinned `cadgen==0.4.19` distribution dependency, carry the same
+included MIT notice.
 
-The reviewed upstream `design-reference` and `image-to-cad` directories are
-not shipped because they did not include license files. The licensed CAD
-skill's optional image-derived integration remains fail-closed when a
-separately authorized compatible renderer is absent.
+The pinned upstream `design-reference` and `image-to-cad` trees do not contain
+standalone license files. Their inclusion does not imply that the MIT license
+above applies to them. `design-reference` can explicitly download a separately
+licensed dataset restricted to non-commercial research; fetched references
+retain their own license and provenance records.
 
 ## Repository-authored work
 
 The `product-to-cad` skill and the Workshop Python host were authored for this
-repository. `product-to-cad` applies general measurement-provenance,
-multi-view-form, manufacturing, and fail-closed evidence principles without
-copying the unlicensed `text-to-3d/skills/design-reference` or
-`text-to-3d/skills/image-to-cad` source.
+repository. `product-to-cad` remains a distinct workflow for broader
+product-design briefs.
 
 Earlier research examined internal Inventor projects including `text2cad`,
 `text2game`, and `vibe-ideas`. Their legacy Python workers and source snapshots
