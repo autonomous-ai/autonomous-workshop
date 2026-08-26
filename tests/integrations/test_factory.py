@@ -468,6 +468,46 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(transport.use_case_writes, 1)
         self.assertEqual(transport.story_block_writes, 1)
 
+    def test_mesh_handoff_accepts_made_without_legacy_project_json(self):
+        product = self.root / "modern-product"
+        product.mkdir()
+        (product / "product.json").write_bytes(
+            canonical_json(self.made.product) + b"\n"
+        )
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        self.assertFalse((product / "project.json").exists())
+
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("product.json", names)
+            self.assertIn("assembled.stl", names)
+            self.assertNotIn("project.json", names)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(
+                facts["source_artifact_sha256"], self.made.artifact_sha256
+            )
+            self.assertEqual(facts["wish"], self.context.wish.to_dict())
+            self.assertEqual(facts["product"], dict(self.made.product))
+
     def test_generator_primary_is_included_but_creator_outputs_are_not(self):
         product = self.made.artifact_root
         (product / "assembled.stl").unlink()
