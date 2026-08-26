@@ -2084,11 +2084,24 @@ def _run_native_session(
 
         _remove_agent_outcome(run.run_root)
         method = "resume" if _session_status(paths) == "checkpointed" else "start"
-        last_session = _launcher_call(
-            launcher, method, checkpoint=checkpoint, paths=paths
-        )
+        launcher_failure: Optional[WorkshopError] = None
+        try:
+            last_session = _launcher_call(
+                launcher, method, checkpoint=checkpoint, paths=paths
+            )
+        except WorkshopError as exc:
+            # The finalizer is an exact filesystem protocol, independent of the
+            # Codex event-stream terminal signal.  A provider timeout or a
+            # lingering/failed launcher may happen after the current proposal
+            # was atomically written.  Count that launched turn and allow only
+            # the normal checkpoint-bound reader and host gate below to decide
+            # whether its exact bytes can advance.  No message or launcher
+            # status is treated as gate evidence.
+            launcher_failure = exc
         turns += 1
         if not _agent_outcome_exists(run.run_root):
+            if launcher_failure is not None:
+                raise launcher_failure
             raise WorkshopError(
                 "native Codex session returned without agent-outcome.json"
             )

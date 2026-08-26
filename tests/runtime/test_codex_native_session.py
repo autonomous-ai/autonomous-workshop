@@ -16,6 +16,7 @@ import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
     CODEX_PERMISSION_PROFILE,
+    DEFAULT_CODEX_TIMEOUT_SECONDS,
     MAX_CODEX_EVENT_BYTES,
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
@@ -790,6 +791,20 @@ class CodexNativeSessionTest(unittest.TestCase):
         self.assertEqual(MINIMUM_CODEX_NATIVE_RUNTIME_VERSION, (0, 145, 0))
         self.assertFalse(codex_supports_native_workshop("0.144.9"))
         self.assertTrue(codex_supports_native_workshop("0.145.0"))
+
+    def test_native_turn_defaults_to_the_maximum_supported_hour(self):
+        self.assertEqual(DEFAULT_CODEX_TIMEOUT_SECONDS, 3_600)
+        launcher = CodexNativeSessionLauncher(
+            binary="/fixture/codex",
+            cli_version="0.145.0",
+        )
+        self.assertEqual(launcher.timeout_seconds, 3_600)
+        with self.assertRaisesRegex(ValueError, "1 to 3,600"):
+            CodexNativeSessionLauncher(
+                binary="/fixture/codex",
+                cli_version="0.145.0",
+                timeout_seconds=3_601,
+            )
 
     def test_completed_turn_is_reaped_after_a_short_natural_exit_grace(self):
         with tempfile.TemporaryDirectory() as temporary:

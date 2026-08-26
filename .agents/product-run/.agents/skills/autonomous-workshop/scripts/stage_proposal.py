@@ -140,6 +140,16 @@ EXCLUDED_SUFFIXES = (
     ".sqlite3-journal",
 )
 EXCLUDED_PREFIXES = (".env", "auth.", "credential.", "credentials.", "secrets.")
+ARTIFACT_DEBRIS_SUFFIXES = (
+    ".backup",
+    ".bak",
+    ".orig",
+    ".rej",
+    ".swn",
+    ".swo",
+    ".swp",
+    "~",
+)
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -525,6 +535,18 @@ def _path_is_excluded(relative: PurePosixPath) -> bool:
     )
 
 
+def _path_has_artifact_debris(relative: PurePosixPath) -> bool:
+    for part in relative.parts:
+        lowered = part.casefold()
+        if (
+            lowered.endswith(ARTIFACT_DEBRIS_SUFFIXES)
+            or (len(part) > 2 and part.startswith(".#"))
+            or (len(part) > 2 and part.startswith("#") and part.endswith("#"))
+        ):
+            return True
+    return False
+
+
 def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict[str, Any]:
     tree_relative, tree_root = _existing_directory(
         run_root, tree_relative_value, label
@@ -542,6 +564,8 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
                 raise ProposalError("%s contains an unavailable directory" % label) from exc
             if absolute.is_symlink() or not stat.S_ISDIR(identity.st_mode):
                 raise ProposalError("%s contains a symlink or special directory" % label)
+            if _path_has_artifact_debris(relative):
+                raise ProposalError("%s contains editor, backup, or patch debris" % label)
             if dirname.casefold() in EXCLUDED_DIRS or _path_is_excluded(relative):
                 raise ProposalError("%s contains a path excluded by manifest policy" % label)
             kept.append(dirname)
@@ -550,6 +574,8 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
             absolute = base / filename
             relative = PurePosixPath(absolute.relative_to(tree_root).as_posix())
             _safe_relative(relative.as_posix(), label + " entry")
+            if _path_has_artifact_debris(relative):
+                raise ProposalError("%s contains editor, backup, or patch debris" % label)
             if _path_is_excluded(relative):
                 raise ProposalError("%s contains a path excluded by manifest policy" % label)
             run_relative = (tree_relative / relative).as_posix()
@@ -858,7 +884,9 @@ def _validate_manifest(value: Any, label: str) -> dict[str, Any]:
             {"path", "bytes", "sha256", "executable"},
             label + " entry",
         )
-        _safe_relative(entry["path"], label + " entry path")
+        relative = _safe_relative(entry["path"], label + " entry path")
+        if _path_has_artifact_debris(relative):
+            raise ProposalError("%s contains editor, backup, or patch debris" % label)
         if type(entry["bytes"]) is not int or not 0 <= entry["bytes"] <= MAX_FILE_BYTES:
             raise ProposalError("%s entry byte count is invalid" % label)
         _sha256(entry["sha256"], label + " entry sha256")

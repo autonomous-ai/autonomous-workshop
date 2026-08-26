@@ -78,6 +78,16 @@ DEFAULT_EXCLUDED_SUFFIXES = (
     ".sqlite3-journal",
 )
 DEFAULT_EXCLUDED_PREFIXES = (".env", "auth.", "credential.", "credentials.", "secrets.")
+ARTIFACT_DEBRIS_SUFFIXES = (
+    ".backup",
+    ".bak",
+    ".orig",
+    ".rej",
+    ".swn",
+    ".swo",
+    ".swp",
+    "~",
+)
 MAX_ENTRIES = 4096
 MAX_PACK_BYTES = 50 * 1024 * 1024
 MAX_FILE_BYTES = 95 * 1024 * 1024
@@ -116,6 +126,36 @@ def _assert_path_has_no_secret(relative_path: str) -> None:
             raise ArtifactError(
                 "artifact filename matches secret rule %s" % rule
             )
+
+
+def _debris_name(name: str) -> bool:
+    """Recognize unambiguous editor, backup, and patch-reject debris."""
+
+    lowered = name.casefold()
+    return (
+        lowered.endswith(ARTIFACT_DEBRIS_SUFFIXES)
+        or (len(name) > 2 and name.startswith(".#"))
+        or (len(name) > 2 and name.startswith("#") and name.endswith("#"))
+    )
+
+
+def assert_artifact_path_hygiene(relative_path: str) -> None:
+    """Reject files or directories that are editing debris, not product output.
+
+    The check is deliberately narrower than a general temporary-file guesser:
+    names such as ``original.step`` and ``tilde~guide.md`` remain legitimate,
+    while conventional backup, reject, swap, lock, and autosave names cannot
+    become part of a content-addressed artifact identity.
+    """
+
+    if not isinstance(relative_path, str):
+        raise ArtifactError("artifact hygiene requires a relative path")
+    candidate = PurePosixPath(relative_path)
+    if any(_debris_name(part) for part in candidate.parts):
+        raise ArtifactError(
+            "artifact path is editor, backup, or patch debris: %s"
+            % relative_path
+        )
 
 
 def _validate_pack_limit(maximum_bytes: int) -> int:
@@ -488,6 +528,7 @@ class ArtifactEntry:
             or self.path == "_inventor-artifact.json"
         ):
             raise ArtifactError("artifact entry path is unsafe or reserved")
+        assert_artifact_path_hygiene(self.path)
         if (
             not isinstance(self.bytes, int)
             or isinstance(self.bytes, bool)
@@ -668,6 +709,7 @@ def assert_packable_content(relative_path: str, content: bytes) -> None:
         or not isinstance(content, bytes)
     ):
         raise ArtifactError("Packable content requires a path and bytes")
+    assert_artifact_path_hygiene(relative_path)
     _assert_path_has_no_secret(relative_path)
     relative = Path(*relative_path.split("/"))
     if _excluded(relative, set()):
@@ -691,6 +733,7 @@ def _source_files(root: Path, extra_excludes: Iterable[str] = ()) -> List[Tuple[
         for dirname in sorted(dirnames):
             absolute = base / dirname
             relative = absolute.relative_to(root)
+            assert_artifact_path_hygiene(relative.as_posix())
             if dirname.lower() in DEFAULT_EXCLUDED_DIRS or _excluded(relative, excluded):
                 continue
             _assert_path_has_no_secret(relative.as_posix())
@@ -701,6 +744,7 @@ def _source_files(root: Path, extra_excludes: Iterable[str] = ()) -> List[Tuple[
         for filename in sorted(filenames):
             absolute = base / filename
             relative = absolute.relative_to(root)
+            assert_artifact_path_hygiene(relative.as_posix())
             if _excluded(relative, excluded):
                 continue
             _assert_path_has_no_secret(relative.as_posix())

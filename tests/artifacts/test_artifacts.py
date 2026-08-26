@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest import mock
 
 from workshop.artifacts.core import (
+    ArtifactEntry,
     ArtifactManifest,
     build_artifact_manifest,
     build_pack,
@@ -64,6 +65,49 @@ class ArtifactTest(unittest.TestCase):
                 ".git", ".claude", "__pycache__", "__macosx", "inputs"
             } for path in paths)
         )
+
+    def test_manifest_rejects_editor_backup_and_patch_debris(self):
+        debris = (
+            "model.step.orig",
+            "change.rej",
+            "notes.md~",
+            "part.py.bak",
+            "scene.backup",
+            ".model.step.swp",
+            ".model.step.swo",
+            ".model.step.swn",
+            "#MANUAL.md#",
+            ".#product.json",
+        )
+        for name in debris:
+            with self.subTest(name=name):
+                path = self.root / name
+                path.write_text("stale editing output\n", encoding="utf-8")
+                with self.assertRaisesRegex(
+                    ArtifactError, "editor, backup, or patch debris"
+                ):
+                    build_artifact_manifest(self.root)
+                path.unlink()
+
+        digest = "0" * 64
+        with self.assertRaisesRegex(
+            ArtifactError, "editor, backup, or patch debris"
+        ):
+            ArtifactEntry("nested/model.step.orig", 0, digest, False)
+
+    def test_manifest_preserves_similar_legitimate_filenames(self):
+        legitimate = (
+            "original.step",
+            "origami.step",
+            "rejection-notes.md",
+            "tilde~guide.md",
+            "hash#tag.md",
+        )
+        for name in legitimate:
+            (self.root / name).write_text("intentional product file\n", encoding="utf-8")
+        manifest = build_artifact_manifest(self.root)
+        paths = {entry.path for entry in manifest.entries}
+        self.assertTrue(set(legitimate).issubset(paths))
 
     def test_printable_token_parts_are_not_mistaken_for_credentials(self):
         (self.root / "token.stl").write_bytes(b"solid token\nendsolid token\n")

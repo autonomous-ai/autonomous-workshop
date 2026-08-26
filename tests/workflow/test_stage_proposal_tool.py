@@ -327,6 +327,45 @@ class StageProposalToolTest(unittest.TestCase):
             "playtest",
         )
 
+    def test_make_rejects_editor_backup_and_patch_debris(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        for name in ("model.step.orig", "change.rej", "notes.md~", ".part.py.swp"):
+            with self.subTest(name=name):
+                debris = product_root / name
+                debris.write_text("stale editing output\n", encoding="utf-8")
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "validation/cad-build.json",
+                    expected=2,
+                )
+                self.assertIn("editor, backup, or patch debris", result.stderr)
+                debris.unlink()
+
+        (product_root / "original.step").write_bytes(b"ISO-10303-21;\n")
+        self.run_tool(
+            "make",
+            "--product-root",
+            "artifacts/make/r0001/product",
+            "--cad-project-path",
+            "cad/project",
+            "--cad-verification-path",
+            "validation/cad-build.json",
+        )
+
     def test_playtest_derives_file_hashes_and_loop_transition(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
@@ -622,6 +661,16 @@ class StageProposalToolTest(unittest.TestCase):
             expected=2,
         )
         self.assertIn("cannot contain media", result.stderr)
+
+        (package_root / "invented-image.png").unlink()
+        (package_root / "product.json.orig").write_bytes(canonical_json(product))
+        result = self.run_tool(
+            "release",
+            "--package-root",
+            "artifacts/release/package",
+            expected=2,
+        )
+        self.assertIn("editor, backup, or patch debris", result.stderr)
 
     def test_fail_closed_on_mutable_stage_duplicate_json_and_authored_hashes(self):
         self.write_stage("match", self.match_inputs(), writable=True)

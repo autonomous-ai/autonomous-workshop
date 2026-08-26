@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import stat
@@ -9,15 +10,24 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
-from workshop.errors import StateConflict
+from workshop.errors import ContractError, StateConflict
+from workshop.match.native import (
+    InventorRoster,
+    MatchRankingEntry,
+    NativeMatchAssignment,
+)
+from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
     NativeRunPaths,
     _native_run_mutation_lock,
     canonical_wish_bytes,
     native_run_paths,
+    start_native_run,
 )
 from workshop.runtime import CodexInvocationError
 from workshop.wish import Wish
+from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
+from workshop.workflow.proposals import AgentOutcomeProposal
 
 
 class _FakeOutcome:
@@ -88,6 +98,87 @@ class _FakeLauncher:
         self.resumes.append(dict(arguments))
         self._write_waiting(arguments)
         return _FakeOutcome(arguments)
+
+
+class _FinalizedMatchThenFailLauncher(_FakeLauncher):
+    """Simulate a launcher failure after the exact Match finalizer boundary."""
+
+    def __init__(self, *, stale_proposal=False, invalid_proposal=False):
+        super().__init__()
+        if stale_proposal and invalid_proposal:
+            raise ValueError("fixture proposal mode is ambiguous")
+        self.stale_proposal = stale_proposal
+        self.invalid_proposal = invalid_proposal
+
+    @staticmethod
+    def _canonical_json(value):
+        return json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8")
+
+    def _write_ready_match(self, arguments):
+        run_root = Path(arguments["run_root"])
+        stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
+        roster = InventorRoster.from_mapping(stage["inputs"]["inventor_roster"])
+        selected = roster.inventors[0]
+        assignment = NativeMatchAssignment(
+            wish_sha256=arguments["wish_sha256"],
+            inventor_roster_sha256=roster.roster_sha256,
+            selected_inventor_id=selected.inventor_id,
+            selected_agent_path=selected.agent_path,
+            selected_agent_sha256=selected.agent_sha256,
+            selected_source_manifest_sha256=selected.source_manifest_sha256,
+            selected_taste_sha256=selected.taste_sha256,
+            blueprint_sha256=ToyBlueprint().sha256,
+            ranking=tuple(
+                MatchRankingEntry(
+                    inventor_id=entry.inventor_id,
+                    rationale="Stable fixture ranking for the exact materialized roster.",
+                )
+                for entry in roster.inventors
+            ),
+        )
+        relative = "artifacts/match/assignment.json"
+        content = self._canonical_json(assignment.to_dict())
+        target = run_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+        artifact = AgentArtifact(
+            path=relative,
+            sha256=hashlib.sha256(content).hexdigest(),
+        )
+        outcome = AgentOutcome(
+            stage="match",
+            status="ready",
+            artifacts=(artifact,),
+            proposed_transition="invent",
+        )
+        proposal = AgentOutcomeProposal(
+            checkpoint_sha256=(
+                "0" * 64
+                if self.stale_proposal
+                else stage["checkpoint_sha256"]
+            ),
+            subject_sha256=stage["subject_sha256"],
+            outcome=outcome,
+        )
+        outcome_path = run_root / "agent-outcome.json"
+        if self.invalid_proposal:
+            outcome_path.write_bytes(b"{")
+        else:
+            outcome_path.write_bytes(
+                self._canonical_json(proposal.to_dict()) + b"\n"
+            )
+
+    def start(self, **arguments):
+        self.starts.append(dict(arguments))
+        self._checkpoint(arguments)
+        self._write_ready_match(arguments)
+        raise CodexInvocationError("fixture failed after finalization")
 
 
 class NativeHostTest(unittest.TestCase):
@@ -342,6 +433,95 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["action"], "started-after-interruption")
             self.assertEqual(len(recovered.starts), 1)
             self.assertEqual(recovered.resumes, [])
+
+    def test_launcher_failure_after_exact_proposal_uses_normal_gate_and_continues(self):
+        launcher = _FinalizedMatchThenFailLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "post-finalizer-launch-failure"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                receipt = start_native_run(
+                    Wish.create(product_id, "a small resilient clockwork toy")
+                )
+
+            self.assertEqual(receipt["stage"], "invent")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["native_turns"], 2)
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(len(launcher.resumes), 1)
+            workspace = home / "toys" / product_id
+            host_state = home / "state" / product_id
+            self.assertFalse((workspace / "agent-outcome.json").exists())
+            self.assertTrue(
+                any(
+                    path.name.endswith("-match.json")
+                    for path in (host_state / "gates").iterdir()
+                )
+            )
+
+    def test_launcher_failure_with_stale_proposal_fails_closed(self):
+        launcher = _FinalizedMatchThenFailLauncher(stale_proposal=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "stale-post-finalizer-proposal"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(StateConflict, "another checkpoint"):
+                start_native_run(
+                    Wish.create(product_id, "a stale proposal must never advance")
+                )
+
+            host_state = home / "state" / product_id
+            self.assertFalse(
+                any(
+                    path.name.endswith("-match.json")
+                    for path in (host_state / "gates").iterdir()
+                )
+            )
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(launcher.resumes, [])
+
+    def test_launcher_failure_with_invalid_proposal_fails_closed(self):
+        launcher = _FinalizedMatchThenFailLauncher(invalid_proposal=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "invalid-post-finalizer-proposal"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ), self.assertRaisesRegex(ContractError, "strict UTF-8 JSON"):
+                start_native_run(
+                    Wish.create(product_id, "an invalid proposal must never advance")
+                )
+
+            host_state = home / "state" / product_id
+            self.assertFalse(
+                any(
+                    path.name.endswith("-match.json")
+                    for path in (host_state / "gates").iterdir()
+                )
+            )
+            self.assertEqual(len(launcher.starts), 1)
+            self.assertEqual(launcher.resumes, [])
 
     def test_native_commands_default_to_private_draft(self):
         command = parser()
