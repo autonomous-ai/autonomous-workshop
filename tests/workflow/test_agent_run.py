@@ -7,7 +7,9 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+import workshop.workflow.agent_run as agent_run_module
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
 from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
@@ -634,6 +636,121 @@ class AgentRunTest(unittest.TestCase):
                 second_failure, gate=self.gate(run, second_failure, passed=False)
             )
         self.assertEqual(run.snapshot().stage, "playtest")
+
+    def test_four_round_cad_history_can_exceed_64_mib_but_not_128_mib(self):
+        run = self.create(max_rounds=4)
+        mib = 1024 * 1024
+        former_limit = 64 * mib
+        cumulative_limit = 128 * mib
+        simulated_sizes = {}
+        read_artifact = agent_run_module._read_relative_regular
+
+        def read_with_simulated_size(root, relative):
+            content, actual_size = read_artifact(root, relative)
+            return content, simulated_sizes.get(relative.as_posix(), actual_size)
+
+        def sized_outcome(stage, transition, name, size):
+            artifact = self.artifact(
+                run,
+                stage,
+                name=name,
+                content=(name + "\n").encode("utf-8"),
+            )
+            simulated_sizes[artifact.path] = size
+            return AgentOutcome(
+                stage=stage,
+                status="ready",
+                artifacts=(artifact,),
+                proposed_transition=transition,
+            )
+
+        def apply_sized(stage, transition, name, size, *, passed=True):
+            outcome = sized_outcome(stage, transition, name, size)
+            return run.apply_outcome(
+                outcome,
+                gate=self.gate(run, outcome, passed=passed),
+            )
+
+        def sealed_bytes():
+            document = json.loads(
+                (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+            )
+            return sum(item["size"] for item in document["sealed_artifacts"])
+
+        # Keep the fixture disk-small while exercising the real cumulative budget;
+        # every simulated artifact remains within the real 16 MiB per-file limit.
+        with patch.object(
+            agent_run_module,
+            "_read_relative_regular",
+            side_effect=read_with_simulated_size,
+        ):
+            for stage, transition in (
+                ("wish", "match"),
+                ("match", "invent"),
+                ("invent", "make"),
+            ):
+                self.advance(run, stage, transition)
+
+            for round_index in range(1, 5):
+                apply_sized(
+                    "make",
+                    "playtest",
+                    "round-%02d-model.step" % round_index,
+                    9 * mib,
+                )
+                final_round = round_index == 4
+                checkpoint = apply_sized(
+                    "playtest",
+                    "release" if final_round else "make",
+                    "round-%02d-evidence.json" % round_index,
+                    9 * mib,
+                    passed=final_round,
+                )
+
+            four_round_total = sealed_bytes()
+            self.assertEqual(
+                (checkpoint.stage, checkpoint.round_index), ("release", 4)
+            )
+            self.assertGreater(four_round_total, former_limit)
+            self.assertLess(four_round_total, cumulative_limit)
+
+            remaining = cumulative_limit - four_round_total
+            release_artifacts = []
+            while remaining:
+                size = min(16 * mib, remaining)
+                name = "package-part-%02d.dat" % (len(release_artifacts) + 1)
+                artifact = self.artifact(
+                    run,
+                    "release",
+                    name=name,
+                    content=(name + "\n").encode("utf-8"),
+                )
+                simulated_sizes[artifact.path] = size
+                release_artifacts.append(artifact)
+                remaining -= size
+
+            release = AgentOutcome(
+                stage="release",
+                status="ready",
+                artifacts=tuple(release_artifacts),
+                proposed_transition="deliver",
+            )
+            checkpoint = run.apply_outcome(release, gate=self.gate(run, release))
+            self.assertEqual(checkpoint.stage, "deliver")
+            self.assertEqual(sealed_bytes(), cumulative_limit)
+            self.assertLessEqual(max(simulated_sizes.values()), 16 * mib)
+
+            beyond_limit = sized_outcome(
+                "deliver",
+                "complete",
+                "one-byte-over.json",
+                1,
+            )
+            gate = self.gate(run, beyond_limit)
+            with self.assertRaisesRegex(ArtifactError, "total limit"):
+                run.apply_outcome(beyond_limit, gate=gate)
+            self.assertEqual(run.snapshot().stage, "deliver")
+            self.assertEqual(sealed_bytes(), cumulative_limit)
 
     def test_passing_playtest_cannot_return_to_make_and_failure_cannot_advance(self):
         run = self.create()
