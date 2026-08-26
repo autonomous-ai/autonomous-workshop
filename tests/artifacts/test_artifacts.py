@@ -10,7 +10,7 @@ from unittest import mock
 from workshop.artifacts.core import (
     ArtifactManifest,
     build_artifact_manifest,
-    build_publish_packet,
+    build_pack,
 )
 import workshop.artifacts.core as artifact_module
 from workshop.errors import ArtifactError
@@ -118,13 +118,13 @@ class ArtifactTest(unittest.TestCase):
             512 * 1024 * 1024,
         )
 
-    def test_publish_packet_is_reproducible(self):
+    def test_pack_is_reproducible(self):
         one = Path(self.temp.name) / "one.zip"
         two = Path(self.temp.name) / "two.zip"
-        result_one = build_publish_packet(self.root, one)
+        result_one = build_pack(self.root, one)
         os.utime(self.root / "project.json", None)
-        result_two = build_publish_packet(self.root, two)
-        self.assertEqual(result_one["packet_sha256"], result_two["packet_sha256"])
+        result_two = build_pack(self.root, two)
+        self.assertEqual(result_one["pack_sha256"], result_two["pack_sha256"])
         self.assertEqual(stat.S_IMODE(one.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(two.stat().st_mode), 0o600)
         with zipfile.ZipFile(one) as archive:
@@ -134,7 +134,7 @@ class ArtifactTest(unittest.TestCase):
             )
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symlinks unavailable")
-    def test_publish_packet_temp_path_replacement_cannot_clobber_target(self):
+    def test_pack_temp_path_replacement_cannot_clobber_target(self):
         destination = Path(self.temp.name) / "safe.zip"
         victim = Path(self.temp.name) / "victim.txt"
         victim.write_text("do not overwrite\n", encoding="utf-8")
@@ -162,7 +162,7 @@ class ArtifactTest(unittest.TestCase):
             "workshop.artifacts.core._ANCHORED_STAGING", False
         ):
             with self.assertRaises(ArtifactError):
-                build_publish_packet(self.root, destination)
+                build_pack(self.root, destination)
 
         self.assertEqual(victim.read_text(encoding="utf-8"), "do not overwrite\n")
         self.assertFalse(destination.exists())
@@ -171,7 +171,7 @@ class ArtifactTest(unittest.TestCase):
         artifact_module._ANCHORED_STAGING,
         "descriptor-anchored staging unavailable",
     )
-    def test_publish_packet_destination_parent_replacement_fails_closed(self):
+    def test_pack_destination_parent_replacement_fails_closed(self):
         output = Path(self.temp.name) / "output"
         output.mkdir()
         replacement = Path(self.temp.name) / "replacement-output"
@@ -192,22 +192,22 @@ class ArtifactTest(unittest.TestCase):
             "workshop.artifacts.core.os.open", side_effect=replace_parent
         ):
             with self.assertRaises(ArtifactError):
-                build_publish_packet(self.root, destination)
+                build_pack(self.root, destination)
         self.assertTrue(replaced[0])
         self.assertFalse(destination.exists())
 
     def test_reserved_manifest_name_cannot_create_duplicate_zip_member(self):
         (self.root / "_inventor-artifact.json").write_text("untrusted\n", encoding="utf-8")
-        packet = Path(self.temp.name) / "reserved.zip"
-        build_publish_packet(self.root, packet)
-        with zipfile.ZipFile(packet) as archive:
+        pack = Path(self.temp.name) / "reserved.zip"
+        build_pack(self.root, pack)
+        with zipfile.ZipFile(pack) as archive:
             self.assertEqual(archive.namelist().count("_inventor-artifact.json"), 1)
 
-    def test_packet_refuses_destination_inside_source(self):
+    def test_pack_refuses_destination_inside_source(self):
         with self.assertRaises(ArtifactError):
-            build_publish_packet(self.root, self.root / "recursive.zip")
+            build_pack(self.root, self.root / "recursive.zip")
 
-    def test_packet_refuses_changed_bytes(self):
+    def test_pack_refuses_changed_bytes(self):
         destination = Path(self.temp.name) / "changed.zip"
         with mock.patch(
             "workshop.artifacts.core._read_open_file",
@@ -217,9 +217,9 @@ class ArtifactTest(unittest.TestCase):
             ),
         ):
             with self.assertRaises(ArtifactError):
-                build_publish_packet(self.root, destination)
+                build_pack(self.root, destination)
 
-    def test_packet_refuses_changed_executable_mode(self):
+    def test_pack_refuses_changed_executable_mode(self):
         destination = Path(self.temp.name) / "changed-mode.zip"
         original_read = artifact_module._read_open_file
         changed = [False]
@@ -234,7 +234,7 @@ class ArtifactTest(unittest.TestCase):
             "workshop.artifacts.core._read_open_file", side_effect=change_mode
         ):
             with self.assertRaises(ArtifactError):
-                build_publish_packet(self.root, destination)
+                build_pack(self.root, destination)
 
     def test_manifest_enforces_expanded_size_limit(self):
         with self.assertRaises(ArtifactError):
@@ -254,23 +254,23 @@ class ArtifactTest(unittest.TestCase):
         with self.assertRaises(ArtifactError):
             mutable.to_dict()
 
-    def test_packet_rejects_secret_content_under_an_innocent_name(self):
+    def test_pack_rejects_secret_content_under_an_innocent_name(self):
         (self.root / "notes.txt").write_text(
             "bot=" + "1234567:" + ("A" * 32), encoding="utf-8"
         )
         with self.assertRaises(ArtifactError):
-            build_publish_packet(self.root, Path(self.temp.name) / "secret.zip")
+            build_pack(self.root, Path(self.temp.name) / "secret.zip")
 
     @unittest.skipIf(os.name == "nt", "backslash is a separator on Windows")
-    def test_packet_rejects_backslash_member_names(self):
+    def test_pack_rejects_backslash_member_names(self):
         (self.root / "..\\escape.txt").write_text("unsafe\n", encoding="utf-8")
         with self.assertRaises(ArtifactError):
-                build_publish_packet(self.root, Path(self.temp.name) / "unsafe.zip")
+            build_pack(self.root, Path(self.temp.name) / "unsafe.zip")
 
-    def test_packet_rejects_control_characters_in_member_names(self):
+    def test_pack_rejects_control_characters_in_member_names(self):
         (self.root / "unsafe\nname.txt").write_text("unsafe\n", encoding="utf-8")
         with self.assertRaises(ArtifactError):
-            build_publish_packet(self.root, Path(self.temp.name) / "unsafe-control.zip")
+            build_pack(self.root, Path(self.temp.name) / "unsafe-control.zip")
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
     def test_symlink_fails_closed(self):

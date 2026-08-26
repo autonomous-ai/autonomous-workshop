@@ -12,10 +12,9 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Protocol, Sequence, Tuple, runtime_checkable
+from typing import Any, Dict, Sequence, Tuple
 
 from workshop.errors import ContractError
-from workshop.wish import Wish
 
 
 WORKSHOP_JOBS: Tuple[str, ...] = (
@@ -33,23 +32,6 @@ PLAYTHING_LANES: Tuple[str, ...] = (
     "holdable-science",
     "little-worlds",
 )
-
-
-@runtime_checkable
-class TasteBinding(Protocol):
-    """The narrow creative-identity seam Product needs from a contributor.
-
-    Product owns the shape of a Make request, while Contributors owns the
-    concrete ``Taste`` document and its filesystem lifecycle. Keeping this
-    structural seam here prevents product policy from depending on the
-    contributor implementation.
-    """
-
-    def assert_valid(self) -> None:
-        ...
-
-    def to_binding(self) -> Mapping[str, Any]:
-        ...
 
 
 @dataclass(frozen=True)
@@ -361,63 +343,12 @@ class ToyBlueprint:
         }
 
 
-def playful_make_request(
-    wish: Wish, taste: TasteBinding, blueprint: ToyBlueprint
-) -> Mapping[str, Any]:
-    """Bind the V1 product promise into every default Make request."""
-
-    if not isinstance(wish, Wish) or not isinstance(taste, TasteBinding):
-        raise ContractError("playful Make requires a typed Wish and Taste binding")
-    wish.assert_valid()
-    taste.assert_valid()
-    taste_binding = taste.to_binding()
-    if not isinstance(taste_binding, Mapping):
-        raise ContractError("Taste binding must be a mapping")
-    return {
-        "schema_version": 1,
-        "wish": wish.to_dict(),
-        "taste": dict(taste_binding),
-        "blueprint": blueprint.to_dict(),
-        "brief": {
-            "workshop": "Santa's workshop for Wish-shaped playthings",
-            "audience": "grown-ups, 14 and up",
-            "promise": "Make a cool plaything whose rules or form exist because of this Wish.",
-            "product_bar": (
-                "The result cannot be interchangeable with something a person could already "
-                "buy before this Wish. Personalization must change rules, geometry, mechanism, "
-                "scientific framing, or composition."
-            ),
-            "tone": "Cool beats cute. Never twee, generic, or decoration-only.",
-            "utility_rule": (
-                "If the Wish sounds useful, make the playable or wondrous version. "
-                "Nothing may be merely useful."
-            ),
-            "product_lanes": list(PLAYTHING_LANES),
-            "playtest_rule": (
-                "Playtest means AI agents simulate playing or using the exact Make, "
-                "give evidence-bound feedback, and send improvements back to Make."
-            ),
-            "reviews_rule": (
-                "Reviews are customer feedback collected after Deliver. They may improve "
-                "a future revision of this toy and future Wishes, but never rewrite "
-                "delivered bytes or delivery history."
-            ),
-            "deliverables": (
-                "build spec, parametric source, STEP, printable parts, assembly, "
-                "fixed-view renders, rules or interaction instructions, and unresolved claims"
-            ),
-        },
-    }
-
-
 __all__ = [
     "PLAYTHING_LANES",
     "POST_DELIVERY_REVIEWS",
     "ReviewsPolicy",
     "TOY_TASKS",
-    "TasteBinding",
     "WORKSHOP_JOBS",
     "ToyBlueprint",
     "ToyTask",
-    "playful_make_request",
 ]

@@ -58,6 +58,11 @@ class ComponentLayoutTest(unittest.TestCase):
                 "%s must be removed after the namespace migration" % namespace,
             )
         self.assertTrue((SOURCE / "cli" / "main.py").is_file())
+        self.assertFalse(
+            (SOURCE / "cli" / "native_run.py").exists(),
+            "the trusted native host belongs to Workflow, not the CLI",
+        )
+        self.assertTrue((WORKSHOP / "workflow" / "native_run.py").is_file())
         self.assertTrue((WORKSHOP / "__init__.py").is_file())
 
     def test_workshop_has_the_architecture_component_packages(self):
@@ -91,6 +96,23 @@ class ComponentLayoutTest(unittest.TestCase):
         )
         self.assertEqual(misplaced, [])
         self.assertTrue((REPOSITORY / "tests" / "cli").is_dir())
+        self.assertFalse(
+            (REPOSITORY / "tests" / "cli" / "test_native_run.py").exists()
+        )
+        self.assertFalse(
+            (REPOSITORY / "tests" / "cli" / "test_native_full_run.py").exists()
+        )
+        self.assertTrue(
+            (REPOSITORY / "tests" / "workflow" / "test_native_host.py").is_file()
+        )
+        self.assertTrue(
+            (
+                REPOSITORY
+                / "tests"
+                / "end_to_end"
+                / "test_native_full_run.py"
+            ).is_file()
+        )
 
     def test_resources_live_with_their_owning_components(self):
         self.assertFalse((REPOSITORY / "skills").exists())
@@ -163,9 +185,7 @@ class ComponentLayoutTest(unittest.TestCase):
             },
             product: {
                 "PLAYTHING_LANES",
-                "TasteBinding",
                 "ToyBlueprint",
-                "playful_make_request",
             },
             match: {
                 "MatchRankingEntry",

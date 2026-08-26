@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
-from cli.native_run import canonical_wish_bytes
+from workshop.workflow.native_run import canonical_wish_bytes
 from workshop.runtime import CodexInvocationError
 from workshop.wish import Wish
 
@@ -84,7 +84,7 @@ class _FakeLauncher:
         return _FakeOutcome(arguments)
 
 
-class NativeCliRunTest(unittest.TestCase):
+class NativeHostTest(unittest.TestCase):
     def test_wish_starts_native_session_before_any_effect_path(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -99,7 +99,7 @@ class NativeCliRunTest(unittest.TestCase):
                 },
                 clear=True,
             ), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), redirect_stdout(stdout), redirect_stderr(stderr):
                 result = main(
@@ -192,7 +192,7 @@ class NativeCliRunTest(unittest.TestCase):
             environment = {"WORKSHOP_HOME": str(home)}
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
@@ -205,10 +205,10 @@ class NativeCliRunTest(unittest.TestCase):
 
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
-                "cli.native_run.product_run_agent_assets",
+                "workshop.workflow.native_run.product_run_agent_assets",
                 side_effect=AssertionError("resume must use materialized bytes"),
             ) as current_assets, redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
@@ -248,7 +248,7 @@ class NativeCliRunTest(unittest.TestCase):
             home = Path(temporary).resolve() / "workshop-home"
             environment = {"WORKSHOP_HOME": str(home)}
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=interrupted,
             ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 self.assertEqual(main(("wish", "a tiny orbit", "--json")), 2)
@@ -263,7 +263,7 @@ class NativeCliRunTest(unittest.TestCase):
             recovered = _FakeLauncher()
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=recovered,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(main(("resume", product_id, "--json")), 0)

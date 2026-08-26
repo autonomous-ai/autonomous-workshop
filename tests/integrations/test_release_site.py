@@ -14,7 +14,7 @@ from workshop.make.cad.mesh import inspect_stl_path
 from workshop.errors import ContractError, ReceiptError
 from workshop.make.contracts import Made
 from workshop.wish import Wish
-from workshop.runtime import PublicationReceipt
+from workshop.runtime import Receipt
 from workshop.integrations.shop import (
     FACTORY_STORY_PROMPT_LIMIT,
     HttpResponse,
@@ -1333,7 +1333,7 @@ class ReleaseSiteTest(unittest.TestCase):
         changed["details"]["page_ready"] = True
         with self.assertRaisesRegex(ReceiptError, "cannot claim"):
             writer._assert_release_draft_receipt(
-                PublicationReceipt.from_dict(changed),
+                Receipt.from_dict(changed),
                 self.made.artifact_sha256,
                 self.manifest.artifact_sha256,
             )

@@ -240,21 +240,6 @@ class ProductRelease:
         page_url = self.site_receipt.details.get("page_url")
         if isinstance(page_url, str) and page_url:
             return page_url
-        # Compatibility for older custom site writers that stored the customer
-        # URL directly in ``project_url``.  Real Shop receipts use project_url
-        # for the immutable downloadable project and therefore must carry the
-        # distinct page_url detail.
-        legacy = self.site_receipt.project_url
-        try:
-            parsed = urllib.parse.urlsplit(legacy or "")
-        except ValueError:
-            parsed = urllib.parse.SplitResult("", "", "", "", "")
-        if (
-            isinstance(legacy, str)
-            and parsed.hostname == "www.autonomous.ai"
-            and parsed.path.startswith("/factory/product/")
-        ):
-            return legacy
         raise ContractError(
             "ProductRelease site Receipt requires a customer product page URL"
         )
@@ -293,12 +278,6 @@ class ProductRelease:
         """Whether the optional later owner transition has verified public proof."""
 
         return self.site_receipt.is_verified_public
-
-    @property
-    def publication_receipt(self) -> Receipt:
-        """Compatibility spelling for callers that previously said publication."""
-
-        return self.site_receipt
 
     def assert_current(self) -> None:
         """Refuse to use output bytes changed after Release completed."""

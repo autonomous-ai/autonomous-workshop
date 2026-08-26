@@ -1,4 +1,4 @@
-"""Thin CLI bridge to one native coding-agent session per Wish.
+"""Trusted host for one native coding-agent session per Wish.
 
 This module deliberately contains no Match, Invent, Make, or Playtest
 reasoning.  It creates the private filesystem protocol, binds a native Codex
@@ -65,7 +65,7 @@ from workshop.runtime.package_data import (
     product_run_domain_skill_roots,
 )
 from workshop.wish import Wish
-from workshop.workflow import (
+from workshop.workflow.agent_run import (
     AgentArtifact,
     AgentOutcome,
     AgentRun,

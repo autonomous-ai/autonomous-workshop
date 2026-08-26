@@ -16,9 +16,8 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
-from cli.native_run import native_run_status, resume_native_run, start_native_run
 from workshop.artifacts.core import MAX_PACK_BYTES
-from workshop.artifacts.pack import pack_artifact, plan_pack, seal_artifact
+from workshop.artifacts.pack import bundle_artifact, plan_artifact, seal_artifact
 from workshop.artifacts.schema_registry import discover_schemas, resolve_schemas_root
 from workshop.contributors import (
     create_inventor,
@@ -46,6 +45,7 @@ from workshop.runtime.package_data import (
     product_run_domain_skill_roots,
 )
 from workshop.wish import Wish, generate_wish_id
+from workshop.workflow import native_run_status, resume_native_run, start_native_run
 
 
 _INVENTOR_ID_PART = re.compile(r"[^a-z0-9]+")
@@ -505,7 +505,7 @@ def _seal(args: argparse.Namespace) -> int:
 
 
 def _pack(args: argparse.Namespace) -> int:
-    packed = pack_artifact(
+    packed = bundle_artifact(
         args.source,
         args.output,
         extra_excludes=args.exclude,
@@ -524,7 +524,7 @@ def _pack(args: argparse.Namespace) -> int:
 
 
 def _plan_pack(args: argparse.Namespace) -> int:
-    planned = plan_pack(
+    planned = plan_artifact(
         args.source,
         extra_excludes=args.exclude,
         maximum_bytes=args.maximum_bytes,

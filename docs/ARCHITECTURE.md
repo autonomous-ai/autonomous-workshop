@@ -38,8 +38,10 @@ Wish -> Match -> Invent -> Make -> Playtest -> Release -> Deliver
   failures return to Make within a bounded round budget.
 - **Release** creates `MANUAL.md`, canonical product facts, evidence-bound
   claims, page metadata, and the factual package used to create a Factory page.
-- **Deliver** owns separately authorized manufacture, hands-on QA, packing, and
-  carrier evidence. Until those receipts exist, the run waits truthfully.
+- **Deliver** is currently a truthful wait boundary. The host does not perform
+  or claim manufacture, hands-on QA, packing, carrier handoff, or delivery.
+  Those future effects require separate authorization and reconciled physical
+  receipts bound to the exact approved bytes.
 
 Release replaces the old instruction-only name because the output is broader than
 a manual. It owns the complete factual publication package while keeping
@@ -157,7 +159,7 @@ Release, and Deliver evidence.
 | CAD/kernel verification | topology, dimensions, required files, and exact computed geometry properties | successful physical printing or durability |
 | Slicer analysis | predicted printability under an exact machine/material/profile | a successful print or surface quality |
 | Host Factory receipt | reconciled remote draft/publication state for exact hashes | manufacture, shipment, or delivery |
-| Deliver receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
+| Future Deliver receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
 | Customer Review | what one verified recipient reported | universal preference or an earlier Playtest fact |
 
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
@@ -200,7 +202,7 @@ inventors/<id>/
                             run workflow and proposal finalizer
 
 src/
-  cli/                     thin user-facing host commands
+  cli/                     parsing, presentation, and exit codes only
   workshop/
     product/               lanes and blueprints
     wish/                  exact customer-intent contract
@@ -210,8 +212,8 @@ src/
       skills/              canonical reusable Make domain skills
     playtest/              evidence, feedback, and Playtested contract/gate
     release/               local package and Release contract/gate
-    deliver/               physical-effect contracts
-    workflow/              lifecycle/checkpoint protocol
+    deliver/               truthful wait boundary; future physical effects
+    workflow/              lifecycle/checkpoint protocol and trusted run host
     artifacts/             immutable artifact identity
     runtime/               native session and trusted state/effect boundaries
     integrations/          host-only external adapters
@@ -226,9 +228,11 @@ Keeping both under `src/` prevents repository tools, fixtures, and tests from
 being imported accidentally.
 
 Dependencies follow the product flow. Stage components own narrow contracts
-and deterministic gates. `workflow` alone owns sequencing. `runtime` owns
-session/state boundaries. `integrations` owns credential-bearing adapters. The
-CLI composes those surfaces and contains no product reasoning.
+and deterministic gates. `workflow` alone owns sequencing, and
+`workflow/native_run.py` is the trusted composition root for one whole native
+run. `runtime` owns session/state boundaries. `integrations` owns
+credential-bearing adapters. The CLI calls Workflow's public host service and
+contains no lifecycle, session, gate, effect, or product reasoning.
 
 ## Engine portability
 

@@ -916,33 +916,3 @@ def build_pack(
         "pack_sha256": pack_sha,
         "artifact_sha256": manifest.artifact_sha256,
     }
-
-
-# Workshop 0.2 compatibility. Canonical code uses Pack names above.
-MAX_PACKET_BYTES = MAX_PACK_BYTES
-
-
-def assert_publishable_content(relative_path: str, content: bytes) -> None:
-    """Compatibility alias for :func:`assert_packable_content`."""
-
-    assert_packable_content(relative_path, content)
-
-
-def build_publish_packet(
-    root: Path,
-    destination: Path,
-    extra_excludes: Iterable[str] = (),
-    maximum_bytes: int = MAX_PACK_BYTES,
-) -> Dict[str, Any]:
-    """Compatibility wrapper returning the former packet digest key."""
-
-    details = dict(
-        build_pack(
-            root,
-            destination,
-            extra_excludes=extra_excludes,
-            maximum_bytes=maximum_bytes,
-        )
-    )
-    details["packet_sha256"] = details.pop("pack_sha256")
-    return details

@@ -26,6 +26,9 @@ continues the recorded session id through:
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 ```
 
+The trusted host implementation is `workshop.workflow.native_run`. The CLI is
+only its command-line adapter and does not own lifecycle or session behavior.
+
 The host materializes a run-only `AGENTS.md`, the `autonomous-workshop` skill,
 Make domain skills, the exact Wish, and immutable declared Inventor bundles.
 Before each native stage it writes a read-only `STAGE.json` bound to the current

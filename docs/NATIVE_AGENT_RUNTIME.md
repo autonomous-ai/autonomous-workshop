@@ -236,8 +236,9 @@ second hand-edited copy.
 .agents/product-run/                         product-run constitution source
 .agents/skills/autonomous-workshop/          native workflow instructions
 inventors/<id>/                              specialist identity and declared extensions
-src/cli/                                     thin host commands
+src/cli/                                     parsing, presentation, and exit codes
 src/workshop/runtime/                        session and trusted effect boundaries
+src/workshop/workflow/native_run.py          trusted whole-run host composition
 src/workshop/workflow/                       lifecycle and checkpoint protocol
 src/workshop/<stage>/                        contracts and deterministic gates
 src/workshop/make/skills/                    reusable Make domain skills

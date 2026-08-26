@@ -197,6 +197,9 @@ Shared code is organized by architecture component under `src/workshop/`:
 `contributors`. Make owns the single installed copy of its locked skills at
 `src/workshop/make/skills/`; portable schemas live with the component that owns
 their contract. Shared tests mirror those component names under `tests/`.
+The trusted whole-run host is `src/workshop/workflow/native_run.py`; the
+`src/cli/` package only parses commands, presents results, and chooses exit
+codes.
 
 Runtime also owns the non-Python product-run assets in `.agents/product-run/`
 and `.agents/skills/autonomous-workshop/`. Packaging copies those exact bytes

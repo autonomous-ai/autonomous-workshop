@@ -155,7 +155,7 @@ class NativePlaytestedTest(unittest.TestCase):
 
         self.assertTrue(canonical.passed)
         self.assertEqual(
-            {item.inspection_id for item in canonical.evidence.results},
+            {item.playtest_id for item in canonical.evidence.results},
             set(self.blueprint.required_capabilities("playtest")),
         )
 

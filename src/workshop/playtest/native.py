@@ -329,7 +329,7 @@ class NativePlaytested:
         made_contract = made.validate_product_tree(root)
         results = tuple(
             PlaytestResult(
-                inspection_id=item.check_id,
+                playtest_id=item.check_id,
                 passed=item.passed,
                 artifact_sha256=self.product_artifact_sha256,
                 evidence=_thaw(item.observations),

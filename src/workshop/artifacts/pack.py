@@ -428,12 +428,6 @@ class Artifact:
             raise ContractError("Artifact claims do not match its serialized bytes")
 
     @property
-    def packet_sha256(self) -> str:
-        """Compatibility spelling used by Workshop 0.2."""
-
-        return self.pack_sha256
-
-    @property
     def payload_sha256(self) -> str:
         """Identity of the exact serialized bytes."""
 
@@ -619,35 +613,14 @@ def bundle_artifact(
     return inspect_artifact(destination)
 
 
-# Read-only compatibility aliases for Workshop 0.3 and older.  Existing
-# persisted records deliberately retain ``pack_sha256``; new code can describe
-# the same invariant as an Artifact and its serialized payload.
-PackedArtifact = Artifact
-PackPlan = ArtifactPlan
-inspect_pack = inspect_artifact
-pack_artifact = bundle_artifact
-plan_pack = plan_artifact
-
-# Private compatibility aliases for code written before Workshop 0.6. No
-# Workshop component imports these names; they remain only to avoid breaking
-# callers that have not yet moved to the public Artifact API.
-_validate_pack_bytes = validate_artifact_payload
-_load_pack = load_artifact_payload
-_inspect_pack_details = inspect_artifact_details
-
 __all__ = [
     "Artifact",
     "ArtifactPlan",
-    "PackPlan",
-    "PackedArtifact",
     "bundle_artifact",
     "inspect_artifact",
     "inspect_artifact_details",
-    "inspect_pack",
     "load_artifact_payload",
-    "pack_artifact",
     "plan_artifact",
-    "plan_pack",
     "seal_artifact",
     "validate_artifact_payload",
 ]

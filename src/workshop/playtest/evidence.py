@@ -18,14 +18,9 @@ from workshop.errors import ContractError
 
 @dataclass(frozen=True)
 class PlaytestResult:
-    """One reproducible playtest verdict bound to exact artifact bytes.
+    """One reproducible Playtest verdict bound to exact artifact bytes."""
 
-    Workshop 0.3 persisted this contract with ``inspection_*`` field names.
-    Those names intentionally remain stable on disk; ``playtest_id`` is the
-    friendlier code-facing spelling for new inventors.
-    """
-
-    inspection_id: str
+    playtest_id: str
     passed: bool
     artifact_sha256: str
     evidence: Mapping[str, Any]
@@ -36,46 +31,34 @@ class PlaytestResult:
     evidence_sha256: str
     observed_at: str
 
-    @property
-    def gate_id(self) -> str:
-        """Compatibility spelling used by Workshop 0.2 and older."""
-
-        return self.inspection_id
-
-    @property
-    def playtest_id(self) -> str:
-        """Canonical spelling for the persisted ``inspection_id`` field."""
-
-        return self.inspection_id
-
     def __post_init__(self) -> None:
         self.assert_valid()
 
     def assert_valid(self) -> None:
-        if not self.inspection_id or not isinstance(self.inspection_id, str):
-            raise ContractError("inspection_id must be a non-empty string")
+        if not isinstance(self.playtest_id, str) or not self.playtest_id:
+            raise ContractError("playtest_id must be a non-empty string")
         if not isinstance(self.passed, bool):
-            raise ContractError("inspection passed must be boolean")
-        require_sha256(self.artifact_sha256, "inspection artifact_sha256")
+            raise ContractError("PlaytestResult passed must be boolean")
+        require_sha256(self.artifact_sha256, "PlaytestResult artifact_sha256")
         if (
             not isinstance(self.evaluator, str)
             or not self.evaluator
             or self.evaluator.casefold() in {"self-report", "trust-me"}
         ):
-            raise ContractError("inspection evaluator must be named")
-        require_exact_version(self.evaluator_version, "inspection evaluator_version")
-        require_sha256(self.config_sha256, "gate config_sha256")
-        require_safe_evidence_path(self.evidence_ref, "inspection evidence_ref")
-        require_sha256(self.evidence_sha256, "inspection evidence_sha256")
-        require_utc_timestamp(self.observed_at, "inspection observed_at")
+            raise ContractError("PlaytestResult evaluator must be named")
+        require_exact_version(self.evaluator_version, "PlaytestResult evaluator_version")
+        require_sha256(self.config_sha256, "PlaytestResult config_sha256")
+        require_safe_evidence_path(self.evidence_ref, "PlaytestResult evidence_ref")
+        require_sha256(self.evidence_sha256, "PlaytestResult evidence_sha256")
+        require_utc_timestamp(self.observed_at, "PlaytestResult observed_at")
         if not self.evidence:
-            raise ContractError("inspection evidence must be a non-empty object")
-        require_json_mapping(self.evidence, "inspection evidence")
+            raise ContractError("PlaytestResult evidence must be a non-empty object")
+        require_json_mapping(self.evidence, "PlaytestResult evidence")
 
     @classmethod
     def create(
         cls,
-        inspection_id: str,
+        playtest_id: str,
         passed: bool,
         artifact_sha256: str,
         evidence: Mapping[str, Any],
@@ -86,7 +69,7 @@ class PlaytestResult:
         evidence_sha256: str,
     ) -> "PlaytestResult":
         return cls(
-            inspection_id,
+            playtest_id,
             passed,
             artifact_sha256,
             evidence,
@@ -102,10 +85,4 @@ class PlaytestResult:
         self.assert_valid()
         return asdict(self)
 
-
-# Persisted and pre-0.4 vocabulary remains type-identical, not wrapped.
-InspectionResult = PlaytestResult
-GateResult = PlaytestResult
-
-
-__all__ = ["GateResult", "InspectionResult", "PlaytestResult"]
+__all__ = ["PlaytestResult"]

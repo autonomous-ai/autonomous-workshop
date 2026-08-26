@@ -45,14 +45,7 @@ class ReceiptError(EffectError):
     """A remote response cannot produce a trustworthy Receipt."""
 
 
-# Workshop 0.3 compatibility names.
-SendError = EffectError
+# Transitional names still used by the durable Shop effect path.
 AmbiguousSendError = AmbiguousEffectError
-StampError = ReceiptError
-
-
-# Compatibility for Workshop 0.1 callers. New code catches WorkshopError.
-FoundationError = WorkshopError
-CoreError = WorkshopError
 PublishError = EffectError
 AmbiguousPublishError = AmbiguousEffectError

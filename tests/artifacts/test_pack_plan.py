@@ -7,34 +7,26 @@ from workshop.errors import ArtifactError
 from workshop.artifacts.pack import (
     Artifact,
     ArtifactPlan,
-    PackPlan,
     bundle_artifact,
     inspect_artifact,
-    pack_artifact,
     plan_artifact,
-    plan_pack,
 )
 
 
 class PackPlanTest(unittest.TestCase):
-    def test_artifact_names_are_canonical_and_pack_names_are_aliases(self):
-        self.assertIs(PackPlan, ArtifactPlan)
-        self.assertIs(plan_pack, plan_artifact)
-        self.assertIs(pack_artifact, bundle_artifact)
-
+    def test_artifact_contract_round_trips_exact_serialized_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = self.artifact(temporary)
             destination = Path(temporary) / "product.zip"
             artifact = bundle_artifact(root, destination)
             self.assertIsInstance(artifact, Artifact)
-            self.assertEqual(artifact.payload_sha256, artifact.pack_sha256)
             self.assertEqual(inspect_artifact(destination), artifact)
             reconstructed = Artifact(
                 artifact.path,
                 artifact.bytes,
                 artifact.entries,
+                pack_sha256=artifact.pack_sha256,
                 artifact_sha256=artifact.artifact_sha256,
-                payload_sha256=artifact.payload_sha256,
             )
             self.assertEqual(reconstructed, artifact)
 
@@ -52,8 +44,8 @@ class PackPlanTest(unittest.TestCase):
             destination = Path(temporary) / "product.pack.zip"
 
             for operation in (
-                lambda: plan_pack(root, maximum_bytes=1),
-                lambda: pack_artifact(root, destination, maximum_bytes=1),
+                lambda: plan_artifact(root, maximum_bytes=1),
+                lambda: bundle_artifact(root, destination, maximum_bytes=1),
             ):
                 with self.subTest(operation=operation):
                     with self.assertRaises(ArtifactError) as raised:
@@ -67,7 +59,7 @@ class PackPlanTest(unittest.TestCase):
         secret_name = "ghp_" + ("A" * 24) + ".bin"
 
         with self.assertRaises(ArtifactError) as raised:
-            PackPlan(
+            ArtifactPlan(
                 artifact_sha256="a" * 64,
                 product_bytes=1,
                 pack_bytes=256,
@@ -84,8 +76,8 @@ class PackPlanTest(unittest.TestCase):
             destination = Path(temporary) / "product.pack.zip"
 
             for operation in (
-                lambda: plan_pack(root, maximum_bytes=MAX_PACK_BYTES + 1),
-                lambda: pack_artifact(
+                lambda: plan_artifact(root, maximum_bytes=MAX_PACK_BYTES + 1),
+                lambda: bundle_artifact(
                     root,
                     destination,
                     maximum_bytes=MAX_PACK_BYTES + 1,
@@ -105,10 +97,10 @@ class PackPlanTest(unittest.TestCase):
             (root / "oversize.bin").write_bytes(b"x" * 1024)
             destination = Path(temporary) / "product.pack.zip"
 
-            plan = plan_pack(root, maximum_bytes=512)
+            plan = plan_artifact(root, maximum_bytes=512)
             self.assertFalse(plan.fits)
             with self.assertRaisesRegex(ArtifactError, "Pack would be"):
-                pack_artifact(root, destination, maximum_bytes=512)
+                bundle_artifact(root, destination, maximum_bytes=512)
             self.assertFalse(destination.exists())
 
     def test_unicode_member_names_have_an_exact_planned_size(self):
@@ -119,8 +111,8 @@ class PackPlanTest(unittest.TestCase):
             (pieces / "棋子-雪.txt").write_text("雪のコマ\n", encoding="utf-8")
             destination = Path(temporary) / "product.pack.zip"
 
-            plan = plan_pack(root)
-            packed = pack_artifact(root, destination)
+            plan = plan_artifact(root)
+            packed = bundle_artifact(root, destination)
 
             self.assertTrue(plan.fits)
             self.assertEqual(plan.pack_bytes, destination.stat().st_size)

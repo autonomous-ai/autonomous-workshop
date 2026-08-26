@@ -25,13 +25,13 @@ The Workshop applies these dependency rules:
 3. Components do not invoke the next lifecycle stage.
 4. `workflow` alone sequences Invent, Make, Playtest, Release, and Deliver
    and mediates Playtest feedback back to Make.
-5. The trusted host is the sole composition root. Components do not construct
-   the next stage or native agent session.
+5. `workshop.workflow.native_run` is the trusted host and sole composition
+   root. Components do not construct the next stage or native agent session.
 6. A component declares ports for model, storage, CAD, Factory, carrier, or
    other outside behavior. `integrations` implements those ports.
 7. Domain components never import a concrete integration.
-8. CLI calls public Workshop services. Workshop never imports CLI or executable
-   Inventor profile code; Inventors are immutable persona data.
+8. CLI calls the public Workflow host service. Workshop never imports CLI or
+   executable Inventor profile code; Inventors are immutable persona data.
 9. Match produces an immutable assignment before the six-stage Workflow;
    Reviews authenticate feedback after delivery and may inform future work.
 10. Missing capability and ambiguous outcomes remain typed needs or waits, not

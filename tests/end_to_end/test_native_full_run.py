@@ -10,7 +10,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
-from cli.native_run import native_run_paths, resume_native_run, start_native_run
+from workshop.workflow.native_run import (
+    native_run_paths,
+    resume_native_run,
+    start_native_run,
+)
 from workshop.errors import ArtifactError
 from workshop.invent.native import InventedV2
 from workshop.make.native import NativeMade
@@ -518,19 +522,19 @@ class NativeFullRunTest(unittest.TestCase):
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
-                "cli.native_run.verify_native_made_cad",
+                "workshop.workflow.native_run.verify_native_made_cad",
                 side_effect=verify_cad,
             ), mock.patch(
-                "cli.native_run.FactoryAgentReleaseWriter",
+                "workshop.workflow.native_run.FactoryAgentReleaseWriter",
                 side_effect=effects.writer,
             ), mock.patch(
-                "cli.native_run.FactoryAgentSession",
+                "workshop.workflow.native_run.FactoryAgentSession",
                 side_effect=effects.session,
             ), mock.patch(
-                "cli.native_run.FactoryPublicTransition",
+                "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
                 waiting = start_native_run(wish, publish_requested=True)
@@ -649,22 +653,22 @@ class NativeFullRunTest(unittest.TestCase):
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
-                "cli.native_run.CodexNativeSessionLauncher",
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
-                "cli.native_run.verify_native_made_cad",
+                "workshop.workflow.native_run.verify_native_made_cad",
                 side_effect=verify_cad,
             ), mock.patch(
-                "cli.native_run._factory_credentials",
+                "workshop.workflow.native_run._factory_credentials",
                 side_effect=effects.credentials,
             ), mock.patch(
-                "cli.native_run.FactoryAgentReleaseWriter",
+                "workshop.workflow.native_run.FactoryAgentReleaseWriter",
                 side_effect=effects.writer,
             ), mock.patch(
-                "cli.native_run.FactoryAgentSession",
+                "workshop.workflow.native_run.FactoryAgentSession",
                 side_effect=effects.session,
             ), mock.patch(
-                "cli.native_run.FactoryPublicTransition",
+                "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
                 receipt = start_native_run(wish, publish_requested=True)

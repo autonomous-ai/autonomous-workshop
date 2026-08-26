@@ -99,7 +99,7 @@ docs = ["src/workshop/release/README.md"]
 [[components]]
 id = "deliver"
 name = "Deliver"
-purpose = "Bind production, physical QA, packing, and carrier evidence to the approved product."
+purpose = "Own the truthful post-Release wait boundary until separately authorized physical effects are implemented."
 primary_role = "Deliver maintainer"
 backup_role = "Deliver backup maintainer"
 primary_github = ["@deehw"]
@@ -113,7 +113,7 @@ docs = ["src/workshop/deliver/README.md"]
 [[components]]
 id = "workflow"
 name = "Workflow"
-purpose = "Sequence Workshop stages, retries, feedback, and checkpoints without owning stage behavior."
+purpose = "Own whole-run host composition, stage order, retries, feedback, and durable checkpoints without owning Codex reasoning."
 primary_role = "Workflow maintainer"
 backup_role = "Workflow backup maintainer"
 primary_github = ["@deehw"]

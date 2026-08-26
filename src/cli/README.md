@@ -1,8 +1,9 @@
 # CLI
 
 `cli` is the installed command-line adapter for Autonomous Workshop. It parses
-commands, calls public `workshop` component APIs, and formats results; business
-rules stay in the component that owns them.
+commands, calls the public `workshop.workflow` host API, formats results, and
+chooses exit codes. Lifecycle, native-session, gate, and effect behavior stays
+in the component that owns it.
 
 Run it from a source checkout with `PYTHONPATH=src python -m cli --help`, or use
 the installed `workshop` command.

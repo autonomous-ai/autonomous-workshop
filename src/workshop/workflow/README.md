@@ -1,10 +1,10 @@
 # Workflow
 
-Owns sequencing, bounded Make–Playtest feedback, checkpoints, and the final run
-projection. Stage implementations remain in their owning components.
+Owns sequencing, bounded Make–Playtest feedback, durable checkpoints, and the
+trusted whole-run host in `native_run.py`. The host composes native-session,
+deterministic-gate, and authorized-effect boundaries without taking over Codex
+reasoning. Stage contracts and deterministic tools remain in their owning
+components.
 
-Composition defaults live in `workshop.bootstrap`.
-
-`Workshop` consumes explicit `WorkshopTools`; applications and generated
-profiles use `workshop.bootstrap.configured_workshop` when they want the shared
-default workers.
+The CLI calls Workflow's public start, resume, and status functions; Workflow
+never imports the CLI.

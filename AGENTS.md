@@ -70,11 +70,11 @@ orchestration as a compatibility layer.
 
 ## Repository ownership
 
-- `src/cli/`: thin user-facing host commands; no product reasoning.
+- `src/cli/`: argument parsing, output formatting, and exit codes only.
 - `src/workshop/runtime/`: native engine adapters and trusted state/effect
   boundaries.
-- `src/workshop/workflow/`: lifecycle protocol, checkpoints, invalidation, and
-  bounded Make–Playtest iteration.
+- `src/workshop/workflow/`: lifecycle protocol, checkpoints, invalidation,
+  bounded Make–Playtest iteration, and the trusted whole-run host composition.
 - `src/workshop/<stage>/`: stage-owned public contracts and deterministic tools.
 - `src/workshop/make/skills/`: reusable domain skills owned by Make.
 - `.agents/product-run/`: constitution materialized only for a product run.

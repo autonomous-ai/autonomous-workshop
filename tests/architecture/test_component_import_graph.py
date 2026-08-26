@@ -147,6 +147,9 @@ class ComponentImportGraphTest(unittest.TestCase):
         for owner, path in _source_files():
             if owner == "integrations":
                 continue
+            if path == WORKSHOP / "workflow" / "native_run.py":
+                # The trusted whole-run host is the sole composition root.
+                continue
             for module, _names, line in _module_load_imports(_tree(path).body):
                 if _component(module) == "integrations":
                     offenders.append(

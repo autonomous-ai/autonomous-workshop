@@ -1,6 +1,8 @@
-"""Typed evidence contracts for a separately authorized physical delivery."""
+"""Component marker for the host-owned Deliver wait boundary.
 
-from workshop.deliver.contracts import DeliverContext, Delivered
-from workshop.deliver.evidence import DeliveryEvidenceReceipt
+Physical manufacture and fulfillment are not implemented.  Future effect
+contracts belong here only once separately authorized adapters and receipts
+exist end to end.
+"""
 
-__all__ = ["DeliverContext", "Delivered", "DeliveryEvidenceReceipt"]
+__all__ = ()

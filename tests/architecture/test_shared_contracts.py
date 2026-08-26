@@ -1,14 +1,32 @@
 import unittest
 
+import workshop.playtest.evidence as playtest_evidence
+import workshop.runtime as runtime
 from workshop.errors import ContractError
-from workshop.playtest.evidence import GateResult
-from workshop.runtime import Receipt, Stamp
+from workshop.playtest.evidence import PlaytestResult
+from workshop.runtime import Receipt
 from workshop._validation import require_exact_version, require_safe_evidence_path
 
 SHA = "a" * 64
 
 
 class SharedContractValidationTest(unittest.TestCase):
+    def test_runtime_public_api_exposes_only_the_canonical_receipt(self):
+        self.assertTrue(hasattr(runtime, "Receipt"))
+        for legacy in (
+            "PublicationOutcome",
+            "PublicationReceipt",
+            "SendResult",
+            "Stamp",
+        ):
+            with self.subTest(legacy=legacy):
+                self.assertFalse(hasattr(runtime, legacy))
+
+    def test_playtest_public_api_has_no_inspection_or_gate_aliases(self):
+        for legacy in ("GateResult", "InspectionResult"):
+            with self.subTest(legacy=legacy):
+                self.assertFalse(hasattr(playtest_evidence, legacy))
+
     def test_receipt_is_canonical_while_persisted_fields_stay_readable(self):
         receipt = Receipt.create(
             payload_sha256=SHA,
@@ -18,7 +36,6 @@ class SharedContractValidationTest(unittest.TestCase):
             reference="external-1",
             details={"verified": True},
         )
-        self.assertIs(Stamp, Receipt)
         self.assertEqual(receipt.payload_sha256, SHA)
         self.assertEqual(receipt.pack_sha256, SHA)
         self.assertEqual(receipt.adapter, "example")
@@ -55,9 +72,9 @@ class SharedContractValidationTest(unittest.TestCase):
             "evidence/proof.json",
         )
 
-    def test_gate_evidence_is_finite_json_and_revalidated(self):
+    def test_playtest_result_is_finite_json_and_revalidated(self):
         evidence = {"score": 1.0}
-        gate = GateResult(
+        result = PlaytestResult(
             "novelty",
             True,
             SHA,
@@ -69,9 +86,11 @@ class SharedContractValidationTest(unittest.TestCase):
             SHA,
             "2026-08-23T00:00:00+00:00",
         )
+        self.assertEqual(result.playtest_id, "novelty")
+        self.assertFalse(hasattr(result, "gate_id"))
         evidence["score"] = float("nan")
         with self.assertRaises(ContractError):
-            gate.assert_valid()
+            result.assert_valid()
 
 
 if __name__ == "__main__":

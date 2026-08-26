@@ -20,8 +20,6 @@ class Playtest:
     tested. Failed results are useful feedback; :meth:`require` is the
     approval boundary and refuses to finish until every required check passes.
 
-    Persisted result fields retain their Workshop 0.3 ``inspection_*`` names
-    so old runs remain readable.
     """
 
     artifact_manifest: ArtifactManifest
@@ -63,20 +61,20 @@ class Playtest:
                     "Playtest results must use the PlaytestResult contract"
                 )
             result.assert_valid()
-            if result.inspection_id in seen:
+            if result.playtest_id in seen:
                 raise ContractError(
-                    "duplicate PlaytestResult %r" % result.inspection_id
+                    "duplicate PlaytestResult %r" % result.playtest_id
                 )
-            seen.add(result.inspection_id)
+            seen.add(result.playtest_id)
             if result.artifact_sha256 != self.artifact_sha256:
                 raise ContractError(
                     "PlaytestResult %s belongs to different artifact bytes"
-                    % result.inspection_id
+                    % result.playtest_id
                 )
             if evidence_inventory.get(result.evidence_ref) != result.evidence_sha256:
                 raise ContractError(
                     "PlaytestResult %s evidence is absent or hash-mismatched "
-                    "in the sealed evidence artifact" % result.inspection_id
+                    "in the sealed evidence artifact" % result.playtest_id
                 )
 
     def require(self, playtest_ids: Iterable[str]) -> Tuple[PlaytestResult, ...]:
@@ -84,7 +82,7 @@ class Playtest:
 
         self.assert_valid()
         required = set(playtest_ids)
-        by_id = {result.inspection_id: result for result in self.results}
+        by_id = {result.playtest_id: result for result in self.results}
         missing = required - set(by_id)
         if missing:
             raise TransitionError(

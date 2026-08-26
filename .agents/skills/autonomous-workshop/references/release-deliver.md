@@ -34,15 +34,14 @@ The host validates and seals the entire package before any Factory effect.
 
 ## Deliver
 
-**Input:** Exact Made and Release hashes, the authorized delivery
-scope, and any host-provided quote or fulfillment policy.
+**Input:** Exact Made and Release hashes and the current Release receipt.
 
-**Codex work:** Prepare a local, exact-byte handoff and identify missing
-information. Codex may inspect returned evidence but must not buy, manufacture,
-publish, ship, or access credentials.
+**Codex work:** Stop truthfully at the Deliver boundary. Codex may summarize
+what future production, hands-on QA, packing, and carrier evidence would be
+needed, but it must not buy, manufacture, publish, ship, or access credentials.
 
-**Artifact and gate:** The host executes each authorized operation through its
-effect adapter, reconciles remote state, and records carrier/manufacturing
-evidence bound to the product and Release hashes. The canonical Delivered
-contract requires verified evidence; a plan, page, label draft, or unconfirmed
-request is not delivery.
+**Artifact and gate:** The current Workshop has no Deliver effect adapter or
+Delivered Python contract. The host returns a durable waiting checkpoint after
+Release. A future, separately reviewed capability may advance only from
+authenticated production, QA, packing, and carrier receipts bound to these
+exact hashes. A plan, page, label draft, or unconfirmed request is not delivery.

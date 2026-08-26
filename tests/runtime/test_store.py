@@ -16,7 +16,7 @@ from workshop.errors import (
     ReceiptError,
     StateConflict,
 )
-from workshop.runtime import InventorStore, PublicationReceipt
+from workshop.runtime import InventorStore, Receipt
 
 SHA = "a" * 64
 
@@ -29,7 +29,7 @@ class StoreTest(unittest.TestCase):
         self.store.register_product("game", "idea", {"title": "Game"}, SHA)
 
     def receipt(self, status="draft"):
-        return PublicationReceipt(
+        return Receipt(
             packet_sha256=SHA,
             artifact_sha256=SHA,
             design_id="d1",
@@ -369,7 +369,7 @@ class StoreTest(unittest.TestCase):
     def test_low_level_receipt_writes_enforce_owner_artifact_and_history(self):
         intent = self.store.prepare_publish("game", SHA, self.publish_request())
         sending = self.store.begin_publish(intent["id"])
-        forged = PublicationReceipt(
+        forged = Receipt(
             **{
                 **self.receipt().to_dict(),
                 "artifact_sha256": "b" * 64,
@@ -391,7 +391,7 @@ class StoreTest(unittest.TestCase):
                 "listing": {"price_cents": 4000},
             },
         )
-        unrelated = PublicationReceipt(
+        unrelated = Receipt(
             **{
                 **self.receipt("public").to_dict(),
                 "design_id": "different-design",

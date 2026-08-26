@@ -15,7 +15,6 @@ from workshop.artifacts.core import (
 from workshop.artifacts.pack import (
     Artifact,
     ArtifactPlan,
-    PackedArtifact,
     bundle_artifact,
     inspect_artifact,
     inspect_artifact_details,
@@ -35,7 +34,6 @@ __all__ = [
     "MAX_EXPANDED_BYTES",
     "MAX_FILE_BYTES",
     "MAX_PACK_BYTES",
-    "PackedArtifact",
     "assert_packable_content",
     "artifact_manifest_from_mapping",
     "build_artifact_manifest",
