@@ -687,7 +687,8 @@ class AgentRunTest(unittest.TestCase):
             for stage, transition in (
                 ("wish", "match"),
                 ("match", "invent"),
-                ("invent", "make"),
+                ("invent", "concept"),
+                ("concept", "make"),
             ):
                 self.advance(run, stage, transition)
 
