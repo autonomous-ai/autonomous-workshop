@@ -192,66 +192,71 @@ happen.
 
 ### Connecting the shared Concept capabilities
 
-Each adapter is configured entirely by its caller: no vendor is assumed, and
-every value is read through `load_dotenv` so a real environment variable always
+Concept's three capabilities each settle on exactly one implementation:
+`concept-images` and `exploded-view-check` are satisfied by an HTTP adapter,
+and `wish-research` by a shared, tool-using coding-agent process — the
+agent-backed path fits `wish-research` better because that capability needs
+genuine grounded search, not a single provider's built-in web plugin. Each
+adapter is configured entirely by its caller: no vendor is assumed, and every
+value is read through `load_dotenv` so a real environment variable always
 wins over one in `.env`.
 
 | Capability | Adapter | Environment |
 |---|---|---|
-| `wish-research` | `OpenAICompatibleWishResearcher.from_env()` | `WISH_RESEARCHER_BASE_URL`, `WISH_RESEARCHER_API_KEY`, `WISH_RESEARCHER_MODEL` |
 | `concept-images` | `OpenRouterConceptArtist.from_env()` | `OPENROUTER_API_KEY`, and optionally `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_API_BASE` |
 | `exploded-view-check` | `OpenAICompatibleExplodeInspector.from_env()` | `CONCEPT_EXPLODE_INSPECTOR_BASE_URL`, `CONCEPT_EXPLODE_INSPECTOR_API_KEY`, `CONCEPT_EXPLODE_INSPECTOR_MODEL` |
+| `wish-research` | `AgentWishResearcher`, built on `concept_agent_session_door_from_env()` | `AGENT_DOOR_LAUNCH_COMMAND` plus the `wish-research` role's own tool/path/wall-clock configuration (below), and `CONCEPT_WISH_RESEARCH_BUDGET_MICROS` |
 
 None of them is wired into an inventor by the module that defines it. A Workshop
 that has not been given one keeps waiting truthfully for that capability.
 
-#### The agent-backed alternative
+#### The shared agent door
 
-Each of the three capabilities above can instead be satisfied by one shared,
-tool-using coding-agent process rather than three independent HTTP adapters.
-`AgentSessionDoor` (`agent_session.py`) is the real `ModelDoor` that runs it;
-`AgentWishResearcher`, `AgentConceptArtist`, and `AgentExplodeInspector`
-(`concept_agent_adapters.py`) are drop-in replacements for the three adapters
-above, each dispatching through that one shared door under the capability's
-own role name. Nothing about Concept changes, and the two integration shapes
-coexist — wiring one does not require giving up the other for a different
-capability.
-
-`concept_agent_session_door_from_env()` builds the shared door the same way
-the adapters above build themselves — no vendor or binary is assumed, and a
-real environment variable always wins over one in `.env`:
+`AgentSessionDoor` (`agent_session.py`) is the real `ModelDoor` that runs the
+wish-research capability's launched process. `AgentWishResearcher`
+(`concept_agent_adapters.py`) dispatches through it under the `wish-research`
+role name. `concept_agent_session_door_from_env()` builds that shared door
+the same way the HTTP adapters above build themselves — no vendor or binary
+is assumed, and a real environment variable always wins over one in `.env`:
 
 | Variable | Meaning |
 |---|---|
 | `AGENT_DOOR_LAUNCH_COMMAND` | The caller's own headless agent CLI invocation, e.g. `"agent-cli --headless --output-format json"`, split the way a shell would |
-| `AGENT_DOOR_<ROLE>_TOOLS` | Comma-separated tool names the launched process gets for that role |
-| `AGENT_DOOR_<ROLE>_ALLOWED_PATHS` | Comma-separated paths/globs the launched process may touch for that role |
-| `AGENT_DOOR_<ROLE>_WALL_CLOCK_SECONDS` | The hard wall-clock bound for that role's process |
-| `AGENT_DOOR_<ROLE>_MAX_BUDGET_MICROS` | Optional per-role ceiling on the dollar budget any call to that role may be given |
+| `AGENT_DOOR_WISH_RESEARCH_TOOLS` | Comma-separated tool names the launched process gets for the `wish-research` role |
+| `AGENT_DOOR_WISH_RESEARCH_ALLOWED_PATHS` | Comma-separated paths/globs the launched process may touch for the `wish-research` role |
+| `AGENT_DOOR_WISH_RESEARCH_WALL_CLOCK_SECONDS` | The hard wall-clock bound for the `wish-research` role's process |
+| `AGENT_DOOR_WISH_RESEARCH_MAX_BUDGET_MICROS` | Optional ceiling on the dollar budget any call to the `wish-research` role may be given |
 
-`<ROLE>` is one of `WISH_RESEARCH`, `CONCEPT_IMAGES`, or
-`EXPLODED_VIEW_CHECK`; all three roles' `_TOOLS`, `_ALLOWED_PATHS`, and
-`_WALL_CLOCK_SECONDS` are required. The door builds each launched process's
-actual tool and file access from this configuration — never from anything the
-role's own request or output claims about itself; see
-[Contributing](CONTRIBUTING.md).
+`_TOOLS`, `_ALLOWED_PATHS`, and `_WALL_CLOCK_SECONDS` are all required. The
+door builds the launched process's actual tool and file access from this
+configuration — never from anything the role's own request or output claims
+about itself; see [Contributing](CONTRIBUTING.md).
+
+`AGENT_DOOR_WISH_RESEARCH_TOOLS` must name a tool that gives the launched
+process real web-search access for the agent-backed path to add anything
+over an HTTP one — the wish-research task instructions ask the process to
+search the web, but nothing in this codebase can verify that the tool named
+here actually performs a real search; that is an operator responsibility, not
+a checked contract.
+
+#### `concept_capabilities_from_env()`
+
+`concept_capabilities_from_env()` (`concept_capabilities.py`) is the one
+committed entry point that wires all three capabilities at once, in this
+exact, settled configuration. Construction fails closed: if any capability's
+configuration is missing, it fails before any of the three is exercised,
+naming whichever capability (`concept-images`, `exploded-view-check`, or
+`wish-research`) is unconfigured.
 
 ```python
-from inventor_workshop.concept import DefaultConcept
-from inventor_workshop.concept_agent_adapters import (
-    AgentConceptArtist,
-    AgentExplodeInspector,
-    AgentWishResearcher,
-    concept_agent_session_door_from_env,
-)
+from inventor_workshop.concept_capabilities import concept_capabilities_from_env
 
-door = concept_agent_session_door_from_env()
-concept = DefaultConcept(
-    AgentConceptArtist(door, budget_micros=2_000_000),
-    AgentExplodeInspector(door, budget_micros=500_000),
-    wish_researcher=AgentWishResearcher(door, budget_micros=1_000_000),
-)
+concept = concept_capabilities_from_env()
 ```
+
+Nothing wires this entry point into any inventor's run automatically — that
+remains a caller's own explicit choice, consistent with every adapter above
+being opt-in.
 
 See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
 [Workshop architecture](docs/ARCHITECTURE.md).

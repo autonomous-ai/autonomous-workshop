@@ -1,12 +1,9 @@
-## Purpose
-
-A real wish researcher that produces a grounded breakdown of a Wish by asking a caller-configured OpenAI-compatible chat endpoint, with web search enabled, what the wished-for object actually is and how big its parts really are — and that returns the sources it read alongside the facts it took from them.
-
-## Requirements
+## REMOVED Requirements
 
 ### Requirement: The researcher is fully configured by its caller, with no vendor built in
 
-The researcher SHALL require a base URL, an API key, and a model name at construction, and SHALL reject construction if any of them is missing or empty. It SHALL NOT default to, or assume, any particular vendor's endpoint — every call target is exactly what the caller configured.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: Construction without a base URL, key, or model is rejected
 
@@ -20,9 +17,8 @@ The researcher SHALL require a base URL, an API key, and a model name at constru
 
 ### Requirement: The request carries the Wish, the Taste, and the lane, and asks for a sourced breakdown
 
-The researcher SHALL send the Wish's objective and constraints, the inventor's Taste description, and the lane's category, and SHALL ask the endpoint to return the object, category, envelope, wall thickness, features, print stance, fit target, and component breakdown, with each stated fact carrying the source it came from.
-
-The request SHALL enable the endpoint's web search facility so the answer can rest on retrieved material rather than recall alone.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: The request states what is being researched
 
@@ -41,9 +37,8 @@ The request SHALL enable the endpoint's web search facility so the answer can re
 
 ### Requirement: The response is parsed strictly into a breakdown and its sources
 
-The researcher SHALL parse the endpoint's answer into a breakdown and the source records behind it, and SHALL return only what the answer actually stated. It SHALL NOT invent a missing dimension, SHALL NOT substitute a default for a field the answer omitted, and SHALL NOT treat an answer it cannot parse as an empty breakdown.
-
-Every source the answer cites SHALL be returned with its origin, the excerpt relied upon, and the time it was retrieved, taken from the endpoint's own returned source material.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted. The strict-parsing posture itself survives — it moves into the agent-backed adapter along with the parsing logic it was built on.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: A well-formed answer becomes a breakdown
 
@@ -67,7 +62,8 @@ Every source the answer cites SHALL be returned with its origin, the excerpt rel
 
 ### Requirement: Requests follow the OpenAI-compatible chat completions contract
 
-The researcher SHALL POST to its configured base URL's chat-completions path with the configured model name and an `Authorization` bearer header carrying its configured API key.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: A request targets the configured endpoint and model
 
@@ -81,7 +77,8 @@ The researcher SHALL POST to its configured base URL's chat-completions path wit
 
 ### Requirement: Failures are surfaced, never silently swallowed into a false result
 
-A non-retryable client error SHALL fail immediately. A rate-limit or server error SHALL be retried a bounded number of times with backoff before failing. An oversized response SHALL be rejected rather than read partially.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: A non-retryable client error fails immediately
 
@@ -100,7 +97,8 @@ A non-retryable client error SHALL fail immediately. A rate-limit or server erro
 
 ### Requirement: The researcher is constructed by an operator, never wired in by default
 
-The researcher SHALL NOT be installed into any inventor's Workshop by the module that defines it. A Workshop that has not been given one SHALL continue to wait truthfully for the wish-research capability.
+**Reason**: `wish-research` is settled on the agent-backed researcher; the OpenAI-compatible HTTP researcher this capability describes is deleted. The surviving agent-backed researcher continues this same never-wired-by-default posture, now specified under `workshop/agent-concept-adapters`.
+**Migration**: Configure `wish-research` through the agent door instead — see `workshop/agent-concept-adapters` and `workshop/concept-capability-wiring`.
 
 #### Scenario: Importing the adapter changes no Workshop
 

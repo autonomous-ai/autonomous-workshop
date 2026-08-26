@@ -1,8 +1,4 @@
-## Purpose
-
-An adapter that satisfies Concept's existing wish-research port by dispatching through a shared agent door, so a configured agent can serve wish-research on the same terms it will eventually serve Make and Playtest. Concept's other two capabilities, concept-images and exploded-view-check, are satisfied by the HTTP adapters specified under `workshop/concept-artist-openrouter` and `workshop/concept-explode-inspector`; this capability no longer covers agent-backed alternatives for them.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Each adapter is a faithful, drop-in implementation of Concept's existing port
 
@@ -17,6 +13,45 @@ An agent-backed adapter SHALL satisfy the exact same callable contract Concept a
 
 - **WHEN** the agent-backed wish researcher returns a breakdown
 - **THEN** every fact in it must still carry a source or a recorded decision, exactly as the existing wish-research attribution rule already requires
+
+## REMOVED Requirements
+
+### Requirement: Each adapter calls the door under Concept's own capability name, never a new one
+
+**Reason**: This requirement covered role-naming for all three agent-backed adapters. Two of them (`AgentConceptArtist`, `AgentExplodeInspector`) are deleted; the one that remains gets its own, narrower requirement below.
+**Migration**: See the new "The wish-research adapter calls the door under its own capability name" requirement.
+
+#### Scenario: The wish-research adapter uses the wish-research role
+
+- **WHEN** the agent-backed wish researcher runs
+- **THEN** it calls the shared door with role `wish-research`
+
+#### Scenario: The image and inspection adapters use their own capability's role
+
+- **WHEN** the agent-backed artist or inspector runs
+- **THEN** each calls the shared door with role `concept-images` or `exploded-view-check` respectively
+
+### Requirement: Concept-images requests stay one image per call
+
+**Reason**: The agent-backed image adapter (`AgentConceptArtist`) is deleted. It was never wired into any Workshop; `concept-images` is now satisfied by exactly one implementation, the OpenRouter-backed artist, whose own one-image-per-call behavior is already specified under `workshop/concept-artist-openrouter`.
+**Migration**: No caller migration is needed — nothing depended on the agent-backed image adapter. A caller configuring `concept-images` continues to use the OpenRouter-backed artist directly.
+
+#### Scenario: One request produces one image
+
+- **WHEN** the agent-backed artist receives one `ConceptImageRequest`
+- **THEN** it returns exactly one image for that request, written to the path the request specifies
+
+### Requirement: Exploded-view inspection reports only offered component keys
+
+**Reason**: The agent-backed inspector (`AgentExplodeInspector`) is deleted. It was never wired into any Workshop; `exploded-view-check` is now satisfied by exactly one implementation, the OpenAI-compatible inspector, which already reports only offered keys.
+**Migration**: No caller migration is needed — nothing depended on the agent-backed inspector. A caller configuring `exploded-view-check` continues to use the OpenAI-compatible inspector directly.
+
+#### Scenario: An unoffered key is never reported
+
+- **WHEN** the agent-backed inspector examines an exploded view
+- **THEN** every key in its answer is one of the keys the request offered
+
+## ADDED Requirements
 
 ### Requirement: The wish-research adapter calls the door under its own capability name
 
@@ -49,13 +84,3 @@ Building the shared agent door from the environment SHALL configure only the `wi
 
 - **WHEN** the shared agent door is built from an environment missing the wish-research role's configuration
 - **THEN** construction fails, naming the wish-research role
-
-### Requirement: Concept keeps taking exactly one implementation per capability
-
-Adding an agent-backed alternative SHALL NOT change Concept's existing shape of taking exactly one `WishResearcher`, one `ConceptArtist`, and one `ExplodeInspector` at a time. Choosing which implementation serves a capability is a caller's wiring decision, made once, outside Concept.
-
-#### Scenario: A Workshop is wired with one implementation per capability
-
-- **WHEN** a Workshop is configured
-- **THEN** each of Concept's three capabilities is satisfied by exactly one adapter, agent-backed or not
-- **AND** nothing inside Concept selects or blends between two candidates for the same capability

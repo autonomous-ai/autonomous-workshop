@@ -142,14 +142,12 @@ from .concept import (
 )
 from .concept_artist_openrouter import OpenRouterConceptArtist
 from .concept_explode_inspector import OpenAICompatibleExplodeInspector
-from .wish_researcher_openrouter import OpenAICompatibleWishResearcher
 from .agent_session import AgentRoleConfig, AgentSessionDoor
 from .concept_agent_adapters import (
-    AgentConceptArtist,
-    AgentExplodeInspector,
     AgentWishResearcher,
     concept_agent_session_door_from_env,
 )
+from .concept_capabilities import concept_capabilities_from_env
 from .env import load_dotenv
 from .workshop import (
     CUSTOMIZATION_LEVELS,
@@ -228,8 +226,6 @@ from .taste import (
 __all__ = [
     # Toy Workshop 0.5 canonical surface.
     "Adapter",
-    "AgentConceptArtist",
-    "AgentExplodeInspector",
     "AgentRoleConfig",
     "AgentSessionDoor",
     "AgentSessionError",
@@ -254,9 +250,9 @@ __all__ = [
     "ConceptProviderError",
     "concept_handoff_text",
     "OpenAICompatibleExplodeInspector",
-    "OpenAICompatibleWishResearcher",
     "OpenRouterConceptArtist",
     "concept_agent_session_door_from_env",
+    "concept_capabilities_from_env",
     "WishResearch",
     "WishResearchFinding",
     "WishResearchRequest",

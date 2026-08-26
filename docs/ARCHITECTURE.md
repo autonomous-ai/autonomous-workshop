@@ -278,24 +278,36 @@ it is never inferred from the role's request or from anything the process's
 own output claims about itself (see CONTRIBUTING.md's tool-access rule for
 agent-backed capabilities).
 
-Three thin adapters in `concept_agent_adapters.py` —
-`AgentWishResearcher`, `AgentConceptArtist`, `AgentExplodeInspector` — satisfy
-Concept's existing `WishResearcher` / `ConceptArtist` / `ExplodeInspector`
-ports by dispatching through one shared `AgentSessionDoor`, calling it under
-the capability's own role name. They are a drop-in alternative to the
-existing single-shot OpenRouter adapters (`wish_researcher_openrouter.py`,
-`concept_artist_openrouter.py`, `concept_explode_inspector.py`): Concept
-cannot tell which kind of adapter it was given, and wiring one in place of
-the other changes nothing about Concept's own behavior. An operator who does
-not need agentic depth for these three single-shot roles keeps the cheaper,
-deterministic HTTP path; nothing forces a choice between the two.
+Concept's three capabilities each settle on exactly one implementation.
+`concept-images` and `exploded-view-check` are satisfied by the existing
+single-shot HTTP adapters (`concept_artist_openrouter.py`,
+`concept_explode_inspector.py`). `wish-research` is satisfied by
+`AgentWishResearcher` (`concept_agent_adapters.py`), a thin adapter
+dispatching through one shared `AgentSessionDoor` under that capability's own
+role name — the tool-using agent process fits `wish-research` specifically,
+since it needs genuine grounded search rather than trusting a single
+provider's built-in web plugin. `AgentWishResearcher` carries the same task
+instructions and attribution rules (`RESEARCH_INSTRUCTIONS`) the deleted HTTP
+wish researcher used to send, so the launched process is told what to decide
+and how to attribute it, not expected to know the contract by role name
+alone. `concept_agent_session_door_from_env()` builds the shared door
+configured for the `wish-research` role only — it reads and requires no
+`concept-images` or `exploded-view-check` configuration, since no adapter
+calls the door under those roles.
+
+`concept_capabilities.py`'s `concept_capabilities_from_env()` is the one
+committed entry point that assembles this exact mix — HTTP for
+`concept-images` and `exploded-view-check`, the agent door for
+`wish-research` — into one ready-to-use `DefaultConcept`, failing closed and
+naming whichever capability's configuration is missing before any of the
+three is exercised. Nothing wires it into an inventor's run automatically;
+that remains a caller's own explicit choice.
 
 `Make` and `Playtest` still default to their `_missing_make` /
-`_missing_playtest` stubs — a `Workshop` wired only with an agent-backed
-Concept still parks at `make` once Concept completes, exactly as it does with
-the OpenRouter-backed adapters today. A real `ModelDoor`-backed
-implementation for Make and Playtest, reusing this same role contract with
-`toys.py`'s `ToyTask.task_id` strings, is a separate, later proposal.
+`_missing_playtest` stubs — a `Workshop` wired only with Concept still parks
+at `make` once Concept completes. A real `ModelDoor`-backed implementation
+for Make and Playtest, reusing this same role contract with `toys.py`'s
+`ToyTask.task_id` strings, is a separate, later proposal.
 
 ## Job contracts
 
@@ -520,7 +532,8 @@ src/inventor_workshop/
   workshop.py           six-job orchestration and improvement loop
   jobs.py               typed inputs, results, feedback, and waiting
   concept.py            wish research, locked design brief, image anchoring, and the artist seam
-  wish_researcher_openrouter.py  a real researcher on a caller-configured endpoint
+  concept_agent_adapters.py  the agent-door wish researcher, RESEARCH_INSTRUCTIONS, and its shared door
+  concept_capabilities.py    concept_capabilities_from_env(), the one committed Concept wiring entry point
   make.py               Wish and shared making boundary
   gameplay.py           reproducible AI-player games and leagues
   playtest.py           exact artifact-bound evidence
