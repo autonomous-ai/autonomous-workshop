@@ -103,9 +103,9 @@ from workshop.deliver.evidence import (
     DeliveryEvidenceReceipt,
     validate_delivery_evidence_chain,
 )
-from workshop.instructions.service import (
-    DefaultInstructions,
-    InstructionsSiteWriter,
+from workshop.release.service import (
+    DefaultRelease,
+    ReleaseSiteWriter,
 )
 from workshop.playtest.gameplay import (
     ExecutableGame,
@@ -118,7 +118,7 @@ from workshop.playtest.gameplay import (
     run_league,
 )
 from workshop.deliver.contracts import DeliverContext, Delivered
-from workshop.instructions.contracts import InstructionsContext, ProductInstructions
+from workshop.release.contracts import ReleaseContext, ProductRelease
 from workshop.invent.contracts import InventContext, Invented
 from workshop.make.contracts import Feedback, Made, MakeContext
 from workshop.outcomes import Need, WaitingFor
@@ -163,7 +163,7 @@ from workshop.product.blueprints import (
 )
 from workshop.workflow.engine import (
     CUSTOMIZATION_LEVELS,
-    InstructionsJob,
+    ReleaseJob,
     InventJob,
     Workshop,
     WorkshopTools,
@@ -219,7 +219,7 @@ from workshop.integrations.ports import (
     LaunchPort,
 )
 from workshop.integrations.send import DEFAULT_SHOP_API, HttpResponse, Sender, ShopDoor
-from workshop.integrations.shop import ShopInstructionsWriter
+from workshop.integrations.shop import ShopReleaseWriter
 from workshop.runtime.effects import Runtime
 from workshop.runtime.reward import RewardLoopResult, RewardSignal, RewardStep, run_reward_loop
 from workshop.integrations.launch import DEFAULT_PORTAL_API, Launchpad, Portal, inspect_publish_packet
@@ -277,12 +277,12 @@ __all__ = [
     "CUSTOMIZATION_LEVELS",
     "CustomerReview",
     "DefaultDeliver",
-    "DefaultInstructions",
+    "DefaultRelease",
     "DeliverContext",
     "Delivered",
-    "InstructionsContext",
-    "InstructionsJob",
-    "InstructionsSiteWriter",
+    "ReleaseContext",
+    "ReleaseJob",
+    "ReleaseSiteWriter",
     "InventContext",
     "Invented",
     "InventJob",
@@ -320,7 +320,7 @@ __all__ = [
     "PlaytestPolicy",
     "PlaytestResult",
     "Playtested",
-    "ProductInstructions",
+    "ProductRelease",
     "RandomPlayer",
     "ReleaseProofSource",
     "ReviewsPolicy",
@@ -430,7 +430,7 @@ __all__ = [
     "SendResult",
     "Sender",
     "ShopDoor",
-    "ShopInstructionsWriter",
+    "ShopReleaseWriter",
     "ShopDoorProtocol",
     "Stamp",
     "StampError",

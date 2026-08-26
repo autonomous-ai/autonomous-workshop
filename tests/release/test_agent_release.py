@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from workshop.instructions.agent import RewardedInstructions
+from workshop.release.agent import RewardedRelease
 from workshop.artifacts.core import build_artifact_manifest
 from workshop.errors import AmbiguousEffectError
-from workshop.instructions.contracts import InstructionsContext
+from workshop.release.contracts import ReleaseContext
 from workshop.make.contracts import Made
 from workshop.playtest.contracts import Playtested
 from workshop.outcomes import WaitingFor
@@ -69,7 +69,7 @@ class FakeCodex:
         return self.outputs.pop(0)
 
 
-class RewardedInstructionsTest(unittest.TestCase):
+class RewardedReleaseTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name).resolve()
@@ -134,8 +134,8 @@ class RewardedInstructionsTest(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def context(self, name="instructions"):
-        return InstructionsContext(
+    def context(self, name="release"):
+        return ReleaseContext(
             self.wish,
             self.taste,
             self.blueprint,
@@ -160,7 +160,7 @@ class RewardedInstructionsTest(unittest.TestCase):
             project_url="https://cdn.autonomous.ai/projects/history-1/",
             observed_at="2026-08-25T12:00:00+00:00",
             details={
-                "instructions_sha256": sealed_manifest.artifact_sha256,
+                "release_sha256": sealed_manifest.artifact_sha256,
                 "page_url": "https://www.autonomous.ai/factory/product/pocket-duel",
             },
         )
@@ -181,7 +181,7 @@ class RewardedInstructionsTest(unittest.TestCase):
             else site_writer
         )
         return (
-            RewardedInstructions(
+            RewardedRelease(
                 selected_site_writer,
                 creator=creator,
                 evaluator=evaluator,
@@ -196,26 +196,26 @@ class RewardedInstructionsTest(unittest.TestCase):
             [action("A first attempt."), action("A tiny duel with one bright reveal.")],
             [verdict(82, "Make the opening feel more specific."), verdict(94, "Ready.")],
         )
-        instructions = worker(self.context())
+        release = worker(self.context())
         self.assertEqual(len(creator.prompts), 2)
         self.assertEqual(len(evaluator.prompts), 2)
         self.assertIn("previous_reward", creator.prompts[1][0])
-        page = json.loads((instructions.root / "product.json").read_text())
+        page = json.loads((release.root / "product.json").read_text())
         self.assertEqual(page["how_to_play"], "Choose one cap, commit, and reveal together.")
         self.assertEqual(page["what_arrives"], ["board", "six caps"])
         self.assertFalse({"images", "use_case", "story_blocks"} & set(page))
         reward = json.loads(
-            (instructions.root / "instructions-reward.json").read_text()
+            (release.root / "release-reward.json").read_text()
         )
         self.assertEqual(reward["goal"], 90)
         self.assertTrue(reward["result"]["reached_goal"])
         self.assertEqual(reward["result"]["steps"][-1]["reward"]["value"], 94)
-        manual = (instructions.root / "INSTRUCTIONS.md").read_text()
+        manual = (release.root / "MANUAL.md").read_text()
         self.assertIn("## Before you begin", manual)
         self.assertIn("## How to play", manual)
         self.assertIn("## What's in the box", manual)
         self.assertIn("## Care and safety", manual)
-        self.assertTrue(instructions.site_receipt.is_verified_draft)
+        self.assertTrue(release.site_receipt.is_verified_draft)
 
     def test_goal_exhaustion_never_lowers_goal_or_seals_a_partial_manual(self):
         worker, _, _ = self.worker(
@@ -227,7 +227,7 @@ class RewardedInstructionsTest(unittest.TestCase):
         context = self.context("short")
         with self.assertRaises(WaitingFor) as raised:
             worker(context)
-        self.assertEqual(raised.exception.needs[0].capability, "instructions-target-score")
+        self.assertEqual(raised.exception.needs[0].capability, "release-target-score")
         self.assertFalse(context.workspace.exists())
 
     def test_site_ambiguity_resumes_sealed_bytes_without_rerunning_models(self):
@@ -251,7 +251,7 @@ class RewardedInstructionsTest(unittest.TestCase):
         resumed = worker.resume(context)
         self.assertEqual(len(creator.prompts), 1)
         self.assertEqual(len(evaluator.prompts), 1)
-        self.assertEqual(resumed.instructions_sha256, manifest_before)
+        self.assertEqual(resumed.release_sha256, manifest_before)
 
     def test_missing_factory_credentials_waits_after_seal_then_resumes_exact_bytes(self):
         worker, creator, evaluator = self.worker(
@@ -265,9 +265,9 @@ class RewardedInstructionsTest(unittest.TestCase):
             worker(context)
 
         self.assertEqual(raised.exception.needs[0].capability, "site-page")
-        self.assertTrue((context.workspace / "INSTRUCTIONS.md").is_file())
+        self.assertTrue((context.workspace / "MANUAL.md").is_file())
         self.assertTrue((context.workspace / "product.json").is_file())
-        self.assertTrue((context.workspace / "instructions-reward.json").is_file())
+        self.assertTrue((context.workspace / "release-reward.json").is_file())
         sealed_before = build_artifact_manifest(
             context.workspace, created_at="content-addressed"
         ).artifact_sha256
@@ -283,7 +283,7 @@ class RewardedInstructionsTest(unittest.TestCase):
         self.assertEqual(len(evaluator.prompts), 1)
         self.assertEqual(len(resume_creator.prompts), 0)
         self.assertEqual(len(resume_evaluator.prompts), 0)
-        self.assertEqual(resumed.instructions_sha256, sealed_before)
+        self.assertEqual(resumed.release_sha256, sealed_before)
 
 
 if __name__ == "__main__":

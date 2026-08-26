@@ -1,7 +1,7 @@
 """Workshop-owned release semantics for every Playtest implementation.
 
 The Playtest worker is replaceable; the release bar is not.  A result name,
-``passed=true``, or an AI-authored sentence cannot authorize Instructions.  This
+``passed=true``, or an AI-authored sentence cannot authorize Release.  This
 module validates exact evidence documents and capability-specific measurements
 against the sealed Make and Playtest manifests before the Workshop advances.
 
@@ -1698,7 +1698,7 @@ def _need(capability: str) -> Need:
         "playtest",
         capability,
         "The passed %s result does not contain %s." % (capability, purpose),
-        "Return exact-byte-bound Playtest evidence and a valid release_proof for %s; a result name or model score alone cannot authorize Instructions."
+        "Return exact-byte-bound Playtest evidence and a valid release_proof for %s; a result name or model score alone cannot authorize Release."
         % capability,
     )
 
@@ -1709,7 +1709,7 @@ def playtest_release_needs(
     playtested: Playtested,
     evidence_root: Path,
 ) -> Tuple[Need, ...]:
-    """Return every missing common release proof before Instructions.
+    """Return every missing common release proof before Release.
 
     This function is deliberately worker-agnostic.  It validates the sealed
     output, not whether it came from the shared or a custom Playtest callable.

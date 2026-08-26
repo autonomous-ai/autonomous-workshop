@@ -15,7 +15,7 @@ from cli.main import (
     _inventor_process_environment,
     _publish_inventor_draft,
     _promote_factory_intent,
-    _resume_factory_instructions,
+    _resume_factory_release,
     _run_inventor,
     _save_manager_assignment,
     _status_receipt,
@@ -59,7 +59,7 @@ class CliTest(unittest.TestCase):
         stage: str = "make",
         capability: str = "model-and-cad-maker",
         artifact_sha256=None,
-        instructions_sha256=None,
+        release_sha256=None,
     ):
         inventor_id = "mira"
         inventor_root = root / "inventors" / inventor_id
@@ -135,8 +135,8 @@ class CliTest(unittest.TestCase):
                 }
             ],
         }
-        if instructions_sha256 is not None:
-            payload["instructions_sha256"] = instructions_sha256
+        if release_sha256 is not None:
+            payload["release_sha256"] = release_sha256
         runtime._transition(
             product_id,
             "wish",
@@ -179,7 +179,7 @@ class CliTest(unittest.TestCase):
         value = receipt.to_dict()
         value["details"] = {
             **value["details"],
-            "instructions_sha256": "b" * 64,
+            "release_sha256": "b" * 64,
             "playtest_evidence_sha256": "c" * 64,
             "page_url": "https://www.autonomous.ai/factory/product/rolling-moon",
         }
@@ -399,7 +399,7 @@ class CliTest(unittest.TestCase):
                         "round": 1,
                         "playtest_rounds": 4,
                         "artifact_sha256": "f" * 64,
-                        "instructions_sha256": "e" * 64,
+                        "release_sha256": "e" * 64,
                         "page_url": "https://attacker.invalid/fake",
                         "invented": None,
                         "needs": [],
@@ -436,8 +436,8 @@ class CliTest(unittest.TestCase):
             "WORKSHOP_MAKE_MODEL": "gpt-5.6-terra",
             "WORKSHOP_MAKE_REWARD_MODEL": "gpt-5.6-luna",
             "WORKSHOP_PLAYTEST_MODEL": "gpt-5.6-luna",
-            "WORKSHOP_INSTRUCTIONS_MODEL": "gpt-5.6-terra",
-            "WORKSHOP_INSTRUCTIONS_REWARD_MODEL": "gpt-5.6-luna",
+            "WORKSHOP_RELEASE_MODEL": "gpt-5.6-terra",
+            "WORKSHOP_RELEASE_REWARD_MODEL": "gpt-5.6-luna",
             "WORKSHOP_PRUSASLICER_BIN": "/opt/workshop/PrusaSlicer",
             "WORKSHOP_PRUSASLICER_PRINTER_PROFILE": "/opt/workshop/printer.ini",
             "WORKSHOP_PRUSASLICER_FILAMENT_PROFILE": "/opt/workshop/filament.ini",
@@ -498,17 +498,17 @@ class CliTest(unittest.TestCase):
                     observed["workshop_args"] = args
                     observed["workshop_kwargs"] = kwargs
 
-                def resume_instructions(self, wish):
+                def resume_release(self, wish):
                     observed["wish"] = wish
                     return FakeRun()
 
-            result = _resume_factory_instructions(
+            result = _resume_factory_release(
                 assignment,
                 {
                     "status": "waiting",
-                    "job": "instructions",
+                    "job": "release",
                     "needs": [
-                        {"job": "instructions", "capability": "site-page"}
+                        {"job": "release", "capability": "site-page"}
                     ],
                     "manager_assignment": handoff.result_binding(),
                 },
@@ -558,9 +558,9 @@ class CliTest(unittest.TestCase):
                     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
                     waiting = {
                         "status": "waiting",
-                        "job": "instructions",
+                        "job": "release",
                         "needs": [
-                            {"job": "instructions", "capability": "site-page"}
+                            {"job": "release", "capability": "site-page"}
                         ],
                         "manager_assignment": handoff.result_binding(),
                     }
@@ -574,10 +574,10 @@ class CliTest(unittest.TestCase):
                         def __init__(self, *args, **kwargs):
                             observed["kwargs"] = kwargs
 
-                        def resume_instructions(self, wish):
+                        def resume_release(self, wish):
                             return FakeRun()
 
-                    result = _resume_factory_instructions(
+                    result = _resume_factory_release(
                         assignment,
                         waiting,
                         environment={"FACTORY_PASSWORD": "manager-only-secret"},
@@ -620,13 +620,13 @@ class CliTest(unittest.TestCase):
                 root, inventor_id, Wish.create("wish-one", "A tiny world")
             )
             with self.assertRaisesRegex(WorkshopError, "known contribution level"):
-                _resume_factory_instructions(
+                _resume_factory_release(
                     assignment,
                     {
                         "status": "waiting",
-                        "job": "instructions",
+                        "job": "release",
                         "needs": [
-                            {"job": "instructions", "capability": "site-page"}
+                            {"job": "release", "capability": "site-page"}
                         ],
                     },
                     environment={"FACTORY_PASSWORD": "manager-only-secret"},
@@ -653,7 +653,7 @@ class CliTest(unittest.TestCase):
         draft_value["details"] = {
             **draft_value["details"],
             "page_url": page_url,
-            "instructions_sha256": "b" * 64,
+            "release_sha256": "b" * 64,
             "playtest_evidence_sha256": "c" * 64,
         }
         draft = Receipt.from_dict(draft_value)
@@ -816,7 +816,7 @@ class CliTest(unittest.TestCase):
         store.recover_stranded_intent.assert_not_called()
         store.release_lease.assert_not_called()
 
-    def test_publish_waits_truthfully_until_instructions_has_a_draft(self):
+    def test_publish_waits_truthfully_until_release_has_a_draft(self):
         assignment = SimpleNamespace(
             wish=SimpleNamespace(product_id="wish-one"),
             decision=SimpleNamespace(
@@ -827,7 +827,7 @@ class CliTest(unittest.TestCase):
         )
         publication = _publish_inventor_draft(assignment, {"job": "make"})
         self.assertEqual(publication["status"], "waiting")
-        self.assertIn("Instructions", publication["reason"])
+        self.assertIn("Release", publication["reason"])
 
     def test_publish_draft_without_factory_secret_returns_an_exact_safe_wait(self):
         assignment = SimpleNamespace(
@@ -1098,7 +1098,7 @@ class CliTest(unittest.TestCase):
                 receipt["wishes"][0]["product_id"], assignment.wish.product_id
             )
 
-    def test_resume_rejects_non_instructions_wait_without_mutating_it(self):
+    def test_resume_rejects_non_release_wait_without_mutating_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             _, runtime, _ = self.durable_wait_fixture(root)
@@ -1111,21 +1111,21 @@ class CliTest(unittest.TestCase):
             receipt = json.loads(output.getvalue())
             self.assertEqual(result, 1)
             self.assertEqual(receipt["result"]["resume"], "not-available")
-            self.assertIn("Instructions", receipt["result"]["reason"])
+            self.assertIn("Release", receipt["result"]["reason"])
             self.assertEqual(runtime.events("wish-one"), before)
 
-    def test_resume_instructions_without_factory_secret_is_actionable_and_safe(self):
+    def test_resume_release_without_factory_secret_is_actionable_and_safe(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.durable_wait_fixture(
                 root,
-                stage="instructions",
+                stage="release",
                 capability="site-page",
                 artifact_sha256="f" * 64,
             )
             output = StringIO()
             with mock.patch.dict("os.environ", {}, clear=True), mock.patch(
-                "cli.main._resume_factory_instructions"
+                "cli.main._resume_factory_release"
             ) as resume_effect, redirect_stdout(output):
                 result = main(
                     ("resume", "wish-one", "--root", str(root), "--json")
@@ -1228,10 +1228,10 @@ class CliTest(unittest.TestCase):
             root = Path(temporary)
             self.durable_wait_fixture(
                 root,
-                stage="instructions",
+                stage="release",
                 capability="site-page",
                 artifact_sha256="f" * 64,
-                instructions_sha256="b" * 64,
+                release_sha256="b" * 64,
             )
             stale = Receipt.from_design(
                 {

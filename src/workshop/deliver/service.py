@@ -14,7 +14,7 @@ class DefaultDeliver:
 
     A label alone is never a delivery receipt.  The configured implementation
     must bind printing, QA, packing, and USPS/UPS/FedEx evidence to the exact
-    approved product and Instructions hashes.
+    approved product and Release hashes.
     """
 
     def __init__(
@@ -32,7 +32,7 @@ class DefaultDeliver:
                 Need(
                     "deliver",
                     "production-and-shipping",
-                    "The toy and its Instructions are approved, but no real print/QA/packing/carrier implementation is configured.",
+                    "The toy and its Release are approved, but no real print/QA/packing/carrier implementation is configured.",
                     "Configure the shared production bench and USPS, UPS, or FedEx handoff; preserve receipts for the exact artifact hashes.",
                 )
             )

@@ -30,7 +30,7 @@ behind those seams.
 
 One Wish uses one persistent native Codex session. The trusted Workshop host
 creates or records the session id, resumes it across Match, Invent, Make,
-Playtest, Instructions, and Deliver, and retains the ability to substitute a
+Playtest, Release, and Deliver, and retains the ability to substitute a
 different native coding-agent adapter later. Session memory improves
 continuity, but durable workspace checkpoints, exact-byte manifests, and
 verified receipts remain authoritative.
@@ -70,7 +70,7 @@ Codex owns:
   native tool/skill use, artifact inspection, and bounded repair;
 - AI-player judgment and evidence-linked feedback, without overriding
   deterministic observations;
-- writing concepts, product files, source notes, and Instructions into the run
+- writing concepts, product files, source notes, and the Release package into the run
   workspace;
 - reporting compact needs and proposing, never authorizing, the next
   transition.
@@ -182,6 +182,6 @@ session only after its contracts and failure behavior remain equivalent.
 - Prove every phase transition fails closed for changed bytes, missing or stale
   evidence, denied authorization, exhausted round budgets, and unknown effects.
 - Prove Make feedback creates a new revision and invalidates/re-runs downstream
-  gates before Instructions or Deliver can advance.
+  gates before Release or Deliver can advance.
 - Prove explicit transient provider failure has at most one bounded recovery
   attempt and never duplicates an external effect.

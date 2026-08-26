@@ -1,7 +1,7 @@
 """The opinionated Workshop: Wish-shaped playthings for grown-ups.
 
 The five lanes are crafts, not extra pipeline stages. Every inventor implements
-the same six creation jobs: Wish, Invent, Make, AI Playtest, Instructions, and Deliver.
+the same six creation jobs: Wish, Invent, Make, AI Playtest, Release, and Deliver.
 Customer Reviews follow Deliver as a shared feedback stream. Reviews improve a
 future revision of the same toy and future Wishes; they never rewrite what was
 already delivered.
@@ -23,7 +23,7 @@ WORKSHOP_JOBS: Tuple[str, ...] = (
     "invent",
     "make",
     "playtest",
-    "instructions",
+    "release",
     "deliver",
 )
 PLAYTHING_LANES: Tuple[str, ...] = (
@@ -67,7 +67,7 @@ class ToyTask:
     def __post_init__(self) -> None:
         if self.job not in WORKSHOP_JOBS:
             raise ContractError(
-                "toy task job must be Wish, Invent, Make, Playtest, Instructions, or Deliver"
+                "toy task job must be Wish, Invent, Make, Playtest, Release, or Deliver"
             )
         for label, value in (
             ("key", self.key),
@@ -236,19 +236,19 @@ TOY_TASKS: Tuple[ToyTask, ...] = (
         "print-test",
     ),
     ToyTask(
-        "instructions.create",
-        "instructions",
-        "Write the box-ready instructions and hand verified product facts to Factory.",
-        "Box insert or rulebook plus an authenticated model-only draft bound to the approved artifact.",
-        "product-instructions",
+        "release.create",
+        "release",
+        "Assemble the complete release package and its host-owned publication intent.",
+        "Manual, product page, media, structured product data, attribution, and publication intent bound to the approved artifact.",
+        "product-release",
         external=True,
     ),
     ToyTask(
-        "instructions.truth",
-        "instructions",
-        "Reject unsupported claims and keep creator page copy or media out of the handoff.",
-        "Claim-to-evidence map and exact model-history hash; Factory enrichment remains pending.",
-        "instructions-review",
+        "release.truth",
+        "release",
+        "Reject unsupported claims and bind every release asset to verified evidence.",
+        "Claim-to-evidence map, sealed release manifest, and a credential-free publication intent.",
+        "release-review",
     ),
     ToyTask(
         "deliver.make",
@@ -301,7 +301,7 @@ class ReviewsPolicy:
             ),
             "evidence": (
                 "Append-only review records bound to the delivered artifact, "
-                "Instructions, and delivery."
+                "Release, and delivery."
             ),
         }
 

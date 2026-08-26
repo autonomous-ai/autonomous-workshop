@@ -1,4 +1,4 @@
-"""Credential-safe Factory agent login for the shared Instructions adapter.
+"""Credential-safe Factory agent login for the shared Release adapter.
 
 The Factory agent credential is used only to mint an in-memory bearer token.
 Neither the credential nor the token is written to the Workshop store, passed
@@ -29,7 +29,7 @@ from workshop.integrations.shop import (
     PROVEN_NO_EFFECT_STATUSES,
     HttpResponse,
     ShopDoor,
-    ShopInstructionsWriter,
+    ShopReleaseWriter,
     Transport,
     urllib_transport,
     _design_with_normalized_currency,
@@ -305,7 +305,7 @@ class FactoryAgentSession:
         return send()
 
 
-class FactoryAgentInstructionsWriter:
+class FactoryAgentReleaseWriter:
     """Bind agent login to the existing sealed, private-draft Shop writer."""
 
     def __init__(
@@ -318,7 +318,7 @@ class FactoryAgentInstructionsWriter:
         sleeper: Sleeper = time.sleep,
     ) -> None:
         if not isinstance(store, InventorStore):
-            raise ContractError("Factory Instructions writer requires an InventorStore")
+            raise ContractError("Factory Release writer requires an InventorStore")
         if not isinstance(inventor_id, str) or not _INVENTOR_ID.fullmatch(inventor_id):
             raise ContractError("Factory inventor_id must be a canonical slug")
         if credentials.username.casefold() != inventor_id.casefold():
@@ -332,7 +332,7 @@ class FactoryAgentInstructionsWriter:
         )
 
     def __repr__(self) -> str:
-        return "FactoryAgentInstructionsWriter(inventor_id=%r, credentials=<redacted>)" % self.inventor_id
+        return "FactoryAgentReleaseWriter(inventor_id=%r, credentials=<redacted>)" % self.inventor_id
 
     def __call__(self, context: Any, sealed_root: Any, sealed_manifest: Any):
         identity = self._session.login()
@@ -344,7 +344,7 @@ class FactoryAgentInstructionsWriter:
             _PLACEHOLDER_TOKEN,
             transport=self._session.authenticated_transport,
         )
-        return ShopInstructionsWriter(
+        return ShopReleaseWriter(
             self._store,
             door,
             identity.owner_id,
@@ -354,10 +354,10 @@ class FactoryAgentInstructionsWriter:
 class FactoryPublicTransition:
     """Explicitly promote one verified private draft, then prove it by GET.
 
-    This is intentionally separate from Instructions. It never supplies a
+    This is intentionally separate from Release. It never supplies a
     price, title, attachment, or other creator-owned page material. Factory may
     apply its default listing policy. A caller must hand in the exact private
-    draft Receipt that Instructions authenticated.
+    draft Receipt that Release authenticated.
     """
 
     def __init__(self, session: FactoryAgentSession) -> None:
@@ -476,7 +476,7 @@ class FactoryPublicTransition:
 __all__ = [
     "FactoryAgentCredentials",
     "FactoryAgentIdentity",
-    "FactoryAgentInstructionsWriter",
+    "FactoryAgentReleaseWriter",
     "FactoryAgentSession",
     "FactoryPublicTransition",
     "FactoryAuthenticationError",

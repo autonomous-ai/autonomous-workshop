@@ -3,7 +3,7 @@
 Deliver is an external boundary.  A truthy dictionary is not evidence that a
 part was printed, inspected, packed, or accepted by a carrier.  These records
 give every configured production adapter one exact envelope and bind the four
-receipts into an ordered chain for the approved product and Instructions.
+receipts into an ordered chain for the approved product and Release.
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ _COMMON_FIELDS = frozenset(
         "provider_config_sha256",
         "receipt_id",
         "product_artifact_sha256",
-        "instructions_sha256",
+        "release_sha256",
         "observed_at",
         "details",
         "receipt_sha256",
@@ -125,7 +125,7 @@ class DeliveryEvidenceReceipt:
     provider_config_sha256: str
     receipt_id: str
     product_artifact_sha256: str
-    instructions_sha256: str
+    release_sha256: str
     observed_at: str
     details: Mapping[str, Any]
     schema_version: int = 1
@@ -151,7 +151,7 @@ class DeliveryEvidenceReceipt:
             self.product_artifact_sha256, "Deliver evidence product artifact sha256"
         )
         require_sha256(
-            self.instructions_sha256, "Deliver evidence Instructions sha256"
+            self.release_sha256, "Deliver evidence Release sha256"
         )
         require_utc_timestamp(self.observed_at, "Deliver evidence observed_at")
         details = _detail_copy(self.details, self.stage)
@@ -198,7 +198,7 @@ class DeliveryEvidenceReceipt:
                 or details["contents_count"] < 2
             ):
                 raise ContractError(
-                    "packing Deliver receipt must contain product and Instructions"
+                    "packing Deliver receipt must contain product and Release"
                 )
         else:
             if details["carrier"] not in _CARRIERS:
@@ -224,7 +224,7 @@ class DeliveryEvidenceReceipt:
             "provider_config_sha256": self.provider_config_sha256,
             "receipt_id": self.receipt_id,
             "product_artifact_sha256": self.product_artifact_sha256,
-            "instructions_sha256": self.instructions_sha256,
+            "release_sha256": self.release_sha256,
             "observed_at": self.observed_at,
             "details": dict(self.details),
         }
@@ -245,7 +245,7 @@ class DeliveryEvidenceReceipt:
             provider_config_sha256=value["provider_config_sha256"],
             receipt_id=value["receipt_id"],
             product_artifact_sha256=value["product_artifact_sha256"],
-            instructions_sha256=value["instructions_sha256"],
+            release_sha256=value["release_sha256"],
             observed_at=value["observed_at"],
             details=value["details"],
             schema_version=value["schema_version"],
@@ -260,7 +260,7 @@ def validate_delivery_evidence_chain(
     evidence: Any,
     *,
     product_artifact_sha256: str,
-    instructions_sha256: str,
+    release_sha256: str,
     carrier: str,
     service: str,
     tracking_id: str,
@@ -283,10 +283,10 @@ def validate_delivery_evidence_chain(
     for receipt in receipts:
         if (
             receipt.product_artifact_sha256 != product_artifact_sha256
-            or receipt.instructions_sha256 != instructions_sha256
+            or receipt.release_sha256 != release_sha256
         ):
             raise ContractError(
-                "Deliver evidence identifies different product or Instructions bytes"
+                "Deliver evidence identifies different product or Release bytes"
             )
     if any(
         later < earlier

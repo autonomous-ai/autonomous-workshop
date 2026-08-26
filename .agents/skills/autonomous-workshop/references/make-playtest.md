@@ -37,5 +37,5 @@ results.
 **Artifact and gate:** Leave artifact-bound Playtest evidence plus structured,
 evidence-linked feedback. The host validates the canonical `Playtested`
 contract. Any `improve` or `block` finding returns to Make, consumes a bounded
-round, and invalidates Playtest, Instructions, and Deliver evidence for the old
+round, and invalidates Playtest, Release, and Deliver evidence for the old
 bytes. Only a pass for the current artifact advances.

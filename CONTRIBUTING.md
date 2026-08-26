@@ -3,7 +3,7 @@
 This repository is a shared blueprint for autonomous inventors. The normal
 contribution is one new folder under `inventors/` with a distinctive Taste and
 a thin connection to the shared Workshop. Invent, Make, Playtest,
-Instructions, and Deliver are already supplied; custom Make or Playtest code
+Release, and Deliver are already supplied; custom Make or Playtest code
 is an explicit exception for genuinely niche behavior.
 
 Start with [Build an inventor](docs/BUILD_AN_INVENTOR.md). For a new
@@ -77,7 +77,7 @@ The Inventor contribution answers:
 
 Workshop-owned code answers:
 
-- How do shared Invent, Make/CAD, Playtest, Instructions, and Deliver run?
+- How do shared Invent, Make/CAD, Playtest, Release, and Deliver run?
 - How do their reward goals, feedback loops, and truthful waits work?
 - How does the runtime persist identity, state, leases, retries, budgets, and effects?
 - How are making skills and CAD/print evidence invoked and versioned?
@@ -99,7 +99,7 @@ The creation vocabulary has six jobs:
 - **Invent** for industrial design and concept selection;
 - **Make** for mechanical, CAD, and 3D design;
 - **Playtest** for exact-artifact checks and feedback;
-- **Instructions** for the product manual and authenticated private Factory handoff;
+- **Release** for the complete release package and authenticated private Factory handoff;
 - **Deliver** for printing, physical QA, packing, and carrier handoff.
 
 **Taste** is the inventor's creative constitution and guides every job; it is
@@ -191,7 +191,7 @@ in `src/workshop/make/` with tests in `tests/make/`; Playtest changes use
 `src/workshop/playtest/` and `tests/playtest/`.
 
 The shared component folders are `product`, `wish`, `match`, `invent`, `make`,
-`playtest`, `instructions`, `deliver`, `reviews`, `workflow`, `artifacts`,
+`playtest`, `release`, `deliver`, `reviews`, `workflow`, `artifacts`,
 `runtime`, `integrations`, and `contributors`. Keep Make's locked knowledge in
 one place at `src/workshop/make/skills/`. Put a persisted schema under the
 component that owns its contract, not in a second repository-root schema tree.
@@ -234,7 +234,7 @@ Reviewers will check that:
 
 1. capability claims match executable code and tests;
 2. the root taste contract influences the workflow;
-3. shared Invent, Make, Playtest, Instructions, Deliver, artifact, runtime, and integration infrastructure was reused
+3. shared Invent, Make, Playtest, Release, Deliver, artifact, runtime, and integration infrastructure was reused
    rather than copied;
 4. failure and ambiguity stop safely;
 5. current adoption is not described as completed target architecture;

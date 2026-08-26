@@ -24,7 +24,7 @@ class WorkshopRun:
     job: str
     round: int
     artifact_sha256: Optional[str] = None
-    instructions_sha256: Optional[str] = None
+    release_sha256: Optional[str] = None
     needs: Sequence[Need] = field(default_factory=tuple)
     delivery: Optional[Delivered] = None
     playtest_rounds: int = 1
@@ -49,9 +49,9 @@ class WorkshopRun:
             )
         if self.artifact_sha256 is not None:
             require_sha256(self.artifact_sha256, "WorkshopRun artifact sha256")
-        if self.instructions_sha256 is not None:
+        if self.release_sha256 is not None:
             require_sha256(
-                self.instructions_sha256, "WorkshopRun instructions sha256"
+                self.release_sha256, "WorkshopRun release sha256"
             )
         if self.page_url is not None:
             try:
@@ -77,7 +77,7 @@ class WorkshopRun:
             "round": self.round,
             "playtest_rounds": self.playtest_rounds,
             "artifact_sha256": self.artifact_sha256,
-            "instructions_sha256": self.instructions_sha256,
+            "release_sha256": self.release_sha256,
             "page_url": self.page_url,
             "invented": self.invented.to_dict() if self.invented is not None else None,
             "needs": [item.to_dict() for item in self.needs],

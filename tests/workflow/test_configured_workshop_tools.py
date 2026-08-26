@@ -45,9 +45,9 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
                 "workshop.playtest.agent.LaneAwarePlaytester",
                 side_effect=lambda: mock.Mock(name="shared-playtest"),
             ), mock.patch(
-                "workshop.instructions.agent.RewardedInstructions",
+                "workshop.release.agent.RewardedRelease",
                 side_effect=lambda writer: mock.Mock(
-                    name="shared-instructions", site_writer=writer
+                    name="shared-release", site_writer=writer
                 ),
             ):
                 bare = configured_workshop(
@@ -83,7 +83,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             FINITE_GAME_SIMULATOR_SOURCE,
         )
         self.assertIsNotNone(bare.tools.playtest)
-        self.assertIsNotNone(bare.tools.instructions)
+        self.assertIsNotNone(bare.tools.release)
         self.assertIs(partial.tools.invent, explicit_invent)
         self.assertIsNotNone(partial.tools.make)
         self.assertIsNotNone(partial.tools.playtest)
@@ -111,7 +111,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIsNone(workshop.tools.invent)
         self.assertIsNone(workshop.tools.make)
         self.assertIsNone(workshop.tools.playtest)
-        self.assertIsNone(workshop.tools.instructions)
+        self.assertIsNone(workshop.tools.release)
 
     def test_workflow_constructor_never_calls_application_composition(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -129,7 +129,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIsNone(workshop.tools.invent)
         self.assertIsNone(workshop.tools.make)
         self.assertIsNone(workshop.tools.playtest)
-        self.assertIsNone(workshop.tools.instructions)
+        self.assertIsNone(workshop.tools.release)
 
     def test_disabled_configuration_preserves_an_explicit_tool_set(self):
         explicit = WorkshopTools(make=mock.Mock(), deliver=mock.Mock())
@@ -152,7 +152,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             "workshop.playtest.agent.LaneAwarePlaytester",
             return_value=playtested,
         ), mock.patch(
-            "workshop.instructions.agent.RewardedInstructions",
+            "workshop.release.agent.RewardedRelease",
             return_value=rewarded,
         ) as rewarded_constructor:
             selected = configured_workshop_tools()
@@ -160,7 +160,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIs(selected.make, made)
         self.assertIs(selected.playtest, playtested)
         rewarded_constructor.assert_called_once_with(None)
-        self.assertIs(selected.instructions, rewarded)
+        self.assertIs(selected.release, rewarded)
 
     def test_legacy_invent_switch_cannot_disable_other_shared_defaults(self):
         explicit_make = mock.Mock()
@@ -180,7 +180,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             "workshop.playtest.agent.LaneAwarePlaytester",
             return_value=playtested,
         ), mock.patch(
-            "workshop.instructions.agent.RewardedInstructions",
+            "workshop.release.agent.RewardedRelease",
             return_value=rewarded,
         ):
             selected = configured_workshop_tools(existing)
@@ -188,7 +188,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIs(selected.invent, invented)
         self.assertIs(selected.make, explicit_make)
         self.assertIs(selected.playtest, playtested)
-        self.assertIs(selected.instructions, rewarded)
+        self.assertIs(selected.release, rewarded)
         self.assertIs(selected.deliver, explicit_deliver)
 
     def test_rejects_unknown_legacy_invent_mode(self):
@@ -217,7 +217,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             "workshop.playtest.agent.LaneAwarePlaytester",
             return_value=playtested,
         ), mock.patch(
-            "workshop.instructions.agent.RewardedInstructions",
+            "workshop.release.agent.RewardedRelease",
             return_value=rewarded,
         ) as rewarded_constructor:
             selected = configured_workshop_tools()
@@ -225,7 +225,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIs(selected.make, made)
         self.assertIs(selected.playtest, playtested)
         rewarded_constructor.assert_called_once_with(None)
-        self.assertIs(selected.instructions, rewarded)
+        self.assertIs(selected.release, rewarded)
         self.assertIsNone(selected.deliver)
 
     def test_full_switch_preserves_every_explicit_non_none_tool(self):
@@ -233,14 +233,14 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             invent=mock.Mock(),
             make=mock.Mock(),
             playtest=mock.Mock(),
-            instructions=mock.Mock(),
+            release=mock.Mock(),
             deliver=mock.Mock(),
         )
         with mock.patch.dict(
             os.environ,
             {
                 "WORKSHOP_AGENT_WORKERS": "codex",
-                # An explicit Instructions adapter means Factory credentials are
+                # An explicit Release adapter means Factory credentials are
                 # outside this helper's responsibility and must not be loaded.
                 "FACTORY_USERNAME": "partial-is-deliberately-ignored",
             },
@@ -259,10 +259,10 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
         self.assertIs(selected.invent, explicit.invent)
         self.assertIs(selected.make, explicit.make)
         self.assertIs(selected.playtest, explicit.playtest)
-        self.assertIs(selected.instructions, explicit.instructions)
+        self.assertIs(selected.release, explicit.release)
         self.assertIs(selected.deliver, explicit.deliver)
 
-    def test_factory_pair_builds_rewarded_instructions_on_shared_runtime_store(self):
+    def test_factory_pair_builds_rewarded_release_on_shared_runtime_store(self):
         invented = mock.Mock()
         made = mock.Mock()
         playtested = mock.Mock()
@@ -289,10 +289,10 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.runtime.store.InventorStore", return_value=store
             ) as store_constructor, mock.patch(
-                "workshop.integrations.factory_agent.FactoryAgentInstructionsWriter",
+                "workshop.integrations.factory_agent.FactoryAgentReleaseWriter",
                 return_value=writer,
             ) as writer_constructor, mock.patch(
-                "workshop.instructions.agent.RewardedInstructions",
+                "workshop.release.agent.RewardedRelease",
                 return_value=rewarded,
             ) as rewarded_constructor:
                 selected = configured_workshop_tools(
@@ -309,7 +309,7 @@ class ConfiguredWorkshopToolsTest(unittest.TestCase):
             "FactoryAgentCredentials(username=<redacted>, password=<redacted>)",
         )
         rewarded_constructor.assert_called_once_with(writer)
-        self.assertIs(selected.instructions, rewarded)
+        self.assertIs(selected.release, rewarded)
 
     def test_partial_factory_pair_fails_instead_of_silently_disabling_auth(self):
         with tempfile.TemporaryDirectory() as temporary, mock.patch.dict(

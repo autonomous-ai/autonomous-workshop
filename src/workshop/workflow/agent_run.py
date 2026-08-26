@@ -31,7 +31,7 @@ AGENT_RUN_STAGES = (
     "invent",
     "make",
     "playtest",
-    "instructions",
+    "release",
     "deliver",
 )
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
@@ -51,8 +51,8 @@ _FORWARD_TRANSITIONS = {
     "match": "invent",
     "invent": "make",
     "make": "playtest",
-    "playtest": "instructions",
-    "instructions": "deliver",
+    "playtest": "release",
+    "release": "deliver",
     "deliver": "complete",
 }
 _UPSTREAM_STAGE = {
@@ -60,10 +60,10 @@ _UPSTREAM_STAGE = {
     "invent": "match",
     "make": "invent",
     "playtest": "make",
-    "instructions": "playtest",
-    "deliver": "instructions",
+    "release": "playtest",
+    "deliver": "release",
 }
-_DOWNSTREAM_OF_MAKE = ("playtest", "instructions", "deliver")
+_DOWNSTREAM_OF_MAKE = ("playtest", "release", "deliver")
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -1289,7 +1289,7 @@ class AgentRun:
             raise TransitionError("deterministic gate is not bound to this exact outcome")
         if outcome.stage == "playtest" and outcome.proposed_transition == "make":
             if gate.passed:
-                raise TransitionError("passing Playtest must advance to Instructions")
+                raise TransitionError("passing Playtest must advance to Release")
             if payload["round_index"] >= payload["max_rounds"]:
                 raise TransitionError("Make-Playtest round budget is exhausted")
         elif not gate.passed:

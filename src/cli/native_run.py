@@ -111,7 +111,7 @@ def native_stage_prompt(stage: str) -> str:
         "invent",
         "make",
         "playtest",
-        "instructions",
+        "release",
         "deliver",
     ):
         raise ContractError("native run stage is invalid")
@@ -286,7 +286,9 @@ def _native_receipt(
         "max_rounds": checkpoint.max_rounds,
         "wish_sha256": checkpoint.wish_sha256,
         "checkpoint_sha256": checkpoint.checkpoint_sha256,
-        "instructions_sha256": materialized_agent_instructions_sha256(checkpoint),
+        "agent_instructions_sha256": materialized_agent_instructions_sha256(
+            checkpoint
+        ),
         "invalidated_stages": list(checkpoint.invalidated_stages),
         "action": action,
         "publication": {

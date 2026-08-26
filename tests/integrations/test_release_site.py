@@ -20,7 +20,7 @@ from workshop.integrations.shop import (
     HttpResponse,
     SHOP_USER_AGENT,
     ShopDoor,
-    ShopInstructionsWriter,
+    ShopReleaseWriter,
     _assert_shop_importable_pack,
     _build_model_handoff_pack,
     _factory_page_readiness,
@@ -70,7 +70,7 @@ def _tetra_shells(count, *, x_origin=0):
     return ("\n".join(lines) + "\n").encode("ascii")
 
 
-class InstructionsSiteContext:
+class ReleaseSiteContext:
     def __init__(self, made, product_id, lease_token=None):
         self.made = made
         self.wish = Wish.create(product_id, "A toy with a verified site page")
@@ -193,7 +193,7 @@ class CuratedShopTransport(SuccessfulShopTransport):
         return super().__call__(method, url, headers, body, timeout)
 
 
-class InstructionsSiteTest(unittest.TestCase):
+class ReleaseSiteTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -243,21 +243,21 @@ class InstructionsSiteTest(unittest.TestCase):
         self.store = InventorStore(self.root / "state.sqlite3")
         self.store.register_product(
             "verified-toy",
-            "instructions",
+            "release",
             artifact_sha256=self.made.artifact_sha256,
         )
-        self.instructions = self.root / "instructions"
-        self.instructions.mkdir(parents=True)
+        self.release = self.root / "release"
+        self.release.mkdir(parents=True)
         self.media = {}
-        (self.instructions / "INSTRUCTIONS.md").write_text(
+        (self.release / "MANUAL.md").write_text(
             "# Verified Toy\n\nUse the toy.\n", encoding="utf-8"
         )
         self.playtest_sha = "e" * 64
-        (self.instructions / "product.json").write_text(
+        (self.release / "product.json").write_text(
             json.dumps(
                 {
                     "schema_version": 2,
-                    "kind": "workshop.instructions-facts",
+                    "kind": "workshop.release-package",
                     "status": "facts-ready",
                     "title": "Verified Toy",
                     "summary": "An exact toy page.\n\nBy Alice.",
@@ -276,20 +276,20 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         self.manifest = build_artifact_manifest(
-            self.instructions, created_at="content-addressed"
+            self.release, created_at="content-addressed"
         )
 
     def test_shared_writer_creates_model_only_draft_with_pending_enrichment(self):
         lease = self.store.acquire_lease("verified-toy", "toy-workshop")
-        context = InstructionsSiteContext(self.made, "verified-toy", lease)
+        context = ReleaseSiteContext(self.made, "verified-toy", lease)
         transport = SuccessfulShopTransport(context, self.media)
-        writer = ShopInstructionsWriter(
+        writer = ShopReleaseWriter(
             self.store,
             ShopDoor("token", transport=transport),
             "owner-1",
         )
         try:
-            receipt = writer(context, self.instructions, self.manifest)
+            receipt = writer(context, self.release, self.manifest)
         finally:
             self.store.release_lease("verified-toy", lease)
 
@@ -297,7 +297,7 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertFalse(receipt.is_verified_public)
         self.assertIsNone(receipt.listing_currency)
         self.assertEqual(
-            receipt.details["instructions_sha256"],
+            receipt.details["release_sha256"],
             self.manifest.artifact_sha256,
         )
         self.assertEqual(
@@ -366,7 +366,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         self.assertEqual(
             _sealed_factory_primary(context),
             {
@@ -378,26 +378,26 @@ class InstructionsSiteTest(unittest.TestCase):
             },
         )
 
-        page_path = self.instructions / "product.json"
+        page_path = self.release / "product.json"
         page = json.loads(page_path.read_text(encoding="utf-8"))
         page["product_artifact_sha256"] = made.artifact_sha256
         page_path.write_text(
             json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
         )
-        instructions_manifest = build_artifact_manifest(
-            self.instructions, created_at="content-addressed"
+        release_manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
         )
         store = InventorStore(self.root / "mesh-preference.sqlite3")
         store.register_product(
-            "verified-toy", "instructions", artifact_sha256=made.artifact_sha256
+            "verified-toy", "release", artifact_sha256=made.artifact_sha256
         )
         lease = store.acquire_lease("verified-toy", "mesh-preference-test")
-        context = InstructionsSiteContext(made, "verified-toy", lease)
+        context = ReleaseSiteContext(made, "verified-toy", lease)
         transport = SuccessfulShopTransport(context, self.media)
         try:
-            receipt = ShopInstructionsWriter(
+            receipt = ShopReleaseWriter(
                 store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, instructions_manifest)
+            )(context, self.release, release_manifest)
         finally:
             store.release_lease("verified-toy", lease)
 
@@ -421,7 +421,7 @@ class InstructionsSiteTest(unittest.TestCase):
             "solid review-only\nendsolid review-only\n", encoding="utf-8"
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
 
         self.assertEqual(
@@ -435,7 +435,7 @@ class InstructionsSiteTest(unittest.TestCase):
             b"solid undeclared-production-body\nendsolid undeclared-production-body\n"
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
         primary = _factory_transport_primary(context, sealed_primary)
         packet = self.root / "undeclared-multipart.zip"
@@ -495,33 +495,33 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
         transported_primary = _factory_transport_primary(context, sealed_primary)
         self.assertEqual(sealed_primary["path"], "assembled.stl")
         self.assertEqual(transported_primary["path"], "verified-toy.stl")
         self.assertEqual(transported_primary["sha256"], sealed_primary["sha256"])
 
-        page_path = self.instructions / "product.json"
+        page_path = self.release / "product.json"
         page = json.loads(page_path.read_text(encoding="utf-8"))
         page["product_artifact_sha256"] = made.artifact_sha256
         page_path.write_text(
             json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
         )
-        instructions_manifest = build_artifact_manifest(
-            self.instructions, created_at="content-addressed"
+        release_manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
         )
         store = InventorStore(self.root / "multipart-mesh.sqlite3")
         store.register_product(
-            "verified-toy", "instructions", artifact_sha256=made.artifact_sha256
+            "verified-toy", "release", artifact_sha256=made.artifact_sha256
         )
         lease = store.acquire_lease("verified-toy", "multipart-mesh-test")
-        context = InstructionsSiteContext(made, "verified-toy", lease)
+        context = ReleaseSiteContext(made, "verified-toy", lease)
         transport = SuccessfulShopTransport(context, self.media)
         try:
-            receipt = ShopInstructionsWriter(
+            receipt = ShopReleaseWriter(
                 store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, instructions_manifest)
+            )(context, self.release, release_manifest)
         finally:
             store.release_lease("verified-toy", lease)
 
@@ -586,7 +586,7 @@ class InstructionsSiteTest(unittest.TestCase):
             json.dumps(sidecar_payload, sort_keys=True) + "\n", encoding="utf-8"
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
         primary = _factory_transport_primary(context, sealed_primary)
         packet = self.root / "occurrence-inventory.zip"
@@ -708,7 +708,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
         primary = _factory_transport_primary(context, sealed_primary)
         facts = {
@@ -754,7 +754,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         sealed_primary = _sealed_factory_primary(context)
         primary = _factory_transport_primary(context, sealed_primary)
         facts = {
@@ -799,7 +799,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         primary = _sealed_factory_primary(context)
         packet = self.root / "missing-occurrence.zip"
         facts = {
@@ -1006,7 +1006,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(product_root, product)
-        context = InstructionsSiteContext(made, "generator-toy")
+        context = ReleaseSiteContext(made, "generator-toy")
         primary = _sealed_factory_primary(context)
         self.assertEqual(primary["kind"], "generator")
         self.assertEqual(primary["path"], "generator.py")
@@ -1058,7 +1058,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(product_root, product)
-        context = InstructionsSiteContext(made, "slug-mesh-toy")
+        context = ReleaseSiteContext(made, "slug-mesh-toy")
         primary = _sealed_factory_primary(context)
         self.assertEqual(primary["kind"], "mesh")
         self.assertEqual(primary["path"], "slug-mesh-toy.stl")
@@ -1124,7 +1124,7 @@ class InstructionsSiteTest(unittest.TestCase):
             encoding="utf-8",
         )
         made = Made.from_root(product_root, product)
-        context = InstructionsSiteContext(made, "existing-slug-toy")
+        context = ReleaseSiteContext(made, "existing-slug-toy")
         sealed_primary = _sealed_factory_primary(context)
         primary = _factory_transport_primary(context, sealed_primary)
         self.assertEqual(sealed_primary["path"], "assembled.stl")
@@ -1155,8 +1155,8 @@ class InstructionsSiteTest(unittest.TestCase):
         product = dict(self.made.product)
         product["art_direction"] = {"notes": "nocturne " * 8_000}
         made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
-        context = InstructionsSiteContext(made, "verified-toy")
-        page = json.loads((self.instructions / "product.json").read_text())
+        context = ReleaseSiteContext(made, "verified-toy")
+        page = json.loads((self.release / "product.json").read_text())
 
         prompt = _factory_story_prompt(context, page)
 
@@ -1171,8 +1171,8 @@ class InstructionsSiteTest(unittest.TestCase):
             "under hard moonlight, then reveal the five-point star."
         )
         made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
-        context = InstructionsSiteContext(made, "verified-toy")
-        page = json.loads((self.instructions / "product.json").read_text())
+        context = ReleaseSiteContext(made, "verified-toy")
+        page = json.loads((self.release / "product.json").read_text())
 
         prompt = _factory_story_prompt(context, page)
 
@@ -1239,20 +1239,20 @@ class InstructionsSiteTest(unittest.TestCase):
         product = dict(self.made.product)
         product["story"] = {"setting": "a substituted story"}
         made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
 
         with self.assertRaisesRegex(ContractError, "artifact/product.json"):
-            ShopInstructionsWriter(
+            ShopReleaseWriter(
                 self.store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, self.manifest)
+            )(context, self.release, self.manifest)
         self.assertEqual(transport.calls, [])
 
     def test_divergent_root_primary_models_fail_closed(self):
         canonical = self.made.artifact_root / "verified-toy.stl"
         canonical.write_text("solid different\nendsolid different\n", encoding="utf-8")
         made = Made.from_root(self.made.artifact_root, self.made.product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
 
         with self.assertRaisesRegex(ContractError, "diverge"):
             _sealed_factory_primary(context)
@@ -1303,7 +1303,7 @@ class InstructionsSiteTest(unittest.TestCase):
         self.assertEqual(calls, [])
 
     def test_model_handoff_never_calls_image_upload(self):
-        context = InstructionsSiteContext(self.made, "verified-toy")
+        context = ReleaseSiteContext(self.made, "verified-toy")
         successful = SuccessfulShopTransport(context, self.media)
 
         def reject_upload(method, url, headers, body, timeout):
@@ -1311,53 +1311,53 @@ class InstructionsSiteTest(unittest.TestCase):
                 raise AssertionError("Workshop must not upload Factory page media")
             return successful(method, url, headers, body, timeout)
 
-        writer = ShopInstructionsWriter(
+        writer = ShopReleaseWriter(
             self.store,
             ShopDoor("token", transport=reject_upload),
             "owner-1",
         )
-        receipt = writer(context, self.instructions, self.manifest)
+        receipt = writer(context, self.release, self.manifest)
         self.assertTrue(receipt.is_verified_draft)
         self.assertEqual([call[0] for call in successful.calls], ["POST", "GET"])
 
     def test_pending_model_handoff_cannot_claim_page_ready(self):
-        context = InstructionsSiteContext(self.made, "verified-toy")
+        context = ReleaseSiteContext(self.made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
-        writer = ShopInstructionsWriter(
+        writer = ShopReleaseWriter(
             self.store, ShopDoor("token", transport=transport), "owner-1"
         )
-        receipt = writer(context, self.instructions, self.manifest)
+        receipt = writer(context, self.release, self.manifest)
         changed = receipt.to_dict()
         changed["details"] = dict(changed["details"])
         changed["details"]["enrichment_status"] = "complete"
         changed["details"]["page_ready"] = True
         with self.assertRaisesRegex(ReceiptError, "cannot claim"):
-            writer._assert_instructions_draft_receipt(
+            writer._assert_release_draft_receipt(
                 PublicationReceipt.from_dict(changed),
                 self.made.artifact_sha256,
                 self.manifest.artifact_sha256,
             )
 
     def test_completed_draft_replays_without_http_and_rejects_price_policy(self):
-        context = InstructionsSiteContext(self.made, "verified-toy")
+        context = ReleaseSiteContext(self.made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
         door = ShopDoor("token", transport=transport)
-        writer = ShopInstructionsWriter(self.store, door, "owner-1")
-        first = writer(context, self.instructions, self.manifest)
+        writer = ShopReleaseWriter(self.store, door, "owner-1")
+        first = writer(context, self.release, self.manifest)
         calls_after_draft = len(transport.calls)
 
-        replay = writer(context, self.instructions, self.manifest)
+        replay = writer(context, self.release, self.manifest)
         self.assertEqual(replay.to_dict(), first.to_dict())
         self.assertEqual(len(transport.calls), calls_after_draft)
 
         with self.assertRaisesRegex(ContractError, "separate owner-controlled"):
-            ShopInstructionsWriter(
+            ShopReleaseWriter(
                 self.store, door, "owner-1", price_cents=5000
             )
         self.assertEqual(len(transport.calls), calls_after_draft)
 
     def test_creator_page_copy_is_rejected_before_import(self):
-        page_path = self.instructions / "product.json"
+        page_path = self.release / "product.json"
         page = json.loads(page_path.read_text(encoding="utf-8"))
         page["use_case"] = {
             "label": "Made for your table",
@@ -1382,42 +1382,42 @@ class InstructionsSiteTest(unittest.TestCase):
             json.dumps(page, sort_keys=True) + "\n", encoding="utf-8"
         )
         manifest = build_artifact_manifest(
-            self.instructions, created_at="content-addressed"
+            self.release, created_at="content-addressed"
         )
-        context = InstructionsSiteContext(self.made, "verified-toy")
+        context = ReleaseSiteContext(self.made, "verified-toy")
         transport = CuratedShopTransport(context, self.media)
         with self.assertRaisesRegex(ContractError, "creator page copy"):
-            ShopInstructionsWriter(
+            ShopReleaseWriter(
                 self.store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, manifest)
+            )(context, self.release, manifest)
         self.assertEqual(transport.calls, [])
 
     def test_creator_factory_output_in_made_facts_is_rejected_before_import(self):
         product = dict(self.made.product)
         product["story_blocks"] = [{"body": "creator-authored page block"}]
         made = Made(self.made.artifact_root, self.made.artifact_manifest, product)
-        context = InstructionsSiteContext(made, "verified-toy")
+        context = ReleaseSiteContext(made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
 
         with self.assertRaisesRegex(ContractError, "creator-owned Factory output"):
-            ShopInstructionsWriter(
+            ShopReleaseWriter(
                 self.store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, self.manifest)
+            )(context, self.release, self.manifest)
         self.assertEqual(transport.calls, [])
 
-    def test_creator_media_in_instructions_is_rejected_before_import(self):
-        image = self.instructions / "hero.png"
+    def test_creator_media_in_release_is_rejected_before_import(self):
+        image = self.release / "hero.png"
         image.write_bytes(b"creator page render")
         manifest = build_artifact_manifest(
-            self.instructions, created_at="content-addressed"
+            self.release, created_at="content-addressed"
         )
-        context = InstructionsSiteContext(self.made, "verified-toy")
+        context = ReleaseSiteContext(self.made, "verified-toy")
         transport = SuccessfulShopTransport(context, self.media)
 
         with self.assertRaisesRegex(ContractError, "creator page media"):
-            ShopInstructionsWriter(
+            ShopReleaseWriter(
                 self.store, ShopDoor("token", transport=transport), "owner-1"
-            )(context, self.instructions, manifest)
+            )(context, self.release, manifest)
         self.assertEqual(transport.calls, [])
 
 

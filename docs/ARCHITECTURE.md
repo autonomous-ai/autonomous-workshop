@@ -19,7 +19,7 @@ Every product belongs to one of five categories:
   game design.
 - **Games that don't exist yet** (`invented-games`) — new rules, mysteries,
   strategy, competition, and tactile problems to solve. AI players exercise
-  the complete rules, strategies, endings, and exploits before Instructions;
+  the complete rules, strategies, endings, and exploits before Release;
   customer response arrives later as Reviews after delivery.
 - **Machines that move** (`moving-machines`) — mechanisms, kinetic desk toys,
   tiny machines, and objects with a satisfying motion.
@@ -48,7 +48,7 @@ They are not Workshop jobs and are not V1 promises.
 The complete Workshop vocabulary is:
 
 ```text
-creation:       Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+creation:       Wish -> Invent -> Make <-> Playtest -> Release -> Deliver
                                        feedback
 after delivery: customer Reviews -> a future revision of this toy
                                   -> future Wishes and Makes
@@ -63,13 +63,12 @@ after delivery: customer Reviews -> a future revision of this toy
   every relevant angle. A failed check returns actionable feedback to Make,
   producing a new immutable round. Playtest never means a human
   print-and-play session.
-- **Instructions** creates the paper that belongs in the box and a factual,
-  evidence-bound content brief. It preserves the terminal `By <Inventor>.`
-  attribution, sends a model-only private draft to Factory, and authenticates
-  that handoff. Factory owns later marketing images and page copy; the handoff
-  remains explicitly pending and not page-ready until a separate content
-  pipeline confirms enrichment. Instructions does not make the page public or
-  require an active listing.
+- **Release** assembles the complete release package: manual, structured product
+  data, product-page facts, media references, attribution, and publication
+  intent. It preserves the terminal `By <Inventor>.` attribution and binds the
+  package to exact product and Playtest evidence. Authenticated Factory import
+  and public publication remain host-owned effects; Release does not make the
+  page public or require an active listing.
 - **Deliver** produces, checks, packs, and hands the exact approved product to
   USPS, UPS, or FedEx.
 
@@ -84,7 +83,7 @@ already shipped.
 The owner-facing transition from private draft to public page is deliberately
 outside those six jobs. Calling `workshop wish` authorizes that separately
 verified transition by default; `--draft` keeps the page private for review.
-This does not delay Instructions or Deliver, claim physical fulfillment, or
+This does not delay Release or Deliver, claim physical fulfillment, or
 introduce a seventh job.
 
 ## The Workshop Manager
@@ -113,7 +112,7 @@ one Wish to the best fit once.
                          chosen inventor
                                |
                                v
-             creation: Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver
+             creation: Wish -> Invent -> Make <-> Playtest -> Release -> Deliver
                                                 feedback
              later:    customer Reviews -> future Makes
 ```
@@ -175,7 +174,7 @@ the machinery beneath her is shared by every inventor.
                              v
 +-------------------- SHARED WORKSHOP ----------------------+
 |                                                            |
-|  [Wish] -> [Invent] -> [Make] -> [Playtest] -> [Instructions] |
+|  [Wish] -> [Invent] -> [Make] -> [Playtest] -> [Release]      |
 |                          ^            |              |       |
 |                          +--feedback--+              v       |
 |                                                   [Deliver]  |
@@ -193,7 +192,7 @@ the machinery beneath her is shared by every inventor.
 
 Dependency remains one-way: Alice imports Workshop; Workshop never imports
 Alice. She demonstrates the Taste-only level: shared Workshop owns Invent,
-Make, Playtest, their improvement loops, Instructions, Deliver, and runtime.
+Make, Playtest, their improvement loops, Release, Deliver, and runtime.
 
 Alice is the bundled `classics-made-yours` example. Her earlier Blindcap work
 remains provenance that taught Workshop how to make and Playtest games; Leo is
@@ -209,13 +208,13 @@ The same boundary supports three levels of authorship:
 
 | Level | Inventor supplies | Workshop supplies |
 |---|---|---|
-| **Taste only** | `TASTE.md` | Invent, Make, Playtest, their loops, Instructions, Deliver, and runtime |
-| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Invent, Playtest, the feedback loop, Instructions, Deliver, and runtime |
-| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Invent, the feedback loop, Instructions, Deliver, and runtime |
+| **Taste only** | `TASTE.md` | Invent, Make, Playtest, their loops, Release, Deliver, and runtime |
+| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Invent, Playtest, the feedback loop, Release, Deliver, and runtime |
+| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Invent, the feedback loop, Release, Deliver, and runtime |
 
 A custom Playtest requires a custom Make. This keeps the maximum level honest:
 an inventor that changes how evidence is interpreted must also own the product
-contract being tested. Instructions and Deliver remain shared so every inventor gets
+contract being tested. Release and Deliver remain shared so every inventor gets
 the same truth and exact-artifact guarantees.
 
 The shared defaults are capabilities configured for the Workshop as a whole,
@@ -241,7 +240,7 @@ Wish + Taste + ToyBlueprint
       PlaytestContext  ->  Playtested
                             | evidence + Feedback
                             v
-          InstructionsContext  ->  ProductInstructions
+          ReleaseContext  ->  ProductRelease
                             | exact facts/paper manifest + authenticated private draft
                             v
        DeliverContext  ->  Delivered
@@ -253,18 +252,18 @@ Wish + Taste + ToyBlueprint
 `Invented` binds the scored industrial-design concept to the exact Wish and
 Taste. `Made` binds the resulting mechanical and 3D design to an immutable
 artifact tree. `Playtested` binds
-every result and evidence file to that artifact hash. `ProductInstructions` binds
+every result and evidence file to that artifact hash. `ProductRelease` binds
 the factual Factory handoff and in-box paper to both its own manifest and the
 product hash. Factory alone creates customer-facing page copy, images, and video.
 `Delivered` binds production and carrier receipts to the exact product and
-Instructions hashes.
+Release hashes.
 
 After delivery, customer Reviews may be collected with the delivered product
 identity and offered as input to a future Make. They do not mutate the
 completed run, re-grade its Playtest, or add another inventor hook.
 
-Changing product bytes after Make, evidence after Playtest, or page bytes after
-Instructions invalidates the next boundary. No later job is allowed to bless stale
+Changing product bytes after Make, evidence after Playtest, or package bytes after
+Release invalidates the next boundary. No later job is allowed to bless stale
 work.
 
 ## The Playtest improvement loop
@@ -342,10 +341,11 @@ Examples of truthful boundaries:
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
 pass. An inventor's own confidence is not independent evidence.
 
-## Instructions is part of the proof chain
+## Release is part of the proof chain
 
-Instructions begins only after Playtest passes for the exact Make. The shared
-default creates the in-box instructions plus a structured content brief and
+Release begins only after Playtest passes for the exact Make. The shared
+default creates the in-box manual plus structured product data, page facts,
+media references, attribution, publication intent, and a
 claim-to-evidence map. It derives a model-only handoff from the exact Make and
 imports it into Factory as a private draft. Local CAD previews, inspection
 renders, `use_case`, and `story_blocks` are never sent as marketing content.
@@ -363,7 +363,7 @@ design facts/specifications, rules/instructions, optional structured story and
 art direction, limitations, and exact inventor credit. The prompt is input to Factory enrichment, not
 creator-authored page output.
 
-Instructions stops there and advances to Deliver. It neither makes the page
+Release stops there and advances to Deliver. It neither makes the page
 public nor requires an active listing. An owner may review the draft and make
 it public later through a separate, explicit action outside the six-job
 pipeline.
@@ -377,8 +377,8 @@ after the model handoff; Workshop accepts that server-owned enrichment without
 requiring it to equal the original factual brief.
 
 Before any site effect, Workshop seals both the approved Make/Playtest
-checkpoint and the complete Instructions tree. If credentials disappear or a
-site response is ambiguous, `workshop.resume_instructions(wish)` reuses those
+checkpoint and the complete Release tree. If credentials disappear or a
+site response is ambiguous, `workshop.resume_release(wish)` reuses those
 exact bytes and retries only the idempotent model-handoff writer. It never
 reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
 separate handoff, not a silently retried Workshop side effect.
@@ -392,7 +392,7 @@ not be presented as proof that the current toy passed Playtest.
 ## Deliver is an exact-product boundary
 
 Deliver does not mean “a label was created.” It requires evidence for printing,
-QA, packing, and carrier handoff, bound to the approved product and Instructions hashes.
+QA, packing, and carrier handoff, bound to the approved product and Release hashes.
 The supported first-version carriers are USPS, UPS, and FedEx.
 
 External effects use durable intent, stable idempotency, scoped credentials,
@@ -428,7 +428,7 @@ src/
       cad/               CAD-specific contracts and helpers
       skills/            the single locked copy of making knowledge
     playtest/            simulation, evidence, feedback, and release gates
-    instructions/        in-box paper and factual Factory handoff
+    release/             complete release package and factual Factory handoff
     deliver/             production, QA, packing, and carrier handoff
     reviews/             post-delivery feedback for future work
     workflow/            six-job orchestration and improvement loop

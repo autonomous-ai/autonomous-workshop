@@ -25,7 +25,7 @@ def attribute_product_description(description: Any, inventor_name: Any) -> str:
 
     Existing copy is preserved. Only trailing whitespace and exact terminal
     ``By {Inventor}.`` credits are replaced, making the operation idempotent
-    across Make, Instructions, listing, and delivery boundaries.
+    across Make, Release, listing, and delivery boundaries.
     """
 
     if not isinstance(description, str) or not description.strip():

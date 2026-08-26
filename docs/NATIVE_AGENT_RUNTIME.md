@@ -51,7 +51,7 @@ host starts one native Codex session before Match
         |
         v
 Codex orchestrates Match -> Invent -> Make <-> Playtest
-                              -> Instructions -> Deliver
+                              -> Release -> Deliver
         |
         v
 host verifies each compact outcome and alone advances the checkpoint
@@ -70,10 +70,10 @@ separate model personas or separate Python agents.
 
 | Owner | Responsibilities |
 |---|---|
-| Native Codex session | understand the Wish, inspect files, Match, research, explore concepts, design, use CAD and other skills, create artifacts, inspect results, repair failures, write Instructions, and propose the next transition |
+| Native Codex session | understand the Wish, inspect files, Match, research, explore concepts, design, use CAD and other skills, create artifacts, inspect results, repair failures, assemble the Release package, and propose the next transition |
 | `workshop.workflow` | legal stage order, Make–Playtest round limit, invalidation, compact outcome protocol, and durable run checkpoint |
 | `workshop.runtime` | native-session launch/resume, sandbox and environment boundary, session checkpoint, leases, budgets, receipts, and recovery |
-| Lifecycle components | narrow public contracts and deterministic tools/gates owned by `wish`, `match`, `invent`, `make`, `playtest`, `instructions`, and `deliver` |
+| Lifecycle components | narrow public contracts and deterministic tools/gates owned by `wish`, `match`, `invent`, `make`, `playtest`, `release`, and `deliver` |
 | `workshop.integrations` | credential-bearing, idempotent external adapters invoked only by the trusted host after authorization |
 | `cli` | user-facing host entry points; it launches or resumes the native session but contains no product reasoning |
 

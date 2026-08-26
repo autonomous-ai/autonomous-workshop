@@ -30,7 +30,7 @@ _FIELDS = frozenset(
         "review_id",
         "review_sha256",
         "product_artifact_sha256",
-        "instructions_sha256",
+        "release_sha256",
         "delivery_tracking_id",
         "authenticated_at",
         "authentication_sha256",
@@ -95,7 +95,7 @@ class ReviewAuthentication:
     review_id: str
     review_sha256: str
     product_artifact_sha256: str
-    instructions_sha256: str
+    release_sha256: str
     delivery_tracking_id: str
     authenticated_at: str
     schema_version: int = 1
@@ -125,8 +125,8 @@ class ReviewAuthentication:
             "Review authentication product artifact sha256",
         )
         require_sha256(
-            self.instructions_sha256,
-            "Review authentication Instructions sha256",
+            self.release_sha256,
+            "Review authentication Release sha256",
         )
         _text(self.delivery_tracking_id, "Review delivery_tracking_id", 300)
         require_utc_timestamp(
@@ -149,7 +149,7 @@ class ReviewAuthentication:
             "review_id": self.review_id,
             "review_sha256": self.review_sha256,
             "product_artifact_sha256": self.product_artifact_sha256,
-            "instructions_sha256": self.instructions_sha256,
+            "release_sha256": self.release_sha256,
             "delivery_tracking_id": self.delivery_tracking_id,
             "authenticated_at": self.authenticated_at,
         }
@@ -173,7 +173,7 @@ class ReviewAuthentication:
             review_id=value["review_id"],
             review_sha256=value["review_sha256"],
             product_artifact_sha256=value["product_artifact_sha256"],
-            instructions_sha256=value["instructions_sha256"],
+            release_sha256=value["release_sha256"],
             delivery_tracking_id=value["delivery_tracking_id"],
             authenticated_at=value["authenticated_at"],
             schema_version=value["schema_version"],
@@ -198,7 +198,7 @@ class ReviewAuthentication:
             self.review_id != review.review_id
             or self.review_sha256 != review_sha256(review)
             or self.product_artifact_sha256 != review.product_artifact_sha256
-            or self.instructions_sha256 != review.instructions_sha256
+            or self.release_sha256 != review.release_sha256
             or self.delivery_tracking_id != review.delivery_tracking_id
         ):
             raise ContractError(

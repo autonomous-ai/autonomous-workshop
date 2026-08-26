@@ -20,7 +20,7 @@ def configured_workshop_tools(
     The Workshop-owned Invent, Make, and Playtest workers are the default.
     ``WORKSHOP_AGENT_WORKERS=disabled`` is an explicit diagnostic escape hatch;
     normal Inventors never need an environment switch to receive the engine.
-    Rewarded Instructions is also a shared default. Without Factory credentials
+    Rewarded Release is also a shared default. Without Factory credentials
     it still creates, scores, and seals the local manual and product facts, then
     waits truthfully at the external handoff. Explicit caller tools always win
     field by field.
@@ -34,7 +34,7 @@ def configured_workshop_tools(
     ``WORKSHOP_INVENT_WORKER=codex`` remains a backward-compatible alias for
     the normal shared-worker default. It must never strand an older direct
     profile with Invent alone while silently removing Make, Playtest, and
-    Instructions.
+    Release.
     """
 
     from workshop.workflow import WorkshopTools
@@ -56,7 +56,7 @@ def configured_workshop_tools(
     invent = selected.invent
     make = selected.make
     playtest = selected.playtest
-    instructions = selected.instructions
+    release = selected.release
 
     if invent is None:
         from workshop.invent.agent import CodexInventor
@@ -74,8 +74,8 @@ def configured_workshop_tools(
     if playtest is None:
         playtest = LaneAwarePlaytester()
 
-    if instructions is None:
-        from workshop.instructions.agent import RewardedInstructions
+    if release is None:
+        from workshop.release.agent import RewardedRelease
 
         site_writer = None
         factory_names = ("FACTORY_USERNAME", "FACTORY_PASSWORD")
@@ -84,18 +84,18 @@ def configured_workshop_tools(
         )
         if factory_environment_present:
             from workshop.integrations.factory_agent import (
-                FactoryAgentInstructionsWriter,
+                FactoryAgentReleaseWriter,
                 factory_credentials_from_environment,
             )
             from workshop.runtime.store import InventorStore
 
             if inventor_id is None:
                 raise ContractError(
-                    "Factory Instructions require the selected inventor_id"
+                    "Factory Release requires the selected inventor_id"
                 )
             if runtime_root is None:
                 raise ContractError(
-                    "Factory Instructions require a caller-supplied runtime_root"
+                    "Factory Release requires a caller-supplied runtime_root"
                 )
             try:
                 selected_runtime = Path(runtime_root)
@@ -110,18 +110,18 @@ def configured_workshop_tools(
                 os.environ,
             )
             store = InventorStore(selected_runtime / "workshop.sqlite3")
-            site_writer = FactoryAgentInstructionsWriter(
+            site_writer = FactoryAgentReleaseWriter(
                 store,
                 inventor_id,
                 credentials,
             )
-        instructions = RewardedInstructions(site_writer)
+        release = RewardedRelease(site_writer)
 
     return WorkshopTools(
         invent=invent,
         make=make,
         playtest=playtest,
-        instructions=instructions,
+        release=release,
         deliver=selected.deliver,
     )
 
@@ -156,7 +156,7 @@ def configured_workshop(
         invent=selected.invent,
         make=make if make is not None else selected.make,
         playtest=playtest if playtest is not None else selected.playtest,
-        instructions=selected.instructions,
+        release=selected.release,
         deliver=selected.deliver,
     )
     composed = configured_workshop_tools(

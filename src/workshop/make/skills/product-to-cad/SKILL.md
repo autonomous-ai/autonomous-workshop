@@ -51,7 +51,7 @@ physical proof as separate evidence streams.
    calibration, and renderer versions. A Workshop Playtest check marked
    `passed` must include the typed measurements and meet the numeric floor in
    [release-evidence.md](references/release-evidence.md); a generic
-   `{"checked": true}` is never enough. Continue to Instructions only when
+   `{"checked": true}` is never enough. Continue to Release only when
    every required digital Playtest result passes. Keep physical claims explicit
    for Deliver instead of asking Playtest to prove an exact print.
 

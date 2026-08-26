@@ -3044,7 +3044,7 @@ class CodexMaker:
         limitations = list(action["design_limitations"]) + [
             "This is a constrained parametric primitive prototype; detailed surface or mechanism CAD may still be required.",
             "The locked digital gate checked exact STEP solids, static-pose interference, measured bounds, STEP-derived meshes, bed placement, and sampled wall thickness only.",
-            "No exact material/printer/slicer profile has passed, so Playtest must wait before Instructions can publish this revision.",
+            "No exact material/printer/slicer profile has passed, so Playtest must wait before Release can package this revision.",
             "Static CAD does not prove physical fit, assembly path, motion, loads, wear, safety, print quality, or customer experience.",
             "Physical production, hands-on quality checks, packing, and shipping belong to Deliver.",
         ]
@@ -3080,7 +3080,7 @@ class CodexMaker:
             ],
             "limitations": limitations,
             "physical_prototype": False,
-            "site_status": "pending-instructions",
+            "site_status": "pending-release",
             "reviews_status": "begins-after-delivery",
         }
         _write_json(artifact / "wish.json", context.wish.to_dict())

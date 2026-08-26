@@ -36,7 +36,7 @@ class Feedback:
     finding: str
     change: str
     evidence_refs: Sequence[str] = field(default_factory=tuple)
-    invalidates: Sequence[str] = ("playtest", "instructions", "deliver")
+    invalidates: Sequence[str] = ("playtest", "release", "deliver")
 
     def __post_init__(self) -> None:
         bounded_text(self.code, "feedback code", 200)

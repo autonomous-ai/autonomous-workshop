@@ -18,7 +18,7 @@ class ToyBlueprintTest(unittest.TestCase):
     def test_workshop_has_six_jobs_and_five_plaything_lanes(self):
         self.assertEqual(
             WORKSHOP_JOBS,
-            ("wish", "invent", "make", "playtest", "instructions", "deliver"),
+            ("wish", "invent", "make", "playtest", "release", "deliver"),
         )
         self.assertEqual(
             PLAYTHING_LANES,

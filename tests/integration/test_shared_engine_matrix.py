@@ -16,7 +16,7 @@ COMMON_STAGE_FIELDS = (
     ("invent_job", "invent"),
     ("make_job", "make"),
     ("playtest_job", "playtest"),
-    ("instructions_job", "instructions"),
+    ("release_job", "release"),
     ("deliver_job", "deliver"),
 )
 
@@ -82,8 +82,8 @@ class SharedEngineMatrixTest(unittest.TestCase):
             )
             stack.enter_context(
                 mock.patch(
-                    "workshop.instructions.agent.RewardedInstructions",
-                    return_value=self.shared["instructions"],
+                    "workshop.release.agent.RewardedRelease",
+                    return_value=self.shared["release"],
                 )
             )
             stack.enter_context(
@@ -150,14 +150,14 @@ class SharedEngineMatrixTest(unittest.TestCase):
         self.assertIs(bob.invent_job, self.shared["invent"])
         self.assertIs(bob.make_job, custom_make)
         self.assertIs(bob.playtest_job, self.shared["playtest"])
-        self.assertIs(bob.instructions_job, self.shared["instructions"])
+        self.assertIs(bob.release_job, self.shared["release"])
         self.assertIs(bob.deliver_job, self.shared["deliver"])
         self.assertEqual(bob.customization_level, "custom-make")
 
         self.assertIs(leo.invent_job, self.shared["invent"])
         self.assertIs(leo.make_job, custom_leo_make)
         self.assertIs(leo.playtest_job, custom_leo_playtest)
-        self.assertIs(leo.instructions_job, self.shared["instructions"])
+        self.assertIs(leo.release_job, self.shared["release"])
         self.assertIs(leo.deliver_job, self.shared["deliver"])
         self.assertEqual(leo.customization_level, "custom-playtest")
 
@@ -208,7 +208,7 @@ class SharedEngineMatrixTest(unittest.TestCase):
                         else self.shared["playtest"],
                     )
                     self.assertIs(
-                        workshop.instructions_job, self.shared["instructions"]
+                        workshop.release_job, self.shared["release"]
                     )
                     self.assertIs(workshop.deliver_job, self.shared["deliver"])
                     self.assertEqual(workshop.customization_level, level)

@@ -328,8 +328,8 @@ class AgentRunTest(unittest.TestCase):
             ("match", "invent"),
             ("invent", "make"),
             ("make", "playtest"),
-            ("playtest", "instructions"),
-            ("instructions", "deliver"),
+            ("playtest", "release"),
+            ("release", "deliver"),
             ("deliver", "complete"),
         ):
             checkpoint = self.advance(run, stage, transition)
@@ -338,7 +338,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint.stage, "deliver")
         self.assertEqual(checkpoint.round_index, 1)
         self.assertEqual(set(checkpoint.stage_artifacts), set(
-            ("wish", "match", "invent", "make", "playtest", "instructions", "deliver")
+            ("wish", "match", "invent", "make", "playtest", "release", "deliver")
         ))
         with self.assertRaises(TransitionError):
             run.apply_outcome(
@@ -391,7 +391,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual((checkpoint.stage, checkpoint.round_index), ("make", 2))
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "instructions", "deliver"),
+            ("playtest", "release", "deliver"),
         )
 
         support = self.artifact(
@@ -411,7 +411,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(len(checkpoint.stage_artifacts["make"]), 2)
         self.assertEqual(
             checkpoint.invalidated_stages,
-            ("playtest", "instructions", "deliver"),
+            ("playtest", "release", "deliver"),
         )
         second_failure = self.outcome(
             run,
@@ -436,7 +436,7 @@ class AgentRunTest(unittest.TestCase):
         advance = self.outcome(
             run,
             "playtest",
-            "instructions",
+            "release",
             name="passing.json",
             content=b'{"passed":true}\n',
         )

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from workshop.deliver import DeliveryPort
-from workshop.instructions import LaunchPort
+from workshop.release import LaunchPort
 from workshop.make import CadDoor, CadInspectionDoor, InspectionDoor, ModelDoor
 
 

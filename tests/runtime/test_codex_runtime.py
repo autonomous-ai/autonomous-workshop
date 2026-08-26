@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from workshop import instructions, invent, make, match, playtest
-from workshop.instructions.agent import RewardedInstructions
+from workshop import invent, make, match, playtest, release
+from workshop.release.agent import RewardedRelease
 from workshop.invent.agent import CodexInventor
 from workshop.make.agent import CodexMaker
 from workshop.playtest.agent import LaneAwarePlaytester
@@ -62,7 +62,7 @@ class ScriptedInvocationRunner:
 class CodexModelPolicyTest(unittest.TestCase):
     def test_stage_output_schemas_leave_uniqueness_to_trusted_validation(self):
         modules = (
-            instructions.agent,
+            release.agent,
             invent.agent,
             make.agent,
             match.semantic,
@@ -166,8 +166,8 @@ class CodexModelPolicyTest(unittest.TestCase):
             ("WORKSHOP_MAKE_MODEL", CodexMaker),
             ("WORKSHOP_MAKE_REWARD_MODEL", CodexMaker),
             ("WORKSHOP_PLAYTEST_MODEL", LaneAwarePlaytester),
-            ("WORKSHOP_INSTRUCTIONS_MODEL", RewardedInstructions),
-            ("WORKSHOP_INSTRUCTIONS_REWARD_MODEL", RewardedInstructions),
+            ("WORKSHOP_RELEASE_MODEL", RewardedRelease),
+            ("WORKSHOP_RELEASE_REWARD_MODEL", RewardedRelease),
         )
         for variable, constructor in cases:
             with self.subTest(variable=variable), mock.patch.dict(

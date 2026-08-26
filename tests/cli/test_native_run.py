@@ -80,7 +80,7 @@ class NativeCliRunTest(unittest.TestCase):
                 WorkshopManager=mock.DEFAULT,
                 _save_manager_assignment=mock.DEFAULT,
                 _run_inventor=mock.DEFAULT,
-                _resume_factory_instructions=mock.DEFAULT,
+                _resume_factory_release=mock.DEFAULT,
                 _publish_inventor_draft=mock.DEFAULT,
             ) as legacy, redirect_stdout(
                 stdout
@@ -191,7 +191,7 @@ class NativeCliRunTest(unittest.TestCase):
                 "cli.main._catalog_roots",
                 side_effect=AssertionError("native resume must precede legacy lookup"),
             ), mock.patch(
-                "cli.main._resume_factory_instructions"
+                "cli.main._resume_factory_release"
             ) as factory_resume, redirect_stdout(output), redirect_stderr(StringIO()):
                 self.assertEqual(
                     main(("resume", product_id, "--root", "/obsolete", "--json")),
@@ -224,7 +224,8 @@ class NativeCliRunTest(unittest.TestCase):
             self.assertEqual(status["kind"], "native-agent-run")
             self.assertEqual(status["session_status"], "checkpointed")
             self.assertEqual(
-                status["instructions_sha256"], started["constitution_sha256"]
+                status["agent_instructions_sha256"],
+                started["constitution_sha256"],
             )
 
     def test_resume_safely_restarts_only_when_no_session_checkpoint_exists(self):

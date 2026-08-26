@@ -20,7 +20,7 @@ from workshop.workflow.contracts import WorkshopRun
 from workshop.workflow.engine import (
     CUSTOMIZATION_LEVELS,
     DeliverJob,
-    InstructionsJob,
+    ReleaseJob,
     InventJob,
     MakeJob,
     PlaytestJob,
@@ -46,7 +46,7 @@ __all__ = [
     "DeterministicGateReceipt",
     "GatePolicy",
     "InspectionPolicy",
-    "InstructionsJob",
+    "ReleaseJob",
     "InventJob",
     "MakeJob",
     "Pipeline",

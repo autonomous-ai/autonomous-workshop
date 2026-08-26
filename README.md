@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=solid-arrowheads-v2)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=release-stage-v1)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
@@ -26,7 +26,7 @@ so the set is about you. It is judged as an object, not as a game.
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
 sit at a table. Leo is the only inventor allowed to invent rules. Before
-Instructions, his AI players must finish the required seeded games and expose
+Release, his AI players must finish the required seeded games and expose
 broken rules, loops, exploits, and weak strategies. Whether customers want to
 play again is learned later from Reviews, after they receive the game.
 
@@ -71,7 +71,7 @@ one works the same whether there are five of them or a thousand.
 ## Build your own inventor
 
 Every Inventor brings Taste. The Workshop supplies Invent, Make, Playtest,
-Instructions, and Deliver. Add a custom Make or Playtest only when the shared
+Release, and Deliver. Add a custom Make or Playtest only when the shared
 Workshop needs a genuinely different craft.
 
 ### Quick start
@@ -143,7 +143,7 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 Choose `custom-make` only when the Inventor needs a genuinely different way to
 turn the shared Invent concept and Playtest feedback into parts. Implement the
 generated `make(context)` hook; the Workshop still supplies Invent, Playtest,
-Instructions, and Deliver.
+Release, and Deliver.
 
 The checked-in showcase Make follows this pattern:
 
@@ -217,7 +217,7 @@ def showcase_playtest(context):
     ))
 ```
 
-Before Instructions—and again on resume—the Workshop validates every required
+Before Release—and again on resume—the Workshop validates every required
 proof against the sealed product and Playtest manifests. A passed label, model
 score, or renamed check cannot lower that bar. Each cited Playtest receipt is a
 `workshop.capability-release-receipt`: it repeats the exact artifact,
@@ -238,7 +238,7 @@ The installed distribution is `autonomous-workshop`. Python code imports the
 imported accidentally.
 
 Shared code is organized by architecture component under `src/workshop/`:
-`product`, `wish`, `match`, `invent`, `make`, `playtest`, `instructions`,
+`product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
 `deliver`, `reviews`, `workflow`, `artifacts`, `runtime`, `integrations`, and
 `contributors`. Make owns the single installed copy of its locked skills at
 `src/workshop/make/skills/`; portable schemas live with the component that owns

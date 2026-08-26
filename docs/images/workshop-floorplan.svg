@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1660" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
-  <desc id="description">A vertical journey through the Workshop from Wish and Match to Invent, Make, Playtest, Instructions, Deliver, and Reviews. Invent is concept exploration and industrial design. Make is mechanical and 3D design. Invent, Make, and Instructions have self-improving loops. AI Players send problems back to Make, and customer Reviews inspire the next revision and future Wishes.</desc>
+  <desc id="description">A vertical journey through the Workshop from Wish and Match to Invent, Make, Playtest, Release, Deliver, and Reviews. Invent is concept exploration and industrial design. Make is mechanical and 3D design. Invent, Make, and Release have self-improving loops. AI Players send problems back to Make, and customer Reviews inspire the next revision and future Wishes.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -172,24 +172,24 @@
   <rect x="530" y="1026" width="136" height="26" rx="13" fill="#eef8ff"/>
   <text x="598" y="1044" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
 
-  <!-- Instructions -->
+  <!-- Release -->
   <g filter="url(#shadow)">
     <rect class="node-internal" x="220" y="1070" width="560" height="140" rx="20"/>
   </g>
   <line x1="600" y1="1090" x2="600" y2="1190" stroke="#edc58a" stroke-width="1.5"/>
   <text x="250" y="1097" class="eyebrow eyebrow-internal">AI INVENTOR · SELF-IMPROVING LOOP</text>
-  <text x="250" y="1131" class="heading">INSTRUCTIONS</text>
-  <text x="250" y="1158" class="body">Create the product page, manual, and everything</text>
-  <text x="250" y="1180" class="body">the new owner needs to begin.</text>
+  <text x="250" y="1131" class="heading">RELEASE</text>
+  <text x="250" y="1158" class="body">Assemble the manual, product page package,</text>
+  <text x="250" y="1180" class="body">media, data, attribution, and publication intent.</text>
   <path class="micro" d="M 665 1098 C 735 1072, 764 1125, 730 1172 C 700 1212, 633 1183, 646 1136"/>
   <text x="697" y="1107" text-anchor="middle" class="micro-copy">OBSERVE</text>
   <text x="697" y="1129" text-anchor="middle" class="micro-copy">ACT</text>
   <text x="697" y="1151" text-anchor="middle" class="micro-copy">REWARD</text>
   <text x="697" y="1173" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
-  <!-- Instructions gate -->
+  <!-- Release gate -->
   <rect x="504" y="1226" width="168" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="1244" text-anchor="middle" class="gate">INSTRUCTIONS GOAL REACHED</text>
+  <text x="588" y="1244" text-anchor="middle" class="gate">RELEASE GOAL REACHED</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">

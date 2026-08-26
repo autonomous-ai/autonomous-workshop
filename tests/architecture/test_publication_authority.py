@@ -63,20 +63,20 @@ class PublicationAuthorityTest(unittest.TestCase):
                         % (path.relative_to(ROOT), node.lineno),
                     )
 
-    def test_default_instructions_has_no_production_media_provider(self):
+    def test_default_release_has_no_production_media_provider(self):
         for path in production_python():
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
                 if not (
                     isinstance(node, ast.Call)
                     and isinstance(node.func, ast.Name)
-                    and node.func.id == "DefaultInstructions"
+                    and node.func.id == "DefaultRelease"
                 ):
                     continue
                 self.assertLessEqual(
                     len(node.args),
                     1,
-                    "%s:%d uses the retired two-provider Instructions API"
+                    "%s:%d uses the retired two-provider Release API"
                     % (path.relative_to(ROOT), node.lineno),
                 )
                 self.assertFalse(

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from workshop.artifacts import load_artifact_payload, validate_artifact_payload
 from workshop.deliver import DeliveryDoor, DeliveryPort
-from workshop.instructions import LaunchPort
+from workshop.release import LaunchPort
 from workshop.integrations import Adapter
 from workshop.integrations.doors import (
     CadDoor as LegacyCadDoor,

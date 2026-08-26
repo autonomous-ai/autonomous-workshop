@@ -14,7 +14,7 @@ COMPONENTS = {
     "artifacts",
     "contributors",
     "deliver",
-    "instructions",
+    "release",
     "integrations",
     "invent",
     "make",

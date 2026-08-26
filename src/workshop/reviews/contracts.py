@@ -22,7 +22,7 @@ class CustomerReview:
 
     review_id: str
     product_artifact_sha256: str
-    instructions_sha256: str
+    release_sha256: str
     delivery_tracking_id: str
     rating: int
     feedback: str
@@ -35,8 +35,8 @@ class CustomerReview:
             "CustomerReview product artifact sha256",
         )
         require_sha256(
-            self.instructions_sha256,
-            "CustomerReview instructions sha256",
+            self.release_sha256,
+            "CustomerReview release sha256",
         )
         bounded_text(
             self.delivery_tracking_id,
@@ -53,11 +53,11 @@ class CustomerReview:
             raise ContractError("CustomerReview requires a Delivered result")
         if (
             self.product_artifact_sha256 != delivered.product_artifact_sha256
-            or self.instructions_sha256 != delivered.instructions_sha256
+            or self.release_sha256 != delivered.release_sha256
             or self.delivery_tracking_id != delivered.tracking_id
         ):
             raise ContractError(
-                "CustomerReview belongs to a different product, Instructions, or delivery"
+                "CustomerReview belongs to a different product, Release, or delivery"
             )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,7 +65,7 @@ class CustomerReview:
             "schema_version": 1,
             "review_id": self.review_id,
             "product_artifact_sha256": self.product_artifact_sha256,
-            "instructions_sha256": self.instructions_sha256,
+            "release_sha256": self.release_sha256,
             "delivery_tracking_id": self.delivery_tracking_id,
             "rating": self.rating,
             "feedback": self.feedback,

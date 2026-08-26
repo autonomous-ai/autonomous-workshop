@@ -140,24 +140,24 @@ def _validate_live_request(
     # asking the runtime to fence them. The store deliberately treats
     # ``assembly_parts`` as opaque finite JSON.
     proof = document.get("proof")
-    bound_instructions = persisted_request.get("_workshop_instructions_sha256")
+    bound_release = persisted_request.get("_workshop_release_sha256")
     bound_playtest = persisted_request.get("_workshop_playtest_evidence_sha256")
-    if bound_instructions is not None and proof is None:
+    if bound_release is not None and proof is None:
         raise StateConflict(
-            "Instructions-owned Shop requests require sealed public proof"
+            "Release-owned Shop requests require sealed public proof"
         )
     if proof is not None:
         if not isinstance(proof, Mapping):
             raise ContractError("live proof must be an object")
         allowed_proof = {
-            "instructions_sha256",
+            "release_sha256",
             "playtest_evidence_sha256",
             "page_url",
         }
-        if set(proof) - allowed_proof or "instructions_sha256" not in proof:
+        if set(proof) - allowed_proof or "release_sha256" not in proof:
             raise ContractError("live proof contains unsupported fields")
         for name in (
-            "instructions_sha256",
+            "release_sha256",
             "playtest_evidence_sha256",
         ):
             if proof.get(name) is not None:
@@ -177,11 +177,11 @@ def _validate_live_request(
                 or any(ord(character) < 32 or ord(character) == 127 for character in page_url)
             ):
                 raise ContractError("live proof page_url must be absolute HTTPS")
-        if proof["instructions_sha256"] != persisted_request.get(
-            "_workshop_instructions_sha256"
+        if proof["release_sha256"] != persisted_request.get(
+            "_workshop_release_sha256"
         ):
             raise StateConflict(
-                "live proof Instructions hash does not match the sealed draft request"
+                "live proof Release hash does not match the sealed draft request"
             )
         if bound_playtest is not None and proof.get(
             "playtest_evidence_sha256"
@@ -189,15 +189,15 @@ def _validate_live_request(
             raise StateConflict(
                 "live proof Playtest hash does not match the sealed draft request"
             )
-        if bound_instructions is not None:
+        if bound_release is not None:
             required_proof = {
-                "instructions_sha256",
+                "release_sha256",
                 "playtest_evidence_sha256",
                 "page_url",
             }
             if set(proof) != required_proof:
                 raise StateConflict(
-                    "Instructions-owned Shop proof is incomplete"
+                    "Release-owned Shop proof is incomplete"
                 )
     return document
 
@@ -1484,13 +1484,13 @@ class InventorStore:
             receipt=receipt,
         )
 
-    def mark_instructions_draft_ready(
+    def mark_release_draft_ready(
         self,
         intent_id: str,
         receipt: PublicationReceipt,
         lease_token: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Bind a model-only private Shop draft to sealed Instructions.
+        """Bind a model-only private Shop draft to a sealed Release package.
 
         Factory owns the downstream images, copy, and optional video.  This
         transition therefore records authenticated model/history readback and
@@ -1503,20 +1503,20 @@ class InventorStore:
         self._assert_draft_receipt(intent, receipt)
         if not receipt.is_verified_draft:
             raise ReceiptError(
-                "Instructions completion requires authenticated private draft readback"
+                "Release completion requires authenticated private draft readback"
             )
         request = intent.get("request")
         if not isinstance(request, Mapping):
-            raise ReceiptError("Instructions draft request is missing")
-        instructions_sha256 = request.get("_workshop_instructions_sha256")
+            raise ReceiptError("Release draft request is missing")
+        release_sha256 = request.get("_workshop_release_sha256")
         playtest_sha256 = request.get("_workshop_playtest_evidence_sha256")
-        require_sha256(instructions_sha256, "Instructions draft sha256")
-        require_sha256(playtest_sha256, "Instructions Playtest evidence sha256")
+        require_sha256(release_sha256, "Release package sha256")
+        require_sha256(playtest_sha256, "Release Playtest evidence sha256")
         details = receipt.details
         required_details = {
             "cover_url",
             "server_cover_urls",
-            "instructions_sha256",
+            "release_sha256",
             "playtest_evidence_sha256",
             "page_url",
             "handoff_artifact_sha256",
@@ -1528,20 +1528,20 @@ class InventorStore:
             "page_ready",
         }
         if not required_details <= set(details):
-            raise ReceiptError("Instructions draft receipt proof is incomplete")
-        if details.get("instructions_sha256") != instructions_sha256:
-            raise ReceiptError("Instructions draft receipt describes different Instructions bytes")
+            raise ReceiptError("Release draft receipt proof is incomplete")
+        if details.get("release_sha256") != release_sha256:
+            raise ReceiptError("Release draft receipt describes different Release bytes")
         if details.get("playtest_evidence_sha256") != playtest_sha256:
-            raise ReceiptError("Instructions draft receipt describes different Playtest evidence")
+            raise ReceiptError("Release draft receipt describes different Playtest evidence")
         handoff_sha256 = request.get("_workshop_handoff_artifact_sha256")
         require_sha256(handoff_sha256, "Factory model handoff sha256")
         if details.get("handoff_artifact_sha256") != handoff_sha256:
             raise ReceiptError(
-                "Instructions draft receipt describes a different model handoff"
+                "Release draft receipt describes a different model handoff"
             )
         require_sha256(
             details.get("product_facts_sha256"),
-            "Instructions product facts sha256",
+            "Release product facts sha256",
         )
         primary_path = details.get("primary_model_path")
         if (
@@ -1550,14 +1550,14 @@ class InventorStore:
             or "/" in primary_path
             or "\\" in primary_path
         ):
-            raise ReceiptError("Instructions primary model path is malformed")
+            raise ReceiptError("Release primary model path is malformed")
         require_sha256(
             details.get("primary_model_sha256"),
-            "Instructions primary model sha256",
+            "Release primary model sha256",
         )
         require_sha256(
             details.get("content_brief_sha256"),
-            "Instructions content brief sha256",
+            "Release content brief sha256",
         )
         if (
             details.get("enrichment_status") != "pending"
@@ -1572,7 +1572,7 @@ class InventorStore:
                 parsed_url = urllib.parse.urlsplit(url)
             except (TypeError, ValueError) as exc:
                 raise ReceiptError(
-                    "Instructions draft %s must be absolute HTTPS" % url_name
+                    "Release draft %s must be absolute HTTPS" % url_name
                 ) from exc
             if (
                 not isinstance(url, str)
@@ -1584,7 +1584,7 @@ class InventorStore:
                 or parsed_url.fragment
             ):
                 raise ReceiptError(
-                    "Instructions draft %s must be absolute HTTPS" % url_name
+                    "Release draft %s must be absolute HTTPS" % url_name
                 )
         server_covers = details.get("server_cover_urls")
         if (
@@ -1606,7 +1606,7 @@ class InventorStore:
             )
             if row["state"] != "succeeded":
                 raise StateConflict(
-                    "Instructions page effects require an authenticated private draft"
+                    "Release page effects require an authenticated private draft"
                 )
             persisted = PublicationReceipt.from_dict(_object(row["receipt_json"]))
             self._assert_draft_receipt(self._row(row), persisted)
@@ -1622,7 +1622,7 @@ class InventorStore:
                 or imported_covers != server_covers
             ):
                 raise ReceiptError(
-                    "Instructions draft cover does not match authenticated import readback"
+                    "Release draft cover does not match authenticated import readback"
                 )
             identity_fields = (
                 "packet_sha256",
@@ -1639,13 +1639,13 @@ class InventorStore:
                 for field in identity_fields
             ):
                 raise ReceiptError(
-                    "Instructions readback does not identify the imported draft history"
+                    "Release readback does not identify the imported draft history"
                 )
-            already_bound = persisted.details.get("instructions_sha256")
+            already_bound = persisted.details.get("release_sha256")
             if already_bound is not None:
                 if persisted.to_dict() != receipt.to_dict():
                     raise StateConflict(
-                        "completed Instructions draft receipt changed during replay"
+                        "completed Release draft receipt changed during replay"
                     )
                 return self._row(row)
 
@@ -1890,7 +1890,7 @@ class InventorStore:
             receipt.details.get(name) != value for name, value in proof.items()
         ):
             raise ReceiptError(
-                "live receipt details do not match the persisted Instructions proof"
+                "live receipt details do not match the persisted Release proof"
             )
         cls._assert_draft_receipt(
             intent,

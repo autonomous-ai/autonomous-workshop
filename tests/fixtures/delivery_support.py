@@ -5,7 +5,7 @@ from workshop.deliver.evidence import DeliveryEvidenceReceipt
 
 def fixture_delivery_evidence(
     product_artifact_sha256,
-    instructions_sha256,
+    release_sha256,
     *,
     carrier="USPS",
     service="Priority Mail",
@@ -18,7 +18,7 @@ def fixture_delivery_evidence(
         "provider_version": "1.0.0",
         "provider_config_sha256": "d" * 64,
         "product_artifact_sha256": product_artifact_sha256,
-        "instructions_sha256": instructions_sha256,
+        "release_sha256": release_sha256,
         "observed_at": observed_at,
     }
     printed = DeliveryEvidenceReceipt(

@@ -41,7 +41,7 @@ from workshop.contributors import (
 )
 from workshop.errors import AmbiguousEffectError, EffectError, WorkshopError
 from workshop.integrations.factory_agent import (
-    FactoryAgentInstructionsWriter,
+    FactoryAgentReleaseWriter,
     FactoryAgentSession,
     FactoryPublicTransition,
     factory_credentials_from_environment,
@@ -56,10 +56,10 @@ from workshop.invent.contracts import Invented
 from workshop.outcomes import Need, WaitingFor
 from workshop.workflow import WorkshopRun
 from workshop.runtime.execution import codex_subprocess_environment, minimal_tool_environment
-from workshop.instructions.agent import (
-    DEFAULT_INSTRUCTIONS_CREATOR_MODEL,
-    DEFAULT_INSTRUCTIONS_REWARD_MODEL,
-    RewardedInstructions,
+from workshop.release.agent import (
+    DEFAULT_RELEASE_CREATOR_MODEL,
+    DEFAULT_RELEASE_REWARD_MODEL,
+    RewardedRelease,
 )
 from workshop.wish import Wish, generate_wish_id
 from workshop.contributors import (
@@ -96,8 +96,8 @@ _SHARED_ENGINE_ENVIRONMENT_NAMES = frozenset(
         "WORKSHOP_MAKE_MODEL",
         "WORKSHOP_MAKE_REWARD_MODEL",
         "WORKSHOP_PLAYTEST_MODEL",
-        "WORKSHOP_INSTRUCTIONS_MODEL",
-        "WORKSHOP_INSTRUCTIONS_REWARD_MODEL",
+        "WORKSHOP_RELEASE_MODEL",
+        "WORKSHOP_RELEASE_REWARD_MODEL",
         "WORKSHOP_CAD_PYTHON",
         "WORKSHOP_HANDLING_FORCE_N",
         "WORKSHOP_HANDLING_SAFETY_FACTOR",
@@ -365,7 +365,7 @@ def _inventor_process_environment(inventor_id: str) -> Mapping[str, str]:
 
     An inventor entrypoint is contribution code. It receives the Codex runtime
     inputs needed by shared Invent/Make/Playtest workers, but Factory authority
-    stays in the Workshop Manager process for the later Instructions handoff.
+    stays in the Workshop Manager process for the later Release handoff.
     """
 
     if not isinstance(inventor_id, str) or not inventor_id:
@@ -446,7 +446,7 @@ def _delivered_from_event(value: Any) -> Delivered:
     if not isinstance(value, Mapping) or set(value) != {
         "schema_version",
         "product_artifact_sha256",
-        "instructions_sha256",
+        "release_sha256",
         "carrier",
         "service",
         "tracking_id",
@@ -457,7 +457,7 @@ def _delivered_from_event(value: Any) -> Delivered:
         raise WorkshopError("persisted Deliver result is malformed")
     return Delivered(
         product_artifact_sha256=value["product_artifact_sha256"],
-        instructions_sha256=value["instructions_sha256"],
+        release_sha256=value["release_sha256"],
         carrier=value["carrier"],
         service=value["service"],
         tracking_id=value["tracking_id"],
@@ -531,12 +531,12 @@ def _validate_child_workshop_state(
             needs = tuple(Need(**dict(item)) for item in raw_needs)
         except (TypeError, WorkshopError) as exc:
             raise WorkshopError("waiting Workshop needs are malformed") from exc
-    instructions_sha256 = next(
+    release_sha256 = next(
         (
-            event["payload"].get("instructions_sha256")
+            event["payload"].get("release_sha256")
             for event in reversed(events)
             if isinstance(event.get("payload"), Mapping)
-            and isinstance(event["payload"].get("instructions_sha256"), str)
+            and isinstance(event["payload"].get("release_sha256"), str)
         ),
         None,
     )
@@ -559,7 +559,7 @@ def _validate_child_workshop_state(
         delivery = _delivered_from_event(payload.get("delivery"))
         if (
             delivery.product_artifact_sha256 != artifact_sha256
-            or delivery.instructions_sha256 != instructions_sha256
+            or delivery.release_sha256 != release_sha256
         ):
             raise WorkshopError("persisted Deliver result has different exact inputs")
     page_url = None
@@ -571,15 +571,15 @@ def _validate_child_workshop_state(
             receipt.assert_artifact(artifact_sha256)
         except (TypeError, WorkshopError) as exc:
             raise WorkshopError(
-                "Manager-resumed Instructions lacks an exact durable Factory receipt"
+                "Manager-resumed Release lacks an exact durable Factory receipt"
             ) from exc
         if not (receipt.is_verified_draft or receipt.is_verified_public):
             raise WorkshopError(
-                "Manager-resumed Instructions Factory receipt is not verified"
+                "Manager-resumed Release Factory receipt is not verified"
             )
-        if receipt.details.get("instructions_sha256") != instructions_sha256:
+        if receipt.details.get("release_sha256") != release_sha256:
             raise WorkshopError(
-                "Manager-resumed Factory receipt identifies different Instructions"
+                "Manager-resumed Factory receipt identifies a different Release"
             )
         page_url = receipt.details.get("page_url")
         if not isinstance(page_url, str) or not page_url:
@@ -590,7 +590,7 @@ def _validate_child_workshop_state(
         job=job,
         round=round_number,
         artifact_sha256=artifact_sha256,
-        instructions_sha256=instructions_sha256,
+        release_sha256=release_sha256,
         needs=needs,
         delivery=delivery,
         playtest_rounds=assignment.playtest_rounds,
@@ -610,7 +610,7 @@ def _validate_child_workshop_state(
 
 
 class _ResumeOnlyStructuredRunner:
-    """Identity-only runner; sealed Instructions resume must never invoke AI."""
+    """Identity-only runner; sealed Release resume must never invoke AI."""
 
     def __init__(self, model: str, reasoning_effort: str) -> None:
         self.model = model
@@ -619,16 +619,16 @@ class _ResumeOnlyStructuredRunner:
 
     def invoke(self, **kwargs):  # pragma: no cover - a resume invariant
         del kwargs
-        raise WorkshopError("sealed Instructions resume attempted to rerun AI")
+        raise WorkshopError("sealed Release resume attempted to rerun AI")
 
 
-def _resume_factory_instructions(
+def _resume_factory_release(
     assignment: Any,
     result: Mapping[str, Any],
     *,
     environment: Optional[Mapping[str, str]] = None,
     store_factory: Any = InventorStore,
-    writer_factory: Any = FactoryAgentInstructionsWriter,
+    writer_factory: Any = FactoryAgentReleaseWriter,
     workshop_factory: Any = Workshop,
     state_validator: Any = _validate_child_workshop_state,
 ) -> Mapping[str, Any]:
@@ -637,7 +637,7 @@ def _resume_factory_instructions(
     The selected profile runs without Factory credentials and therefore stops
     truthfully after scoring and sealing its manual/page facts. If the Manager
     owns a credential, this function gives it only to the shared site adapter,
-    reconstructs the exact checkpoint, and resumes Instructions without
+    reconstructs the exact checkpoint, and resumes Release without
     executing the profile or any custom Invent/Make/Playtest hook.
     """
 
@@ -646,11 +646,11 @@ def _resume_factory_instructions(
     needs = result.get("needs")
     is_factory_wait = (
         result.get("status") == "waiting"
-        and result.get("job") == "instructions"
+        and result.get("job") == "release"
         and isinstance(needs, list)
         and any(
             isinstance(need, Mapping)
-            and need.get("job") == "instructions"
+            and need.get("job") == "release"
             and need.get("capability") in ("site-page", "site-reconciliation")
             for need in needs
         )
@@ -677,19 +677,19 @@ def _resume_factory_instructions(
         inventor_id,
         credentials,
     )
-    instructions = RewardedInstructions(
+    release_job = RewardedRelease(
         writer,
         creator=_ResumeOnlyStructuredRunner(
-            DEFAULT_INSTRUCTIONS_CREATOR_MODEL, "medium"
+            DEFAULT_RELEASE_CREATOR_MODEL, "medium"
         ),
         evaluator=_ResumeOnlyStructuredRunner(
-            DEFAULT_INSTRUCTIONS_REWARD_MODEL, "low"
+            DEFAULT_RELEASE_REWARD_MODEL, "low"
         ),
     )
 
     def unavailable(context):  # pragma: no cover - resume must not call these
         del context
-        raise WorkshopError("Instructions resume attempted an earlier Workshop stage")
+        raise WorkshopError("Release resume attempted an earlier Workshop stage")
 
     workshop_kwargs = {
         "inventor_id": inventor_id,
@@ -697,23 +697,23 @@ def _resume_factory_instructions(
             invent=unavailable,
             make=unavailable,
             playtest=unavailable,
-            instructions=instructions,
+            release=release_job,
         ),
         "runtime_root": runtime_root,
     }
     # These inert seams reconstruct only the checkpoint-bound contribution
-    # level. They are never called by resume_instructions and never import or
+    # level. They are never called by resume_release and never import or
     # execute the inventor's custom implementation.
     if level in ("custom-make", "custom-playtest"):
         workshop_kwargs["make"] = unavailable
     if level == "custom-playtest":
         workshop_kwargs["playtest"] = unavailable
     workshop = workshop_factory(card.root, lane, **workshop_kwargs)
-    resumed = workshop.resume_instructions(assignment.wish).to_dict()
+    resumed = workshop.resume_release(assignment.wish).to_dict()
     handoff = ManagerAssignmentHandoff.from_assignment(assignment)
     if result.get("manager_assignment") != handoff.result_binding():
         raise WorkshopError(
-            "Manager-resumed Instructions lost its exact assignment binding"
+            "Manager-resumed Release lost its exact assignment binding"
         )
     rebound = {**resumed, "manager_assignment": handoff.result_binding()}
     if not callable(state_validator):
@@ -1076,12 +1076,12 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
     raw_receipt = intent.get("receipt") if isinstance(intent, Mapping) else None
     page = None
     if raw_receipt is not None:
-        instructions_sha256 = next(
+        release_sha256 = next(
             (
-                event["payload"].get("instructions_sha256")
+                event["payload"].get("release_sha256")
                 for event in reversed(located["events"])
                 if isinstance(event.get("payload"), Mapping)
-                and isinstance(event["payload"].get("instructions_sha256"), str)
+                and isinstance(event["payload"].get("release_sha256"), str)
             ),
             None,
         )
@@ -1093,11 +1093,11 @@ def _status_receipt(root: Path, product_id: str) -> Mapping[str, Any]:
                 "saved Factory page receipt identifies different product bytes"
             ) from exc
         if (
-            not isinstance(instructions_sha256, str)
-            or page.details.get("instructions_sha256") != instructions_sha256
+            not isinstance(release_sha256, str)
+            or page.details.get("release_sha256") != release_sha256
         ):
             raise WorkshopError(
-                "saved Factory page receipt identifies different Instructions"
+                "saved Factory page receipt identifies a different Release"
             )
     if page is not None and (page.is_verified_draft or page.is_verified_public):
         intent_state = intent.get("state") if isinstance(intent, Mapping) else None
@@ -1203,7 +1203,7 @@ def _promote_factory_intent(
         if len(set(origins)) != 1 or not origins:
             raise WorkshopError("durable Factory draft has no unambiguous API origin")
         proof = {
-            "instructions_sha256": draft.details.get("instructions_sha256"),
+            "release_sha256": draft.details.get("release_sha256"),
             "playtest_evidence_sha256": draft.details.get(
                 "playtest_evidence_sha256"
             ),
@@ -1211,7 +1211,7 @@ def _promote_factory_intent(
         }
         if any(not isinstance(value, str) or not value for value in proof.values()):
             raise WorkshopError(
-                "authenticated Factory draft lacks exact Instructions, Playtest, or page proof"
+                "authenticated Factory draft lacks exact Release, Playtest, or page proof"
             )
         publishing = store.begin_live(
             intent_id,
@@ -1267,7 +1267,7 @@ def _publish_inventor_draft(
     session_factory: Any = FactoryAgentSession,
     transition_factory: Any = FactoryPublicTransition,
 ) -> Mapping[str, Any]:
-    """Durably promote the exact authenticated Instructions draft, then prove it."""
+    """Durably promote the exact authenticated Release draft, then prove it."""
 
     product_id = assignment.wish.product_id
     inventor_id = assignment.decision.selected.card.inventor_id
@@ -1276,7 +1276,7 @@ def _publish_inventor_draft(
     if not isinstance(page_url, str) or not page_url:
         return {
             "status": "waiting",
-            "reason": "Instructions has not produced an authenticated Factory draft yet.",
+            "reason": "Release has not produced an authenticated Factory draft yet.",
         }
     environment = _factory_credential_environment(inventor_id)
     if environment is None:
@@ -1298,7 +1298,7 @@ def _publish_inventor_draft(
         draft = Receipt.from_dict(receipt_value)
         if draft.details.get("page_url") != page_url:
             raise WorkshopError(
-                "the Factory draft URL differs from the Workshop Instructions receipt"
+                "the Factory draft URL differs from the Workshop Release receipt"
             )
         if isinstance(artifact_sha256, str):
             draft.assert_artifact(artifact_sha256)
@@ -1406,7 +1406,7 @@ def _print_wish_receipt(
             print("Page: waiting — %s" % publication["reason"])
     if root is not None and match is not None:
         print("Saved: %s" % _status_command(wish["product_id"], root))
-        if result.get("status") == "waiting" and result.get("job") == "instructions":
+        if result.get("status") == "waiting" and result.get("job") == "release":
             print("Resume: %s" % _resume_command(wish["product_id"], root))
         elif result.get("status") == "waiting":
             print("Resume: unavailable for this stage; the saved command is status only.")
@@ -1440,7 +1440,7 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
         if page.get("page_url"):
             print("%s: %s" % (label, page["page_url"]))
     print("Event chain: %s" % receipt["event_chain"])
-    if receipt.get("status") == "waiting" and receipt.get("job") == "instructions":
+    if receipt.get("status") == "waiting" and receipt.get("job") == "release":
         print("Resume: %s" % _resume_command(receipt["product_id"], root))
     elif receipt.get("status") in ("assigned", "working", "waiting"):
         print("Resume: unavailable for this stage; status does not restart its worker.")
@@ -1601,7 +1601,7 @@ def _resume(args: argparse.Namespace) -> int:
     needs = status.get("needs", [])
     site_wait = (
         status.get("status") == "waiting"
-        and status.get("job") == "instructions"
+        and status.get("job") == "release"
         and any(
             need.get("capability") in ("site-page", "site-reconciliation")
             for need in needs
@@ -1613,10 +1613,10 @@ def _resume(args: argparse.Namespace) -> int:
             result = {
                 "product_id": args.product_id,
                 "status": "waiting",
-                "job": "instructions",
+                "job": "release",
                 "needs": [
                     {
-                        "job": "instructions",
+                        "job": "release",
                         "capability": "factory-authentication",
                         "reason": "This Manager process has no Factory credential for the matched Inventor.",
                         "instructions": (
@@ -1637,13 +1637,13 @@ def _resume(args: argparse.Namespace) -> int:
         else:
             waiting = {
                 "status": "waiting",
-                "job": "instructions",
+                "job": "release",
                 "needs": needs,
                 "manager_assignment": ManagerAssignmentHandoff.from_assignment(
                     assignment
                 ).result_binding(),
             }
-            result = _resume_factory_instructions(assignment, waiting)
+            result = _resume_factory_release(assignment, waiting)
     else:
         page = status.get("page")
         if not isinstance(page, Mapping) or page.get("status") != "draft":
@@ -1654,7 +1654,7 @@ def _resume(args: argparse.Namespace) -> int:
                 "needs": needs,
                 "resume": "not-available",
                 "reason": (
-                    "Only an exact sealed Instructions handoff can currently resume safely; "
+                    "Only an exact sealed Release handoff can currently resume safely; "
                     "the durable run was not changed."
                 ),
             }
@@ -2230,7 +2230,7 @@ def parser() -> argparse.ArgumentParser:
         help="resume the exact native session for a saved Wish",
         description=(
             "Resume the exact native coding-agent session bound to the private Wish "
-            "workspace. Legacy Instructions-only runs remain readable during migration."
+            "workspace. Legacy Release-only runs remain readable during migration."
         ),
     )
     resume.add_argument("product_id", help="saved Wish id")

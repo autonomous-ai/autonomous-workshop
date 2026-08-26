@@ -68,7 +68,7 @@ WORKSHOP_SHOP_LISTING_FIELDS = frozenset(
     (
         "_workshop_artifact_sha256",
         "_workshop_handoff_artifact_sha256",
-        "_workshop_instructions_sha256",
+        "_workshop_release_sha256",
         "_workshop_playtest_evidence_sha256",
         FACTORY_ASSEMBLY_INVENTORY_FIELD,
         "_workshop_owner_id",
@@ -119,7 +119,7 @@ SHOP_MODEL_HANDOFF_EXCLUDED_DIRS = frozenset(
         "validation",
     )
 )
-SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
+SHOP_RELEASE_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
     (
         ".avi",
         ".avif",
@@ -544,7 +544,7 @@ def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
     """Build bounded factual input for Factory-owned copy and media generation.
 
     This prompt is not page copy. It carries only selected, verified Make,
-    Wish, Taste, and Instructions facts; the complete canonical record remains
+    Wish, Taste, and Release facts; the complete canonical record remains
     in ``workshop-product-facts.json``. The inventor credit is always retained
     even if an unusually large optional story section must be truncated.
     """
@@ -1065,7 +1065,7 @@ def _assert_model_only_handoff(content: bytes) -> None:
                         % name
                     )
                 if PurePosixPath(name).suffix.casefold() in (
-                    SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES
+                    SHOP_RELEASE_FORBIDDEN_MEDIA_SUFFIXES
                 ):
                     raise ContractError(
                         "Factory model handoff contains local page media: %s" % name
@@ -2055,7 +2055,7 @@ class _ShopSender:
         lease_token: Optional[str] = None,
         *,
         inventor_name: Optional[str] = None,
-        instructions_sha256: Optional[str] = None,
+        release_sha256: Optional[str] = None,
         playtest_evidence_sha256: Optional[str] = None,
         thumbnail: Optional[Mapping[str, Any]] = None,
         source_artifact_sha256: Optional[str] = None,
@@ -2100,9 +2100,9 @@ class _ShopSender:
             request[FACTORY_ASSEMBLY_INVENTORY_FIELD] = list(
                 factory_assembly_inventory
             )
-        if instructions_sha256 is not None:
-            request["_workshop_instructions_sha256"] = require_sha256(
-                instructions_sha256, "Instructions sha256"
+        if release_sha256 is not None:
+            request["_workshop_release_sha256"] = require_sha256(
+                release_sha256, "Release sha256"
             )
         if playtest_evidence_sha256 is not None:
             request["_workshop_playtest_evidence_sha256"] = require_sha256(
@@ -2691,16 +2691,16 @@ class _ShopSender:
         return receipt
 
 
-class ShopInstructionsWriter:
+class ShopReleaseWriter:
     """Shared model handoff inherited by every inventor.
 
-    ``DefaultInstructions`` seals the box paper and factual product handoff, then
+    ``DefaultRelease`` seals the box paper and factual product handoff, then
     calls this object as ``writer(context, root, manifest)``.  This adapter
     imports a model-only subset of the exact Made artifact as a private draft.
     It deliberately does not upload local marketing images or write product-page
     copy: Factory owns that later enrichment.  The returned authenticated
     readback is bound to the source Make, the narrowed handoff Pack, the factual
-    product record, Playtest, and Instructions.  Its enrichment state remains
+    product record, Playtest, and Release.  Its enrichment state remains
     ``pending``; a draft import is not proof that Factory produced final images,
     copy, or video.  This adapter never makes the page public.
     """
@@ -2715,7 +2715,7 @@ class ShopInstructionsWriter:
     ) -> None:
         if price_cents is not None:
             raise ContractError(
-                "Shop Instructions creates a private draft; price_cents belongs "
+                "Shop Release creates a private draft; price_cents belongs "
                 "to the separate owner-controlled public transition"
             )
         self.store = store
@@ -2733,21 +2733,21 @@ class ShopInstructionsWriter:
             or not isinstance(manifest, ArtifactManifest)
         ):
             raise ContractError(
-                "Shop Instructions require an absolute sealed Instructions directory"
+                "Shop Release requires an absolute sealed Release directory"
             )
         resolved = requested.resolve(strict=True)
         current = build_artifact_manifest(resolved, created_at=manifest.created_at)
         if current.to_dict() != manifest.to_dict():
-            raise ContractError("Instructions bytes changed after they were sealed")
+            raise ContractError("Release bytes changed after they were sealed")
         forbidden_media = [
             entry.path
             for entry in manifest.entries
             if PurePosixPath(entry.path).suffix.casefold()
-            in SHOP_INSTRUCTIONS_FORBIDDEN_MEDIA_SUFFIXES
+            in SHOP_RELEASE_FORBIDDEN_MEDIA_SUFFIXES
         ]
         if forbidden_media:
             raise ContractError(
-                "Shop Instructions cannot contain creator page media: %s"
+                "Shop Release cannot contain creator page media: %s"
                 % forbidden_media
             )
         return resolved
@@ -2756,7 +2756,7 @@ class ShopInstructionsWriter:
     def _read_page(root: Path) -> Mapping[str, Any]:
         path = root / "product.json"
         if path.is_symlink() or not path.is_file():
-            raise ContractError("sealed Instructions require product.json")
+            raise ContractError("sealed Release requires product.json")
         content = path.read_bytes()
         page = _json_body(HttpResponse(200, {}, content))
         required = {
@@ -2773,10 +2773,10 @@ class ShopInstructionsWriter:
             raise ContractError("sealed product.json is missing required page fields")
         if (
             page.get("schema_version") != 2
-            or page.get("kind") != "workshop.instructions-facts"
+            or page.get("kind") != "workshop.release-package"
             or page.get("status") != "facts-ready"
         ):
-            raise ContractError("sealed product.json is not a factual Instructions handoff")
+            raise ContractError("sealed product.json is not a factual Release handoff")
         forbidden = {"images", "use_case", "story_blocks"} & set(page)
         if forbidden:
             raise ContractError(
@@ -2792,18 +2792,18 @@ class ShopInstructionsWriter:
         return page
 
     @staticmethod
-    def _assert_instructions_draft_receipt(
+    def _assert_release_draft_receipt(
         receipt: PublicationReceipt,
         artifact_sha256: str,
-        instructions_sha256: str,
+        release_sha256: str,
     ) -> None:
         receipt.assert_artifact(artifact_sha256)
         if not receipt.is_verified_draft:
-            raise ReceiptError("Instructions require authenticated private Shop draft readback")
+            raise ReceiptError("Release requires authenticated private Shop draft readback")
         _https_url(receipt.details.get("page_url"), "Shop product page URL")
         _https_url(receipt.details.get("cover_url"), "Shop draft cover URL")
-        if receipt.details.get("instructions_sha256") != instructions_sha256:
-            raise ReceiptError("Shop receipt is not bound to the sealed Instructions bytes")
+        if receipt.details.get("release_sha256") != release_sha256:
+            raise ReceiptError("Shop receipt is not bound to the sealed Release bytes")
         require_sha256(
             receipt.details.get("playtest_evidence_sha256"),
             "Shop draft Playtest evidence sha256",
@@ -2848,11 +2848,11 @@ class ShopInstructionsWriter:
             response = self.client.get_design(imported.slug)
         except Exception as exc:
             raise AmbiguousPublishError(
-                "authenticated Instructions draft readback failed"
+                "authenticated Release draft readback failed"
             ) from exc
         if response.status != 200:
             raise AmbiguousPublishError(
-                "authenticated Instructions draft readback returned HTTP %s"
+                "authenticated Release draft readback returned HTTP %s"
                 % response.status
             )
         try:
@@ -2908,7 +2908,7 @@ class ShopInstructionsWriter:
                 )
             ):
                 raise ReceiptError(
-                    "Shop draft readback does not preserve the sealed Instructions import"
+                    "Shop draft readback does not preserve the sealed Release import"
                 )
             forbidden_effects = {
                 effect.get("kind")
@@ -2920,13 +2920,13 @@ class ShopInstructionsWriter:
                     "Factory-owned enrichment cannot contain Workshop page effects"
                 )
             receipt = _receipt_with_details(receipt, proof)
-            persisted = self.store.mark_instructions_draft_ready(
+            persisted = self.store.mark_release_draft_ready(
                 intent_id, receipt, lease_token
             )
             return PublicationReceipt.from_dict(persisted["receipt"])
         except (ContractError, PublishError, ReceiptError, StateConflict) as exc:
             raise AmbiguousPublishError(
-                "authenticated Shop readback did not prove the exact Instructions draft"
+                "authenticated Shop readback did not prove the exact Release draft"
             ) from exc
 
     def __call__(
@@ -2936,11 +2936,11 @@ class ShopInstructionsWriter:
         sealed_manifest: ArtifactManifest,
     ) -> PublicationReceipt:
         if not callable(getattr(context, "assert_current", None)):
-            raise ContractError("ShopInstructionsWriter requires an InstructionsContext")
+            raise ContractError("ShopReleaseWriter requires a ReleaseContext")
         context.assert_current()
         root = self._assert_sealed(sealed_root, sealed_manifest)
-        instructions_sha256 = require_sha256(
-            sealed_manifest.artifact_sha256, "sealed Instructions sha256"
+        release_sha256 = require_sha256(
+            sealed_manifest.artifact_sha256, "sealed Release sha256"
         )
         page = self._read_page(root)
         artifact_sha256 = require_sha256(
@@ -2974,7 +2974,7 @@ class ShopInstructionsWriter:
             "schema_version": 2,
             "kind": "workshop.product-facts",
             "source_artifact_sha256": artifact_sha256,
-            "instructions_sha256": instructions_sha256,
+            "release_sha256": release_sha256,
             "playtest_evidence_sha256": playtest_sha256,
             "inventor": {"name": inventor_name},
             "wish": context.wish.to_dict(),
@@ -2983,14 +2983,14 @@ class ShopInstructionsWriter:
             # This is a story/facts input, never pre-authored page output. It
             # gives Factory the verified rules, components, limitations, and
             # Playtest claims it needs to generate accurate copy and imagery.
-            "instructions": dict(page),
+            "release": dict(page),
         }
 
         def assert_current() -> None:
             context.assert_current()
             self._assert_sealed(root, sealed_manifest)
 
-        with tempfile.TemporaryDirectory(prefix="workshop-instructions-") as directory:
+        with tempfile.TemporaryDirectory(prefix="workshop-release-") as directory:
             packet = Path(directory) / "model-handoff.zip"
             handoff = _build_model_handoff_pack(
                 context.made.artifact_root,
@@ -3012,20 +3012,20 @@ class ShopInstructionsWriter:
                     "tags": ["toy", lane],
                 },
                 inventor_name=inventor_name,
-                instructions_sha256=instructions_sha256,
+                release_sha256=release_sha256,
                 playtest_evidence_sha256=playtest_sha256,
                 source_artifact_sha256=artifact_sha256,
                 model_only_handoff=True,
                 lease_token=lease_token,
             )
-        if outcome.receipt.details.get("instructions_sha256") is not None:
-            self._assert_instructions_draft_receipt(
-                outcome.receipt, artifact_sha256, instructions_sha256
+        if outcome.receipt.details.get("release_sha256") is not None:
+            self._assert_release_draft_receipt(
+                outcome.receipt, artifact_sha256, release_sha256
             )
             return outcome.receipt
         if outcome.receipt.status != "draft":
             raise StateConflict(
-                "Shop Instructions cannot reuse an intent already made public"
+                "Shop Release cannot reuse an intent already made public"
             )
         persisted_intent = self.store.get_publish_intent(outcome.intent_id)
         import_response = persisted_intent.get("response")
@@ -3040,7 +3040,7 @@ class ShopInstructionsWriter:
             )
         cover_url = _https_url(cover_urls[0], "Shop draft cover URL")
         proof = {
-            "instructions_sha256": instructions_sha256,
+            "release_sha256": release_sha256,
             "playtest_evidence_sha256": playtest_sha256,
             "page_url": _shop_product_page_url(outcome.receipt.slug),
             "cover_url": cover_url,
@@ -3060,7 +3060,7 @@ class ShopInstructionsWriter:
             proof,
             lease_token,
         )
-        self._assert_instructions_draft_receipt(
-            receipt, artifact_sha256, instructions_sha256
+        self._assert_release_draft_receipt(
+            receipt, artifact_sha256, release_sha256
         )
         return receipt

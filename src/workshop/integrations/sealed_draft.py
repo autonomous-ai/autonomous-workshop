@@ -1,7 +1,7 @@
 """Publish one already-sealed Workshop product as a verified private draft.
 
 This module is deliberately downstream of Make and AI Playtest.  A small,
-checked-in descriptor points at immutable Make, Playtest, and Instructions
+checked-in descriptor points at immutable Make, Playtest, and Release
 trees; the loader reconstructs the typed Workshop objects and fails before any
 network request unless every required Playtest result passes and no actionable
 feedback remains.
@@ -26,8 +26,8 @@ from typing import Any, Dict, Mapping, MutableMapping, Optional, Sequence, Tuple
 from workshop.artifacts import ArtifactEntry, ArtifactManifest, build_artifact_manifest
 from workshop.product import attribute_product_description
 from workshop.errors import ContractError, PublishError, ReceiptError, StateConflict
-from workshop.instructions.service import evidence_claims
-from workshop.instructions.contracts import InstructionsContext, ProductInstructions
+from workshop.release.service import evidence_claims
+from workshop.release.contracts import ReleaseContext, ProductRelease
 from workshop.make.contracts import Feedback, Made
 from workshop.playtest.contracts import Playtested
 from workshop.wish import Wish
@@ -40,7 +40,7 @@ from workshop.integrations.shop import (
     MAX_RESPONSE_BYTES,
     HttpResponse,
     ShopDoor,
-    ShopInstructionsWriter,
+    ShopReleaseWriter,
     Transport,
     _factory_enrichment_readback,
     urllib_transport,
@@ -51,7 +51,7 @@ from workshop.product import ToyBlueprint
 
 
 DESCRIPTOR_KIND = "workshop.sealed-private-draft"
-_FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES = frozenset(
+_FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
     (
         ".avi", ".avif", ".bmp", ".gif", ".heic", ".jpeg", ".jpg",
         ".m4v", ".mkv", ".mov", ".mp4", ".png", ".svg", ".tif",
@@ -229,9 +229,9 @@ class SealedDraft:
     evidence_manifest: ArtifactManifest
     evidence_manifest_path: Path
     playtest_index_path: Path
-    instructions_root: Path
-    instructions_manifest: ArtifactManifest
-    instructions_manifest_path: Path
+    release_root: Path
+    release_manifest: ArtifactManifest
+    release_manifest_path: Path
     page: Mapping[str, Any]
     external_hashes: Sequence[Tuple[Path, str]]
 
@@ -243,14 +243,14 @@ class SealedDraft:
     def slug(self) -> str:
         return self.wish.product_id
 
-    def context(self, lease_token: str) -> InstructionsContext:
-        return InstructionsContext(
+    def context(self, lease_token: str) -> ReleaseContext:
+        return ReleaseContext(
             self.wish,
             self.taste,
             self.blueprint,
             self.made,
             self.playtested,
-            self.instructions_root,
+            self.release_root,
             lease_token,
         )
 
@@ -270,12 +270,12 @@ class SealedDraft:
         )
         if current_evidence.to_dict() != self.evidence_manifest.to_dict():
             raise ContractError("sealed Playtest evidence changed during publication")
-        current_instructions = build_artifact_manifest(
-            self.instructions_root,
-            created_at=self.instructions_manifest.created_at,
+        current_release = build_artifact_manifest(
+            self.release_root,
+            created_at=self.release_manifest.created_at,
         )
-        if current_instructions.to_dict() != self.instructions_manifest.to_dict():
-            raise ContractError("sealed Instructions changed during publication")
+        if current_release.to_dict() != self.release_manifest.to_dict():
+            raise ContractError("sealed Release changed during publication")
         for path, expected in self.external_hashes:
             if _sha256_file(path) != expected:
                 raise ContractError(
@@ -517,12 +517,12 @@ def _load_playtested(
         tuple(feedback),
     )
     if not playtested.passed:
-        raise ContractError("Instructions require all-pass Playtest with no blockers")
+        raise ContractError("Release requires all-pass Playtest with no blockers")
     return playtested, index_path, tuple(external)
 
 
-def _validate_instructions(
-    context: InstructionsContext,
+def _validate_release(
+    context: ReleaseContext,
     root: Path,
     manifest: ArtifactManifest,
 ) -> Mapping[str, Any]:
@@ -530,18 +530,18 @@ def _validate_instructions(
         entry.path
         for entry in manifest.entries
         if PurePosixPath(entry.path).suffix.casefold()
-        in _FORBIDDEN_INSTRUCTIONS_MEDIA_SUFFIXES
+        in _FORBIDDEN_RELEASE_MEDIA_SUFFIXES
     ]
     if forbidden_media:
         raise ContractError(
-            "sealed Instructions cannot contain creator page media: %s"
+            "sealed Release cannot contain creator page media: %s"
             % forbidden_media
         )
-    page = ShopInstructionsWriter._read_page(root)
+    page = ShopReleaseWriter._read_page(root)
     claims = evidence_claims(context)
     expected = {
         "schema_version": 2,
-        "kind": "workshop.instructions-facts",
+        "kind": "workshop.release-package",
         "status": "facts-ready",
         "title": str(context.made.product["title"]),
         "summary": attribute_product_description(
@@ -557,20 +557,20 @@ def _validate_instructions(
     }
     if any(page.get(key) != value for key, value in expected.items()):
         raise ContractError(
-            "sealed Instructions belong to a different Wish, Make, Playtest, or inventor"
+            "sealed Release belongs to a different Wish, Make, Playtest, or inventor"
         )
     if {"images", "use_case", "story_blocks"} & set(page):
         raise ContractError(
-            "sealed Instructions cannot contain creator-owned page copy or media"
+            "sealed Release cannot contain creator-owned page copy or media"
         )
     if page.get("factory_enrichment") != {
         "copy_owner": "factory",
         "media_owner": "factory",
         "status": "pending",
     }:
-        raise ContractError("sealed Instructions must leave Factory enrichment pending")
-    if not (root / "INSTRUCTIONS.md").is_file():
-        raise ContractError("sealed Instructions require INSTRUCTIONS.md")
+        raise ContractError("sealed Release must leave Factory enrichment pending")
+    if not (root / "MANUAL.md").is_file():
+        raise ContractError("sealed Release requires MANUAL.md")
     return page
 
 
@@ -594,7 +594,7 @@ def load_sealed_draft(
             "taste_sha256",
             "make",
             "playtest",
-            "instructions",
+            "release",
         ),
         "sealed draft descriptor",
     )
@@ -617,15 +617,15 @@ def load_sealed_draft(
 
     make_value = value.get("make")
     playtest_value = value.get("playtest")
-    instructions_value = value.get("instructions")
+    release_value = value.get("release")
     if not all(
         isinstance(item, Mapping)
-        for item in (make_value, playtest_value, instructions_value)
+        for item in (make_value, playtest_value, release_value)
     ):
         raise ContractError("descriptor roots must be objects")
     assert isinstance(make_value, Mapping)
     assert isinstance(playtest_value, Mapping)
-    assert isinstance(instructions_value, Mapping)
+    assert isinstance(release_value, Mapping)
     _strict_keys(make_value, ("root", "manifest", "artifact_sha256"), "Make descriptor")
     _strict_keys(
         playtest_value,
@@ -633,9 +633,9 @@ def load_sealed_draft(
         "Playtest descriptor",
     )
     _strict_keys(
-        instructions_value,
+        release_value,
         ("root", "manifest", "artifact_sha256"),
-        "Instructions descriptor",
+        "Release descriptor",
     )
     make_root = _safe_repo_path(
         root, make_value.get("root"), "Make root", directory=True
@@ -672,30 +672,30 @@ def load_sealed_draft(
         playtest_value.get("index_sha256"),
     )
 
-    instructions_root = _safe_repo_path(
-        root, instructions_value.get("root"), "Instructions root", directory=True
+    release_root = _safe_repo_path(
+        root, release_value.get("root"), "Release root", directory=True
     )
-    instructions_manifest_path = _safe_repo_path(
+    release_manifest_path = _safe_repo_path(
         root,
-        instructions_value.get("manifest"),
-        "Instructions manifest",
+        release_value.get("manifest"),
+        "Release manifest",
         directory=False,
     )
-    instructions_manifest = _typed_manifest(
-        instructions_root,
-        instructions_manifest_path,
-        "Instructions",
-        instructions_value.get("artifact_sha256"),
+    release_manifest = _typed_manifest(
+        release_root,
+        release_manifest_path,
+        "Release",
+        release_value.get("artifact_sha256"),
     )
-    provisional = InstructionsContext(
+    provisional = ReleaseContext(
         wish,
         taste,
         blueprint,
         made,
         playtested,
-        instructions_root,
+        release_root,
     )
-    page = _validate_instructions(provisional, instructions_root, instructions_manifest)
+    page = _validate_release(provisional, release_root, release_manifest)
     loaded = SealedDraft(
         root,
         descriptor_path,
@@ -711,9 +711,9 @@ def load_sealed_draft(
         evidence_manifest,
         evidence_manifest_path,
         index_path,
-        instructions_root,
-        instructions_manifest,
-        instructions_manifest_path,
+        release_root,
+        release_manifest,
+        release_manifest_path,
         page,
         external,
     )
@@ -774,7 +774,7 @@ def _publication_metadata(sealed: SealedDraft) -> Mapping[str, Any]:
         "wish": sealed.wish.to_dict(),
         "artifact_sha256": sealed.made.artifact_sha256,
         "evidence_sha256": sealed.evidence_manifest.artifact_sha256,
-        "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
+        "release_sha256": sealed.release_manifest.artifact_sha256,
     }
 
 
@@ -786,14 +786,14 @@ def _register_exact_product(store: InventorStore, sealed: SealedDraft) -> None:
         try:
             product = store.register_product(
                 sealed.product_id,
-                "instructions",
+                "release",
                 metadata=expected,
                 artifact_sha256=sealed.made.artifact_sha256,
             )
         except StateConflict:
             product = store.get_product(sealed.product_id)
     if (
-        product.get("stage") != "instructions"
+        product.get("stage") != "release"
         or product.get("revision") != 0
         or product.get("artifact_sha256") != sealed.made.artifact_sha256
         or product.get("metadata") != expected
@@ -867,7 +867,7 @@ def _verify_fresh_draft(
         "slug": sealed.slug,
         "page_url": _customer_page_url(sealed.slug),
         "artifact_sha256": sealed.made.artifact_sha256,
-        "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
+        "release_sha256": sealed.release_manifest.artifact_sha256,
         "observed_at": fresh.observed_at,
         "factory_enrichment": enrichment,
     }
@@ -934,15 +934,15 @@ def publish_sealed_draft(
         if previous_intent is None:
             _collision_preflight(door, sealed.slug)
         context = sealed.context(lease)
-        receipt = ShopInstructionsWriter(store, door, expected_owner)(
+        receipt = ShopReleaseWriter(store, door, expected_owner)(
             context,
-            sealed.instructions_root,
-            sealed.instructions_manifest,
+            sealed.release_root,
+            sealed.release_manifest,
         )
-        product_instructions = ProductInstructions.from_root(
-            sealed.instructions_root,
+        product_release = ProductRelease.from_root(
+            sealed.release_root,
             sealed.made.artifact_sha256,
-            "INSTRUCTIONS.md",
+            "MANUAL.md",
             evidence_claims(context),
             receipt,
         )
@@ -965,12 +965,12 @@ def publish_sealed_draft(
             else "draft-created"
         ),
         "slug": sealed.slug,
-        "page_url": product_instructions.page_url,
+        "page_url": product_release.page_url,
         "enrichment_status": receipt.details.get("enrichment_status"),
         "page_ready": receipt.details.get("page_ready"),
         "artifact_sha256": sealed.made.artifact_sha256,
         "evidence_sha256": sealed.evidence_manifest.artifact_sha256,
-        "instructions_sha256": sealed.instructions_manifest.artifact_sha256,
+        "release_sha256": sealed.release_manifest.artifact_sha256,
         "state": str(state_directory / "workshop.sqlite3"),
     }
     if verification is not None:

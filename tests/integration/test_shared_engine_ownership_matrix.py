@@ -8,7 +8,7 @@ from pathlib import Path
 
 from workshop.artifacts.core import build_artifact_manifest
 from workshop.deliver.service import DefaultDeliver
-from workshop.instructions.service import DefaultInstructions
+from workshop.release.service import DefaultRelease
 from workshop.deliver.contracts import Delivered
 from workshop.invent.contracts import Invented
 from workshop.make.contracts import Made
@@ -71,12 +71,12 @@ class DeterministicWorkshopFakes:
         self.taste_sha256 = taste_sha256
         self.calls = []
 
-    def tools(self, *, instructions=None):
+    def tools(self, *, release=None):
         return WorkshopTools(
             invent=self.invent,
             make=self.make,
             playtest=self.playtest,
-            instructions=instructions or self.instructions,
+            release=release or self.release,
             deliver=self.deliver,
         )
 
@@ -1002,7 +1002,7 @@ class DeterministicWorkshopFakes:
             project_url="https://cdn.autonomous.ai/projects/history-1/",
             observed_at=FIXED_TIME,
             details={
-                "instructions_sha256": sealed_manifest.artifact_sha256,
+                "release_sha256": sealed_manifest.artifact_sha256,
                 "page_url": (
                     "https://www.autonomous.ai/factory/product/"
                     + context.wish.product_id
@@ -1010,16 +1010,16 @@ class DeterministicWorkshopFakes:
             },
         )
 
-    def instructions(self, context):
-        self._record("instructions", context)
-        return DefaultInstructions(site_writer=self._site_writer)(context)
+    def release(self, context):
+        self._record("release", context)
+        return DefaultRelease(site_writer=self._site_writer)(context)
 
     def deliver(self, context):
         self._record("deliver", context)
         return DefaultDeliver(
             lambda selected: Delivered(
                 selected.made.artifact_sha256,
-                selected.instructions.instructions_sha256,
+                selected.release.release_sha256,
                 "UPS",
                 "Ground",
                 "1Z999AA10123456784",
@@ -1027,7 +1027,7 @@ class DeterministicWorkshopFakes:
                 FIXED_TIME,
                 fixture_delivery_evidence(
                     selected.made.artifact_sha256,
-                    selected.instructions.instructions_sha256,
+                    selected.release.release_sha256,
                     carrier="UPS",
                     service="Ground",
                     tracking_id="1Z999AA10123456784",
@@ -1081,7 +1081,7 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
     def assert_exact_matrix(self, fixture):
         self.assertEqual(
             [call["stage"] for call in fixture.calls],
-            ["invent", "make", "playtest", "instructions", "deliver"],
+            ["invent", "make", "playtest", "release", "deliver"],
         )
         for call in fixture.calls:
             self.assertEqual(call["wish"], fixture.wish.to_dict())
@@ -1135,7 +1135,7 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
         self.assertIs(bob_workshop.make_job, bob_custom_make)
         self.assertIs(bob_workshop.invent_job.__self__, bob_fixture)
         self.assertIs(bob_workshop.playtest_job.__self__, bob_fixture)
-        self.assertIs(bob_workshop.instructions_job.__self__, bob_fixture)
+        self.assertIs(bob_workshop.release_job.__self__, bob_fixture)
         self.assertIs(bob_workshop.deliver_job.__self__, bob_fixture)
         self.assertEqual(bob_custom_calls, ["make"])
         self.assert_exact_matrix(bob_fixture)
@@ -1167,7 +1167,7 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
         self.assertIs(leo_workshop.make_job, leo_custom_make)
         self.assertIs(leo_workshop.playtest_job, leo_custom_playtest)
         self.assertIs(leo_workshop.invent_job.__self__, leo_fixture)
-        self.assertIs(leo_workshop.instructions_job.__self__, leo_fixture)
+        self.assertIs(leo_workshop.release_job.__self__, leo_fixture)
         self.assertIs(leo_workshop.deliver_job.__self__, leo_fixture)
         self.assertEqual(leo_custom_calls, ["make", "playtest"])
         self.assert_exact_matrix(leo_fixture)
@@ -1178,23 +1178,23 @@ class SharedEngineOwnershipMatrixTest(unittest.TestCase):
             "alice", "classics-made-yours", wish, "shared-site-wait"
         )
 
-        def shared_instructions_without_site_provider(context):
-            fixture._record("instructions", context)
-            return DefaultInstructions()(context)
+        def shared_release_without_site_provider(context):
+            fixture._record("release", context)
+            return DefaultRelease()(context)
 
         workshop = profile.build_workshop(
-            tools=fixture.tools(instructions=shared_instructions_without_site_provider),
+            tools=fixture.tools(release=shared_release_without_site_provider),
             runtime_root=runtime_root,
             max_rounds=1,
         )
         result = workshop.run(wish, playtest_rounds=1)
 
         self.assertEqual(result.status, "waiting")
-        self.assertEqual(result.job, "instructions")
+        self.assertEqual(result.job, "release")
         self.assertEqual([need.capability for need in result.needs], ["site-page"])
         self.assertEqual(
             [call["stage"] for call in fixture.calls],
-            ["invent", "make", "playtest", "instructions"],
+            ["invent", "make", "playtest", "release"],
         )
         for need in result.needs:
             rendered = json.dumps(need.to_dict()).casefold()

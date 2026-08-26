@@ -69,7 +69,7 @@ artifact; inspect any partial workspace writes and rerun their gates.
   attempt directory rather than mutating evidence already cited by a receipt.
 - Recompute manifests after every material change. A stale hash or receipt is a
   failure, not a warning.
-- A new Make revision invalidates Playtest, Instructions, and Deliver evidence
+- A new Make revision invalidates Playtest, Release, and Deliver evidence
   for the prior bytes. Run those gates again in order.
 - Respect the host lease and bounded Make–Playtest round budget. Concurrent or
   expired work must stop at a typed need instead of racing the checkpoint.

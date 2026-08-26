@@ -1,6 +1,6 @@
 ---
 name: autonomous-workshop
-description: Run, resume, or diagnose an Autonomous Workshop Wish through Match, Invent, Make, Playtest, Instructions, and Deliver using Codex-native tools while preserving deterministic gates and human-controlled effects.
+description: Run, resume, or diagnose an Autonomous Workshop Wish through Match, Invent, Make, Playtest, Release, and Deliver using Codex-native tools while preserving deterministic gates and human-controlled effects.
 ---
 
 # Autonomous Workshop
@@ -22,8 +22,8 @@ supplies order, durable checkpoints, limits, gates, and effect authority.
    - Wish or Match: [references/wish-match.md](references/wish-match.md)
    - Invent: [references/invent.md](references/invent.md)
    - Make or Playtest: [references/make-playtest.md](references/make-playtest.md)
-   - Instructions or Deliver:
-     [references/instructions-deliver.md](references/instructions-deliver.md)
+   - Release or Deliver:
+     [references/release-deliver.md](references/release-deliver.md)
 5. Read
    [references/effects-and-recovery.md](references/effects-and-recovery.md)
    before any authenticated external operation, resume, retry, ambiguous
@@ -82,7 +82,7 @@ Wish -> Match -> Invent -> Make -> Playtest
                              +---------+
                                    |
                                    v
-                           Instructions -> Deliver
+                              Release -> Deliver
 ```
 
 Playtest feedback changes the next Make revision and invalidates downstream

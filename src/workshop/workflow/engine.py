@@ -3,7 +3,7 @@
 An inventor supplies Taste and may replace Make, or Make and Playtest. Invent is
 the industrial-design stage that selects a concept; Make is the mechanical and
 3D-design stage that engineers it. The Workshop always owns the loops, exact
-artifact identity, Instructions, Deliver, and truthful waiting for capabilities
+artifact identity, Release, Deliver, and truthful waiting for capabilities
 that are not present. Playtest is AI-agent simulation. Customer Reviews arrive
 asynchronously after Deliver and become learning for a future Make without
 mutating shipped bytes.
@@ -32,14 +32,14 @@ from workshop.make.cad import (
     VerificationReceipt,
 )
 from workshop.deliver.service import DefaultDeliver
-from workshop.instructions.service import (
-    DefaultInstructions,
-    INSTRUCTIONS_MANIFEST_FILENAME,
-    sealed_instructions_manifest,
+from workshop.release.service import (
+    DefaultRelease,
+    RELEASE_MANIFEST_FILENAME,
+    sealed_release_manifest,
 )
 from workshop.errors import ContractError
 from workshop.deliver.contracts import DeliverContext, Delivered
-from workshop.instructions.contracts import InstructionsContext, ProductInstructions
+from workshop.release.contracts import ReleaseContext, ProductRelease
 from workshop.invent.contracts import InventContext, Invented
 from workshop.make.contracts import Made, MakeContext
 from workshop.outcomes import Need, WaitingFor
@@ -59,10 +59,10 @@ from workshop.product import ToyBlueprint, playful_make_request
 InventJob = Callable[[InventContext], Invented]
 MakeJob = Callable[[MakeContext], Made]
 PlaytestJob = Callable[[PlaytestContext], Playtested]
-InstructionsJob = Callable[[InstructionsContext], ProductInstructions]
+ReleaseJob = Callable[[ReleaseContext], ProductRelease]
 DeliverJob = Callable[[DeliverContext], Delivered]
 
-_INSTRUCTIONS_CHECKPOINT = "instructions-checkpoint.json"
+_RELEASE_CHECKPOINT = "release-checkpoint.json"
 # The managed CLI supervises an Inventor child for at most 60 minutes. Keep the
 # Workshop fence alive slightly longer so a valid late result cannot outlive
 # its lease and so no second process can enter during the supervisor's window.
@@ -115,7 +115,7 @@ def _review_from_dict(value: Any) -> CustomerReview:
         return CustomerReview(
             review_id=value["review_id"],
             product_artifact_sha256=value["product_artifact_sha256"],
-            instructions_sha256=value["instructions_sha256"],
+            release_sha256=value["release_sha256"],
             delivery_tracking_id=value["delivery_tracking_id"],
             rating=value["rating"],
             feedback=value["feedback"],
@@ -140,7 +140,7 @@ def _delivery_from_events(runtime: Runtime, product_id: str) -> Delivered:
         try:
             return Delivered(
                 product_artifact_sha256=value["product_artifact_sha256"],
-                instructions_sha256=value["instructions_sha256"],
+                release_sha256=value["release_sha256"],
                 carrier=value["carrier"],
                 service=value["service"],
                 tracking_id=value["tracking_id"],
@@ -214,14 +214,14 @@ def _canonical_json(value: Any) -> bytes:
             allow_nan=False,
         ).encode("utf-8")
     except (TypeError, ValueError) as exc:
-        raise ContractError("Instructions checkpoint accepts only finite JSON") from exc
+        raise ContractError("Release checkpoint accepts only finite JSON") from exc
 
 
 def _write_json_once(path: Path, value: Mapping[str, Any]) -> None:
     """Create one durable checkpoint without ever replacing an earlier identity."""
 
     if path.exists() or path.is_symlink():
-        raise ContractError("Instructions checkpoint already exists")
+        raise ContractError("Release checkpoint already exists")
     payload = json.dumps(
         value, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False
     ) + "\n"
@@ -236,7 +236,7 @@ def _write_json_once(path: Path, value: Mapping[str, Any]) -> None:
         try:
             os.link(temporary, path)
         except FileExistsError as exc:
-            raise ContractError("Instructions checkpoint already exists") from exc
+            raise ContractError("Release checkpoint already exists") from exc
     finally:
         try:
             os.unlink(temporary)
@@ -499,7 +499,7 @@ def _checkpoint_tree(root: Path, value: Any, label: str) -> Path:
     return resolved
 
 
-def _instructions_checkpoint_payload(
+def _release_checkpoint_payload(
     wish: Wish,
     inventor_id: str,
     taste_sha256: str,
@@ -525,7 +525,7 @@ def _instructions_checkpoint_payload(
         )
         if current_evidence.to_dict() != evidence_manifest.to_dict():
             raise ContractError(
-                "Playtest evidence must be sealed from its Workshop workspace to support safe Instructions resume"
+                "Playtest evidence must be sealed from its Workshop workspace to support safe Release resume"
             )
     return {
         "product_id": wish.product_id,
@@ -555,41 +555,41 @@ def _instructions_checkpoint_payload(
     }
 
 
-def _write_instructions_checkpoint(run_root: Path, payload: Mapping[str, Any]) -> str:
+def _write_release_checkpoint(run_root: Path, payload: Mapping[str, Any]) -> str:
     digest = hashlib.sha256(_canonical_json(payload)).hexdigest()
     document = {
         "schema_version": 1,
         "checkpoint_sha256": digest,
         "payload": payload,
     }
-    _write_json_once(run_root / _INSTRUCTIONS_CHECKPOINT, document)
+    _write_json_once(run_root / _RELEASE_CHECKPOINT, document)
     return digest
 
 
-def _read_instructions_checkpoint(
+def _read_release_checkpoint(
     run_root: Path,
 ) -> tuple[Mapping[str, Any], str]:
-    path = run_root / _INSTRUCTIONS_CHECKPOINT
+    path = run_root / _RELEASE_CHECKPOINT
     if path.is_symlink() or not path.is_file():
-        raise ContractError("Instructions resume checkpoint is missing")
+        raise ContractError("Release resume checkpoint is missing")
     try:
         document = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise ContractError(
-            "Instructions resume checkpoint must be valid UTF-8 JSON"
+            "Release resume checkpoint must be valid UTF-8 JSON"
         ) from exc
     if not isinstance(document, Mapping) or set(document) != {
         "schema_version",
         "checkpoint_sha256",
         "payload",
     } or document.get("schema_version") != 1:
-        raise ContractError("Instructions resume checkpoint is malformed")
+        raise ContractError("Release resume checkpoint is malformed")
     payload = document.get("payload")
     if not isinstance(payload, Mapping):
-        raise ContractError("Instructions resume checkpoint payload is malformed")
+        raise ContractError("Release resume checkpoint payload is malformed")
     digest = hashlib.sha256(_canonical_json(payload)).hexdigest()
     if document.get("checkpoint_sha256") != digest:
-        raise ContractError("Instructions resume checkpoint identity changed")
+        raise ContractError("Release resume checkpoint identity changed")
     return payload, digest
 
 
@@ -655,7 +655,7 @@ class WorkshopTools:
     invent: Optional[InventJob] = None
     make: Optional[MakeJob] = None
     playtest: Optional[PlaytestJob] = None
-    instructions: Optional[InstructionsJob] = None
+    release: Optional[ReleaseJob] = None
     deliver: Optional[DeliverJob] = None
 
     def __post_init__(self) -> None:
@@ -663,7 +663,7 @@ class WorkshopTools:
             (self.invent, "Workshop Invent"),
             (self.make, "Workshop Make"),
             (self.playtest, "Workshop Playtest"),
-            (self.instructions, "Workshop Instructions"),
+            (self.release, "Workshop Release"),
             (self.deliver, "Workshop Deliver"),
         ):
             _callable_or_none(value, label)
@@ -709,7 +709,7 @@ def _missing_playtest(context: PlaytestContext) -> Playtested:
 
 
 class Workshop:
-    """Run Wish -> Invent -> Make <-> Playtest -> Instructions -> Deliver.
+    """Run Wish -> Invent -> Make <-> Playtest -> Release -> Deliver.
 
     With neither override, the inventor authors only ``TASTE.md``. A Make override
     creates the middle level. Make plus Playtest creates the maximum level.
@@ -768,7 +768,7 @@ class Workshop:
             invent=requested_tools.invent,
             make=make or requested_tools.make,
             playtest=playtest or requested_tools.playtest,
-            instructions=requested_tools.instructions,
+            release=requested_tools.release,
             deliver=requested_tools.deliver,
         )
         self.tools = selected_tools
@@ -777,8 +777,8 @@ class Workshop:
         self.playtest_job: PlaytestJob = (
             playtest or selected_tools.playtest or _missing_playtest
         )
-        self.instructions_job: InstructionsJob = (
-            selected_tools.instructions or DefaultInstructions()
+        self.release_job: ReleaseJob = (
+            selected_tools.release or DefaultRelease()
         )
         self.deliver_job: DeliverJob = selected_tools.deliver or DefaultDeliver()
         self.review_authenticator = review_authenticator
@@ -807,7 +807,7 @@ class Workshop:
         """Read customer Reviews without making them part of the five-job gate.
 
         Reviews are append-only events on a delivered product. They remain bound
-        to the exact shipped artifact, Instructions, and carrier record.
+        to the exact shipped artifact, Release, and carrier record.
         """
 
         runtime = self._runtime()
@@ -831,7 +831,7 @@ class Workshop:
                 "feedback": review.feedback,
                 "observed_at": review.observed_at,
                 "source_artifact_sha256": review.product_artifact_sha256,
-                "source_instructions_sha256": review.instructions_sha256,
+                "source_release_sha256": review.release_sha256,
                 "applies_to": "future-make",
                 "delivered_revision_immutable": True,
             }
@@ -924,8 +924,8 @@ class Workshop:
             "wish": ("invent",),
             "invent": ("invent", "make"),
             "make": ("make", "playtest"),
-            "playtest": ("playtest", "make", "instructions"),
-            "instructions": ("instructions", "deliver"),
+            "playtest": ("playtest", "make", "release"),
+            "release": ("release", "deliver"),
             "deliver": ("deliver",),
         }
         if to_job not in legal.get(source, ()):
@@ -951,7 +951,7 @@ class Workshop:
         playtest_rounds: int,
         *,
         artifact_sha256: Optional[str] = None,
-        instructions_sha256: Optional[str] = None,
+        release_sha256: Optional[str] = None,
         page_url: Optional[str] = None,
         invented: Optional[Invented] = None,
     ) -> WorkshopRun:
@@ -962,22 +962,22 @@ class Workshop:
             "round": round_number,
             "needs": [need.to_dict() for need in waiting.needs],
         }
-        if job == "instructions":
+        if job == "release":
             run_root = self.runtime_root / "runs" / wish.product_id
-            _, checkpoint_sha256 = _read_instructions_checkpoint(run_root)
+            _, checkpoint_sha256 = _read_release_checkpoint(run_root)
             wait_payload["resume_checkpoint_sha256"] = checkpoint_sha256
-            instructions_root = run_root / "instructions"
-            manifest_path = run_root / INSTRUCTIONS_MANIFEST_FILENAME
-            if instructions_root.exists():
-                if instructions_root.is_symlink() or not instructions_root.is_dir():
-                    raise ContractError("Instructions workspace must be a regular directory")
-                if any(instructions_root.iterdir()):
-                    manifest = sealed_instructions_manifest(instructions_root)
-                    wait_payload["instructions_sha256"] = manifest.artifact_sha256
+            release_root = run_root / "release"
+            manifest_path = run_root / RELEASE_MANIFEST_FILENAME
+            if release_root.exists():
+                if release_root.is_symlink() or not release_root.is_dir():
+                    raise ContractError("Release workspace must be a regular directory")
+                if any(release_root.iterdir()):
+                    manifest = sealed_release_manifest(release_root)
+                    wait_payload["release_sha256"] = manifest.artifact_sha256
                 elif manifest_path.exists() or manifest_path.is_symlink():
-                    raise ContractError("empty Instructions tree cannot have a seal")
+                    raise ContractError("empty Release tree cannot have a seal")
             elif manifest_path.exists() or manifest_path.is_symlink():
-                raise ContractError("Instructions seal cannot exist without its tree")
+                raise ContractError("Release seal cannot exist without its tree")
         self._advance(
             runtime,
             wish.product_id,
@@ -992,37 +992,37 @@ class Workshop:
             job,
             round_number,
             artifact_sha256,
-            instructions_sha256,
+            release_sha256,
             waiting.needs,
             playtest_rounds=playtest_rounds,
             page_url=page_url,
             invented=invented,
         )
 
-    def _finish_instructions(
+    def _finish_release(
         self,
         runtime: Runtime,
         wish: Wish,
         made: Made,
-        product_instructions: ProductInstructions,
+        product_release: ProductRelease,
         round_number: int,
         playtest_rounds: int,
         lease_token: str,
-        instructions_workspace: Path,
+        release_workspace: Path,
         invented: Optional[Invented] = None,
     ) -> WorkshopRun:
-        """Validate Instructions once, then continue through the existing Deliver job."""
+        """Validate Release once, then continue through the existing Deliver job."""
 
-        if not isinstance(product_instructions, ProductInstructions):
-            raise ContractError("Instructions must return ProductInstructions")
+        if not isinstance(product_release, ProductRelease):
+            raise ContractError("Release must return ProductRelease")
         _inside(
-            product_instructions.root,
-            instructions_workspace,
-            "Instructions result",
+            product_release.root,
+            release_workspace,
+            "Release result",
         )
-        product_instructions.assert_current()
-        if product_instructions.product_artifact_sha256 != made.artifact_sha256:
-            raise ContractError("Instructions describe different product bytes")
+        product_release.assert_current()
+        if product_release.product_artifact_sha256 != made.artifact_sha256:
+            raise ContractError("Release describes different product bytes")
         self._advance(
             runtime,
             wish.product_id,
@@ -1031,11 +1031,11 @@ class Workshop:
             payload={
                 "status": "working",
                 "round": round_number,
-                "instructions_sha256": product_instructions.instructions_sha256,
+                "release_sha256": product_release.release_sha256,
             },
             lease_token=lease_token,
         )
-        deliver_context = DeliverContext(wish, made, product_instructions)
+        deliver_context = DeliverContext(wish, made, product_release)
         try:
             delivered = self.deliver_job(deliver_context)
         except WaitingFor as waiting:
@@ -1048,8 +1048,8 @@ class Workshop:
                 lease_token,
                 playtest_rounds,
                 artifact_sha256=made.artifact_sha256,
-                instructions_sha256=product_instructions.instructions_sha256,
-                page_url=product_instructions.page_url,
+                release_sha256=product_release.release_sha256,
+                page_url=product_release.page_url,
                 invented=invented,
             )
         if not isinstance(delivered, Delivered):
@@ -1063,7 +1063,7 @@ class Workshop:
             payload={
                 "status": "delivered",
                 "round": round_number,
-                "instructions_sha256": product_instructions.instructions_sha256,
+                "release_sha256": product_release.release_sha256,
                 "delivery": delivered.to_dict(),
             },
             lease_token=lease_token,
@@ -1074,39 +1074,39 @@ class Workshop:
             "deliver",
             round_number,
             made.artifact_sha256,
-            product_instructions.instructions_sha256,
+            product_release.release_sha256,
             delivery=delivered,
             playtest_rounds=playtest_rounds,
-            page_url=product_instructions.page_url,
+            page_url=product_release.page_url,
             invented=invented,
         )
 
-    def resume_instructions(self, wish: Wish) -> WorkshopRun:
-        """Resume one exact run waiting at Instructions, without Make or Playtest.
+    def resume_release(self, wish: Wish) -> WorkshopRun:
+        """Resume one exact run waiting at Release, without Make or Playtest.
 
         A content-addressed checkpoint reconstructs the already approved revision.
-        If local Instructions were sealed before the wait, only the resumable site
+        If local Release were sealed before the wait, only the resumable site
         portion may run; media and copy are never regenerated or overwritten.
         """
 
         if not isinstance(wish, Wish):
-            raise ContractError("Workshop.resume_instructions requires a Wish")
+            raise ContractError("Workshop.resume_release requires a Wish")
         wish.assert_valid()
         self.taste.assert_current()
         runtime = self._runtime()
         product = runtime.get_product(wish.product_id)
-        if product["stage"] != "instructions":
+        if product["stage"] != "release":
             raise ContractError(
-                "resume_instructions requires a run waiting at Instructions"
+                "resume_release requires a run waiting at Release"
             )
         lease = runtime.acquire_lease(
-            wish.product_id, "toy-workshop-instructions-resume"
+            wish.product_id, "toy-workshop-release-resume"
         )
         try:
             product = runtime.get_product(wish.product_id)
-            if product["stage"] != "instructions":
+            if product["stage"] != "release":
                 raise ContractError(
-                    "resume_instructions requires a run waiting at Instructions"
+                    "resume_release requires a run waiting at Release"
                 )
             if not runtime.verify_event_chain(wish.product_id):
                 raise ContractError("Workshop event chain is not trustworthy")
@@ -1145,7 +1145,7 @@ class Workshop:
             if run_root.is_symlink() or not run_root.is_dir():
                 raise ContractError("Workshop run directory is missing or unsafe")
             run_root = run_root.resolve(strict=True)
-            checkpoint, checkpoint_sha256 = _read_instructions_checkpoint(run_root)
+            checkpoint, checkpoint_sha256 = _read_release_checkpoint(run_root)
             if set(checkpoint) != {
                 "product_id",
                 "inventor_id",
@@ -1159,7 +1159,7 @@ class Workshop:
                 "made",
                 "playtested",
             }:
-                raise ContractError("Instructions resume checkpoint bindings are malformed")
+                raise ContractError("Release resume checkpoint bindings are malformed")
             checkpoint_bindings = {
                 "product_id": wish.product_id,
                 "inventor_id": self.inventor_id,
@@ -1175,7 +1175,7 @@ class Workshop:
                 for key, value in checkpoint_bindings.items()
             ):
                 raise ContractError(
-                    "Instructions checkpoint differs from the original Workshop bindings"
+                    "Release checkpoint differs from the original Workshop bindings"
                 )
             round_number = checkpoint["round"]
             if (
@@ -1183,13 +1183,13 @@ class Workshop:
                 or round_number < 1
                 or round_number > selected_rounds
             ):
-                raise ContractError("Instructions checkpoint round is outside its allowance")
+                raise ContractError("Release checkpoint round is outside its allowance")
 
             events = runtime.events(wish.product_id)
             latest = events[-1]
             latest_payload = latest.get("payload")
             if (
-                latest.get("to_stage") != "instructions"
+                latest.get("to_stage") != "release"
                 or not isinstance(latest_payload, Mapping)
                 or latest_payload.get("status") != "waiting"
                 or latest_payload.get("round") != round_number
@@ -1197,14 +1197,14 @@ class Workshop:
                 != checkpoint_sha256
             ):
                 raise ContractError(
-                    "resume_instructions requires the latest state to be this exact waiting checkpoint"
+                    "resume_release requires the latest state to be this exact waiting checkpoint"
                 )
             approval_event = next(
                 (
                     event
                     for event in reversed(events)
                     if event.get("from_stage") == "playtest"
-                    and event.get("to_stage") == "instructions"
+                    and event.get("to_stage") == "release"
                     and isinstance(event.get("payload"), Mapping)
                     and event["payload"].get("resume_checkpoint_sha256")
                     == checkpoint_sha256
@@ -1213,7 +1213,7 @@ class Workshop:
             )
             if approval_event is None:
                 raise ContractError(
-                    "Instructions checkpoint is not bound to an approved Playtest event"
+                    "Release checkpoint is not bound to an approved Playtest event"
                 )
             made, playtested, evidence_root = _rebuild_checkpoint_results(
                 run_root, checkpoint
@@ -1231,70 +1231,70 @@ class Workshop:
                 != playtested.evidence.evidence_artifact_sha256
             ):
                 raise ContractError(
-                    "persisted Instructions state identifies different Make or Playtest bytes"
+                    "persisted Release state identifies different Make or Playtest bytes"
                 )
 
-            instructions_workspace = (run_root / "instructions").absolute()
-            instructions_context = InstructionsContext(
+            release_workspace = (run_root / "release").absolute()
+            release_context = ReleaseContext(
                 wish,
                 self.taste,
                 self.blueprint,
                 made,
                 playtested,
-                instructions_workspace,
+                release_workspace,
                 lease,
             )
             tree_is_nonempty = False
-            if instructions_workspace.exists():
+            if release_workspace.exists():
                 if (
-                    instructions_workspace.is_symlink()
-                    or not instructions_workspace.is_dir()
+                    release_workspace.is_symlink()
+                    or not release_workspace.is_dir()
                 ):
-                    raise ContractError("Instructions workspace must be a regular directory")
-                tree_is_nonempty = any(instructions_workspace.iterdir())
+                    raise ContractError("Release workspace must be a regular directory")
+                tree_is_nonempty = any(release_workspace.iterdir())
             if tree_is_nonempty:
-                manifest = sealed_instructions_manifest(instructions_workspace)
-                if latest_payload.get("instructions_sha256") != manifest.artifact_sha256:
+                manifest = sealed_release_manifest(release_workspace)
+                if latest_payload.get("release_sha256") != manifest.artifact_sha256:
                     raise ContractError(
-                        "sealed Instructions identity differs from its waiting event"
+                        "sealed Release identity differs from its waiting event"
                     )
-                resume_job = getattr(self.instructions_job, "resume", None)
+                resume_job = getattr(self.release_job, "resume", None)
                 if not callable(resume_job):
                     raise ContractError(
-                        "sealed Instructions require a job with resume(context) support"
+                        "sealed Release requires a job with resume(context) support"
                     )
                 operation = resume_job
             else:
-                if latest_payload.get("instructions_sha256") is not None:
+                if latest_payload.get("release_sha256") is not None:
                     raise ContractError(
-                        "waiting event cites sealed Instructions that are missing"
+                        "waiting event cites sealed Release that are missing"
                     )
-                manifest_path = run_root / INSTRUCTIONS_MANIFEST_FILENAME
+                manifest_path = run_root / RELEASE_MANIFEST_FILENAME
                 if manifest_path.exists() or manifest_path.is_symlink():
-                    raise ContractError("Instructions seal exists without a sealed tree")
-                operation = self.instructions_job
+                    raise ContractError("Release seal exists without a sealed tree")
+                operation = self.release_job
             try:
-                product_instructions = operation(instructions_context)
+                product_release = operation(release_context)
             except WaitingFor as waiting:
                 return self._wait(
                     runtime,
                     wish,
-                    "instructions",
+                    "release",
                     round_number,
                     waiting,
                     lease,
                     selected_rounds,
                     artifact_sha256=made.artifact_sha256,
                 )
-            return self._finish_instructions(
+            return self._finish_release(
                 runtime,
                 wish,
                 made,
-                product_instructions,
+                product_release,
                 round_number,
                 selected_rounds,
                 lease,
-                instructions_workspace,
+                release_workspace,
             )
         finally:
             runtime.release_lease(wish.product_id, lease)
@@ -1503,7 +1503,7 @@ class Workshop:
                             artifact_sha256=made.artifact_sha256,
                             invented=invented,
                         )
-                    checkpoint_payload = _instructions_checkpoint_payload(
+                    checkpoint_payload = _release_checkpoint_payload(
                         wish,
                         self.inventor_id,
                         self.taste.sha256,
@@ -1516,13 +1516,13 @@ class Workshop:
                         run_root,
                         playtest_workspace,
                     )
-                    checkpoint_sha256 = _write_instructions_checkpoint(
+                    checkpoint_sha256 = _write_release_checkpoint(
                         run_root, checkpoint_payload
                     )
                     self._advance(
                         runtime,
                         wish.product_id,
-                        "instructions",
+                        "release",
                         artifact_sha256=made.artifact_sha256,
                         payload={
                             "status": "working",
@@ -1581,23 +1581,23 @@ class Workshop:
 
             if made is None or playtested is None or not playtested.passed:
                 raise ContractError("Workshop ended without an approved Make")
-            instructions_workspace = (run_root / "instructions").absolute()
-            instructions_context = InstructionsContext(
+            release_workspace = (run_root / "release").absolute()
+            release_context = ReleaseContext(
                 wish,
                 self.taste,
                 self.blueprint,
                 made,
                 playtested,
-                instructions_workspace,
+                release_workspace,
                 lease,
             )
             try:
-                product_instructions = self.instructions_job(instructions_context)
+                product_release = self.release_job(release_context)
             except WaitingFor as waiting:
                 return self._wait(
                     runtime,
                     wish,
-                    "instructions",
+                    "release",
                     round_number,
                     waiting,
                     lease,
@@ -1605,15 +1605,15 @@ class Workshop:
                     artifact_sha256=made.artifact_sha256,
                     invented=invented,
                 )
-            return self._finish_instructions(
+            return self._finish_release(
                 runtime,
                 wish,
                 made,
-                product_instructions,
+                product_release,
                 round_number,
                 selected_rounds,
                 lease,
-                instructions_workspace,
+                release_workspace,
                 invented,
             )
         finally:
@@ -1635,7 +1635,7 @@ from workshop.make.offline import (  # noqa: E402,F401
 __all__ = [
     "CUSTOMIZATION_LEVELS",
     "DeliverJob",
-    "InstructionsJob",
+    "ReleaseJob",
     "InventJob",
     "MakeJob",
     "PlaytestJob",

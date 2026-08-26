@@ -70,7 +70,7 @@ class StoreTest(unittest.TestCase):
                 "unused",
                 "media-upload",
                 "hero",
-                {"instructions_sha256": SHA},
+                {"release_sha256": SHA},
             )
 
     def test_revision_fence_and_hash_chain(self):

@@ -9,7 +9,7 @@ from unittest import mock
 
 from workshop.artifacts.core import build_artifact_manifest
 from workshop.deliver.service import DefaultDeliver
-from workshop.instructions.service import DefaultInstructions
+from workshop.release.service import DefaultRelease
 from workshop.errors import ContractError
 from workshop.reviews.contracts import CustomerReview
 from workshop.deliver.contracts import Delivered
@@ -1079,14 +1079,14 @@ class ToyWorkshopTest(unittest.TestCase):
             listing_price_cents=3500,
             listing_currency="USD",
             listing_sku="TEST-001",
-            details={"instructions_sha256": sealed_manifest.artifact_sha256},
+            details={"release_sha256": sealed_manifest.artifact_sha256},
         )
 
     @staticmethod
     def fulfiller(context):
         return Delivered(
             context.made.artifact_sha256,
-            context.instructions.instructions_sha256,
+            context.release.release_sha256,
             "USPS",
             "Priority Mail",
             "9400100000000000000000",
@@ -1094,7 +1094,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "2026-08-23T12:00:00+00:00",
             fixture_delivery_evidence(
                 context.made.artifact_sha256,
-                context.instructions.instructions_sha256,
+                context.release.release_sha256,
             ),
         )
 
@@ -1110,7 +1110,7 @@ class ToyWorkshopTest(unittest.TestCase):
             review_id=review.review_id,
             review_sha256=review_sha256(review),
             product_artifact_sha256=review.product_artifact_sha256,
-            instructions_sha256=review.instructions_sha256,
+            release_sha256=review.release_sha256,
             delivery_tracking_id=review.delivery_tracking_id,
             authenticated_at=review.observed_at,
         )
@@ -1120,7 +1120,7 @@ class ToyWorkshopTest(unittest.TestCase):
             invent=self.invent_job,
             make=self.make_job,
             playtest=playtest or self.playtest_job,
-            instructions=DefaultInstructions(site_writer=self.site_writer),
+            release=DefaultRelease(site_writer=self.site_writer),
             deliver=DefaultDeliver(self.fulfiller),
         )
 
@@ -1148,7 +1148,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 "playtest",
                 "make",
                 "playtest",
-                "instructions",
+                "release",
                 "deliver",
                 "deliver",
             ],
@@ -1171,7 +1171,7 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=make,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(site_writer=self.site_writer),
+                release=DefaultRelease(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.root / "identity-runtime",
@@ -1180,7 +1180,7 @@ class ToyWorkshopTest(unittest.TestCase):
         self.assertEqual(wish.to_dict(), original)
         self.assertNotEqual("machine-smith", "Test Inventor".casefold())
 
-    def test_instructions_resume_cannot_switch_inventor_identity(self):
+    def test_release_resume_cannot_switch_inventor_identity(self):
         wish = Wish.create("identity-resume", "A top owned by one inventor")
         waiting = Workshop(
             self.inventor,
@@ -1190,11 +1190,11 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(),
+                release=DefaultRelease(),
             ),
             runtime_root=self.root / "identity-resume-runtime",
         ).run(wish, playtest_rounds=1)
-        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "release"))
         with self.assertRaisesRegex(ContractError, "different inventor identity"):
             Workshop(
                 self.inventor,
@@ -1204,12 +1204,12 @@ class ToyWorkshopTest(unittest.TestCase):
                     invent=self.invent_job,
                     make=self.make_job,
                     playtest=self.passing_playtest,
-                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                    release=DefaultRelease(site_writer=self.site_writer),
                 ),
                 runtime_root=self.root / "identity-resume-runtime",
-            ).resume_instructions(wish)
+            ).resume_release(wish)
 
-    def test_resume_instructions_uses_checkpoint_without_repeating_make_or_playtest(self):
+    def test_resume_release_uses_checkpoint_without_repeating_make_or_playtest(self):
         calls = {"make": 0, "playtest": 0, "site": 0}
 
         def counted_make(context):
@@ -1232,13 +1232,13 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(),
+                release=DefaultRelease(),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         )
         waiting = waiting_workshop.run(wish, playtest_rounds=3)
-        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "release"))
         self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 0})
 
         resumed_workshop = Workshop(
@@ -1248,16 +1248,16 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(site_writer=counted_site),
+                release=DefaultRelease(site_writer=counted_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         )
         with self.assertRaisesRegex(ContractError, "original Wish"):
-            resumed_workshop.resume_instructions(
+            resumed_workshop.resume_release(
                 Wish.create("resumable-top", "A different Wish must not attach")
             )
-        resumed = resumed_workshop.resume_instructions(wish)
+        resumed = resumed_workshop.resume_release(wish)
         self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
         self.assertEqual(resumed.artifact_sha256, waiting.artifact_sha256)
         self.assertEqual(resumed.playtest_rounds, 3)
@@ -1265,7 +1265,7 @@ class ToyWorkshopTest(unittest.TestCase):
         state = Runtime(self.runtime / "workshop.sqlite3")
         self.assertTrue(state.verify_event_chain(wish.product_id))
 
-    def test_resume_reuses_sealed_instructions_and_only_retries_the_site(self):
+    def test_resume_reuses_sealed_release_and_only_retries_the_site(self):
         calls = {"make": 0, "playtest": 0, "site": 0}
 
         def counted_make(context):
@@ -1281,7 +1281,7 @@ class ToyWorkshopTest(unittest.TestCase):
             calls["site"] += 1
             raise WaitingFor(
                 Need(
-                    "instructions",
+                    "release",
                     "site-page",
                     "The sealed page is waiting for a site account.",
                     "Configure the site account and resume this exact page.",
@@ -1296,18 +1296,18 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(site_writer=waiting_site),
+                release=DefaultRelease(site_writer=waiting_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         ).run(wish, playtest_rounds=2)
-        self.assertEqual((first.status, first.job), ("waiting", "instructions"))
+        self.assertEqual((first.status, first.job), ("waiting", "release"))
         self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 1})
         waiting_payload = Runtime(
             self.runtime / "workshop.sqlite3"
         ).events(wish.product_id)[-1]["payload"]
         self.assertEqual(len(waiting_payload["resume_checkpoint_sha256"]), 64)
-        self.assertEqual(len(waiting_payload["instructions_sha256"]), 64)
+        self.assertEqual(len(waiting_payload["release_sha256"]), 64)
 
         def successful_site(context, root, manifest):
             calls["site"] += 1
@@ -1320,30 +1320,30 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=counted_make,
                 playtest=counted_playtest,
-                instructions=DefaultInstructions(site_writer=successful_site),
+                release=DefaultRelease(site_writer=successful_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
-        ).resume_instructions(wish)
+        ).resume_release(wish)
         self.assertEqual((resumed.status, resumed.job), ("delivered", "deliver"))
         self.assertEqual(resumed.artifact_sha256, first.artifact_sha256)
         self.assertEqual(calls, {"make": 1, "playtest": 1, "site": 2})
 
-    def test_resume_rejects_changed_sealed_instructions_before_site_effect(self):
+    def test_resume_rejects_changed_sealed_release_before_site_effect(self):
         site_calls = 0
 
         def waiting_site(context, root, manifest):
             del context, root, manifest
             raise WaitingFor(
                 Need(
-                    "instructions",
+                    "release",
                     "site-page",
                     "The sealed page is waiting.",
                     "Resume after site capability is configured.",
                 )
             )
 
-        wish = Wish.create("tampered-page", "A top with immutable Instructions")
+        wish = Wish.create("tampered-page", "A top with an immutable release package")
         Workshop(
             self.inventor,
             "moving-machines",
@@ -1351,19 +1351,19 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(site_writer=waiting_site),
+                release=DefaultRelease(site_writer=waiting_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         ).run(wish, playtest_rounds=1)
-        instructions_path = (
+        release_path = (
             self.runtime
             / "runs"
             / wish.product_id
-            / "instructions"
-            / "INSTRUCTIONS.md"
+            / "release"
+            / "MANUAL.md"
         )
-        instructions_path.write_text("changed while waiting\n", encoding="utf-8")
+        release_path.write_text("changed while waiting\n", encoding="utf-8")
 
         def forbidden_site(context, root, manifest):
             nonlocal site_calls
@@ -1377,13 +1377,13 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(site_writer=forbidden_site),
+                release=DefaultRelease(site_writer=forbidden_site),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             runtime_root=self.runtime,
         )
         with self.assertRaisesRegex(ContractError, "changed while waiting"):
-            resumed_workshop.resume_instructions(wish)
+            resumed_workshop.resume_release(wish)
         self.assertEqual(site_calls, 0)
 
     def test_customer_reviews_follow_deliver_and_feed_only_a_future_make(self):
@@ -1401,7 +1401,7 @@ class ToyWorkshopTest(unittest.TestCase):
         review = CustomerReview(
             "review-1",
             result.artifact_sha256,
-            result.instructions_sha256,
+            result.release_sha256,
             result.delivery.tracking_id,
             4,
             "The second rhythm is delightful; make the winding grip larger next time.",
@@ -1420,7 +1420,7 @@ class ToyWorkshopTest(unittest.TestCase):
         changed = CustomerReview(
             "review-1",
             result.artifact_sha256,
-            result.instructions_sha256,
+            result.release_sha256,
             result.delivery.tracking_id,
             1,
             "Different feedback under the same id must not replace history.",
@@ -1443,7 +1443,7 @@ class ToyWorkshopTest(unittest.TestCase):
         review = CustomerReview(
             "review-no-order-proof",
             result.artifact_sha256,
-            result.instructions_sha256,
+            result.release_sha256,
             result.delivery.tracking_id,
             5,
             "Lovely, but this must still be order-authenticated.",
@@ -1466,7 +1466,7 @@ class ToyWorkshopTest(unittest.TestCase):
             tools=WorkshopTools(
                 invent=self.invent_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(site_writer=self.site_writer),
+                release=DefaultRelease(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -1477,7 +1477,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "moving-machines",
             tools=WorkshopTools(
                 invent=self.invent_job,
-                instructions=DefaultInstructions(site_writer=self.site_writer),
+                release=DefaultRelease(site_writer=self.site_writer),
                 deliver=DefaultDeliver(self.fulfiller),
             ),
             make=self.make_job,
@@ -1583,7 +1583,7 @@ class ToyWorkshopTest(unittest.TestCase):
             (held.status, held.job, held.round, held.playtest_rounds),
             ("stopped", "playtest", 1, 1),
         )
-        self.assertIsNone(held.instructions_sha256)
+        self.assertIsNone(held.release_sha256)
         self.assertIsNone(held.delivery)
 
         with self.assertRaisesRegex(ContractError, "from 1 to 100"):
@@ -1629,7 +1629,7 @@ class ToyWorkshopTest(unittest.TestCase):
         )
 
     def test_custom_playtest_labels_cannot_release_a_moving_machine(self):
-        calls = {"instructions": 0, "deliver": 0}
+        calls = {"release": 0, "deliver": 0}
 
         def synthetic_playtest(context):
             return self._playtest(
@@ -1638,10 +1638,10 @@ class ToyWorkshopTest(unittest.TestCase):
                 valid_proofs=False,
             )
 
-        def forbidden_instructions(context):
+        def forbidden_release(context):
             del context
-            calls["instructions"] += 1
-            raise AssertionError("Instructions must not see synthetic Playtest labels")
+            calls["release"] += 1
+            raise AssertionError("Release must not see synthetic Playtest labels")
 
         def forbidden_deliver(context):
             del context
@@ -1653,7 +1653,7 @@ class ToyWorkshopTest(unittest.TestCase):
             "moving-machines",
             tools=WorkshopTools(
                 invent=self.invent_job,
-                instructions=forbidden_instructions,
+                release=forbidden_release,
                 deliver=forbidden_deliver,
             ),
             make=self.make_job,
@@ -1669,7 +1669,7 @@ class ToyWorkshopTest(unittest.TestCase):
             {need.capability for need in result.needs},
             {"mechanical-test", "print-test", "motion-test"},
         )
-        self.assertEqual(calls, {"instructions": 0, "deliver": 0})
+        self.assertEqual(calls, {"release": 0, "deliver": 0})
 
     def test_custom_playtest_pass_labels_cannot_bypass_any_lane_release_proof(self):
         expected_by_lane = {
@@ -1743,7 +1743,7 @@ class ToyWorkshopTest(unittest.TestCase):
                     lane,
                     tools=WorkshopTools(
                         invent=self.invent_job,
-                        instructions=DefaultInstructions(site_writer=self.site_writer),
+                        release=DefaultRelease(site_writer=self.site_writer),
                         deliver=DefaultDeliver(self.fulfiller),
                     ),
                     make=self.make_job,
@@ -1886,8 +1886,8 @@ class ToyWorkshopTest(unittest.TestCase):
             {need.capability for need in result.needs}, {"mechanical-test"}
         )
 
-    def test_changed_custom_playtest_evidence_fails_before_instructions(self):
-        instructions_calls = 0
+    def test_changed_custom_playtest_evidence_fails_before_release(self):
+        release_calls = 0
 
         def tampering_playtest(context):
             result = self._playtest(context, passed=True)
@@ -1896,18 +1896,18 @@ class ToyWorkshopTest(unittest.TestCase):
             )
             return result
 
-        def forbidden_instructions(context):
+        def forbidden_release(context):
             del context
-            nonlocal instructions_calls
-            instructions_calls += 1
-            raise AssertionError("tampered evidence must not reach Instructions")
+            nonlocal release_calls
+            release_calls += 1
+            raise AssertionError("tampered evidence must not reach Release")
 
         workshop = Workshop(
             self.inventor,
             "moving-machines",
             tools=WorkshopTools(
                 invent=self.invent_job,
-                instructions=forbidden_instructions,
+                release=forbidden_release,
             ),
             make=self.make_job,
             playtest=tampering_playtest,
@@ -1918,9 +1918,9 @@ class ToyWorkshopTest(unittest.TestCase):
                 Wish.create("tampered-playtest", "A toy with changed proof bytes"),
                 playtest_rounds=1,
             )
-        self.assertEqual(instructions_calls, 0)
+        self.assertEqual(release_calls, 0)
 
-    def test_instructions_resume_revalidates_sealed_playtest_evidence(self):
+    def test_release_resume_revalidates_sealed_playtest_evidence(self):
         wish = Wish.create("resume-proof", "A top whose proof must stay exact")
         waiting = Workshop(
             self.inventor,
@@ -1929,11 +1929,11 @@ class ToyWorkshopTest(unittest.TestCase):
                 invent=self.invent_job,
                 make=self.make_job,
                 playtest=self.passing_playtest,
-                instructions=DefaultInstructions(),
+                release=DefaultRelease(),
             ),
             runtime_root=self.root / "resume-proof-runtime",
         ).run(wish, playtest_rounds=1)
-        self.assertEqual((waiting.status, waiting.job), ("waiting", "instructions"))
+        self.assertEqual((waiting.status, waiting.job), ("waiting", "release"))
         receipt = (
             self.root
             / "resume-proof-runtime"
@@ -1952,11 +1952,11 @@ class ToyWorkshopTest(unittest.TestCase):
                     invent=self.invent_job,
                     make=self.make_job,
                     playtest=self.passing_playtest,
-                    instructions=DefaultInstructions(site_writer=self.site_writer),
+                    release=DefaultRelease(site_writer=self.site_writer),
                     deliver=DefaultDeliver(self.fulfiller),
                 ),
                 runtime_root=self.root / "resume-proof-runtime",
-            ).resume_instructions(wish)
+            ).resume_release(wish)
 
     def test_playtest_requires_ai_agent_simulation_evidence(self):
         def non_ai_playtest(context):
