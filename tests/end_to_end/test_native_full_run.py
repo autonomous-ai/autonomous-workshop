@@ -46,6 +46,31 @@ _FAKE_CONCEPT_IMAGES_CONFIG = ConceptImagesConfig(
 )
 
 
+class _FixtureConceptImagesAdapter:
+    def __init__(self, config):
+        self.config = config
+
+    def draw_concept(self, tree, concept):
+        entries = {
+            "front": tree.descriptor["front"],
+            "top": tree.descriptor["top"],
+            "bottom": tree.descriptor["bottom"],
+            "exploded": tree.descriptor["exploded"],
+            **{
+                "components.%s" % key: entry
+                for key, entry in tree.descriptor["components"].items()
+            },
+        }
+        drawn = {}
+        for role, entry in entries.items():
+            destination = tree.root / entry["path"]
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            content = (role + "-pixels").encode("utf-8")
+            destination.write_bytes(content)
+            drawn[role] = _sha256(content)
+        return drawn
+
+
 def _canonical_json(value):
     return json.dumps(
         value,
@@ -287,25 +312,11 @@ class _OneSessionProductAgent:
         inputs = stage["inputs"]
         concept_root_value = inputs["concept_root"]
         concept_root = run_root / concept_root_value
-        (concept_root / "images/components").mkdir(parents=True, exist_ok=True)
+        concept_root.mkdir(parents=True, exist_ok=True)
         wish = _read_json(run_root / "WISH.json")
         objective = wish["objective"]
 
-        for name, content in (
-            ("front.png", b"front-pixels"),
-            ("top.png", b"top-pixels"),
-            ("bottom.png", b"bottom-pixels"),
-            ("exploded.png", b"exploded-pixels"),
-        ):
-            (concept_root / "images" / name).write_bytes(content)
         components = _concept_fixture_components()
-        for key in components:
-            (concept_root / "images/components" / ("%s.png" % key)).write_bytes(
-                ("%s-pixels" % key).encode("ascii")
-            )
-
-        def sha(relative):
-            return _sha256((concept_root / relative).read_bytes())
 
         brief = {
             "object": "orbit dog draughts set",
@@ -428,21 +439,12 @@ class _OneSessionProductAgent:
             },
         }
         descriptor = {
-            "front": {"path": "images/front.png", "sha256": sha("images/front.png")},
-            "top": {"path": "images/top.png", "sha256": sha("images/top.png")},
-            "bottom": {
-                "path": "images/bottom.png",
-                "sha256": sha("images/bottom.png"),
-            },
-            "exploded": {
-                "path": "images/exploded.png",
-                "sha256": sha("images/exploded.png"),
-            },
+            "front": {"path": "images/front.png"},
+            "top": {"path": "images/top.png"},
+            "bottom": {"path": "images/bottom.png"},
+            "exploded": {"path": "images/exploded.png"},
             "components": {
-                key: {
-                    "path": "images/components/%s.png" % key,
-                    "sha256": sha("images/components/%s.png" % key),
-                }
+                key: {"path": "images/components/%s.png" % key}
                 for key in components
             },
         }
@@ -839,6 +841,10 @@ class _FactoryEffects:
         return PublicTransition()
 
 
+@mock.patch(
+    "workshop.workflow.native_run.ConceptImagesAdapter",
+    _FixtureConceptImagesAdapter,
+)
 class NativeFullRunTest(unittest.TestCase):
     def test_release_credential_wait_is_durable_and_resumes_same_session(self):
         launcher = _OneSessionProductAgent()
@@ -1790,6 +1796,7 @@ class NativeFullRunTest(unittest.TestCase):
                 "invent": {"artifacts/invent/invented.json"},
                 "concept": {
                     "artifacts/concept/r0001/concept.json",
+                    "artifacts/concept/r0001/sealed-concept.json",
                     "artifacts/concept/r0001/concept/brief.json",
                     "artifacts/concept/r0001/concept/research.json",
                     "artifacts/concept/r0001/concept/prompts.json",
@@ -1832,8 +1839,13 @@ class NativeFullRunTest(unittest.TestCase):
             invented = NativeInvented.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["invent"][0].path)
             )
+            sealed_concept_artifact = next(
+                artifact
+                for artifact in checkpoint.stage_artifacts["concept"]
+                if artifact.path.endswith("/sealed-concept.json")
+            )
             concept = NativeConcept.from_mapping(
-                _read_json(paths.workspace / checkpoint.stage_artifacts["concept"][0].path)
+                _read_json(paths.workspace / sealed_concept_artifact.path)
             )
             made = NativeMade.from_mapping(
                 _read_json(paths.workspace / checkpoint.stage_artifacts["make"][0].path)

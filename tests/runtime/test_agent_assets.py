@@ -65,6 +65,33 @@ ALICE_TASTE = (
 
 
 class ProductRunAgentAssetsTest(unittest.TestCase):
+    def test_concept_instructions_finalize_before_host_renders_images(self):
+        reference = (
+            REPOSITORY
+            / ".agents"
+            / "product-run"
+            / ".agents"
+            / "skills"
+            / "autonomous-workshop"
+            / "references"
+            / "concept.md"
+        ).read_text(encoding="utf-8")
+        normalized_reference = " ".join(reference.split())
+
+        for required_instruction in (
+            "Missing rendered images before finalization is the expected state, "
+            "not a need or blocker.",
+            "Run the finalizer now, before any rendered image exists:",
+            'Each descriptor leaf is exactly `{"path":"..."}`; do not add an '
+            "image hash because no image exists yet.",
+            "writes the canonical pre-render proposal, `concept.json`, plus "
+            "`agent-outcome.json`.",
+            "This proposal is not the rendered, sealed Concept that Make consumes.",
+            "It neither reads nor expects rendered image files.",
+            "The finalizer must succeed before the host calls the image provider.",
+        ):
+            self.assertIn(required_instruction, normalized_reference)
+
     def test_source_checkout_uses_product_run_instructions_not_root_agents(self):
         assets = product_run_agent_assets(REPOSITORY)
 

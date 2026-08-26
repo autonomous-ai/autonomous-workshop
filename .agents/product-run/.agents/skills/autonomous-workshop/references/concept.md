@@ -7,9 +7,9 @@ feedback that invalidated it. Verify those bytes before acting.
 
 Concept turns an invented idea into one decided, visualized design before any
 geometry exists. You research the Wish, decide its physical facts, and author
-one drawing instruction per required image role. The host draws the images
-between turns and seals the whole tree; it composes, scores, or chooses
-nothing itself.
+one drawing instruction per required image role. First you finalize those
+pre-render instructions and return control. Only then does the host draw the
+images and seal the whole tree; it composes, scores, or chooses nothing itself.
 
 ## Concept Goal
 
@@ -64,11 +64,16 @@ refinement past the host's stated allowance — re-anchor on the design's
 locked facts instead of drifting further.
 
 You cannot reach an image provider yourself; the sandbox has no network. The
-host draws every image between turns, from your instructions verbatim, after
-its structural checks pass. Where the image provider is not configured, the
-host parks the run waiting on that capability — this is not a failure to
-route around; your accepted brief and research survive the wait and the host
-resumes the same design once it is configured.
+host cannot start drawing until after you successfully run the `concept`
+finalizer and return control. Missing rendered images before finalization is
+the expected state, not a need or blocker. Do not wait for image paths in
+`descriptor.json` to exist and do not mark the Goal blocked because they are
+absent. After the finalizer succeeds, the host draws every image between turns
+from your instructions verbatim and only after its structural checks pass.
+Where the image provider is not configured, the host then parks the run waiting
+on that capability — this is not a failure to route around; your accepted brief
+and research survive the wait and the host resumes the same design once it is
+configured.
 
 Do not implement research, prompt composition, image generation, or judging
 in Python. A deterministic script may validate structure; it does not decide
@@ -80,17 +85,25 @@ Write the concept tree at the exact `concept_root` in `STAGE.json`:
 `brief.json`, `research.json`, `prompts.json` (the drawing instructions,
 keyed by role, `front`/`top`/`bottom`/`exploded`/`components.<key>`),
 `descriptor.json` (each image's path, mirroring the same role keys), and
-`derived_wish.json`. Do not write image files yourself — the host draws them
-into the tree from the sealed instructions. Then run:
+`derived_wish.json`. Each descriptor leaf is exactly `{"path":"..."}`; do not
+add an image hash because no image exists yet. Do not write image files
+yourself — the host draws them
+into the tree from the finalized instructions. At this point the image paths
+declared in `descriptor.json` are expected not to exist. Run the finalizer now,
+before any rendered image exists:
 
 ```bash
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . concept --concept-root <STAGE concept_root>
 ```
 
-The deterministic finalizer hashes the complete tree and writes the canonical
-Concept contract. Complete the Concept Goal only after it succeeds, then
-return to the host. The host re-checks every structural rule, draws the
-images, and only then seals `concept_sha256` over the brief, the research,
-the drawing instructions, and every image together. Make is bound to that
-exact identity and cannot proceed without it.
+The deterministic finalizer validates and hashes the five authored pre-render
+JSON documents and writes the canonical pre-render proposal, `concept.json`,
+plus `agent-outcome.json`. This proposal is not the rendered, sealed Concept
+that Make consumes. It neither reads nor expects rendered image files. The
+finalizer must succeed before the host calls the image provider. Complete the
+Concept Goal only after it succeeds, then return to the host. The host
+re-checks every structural rule, draws the images, and only then writes the
+host-owned `sealed-concept.json` whose `concept_sha256` covers the brief, the
+research, the drawing instructions, and every image together. Make consumes
+that sealed contract and cannot proceed without it.

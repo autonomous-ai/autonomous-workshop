@@ -15,7 +15,7 @@ from workshop._validation import (
     require_safe_evidence_path,
     require_sha256,
 )
-from workshop.concept.native import ConceptTree, NativeConcept
+from workshop.concept.native import ConceptTree, NativeConcept, seal_rendered_concept
 from workshop.concept.native_gate import evaluate_concept_brief
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
@@ -486,7 +486,7 @@ def evaluate_concept_stage(
     standing_concept_sha256: Optional[str],
     feedback_sha256: Optional[str],
     execute_image_effect: Callable[[ConceptTree, NativeConcept], Mapping[str, Any]],
-) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+) -> tuple[StageGateDecision, tuple[AgentArtifact, ...], NativeConcept]:
     """Validate a Concept brief, draw its images, and seal the whole tree.
 
     Structural checks run before ``execute_image_effect`` so a brief that
@@ -522,11 +522,18 @@ def evaluate_concept_stage(
     concept = NativeConcept.from_mapping(
         _artifact_document(run_root, artifact, label="native Concept contract")
     )
+    if concept.images_rendered:
+        raise ContractError(
+            "Concept finalizer must propose source JSON and image output paths before rendering"
+        )
     concept.assert_context(assignment, invented, wish)
     tree = concept.validate_concept_tree(run_root)
     checks = evaluate_concept_brief(tree, wish=wish)
     effect_checks = execute_image_effect(tree, concept)
-    additional = _manifest_agent_artifacts(concept.concept_root, concept.concept_manifest)
+    sealed_concept = seal_rendered_concept(concept, run_root)
+    additional = _manifest_agent_artifacts(
+        sealed_concept.concept_root, sealed_concept.concept_manifest
+    )
     evidence = StageGateEvidence(
         stage="concept",
         gate_id=CONCEPT_GATE_ID,
@@ -540,11 +547,15 @@ def evaluate_concept_stage(
         checks={
             **checks,
             **effect_checks,
-            "concept_sha256": concept.concept_sha256,
+            "concept_sha256": sealed_concept.concept_sha256,
             "wish_bound": True,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="make"), additional
+    return (
+        StageGateDecision(evidence=evidence, transition="make"),
+        additional,
+        sealed_concept,
+    )
 
 
 __all__ = [

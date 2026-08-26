@@ -266,9 +266,11 @@ calls `src/workshop/integrations/concept_images.py` to draw each image from
 its exact authored instruction, attaching only the references the concept
 itself named (`front` for `top`/`bottom`/`exploded`; `front` alone for each
 component's material, finish, and form language, never its shape). Only after
-every image is drawn does the gate build evidence over the whole tree and seal
-one `concept_sha256` covering the brief, research, drawing instructions, and
-every image together, exactly as the Release gate seals its package. Make's
+every image is drawn does the gate build evidence over the whole tree and write
+the host-owned `sealed-concept.json`, with one `concept_sha256` covering the
+brief, research, drawing instructions, and every image together, exactly as
+the Release gate seals its package. The agent-authored `concept.json` remains
+the immutable pre-render proposal. Make consumes `sealed-concept.json`; its
 sealed `NativeMade` is bound to that exact `concept_sha256` and cannot proceed
 without it.
 

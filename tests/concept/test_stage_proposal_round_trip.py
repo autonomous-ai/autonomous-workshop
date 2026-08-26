@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from workshop.concept.native import NativeConcept
+from workshop.concept.native import NativeConcept, seal_rendered_concept
 from workshop.invent.native import NativeInvented
 from workshop.match.native import (
     InventorRoster,
@@ -118,13 +118,7 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
 
     def build_concept_tree(self):
         concept_root = self.run_root / "artifacts/concept/r0001/concept"
-        (concept_root / "images/components").mkdir(parents=True)
-        for name in ("front.png", "top.png", "bottom.png", "exploded.png"):
-            (concept_root / "images" / name).write_bytes(name.encode())
-        for key in ("dome", "base"):
-            (concept_root / "images/components" / ("%s.png" % key)).write_bytes(
-                key.encode()
-            )
+        concept_root.mkdir(parents=True)
 
         brief = {
             "object": "moon lamp",
@@ -265,22 +259,13 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
             },
         }
         descriptor = {
-            "front": {"path": "images/front.png", "sha256": sha256(b"front.png")},
-            "top": {"path": "images/top.png", "sha256": sha256(b"top.png")},
-            "bottom": {"path": "images/bottom.png", "sha256": sha256(b"bottom.png")},
-            "exploded": {
-                "path": "images/exploded.png",
-                "sha256": sha256(b"exploded.png"),
-            },
+            "front": {"path": "images/front.png"},
+            "top": {"path": "images/top.png"},
+            "bottom": {"path": "images/bottom.png"},
+            "exploded": {"path": "images/exploded.png"},
             "components": {
-                "dome": {
-                    "path": "images/components/dome.png",
-                    "sha256": sha256(b"dome"),
-                },
-                "base": {
-                    "path": "images/components/base.png",
-                    "sha256": sha256(b"base"),
-                },
+                "dome": {"path": "images/components/dome.png"},
+                "base": {"path": "images/components/base.png"},
             },
         }
         derived_wish = {
@@ -340,8 +325,26 @@ class ConceptStageProposalRoundTripTest(unittest.TestCase):
         self.assertEqual(contract_bytes, canonical_json(contract_document))
 
         from_finalizer = NativeConcept.from_mapping(contract_document)
+        self.assertFalse(from_finalizer.images_rendered)
         tree = from_finalizer.validate_concept_tree(self.run_root)
         self.assertEqual(tree.brief["object"], "moon lamp")
+        self.assertFalse((tree.root / "images").exists())
+
+        for entry in (
+            tree.descriptor["front"],
+            tree.descriptor["top"],
+            tree.descriptor["bottom"],
+            tree.descriptor["exploded"],
+            tree.descriptor["components"]["dome"],
+            tree.descriptor["components"]["base"],
+        ):
+            image = tree.root / entry["path"]
+            image.parent.mkdir(parents=True, exist_ok=True)
+            image.write_bytes((entry["path"] + " pixels").encode("utf-8"))
+        sealed = seal_rendered_concept(from_finalizer, self.run_root)
+        self.assertTrue(sealed.images_rendered)
+        sealed.validate_concept_tree(self.run_root)
+        self.assertNotEqual(sealed.concept_sha256, from_finalizer.concept_sha256)
 
         outcome_document = json.loads(
             (self.run_root / "agent-outcome.json").read_bytes().decode("utf-8")

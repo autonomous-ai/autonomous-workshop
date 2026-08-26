@@ -14,13 +14,17 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, field
+import os
+import stat
+import tempfile
+from dataclasses import asdict, dataclass, field
 from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, Mapping
 
 from workshop._validation import bounded_text, copy_json_mapping, require_sha256
 from workshop.artifacts import (
+    ArtifactEntry,
     ArtifactManifest,
     artifact_manifest_from_mapping,
     build_artifact_manifest,
@@ -112,7 +116,7 @@ def _strict_json_object(path: Path, label: str) -> tuple[dict[str, Any], bytes]:
 def _walk_descriptor_entries(node: Any, label: str) -> list[dict[str, Any]]:
     """Flatten a descriptor's nested role tree into its leaf image entries."""
 
-    if isinstance(node, Mapping) and "path" in node and "sha256" in node:
+    if isinstance(node, Mapping) and "path" in node:
         return [dict(node)]
     if isinstance(node, Mapping):
         entries: list[dict[str, Any]] = []
@@ -226,7 +230,7 @@ class ConceptTree:
 
 @dataclass(frozen=True)
 class NativeConcept:
-    """One sealed, content-addressed Concept revision proposed by Codex."""
+    """One pre-render proposal or host-sealed Concept revision."""
 
     round: int
     wish_sha256: str
@@ -254,6 +258,7 @@ class NativeConcept:
     schema_version: int = 1
     kind: str = NATIVE_CONCEPT_KIND
     concept_sha256: str = field(init=False)
+    images_rendered: bool = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if type(self.schema_version) is not int or self.schema_version != 1:
@@ -329,8 +334,18 @@ class NativeConcept:
             self.descriptor, "native Concept descriptor", nonempty=True
         )
         derived_wish = DerivedWish.from_mapping(self.derived_wish)
-        for entry in _walk_descriptor_entries(descriptor, "native Concept descriptor"):
-            if set(entry) != {"path", "sha256"}:
+        image_entries = _walk_descriptor_entries(descriptor, "native Concept descriptor")
+        entry_fields = {frozenset(entry) for entry in image_entries}
+        if entry_fields == {frozenset(("path",))}:
+            images_rendered = False
+        elif entry_fields == {frozenset(("path", "sha256"))}:
+            images_rendered = True
+        else:
+            raise ContractError(
+                "native Concept descriptor entries must be uniformly pre-render or sealed"
+            )
+        for entry in image_entries:
+            if set(entry) not in ({"path"}, {"path", "sha256"}):
                 raise ContractError("native Concept descriptor entry fields are invalid")
             entry_path = _safe_relative(
                 entry["path"], "native Concept descriptor image path"
@@ -339,20 +354,38 @@ class NativeConcept:
                 raise ContractError(
                     "native Concept descriptor image path has a forbidden suffix"
                 )
-            require_sha256(entry["sha256"], "native Concept descriptor image sha256")
-            if entry_path.as_posix() not in manifest_paths:
+            if images_rendered:
+                require_sha256(
+                    entry["sha256"], "native Concept descriptor image sha256"
+                )
+            if images_rendered and entry_path.as_posix() not in manifest_paths:
                 raise ContractError(
                     "native Concept descriptor names an image outside its manifest"
                 )
-        image_entries = _walk_descriptor_entries(descriptor, "native Concept descriptor")
+            if not images_rendered and entry_path.as_posix() in manifest_paths:
+                raise ContractError(
+                    "pre-render Concept manifest must not contain rendered images"
+                )
         image_paths = [entry["path"] for entry in image_entries]
         if len(image_paths) != len(set(image_paths)):
             raise ContractError("native Concept descriptor images must be distinct files")
+        source_paths = {
+            self.brief_path,
+            self.research_path,
+            self.drawing_instructions_path,
+            self.descriptor_path,
+            self.derived_wish_path,
+        }
+        if not images_rendered and manifest_paths != source_paths:
+            raise ContractError(
+                "pre-render Concept manifest must contain exactly its five source documents"
+            )
         object.__setattr__(self, "brief", _freeze(brief))
         object.__setattr__(self, "research", _freeze(research))
         object.__setattr__(self, "drawing_instructions", _freeze(drawing_instructions))
         object.__setattr__(self, "descriptor", _freeze(descriptor))
         object.__setattr__(self, "derived_wish", _freeze(derived_wish.to_dict()))
+        object.__setattr__(self, "images_rendered", images_rendered)
         object.__setattr__(
             self,
             "concept_sha256",
@@ -487,8 +520,12 @@ class NativeConcept:
         concept_root = root.joinpath(*relative.parts)
         if concept_root.is_symlink() or not concept_root.is_dir():
             raise ArtifactError("native Concept tree is unavailable")
-        current = build_artifact_manifest(
-            concept_root, created_at=self.concept_manifest.created_at
+        current = (
+            build_artifact_manifest(
+                concept_root, created_at=self.concept_manifest.created_at
+            )
+            if self.images_rendered
+            else _source_manifest(concept_root, self.concept_manifest.created_at)
         )
         if current.to_dict() != self.concept_manifest.to_dict():
             raise ArtifactError("native Concept tree differs from its manifest")
@@ -534,13 +571,16 @@ class NativeConcept:
             raise ContractError(
                 "native Concept derived Wish differs from derived_wish.json"
             )
-        for entry in _walk_descriptor_entries(descriptor, "native Concept descriptor"):
-            entry_path = _safe_relative(entry["path"], "native Concept image path")
-            image_bytes = (concept_root.joinpath(*entry_path.parts)).read_bytes()
-            if hashlib.sha256(image_bytes).hexdigest() != entry["sha256"]:
-                raise ArtifactError(
-                    "native Concept image %s differs from its bytes" % entry["path"]
-                )
+        if self.images_rendered:
+            for entry in _walk_descriptor_entries(
+                descriptor, "native Concept descriptor"
+            ):
+                entry_path = _safe_relative(entry["path"], "native Concept image path")
+                image_bytes = (concept_root.joinpath(*entry_path.parts)).read_bytes()
+                if hashlib.sha256(image_bytes).hexdigest() != entry["sha256"]:
+                    raise ArtifactError(
+                        "native Concept image %s differs from its bytes" % entry["path"]
+                    )
         return ConceptTree(
             root=concept_root,
             manifest=self.concept_manifest,
@@ -552,6 +592,152 @@ class NativeConcept:
         )
 
 
+_CONCEPT_SOURCE_PATHS = (
+    "brief.json",
+    "derived_wish.json",
+    "descriptor.json",
+    "prompts.json",
+    "research.json",
+)
+
+
+def _source_manifest(concept_root: Path, created_at: str) -> ArtifactManifest:
+    """Hash only the five agent-authored pre-render Concept documents."""
+
+    entries: list[ArtifactEntry] = []
+    for relative in _CONCEPT_SOURCE_PATHS:
+        path = concept_root / relative
+        try:
+            identity = path.lstat()
+            content = path.read_bytes()
+            after = path.lstat()
+        except OSError as exc:
+            raise ArtifactError(
+                "native Concept source file is unavailable: %s" % relative
+            ) from exc
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+            or (identity.st_dev, identity.st_ino, identity.st_mtime_ns, identity.st_size)
+            != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        ):
+            raise ArtifactError(
+                "native Concept source file changed while hashing: %s" % relative
+            )
+        entries.append(
+            ArtifactEntry(
+                path=relative,
+                bytes=len(content),
+                sha256=hashlib.sha256(content).hexdigest(),
+                executable=bool(identity.st_mode & stat.S_IXUSR),
+            )
+        )
+    entries.sort(key=lambda entry: entry.path)
+    artifact_sha256 = hashlib.sha256(
+        _canonical_json([asdict(entry) for entry in entries])
+    ).hexdigest()
+    return ArtifactManifest(
+        schema_version=1,
+        artifact_sha256=artifact_sha256,
+        entries=tuple(entries),
+        total_bytes=sum(entry.bytes for entry in entries),
+        created_at=created_at,
+    )
+
+
+def _seal_descriptor(node: Any, concept_root: Path) -> Any:
+    if isinstance(node, Mapping) and set(node) == {"path"}:
+        relative = _safe_relative(node["path"], "native Concept image path")
+        path = concept_root.joinpath(*relative.parts)
+        try:
+            identity = path.lstat()
+            content = path.read_bytes()
+            after = path.lstat()
+        except OSError as exc:
+            raise ArtifactError(
+                "native Concept rendered image is unavailable: %s" % relative.as_posix()
+            ) from exc
+        if (
+            path.is_symlink()
+            or not stat.S_ISREG(identity.st_mode)
+            or (identity.st_dev, identity.st_ino, identity.st_mtime_ns, identity.st_size)
+            != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        ):
+            raise ArtifactError(
+                "native Concept rendered image changed while hashing: %s"
+                % relative.as_posix()
+            )
+        return {
+            "path": relative.as_posix(),
+            "sha256": hashlib.sha256(content).hexdigest(),
+        }
+    if isinstance(node, Mapping):
+        return {
+            key: _seal_descriptor(value, concept_root) for key, value in node.items()
+        }
+    raise ContractError("native Concept descriptor is not a valid descriptor tree")
+
+
+def seal_rendered_concept(concept: NativeConcept, run_root: Path) -> NativeConcept:
+    """Bind host-rendered image bytes and return the downstream Concept contract."""
+
+    if not isinstance(concept, NativeConcept) or concept.images_rendered:
+        raise ContractError("Concept image sealing requires a pre-render proposal")
+    tree = concept.validate_concept_tree(run_root)
+    descriptor = _seal_descriptor(tree.descriptor, tree.root)
+    descriptor_bytes = _canonical_json(descriptor) + b"\n"
+    descriptor_path = tree.root / concept.descriptor_path
+    file_descriptor, temporary_name = tempfile.mkstemp(
+        prefix=".%s." % descriptor_path.name,
+        suffix=".tmp",
+        dir=str(descriptor_path.parent),
+    )
+    temporary = Path(temporary_name)
+    try:
+        written = 0
+        while written < len(descriptor_bytes):
+            written += os.write(file_descriptor, descriptor_bytes[written:])
+        os.fsync(file_descriptor)
+        os.close(file_descriptor)
+        file_descriptor = -1
+        os.replace(temporary, descriptor_path)
+    finally:
+        if file_descriptor >= 0:
+            os.close(file_descriptor)
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+    manifest = build_artifact_manifest(tree.root, created_at="content-addressed")
+    sealed = NativeConcept(
+        round=concept.round,
+        wish_sha256=concept.wish_sha256,
+        assignment_sha256=concept.assignment_sha256,
+        taste_sha256=concept.taste_sha256,
+        blueprint_sha256=concept.blueprint_sha256,
+        invented_sha256=concept.invented_sha256,
+        concept_root=concept.concept_root,
+        concept_manifest=manifest,
+        brief=_thaw(concept.brief),
+        brief_path=concept.brief_path,
+        brief_sha256=concept.brief_sha256,
+        research=_thaw(concept.research),
+        research_path=concept.research_path,
+        research_sha256=concept.research_sha256,
+        drawing_instructions=_thaw(concept.drawing_instructions),
+        drawing_instructions_path=concept.drawing_instructions_path,
+        drawing_instructions_sha256=concept.drawing_instructions_sha256,
+        descriptor=descriptor,
+        descriptor_path=concept.descriptor_path,
+        descriptor_sha256=hashlib.sha256(descriptor_bytes).hexdigest(),
+        derived_wish=_thaw(concept.derived_wish),
+        derived_wish_path=concept.derived_wish_path,
+        derived_wish_sha256_field=concept.derived_wish_sha256_field,
+    )
+    sealed.validate_concept_tree(run_root)
+    return sealed
+
+
 __all__ = [
     "DERIVED_WISH_KIND",
     "MAX_CONCEPT_JSON_BYTES",
@@ -561,4 +747,5 @@ __all__ = [
     "ConceptTree",
     "DerivedWish",
     "NativeConcept",
+    "seal_rendered_concept",
 ]

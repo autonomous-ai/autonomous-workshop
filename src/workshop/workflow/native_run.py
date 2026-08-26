@@ -836,6 +836,12 @@ def _stage_primary(
     artifacts = checkpoint.stage_artifacts.get(stage)
     if not artifacts:
         raise TransitionError("native run lacks the %s contract" % stage)
+    if stage == "concept":
+        suffix = "/sealed-concept.json"
+        sealed = tuple(artifact for artifact in artifacts if artifact.path.endswith(suffix))
+        if len(sealed) != 1:
+            raise TransitionError("native run lacks one host-sealed Concept contract")
+        return sealed[0]
     return artifacts[0]
 
 
@@ -2230,7 +2236,7 @@ def _process_agent_outcome(
         )
     elif checkpoint.stage == "concept":
         try:
-            decision, additional = evaluate_concept_stage(
+            decision, additional, sealed_concept = evaluate_concept_stage(
                 proposal,
                 run_root=run.run_root,
                 expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
@@ -2241,6 +2247,15 @@ def _process_agent_outcome(
                 standing_concept_sha256=context["concept_standing_sha256"],
                 feedback_sha256=context["concept_feedback_sha256"],
                 execute_image_effect=_execute_concept_image_effect,
+            )
+            sealed_relative = "artifacts/concept/r%04d/sealed-concept.json" % (
+                checkpoint.round_index,
+            )
+            sealed_content = _canonical_json_bytes(sealed_concept.to_dict()) + b"\n"
+            _atomic_private_write(run.run_root / sealed_relative, sealed_content)
+            additional = (
+                AgentArtifact(sealed_relative, _sha256(sealed_content)),
+                *additional,
             )
         except _ConceptImagesCredentialsUnavailable:
             waiting = AgentOutcome(

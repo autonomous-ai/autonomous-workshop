@@ -168,9 +168,9 @@ silently upgrading old evidence.
 ## Verification
 
 - One Concept turn produces a brief, research record, and drawing
-  instructions that the `concept` finalizer hashes into a canonical contract
-  identical, byte-for-byte, whether built through the finalizer or validated
-  through `workshop.concept.native`.
+  instructions that the `concept` finalizer hashes into a canonical pre-render
+  contract without requiring image files. After rendering, the host writes a
+  distinct `sealed-concept.json` binding the complete tree for Make.
 - `evaluate_concept_stage` refuses a brief that decided nothing before any
   image is drawn, and refuses a drawing-instruction set missing a required
   role.

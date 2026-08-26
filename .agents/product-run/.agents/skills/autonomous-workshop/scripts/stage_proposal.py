@@ -584,6 +584,42 @@ def _tree_manifest(run_root: Path, tree_relative_value: str, label: str) -> dict
     }
 
 
+def _files_manifest(
+    run_root: Path,
+    tree_relative_value: str,
+    filenames: tuple[str, ...],
+    label: str,
+) -> dict[str, Any]:
+    """Bind explicit source files without inspecting not-yet-rendered outputs."""
+
+    tree_relative, _ = _existing_directory(run_root, tree_relative_value, label)
+    entries: list[dict[str, Any]] = []
+    for filename in sorted(filenames):
+        relative = _safe_relative(filename, label + " source entry")
+        run_relative = (tree_relative / relative).as_posix()
+        digest, byte_count, executable = _hash_regular(
+            run_root, run_relative, label + " source entry"
+        )
+        entries.append(
+            {
+                "path": relative.as_posix(),
+                "bytes": byte_count,
+                "sha256": digest,
+                "executable": executable,
+            }
+        )
+    total = sum(item["bytes"] for item in entries)
+    if total > MAX_TREE_BYTES:
+        raise ProposalError("%s exceeds the native expanded-size limit" % label)
+    return {
+        "schema_version": 1,
+        "artifact_sha256": json_sha256(entries),
+        "total_bytes": total,
+        "created_at": "content-addressed",
+        "entries": entries,
+    }
+
+
 def _ensure_output_parent(run_root: Path, relative: PurePosixPath) -> Path:
     current = run_root
     for part in relative.parts[:-1]:
@@ -1012,7 +1048,7 @@ _CONCEPT_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
 
 
 def _walk_descriptor_entries(node: Any, label: str) -> list[dict[str, Any]]:
-    if isinstance(node, dict) and "path" in node and "sha256" in node:
+    if isinstance(node, dict) and "path" in node:
         return [dict(node)]
     if isinstance(node, dict):
         entries: list[dict[str, Any]] = []
@@ -1067,7 +1103,12 @@ def _concept_contract(
     expected_root = "artifacts/concept/r%04d/concept" % round_index
     if concept_root_value != expected_root:
         raise ProposalError("Concept concept root must be %s" % expected_root)
-    manifest = _tree_manifest(run_root, concept_root_value, "Concept tree")
+    manifest = _files_manifest(
+        run_root,
+        concept_root_value,
+        tuple(filename for _, filename in _CONCEPT_TREE_FILES),
+        "Concept tree",
+    )
     manifest_paths = {entry["path"] for entry in manifest["entries"]}
 
     documents: dict[str, Any] = {}
@@ -1091,14 +1132,13 @@ def _concept_contract(
     descriptor = documents["descriptor_path"]
     seen_paths: set[str] = set()
     for entry in _walk_descriptor_entries(descriptor, "Concept descriptor"):
-        if set(entry) != {"path", "sha256"}:
+        if set(entry) != {"path"}:
             raise ProposalError("Concept descriptor entry fields are invalid")
         entry_path = _safe_relative(entry["path"], "Concept descriptor image path")
         if entry_path.suffix.casefold() not in _CONCEPT_IMAGE_SUFFIXES:
             raise ProposalError("Concept descriptor image path has a forbidden suffix")
-        _sha256(entry["sha256"], "Concept descriptor image sha256")
-        if entry_path.as_posix() not in manifest_paths:
-            raise ProposalError("Concept descriptor names an image outside its manifest")
+        if entry_path.as_posix() in manifest_paths:
+            raise ProposalError("Concept descriptor image path overlaps a source document")
         if entry_path.as_posix() in seen_paths:
             raise ProposalError("Concept descriptor images must be distinct files")
         seen_paths.add(entry_path.as_posix())
@@ -1992,7 +2032,11 @@ def _parser() -> argparse.ArgumentParser:
     invent.add_argument("--source", required=True, help="Run-local Invent authored JSON.")
 
     concept = subparsers.add_parser(
-        "concept", help="Seal one exact concept tree: brief, research, and images."
+        "concept",
+        help=(
+            "Finalize pre-render Concept source JSON and declared output paths; "
+            "rendered images are not read."
+        ),
     )
     concept.add_argument(
         "--concept-root", required=True, help="Run-local concept tree."
