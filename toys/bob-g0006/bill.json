@@ -1,0 +1,18 @@
+[
+  { "name": "Terrain plate 1 — Shrine 1", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Terrain plate 2 — Shrine 2", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Terrain plate 3 — no shrine", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Terrain plate 4 — Shrine 4", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Terrain plate 5 — no shrine", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Terrain plate 6 — Shrine 6", "qty": 1, "size_mm": "100 x 100 x 12", "per_player": false },
+  { "name": "Detent hinge knuckle (front)", "qty": 5, "size_mm": "62 x 16 x 16", "per_player": false, "signature": true },
+  { "name": "Detent hinge knuckle (rear)", "qty": 5, "size_mm": "62 x 16 x 16", "per_player": false },
+  { "name": "Hinge detent pin", "qty": 10, "size_mm": "5 dia x 18", "per_player": false },
+  { "name": "Runner", "qty": 4, "size_mm": "14 dia x 32", "per_player": true },
+  { "name": "Brace", "qty": 20, "size_mm": "8 dia x 18", "per_player": true },
+  { "name": "Claim peg", "qty": 12, "size_mm": "6 dia x 14", "per_player": true },
+  { "name": "Home marker", "qty": 4, "size_mm": "14 dia x 10", "per_player": true },
+  { "name": "Quest tile", "qty": 4, "size_mm": "70 x 40 x 5", "per_player": true },
+  { "name": "Round track", "qty": 1, "size_mm": "180 x 30 x 8", "per_player": false },
+  { "name": "Round marker", "qty": 1, "size_mm": "8 dia x 16", "per_player": false }
+]

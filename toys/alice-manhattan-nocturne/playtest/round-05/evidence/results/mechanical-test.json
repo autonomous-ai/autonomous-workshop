@@ -1,0 +1,41 @@
+{
+  "agent_roles": [
+    "competitive chess player",
+    "print breaker",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "claims": [
+    "All 33 exact sealed STEP occurrences pass selected topological validation with zero reported failures.",
+    "The starting assembly has zero B-rep clashes above 0.001 cubic millimetres across 528 occurrence pairs, with 32 candidate pairs tested and 496 rejected by bounding boxes.",
+    "All 20 algebraic board-envelope, isolated-pad, landing, street-plan, clearance, side-code, inventory, starting-layout, and assembly-height checks pass for the exact Make.",
+    "The finish-plan checker confirms that the 0.80 millimetre checker relief preserves the sealed 9.00 millimetre one-piece board and leaves its 27-file geometry seal unchanged."
+  ],
+  "config_sha256": "da72ad7d16521ada3281b35e7cb27c6eb9da997b676c228cda003136b7b75340",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "human_playtest": false,
+  "limitations": [
+    "The B-rep validation skipped the expensive self-intersection subcheck; strict exported-mesh and thickness checks are recorded separately in print-test.",
+    "Digital geometry cannot establish friction, real tip resistance, hand feel, fatigue, warp, impact behavior, finish, assembly feel, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 5,
+  "schema_version": 1,
+  "simulation": "AI mechanical, print-breaker, competitive-player, and adversarial lenses interpreted deterministic STEP validation, algebraic fit and clearance, assembly bounds, exact B-rep interference, and the immutable geometry seal",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "7e15518cabe16b06a649578fd16dc4f25a1268de13a20d2756946cb12c2ab10f"
+    },
+    {
+      "path": "sources/mechanical-audit.json",
+      "sha256": "54049031821b76789028a79b94c98606b2c848fc79ba5e2041f9b00dce837a07"
+    },
+    {
+      "path": "sources/finish-plan-audit.json",
+      "sha256": "46c67dec8ace00a846c9b548a7e60e966de265b98547ca48eebcc5c590563972"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "slug": "g0003",
+  "export_dir": "/Users/d/code/inventors/bob/toys/g0003/export_text2game/g0003",
+  "complete": true,
+  "missing": [],
+  "copied": [
+    "discover.md",
+    "seed.md",
+    "assembled.stl",
+    "fe_parts/ (44 meshes)",
+    "part_colors.json",
+    "renders/assembled.png",
+    "rulebook.md (print-bundle only; page content skips it per Tam's 2026-08-20 call)"
+  ],
+  "instructions": [
+    "Historical compatibility payload for local inspection only.",
+    "Use the shared Workshop model-only Shop path for any draft."
+  ]
+}

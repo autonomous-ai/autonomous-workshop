@@ -1,0 +1,39 @@
+{
+  "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec",
+  "assembly": {
+    "bounds_mm": [244.0, 244.0, 83.35],
+    "combined_stl_sha256": "ef2b00c66415d63116228eb1483591077411092dc9bfc6e0dd8e48a91a1ec458",
+    "component_order_matches_source": true,
+    "occurrences": 33,
+    "placed_board_count": 1,
+    "placed_piece_count": 32,
+    "sidecar_sha256": "29125f3085cc29eb1ef53a004bda38aae57b03f276c7f8d74409ff6e23110c66"
+  },
+  "check": "factory-whole-product-handoff",
+  "checked_at": "2026-08-24T14:38:28Z",
+  "claim_scope": "Deterministic combined-mesh topology, occurrence ordering, transforms, dimensions, and mesh heuristics for Factory's primary renderer input; not an image-generation, physical-print, or human-quality claim.",
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python project/validation/check_factory_handoff.py",
+    "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python skills/cad/scripts/check_mesh project/assembled.stl --bed 256x256x256 --assembly",
+    "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python project/measure/check_fit.py",
+    "PYTHONDONTWRITEBYTECODE=1 .venv-cad/bin/python project/validation/check_finish.py"
+  ],
+  "mesh": {
+    "boundary_edges": 0,
+    "connected_shells": 33,
+    "manifold_edge_failures": 0,
+    "manifold_vertex_failures": 0,
+    "positive_volume_cm3": 798.78,
+    "result": "printable-digital-check",
+    "triangles": 60426,
+    "vertices": 30271,
+    "winding_failures": 0
+  },
+  "passed": true,
+  "regression_checks": {
+    "factory_handoff": "1 board + 32 correctly ordered and placed pieces",
+    "finish": "15 deterministic checks passed",
+    "fit": "20 algebraic checks passed"
+  },
+  "schema_version": 1
+}

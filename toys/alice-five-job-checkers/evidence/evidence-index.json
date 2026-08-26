@@ -1,0 +1,28 @@
+{
+  "artifact_sha256": "d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9",
+  "evaluator": "showcase-digital-playtest-v1",
+  "evaluator_version": "1.0.0",
+  "kind": "showcase-ai-playtest-index",
+  "reviews": "Customer Reviews arrive only after Deliver.",
+  "schema_version": 1,
+  "status": "passed-ai-playtest",
+  "unresolved_canonical_capabilities": [],
+  "validated_checks": [
+    {
+      "evidence_ref": "agent-playtest.json",
+      "playtest_id": "agent-playtest"
+    },
+    {
+      "evidence_ref": "classic-rules-test.json",
+      "playtest_id": "classic-rules-test"
+    },
+    {
+      "evidence_ref": "mechanical-test.json",
+      "playtest_id": "mechanical-test"
+    },
+    {
+      "evidence_ref": "print-test.json",
+      "playtest_id": "print-test"
+    }
+  ]
+}

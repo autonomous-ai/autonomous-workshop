@@ -1,0 +1,21 @@
+{
+  "agent_roles": [
+    "optimizing-player",
+    "rules-lawyer",
+    "adversarial-breaker",
+    "first-time-player"
+  ],
+  "artifact_sha256": "70793ea2f7bbdad64dc314f640cbb1cc842070a21448857093dee391267b0fde",
+  "claims": [
+    "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+  ],
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback": [],
+  "schema_version": 1,
+  "simulation": "wish-and-taste panel",
+  "source_records": [
+    "wish-taste-trace.json",
+    "digital-lane.json"
+  ]
+}

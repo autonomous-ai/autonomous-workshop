@@ -1,0 +1,367 @@
+{
+  "by_players": {
+    "2": {
+      "branching": {
+        "forced_fraction": 0.00017190588933946316,
+        "median": 8.0
+      },
+      "browne": {
+        "drama": 0.93,
+        "duration": {
+          "cv": 0.03668789889724571,
+          "false_start_share": 0.0,
+          "median": 257.0
+        },
+        "killer_scarcity": 0.9450018362674543,
+        "late_uncertainty": 0.7890296900803866,
+        "lead_changes_mean": 14.077
+      },
+      "gavel": {
+        "agency": 0.9998280941106605,
+        "balance": 0.982,
+        "completion": 1.0,
+        "coverage": null,
+        "decisiveness": 1.0,
+        "harmonic_mean": 0.9953958278670038
+      },
+      "ladder": {
+        "baseline": 0.5,
+        "edges": {
+          "greedy>random": 0.44499999999999995,
+          "lookahead1>greedy": 0.050000000000000044,
+          "lookahead1>random": 0.5
+        },
+        "matrix": {
+          "greedy": {
+            "lookahead1": 0.495,
+            "random": 0.945
+          },
+          "lookahead1": {
+            "greedy": 0.55,
+            "random": 1.0
+          },
+          "random": {
+            "greedy": 0.035,
+            "lookahead1": 0.0
+          }
+        },
+        "mirror_seat_winrates": {
+          "greedy": [
+            0.48,
+            0.52
+          ],
+          "lookahead1": [
+            0.492,
+            0.508
+          ],
+          "random": [
+            0.491,
+            0.509
+          ]
+        },
+        "policies": [
+          "random",
+          "greedy",
+          "lookahead1"
+        ],
+        "runaway_max_seat_winrate": 0.52,
+        "strongest_rung": "lookahead1",
+        "strongest_seat_spread": 0.016000000000000014
+      },
+      "move_cap": 1028,
+      "n_games": 1000,
+      "n_players": 2,
+      "notes": {
+        "coverage": "skipped: engine contract exposes no board sites; None is excluded from the harmonic mean, never treated as a pass"
+      },
+      "probe_median_length": 257.0,
+      "seat_winrates_random": [
+        0.491,
+        0.509
+      ],
+      "seed": 0,
+      "thresholds": {
+        "MAX_FORCED_FRACTION": 0.25,
+        "MAX_RUNAWAY": 0.85,
+        "MAX_SEAT_EDGE": 0.1,
+        "MIN_COMPLETION": 0.98,
+        "MIN_DECISIVENESS": 0.9,
+        "MIN_MEDIAN_BRANCHING": 3.0,
+        "MIN_SKILL_EDGE": 0.15,
+        "MOVE_CAP_MULT": 4
+      },
+      "verdicts": {
+        "all_pass": true,
+        "balance_ok": true,
+        "branching_ok": true,
+        "completion_ok": true,
+        "decisiveness_ok": true,
+        "forced_ok": true,
+        "runaway_ok": true,
+        "seat_bias_ok": true,
+        "skill_ladder_ok": true
+      }
+    },
+    "3": {
+      "branching": {
+        "forced_fraction": 0.00015620525370341198,
+        "median": 8.0
+      },
+      "browne": {
+        "drama": 0.909,
+        "duration": {
+          "cv": 0.04183786480174996,
+          "false_start_share": 0.0,
+          "median": 192.0
+        },
+        "killer_scarcity": 0.969232771862227,
+        "late_uncertainty": 0.6744630208482928,
+        "lead_changes_mean": 5.909
+      },
+      "gavel": {
+        "agency": 0.9998437947462966,
+        "balance": 0.991,
+        "completion": 1.0,
+        "coverage": null,
+        "decisiveness": 1.0,
+        "harmonic_mean": 0.9976958301407434
+      },
+      "ladder": {
+        "baseline": 0.3333333333333333,
+        "edges": {
+          "greedy>random": 0.6666666666666667,
+          "lookahead1>greedy": 0.009950248756218916,
+          "lookahead1>random": 0.6666666666666667
+        },
+        "matrix": {
+          "greedy": {
+            "lookahead1": 0.263681592039801,
+            "random": 1.0
+          },
+          "lookahead1": {
+            "greedy": 0.34328358208955223,
+            "random": 1.0
+          },
+          "random": {
+            "greedy": 0.0,
+            "lookahead1": 0.0
+          }
+        },
+        "mirror_seat_winrates": {
+          "greedy": [
+            0.324,
+            0.328,
+            0.348
+          ],
+          "lookahead1": [
+            0.344,
+            0.316,
+            0.34
+          ],
+          "random": [
+            0.33,
+            0.331,
+            0.339
+          ]
+        },
+        "policies": [
+          "random",
+          "greedy",
+          "lookahead1"
+        ],
+        "runaway_max_seat_winrate": 0.348,
+        "strongest_rung": "lookahead1",
+        "strongest_seat_spread": 0.02799999999999997
+      },
+      "move_cap": 768,
+      "n_games": 1000,
+      "n_players": 3,
+      "notes": {
+        "coverage": "skipped: engine contract exposes no board sites; None is excluded from the harmonic mean, never treated as a pass"
+      },
+      "probe_median_length": 192.0,
+      "seat_winrates_random": [
+        0.33,
+        0.331,
+        0.339
+      ],
+      "seed": 0,
+      "thresholds": {
+        "MAX_FORCED_FRACTION": 0.25,
+        "MAX_RUNAWAY": 0.85,
+        "MAX_SEAT_EDGE": 0.1,
+        "MIN_COMPLETION": 0.98,
+        "MIN_DECISIVENESS": 0.9,
+        "MIN_MEDIAN_BRANCHING": 3.0,
+        "MIN_SKILL_EDGE": 0.15,
+        "MOVE_CAP_MULT": 4
+      },
+      "verdicts": {
+        "all_pass": true,
+        "balance_ok": true,
+        "branching_ok": true,
+        "completion_ok": true,
+        "decisiveness_ok": true,
+        "forced_ok": true,
+        "runaway_ok": true,
+        "seat_bias_ok": true,
+        "skill_ladder_ok": true
+      }
+    },
+    "4": {
+      "branching": {
+        "forced_fraction": 0.00017190588933946316,
+        "median": 8.0
+      },
+      "browne": {
+        "drama": 0.956,
+        "duration": {
+          "cv": 0.03668789889724571,
+          "false_start_share": 0.0,
+          "median": 257.0
+        },
+        "killer_scarcity": 0.9717214812036538,
+        "late_uncertainty": 0.6957050194933091,
+        "lead_changes_mean": 7.238
+      },
+      "gavel": {
+        "agency": 0.9998280941106605,
+        "balance": 0.989,
+        "completion": 1.0,
+        "coverage": null,
+        "decisiveness": 1.0,
+        "harmonic_mean": 0.9971843797891642
+      },
+      "ladder": {
+        "baseline": 0.25,
+        "edges": {
+          "greedy>random": 0.75,
+          "lookahead1>greedy": 0.020000000000000018,
+          "lookahead1>random": 0.75
+        },
+        "matrix": {
+          "greedy": {
+            "lookahead1": 0.205,
+            "random": 1.0
+          },
+          "lookahead1": {
+            "greedy": 0.27,
+            "random": 1.0
+          },
+          "random": {
+            "greedy": 0.0,
+            "lookahead1": 0.0
+          }
+        },
+        "mirror_seat_winrates": {
+          "greedy": [
+            0.276,
+            0.264,
+            0.23,
+            0.23
+          ],
+          "lookahead1": [
+            0.236,
+            0.252,
+            0.246,
+            0.266
+          ],
+          "random": [
+            0.245,
+            0.253,
+            0.256,
+            0.246
+          ]
+        },
+        "policies": [
+          "random",
+          "greedy",
+          "lookahead1"
+        ],
+        "runaway_max_seat_winrate": 0.276,
+        "strongest_rung": "lookahead1",
+        "strongest_seat_spread": 0.030000000000000027
+      },
+      "move_cap": 1028,
+      "n_games": 1000,
+      "n_players": 4,
+      "notes": {
+        "coverage": "skipped: engine contract exposes no board sites; None is excluded from the harmonic mean, never treated as a pass"
+      },
+      "probe_median_length": 257.0,
+      "seat_winrates_random": [
+        0.245,
+        0.253,
+        0.256,
+        0.246
+      ],
+      "seed": 0,
+      "thresholds": {
+        "MAX_FORCED_FRACTION": 0.25,
+        "MAX_RUNAWAY": 0.85,
+        "MAX_SEAT_EDGE": 0.1,
+        "MIN_COMPLETION": 0.98,
+        "MIN_DECISIVENESS": 0.9,
+        "MIN_MEDIAN_BRANCHING": 3.0,
+        "MIN_SKILL_EDGE": 0.15,
+        "MOVE_CAP_MULT": 4
+      },
+      "verdicts": {
+        "all_pass": true,
+        "balance_ok": true,
+        "branching_ok": true,
+        "completion_ok": true,
+        "decisiveness_ok": true,
+        "forced_ok": true,
+        "runaway_ok": true,
+        "seat_bias_ok": true,
+        "skill_ladder_ok": true
+      }
+    }
+  },
+  "engine_assumptions": [
+    "A1 Load is three sequential Locksmith decisions -- (a) the five starting rungs as a multiset, which is public and becomes the cut rail, (b) the secret arrangement of those five pins across chambers 1-5, (c) the three secret reserve pins. rules.md sec.5 Load has the Locksmith pick and show five pins, then place them, then draw the reserve; no information reaches the Locksmith between those steps, so the set of achievable loads is identical, but the engine's move list stays at 792 / <=120 / <=120 entries instead of one 8^5-wide move.",
+    "A2 A Probe key is set as five sequential single-slider decisions (slider 1 first, slider 5 last). rules.md sec.5 Probe makes slider settings public and set in the open, so no information reaches the Cracker between settings and the strategy space is unchanged -- but it keeps legal_moves at <=8 entries instead of 32768. The Hold/Probe choice is folded into the first decision: naming any value for slider 1 commits the turn to a Probe. CONSEQUENCE: one rules.md 'turn' is up to 5 engine moves, so engine move counts run ~4x the table's turn count.",
+    "A3 rules.md sec.5 Re-pin says 'you may not re-pin ... after the opening Probe'. The engine reads that as 'after a Probe that opens the lock', which agrees with sec.4 step 4 (the window follows a FAILED Probe) and sec.8 ('A Probe reads OPEN ... no re-pin window'). The competing reading -- no window after the round's FIRST Probe -- is a real extra rule and only bites when turn 1 was a Hold (the lane reaches 2 on turn 2). rules.md should say which; the engine implements the first reading.",
+    "A4 The gate is exact: a chamber counts correct iff the slider number equals that chamber's pin rung. rules.md never rules on print tolerance on the 0.4 mm ladder, so the engine models no slop -- a neighbouring rung never passes, and a correct chamber never binds.",
+    "A5 Physical mishaps never occur. sec.5's void/jam/forced-plug rulings and sec.8's voided round, seen-pin and lifted-hood cases are execution errors rather than decisions, so the engine models perfectly clean play: no turn is voided, no round replayed, no reading corrected. Registered because it means no number this sim produces tests those rules.",
+    "A6 'The player to the Locksmith's left' (sec.3.6) and 'pass the Locksmith seat to the left' (sec.3) both mean the next seat index, (seat + 1) mod n, and turns pass in that same direction (sec.4, 'clockwise'). rules.md never pins left to ascending seat order.",
+    "A7 The first Locksmith is drawn from the seeded RNG -- sec.3.4 explicitly allows a random choice for machine play. The seat then advances by one seat per round.",
+    "A8 A re-pin may return a pin of the rung that was just removed, if the reserve holds that rung. sec.5 Re-pin says only 'put one of your three hidden reserve pins in its place' and never requires the rung to change, so a 2-point bluff that changes nothing is legal here.",
+    "A9 Choosing between two reserve pins of the same rung is not a distinct decision, so re-pin moves are listed once per distinct (chamber, rung) pair rather than once per physical pin.",
+    "A10 A reading of 0 still qualifies for the deepest-reading bonus. sec.6 excludes only the case where no Probe was made all round, so in an unopened round of nothing but 0s the earliest Prober banks the 3.",
+    "A11 The five-pins-per-rung supply limit (sec.8) is enforced only on the Locksmith's opening eight pins (five loaded plus three reserve). After that those eight pins circulate between chambers and reserve and the case is never touched again, so supply never binds mid-round.",
+    "A12 Round count is one round per player at 3 and 4 players and four legs at 2 players (sec.3.5, sec.6). The Locksmith seat advances every round, so at 2 players each seat is Locksmith twice.",
+    "A13 The score board's printed 0-70 range (sec.2) is treated as unbounded; the engine never caps a score. The reachable maximum is under 70 at every player count, so the track never actually runs out.",
+    "A14 The cut rail is published as the sorted multiset of the five starting rungs and never changes (sec.5.4). The engine shows it to every seat and reveals nothing about the arrangement.",
+    "A15 A re-pin is announced publicly -- every seat learns THAT a chamber changed and on which turn, and sees the -2 on the lane -- but which chamber and which rung stay hidden from the Crackers (sec.5.1, sec.5.4).",
+    "A16 The re-pin window is a distinct engine move only when the Locksmith lane is at 2 or more. When a re-pin is unaffordable (sec.8) the window is skipped rather than offered as a forced pass, so the move list never contains a decision with no content.",
+    "A17 Holds pay the Locksmith. sec.4 step 3 says income accrues 'on a Hold as well as on a failed Probe', while sec.6's worked example prose says 'six failed turns paid 6' over a table showing seven paid turns. The engine follows sec.4 step 3, which is what makes that example's final figure of 3 come out right.",
+    "A18 sec.7's four-step tiebreak always separates the leaders, so winners() returns exactly one seat and never a shared win. 'Sat in the Locksmith seat most recently' is read as the highest round index at which that seat was Locksmith.",
+    "A19 The pin ladder has 8 rungs. idea.json says '3.0-6.0 mm in 0.4 mm steps' (which would be 9 rungs) but rules.md sec.2 prints exactly 8 (3.0/3.4/3.8/4.2/4.6/5.0/5.4/5.8) and the key sliders detent at 1-8. The engine follows rules.md.",
+    "A20 rules.md sec.6's worked scoring example CANNOT HAPPEN. Exhaustive search over every starting arrangement of the rail 1 2 3 5 7 and every one-chamber re-pin the table allows on turns 4 and 6 yields zero histories matching its eight rows. Turns 1-4 force chambers (2,3,1,7,5); turn 4's re-pin must hit chamber 3 to make turn 5 read 2, but then turn 6 reads 2 where the table prints 1. Independently, turn 8 opens on key 2 3 7 5 1 with no re-pin after turn 7, so chamber 1 held rung 2 on turn 7, and Ash's turn-7 key starts with 2 -- the pointer had to read at least 1, not the 0 printed. The engine implements sec.5's definition of the reading (which is unambiguous); the example is wrong and teaches the table a lock that the mechanism cannot produce. The rules writer must rebuild that table.",
+    "A21 scores() is an engine-side progress heuristic and reads hidden state (it knows which chamber a re-pin hit, so a Cracker's confirmed prefix decays the moment it actually rots, not when the Cracker works it out). It is not shown to any seat; observation() carries public information only."
+  ],
+  "idea_sha": "33417d4f3fd0a02e10e808ebc310d4c5fde16b43d225d95491bc907ff78df72c",
+  "n_games": 1000,
+  "seed": 0,
+  "slug": "g0002",
+  "thresholds": {
+    "MAX_FORCED_FRACTION": 0.25,
+    "MAX_RUNAWAY": 0.85,
+    "MAX_SEAT_EDGE": 0.1,
+    "MIN_COMPLETION": 0.98,
+    "MIN_DECISIVENESS": 0.9,
+    "MIN_MEDIAN_BRANCHING": 3.0,
+    "MIN_SKILL_EDGE": 0.15,
+    "MOVE_CAP_MULT": 4
+  },
+  "verdicts": {
+    "all_pass": true,
+    "per_players": {
+      "2": true,
+      "3": true,
+      "4": true
+    }
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product to Printable CAD"
+  short_description: "Turn concepts into verified printable CAD"
+  default_prompt: "Use $product-to-cad to turn this product concept into an attractive, manufacturable CAD project."

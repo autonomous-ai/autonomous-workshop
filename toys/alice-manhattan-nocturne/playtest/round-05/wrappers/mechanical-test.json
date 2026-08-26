@@ -1,0 +1,21 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "config_sha256": "da72ad7d16521ada3281b35e7cb27c6eb9da997b676c228cda003136b7b75340",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "5.0.0",
+  "evidence": {
+    "brep_failure_count": 0,
+    "clash_count": 0,
+    "evidence_class": "ai-simulation",
+    "finish_checks_passed": 15,
+    "geometry_seal_sha256": "477db74fb531a6abfec3c8e6fa00a658c57f125c1bf5d074d9a22e76e7069e54",
+    "layout_checks_passed": 20,
+    "physical_claim": false,
+    "result_file_sha256": "dc17afcef03123066c3cae1d4a40f69d0cca406efae4a3d4335755cfb99f7216"
+  },
+  "evidence_ref": "results/mechanical-test.json",
+  "evidence_sha256": "dc17afcef03123066c3cae1d4a40f69d0cca406efae4a3d4335755cfb99f7216",
+  "inspection_id": "mechanical-test",
+  "observed_at": "2026-08-24T12:30:00+00:00",
+  "passed": true
+}

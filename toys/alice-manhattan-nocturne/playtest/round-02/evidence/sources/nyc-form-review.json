@@ -1,0 +1,45 @@
+{
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "claim_scope": "One AI NYC-design-critic lens over exact-CAD renders; not an independent human preference study",
+  "criteria": [
+    {
+      "finding": "Water-tower pawns, stepped rooks, bridge knights, avenue-cut bishops, broad fan queens, and neo-Gothic cross kings now form six distinct architectural families without souvenir-landmark shortcuts.",
+      "name": "Manhattan-specific rank language",
+      "passed": true
+    },
+    {
+      "finding": "Stone carries horizontal terraces through the upper body while Steel carries vertical ribs through the full height; the geometry, not color alone, distinguishes the sides.",
+      "name": "full-height side language",
+      "passed": true
+    },
+    {
+      "finding": "The board is calm and architectural, but its square field is too tone-on-tone: all boundaries remain visible while alternating parity disappears at normal oblique viewing distance.",
+      "name": "board parity at play distance",
+      "passed": false
+    }
+  ],
+  "feedback_codes": [
+    "board-parity-tone-on-tone"
+  ],
+  "passed": false,
+  "role": "NYC design critic",
+  "schema_version": 1,
+  "views": [
+    {
+      "path": "project/product-media/cad-preview/01-hero-stone.png",
+      "sha256": "a0b15d9a622df5bdf3ff18a14d86ed2391533d9c6628a9493b0938c147ded983"
+    },
+    {
+      "path": "project/product-media/cad-preview/04-rank-lineup.png",
+      "sha256": "57fa8b33f5a183185e2456fbba9c7214c5ee9903448e1eac0547d08fe0e81c9a"
+    },
+    {
+      "path": "project/product-media/cad-preview/05-side-detail.png",
+      "sha256": "731ce3346b4629e5ecb1dab6a816d6ba888ded1342bef11f5949f169068bc616"
+    },
+    {
+      "path": "project/product-media/cad-preview/07-neutral-start-recognition.png",
+      "sha256": "fc7fb5d7a39aa100b9d7038994362d3a04897d665cf28d1796e1701b3163d90c"
+    }
+  ]
+}

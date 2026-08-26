@@ -1,0 +1,43 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "claims": [
+    "The exact-CAD set has a coherent architectural premise and clearly differentiated rook, knight, and pawn families.",
+    "Round 1 does not meet Alice's rank- and side-recognition bar because the bishop, queen, and king converge and the two side languages are base-heavy."
+  ],
+  "config_sha256": "bb4874fd5e33c60552e30742abde224625ac4e13c3eb2a5abb6ec718869bce74",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [
+    "rank-crown-silhouette-collapse",
+    "side-language-base-heavy",
+    "neutral-top-recognition-unproven"
+  ],
+  "independent_human_review": false,
+  "passed": false,
+  "physical_print": false,
+  "round": 1,
+  "schema_version": 1,
+  "simulation": "Six-role visual and adversarial review of three exact-CAD renders, including top view and both player-facing hero views",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "7934677bb1d23ea72df3e8b5dd1a31c6d382a058fe94a2a029e64181aa8ebe2c"
+    },
+    {
+      "path": "sources/render-review.json",
+      "sha256": "f1a882d207774daf1c29cd1301259696b6cf8c02dfe97f227f3cf36b127f00ac"
+    },
+    {
+      "path": "sources/chess-layout.json",
+      "sha256": "865ea0b836cef32c3833691e8077ccfa5218f0dffaf41cb92ae0997c52794b14"
+    }
+  ]
+}

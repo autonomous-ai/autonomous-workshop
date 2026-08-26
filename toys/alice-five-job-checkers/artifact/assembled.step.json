@@ -1,0 +1,108 @@
+{
+  "entryKind": "assembly",
+  "generator": "showcase-real-cad-v1",
+  "parts": [
+    {
+      "name": "board",
+      "stlPath": "cad/parts/board.stl"
+    },
+    {
+      "name": "five-ring-01",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-02",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-03",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-04",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-05",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-06",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-07",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-08",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-09",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-10",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-11",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-ring-12",
+      "stlPath": "cad/parts/five-ring-piece.stl"
+    },
+    {
+      "name": "five-spoke-01",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-02",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-03",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-04",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-05",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-06",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-07",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-08",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-09",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-10",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-11",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    },
+    {
+      "name": "five-spoke-12",
+      "stlPath": "cad/parts/five-spoke-piece.stl"
+    }
+  ],
+  "primaryPose": "assembled",
+  "schemaVersion": 1
+}

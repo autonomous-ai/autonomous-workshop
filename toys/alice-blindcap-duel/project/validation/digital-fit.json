@@ -1,0 +1,286 @@
+{
+  "topology": "parallel_non_crossing",
+  "contact_sweep": {
+    "A": {
+      "clear_proud_mm": 27.632812,
+      "clear_overlap_mm3": 8.695258376992114e-07,
+      "contact_proud_mm": 27.625,
+      "contact_overlap_mm3": 1.920141362041215e-05,
+      "midpoint_proud_mm": 27.628906
+    },
+    "B": {
+      "clear_proud_mm": 27.632812,
+      "clear_overlap_mm3": 8.695258377259169e-07,
+      "contact_proud_mm": 27.625,
+      "contact_overlap_mm3": 1.920141362033532e-05,
+      "midpoint_proud_mm": 27.628906
+    }
+  },
+  "geometry": {
+    "channel_center_spacing_mm": 12.6,
+    "inter_channel_wall_mm": 5.8,
+    "minimum_outer_shank_wall_mm": 1.0,
+    "collar_radial_wall_mm": 3.1,
+    "probe_head_gap_mm": 0.8,
+    "bore_radial_clearance_mm": 0.2,
+    "probe_channel_radial_clearance_mm": 1.090599,
+    "key_flat_clearance_mm": 0.2,
+    "key_rotation_allowance_deg": 1.303593,
+    "bore_tilt_allowance_deg": 1.145763
+  },
+  "motion_contract": {
+    "motions_declared": 6,
+    "parts": [
+      "probe_pin_p1",
+      "probe_pin_p1#2",
+      "probe_pin_p1#3",
+      "probe_pin_p2",
+      "probe_pin_p2#2",
+      "probe_pin_p2#3"
+    ],
+    "full_extraction_vectors": {
+      "probe_pin_p1": [
+        20.598354,
+        20.598354,
+        10.602624
+      ],
+      "probe_pin_p1#2": [
+        20.598354,
+        20.598354,
+        10.602624
+      ],
+      "probe_pin_p1#3": [
+        20.598354,
+        20.598354,
+        10.602624
+      ],
+      "probe_pin_p2": [
+        4.233356,
+        4.233356,
+        2.179042
+      ],
+      "probe_pin_p2#2": [
+        4.233356,
+        4.233356,
+        2.179042
+      ],
+      "probe_pin_p2#3": [
+        20.598354,
+        20.598354,
+        10.602624
+      ]
+    }
+  },
+  "neighbour_sweep": {
+    "directions": {
+      "east": [
+        44.0,
+        0.0
+      ],
+      "west": [
+        -44.0,
+        0.0
+      ],
+      "north": [
+        0.0,
+        44.0
+      ],
+      "south": [
+        0.0,
+        -44.0
+      ]
+    },
+    "proud_samples_mm": [
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0,
+      20.0,
+      21.0,
+      22.0,
+      23.0,
+      24.0,
+      25.0,
+      26.0,
+      27.0,
+      27.628906,
+      28.0,
+      29.0,
+      30.0,
+      31.0,
+      32.0,
+      33.0,
+      34.0
+    ],
+    "maximum_overlap_mm3": 0.0,
+    "case_maxima_mm3": {
+      "high_A_east_stool": 0.0,
+      "high_A_east_admitted_A": 0.0,
+      "high_A_east_admitted_B": 0.0,
+      "high_A_west_stool": 0.0,
+      "high_A_west_admitted_A": 0.0,
+      "high_A_west_admitted_B": 0.0,
+      "high_A_north_stool": 0.0,
+      "high_A_north_admitted_A": 0.0,
+      "high_A_north_admitted_B": 0.0,
+      "high_A_south_stool": 0.0,
+      "high_A_south_admitted_A": 0.0,
+      "high_A_south_admitted_B": 0.0,
+      "high_B_east_stool": 0.0,
+      "high_B_east_admitted_A": 0.0,
+      "high_B_east_admitted_B": 0.0,
+      "high_B_west_stool": 0.0,
+      "high_B_west_admitted_A": 0.0,
+      "high_B_west_admitted_B": 0.0,
+      "high_B_north_stool": 0.0,
+      "high_B_north_admitted_A": 0.0,
+      "high_B_north_admitted_B": 0.0,
+      "high_B_south_stool": 0.0,
+      "high_B_south_admitted_A": 0.0,
+      "high_B_south_admitted_B": 0.0
+    }
+  },
+  "withdrawal_sweep": {
+    "end_proud_mm": 34.0,
+    "maximum_step_mm": 1.0,
+    "maxima": {
+      "blocked_deadhead_A": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 6e-06
+      },
+      "blocked_deadhead_B": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 6e-06
+      },
+      "admitted_bracket_A": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 0.0
+      },
+      "admitted_inkcap_B": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 0.0
+      },
+      "admitted_hollow_A": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 0.0
+      },
+      "admitted_hollow_B": {
+        "tile_overlap_mm3": 0.0,
+        "stool_overlap_mm3": 0.0
+      }
+    }
+  },
+  "alignment_sweep": {
+    "modes_per_route": 64,
+    "radial_translation_mm": 0.2,
+    "key_rotation_deg": 1.303593,
+    "bore_tilt_deg": 1.145763,
+    "route_maxima_mm3": {
+      "bracket_A": 0.0,
+      "inkcap_B": 0.0,
+      "hollow_A": 0.0,
+      "hollow_B": 0.0
+    },
+    "collisions": []
+  },
+  "manufacturing_tolerance_sensitivity": {
+    "digital_contact_bracket_mm": 0.05,
+    "probe_channel_radial_clearance_mm": 1.090599,
+    "bore_radial_clearance_mm": 0.2,
+    "warning": "Physical fit is unverified; print the keyed reader coupon before production."
+  },
+  "target_bed_contract": {
+    "maximum_xy_mm": 160.0,
+    "part_extents_mm": {
+      "loam_tile": 144.0,
+      "spore_trough_x": 154.0,
+      "spore_trough_y": 150.0,
+      "stool": 34.0,
+      "claim_crown": 24.0,
+      "probe_pin": 10.0
+    }
+  },
+  "harvest_reveal_contract": {
+    "sequence": "record four probe metrics, fully withdraw every probe, then invert stools cap-down",
+    "probe_end_proud_mm": 34.0,
+    "cap_diameter_mm": 34.0,
+    "socket_pitch_mm": 44.0,
+    "flat_boss_foot_diameter_mm": 16.0,
+    "crown_inner_diameter_mm": 16.8,
+    "upward_shank_diameter_mm": 21.4
+  },
+  "checks": {
+    "all_breps_valid": true,
+    "two_player_quantities": true,
+    "all_production_parts_fit_160mm_target_bed": true,
+    "stool_origin_z_exact": true,
+    "crown_origin_z_exact": true,
+    "blocked_A_reference_matches_sweep": true,
+    "blocked_B_reference_matches_sweep": true,
+    "admitted_reference_exact": true,
+    "owner_marks_printable": true,
+    "owner_marks_visible_when_low": true,
+    "owner_variants_geometrically_distinct": true,
+    "all_public_owner_families_distinct": true,
+    "species_truth_table": true,
+    "all_seated_stools_clear_tile": true,
+    "crown_clears_stool_at_z54": true,
+    "parallel_tunnel_cutters_do_not_cross": true,
+    "all_owner_dual_probe_pairs_clear": true,
+    "both_blind_stops_clear_at_3_1": true,
+    "both_blind_stops_collide_at_2_9": true,
+    "all_orthogonal_neighbours_clear_full_withdrawal": true,
+    "all_exact_withdrawal_paths_clear": true,
+    "all_admitted_routes_clear_conservative_alignment_sweep": true,
+    "admissible_play_below_channel_clearance": true,
+    "minimum_outer_shank_wall_at_least_1mm": true,
+    "collar_wall_at_least_3mm": true,
+    "probe_heads_clear_each_other": true,
+    "six_exact_motion_occurrences_declared": true,
+    "harvest_requires_full_probe_withdrawal": true,
+    "cap_down_reveal_clears_socket_pitch": true,
+    "cap_down_reveal_has_flat_boss_foot": true,
+    "crown_can_rest_on_upward_shank_tip": true
+  },
+  "measurements": {
+    "deadhead_A_admitted_overlap_mm3": 252.076624,
+    "deadhead_B_admitted_overlap_mm3": 158.261771,
+    "bracket_A_admitted_overlap_mm3": 0.0,
+    "bracket_B_crosstalk_overlap_mm3": 158.261771,
+    "inkcap_A_crosstalk_overlap_mm3": 252.076624,
+    "inkcap_B_admitted_overlap_mm3": 0.0,
+    "hollow_A_admitted_overlap_mm3": 0.0,
+    "hollow_B_admitted_overlap_mm3": 0.0,
+    "tile_deadhead_seated_overlap_mm3": 0.0,
+    "tile_bracket_seated_overlap_mm3": 0.0,
+    "tile_inkcap_seated_overlap_mm3": 0.0,
+    "tile_hollow_seated_overlap_mm3": 0.0,
+    "crown_seated_stool_overlap_mm3": 0.0,
+    "A_B_tunnel_cutter_overlap_mm3": 0.0,
+    "admitted_A_tile_overlap_mm3": 0.0,
+    "stop_A_3_1_clear_overlap_mm3": 0.0,
+    "stop_A_2_9_collision_overlap_mm3": 3.683604,
+    "admitted_B_tile_overlap_mm3": 0.0,
+    "stop_B_3_1_clear_overlap_mm3": 0.0,
+    "stop_B_2_9_collision_overlap_mm3": 3.683604,
+    "dual_probe_p1A_p1B_overlap_mm3": 0.0,
+    "dual_probe_p1A_p2B_overlap_mm3": 0.0,
+    "dual_probe_p2A_p1B_overlap_mm3": 0.0,
+    "dual_probe_p2A_p2B_overlap_mm3": 0.0
+  },
+  "passed": true,
+  "physical_fit_verified": false
+}

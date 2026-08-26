@@ -1,0 +1,42 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "binding_mode": "content-addressed Make manifest over the exact Round 5 project tree",
+  "check": "artifact-binding",
+  "checked_at": "2026-08-24T12:30:00+00:00",
+  "claim_scope": "Every Round 5 claim is restricted to files named and hashed in make-manifest.json. Instructions, Deliver, physical-print, finish-execution, human-play, customer-Review, and later project bytes are excluded.",
+  "git_commit_context": "0870ca5bc89fa0d6396e4019e68afbd2f4586300",
+  "make_manifest": {
+    "entries": 125,
+    "path": "../../make-manifest.json",
+    "sha256": "3ec32062971d5eba16d4e7f78f16133d49ff43d4d6b9e25bed3adc5a8e7d0900",
+    "total_bytes": 19622034
+  },
+  "passed": true,
+  "schema_version": 1,
+  "sealed_inputs": [
+    {
+      "path": "manhattan_nocturne.step",
+      "sha256": "a8de2b4e426c923535f55aa235760fb5da02d41d852ef4f8e1e99d5a4c129937"
+    },
+    {
+      "path": "exports/manhattan-nocturne.glb",
+      "sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b"
+    },
+    {
+      "path": "product-media/cad-preview/render-manifest.json",
+      "sha256": "00f186008faf01bce9b6a3b56a8da9625a93812d2c1f85b717d82b6bada7ccbc"
+    },
+    {
+      "path": "render_product.py",
+      "sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
+    },
+    {
+      "path": "validation/finish-plan.json",
+      "sha256": "e597ac0e8323f749434a0a44ac8b17f328391f93542cae0b44e69fbf7eeab107"
+    },
+    {
+      "path": "validation/slicer-receipt.json",
+      "sha256": "1dc0156afd156ae98cbb156837d9c13594c9d25ce830c79db59c29e89b3a8185"
+    }
+  ]
+}

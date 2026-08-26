@@ -1,0 +1,69 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "claim_scope": "AI print-breaker interpretation of exact digital mesh, thickness, packing, and OrcaSlicer receipts only",
+  "evidence_class": "digital-slicer",
+  "full_piece_inventory_slice": {
+    "filament_g": 155.5,
+    "gcode_sha256": "c5d826ee9d023da616512538d04484d393f2af181e88d7ba6a5b85536e250b62",
+    "input_objects": 32,
+    "layers": 372,
+    "max_z_mm": 74.4,
+    "model_seconds": 23562,
+    "passed": true,
+    "plates": 1,
+    "support_enabled": false
+  },
+  "inputs": [
+    {
+      "path": "validation/slicer-receipt.json",
+      "sha256": "1dc0156afd156ae98cbb156837d9c13594c9d25ce830c79db59c29e89b3a8185"
+    },
+    {
+      "path": "validation/slice_product.py",
+      "sha256": "d33bcdad6a3c00eb179973a7157cb305f9c80221f8b4209aea0a422cd44ae985"
+    },
+    {
+      "path": "validation/orca-profiles/p2s-machine-standard.json",
+      "sha256": "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9"
+    },
+    {
+      "path": "validation/orca-profiles/p2s-process-standard.json",
+      "sha256": "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7"
+    },
+    {
+      "path": "validation/orca-profiles/pla-basic-standard.json",
+      "sha256": "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+    }
+  ],
+  "invocations": {
+    "count": 14,
+    "exit_zero": 14,
+    "stdout_T65535_warning": "[error] Invalid T command (T65535).",
+    "stdout_T65535_warning_count": 14,
+    "top_level_slicer_warnings_count": 0
+  },
+  "limitations": [
+    "Every successful invocation stdout retains '[error] Invalid T command (T65535).' even though the receipt's top-level slicer_warnings array is empty.",
+    "No G-code was accepted by a physical printer and no physical print, production finish, warp, tipping, handling, tactile, support-removal, color-change, or durability claim is made."
+  ],
+  "mesh_and_thickness": {
+    "mesh_passed": 13,
+    "thickness_floor_mm": 0.8,
+    "thickness_passed": 13,
+    "unique_printable_entries": 13
+  },
+  "observed_at": "2026-08-24T11:42:03+00:00",
+  "packed_totals": {
+    "filament_g": 363.02,
+    "model_seconds": 39016
+  },
+  "passed": true,
+  "physical_print": false,
+  "schema_version": 1,
+  "slicer": {
+    "executable_sha256": "544098eecb95e01e6ba636a16f3252efb6994806376a334a5085320d3468c26f",
+    "name": "OrcaSlicer",
+    "version": "2.3.2"
+  },
+  "unique_part_slices": 13
+}

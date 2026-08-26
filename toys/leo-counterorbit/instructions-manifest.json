@@ -1,0 +1,20 @@
+{
+  "artifact_sha256": "61041baba022cb775782567fda4b164b1e71505c739c6937e5daabc0b34828dc",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 600,
+      "executable": false,
+      "path": "INSTRUCTIONS.md",
+      "sha256": "885a09ad70199bb1a0600a4144adaf2eff02284b1af7066222dcfe8dae42a58f"
+    },
+    {
+      "bytes": 3216,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "9a533a00c874baac7fede87087407432301caef8d3a9da1054fc544513cacbff"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 3816
+}

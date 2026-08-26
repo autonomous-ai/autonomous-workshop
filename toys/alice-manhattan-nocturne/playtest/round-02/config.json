@@ -1,0 +1,38 @@
+{
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "board_readability_thresholds": {
+    "alternating_square_parity_percent_min": 100,
+    "cell_boundary_percent_min": 100
+  },
+  "claim_boundaries": {
+    "customer_review": false,
+    "human_playtest": false,
+    "physical_print": false,
+    "scope": "AI-player review of exact digital CAD, deterministic geometry checks, and parsed digital slicer evidence only"
+  },
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "2.0.0",
+  "player_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "recognition_thresholds": {
+    "aggregate_rank_percent_min": 95,
+    "each_rank_percent_min": 90,
+    "king_and_queen_percent_min": 100,
+    "neutral_material_side_percent_min": 100
+  },
+  "round": 2,
+  "schema_version": 1,
+  "visual_inputs": [
+    "project/product-media/cad-preview/01-hero-stone.png",
+    "project/product-media/cad-preview/03-top-inventory.png",
+    "project/product-media/cad-preview/04-rank-lineup.png",
+    "project/product-media/cad-preview/05-side-detail.png",
+    "project/product-media/cad-preview/07-neutral-start-recognition.png"
+  ]
+}

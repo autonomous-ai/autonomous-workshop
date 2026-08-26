@@ -1,0 +1,51 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "claims": [
+    "The sealed model preserves the standard 8 by 8 board, 32-piece inventory, R N B Q K B N R back rank, and initial placement with zero setup errors and zero rule changes.",
+    "Every piece role and both geometric side languages meet their recognition targets.",
+    "Classic-rules-test fails only because a playable chessboard must visually alternate square parity, while the exact normal-oblique renders score 0 of 128 parity judgments despite 128 of 128 visible cell boundaries."
+  ],
+  "config_sha256": "11e44d632556e17291b196131fda0175cca8a411761a7d7fc496ad26d0fe9248",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [
+    "board-parity-tone-on-tone"
+  ],
+  "lane_checks": {
+    "alternating_square_parity_percent": 0,
+    "board_cells": 64,
+    "cell_boundary_percent": 100,
+    "exact_starting_inventory": true,
+    "recognition_thresholds_satisfied": true,
+    "rule_changes": 0,
+    "setup_errors": 0,
+    "standard_back_rank": true
+  },
+  "passed": false,
+  "physical_print": false,
+  "round": 2,
+  "schema_version": 1,
+  "simulation": "Standard-chess inventory and setup audit plus scored rule-legibility review from exact-CAD top, lineup, side-detail, and normal-oblique views",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "ba5b520f90a03e0181216aa73c5ff2ab009457b45182940cd72095a93824df8d"
+    },
+    {
+      "path": "sources/two-player-recognition.json",
+      "sha256": "6fcbd326d991a215fe256776b9ce43d5f59d4d817181d18e488360871ed83fa3"
+    },
+    {
+      "path": "sources/geometry-validation.json",
+      "sha256": "ca9595d474adefb79815f6addaae432b62220e2c4fa114c9a44a03f3e3cbd686"
+    }
+  ]
+}

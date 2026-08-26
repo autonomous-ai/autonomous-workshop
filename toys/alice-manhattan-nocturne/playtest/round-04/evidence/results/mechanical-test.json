@@ -1,0 +1,35 @@
+{
+  "agent_roles": [
+    "competitive chess player",
+    "print breaker",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "claims": [
+    "All 33 exact sealed STEP occurrences pass selected topological validation with zero reported failures.",
+    "The starting assembly has zero B-rep clashes above 0.001 cubic millimetres across 528 occurrence pairs, with 32 candidate pairs tested and 496 rejected by bounding boxes.",
+    "All 20 algebraic board-envelope, isolated-pad, landing, street-plan, clearance, side-code, inventory, starting-layout, and assembly-height checks pass for the exact Make."
+  ],
+  "config_sha256": "e1c4e670024c95bb623d58d4f3a153fc968cbb6fea1dc8c746ec5678829748eb",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "limitations": [
+    "The B-rep validation skipped the expensive self-intersection subcheck; strict exported-mesh and thickness checks are recorded separately in print-test.",
+    "Digital geometry cannot establish friction, real tip resistance, hand feel, fatigue, warp, impact behavior, finish, assembly feel, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 4,
+  "schema_version": 1,
+  "simulation": "AI mechanical, print-breaker, competitive-player, and adversarial roles interpreted deterministic STEP validation, algebraic fit and clearance, assembly bounds, and exact B-rep interference",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "35855e72a88c090040570b3d48c415896417c7b6c8c3765d2e79bccbf6271644"
+    },
+    {
+      "path": "sources/mechanical-audit.json",
+      "sha256": "07bcb5bd35c55d96b9367b1660b006d1ca3066aca01670a65ae80d78a4b980d8"
+    }
+  ]
+}

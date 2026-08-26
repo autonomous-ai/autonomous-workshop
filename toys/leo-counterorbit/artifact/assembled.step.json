@@ -1,0 +1,56 @@
+{
+  "entryKind": "assembly",
+  "generator": "showcase-real-cad-v1",
+  "parts": [
+    {
+      "name": "five-job-core",
+      "stlPath": "cad/parts/five-job-core.stl"
+    },
+    {
+      "name": "counter-orbit",
+      "stlPath": "cad/parts/counter-orbit.stl"
+    },
+    {
+      "name": "ring-signal-01",
+      "stlPath": "cad/parts/ring-signal.stl"
+    },
+    {
+      "name": "ring-signal-02",
+      "stlPath": "cad/parts/ring-signal.stl"
+    },
+    {
+      "name": "ring-signal-03",
+      "stlPath": "cad/parts/ring-signal.stl"
+    },
+    {
+      "name": "ring-signal-04",
+      "stlPath": "cad/parts/ring-signal.stl"
+    },
+    {
+      "name": "ring-signal-05",
+      "stlPath": "cad/parts/ring-signal.stl"
+    },
+    {
+      "name": "spoke-signal-01",
+      "stlPath": "cad/parts/spoke-signal.stl"
+    },
+    {
+      "name": "spoke-signal-02",
+      "stlPath": "cad/parts/spoke-signal.stl"
+    },
+    {
+      "name": "spoke-signal-03",
+      "stlPath": "cad/parts/spoke-signal.stl"
+    },
+    {
+      "name": "spoke-signal-04",
+      "stlPath": "cad/parts/spoke-signal.stl"
+    },
+    {
+      "name": "spoke-signal-05",
+      "stlPath": "cad/parts/spoke-signal.stl"
+    }
+  ],
+  "primaryPose": "assembled",
+  "schemaVersion": 1
+}

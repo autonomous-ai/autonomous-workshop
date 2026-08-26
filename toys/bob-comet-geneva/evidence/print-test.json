@@ -1,0 +1,20 @@
+{
+  "agent_roles": [
+    "optimizing-player",
+    "rules-lawyer",
+    "adversarial-breaker",
+    "first-time-player"
+  ],
+  "artifact_sha256": "c33e3f6ddde9a554f951ba94dbace931e985b5bafc163185be2e601f13079e2b",
+  "claims": [
+    "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+  ],
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback": [],
+  "schema_version": 1,
+  "simulation": "mesh topology, orientation, bed-envelope, and support-risk analysis",
+  "source_records": [
+    "digital-printability.json"
+  ]
+}

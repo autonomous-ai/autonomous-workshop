@@ -1,0 +1,34 @@
+{
+  "artifact_sha256": "46ac6c0fe65bf2aad1f7fbe7618934e312047f470735f8ad6e7c624e051f5dec",
+  "binding_mode": "content-addressed Make manifest over the exact Round 6 project tree",
+  "check": "artifact-binding",
+  "checked_at": "2026-08-24T14:38:28Z",
+  "claim_scope": "Every Round 6 result is restricted to files named and hashed in make-manifest.json; physical-print, human-play, Deliver, and customer-Review claims remain excluded.",
+  "make_manifest": {
+    "entries": 128,
+    "path": "../../make-manifest.json",
+    "sha256": "70c822f3306d08d3150299a850aa9cf7f768b6adb6468506868a4bf711f11f22",
+    "total_bytes": 22652512
+  },
+  "passed": true,
+  "round_05_delta": {
+    "added": [
+      {
+        "path": "assembled.step.json",
+        "sha256": "29125f3085cc29eb1ef53a004bda38aae57b03f276c7f8d74409ff6e23110c66"
+      },
+      {
+        "path": "assembled.stl",
+        "sha256": "ef2b00c66415d63116228eb1483591077411092dc9bfc6e0dd8e48a91a1ec458"
+      },
+      {
+        "path": "validation/check_factory_handoff.py",
+        "sha256": "e86fdd9d4b359dd96bd5bc3d5b3fc7a629d23ff086e93138ecce019b50955e5d"
+      }
+    ],
+    "changed_non_geometry_docs": ["BUILD.md", "README.md"],
+    "removed": [],
+    "unchanged_entries": 123
+  },
+  "schema_version": 1
+}

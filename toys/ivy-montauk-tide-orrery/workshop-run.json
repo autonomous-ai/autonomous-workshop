@@ -1,0 +1,67 @@
+{
+  "artifact_sha256": "70793ea2f7bbdad64dc314f640cbb1cc842070a21448857093dee391267b0fde",
+  "assertions": {
+    "ai_playtest_passed": true,
+    "customer_reviews": false,
+    "delivered": false,
+    "exact_geometry_render": true,
+    "instructions_created": true,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "site_draft_verified": false,
+    "site_page_live": false,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "5df739e59f227d3271001ef795cfa41edc6e065c9bba9f99fcf3b7ba9898260f",
+  "evidence_sha256": "d557ec48735898b1e80c87446d1d46be5da426619322ab3ed5f7e114595c1252",
+  "instructions_sha256": "72c78f8eee633572230f02d0e4127fc194d1204a14c39f2d9aa08a87b50f64e5",
+  "inventor": {
+    "extension_level": "taste-only",
+    "id": "ivy",
+    "name": "Ivy",
+    "profile": "inventors/ivy/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "70793ea2f7bbdad64dc314f640cbb1cc842070a21448857093dee391267b0fde",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "instructions",
+    "needs": [
+      {
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
+      }
+    ],
+    "page_url": null,
+    "playtest_rounds": 3,
+    "product_id": "montauk-tide-orrery",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "site_receipt": null,
+  "taste_sha256": "6893a9e4033b73813998db78a446081c371ee297e7cb3acbd6d0e4d12d5bc9fc",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "holdable-science"
+    },
+    "context": {
+      "inventor_id": "ivy"
+    },
+    "objective": "I wish I could hold the spring-neap tide cycle for Montauk and predict what alignment makes the larger tide.",
+    "product_id": "montauk-tide-orrery",
+    "schema_version": 1
+  }
+}

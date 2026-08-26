@@ -1,0 +1,12 @@
+{
+  "build_pass": true,
+  "idea_sha": "7c9e97158114faeaf28d90b9cde69db96f3cfebf586902d81158ba6878b71ada",
+  "issues": [
+    "survives_as_cardboard reasoning: the game's whole secret (click direction, felt not seen, under a hood) and its bust check (a loose bar that visibly tips/rolls, per bill.json 'it replaces a judge') are both physical, unforgeable events \u2014 a cardboard version needs a human referee to secretly track turn direction and to eyeball a sub-millimetre bar-clearance call, which is exactly the honesty problem the printed detent screw and loose bar exist to remove.",
+    "FIDELITY (minor, unregistered): D1 grows screw_shroud OD 24.0->28.0, which forces stop_ring ID up too (clearance_lib.py:186, RING_ID = SHROUD_OD + 0.6 = 28.6), but DEVIATIONS.md never states this as its own line against the brief's stop_ring row ('\u230024.5 ID clearance'). The code is correct and the change is physically compelled by D1, but per the fidelity rule 'an unregistered deviation is a finding even when the change is good.' Disposition: repair (one DEVIATIONS.md line, no geometry change).",
+    "PRINTABILITY (disclosed, not new): 42 printed parts / ~34.5 machine-hours vs the brief's own 6-20 part / <=20h guideline (brief section 8). This is not builder drift \u2014 brief section 8 already prices it at $79 to cover the overage \u2014 but it is real and worth the build gate seeing directly rather than only in the brief. Disposition: brief-defect (30 randomised blocks + 220mm base are the game; not a CAD fix).",
+    "SELLABILITY: the assembled renders (assembled.png, assembled_lane.png) read as a small inspection/CNC gantry rig (matte industrial greys, exposed caliper-like column and cylindrical head) rather than as a game object at a stranger's first glance on a $40-80 shelf. The mechanism's intrigue is real once explained, but the silhouette alone may not clear the gift-shelf glance test the price point needs. Disposition: repair (finish/colour pass, not geometry \u2014 brief section 4 already mandates opaque non-clear filament and a light/dark contrast scheme, so this is tuning within that spec)."
+  ],
+  "judge": "bob-build-lens",
+  "survives_as_cardboard": false
+}

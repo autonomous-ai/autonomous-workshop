@@ -1,0 +1,60 @@
+{
+  "agent_roles": [
+    "blind first-time owner",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "adversarial evidence auditor"
+  ],
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "claims": [
+    "Two fresh independent blind AI Player sessions each immediately read an alternating 8 by 8 board and a light square on the right from both corrected player orientations: Stone south has h1 on the right and Steel north has a8 on the right.",
+    "Each session identifies all six chess roles. Bishop and queen are the weaker pair, but both still pass; the aggregate is 12 of 12 session-role decisions and king-or-queen is 4 of 4.",
+    "Each session identifies two systematic neutral-material geometry families across all six role pairs. The knight is the weakest paired distinction and color is faster than geometry, but side recognition still passes in neutral material.",
+    "Without seeing the brief, both sessions spontaneously lead with Manhattan or NYC-associated Art Deco/noir language. Both also say that NYC is leading rather than exclusive without a literal landmark. This passes the sealed Wish for NYC building style and the sealed no-exact-landmark direction; it does not claim unique landmark recognition or exclusive city identification.",
+    "The digital production-finish plan passes 15 of 15 deterministic checks and makes board parity immediately readable in exact production-finish previews, but no physical finish execution is claimed."
+  ],
+  "config_sha256": "da72ad7d16521ada3281b35e7cb27c6eb9da997b676c228cda003136b7b75340",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "feedback_codes": [],
+  "human_playtest": false,
+  "limitations": [
+    "Exactly two independent blind AI Player sessions are recorded, not a six-independent-model panel. The named roles are evaluation lenses applied within those two sessions.",
+    "These are digital pixel observations, not a human recognition, enjoyment, accessibility, or table-play study.",
+    "NYC is the leading spontaneous association, not an exclusive city identification, and no literal landmark is claimed.",
+    "No physical finish, lighting variation, handling, durability, or customer experience was tested."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "production_finish_execution": false,
+  "round": 5,
+  "schema_version": 1,
+  "scores": {
+    "aggregate_role_recognition": "12/12 session-role decisions (100%)",
+    "alternating_board_and_light_on_right": "2/2 sessions (100%)",
+    "each_rank": "2/2 sessions per rank (100%)",
+    "king_and_queen": "4/4 session-role decisions (100%)",
+    "leading_spontaneous_nyc_association": "2/2 sessions (100%)",
+    "neutral_material_side_family": "2/2 sessions across all six role pairs (100%)"
+  },
+  "simulation": "Two independent blind AI Player sessions reviewed exact corrected production-finish and neutral-recognition pixels under six product-use role lenses",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "7e15518cabe16b06a649578fd16dc4f25a1268de13a20d2756946cb12c2ab10f"
+    },
+    {
+      "path": "sources/renderer-provenance.json",
+      "sha256": "3254c9e3c83146078f8175eac0dd769b60cd72948c807ac68bb62bb5ce43a479"
+    },
+    {
+      "path": "sources/blind-player-audit.json",
+      "sha256": "6c54b1a468d09acaac44c98f8892bf960f9b06af6610ec84d278e93434b98c7b"
+    },
+    {
+      "path": "sources/finish-plan-audit.json",
+      "sha256": "46c67dec8ace00a846c9b548a7e60e966de265b98547ca48eebcc5c590563972"
+    }
+  ]
+}

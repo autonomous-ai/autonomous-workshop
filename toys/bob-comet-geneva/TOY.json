@@ -1,0 +1,34 @@
+{
+  "schema": "autonomous-workshop.toy-project.v1",
+  "kind": "legacy-toy-project",
+  "toy_id": "bob-comet-geneva",
+  "display_slug": "comet-geneva",
+  "selected_inventor": "bob",
+  "codex": {
+    "working_directory": ".",
+    "manager": "root-codex-session",
+    "workflow_skill": ".agents/skills/autonomous-workshop/SKILL.md",
+    "eligible_inventor_agents": [
+      ".codex/agents/alice.toml",
+      ".codex/agents/bob.toml",
+      ".codex/agents/eve.toml",
+      ".codex/agents/ivy.toml",
+      ".codex/agents/leo.toml"
+    ],
+    "selected_inventor_subagent_skill": ".agents/skills/bob-inventor/SKILL.md"
+  },
+  "legacy_source": {
+    "commit": "db92e2b8f75262c9184455f794548909ce149748",
+    "path": "inventors/bob/toys/comet-geneva",
+    "git_tree_sha1": "68c197e2b0035aa160f00623878bcae1e570b060"
+  },
+  "migration": {
+    "status": "migrated-legacy-product",
+    "product_file_count": 37,
+    "product_bytes": 2329218,
+    "product_inventory_sha256": "7fa082d1da81c668ea7ea02a9a84bd92479e3a7a237667dddbda144c9704b9c9",
+    "exclusions_manifest": "../legacy-migration.json",
+    "native_codex_checkpoint": null,
+    "checkpoint_note": "This historical product predates the native Codex run host; no session id, stage checkpoint, or resumable host state was fabricated."
+  }
+}

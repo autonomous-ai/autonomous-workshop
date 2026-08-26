@@ -1,0 +1,17 @@
+{
+  "all_exported_parts_inside_bed": true,
+  "all_exported_parts_watertight": true,
+  "artifact_sha256": "c33e3f6ddde9a554f951ba94dbace931e985b5bafc163185be2e601f13079e2b",
+  "check": "digital-printability",
+  "claim_scope": "AI print simulation only; Deliver proves the manufactured object",
+  "declared_bed_mm": [
+    256.0,
+    256.0,
+    256.0
+  ],
+  "fit_test": false,
+  "locked_slicer_profile_run": false,
+  "passed": true,
+  "physical_print": false,
+  "schema_version": 1
+}

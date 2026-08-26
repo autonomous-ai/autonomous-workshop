@@ -1,0 +1,104 @@
+{
+  "slug": "blindcap-duel",
+  "title": "Blindcap: Duel",
+  "schema_version": 2,
+  "concept": "Twelve mushrooms share one species-neutral silhouette while hiding four different tunnel patterns beneath a cracked field. You know the six you plant; your rival does not. Their three iron probes are the only way to interrogate yours: slide one beneath a cap and the buried geometry makes it rest low or stop high. With only three probes and three crowns, every bit of truth you buy is a claim you postpone. Grow secret groves, read your rival's field, and commit before the harvest reveals what the plastic knew all along.",
+  "players": {"min": 2, "max": 2},
+  "playtime_min": 25,
+  "action_types": ["seed", "plant", "probe", "crown"],
+  "design_contract": {
+    "core_experience": "A tense two-player duel in which the printed objects themselves reveal partial truth and every probe delays a spatial claim.",
+    "core_mechanism": "Two marked tile channels meet two optional, parallel routes in a keyed buried shank. Solid plastic stops an owner-marked probe high; an open route lets it rest low. The readings stay public on the field until players record them at harvest, and players use that evidence to value hidden orthogonal groves before committing crowns.",
+    "must_preserve": [
+      "All four mushroom species share one silhouette above the loam while one or two cap bites keep ownership visible.",
+      "Probe results come from geometry, need no human adjudicator and remain visible on the board until they are recorded at harvest.",
+      "Each player must choose exactly when to spend three probes versus two early crowns before a final forced crown.",
+      "Hidden species, public ownership and orthogonal grove scoring remain separate information layers."
+    ],
+    "anti_goals": [
+      "No cards, dice, app or moderator.",
+      "No voluntary pass, take-that destruction or memory-only information.",
+      "No rule that lets a player inspect a buried shank directly."
+    ],
+    "complexity_budget": {"max_rule_words": 700, "max_action_types": 4},
+    "kill_criteria": [
+      "Blind players cannot distinguish the 3.0 mm low state from the 27.628906 mm high reference at normal table distance.",
+      "Either starting seat exceeds a 10 percentage-point advantage after competent-policy simulation and blind play.",
+      "Players use fewer than 2.5 of their 3 probes on average in blind play.",
+      "A full set cannot be printed on a 160 x 160 mm bed without supports or split parts."
+    ]
+  },
+
+  "novelty": "Blindcap does not claim the broad idea of probing hidden game information. A 1959 educational-game patent describes depth-sensing probes entering selectively blocked sockets; Black Box (mid-1970s) uses paid probes to infer hidden atoms; and Electronic Stratego (1982) reads unique bumps under pieces with an electronic board and includes a probe action. Blindcap's narrower product combination is passive and printable: one-dot and two-dot angled tile channels interrogate two optional, parallel routes in a movable, keyed, player-planted piece; the probe's resting height holds the result publicly until the pre-harvest record; ownership stays visible while species stays hidden; and that partial information feeds simultaneous spatial grove building and commitment-before-reveal scoring. Searches on 2026-08-23 found no tabletop product titled Blindcap or Blindcap: Duel, but this is a product-search result, not trademark or freedom-to-operate clearance. Full sources and limits travel with the downloadable project at docs/prior-art.md.",
+
+  "art_direction": {
+    "form_language": "Two materials in one plastic, told apart purely by curvature: everything that grew is swollen, radiused and fluted with no straight edge on it, and everything that was forged is faceted, tapered and hard. The loam tiles are thick slabs whose top face is broken into irregular 1.4mm-deep dried-mud channels, chamfered at every rim so a slab never reads as a printed plate. The stools are fat flat-topped domes with a supported mushroom shoulder, a radiused brim, thick walls and no filigree. The pins are hex-shafted with a knurled disc head and a blunt taper. Nothing in the box is delicate.",
+    "silhouette": "A field of cracked earth studded with pale mushrooms of exactly one design, a few wearing small toothed crowns, and iron pins jutting out from under their brims at rakish angles like thorns driven into the ground — the amount of ironwork on the table is a picture of how much the players have found out.",
+    "part_vocabulary": "FIVE families, each separable by shape alone at arm's length. (1) loam_tile — the only flat, wide, cracked thing; a thick slab of dried mud, its keyed sockets ringed by raised collars. Two tiles join into one 6x3 field. Every socket has a one-dot channel and a two-dot channel. (2) stool_* — the only domed things; a flat-topped cap on a hidden D-keyed shank, brim floating above the loam. All four species share one above-loam silhouette and differ only by which buried routes exist (neither / one-dot / two-dot / both). Player ownership is a separate visible axis: one or two square bites in the cap brim. (3) claim_crown — the only toothed ring; a low six-point coronet that seats on the cap boss. One or two pierced holes identify its owner. (4) probe_pin — the only faceted straight thing; each player's three pins carry the same one- or two-mark language as their stools and crowns. (5) spore_trough — the only object with a wall; a compact screened tray holding six stools and three crowns, marked for one of the two players. The probes and flat scoring aid sit beside it during play.",
+    "surface_treatment": "Craquelure channels 1.4mm deep by 1.2mm wide cross every loam_tile top face. Concentric growth-ring grooves are recessed 0.8mm into each cap top. Thirty-two radial gill ribs sit 1.0mm proud on the underside of the cap brim, visible in the shadow gap where a player's eye goes when sliding a pin in. One-dot and two-dot mouth marks are at least 0.8mm and remain visible beside a planted cap. Owner bites are 2.5mm deep in the brim edge. The D-flat and buried tunnels are clean functional geometry, not ornament. Knurl is 0.9mm on the pin head. No motif is under 0.8mm.",
+    "hero_shot": "The board at the turn from play to harvest, shot low: a cracked field of pale caps sharing one species-neutral silhouette but carrying distinct player bite marks, the public probe heights still readable in the background, and in the foreground—after its probe counts have been recorded and its pins removed—one stool inverted cap-down in its original cell with its parallel buried route pattern visible and its crown resting on the upward shank. The image has to say, without a word of rules, that the mushrooms kept a secret and the pins extracted it."
+  },
+
+  "components": [
+    {"name": "loam_tile", "qty": 2, "tiled": true, "per_player": 1,
+     "desc": "A 132 x 132 x 28mm slab of cracked loam carrying a 3x3 grid of keyed stool sockets; its self-mating joints bring the printable envelope to 144mm. Two tiles join into a 6x3 field of 18 sockets. Each Ø21.8 D-keyed blind bore accepts a Ø21.4 shank and has one one-dot and one two-dot Ø6.8mm channel. The two paths are parallel, 12.6mm apart, and run 70 degrees from vertical without crossing. Each blind channel stops 31mm from its mouth. Neighbours remain clear through the full insertion and extraction range."},
+
+    {"name": "stool_deadhead", "qty": 4, "per_player": 2,
+     "desc": "Flat-topped fluted cap on a D-keyed 21.4mm shank with neither parallel route: both probes stop high. Cap, brim, boss, key and shank envelope share the species silhouette; only the buried route cuts differ. One or two visible cap bites identify the owner."},
+    {"name": "stool_bracket", "qty": 4, "per_player": 2,
+     "desc": "Species-neutral above the loam with visible owner bites; the one-dot parallel route is open and the two-dot route is solid, so the one-dot probe rests low and the two-dot probe stops high. Two per player."},
+    {"name": "stool_inkcap", "qty": 2, "per_player": 1,
+     "desc": "Species-neutral above the loam with visible owner bites; the two-dot parallel route is open and the one-dot route is solid, so the two-dot probe rests low and the one-dot probe stops high. Scarce: exactly one per player, and a grove of them scores double."},
+    {"name": "stool_hollow", "qty": 2, "per_player": 1,
+     "desc": "Species-neutral above the loam with visible owner bites; both parallel routes are open, so both probes rest low. Scarce: exactly one per player, and a grove of them scores double."},
+
+    {"name": "claim_crown", "qty": 6, "per_player": 3,
+     "desc": "A low six-toothed ring that drops onto a rival stool's cap boss and never moves again. One or two pierced holes match the owner's cap bites. Two crowns may be committed during the five main rounds; the third is reserved for the closing claim."},
+
+    {"name": "probe_pin", "qty": 6, "per_player": 3,
+     "desc": "A 34mm hex-shafted pin with a knurled disc head and robust 0.9mm-radius blunt taper. When solid shank blocks it, contact begins between 27.632812 and 27.625mm proud; the digital reference is 27.628906mm. When a tunnel admits it, the 31mm blind stop leaves exactly 3.0mm proud. One or two marks identify the owner. Each player must spend all three probes on rival stools during the five main rounds."},
+
+    {"name": "spore_trough", "qty": 2, "per_player": 1,
+     "desc": "A 154 x 150 x 40mm screened 3x2 personal tray holding six stools shank-inward plus three crowns. Its near wall hides the owner's tunnel code from the opposite seat; one or two notches mark the owner. Probes and the separate flat scoring aid stay beside the tray during play."}
+  ],
+
+  "rules": {
+    "setup": [
+      {"text": "Join the two loam tiles into a 6x3 field. Each player's seed socket is the middle-row socket on their tile immediately beside the centre join. All other sockets begin empty; only shared grid edges make neighbours.",
+       "uses": ["loam_tile"]},
+      {"text": "Each player takes their marked tray, 2 deadheads, 2 brackets, 1 inkcap, 1 hollow, 3 crowns and 3 probes. Keep every shank hidden behind the tray wall; the cap's owner mark remains visible.",
+       "uses": ["spore_trough", "stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "claim_crown", "probe_pin"]},
+      {"text": "Learn the buried code: an open tunnel leaves its probe low at 3.0 mm proud; solid plastic stops it high at about 27.63 mm. Deadhead is high/high, bracket low/high, inkcap high/low and hollow low/low. Use the fit coupon before the first game.",
+       "uses": ["probe_pin", "stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "loam_tile"]},
+      {"text": "Choose the first-round starter at random. Each player secretly chooses one stool and plants it in their seed socket simultaneously on three. The player who starts alternates every round.",
+       "uses": ["stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "loam_tile"]}
+    ],
+
+    "turn": [
+      {"text": "Play five main rounds. The starter takes a complete turn, then the other player; swap the starter next round.",
+       "uses": []},
+      {"text": "PLANT by hiding one stool's shank and seating it in any empty socket. Its brim shows its owner; its species stays hidden until harvest.",
+       "uses": ["stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "loam_tile", "spore_trough"]},
+      {"text": "After planting, choose PROBE or CROWN; you cannot pass. Across your five main turns you must use exactly 3 probes and 2 crowns, in any order.",
+       "uses": ["probe_pin", "claim_crown"]},
+      {"text": "PROBE by putting one of your marked pins into an empty one-dot or two-dot channel beneath a rival stool. Leave it where it stops until harvest: the public low/high result and its owner remain on the board. You may test both channels of one stool or spread your probes.",
+       "uses": ["probe_pin", "loam_tile"]},
+      {"text": "CROWN by dropping one crown onto an uncrowned rival stool; it never moves. Use at most 2 crowns during main play and reserve the third for closing.",
+       "uses": ["claim_crown"]}
+    ],
+
+    "end": [
+      {"text": "After five main rounds, each player places their reserved third crown on an uncrowned rival stool in starter order. There is no planting or probing.",
+       "uses": ["claim_crown"]},
+      {"text": "HARVEST. Before touching a probe, agree and write four counts for each player: rival stools personally tested in both channels, distinct rival stools personally probed, your probes beneath stools you crowned, and your probes resting low. Withdraw all six probes completely. Lift each stool and set it cap-down in its original cell with the shank visible; rest its crown flat on the upward shank.",
+       "uses": ["stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "claim_crown", "probe_pin", "loam_tile"]},
+      {"text": "Find each maximal orthogonally connected same-species grove; a lone stool is a grove of one and tile joins count. Groves without a crown score nothing.",
+       "uses": ["stool_deadhead", "stool_bracket", "stool_inkcap", "stool_hollow", "loam_tile"]}
+    ],
+
+    "win": {
+      "text": "Each grove pays once per crown owner. If one player alone crowned a grove of n stools, score n x n; if both players crowned it, each scores n. Double inkcap and hollow groves; extra same-owner crowns are wasted. Highest total wins. Break ties by: larger uncontested grove, then the recorded counts for rival stools fully probed, rival stools probed, your probes beneath stools you crowned, and your probes that rested low. Share the win if still tied.",
+      "uses": ["claim_crown", "probe_pin", "stool_inkcap", "stool_hollow", "stool_deadhead", "stool_bracket"]
+    }
+  }
+}

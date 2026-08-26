@@ -1,0 +1,22 @@
+{
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "config_sha256": "bb4874fd5e33c60552e30742abde224625ac4e13c3eb2a5abb6ec718869bce74",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "1.0.0",
+  "evidence": {
+    "evidence_class": "ai-simulation",
+    "feedback_codes": [
+      "rank-crown-silhouette-collapse",
+      "side-language-base-heavy",
+      "neutral-top-recognition-unproven"
+    ],
+    "result_file_sha256": "3b59ef2a24f060aa56d9ab353031e09ea47fb584b9f2a2f329c9472c72137c38",
+    "rule_changes": 0,
+    "standard_inventory_and_setup": true
+  },
+  "evidence_ref": "results/classic-rules-test.json",
+  "evidence_sha256": "3b59ef2a24f060aa56d9ab353031e09ea47fb584b9f2a2f329c9472c72137c38",
+  "inspection_id": "classic-rules-test",
+  "observed_at": "2026-08-24T09:30:00+00:00",
+  "passed": false
+}

@@ -1,0 +1,20 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "config_sha256": "da72ad7d16521ada3281b35e7cb27c6eb9da997b676c228cda003136b7b75340",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "5.0.0",
+  "evidence": {
+    "corrected_coordinate_restoration": "CAD=(GLB X,-GLB Z,GLB Y)",
+    "evidence_class": "ai-simulation",
+    "light_square_on_right_both_players": true,
+    "result_file_sha256": "0ef1e1bcb61251525424f52bc52a4bc6b771d0d2d0070755754e1bb8d1e73548",
+    "rule_changes": 0,
+    "setup_errors": 0,
+    "standard_inventory_and_setup": true
+  },
+  "evidence_ref": "results/classic-rules-test.json",
+  "evidence_sha256": "0ef1e1bcb61251525424f52bc52a4bc6b771d0d2d0070755754e1bb8d1e73548",
+  "inspection_id": "classic-rules-test",
+  "observed_at": "2026-08-24T12:30:00+00:00",
+  "passed": true
+}

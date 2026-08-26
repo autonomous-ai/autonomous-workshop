@@ -1,0 +1,15 @@
+{
+  "schema_version": 7,
+  "id": "bob",
+  "status": "experimental",
+  "capabilities": ["moving-machines"],
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "bob-inventor",
+      "path": "skills/bob-inventor",
+      "artifact_sha256": "bf33915f0dc5eeb36eb08fbe4c74599c46d959a5776b1bd8971d7444443b274a"
+    }
+  ]
+}

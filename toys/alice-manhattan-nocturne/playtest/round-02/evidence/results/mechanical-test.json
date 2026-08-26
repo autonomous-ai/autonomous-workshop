@@ -1,0 +1,38 @@
+{
+  "agent_roles": [
+    "first-time chess player",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "print breaker",
+    "adversarial player"
+  ],
+  "artifact_sha256": "45d3d14014f53f8ad4f199a7ac19337ca59f7bd97f25eef3a271f14a96eb00a2",
+  "claims": [
+    "All 33 exact sealed STEP occurrences pass the selected topological validation with zero reported failures.",
+    "The starting assembly has zero B-rep clashes above 0.001 cubic millimetres across 528 occurrence pairs, with 32 candidate pairs tested and 496 rejected by bounding boxes.",
+    "The immutable commit passes all 11 algebraic checks for board envelope, base clearance, side/rank inventory, starting squares, standard back rank, relief, and maximum height."
+  ],
+  "config_sha256": "11e44d632556e17291b196131fda0175cca8a411761a7d7fc496ad26d0fe9248",
+  "customer_review": false,
+  "evidence_class": "ai-simulation",
+  "limitations": [
+    "The B-rep validation skipped the expensive self-intersection subcheck; strict exported-mesh checks are recorded separately in print-test.",
+    "Digital geometry cannot establish friction, real tip resistance, hand feel, fatigue, warp, impact behavior, finish, or durability."
+  ],
+  "passed": true,
+  "physical_print": false,
+  "round": 2,
+  "schema_version": 1,
+  "simulation": "AI mechanical and adversarial roles interpreted deterministic STEP validation, algebraic dimensions, assembly envelope, and exact B-rep interference",
+  "source_records": [
+    {
+      "path": "sources/artifact-binding.json",
+      "sha256": "ba5b520f90a03e0181216aa73c5ff2ab009457b45182940cd72095a93824df8d"
+    },
+    {
+      "path": "sources/geometry-validation.json",
+      "sha256": "ca9595d474adefb79815f6addaae432b62220e2c4fa114c9a44a03f3e3cbd686"
+    }
+  ]
+}

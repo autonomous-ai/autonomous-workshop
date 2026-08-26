@@ -1,0 +1,34 @@
+{
+  "artifact_sha256": "2f7776df346eb030ec2f42aa07ed1061884b39e1f1f89aaf7d1e2e89cd36ea4e",
+  "bed_envelope": {
+    "board_mm": [244.0, 244.0, 9.0],
+    "declared_bed_mm": [256.0, 256.0, 256.0],
+    "geometry_inside_declared_bed": true
+  },
+  "claim_scope": "Round 1 release-readiness inventory only; geometry envelope is not slicer-backed printability and is not a physical print",
+  "make_inventory": {
+    "make_manifest_path": "../../make-manifest.json",
+    "make_manifest_sha256": "abf990d677f48cfda37531bfc9462122bafc84b584f79c814573b8c003b0952b",
+    "slicer_receipt_count": 0,
+    "stl_count": 0
+  },
+  "passed": false,
+  "physical_print": false,
+  "pinned_profiles_present": [
+    {
+      "path": "project/validation/orca-profiles/p2s-machine-standard.json",
+      "sha256": "959cfab8f958303c40a45eecda9c46f591ba7c021ac8614220969a0f32fbf6e9"
+    },
+    {
+      "path": "project/validation/orca-profiles/p2s-process-standard.json",
+      "sha256": "eb04065bfe8b7ab3beb32c81447208b87e40bc74adcef30478f5a303b3f845d7"
+    },
+    {
+      "path": "project/validation/orca-profiles/pla-basic-standard.json",
+      "sha256": "3eee98f3ad465116107538277e09a7d7bacdfe3fc03bb0fd52e0267cd345a3c0"
+    }
+  ],
+  "reason": "Pinned profile inputs exist, but Round 1 contains no final per-part STL release and no parsed OrcaSlicer receipt bound to those meshes. Mesh topology, support use, time, material, and slicer errors are therefore unresolved.",
+  "schema_version": 1,
+  "slicer_backed": false
+}

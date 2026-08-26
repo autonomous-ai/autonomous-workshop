@@ -1,0 +1,146 @@
+{
+  "artifact_sha256": "b48348737192133398255bf800b83b9f922f6f12fcd34e6e9e9b05e2094da19c",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 1244,
+      "executable": false,
+      "path": "README.md",
+      "sha256": "dc0d8c996f167903b628f2339a34338d3b9221df71e28a7d0eaa6b09c80a017e"
+    },
+    {
+      "bytes": 758980,
+      "executable": false,
+      "path": "assembled.step",
+      "sha256": "54a326b8befbe96cb6e0ad7402ba964ec2337700fd5e5519cf0a2f27fd6d70de"
+    },
+    {
+      "bytes": 1230,
+      "executable": false,
+      "path": "assembled.step.json",
+      "sha256": "9e9b0fd43fe97820f13c7274204d36f058f8b9362cd5df0c81d30e99f1b0125e"
+    },
+    {
+      "bytes": 884684,
+      "executable": false,
+      "path": "assembled.stl",
+      "sha256": "5ce46527f49fc2d919125ec9db715019d281d3f6b25d14b11d28a53e6b9d8244"
+    },
+    {
+      "bytes": 1798,
+      "executable": false,
+      "path": "cad/design.json",
+      "sha256": "29d4b8464edd14ad751c4480e06fbd614d1408b7162b76352bdc47d50ceeb854"
+    },
+    {
+      "bytes": 6709,
+      "executable": false,
+      "path": "cad/digital-build.json",
+      "sha256": "90df85eaf60ae30fef08f398c33432e290e23498b2f349b9e64dcc8749914b69"
+    },
+    {
+      "bytes": 999,
+      "executable": true,
+      "path": "cad/model.py",
+      "sha256": "421c38aba95c363749bf9ec95992206e59121a81631a8260343b244a0bbc7a1c"
+    },
+    {
+      "bytes": 56471,
+      "executable": false,
+      "path": "cad/parts/counter-orbit.step",
+      "sha256": "54e8d007444108ac7180e150747bb905e955de60411c344ff371ca0f5be19313"
+    },
+    {
+      "bytes": 302484,
+      "executable": false,
+      "path": "cad/parts/counter-orbit.stl",
+      "sha256": "406543cfaa14a7c8f29913eeed25d0e60a90d8d7b9a3d57e5b7a878fb175a212"
+    },
+    {
+      "bytes": 33459,
+      "executable": false,
+      "path": "cad/parts/five-job-core.step",
+      "sha256": "e1fc8d62792bfa4112fb0feed6485a6f95fc8af458e198a3ee0c0c30a3a92a77"
+    },
+    {
+      "bytes": 176284,
+      "executable": false,
+      "path": "cad/parts/five-job-core.stl",
+      "sha256": "6b80e3015f17da0f28f56af1a32b4887c5f238ec07693bb36d95c3ac0edd8240"
+    },
+    {
+      "bytes": 9685,
+      "executable": false,
+      "path": "cad/parts/ring-signal.step",
+      "sha256": "2253bd2a3bc7471c01089cfb1763d8de19e525a1033aaf39cea1b436cf39bb82"
+    },
+    {
+      "bytes": 50284,
+      "executable": false,
+      "path": "cad/parts/ring-signal.stl",
+      "sha256": "868a07ec9cae405d7ac9f59af7d0e82a5becce7f63e3d9cbb2aa139f830bfad4"
+    },
+    {
+      "bytes": 118281,
+      "executable": false,
+      "path": "cad/parts/spoke-signal.step",
+      "sha256": "030c051696e7ed59734ed54b399f102e7a6dd9662d91cd5b5732e188791cabf2"
+    },
+    {
+      "bytes": 31084,
+      "executable": false,
+      "path": "cad/parts/spoke-signal.stl",
+      "sha256": "3b9c8d99d3ebaab4686d0e0d6f5ae4baed99789fb13757c0a5877857a72165de"
+    },
+    {
+      "bytes": 759412,
+      "executable": false,
+      "path": "cad/product.step",
+      "sha256": "b204804016fae405032e825701f942722b53fa224a2c9f362d6d6b681479b573"
+    },
+    {
+      "bytes": 884684,
+      "executable": false,
+      "path": "cad/product.stl",
+      "sha256": "5ce46527f49fc2d919125ec9db715019d281d3f6b25d14b11d28a53e6b9d8244"
+    },
+    {
+      "bytes": 1528,
+      "executable": false,
+      "path": "game/RULES.md",
+      "sha256": "0c046b4f5e68b8b66875c6a41304ec0fd6c7134a63db6ddb976bc713f7647981"
+    },
+    {
+      "bytes": 5931,
+      "executable": true,
+      "path": "game/simulate.py",
+      "sha256": "862257e3f3a7f2e15c5d4d902ecbe8e4fb378e7ceaddcceb070998e857d9ca08"
+    },
+    {
+      "bytes": 110521,
+      "executable": false,
+      "path": "images/hero.png",
+      "sha256": "2a4ebf0a0951d8580940c7d4df9a6a661f343ec19420872906cb1c55663cbf0e"
+    },
+    {
+      "bytes": 6567,
+      "executable": false,
+      "path": "product.json",
+      "sha256": "169f550a39944683ac6819d0bbfed698c770ad21230d8c3d82145fdd071ba5d4"
+    },
+    {
+      "bytes": 53,
+      "executable": false,
+      "path": "project.json",
+      "sha256": "3ded60bce15f6e080f02cce2bc80a2e51e60f1c698a82aa59d9eae016fc24eff"
+    },
+    {
+      "bytes": 349,
+      "executable": false,
+      "path": "wish.json",
+      "sha256": "9f7f99c31c0a55983b7ddc238b5975ab6e16551b6bf419db106c8a435e9f2808"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 4202721
+}

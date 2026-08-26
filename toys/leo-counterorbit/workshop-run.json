@@ -1,0 +1,67 @@
+{
+  "artifact_sha256": "b48348737192133398255bf800b83b9f922f6f12fcd34e6e9e9b05e2094da19c",
+  "assertions": {
+    "ai_playtest_passed": true,
+    "customer_reviews": false,
+    "delivered": false,
+    "exact_geometry_render": true,
+    "instructions_created": true,
+    "physical_prototype": false,
+    "real_step_and_stl": true,
+    "site_draft_verified": false,
+    "site_page_live": false,
+    "step_reimported": true,
+    "typed_evidence_contract_validated": true,
+    "typed_workshop_run": true
+  },
+  "blueprint_sha256": "bc28c3590ee202c21de2ba21b556c02df61b58b7649dc80317249c8a7080138a",
+  "evidence_sha256": "54c1a53a4523cbf166a72e252f55035dd70efa2131b8fafee3d9c044343debeb",
+  "instructions_sha256": "61041baba022cb775782567fda4b164b1e71505c739c6937e5daabc0b34828dc",
+  "inventor": {
+    "extension_level": "custom-playtest",
+    "id": "leo",
+    "name": "Leo",
+    "profile": "inventors/leo/profile.py"
+  },
+  "kind": "showcase-workshop-run",
+  "run": {
+    "artifact_sha256": "b48348737192133398255bf800b83b9f922f6f12fcd34e6e9e9b05e2094da19c",
+    "delivery": null,
+    "instructions_sha256": null,
+    "job": "instructions",
+    "needs": [
+      {
+        "capability": "site-page",
+        "instructions": "Set WORKSHOP_SHOP_TOKEN and WORKSHOP_SHOP_OWNER_ID, then let shared Instructions create and verify the private draft.",
+        "job": "instructions",
+        "reason": "The page and in-box guide are sealed, but this run has no authenticated Workshop site account."
+      }
+    ],
+    "page_url": null,
+    "playtest_rounds": 10,
+    "product_id": "counterorbit",
+    "round": 1,
+    "status": "waiting"
+  },
+  "schema_version": 1,
+  "shared_adapters": {
+    "builder_path": "tools/build_showcase_products.py",
+    "builder_sha256": "9bd06769f319bb7b42fca6e9a8ad618ab71fe1e552cda116956851b896028cbc",
+    "make": "showcase-real-cad-v1",
+    "playtest": "showcase-digital-playtest-v1"
+  },
+  "site_receipt": null,
+  "taste_sha256": "7941ac6fc22874faa75c1c368f7efa34ab2a23c998bb44c84f4b1885e285c3fc",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "invented-games"
+    },
+    "context": {
+      "inventor_id": "leo"
+    },
+    "objective": "I wish for a tense two-player game where our five Workshop jobs orbit, interfere, and only align when a plan survives the other inventor.",
+    "product_id": "counterorbit",
+    "schema_version": 1
+  }
+}

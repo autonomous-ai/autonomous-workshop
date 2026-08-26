@@ -1,0 +1,12 @@
+{
+  "constraints": {
+    "audience": "grown-ups-14-plus",
+    "lane": "classics-made-yours"
+  },
+  "context": {
+    "inventor_id": "alice"
+  },
+  "objective": "I wish our five-job Workshop became a checkers set for late-night design reviews\u2014black and warm gold, architectural rather than cute.",
+  "product_id": "five-job-checkers",
+  "schema_version": 1
+}

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="148mm" viewBox="0 0 2100 1480" role="img" aria-labelledby="title desc">
+  <title id="title">Blindcap Duel reader, harvest record, and scoring aid</title>
+  <desc id="desc">A black and white player aid showing the hidden species code, grove scoring, four probe counts to record before pin removal, and the physical harvest sequence.</desc>
+  <rect width="2100" height="1480" rx="42" fill="#f4efe4"/>
+  <rect x="22" y="22" width="2056" height="1436" rx="32" fill="none" stroke="#241d18" stroke-width="9"/>
+
+  <g fill="#241d18" font-family="Arial, Helvetica, sans-serif">
+    <text x="78" y="112" font-size="68" font-weight="700">BLINDCAP: DUEL</text>
+    <text x="78" y="166" font-size="27" letter-spacing="5">READ · RECORD · REVEAL · HARVEST</text>
+
+    <line x1="1040" y1="198" x2="1040" y2="1370" stroke="#241d18" stroke-width="5"/>
+
+    <text x="78" y="255" font-size="39" font-weight="700">THE BURIED CODE</text>
+    <circle cx="368" cy="302" r="11"/>
+    <text x="395" y="313" font-size="28">one-dot channel</text>
+    <circle cx="694" cy="302" r="11"/>
+    <circle cx="725" cy="302" r="11"/>
+    <text x="752" y="313" font-size="28">two-dot</text>
+
+    <g font-size="31">
+      <text x="108" y="386" font-weight="700">Deadhead</text>
+      <text x="455" y="386">HIGH</text>
+      <text x="760" y="386">HIGH</text>
+
+      <text x="108" y="454" font-weight="700">Bracket</text>
+      <text x="455" y="454">LOW</text>
+      <text x="760" y="454">HIGH</text>
+
+      <text x="108" y="522" font-weight="700">Inkcap ×2</text>
+      <text x="455" y="522">HIGH</text>
+      <text x="760" y="522">LOW</text>
+
+      <text x="108" y="590" font-weight="700">Hollow ×2</text>
+      <text x="455" y="590">LOW</text>
+      <text x="760" y="590">LOW</text>
+    </g>
+    <text x="108" y="646" font-size="25">LOW = admitted · HIGH = blocked</text>
+
+    <line x1="78" y1="690" x2="980" y2="690" stroke="#241d18" stroke-width="4"/>
+    <text x="78" y="758" font-size="39" font-weight="700">SCORE EACH GROVE</text>
+    <text x="108" y="825" font-size="30">one crown owner</text>
+    <text x="730" y="825" font-size="43" font-weight="700">n × n</text>
+    <text x="108" y="890" font-size="30">both crown owners</text>
+    <text x="730" y="890" font-size="43" font-weight="700">n each</text>
+    <text x="108" y="950" font-size="28">Inkcap and Hollow double that result.</text>
+    <text x="108" y="1002" font-size="26">A grove is one maximal orthogonal group.</text>
+    <text x="108" y="1043" font-size="26">No crown in the grove means zero points.</text>
+
+    <text x="78" y="1135" font-size="39" font-weight="700">TIEBREAK ORDER</text>
+    <g font-size="27">
+      <text x="108" y="1190">1  larger uncontested grove</text>
+      <text x="108" y="1236">2  rival mushrooms tested twice</text>
+      <text x="108" y="1282">3  distinct rival mushrooms probed</text>
+      <text x="108" y="1328">4  probes under your crowns · 5  probes that were LOW</text>
+      <text x="108" y="1374">still tied · share the win</text>
+    </g>
+
+    <text x="1100" y="255" font-size="39" font-weight="700">BEFORE REMOVING PINS</text>
+    <text x="1100" y="302" font-size="26">Agree and write the four visible counts.</text>
+
+    <g font-size="25" font-weight="700">
+      <text x="1110" y="370">PROBE RECORD</text>
+      <text x="1810" y="370">P1</text>
+      <text x="1930" y="370">P2</text>
+    </g>
+    <g fill="none" stroke="#241d18" stroke-width="4">
+      <rect x="1090" y="394" width="930" height="280" rx="12"/>
+      <line x1="1755" y1="394" x2="1755" y2="674"/>
+      <line x1="1888" y1="394" x2="1888" y2="674"/>
+      <line x1="1090" y1="464" x2="2020" y2="464"/>
+      <line x1="1090" y1="534" x2="2020" y2="534"/>
+      <line x1="1090" y1="604" x2="2020" y2="604"/>
+    </g>
+    <g font-size="25">
+      <text x="1120" y="438">rival mushrooms tested twice</text>
+      <text x="1120" y="508">distinct rival mushrooms probed</text>
+      <text x="1120" y="578">your probes under your crowns</text>
+      <text x="1120" y="648">your probes that were LOW</text>
+    </g>
+
+    <text x="1100" y="765" font-size="39" font-weight="700">PHYSICAL HARVEST</text>
+    <g font-size="27">
+      <circle cx="1130" cy="835" r="27" fill="none" stroke="#241d18" stroke-width="4"/>
+      <text x="1121" y="845" font-weight="700">1</text>
+      <text x="1180" y="826">Record the four counts above while</text>
+      <text x="1180" y="862">every probe is still in its channel.</text>
+
+      <circle cx="1130" cy="940" r="27" fill="none" stroke="#241d18" stroke-width="4"/>
+      <text x="1121" y="950" font-weight="700">2</text>
+      <text x="1180" y="931">Withdraw all six probes completely.</text>
+      <text x="1180" y="967">Return them to their owners.</text>
+
+      <circle cx="1130" cy="1045" r="27" fill="none" stroke="#241d18" stroke-width="4"/>
+      <text x="1121" y="1055" font-weight="700">3</text>
+      <text x="1180" y="1036">Lift each stool and set it cap-down</text>
+      <text x="1180" y="1072">in its original cell, shank visible.</text>
+
+      <circle cx="1130" cy="1150" r="27" fill="none" stroke="#241d18" stroke-width="4"/>
+      <text x="1121" y="1160" font-weight="700">4</text>
+      <text x="1180" y="1141">Rest its crown on the upward shank.</text>
+      <text x="1180" y="1177">Trace groves, score, then break ties.</text>
+    </g>
+
+    <line x1="1100" y1="1242" x2="2010" y2="1242" stroke="#241d18" stroke-width="4"/>
+    <text x="1100" y="1300" font-size="27" font-weight="700">THREE PROBES · TWO EARLY CROWNS</text>
+    <text x="1100" y="1344" font-size="27" font-weight="700">ONE RESERVED CLOSING CROWN</text>
+    <text x="1100" y="1392" font-size="23">Probe rivals · crown rivals · no pass</text>
+  </g>
+</svg>

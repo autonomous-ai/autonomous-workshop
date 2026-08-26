@@ -1,0 +1,62 @@
+{
+  "artifact_sha256": "fe8254dacc03ece8862ed1125350010080deee0f96da890f80ea991c16c95d06",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 1572,
+      "executable": false,
+      "path": "results/agent-playtest.json",
+      "sha256": "5cda776fc27fa88ca24036f613171a42dab21c1fd8a24db178ef776a194d18e2"
+    },
+    {
+      "bytes": 1877,
+      "executable": false,
+      "path": "results/classic-rules-test.json",
+      "sha256": "3b59ef2a24f060aa56d9ab353031e09ea47fb584b9f2a2f329c9472c72137c38"
+    },
+    {
+      "bytes": 1747,
+      "executable": false,
+      "path": "results/mechanical-test.json",
+      "sha256": "08a61f1ab54bcca36b1e7e4c5599310684f9b08c63f3f5dfd8a29d43f76c478b"
+    },
+    {
+      "bytes": 1514,
+      "executable": false,
+      "path": "results/print-test.json",
+      "sha256": "e23a692a55f0fda1b3d4162ee6fe09d8a44580085016c5bea6ed18ba309a7271"
+    },
+    {
+      "bytes": 721,
+      "executable": false,
+      "path": "sources/artifact-binding.json",
+      "sha256": "7934677bb1d23ea72df3e8b5dd1a31c6d382a058fe94a2a029e64181aa8ebe2c"
+    },
+    {
+      "bytes": 1292,
+      "executable": false,
+      "path": "sources/chess-layout.json",
+      "sha256": "865ea0b836cef32c3833691e8077ccfa5218f0dffaf41cb92ae0997c52794b14"
+    },
+    {
+      "bytes": 2499,
+      "executable": false,
+      "path": "sources/geometry-validation.json",
+      "sha256": "d8ea90f053479b55cfe576422f81eda430d99318cf3b9c90d03fe028234501a3"
+    },
+    {
+      "bytes": 1493,
+      "executable": false,
+      "path": "sources/print-readiness.json",
+      "sha256": "7e9d3d81a3f2ad29386204f31c448b98f1ba690ef1cd2d6330cc9f2db89fdc14"
+    },
+    {
+      "bytes": 3238,
+      "executable": false,
+      "path": "sources/render-review.json",
+      "sha256": "f1a882d207774daf1c29cd1301259696b6cf8c02dfe97f227f3cf36b127f00ac"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 15953
+}

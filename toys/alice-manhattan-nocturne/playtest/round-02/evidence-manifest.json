@@ -1,0 +1,62 @@
+{
+  "artifact_sha256": "78db1fcfe1a0e4c5450b767fc13d3c5c1ec921681f7c82e0224c1c8e38000a76",
+  "created_at": "content-addressed",
+  "entries": [
+    {
+      "bytes": 2077,
+      "executable": false,
+      "path": "results/agent-playtest.json",
+      "sha256": "ea0272dcf362c9e3f1fee16023ed042ce21248e33b2251e743bc4c86fdc61b74"
+    },
+    {
+      "bytes": 1991,
+      "executable": false,
+      "path": "results/classic-rules-test.json",
+      "sha256": "9cf902771b783a37c35f16cee31b492333db2ff2fad23778ebd68d8197154f72"
+    },
+    {
+      "bytes": 1796,
+      "executable": false,
+      "path": "results/mechanical-test.json",
+      "sha256": "43f020a94f50895c928ba8f6791e008de682befea1277390d536f85a7b7e2070"
+    },
+    {
+      "bytes": 2178,
+      "executable": false,
+      "path": "results/print-test.json",
+      "sha256": "e1ea6809ee8a83e296f1ae9d7f4fe879493d67e22e40c545d387ad6371128a92"
+    },
+    {
+      "bytes": 1501,
+      "executable": false,
+      "path": "sources/artifact-binding.json",
+      "sha256": "ba5b520f90a03e0181216aa73c5ff2ab009457b45182940cd72095a93824df8d"
+    },
+    {
+      "bytes": 2976,
+      "executable": false,
+      "path": "sources/geometry-validation.json",
+      "sha256": "ca9595d474adefb79815f6addaae432b62220e2c4fa114c9a44a03f3e3cbd686"
+    },
+    {
+      "bytes": 1907,
+      "executable": false,
+      "path": "sources/nyc-form-review.json",
+      "sha256": "98b6130466c2450204e49a37947a1fe01fdc75bded8221f4560a0d846b679fad"
+    },
+    {
+      "bytes": 2989,
+      "executable": false,
+      "path": "sources/slicer-validation.json",
+      "sha256": "2bb4c6fc1971f6e6a217219117df393d48fdab55aa4b36cfb0eb5d8401abf5ca"
+    },
+    {
+      "bytes": 5835,
+      "executable": false,
+      "path": "sources/two-player-recognition.json",
+      "sha256": "6fcbd326d991a215fe256776b9ce43d5f59d4d817181d18e488360871ed83fa3"
+    }
+  ],
+  "schema_version": 1,
+  "total_bytes": 23250
+}

@@ -1,0 +1,36 @@
+[
+  {
+    "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "required_checks": [
+      "manifest",
+      "brep",
+      "mesh-topology",
+      "dimensions",
+      "interference",
+      "bed-packing",
+      "slicer"
+    ],
+    "substrate": "deterministic",
+    "validator": "replace-with-deterministic-validator",
+    "validator_version": "0.0.0-template"
+  },
+  {
+    "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "required_checks": [
+      "form-review",
+      "safety"
+    ],
+    "substrate": "independent-review",
+    "validator": "replace-with-independent-reviewer",
+    "validator_version": "0.0.0-template"
+  },
+  {
+    "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "required_checks": [
+      "physical-claims"
+    ],
+    "substrate": "physical",
+    "validator": "replace-with-physical-test-recorder",
+    "validator_version": "0.0.0-template"
+  }
+]

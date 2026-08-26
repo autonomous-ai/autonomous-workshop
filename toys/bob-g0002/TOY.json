@@ -1,0 +1,34 @@
+{
+  "schema": "autonomous-workshop.toy-project.v1",
+  "kind": "legacy-toy-project",
+  "toy_id": "bob-g0002",
+  "display_slug": "g0002",
+  "selected_inventor": "bob",
+  "codex": {
+    "working_directory": ".",
+    "manager": "root-codex-session",
+    "workflow_skill": ".agents/skills/autonomous-workshop/SKILL.md",
+    "eligible_inventor_agents": [
+      ".codex/agents/alice.toml",
+      ".codex/agents/bob.toml",
+      ".codex/agents/eve.toml",
+      ".codex/agents/ivy.toml",
+      ".codex/agents/leo.toml"
+    ],
+    "selected_inventor_subagent_skill": ".agents/skills/bob-inventor/SKILL.md"
+  },
+  "legacy_source": {
+    "commit": "db92e2b8f75262c9184455f794548909ce149748",
+    "path": "inventors/bob/toys/g0002",
+    "git_tree_sha1": "43113249716a4fed60b929ac1823daaa007fb7f4"
+  },
+  "migration": {
+    "status": "migrated-legacy-product",
+    "product_file_count": 172,
+    "product_bytes": 69701913,
+    "product_inventory_sha256": "57593109577ab369f1c009028d05f72ec16cfe9012b9a490a85dccdcd0d0361e",
+    "exclusions_manifest": "../legacy-migration.json",
+    "native_codex_checkpoint": null,
+    "checkpoint_note": "This historical product predates the native Codex run host; no session id, stage checkpoint, or resumable host state was fabricated."
+  }
+}

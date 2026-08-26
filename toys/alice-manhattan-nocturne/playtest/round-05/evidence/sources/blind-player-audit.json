@@ -1,0 +1,90 @@
+{
+  "artifact_sha256": "53803d012d5523c9645525c76ab371f3d3c5adac6354080895e65331af13632f",
+  "check": "two-independent-blind-ai-player-sessions",
+  "claim_scope": "Two fresh independent AI Player readings of exact corrected pixels. This is not a six-model panel, a human preference study, or proof of unique landmark or exclusive-city recognition.",
+  "evidence_class": "ai-simulation",
+  "independent_ai_player_sessions": 2,
+  "manhattan_identity_interpretation": {
+    "exclusive_city_identification_claimed": false,
+    "frozen_direction": "NYC building style expressed through original architectural archetypes; exact landmark reproduction is out of scope",
+    "literal_landmark_claimed": false,
+    "passed": true,
+    "rationale": "Both blind sessions spontaneously led with Manhattan or NYC-associated Art Deco/noir language. Both also warned that the city association is leading, not exclusive, without a literal landmark. That exactly satisfies the sealed style Wish without turning the set into a souvenir-landmark test.",
+    "sealed_requirements": [
+      {
+        "path": "wish.json",
+        "sha256": "5cc9acc4dcd95d209fefc8b6700156bad2a8a131ff9275c6435c7218c5d1d9ae"
+      },
+      {
+        "path": "manhattan_nocturne_spec.md",
+        "sha256": "ecc7bc7ee55c75512858d1ffee8ca3a1070efc6b3df1822cde4be579e2f71a0c"
+      }
+    ]
+  },
+  "observations": [
+    {
+      "board": {
+        "alternating_8_by_8_immediate": true,
+        "light_on_right_steel_a8": true,
+        "light_on_right_stone_h1": true
+      },
+      "first_city_association": "Manhattan / NYC Art Deco noir",
+      "identity_qualification": "NYC is the leading association, but it is not exclusive without a literal landmark",
+      "role_recognition": {
+        "bishop_queen_note": "Both passed; these are the weaker or closest silhouettes",
+        "roles_identified": ["pawn", "rook", "knight", "bishop", "queen", "king"],
+        "score": "6/6"
+      },
+      "session": "blind-player-a",
+      "side_recognition": {
+        "color_is_faster_than_geometry": true,
+        "geometry_families_systematic": true,
+        "knight_is_weakest_pair": true,
+        "passed": true
+      }
+    },
+    {
+      "board": {
+        "alternating_8_by_8_immediate": true,
+        "light_on_right_steel_a8": true,
+        "light_on_right_stone_h1": true
+      },
+      "first_city_association": "Midtown / Gotham-as-NYC architectural chess",
+      "identity_qualification": "NYC leads, but another dense Art Deco city could remain plausible without an iconic building",
+      "role_recognition": {
+        "bishop_queen_note": "Both passed; these require more attention than rook, knight, pawn, or king",
+        "roles_identified": ["pawn", "rook", "knight", "bishop", "queen", "king"],
+        "score": "6/6"
+      },
+      "session": "blind-player-b",
+      "side_recognition": {
+        "color_is_faster_than_geometry": true,
+        "geometry_families_systematic": true,
+        "knight_is_weakest_pair": true,
+        "passed": true
+      }
+    }
+  ],
+  "passed": true,
+  "role_lenses": [
+    "blind first-time owner",
+    "competitive chess player",
+    "low-color-vision player",
+    "NYC design critic",
+    "adversarial evidence auditor"
+  ],
+  "schema_version": 1,
+  "scores": {
+    "aggregate_role_recognition": "12/12 session-role decisions (100%)",
+    "alternating_board_and_light_on_right": "2/2 sessions (100%)",
+    "each_role": "2/2 sessions per role (100%)",
+    "king_and_queen": "4/4 session-role decisions (100%)",
+    "leading_spontaneous_nyc_association": "2/2 sessions (100%)",
+    "neutral_geometry_side_family": "2/2 sessions across all six role pairs (100%)"
+  },
+  "visual_binding": {
+    "glb_sha256": "a93f1e186b74b758844fd6414718e3ac1e7a0739aa748a85a21babc414cf8f8b",
+    "render_manifest_sha256": "00f186008faf01bce9b6a3b56a8da9625a93812d2c1f85b717d82b6bada7ccbc",
+    "renderer_sha256": "7d0149eeb83d929e5637692cb7010121a76a97ed6251b323fb8f1a26b61a513e"
+  }
+}

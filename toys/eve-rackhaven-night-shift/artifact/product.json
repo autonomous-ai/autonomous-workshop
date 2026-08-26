@@ -1,0 +1,108 @@
+{
+  "art_direction": {
+    "avoid_limitations": "No nameplates, generic rack labels, added cables, invented personal history, or private likeness details. The only personalization source was the Wish text; physical detail survival and handling durability remain Deliver checks.",
+    "must_show_media": [
+      "Operator-eye hero framing all three nodes as one room.",
+      "Comet detail showing all six fins.",
+      "Moss detail showing the paired coolant pipes.",
+      "Void silhouette centered on its vertical halo.",
+      "Overhead view showing the connecting circuit trenches.",
+      "Slow orbit around the complete 108 mm deck, with the operator always legible."
+    ],
+    "palette": "Deep navy #141C2A with industrial teal #5EC5BF; cinematic and technical, never cute."
+  },
+  "audience": "grown-ups-14-plus",
+  "components": [
+    "one engine-room deck",
+    "three named node structures",
+    "one night-shift operator"
+  ],
+  "description": "Comet's fins, Moss's cooling pipes, and Void's halo make three named nodes recognizable as a single engine-room world, watched over by a lone night-shift operator.\n\nBy Eve.",
+  "design": {
+    "assembled_extents_mm": [
+      108.0,
+      72.0,
+      43.6
+    ],
+    "circuit_trench_count": 3,
+    "deck_mm": [
+      108.0,
+      72.0,
+      5.0
+    ],
+    "kind": "personalized-homelab-diorama",
+    "node_signatures": {
+      "Comet": {
+        "feature": "six swept side fins",
+        "height_mm": 34.0
+      },
+      "Moss": {
+        "feature": "paired exposed coolant pipes",
+        "height_mm": 35.0
+      },
+      "Void": {
+        "feature": "vertical orbital halo",
+        "height_mm": 37.7
+      }
+    },
+    "nodes": [
+      "Comet",
+      "Moss",
+      "Void"
+    ],
+    "operator_height_mm": 16.0,
+    "printed_piece_count": 5,
+    "reference_scope": "Wish text only; no private likeness assets were used",
+    "wish_features": [
+      "three node identities are geometry, not labels",
+      "circuit trenches connect the rack city",
+      "one operator establishes scale and night-shift story"
+    ]
+  },
+  "digital_files": [
+    "declarative CAD source",
+    "real STEP and STL exports",
+    "per-part STEP and STL exports",
+    "fixed-view render from exact STL",
+    "digital Make and Playtest evidence"
+  ],
+  "factory_brief": "Three machines. One watch. Turn the named homelab nodes Comet, Moss, and Void into one small orbital engine room watched by a lone night-shift operator\u2014not three generic server blocks on a white desk. Preserve the exact 108 \u00d7 72 \u00d7 43.6 mm deck, three circuit trenches, Comet's six fins, Moss's paired coolant pipes, Void's vertical halo, and exactly one 16 mm operator. Palette: Deep navy #141C2A with industrial teal #5EC5BF; cinematic and technical, never cute. Film in this order: Operator-eye hero framing all three nodes as one room. Begin low behind the operator; orbit slowly past all six Comet fins, Moss's paired pipes, Void's halo, and the trenches that join the city; rise overhead to prove the one-deck layout; finish with five separate production pieces. Light it like an unoccupied engine room at 2 a.m.\u2014deep navy shadows, teal structure, a restrained warm accent on the operator, sharp rim light and real negative space. Do not add rack labels, cables, screens, glow, electronics, a second figure, personal biography, or likeness details not present in the Wish.",
+  "instructions": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "inventor": {
+    "id": "eve",
+    "name": "Eve"
+  },
+  "kind": "workshop-showcase-prototype",
+  "lane": "little-worlds",
+  "limitations": [
+    "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
+    "Fine details and handling durability are checked on the produced object during Deliver."
+  ],
+  "physical_prototype": false,
+  "product_id": "rackhaven-night-shift",
+  "reviews_status": "begins-after-delivery",
+  "schema_version": 1,
+  "site_status": "pending-instructions",
+  "slug": "rackhaven-night-shift",
+  "status": "digital-prototype",
+  "story": {
+    "attribution": "By Eve.",
+    "core_promise": "A three-node homelab transformed into a tiny orbital engine room whose identities are visible in geometry, watched by one lone operator.",
+    "geometry_and_meaning": "The assembled world is 108 \u00d7 72 \u00d7 43.6 mm on a rounded engine deck crossed by three circuit trenches. Comet is a 34 mm tower with six swept side fins; Moss is a 35 mm structure with paired exposed coolant pipes; Void rises to 37.7 mm beneath a vertical orbital halo. A single 16 mm operator faces all three and establishes scale.",
+    "interaction_story": "The trenches make the nodes read as one connected machine city; the operator turns the arrangement into a night-shift scene rather than three unrelated server blocks."
+  },
+  "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.",
+  "title": "Rackhaven: Night Shift",
+  "wish": {
+    "constraints": {
+      "audience": "grown-ups-14-plus",
+      "lane": "little-worlds"
+    },
+    "context": {
+      "inventor_id": "eve"
+    },
+    "objective": "I wish my three-node homelab\u2014Comet, Moss, and Void\u2014became a tiny orbital engine room with one night-shift operator.",
+    "product_id": "rackhaven-night-shift",
+    "schema_version": 1
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "entryKind": "assembly",
+  "generator": "showcase-real-cad-v1",
+  "parts": [
+    {
+      "name": "base",
+      "stlPath": "cad/parts/base.stl"
+    },
+    {
+      "name": "drive-axle",
+      "stlPath": "cad/parts/axle.stl"
+    },
+    {
+      "name": "orbit-axle",
+      "stlPath": "cad/parts/axle.stl"
+    },
+    {
+      "name": "comet-drive",
+      "stlPath": "cad/parts/comet-drive.stl"
+    },
+    {
+      "name": "six-slot-orbit",
+      "stlPath": "cad/parts/six-slot-orbit.stl"
+    }
+  ],
+  "primaryPose": "assembled",
+  "schemaVersion": 1
+}

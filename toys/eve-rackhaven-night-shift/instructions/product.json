@@ -1,0 +1,74 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "1415b6a61963e702044ca002d180ef8f485bad1410478d6043dd18a837d8315a",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "8ab4994d167d92652c8e3de213544a3b4d81753a8753d63d501c908e8c52e07d",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "29cc5fa75e479b94fb6e785102c8c43eee31dda642ae9f35313599c0ad952a6c",
+      "passed": true
+    },
+    "world-test": {
+      "claims": [
+        "The lane-specific AI players completed their exact-design checks without a blocking finding."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "world-test.json",
+      "evidence_sha256": "378941b06418050a8f546f0622e1dfaef7c18c8eff4af76d9c0a2098c141e7cc",
+      "passed": true
+    }
+  },
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
+  },
+  "how_to_use": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "instructions_kind": "instructions",
+  "kind": "workshop.instructions-facts",
+  "lane": "little-worlds",
+  "limitations": [
+    "AI agents review the named-node mapping against the provided references; the customer can correct likeness later through Reviews.",
+    "Fine details and handling durability are checked on the produced object during Deliver."
+  ],
+  "playtest_evidence_artifact_sha256": "e3f180c35323b9a6b223c33e75a97e576470f08c6c630b6ad3426c670fb31e22",
+  "product_artifact_sha256": "f4ca2fd32d794338351a7823b54a6b0d059de211b4c01f2f77a59f5722e1d429",
+  "schema_version": 2,
+  "status": "facts-ready",
+  "summary": "A personalized three-node homelab transformed into a cinematic orbital engine room.\n\nBy Eve.",
+  "title": "Rackhaven: Night Shift",
+  "what_arrives": [
+    "one engine-room deck",
+    "three named node structures",
+    "one night-shift operator"
+  ],
+  "wish": "I wish my three-node homelab—Comet, Moss, and Void—became a tiny orbital engine room with one night-shift operator."
+}

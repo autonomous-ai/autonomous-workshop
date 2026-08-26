@@ -1,0 +1,34 @@
+{
+  "schema": "autonomous-workshop.toy-project.v1",
+  "kind": "legacy-toy-project",
+  "toy_id": "leo-counterorbit",
+  "display_slug": "counterorbit",
+  "selected_inventor": "leo",
+  "codex": {
+    "working_directory": ".",
+    "manager": "root-codex-session",
+    "workflow_skill": ".agents/skills/autonomous-workshop/SKILL.md",
+    "eligible_inventor_agents": [
+      ".codex/agents/alice.toml",
+      ".codex/agents/bob.toml",
+      ".codex/agents/eve.toml",
+      ".codex/agents/ivy.toml",
+      ".codex/agents/leo.toml"
+    ],
+    "selected_inventor_subagent_skill": ".agents/skills/leo-inventor/SKILL.md"
+  },
+  "legacy_source": {
+    "commit": "db92e2b8f75262c9184455f794548909ce149748",
+    "path": "inventors/leo/toys/counterorbit",
+    "git_tree_sha1": "b36cd3d83cdef6dad560394e6013f1395f4416ea"
+  },
+  "migration": {
+    "status": "migrated-legacy-product",
+    "product_file_count": 39,
+    "product_bytes": 4229915,
+    "product_inventory_sha256": "5396202038e628a50fec4efdc8c5dc3e55dbc96fe406ce0006029fc7e182e5c3",
+    "exclusions_manifest": "../legacy-migration.json",
+    "native_codex_checkpoint": null,
+    "checkpoint_note": "This historical product predates the native Codex run host; no session id, stage checkpoint, or resumable host state was fabricated."
+  }
+}

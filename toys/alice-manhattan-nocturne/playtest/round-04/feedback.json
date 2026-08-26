@@ -1,0 +1,23 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "feedback": [
+    {
+      "area": "board readability",
+      "change": "Make the 32-square family immediately legible in every raw native-material acceptance view using an artifact-truthful printable contrast source. Implement the promised warm-brass material boundary as a reproducible layer-change or multi-material production plan, or revise the geometry so alternating relief remains obvious under ordinary top and oblique lighting. Do not rely on synthetic depth edges or proof-only lighting; rerender and repeat the blind first-read parity test.",
+      "code": "board-parity-not-immediate",
+      "evidence_refs": [
+        "sources/visual-player-audit.json"
+      ],
+      "finding": "The blind first-read AI Player can count the 8 by 8 grid only by deliberate tracing; alternating parity is not immediate. In the exact raw top acceptance render all 64 square centers share RGB 20,20,24, so the red channel has minimum 20, maximum 20, and population standard deviation 0.0. The exact geometry contains 32 raised pads, but tone-on-tone edge cues do not yet meet the player-readability bar.",
+      "invalidates": [
+        "playtest",
+        "instructions",
+        "deliver"
+      ],
+      "severity": "block"
+    }
+  ],
+  "overall_passed": false,
+  "round": 4,
+  "schema_version": 1
+}

@@ -1,0 +1,44 @@
+{
+  "assemblies": [],
+  "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "engine": {
+    "name": "replace-with-engine",
+    "version": "0.0.0-template"
+  },
+  "evidence_files": {},
+  "fits": [],
+  "motions": [],
+  "parts": [
+    {
+      "expected_shells": 1,
+      "expected_solids": 1,
+      "material": "replace-with-calibrated-material",
+      "name": "Replace me",
+      "part_id": "PART-01",
+      "print_orientation": [0, 0, 0],
+      "quantity": 1,
+      "source_path": "src/part.py",
+      "step_path": "step/part.step",
+      "stl_path": "stl/part.stl"
+    }
+  ],
+  "physical_claims": [
+    {
+      "claim_id": "physical-proof-required",
+      "critical": true,
+      "evidence_ref": null,
+      "evidence_sha256": null,
+      "statement": "Replace with the product-specific physical claim.",
+      "status": "held"
+    }
+  ],
+  "print_profile": {
+    "process": "FDM",
+    "profile_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "project_id": "replace-with-project-id",
+  "schema_version": 1,
+  "skill_versions": {
+    "product-to-cad": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

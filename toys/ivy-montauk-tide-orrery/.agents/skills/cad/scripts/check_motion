@@ -1,0 +1,500 @@
+#!/usr/bin/env python3
+"""Motion-path and assembly-order gate for a source-built assembly.
+
+`validate` says the solid is sound. `interfere` says nothing overlaps in the
+assembled pose. Neither says the parts can be *brought* to that pose; a rigid
+feature can still be impossible to insert into a closed slot.
+
+This runs a declared motion manifest against the assembly, sampling the path and
+testing each step with an exact boolean. Four checks:
+
+    linear_motion_collision     slide/insert/withdraw along a vector
+    rotation_motion_collision   hinge/fold/latch about an axis
+    clear_path_proxy            a pin, tool or finger of radius r reaches
+    assembly_sequence           an ordered list of the above, in order
+
+A condition says which answer it wants. `"expect": "clear"` (the default) is a
+motion that must be possible; `"expect": "blocked"` is a capture -- a dovetail
+that has to retain its tenon, a pin that must not back out. Without that second
+form the gate can only ask whether parts come apart, never whether they stay
+together, and a connector modelled as a plain boss in a plain pocket reads as a
+clean pass.
+
+Method ported from `evaluate-cad-reconstruction` in the panda-social-cc-agent
+repo, which samples the same paths against triangle meshes. The sampling and the
+manifest vocabulary carry over; the mesh collision does not. This repo is
+STEP-first, so a step tests `(moved & obstacle).volume` on the B-rep -- exact
+where the mesh version approximates, and there is no reason to take the weaker
+answer when the stronger one is already in the toolchain.
+
+    scripts/check_motion <project-dir> --manifest measure/motion.json
+    scripts/check_motion <project-dir> --manifest -        # from stdin
+    scripts/check_motion <project-dir> --manifest m.json --json
+
+Exit 0 when every condition passes, 1 on any failure, 2 on bad usage.
+See references/motion-manifests.md for the schema.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import importlib.util
+import io
+import json
+import sys
+from pathlib import Path
+
+SCRIPTS_DIR = Path(__file__).resolve().parent
+PACKAGES_DIR = SCRIPTS_DIR / "packages"
+CADPY_SRC_DIR = PACKAGES_DIR / "cadgen" / "src"
+for _runtime_path in (SCRIPTS_DIR, PACKAGES_DIR, CADPY_SRC_DIR):
+    _text = str(_runtime_path)
+    if _runtime_path.is_dir() and _text not in sys.path:
+        sys.path.insert(0, _text)
+
+ENTRY_SUFFIX = ".step.py"
+PART_PREFIX = "part_"
+GEN_FUNC = "gen_" + "step"
+
+DEFAULT_STEPS = 12
+DEFAULT_OVERLAP_TOL = 1e-3  # mm3; contact is not collision
+
+
+class ManifestError(Exception):
+    """The manifest asks for something this gate cannot answer."""
+
+
+# --- loading the assembly -------------------------------------------------
+
+def find_assembly_entry(project: Path, declared: str | None) -> Path:
+    if declared:
+        path = project / declared
+        if not path.is_file():
+            raise ManifestError(f"assembly entry {declared} not found in {project}")
+        return path
+    candidates = [
+        path for path in sorted(project.glob("*" + ENTRY_SUFFIX))
+        if not path.name.startswith(PART_PREFIX)
+    ]
+    if not candidates:
+        raise ManifestError(f"no combined <name>{ENTRY_SUFFIX} in {project}")
+    if len(candidates) > 1:
+        names = ", ".join(path.name for path in candidates)
+        raise ManifestError(f'{project} has several assembly entries ({names}); set "assembly"')
+    return candidates[0]
+
+
+def build_assembly(entry: Path):
+    """Import one entry generator with its project directory on sys.path."""
+    project = str(entry.parent)
+    inserted = project not in sys.path
+    if inserted:
+        sys.path.insert(0, project)
+    module_name = f"_checkmotion_{entry.name.replace('.', '_')}"
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, entry)
+        if spec is None or spec.loader is None:
+            raise ManifestError(f"cannot load {entry}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        sink = io.StringIO()
+        with contextlib.redirect_stdout(sink):
+            spec.loader.exec_module(module)
+            builder = getattr(module, GEN_FUNC, None)
+            if builder is None:
+                raise ManifestError(f"{entry.name} defines no {GEN_FUNC}()")
+            shape = builder()
+    finally:
+        if inserted:
+            with contextlib.suppress(ValueError):
+                sys.path.remove(project)
+    if shape is None:
+        raise ManifestError(f"{entry.name} {GEN_FUNC}() returned None")
+    return shape
+
+
+def index_parts(shape) -> dict[str, object]:
+    """Map every labelled leaf to its shape, in assembly pose.
+
+    These are placed instances, not canonical parts: a part_*.step.py returns
+    print pose, which is the wrong frame for asking whether two things collide
+    on the way together. Nested labels are also reachable by their dotted path,
+    so a repeated label stays addressable.
+    """
+    found: dict[str, list[object]] = {}
+
+    def walk(node, trail: list[str]) -> None:
+        label = getattr(node, "label", "") or ""
+        path = trail + ([label] if label else [])
+        if label and trail:
+            # Sub-assemblies are addressable too. A Compound's solids() reaches
+            # its descendants, so a whole fuselage section moves as one body --
+            # which is the granularity a motion check usually wants, well above
+            # the individual windows and doors underneath it.
+            found.setdefault(label, []).append(node)
+            found.setdefault(".".join(path), []).append(node)
+        for child in list(getattr(node, "children", []) or []):
+            walk(child, path)
+
+    walk(shape, [])
+    parts = {name: shapes[0] for name, shapes in found.items() if len(shapes) == 1}
+    parts["__ambiguous__"] = sorted(name for name, shapes in found.items() if len(shapes) > 1)
+    return parts
+
+
+# --- geometry -------------------------------------------------------------
+
+def solid_volume(shape) -> float:
+    """Compound.volume is 0 when the geometry hangs off children."""
+    if shape is None:
+        return 0.0
+    solids = shape.solids()
+    if not solids:
+        return 0.0
+    return float(sum(solid.volume for solid in solids))
+
+
+def boxes_apart(a, b) -> bool:
+    box_a, box_b = a.bounding_box(), b.bounding_box()
+    return (
+        box_a.min.X > box_b.max.X or box_a.max.X < box_b.min.X
+        or box_a.min.Y > box_b.max.Y or box_a.max.Y < box_b.min.Y
+        or box_a.min.Z > box_b.max.Z or box_a.max.Z < box_b.min.Z
+    )
+
+
+def overlap_volume(a, b) -> float:
+    """Exact intersection volume, with a bounding-box prefilter.
+
+    The prefilter is what makes a 12-step sweep against several obstacles cheap:
+    most steps of a real motion are nowhere near the obstacle, and a boolean is
+    far more expensive than six float comparisons.
+    """
+    if boxes_apart(a, b):
+        return 0.0
+    with contextlib.suppress(Exception):
+        return solid_volume(a & b)
+    return 0.0
+
+
+def vector3(value, field: str):
+    if not isinstance(value, (list, tuple)) or len(value) != 3:
+        raise ManifestError(f"{field} must be [x, y, z]")
+    try:
+        return tuple(float(component) for component in value)
+    except (TypeError, ValueError) as error:
+        raise ManifestError(f"{field} must be numeric: {error}") from error
+
+
+def resolve_parts(names, parts: dict, field: str) -> list[tuple[str, object]]:
+    if isinstance(names, str):
+        names = [names]
+    if not isinstance(names, list) or not names:
+        raise ManifestError(f"{field} must name at least one part")
+    ambiguous = parts.get("__ambiguous__", [])
+    resolved = []
+    for name in names:
+        if name in ambiguous:
+            options = [key for key in parts if key != "__ambiguous__" and key.endswith("." + name)]
+            raise ManifestError(
+                f'{field} "{name}" is ambiguous - several parts carry that label; '
+                f'use a dotted path such as {options[0] if options else "<parent>." + name}'
+            )
+        if name not in parts or name == "__ambiguous__":
+            near = [key for key in sorted(parts)
+                    if key != "__ambiguous__" and name.lower() in key.lower()][:6]
+            hint = f"did you mean: {', '.join(near)}" if near else "run --list-parts"
+            raise ManifestError(f'{field} "{name}" is not a labelled part; {hint}')
+        resolved.append((name, parts[name]))
+    return resolved
+
+
+def sweep(moving, obstacles, place, steps: int, tol: float, allow_seated: bool) -> dict:
+    """Move `moving` through `steps` samples, reporting the first collision.
+
+    `allow_seated` skips step 0. An installed insert legitimately touches what
+    it is installed in, so testing the seated pose measures the design intent,
+    not the path -- that is what `interfere` is for.
+    """
+    first = 1 if allow_seated else 0
+    for step in range(first, steps + 1):
+        moved = place(moving, step / steps)
+        for name, obstacle in obstacles:
+            volume = overlap_volume(moved, obstacle)
+            if volume > tol:
+                return {
+                    "clear": False,
+                    "step": step,
+                    "steps": steps,
+                    "obstacle": name,
+                    "overlapMm3": round(volume, 6),
+                }
+    return {"clear": True, "steps": steps, "skippedSeatedStep": allow_seated}
+
+
+# --- the checks -----------------------------------------------------------
+
+def check_linear(inputs: dict, thresholds: dict, parts: dict) -> dict:
+    from build123d import Vector
+
+    moving_name = inputs.get("moving_part")
+    if not moving_name:
+        raise ManifestError("linear_motion_collision requires moving_part")
+    moving = resolve_parts(moving_name, parts, "moving_part")[0][1]
+    obstacles = resolve_parts(inputs.get("obstacle_parts"), parts, "obstacle_parts")
+    translation = Vector(*vector3(inputs.get("translation"), "translation"))
+    steps = int(inputs.get("steps", DEFAULT_STEPS))
+    if steps < 1:
+        raise ManifestError("steps must be >= 1")
+    tol = float(thresholds.get("maxOverlapMm3", DEFAULT_OVERLAP_TOL))
+
+    def place(shape, fraction: float):
+        return shape.translate(translation * fraction)
+
+    result = sweep(moving, obstacles, place, steps, tol,
+                   bool(inputs.get("allow_seated_contact", False)))
+    result["translation"] = list(vector3(inputs.get("translation"), "translation"))
+    return result
+
+
+def check_rotation(inputs: dict, thresholds: dict, parts: dict) -> dict:
+    from build123d import Axis, Vector
+
+    moving_name = inputs.get("moving_part")
+    if not moving_name:
+        raise ManifestError("rotation_motion_collision requires moving_part")
+    moving = resolve_parts(moving_name, parts, "moving_part")[0][1]
+    obstacles = resolve_parts(inputs.get("obstacle_parts"), parts, "obstacle_parts")
+    point = vector3(inputs.get("axis_point"), "axis_point")
+    direction = vector3(inputs.get("axis_direction"), "axis_direction")
+    if not any(direction):
+        raise ManifestError("axis_direction must not be the zero vector")
+    axis = Axis(Vector(*point), Vector(*direction))
+    start = float(inputs.get("start_deg", 0.0))
+    end = float(inputs.get("end_deg", 0.0))
+    steps = int(inputs.get("steps", DEFAULT_STEPS))
+    if steps < 1:
+        raise ManifestError("steps must be >= 1")
+    tol = float(thresholds.get("maxOverlapMm3", DEFAULT_OVERLAP_TOL))
+
+    def place(shape, fraction: float):
+        return shape.rotate(axis, start + (end - start) * fraction)
+
+    result = sweep(moving, obstacles, place, steps, tol,
+                   bool(inputs.get("allow_seated_contact", False)))
+    result["arcDeg"] = [start, end]
+    if not result["clear"]:
+        result["angleDeg"] = round(start + (end - start) * result["step"] / steps, 4)
+    return result
+
+
+def check_clear_path(inputs: dict, thresholds: dict, parts: dict) -> dict:
+    from build123d import Plane, Solid, Vector
+
+    start = Vector(*vector3(inputs.get("start"), "start"))
+    end = Vector(*vector3(inputs.get("end"), "end"))
+    radius = float(inputs.get("radius", 0.0))
+    if radius <= 0:
+        raise ManifestError("clear_path_proxy requires a positive radius")
+    direction = end - start
+    if direction.length == 0:
+        raise ManifestError("clear_path_proxy start and end must differ")
+    obstacles = resolve_parts(inputs.get("obstacle_parts"), parts, "obstacle_parts")
+    tol = float(thresholds.get("maxOverlapMm3", DEFAULT_OVERLAP_TOL))
+
+    probe = Solid.make_cylinder(radius, direction.length, Plane(origin=start, z_dir=direction))
+    blocked = []
+    for name, obstacle in obstacles:
+        volume = overlap_volume(probe, obstacle)
+        if volume > tol:
+            blocked.append({"obstacle": name, "overlapMm3": round(volume, 6)})
+    return {
+        "clear": not blocked,
+        "radius": radius,
+        "length": round(direction.length, 4),
+        "blockedBy": blocked,
+    }
+
+
+CHECKS = {
+    "linear_motion_collision": check_linear,
+    "rotation_motion_collision": check_rotation,
+    "clear_path_proxy": check_clear_path,
+}
+
+
+def run_condition(condition: dict, parts: dict, index: int) -> dict:
+    name = condition.get("check")
+    ident = condition.get("id", f"condition_{index}")
+    record = {
+        "id": ident,
+        "check": name,
+        "description": condition.get("description", ""),
+    }
+    inputs = condition.get("inputs", {}) or {}
+    thresholds = condition.get("thresholds", {}) or {}
+
+    if name == "assembly_sequence":
+        steps = inputs.get("steps")
+        if not isinstance(steps, list) or not steps:
+            record.update(status="inconclusive",
+                          detail="assembly_sequence requires a non-empty steps list")
+            return record
+        results = []
+        for position, step in enumerate(steps):
+            if not isinstance(step, dict):
+                record.update(status="inconclusive",
+                              detail=f"assembly_sequence step {position} must be an object")
+                return record
+            step.setdefault("id", f"{ident}.{position}")
+            results.append(run_condition(step, parts, position))
+        record["stepResults"] = results
+        failed = [r["id"] for r in results if r["status"] == "fail"]
+        unclear = [r["id"] for r in results if r["status"] == "inconclusive"]
+        if failed:
+            record.update(status="fail",
+                          detail=f"order breaks at {failed[0]} ({len(failed)} failing step(s))")
+        elif unclear:
+            record.update(status="inconclusive", detail=f"inconclusive at {', '.join(unclear)}")
+        else:
+            record.update(status="pass", detail=f"{len(results)} steps in order, all clear")
+        return record
+
+    handler = CHECKS.get(name)
+    if handler is None:
+        known = ", ".join(sorted([*CHECKS, "assembly_sequence"]))
+        record.update(status="inconclusive", detail=f"unknown check {name!r}; known: {known}")
+        return record
+
+    try:
+        outcome = handler(inputs, thresholds, parts)
+    except ManifestError as error:
+        record.update(status="inconclusive", detail=str(error))
+        return record
+    except Exception as error:  # a boolean can fail on degenerate input
+        record.update(status="inconclusive", detail=f"{type(error).__name__}: {error}")
+        return record
+
+    record.update(outcome)
+    expect = condition.get("expect", "clear")
+    if expect not in ("clear", "blocked"):
+        record.update(status="inconclusive", detail=f'expect must be "clear" or "blocked"')
+        return record
+    record["expect"] = expect
+
+    clear = bool(outcome.get("clear"))
+    if clear:
+        moved = (f"clear across {outcome['steps']} steps" if "steps" in outcome
+                 else "path is clear")
+    elif "step" in outcome:
+        moved = (f"blocked by {outcome['obstacle']} at step "
+                 f"{outcome['step']}/{outcome['steps']} ({outcome['overlapMm3']} mm3)")
+    else:
+        names = ", ".join(entry["obstacle"] for entry in outcome.get("blockedBy", []))
+        moved = f"blocked by {names}"
+
+    if clear == (expect == "clear"):
+        record["status"] = "pass"
+        record["detail"] = moved if expect == "clear" else f"{moved} - retained, as expected"
+    else:
+        record["status"] = "fail"
+        record["detail"] = (
+            moved if expect == "clear"
+            else f"{moved} - expected this to be blocked, but the part is free to leave"
+        )
+    return record
+
+
+def load_manifest(source: str) -> dict:
+    text = sys.stdin.read() if source == "-" else Path(source).read_text(encoding="utf-8")
+    try:
+        manifest = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ManifestError(f"manifest is not valid JSON: {error}") from error
+    if not isinstance(manifest, dict):
+        raise ManifestError("manifest must be a JSON object")
+    return manifest
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("project", help="project directory holding the assembly entry")
+    parser.add_argument("--manifest", required=True, help="motion manifest JSON, or - for stdin")
+    parser.add_argument("--list-parts", action="store_true",
+                        help="print the labelled parts and exit")
+    parser.add_argument("--allow-inconclusive", action="store_true",
+                        help="do not fail on conditions that could not run")
+    parser.add_argument("--json", action="store_true", help="emit results as JSON")
+    args = parser.parse_args()
+
+    project = Path(args.project).resolve()
+    if not project.is_dir():
+        print(f"check_motion: {project} is not a directory", file=sys.stderr)
+        return 2
+
+    try:
+        manifest = load_manifest(args.manifest)
+        entry = find_assembly_entry(project, manifest.get("assembly"))
+        parts = index_parts(build_assembly(entry))
+    except ManifestError as error:
+        print(f"check_motion: {error}", file=sys.stderr)
+        return 2
+
+    if args.list_parts:
+        for name in sorted(parts):
+            if name == "__ambiguous__":
+                continue
+            print(f"{name}  (ambiguous)" if name in parts["__ambiguous__"] else name)
+        for name in parts["__ambiguous__"]:
+            print(f"{name}  (ambiguous - use its dotted path)")
+        return 0
+
+    conditions = manifest.get("conditions", [])
+    if not isinstance(conditions, list) or not conditions:
+        print("check_motion: manifest has no conditions", file=sys.stderr)
+        return 2
+
+    results = [run_condition(condition, parts, index)
+               for index, condition in enumerate(conditions)]
+    failed = [r for r in results if r["status"] == "fail"]
+    unclear = [r for r in results if r["status"] == "inconclusive"]
+
+    if args.json:
+        print(json.dumps({
+            "ok": not failed and (args.allow_inconclusive or not unclear),
+            "project": str(project),
+            "assembly": entry.name,
+            "results": results,
+        }, indent=2))
+        return 0 if not failed and (args.allow_inconclusive or not unclear) else 1
+
+    labelled = len([name for name in parts if name != "__ambiguous__"])
+    print(f"{entry.name}: {labelled} labelled parts, {len(results)} condition(s)\n")
+    for result in results:
+        badge = {"pass": "ok  ", "fail": "FAIL", "inconclusive": "??  "}[result["status"]]
+        print(f"  {badge} {result['id']} [{result['check']}] {result['detail']}")
+        if result.get("description"):
+            print(f"         {result['description']}")
+        for step in result.get("stepResults", []):
+            inner = {"pass": "ok  ", "fail": "FAIL", "inconclusive": "??  "}[step["status"]]
+            print(f"         {inner} {step['id']} {step['detail']}")
+
+    if failed:
+        print(f"\ncheck_motion: {len(failed)} condition(s) failed", file=sys.stderr)
+        return 1
+    if unclear:
+        # An inconclusive condition is a manifest that did not run, not a path
+        # that was found clear. Exiting 0 on it is the quiet pass this gate
+        # exists to remove. --allow-inconclusive is for the genuinely
+        # unmeasurable, and says so out loud either way.
+        print(f"\ncheck_motion: {len(unclear)} condition(s) never ran "
+              f"({len(results) - len(unclear)} clear)",
+              file=sys.stderr if not args.allow_inconclusive else sys.stdout)
+        return 0 if args.allow_inconclusive else 1
+    print(f"\ncheck_motion: ok - {len(results)} condition(s) clear")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

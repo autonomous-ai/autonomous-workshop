@@ -1,0 +1,74 @@
+{
+  "audience": "grown-ups, 14 and up",
+  "claims": {
+    "agent-playtest": {
+      "claims": [
+        "Four independent AI-player roles found the Wish structural in the exact design and found no generic-decoration substitution."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "agent-playtest.json",
+      "evidence_sha256": "0e9edd5ccf61fce4d9b2299b75166aa760e9985dbc5bfcca7728539f81b25f31",
+      "passed": true
+    },
+    "classic-rules-test": {
+      "claims": [
+        "The lane-specific AI players completed their exact-design checks without a blocking finding."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "classic-rules-test.json",
+      "evidence_sha256": "3856a12ac068a78f7256d1a40c631ecdb187db5a5705dedd9f43a8a189c34afa",
+      "passed": true
+    },
+    "mechanical-test": {
+      "claims": [
+        "The AI mechanical panel found no blocking digital geometry or assembly-envelope contradiction in this revision."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "mechanical-test.json",
+      "evidence_sha256": "679a0e5eb9c09a16ab7ce7aa6343c8e128cd3a1abc91153983c1c2dc4c155a1b",
+      "passed": true
+    },
+    "print-test": {
+      "claims": [
+        "The AI print panel found every exported part watertight and inside the declared bed envelope; this is simulation, not a physical print claim."
+      ],
+      "evaluator": "showcase-digital-playtest-v1",
+      "evaluator_version": "1.0.0",
+      "evidence_class": "ai-simulation",
+      "evidence_ref": "print-test.json",
+      "evidence_sha256": "22998c9753e3998438f65245642d6dc3975d545aa9cccf6e3d7ae2a5acd2b80f",
+      "passed": true
+    }
+  },
+  "factory_enrichment": {
+    "copy_owner": "factory",
+    "media_owner": "factory",
+    "status": "pending"
+  },
+  "how_to_play": "Set the parts on a stable surface, follow the intended interaction shown in the play view, and keep the included limitations in mind.",
+  "instructions_kind": "rulebook",
+  "kind": "workshop.instructions-facts",
+  "lane": "classics-made-yours",
+  "limitations": [
+    "AI players checked the known rules and role readability; customer experience will arrive later as Reviews.",
+    "The exact physical set is produced and checked during Deliver, not Playtest."
+  ],
+  "playtest_evidence_artifact_sha256": "4a2a3a63e6bd4572dbeff3df46510f5c6ce363bf2f38aaec55a25cfa322c9d74",
+  "product_artifact_sha256": "d5ec037d9b8407150dffaf55664c561370a17b5a3ac3ed64b462c83a0b1b5fb9",
+  "schema_version": 2,
+  "status": "facts-ready",
+  "summary": "A known checkers game made into an architectural portrait of the Workshop's five jobs.\n\nBy Alice.",
+  "title": "Five-Job Checkers",
+  "what_arrives": [
+    "one checkers board",
+    "twelve five-ring pieces",
+    "twelve five-spoke pieces"
+  ],
+  "wish": "I wish our five-job Workshop became a checkers set for late-night design reviews—black and warm gold, architectural rather than cute."
+}

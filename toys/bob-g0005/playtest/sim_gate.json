@@ -1,0 +1,9 @@
+{
+  "all_pass": true,
+  "degeneracy_pass": true,
+  "failed_verdicts": [],
+  "idea_sha": "20b9993488f8caa4a502b13d2489dbe1afac075586f20af136967779851bd724",
+  "integrity_pass": true,
+  "n_games": 1000,
+  "seed": 0
+}

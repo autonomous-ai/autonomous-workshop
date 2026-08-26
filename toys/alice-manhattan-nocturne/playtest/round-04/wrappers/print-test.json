@@ -1,0 +1,24 @@
+{
+  "artifact_sha256": "0309de0e3866126decc94c3c911368fafa1dbc6aa1bd92d947b5b7a1e94c64e6",
+  "config_sha256": "e1c4e670024c95bb623d58d4f3a153fc968cbb6fea1dc8c746ec5678829748eb",
+  "evaluator": "alice.manhattan-nocturne.ai-players",
+  "evaluator_version": "4.0.0",
+  "evidence": {
+    "agent_roles": [
+      "print breaker",
+      "adversarial evidence auditor"
+    ],
+    "evidence_class": "ai-simulation",
+    "mesh_passed": 13,
+    "physical_print": false,
+    "result_file_sha256": "ddd79c091f513866af5b3105b7b9da0a05093c9664275ddb06b4b2838ee75762",
+    "slicer_backed": true,
+    "thickness_passed": 13,
+    "warning": "[error] Invalid T command (T65535)."
+  },
+  "evidence_ref": "results/print-test.json",
+  "evidence_sha256": "ddd79c091f513866af5b3105b7b9da0a05093c9664275ddb06b4b2838ee75762",
+  "inspection_id": "print-test",
+  "observed_at": "2026-08-24T11:55:42+00:00",
+  "passed": true
+}
