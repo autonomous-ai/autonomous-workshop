@@ -85,8 +85,8 @@ class PublicationAuthorityTest(unittest.TestCase):
                     % (path.relative_to(ROOT), node.lineno),
                 )
 
-    def test_store_schema_cannot_persist_new_page_mutations(self):
-        source = (ROOT / "src" / "workshop" / "runtime" / "store.py").read_text(
+    def test_effect_ledger_cannot_persist_page_mutations(self):
+        source = (ROOT / "src" / "workshop" / "runtime" / "effects.py").read_text(
             encoding="utf-8"
         ).casefold()
         for statement in (
@@ -96,6 +96,16 @@ class PublicationAuthorityTest(unittest.TestCase):
             "delete from shop_effects",
         ):
             self.assertNotIn(statement, source)
+
+    def test_retired_shop_modules_and_vocabulary_are_absent(self):
+        self.assertFalse((ROOT / "src/workshop/integrations/shop.py").exists())
+        self.assertFalse((ROOT / "src/workshop/integrations/factory_agent.py").exists())
+        self.assertFalse((ROOT / "src/workshop/runtime/store.py").exists())
+        production = "\n".join(
+            path.read_text(encoding="utf-8") for path in production_python()
+        )
+        for name in ("ShopDoor", "ShopReleaseWriter", "InventorStore", "Launchpad"):
+            self.assertNotIn(name, production)
 
 
 if __name__ == "__main__":

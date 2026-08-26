@@ -1,0 +1,566 @@
+import hashlib
+import io
+import json
+import tempfile
+import unittest
+import zipfile
+from email.parser import BytesParser
+from email.policy import default as email_policy
+from pathlib import Path
+
+from workshop.artifacts import build_artifact_manifest
+from workshop.errors import AmbiguousEffectError, ContractError, EffectError
+from workshop.integrations.factory import (
+    DEFAULT_FACTORY_API,
+    FACTORY_USER_AGENT,
+    FactoryAgentCredentials,
+    FactoryAgentSession,
+    FactoryClient,
+    FactoryCredentialRejected,
+    FactoryPublicTransition,
+    FactoryReleaseWriter,
+    HttpResponse,
+    factory_credentials_from_environment,
+)
+from workshop.make.contracts import Made
+from workshop.runtime import EffectLedger, Receipt
+from workshop.wish import Wish
+
+
+OBSERVED = "2026-08-26T00:00:00+00:00"
+TETRA_STL = b"""solid workshop
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 1 0
+      vertex 1 0 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 1 0 0
+      vertex 0 0 1
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 0
+      vertex 0 0 1
+      vertex 0 1 0
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 1 0 0
+      vertex 0 1 0
+      vertex 0 0 1
+    endloop
+  endfacet
+endsolid workshop
+"""
+
+
+def login_response(number=1):
+    return HttpResponse(
+        200,
+        {"Content-Type": "application/json"},
+        json.dumps(
+            {
+                "access_token": "test-access-%d" % number,
+                "token_type": "Bearer",
+                "expires_in": 31_536_000,
+                "user": {"id": "owner-alice", "username": "alice"},
+            }
+        ).encode(),
+    )
+
+
+def multipart_parts(headers, body):
+    message = BytesParser(policy=email_policy).parsebytes(
+        ("Content-Type: %s\r\nMIME-Version: 1.0\r\n\r\n" % headers["Content-Type"]).encode()
+        + body
+    )
+    values = {}
+    for part in message.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        values.setdefault(name, []).append(part.get_payload(decode=True))
+    return values
+
+
+class ScriptedSessionTransport:
+    def __init__(self, protected_statuses=(200,)):
+        self.protected_statuses = list(protected_statuses)
+        self.calls = []
+        self.logins = 0
+
+    def __call__(self, method, url, headers, body, timeout):
+        self.calls.append((method, url, dict(headers), body, timeout))
+        if url.endswith("/auth/agent/login"):
+            self.logins += 1
+            return login_response(self.logins)
+        return HttpResponse(self.protected_statuses.pop(0), {}, b"{}")
+
+
+class FactorySessionTest(unittest.TestCase):
+    def test_credentials_are_exact_and_redacted(self):
+        credentials = factory_credentials_from_environment(
+            "alice",
+            {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+        )
+        self.assertEqual(credentials.username, "alice")
+        self.assertNotIn("alice", repr(credentials))
+        self.assertNotIn("test-secret", repr(credentials))
+        with self.assertRaisesRegex(ContractError, "configured together"):
+            factory_credentials_from_environment("alice", {"FACTORY_USERNAME": "alice"})
+        with self.assertRaisesRegex(ContractError, "exactly match"):
+            factory_credentials_from_environment(
+                "bob",
+                {"FACTORY_USERNAME": "alice", "FACTORY_PASSWORD": "test-secret"},
+            )
+
+    def test_bearer_is_memory_only_cached_and_same_origin(self):
+        transport = ScriptedSessionTransport((200, 200))
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"), transport=transport
+        )
+        for _ in range(2):
+            session.authenticated_transport(
+                "GET", DEFAULT_FACTORY_API + "/designs/example", {}, None, 30
+            )
+        self.assertEqual(transport.logins, 1)
+        self.assertNotIn("Authorization", transport.calls[0][2])
+        for call in transport.calls[1:]:
+            self.assertEqual(call[2]["Authorization"], "Bearer test-access-1")
+            self.assertNotIn(b"test-secret", call[3] or b"")
+        with self.assertRaisesRegex(ContractError, "another origin"):
+            session.authenticated_transport(
+                "GET", "https://example.com/api/v1/designs/example", {}, None, 30
+            )
+
+    def test_one_401_refreshes_once_and_login_rejection_is_redacted(self):
+        transport = ScriptedSessionTransport((401, 200))
+        session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"), transport=transport
+        )
+        self.assertEqual(
+            session.authenticated_transport(
+                "POST", DEFAULT_FACTORY_API + "/designs/import", {}, b"exact", 30
+            ).status,
+            200,
+        )
+        self.assertEqual(transport.logins, 2)
+
+        def rejected(method, url, headers, body, timeout):
+            return HttpResponse(401, {}, b'{"error":"provider-secret"}')
+
+        rejected_session = FactoryAgentSession(
+            FactoryAgentCredentials("alice", "test-secret"), transport=rejected
+        )
+        with self.assertRaises(FactoryCredentialRejected) as raised:
+            rejected_session.login()
+        self.assertNotIn("test-secret", str(raised.exception))
+        self.assertNotIn("provider-secret", str(raised.exception))
+
+
+class ReleaseContext:
+    def __init__(self, made, product_id="verified-toy"):
+        self.made = made
+        self.wish = Wish.create(product_id, "A toy with a verified Factory page")
+        self.taste = type("TasteName", (), {"name": "Alice"})()
+
+    def assert_current(self):
+        self.made.assert_current()
+
+
+class FactoryTransport:
+    def __init__(
+        self, product_id="verified-toy", *, fail_get=False, import_status=201
+    ):
+        self.product_id = product_id
+        self.fail_get = fail_get
+        self.import_status = import_status
+        self.public = False
+        self.calls = []
+        self.imports = 0
+
+    def design(self):
+        return {
+            "id": "design-1",
+            "slug": self.product_id,
+            "owner_id": "owner-alice",
+            "root_id": "design-1",
+            "current_history_id": "history-1",
+            "published_history_id": "history-1" if self.public else None,
+            "status": "public" if self.public else "draft",
+            "project_url": "https://cdn.autonomous.ai/projects/history-1/",
+            "origin": "import",
+            "tags": ["toy", "classics-made-yours"],
+            "category": {"slug": "toys"},
+            "author": {"id": "owner-alice"},
+            "thumbnail_urls": ["https://cdn.example/cover.png"],
+            "listing": (
+                {
+                    "active": True,
+                    "price_cents": 2400,
+                    "currency": "usd",
+                    "sku": "TOY-001",
+                }
+                if self.public
+                else None
+            ),
+        }
+
+    def __call__(self, method, url, headers, body, timeout):
+        self.calls.append((method, url, dict(headers), body, timeout))
+        if url.endswith("/auth/agent/login"):
+            return login_response()
+        if url.endswith("/designs/import"):
+            self.imports += 1
+            if self.import_status != 201:
+                return HttpResponse(
+                    self.import_status, {}, b'{"error":"request rejected"}'
+                )
+            return HttpResponse(201, {}, json.dumps(self.design()).encode())
+        if method == "GET" and "/designs/" in url:
+            if self.fail_get:
+                raise RuntimeError("readback unavailable")
+            return HttpResponse(200, {}, json.dumps(self.design()).encode())
+        if method == "POST" and url.endswith("/publish"):
+            self.public = True
+            return HttpResponse(200, {}, b"{}")
+        raise AssertionError("unexpected Factory call %s %s" % (method, url))
+
+
+class FactoryReleaseTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        product = self.root / "product"
+        product.mkdir()
+        (product / "project.json").write_text(
+            '{"id":"verified-toy","name":"Verified Toy"}\n', encoding="utf-8"
+        )
+        (product / "assembled.step").write_bytes(b"exact STEP bytes")
+        (product / "assembled.stl").write_bytes(b"solid verified\nendsolid verified\n")
+        (product / "main.py").write_text(
+            "def gen_step():\n    raise RuntimeError('must not execute')\n",
+            encoding="utf-8",
+        )
+        (product / "unrelated.py").write_text(
+            "raise RuntimeError('must not upload')\n", encoding="utf-8"
+        )
+        (product / "page.json").write_text(
+            '{"title":"creator copy"}\n', encoding="utf-8"
+        )
+        (product / "review.json").write_text(
+            '{"verdict":"creator review"}\n', encoding="utf-8"
+        )
+        (product / "marketing-copy.md").write_text(
+            "# Creator marketing copy\n", encoding="utf-8"
+        )
+        for name in ("review", "renders", "product-media"):
+            folder = product / name
+            folder.mkdir()
+            (folder / "local.png").write_bytes((name + " bytes").encode())
+        made_product = {
+            "title": "Verified Toy",
+            "summary": "A small exact toy.",
+            "description": "A small exact toy. By Alice.",
+            "lane": "classics-made-yours",
+            "components": ["one puzzle", "one rule card"],
+            "instructions": "Turn it.",
+            "rules": {"goal": "align the star"},
+            "limitations": ["digital Playtest only"],
+        }
+        (product / "product.json").write_text(
+            json.dumps(made_product, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        self.made = Made.from_root(product, made_product)
+        self.context = ReleaseContext(self.made)
+        self.release = self.root / "release"
+        self.release.mkdir()
+        (self.release / "MANUAL.md").write_text("# Verified Toy\n\nTurn it.\n")
+        self.playtest_sha256 = "e" * 64
+        (self.release / "product.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 2,
+                    "kind": "workshop.release-package",
+                    "status": "facts-ready",
+                    "title": "Verified Toy",
+                    "summary": "An exact toy page.",
+                    "lane": "classics-made-yours",
+                    "factory_enrichment": {
+                        "copy_owner": "factory",
+                        "media_owner": "factory",
+                        "status": "pending",
+                    },
+                    "product_artifact_sha256": self.made.artifact_sha256,
+                    "playtest_evidence_artifact_sha256": self.playtest_sha256,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        self.ledger = EffectLedger(self.root / "state" / "factory-effects.sqlite3")
+
+    def writer(self, transport):
+        return FactoryReleaseWriter(
+            self.ledger,
+            "alice",
+            FactoryAgentCredentials("alice", "test-secret"),
+            transport=transport,
+        )
+
+    def test_private_import_is_model_only_hash_bound_and_idempotent(self):
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(receipt.adapter, "factory")
+        self.assertEqual(receipt.details["release_sha256"], self.manifest.artifact_sha256)
+        self.assertEqual(receipt.details["playtest_evidence_sha256"], self.playtest_sha256)
+        self.assertEqual(receipt.details["page_url"], "https://www.autonomous.ai/factory/product/verified-toy")
+        self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
+        self.assertRegex(receipt.details["effect_request_sha256"], r"^[0-9a-f]{64}$")
+        import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
+        self.assertEqual(import_call[2]["User-Agent"], FACTORY_USER_AGENT)
+        self.assertRegex(import_call[2]["Idempotency-Key"], r"^autonomous-workshop-[0-9a-f]{64}$")
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("assembled.stl", names)
+            self.assertIn("workshop-product-facts.json", names)
+            self.assertNotIn("main.py", names)
+            self.assertNotIn("page.json", names)
+            self.assertNotIn("review.json", names)
+            self.assertNotIn("marketing-copy.md", names)
+            self.assertFalse(any(name.endswith(".png") for name in names))
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+        replay = self.writer(transport)(self.context, self.release, self.manifest)
+        self.assertEqual(replay, receipt)
+        self.assertEqual(transport.imports, 1)
+
+    def test_generator_primary_is_included_but_creator_outputs_are_not(self):
+        product = self.made.artifact_root
+        (product / "assembled.stl").unlink()
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_facts_path = self.release / "product.json"
+        release_facts = json.loads(release_facts_path.read_text(encoding="utf-8"))
+        release_facts["product_artifact_sha256"] = self.made.artifact_sha256
+        release_facts_path.write_text(
+            json.dumps(release_facts, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertIn("main.py", names)
+            self.assertIn("assembled.step", names)
+            self.assertNotIn("unrelated.py", names)
+            self.assertNotIn("page.json", names)
+            self.assertNotIn("review.json", names)
+            self.assertNotIn("marketing-copy.md", names)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(
+                facts["primary_model"],
+                {
+                    "kind": "generator",
+                    "path": "main.py",
+                    "sha256": hashlib.sha256(archive.read("main.py")).hexdigest(),
+                },
+            )
+
+    def test_client_rejects_unrecognized_creator_output_in_model_archive(self):
+        primary = b"solid exact\nendsolid exact\n"
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("assembled.stl", primary)
+            archive.writestr(
+                "workshop-product-facts.json",
+                json.dumps(
+                    {
+                        "primary_model": {
+                            "kind": "mesh",
+                            "path": "assembled.stl",
+                            "sha256": hashlib.sha256(primary).hexdigest(),
+                        }
+                    }
+                ),
+            )
+            archive.writestr("page.json", '{"title":"must not cross"}')
+            archive.writestr("unrelated.py", "raise RuntimeError('must not cross')")
+
+        def must_not_send(method, url, headers, body, timeout):
+            raise AssertionError("invalid model archive reached the transport")
+
+        client = FactoryClient(must_not_send)
+        with self.assertRaisesRegex(ContractError, "non-model output: page.json"):
+            client.import_model(
+                filename="model-handoff.zip",
+                content=buffer.getvalue(),
+                metadata={},
+                idempotency_key="test-key",
+            )
+
+    def test_multipart_import_preserves_safe_underscore_occurrence_names(self):
+        product = self.made.artifact_root
+        (product / "assembled.stl").write_bytes(TETRA_STL)
+        (product / "stone_rook_a1.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step.json").write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "stone_rook_a1", "stlPath": "stone_rook_a1.stl"}
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        self.made = Made.from_root(product, self.made.product)
+        self.context = ReleaseContext(self.made)
+        release_facts_path = self.release / "product.json"
+        release_facts = json.loads(release_facts_path.read_text(encoding="utf-8"))
+        release_facts["product_artifact_sha256"] = self.made.artifact_sha256
+        release_facts_path.write_text(
+            json.dumps(release_facts, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            occurrence_path = "verified-toy_parts/stone_rook_a1.stl"
+            self.assertIn(occurrence_path, names)
+            sidecar = json.loads(archive.read("verified-toy.step.json"))
+            self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
+            self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
+
+    def test_unknown_import_recovers_by_get_without_resending(self):
+        failed = FactoryTransport(fail_get=True)
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(failed)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "unknown")
+        self.assertIsNotNone(intent.response)
+
+        recovery = FactoryTransport()
+        receipt = self.writer(recovery)(self.context, self.release, self.manifest)
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(recovery.imports, 0)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
+
+    def test_proven_no_effect_rejection_can_retry_after_host_correction(self):
+        rejected = FactoryTransport(import_status=422)
+        with self.assertRaises(EffectError):
+            self.writer(rejected)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-import")
+        self.assertEqual(intent.state, "rejected")
+
+        corrected = FactoryTransport()
+        receipt = self.writer(corrected)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(corrected.imports, 1)
+        self.assertEqual(
+            self.ledger.get(intent.intent_id).state,
+            "succeeded",
+        )
+
+
+def draft_receipt():
+    return Receipt(
+        payload_sha256="f" * 64,
+        artifact_sha256="a" * 64,
+        adapter="factory",
+        status="draft",
+        observed_at=OBSERVED,
+        reference="design-1",
+        details={
+            "product_id": "verified-toy",
+            "release_sha256": "b" * 64,
+            "playtest_evidence_sha256": "c" * 64,
+            "handoff_artifact_sha256": "d" * 64,
+            "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
+        },
+        design_id="design-1",
+        slug="verified-toy",
+        owner_id="owner-alice",
+        root_id="design-1",
+        current_history_id="history-1",
+        project_url="https://cdn.autonomous.ai/projects/history-1/",
+    )
+
+
+class FactoryPublicTransitionTest(unittest.TestCase):
+    def test_explicit_transition_is_fenced_then_proven_by_get(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport()
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+            receipt = FactoryPublicTransition(ledger, session).publish(draft_receipt())
+        self.assertTrue(receipt.is_verified_public)
+        publish = [call for call in transport.calls if call[1].endswith("/publish")]
+        self.assertEqual(len(publish), 1)
+        self.assertIsNone(publish[0][3])
+        self.assertIn("Idempotency-Key", publish[0][2])
+
+    def test_unknown_publication_never_blindly_retries(self):
+        class UnknownPublish(FactoryTransport):
+            def __call__(self, method, url, headers, body, timeout):
+                if method == "POST" and url.endswith("/publish"):
+                    self.calls.append((method, url, dict(headers), body, timeout))
+                    raise RuntimeError("connection lost")
+                return super().__call__(method, url, headers, body, timeout)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = UnknownPublish()
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+            transition = FactoryPublicTransition(ledger, session)
+            with self.assertRaises(AmbiguousEffectError):
+                transition.publish(draft_receipt())
+            with self.assertRaises(AmbiguousEffectError):
+                transition.publish(draft_receipt())
+        self.assertEqual(
+            len([call for call in transport.calls if call[1].endswith("/publish")]),
+            1,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

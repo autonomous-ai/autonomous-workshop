@@ -40,3 +40,40 @@ __cadgen__/
 # macOS
 .DS_Store
 .venv-cad/
+
+# Historical toy projects intentionally preserve exact generated CAD views.
+# Runtime-created toy projects are private by default. Only the reviewed
+# historical migrations below are allowlisted for source control.
+/toys/*
+!/toys/README.md
+!/toys/legacy-migration.json
+!/toys/alice-blindcap-duel/
+!/toys/alice-blindcap-duel/**
+!/toys/alice-cone-nine/
+!/toys/alice-cone-nine/**
+!/toys/alice-five-job-checkers/
+!/toys/alice-five-job-checkers/**
+!/toys/alice-manhattan-nocturne/
+!/toys/alice-manhattan-nocturne/**
+!/toys/bob-comet-geneva/
+!/toys/bob-comet-geneva/**
+!/toys/bob-g0001/
+!/toys/bob-g0001/**
+!/toys/bob-g0002/
+!/toys/bob-g0002/**
+!/toys/bob-g0003/
+!/toys/bob-g0003/**
+!/toys/bob-g0004/
+!/toys/bob-g0004/**
+!/toys/bob-g0005/
+!/toys/bob-g0005/**
+!/toys/bob-g0006/
+!/toys/bob-g0006/**
+!/toys/eve-rackhaven-night-shift/
+!/toys/eve-rackhaven-night-shift/**
+!/toys/ivy-montauk-tide-orrery/
+!/toys/ivy-montauk-tide-orrery/**
+!/toys/leo-counterorbit/
+!/toys/leo-counterorbit/**
+!toys/**/__cadgen__/
+!toys/**/__cadgen__/**

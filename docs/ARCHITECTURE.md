@@ -1,8 +1,9 @@
 # Autonomous Workshop architecture
 
 Autonomous Workshop turns one person's Wish into one evidence-backed physical
-product design. It is a thin workflow harness over a native coding-agent
-runtime, not a Python agent framework.
+product design. It is a thin workflow harness over a pluggable coding-agent
+runtime, not a Python agent framework. Codex is implemented first; Claude Code
+and Grok Build are future adapters to the same boundary.
 
 ## Product scope
 
@@ -50,33 +51,38 @@ Factory-generated copy/media and authenticated publication outside the agent.
 Customer Reviews happen after delivery and may inform a later Wish or revision.
 They do not mutate a completed run.
 
-## One native Manager session per Wish
+## One Manager session per Wish
 
-`workshop wish` creates a private workspace and starts one native Codex session
-before Match. The same session handles discovery, research, concept work, CAD,
-inspection, repair, Playtest judgment, manual writing, and product-page facts.
-`workshop resume` continues the exact recorded session id.
+`workshop wish` first creates and populates one persistent product project under
+`toys/`, then starts one coding-agent session with that directory as its working
+directory before Match. The same session handles discovery, research, concept
+work, CAD, inspection, repair, Playtest judgment, manual writing, and
+product-page facts. `workshop resume` continues the exact recorded session id.
 
-That root Codex session is the Workshop Manager. It may dynamically delegate
-bounded matching, specialist creation, or independent inspection to native
-subagents. Those children are part of the Manager's native agent tree; they are
-not separately launched OS-level Codex processes, Python workers, or lifecycle
-sessions. The root Manager receives each host stage packet, synthesizes child
-work, and submits the one proposal the host verifies.
+That root session plays the Workshop Manager role. In the current adapter it is
+Codex, and it may dynamically delegate bounded matching, specialist creation,
+or independent inspection through standard Codex-native subagents. Those
+children are part of the Manager's native agent tree; they are not separately
+launched OS-level Codex processes, Python workers, or lifecycle sessions. The
+root Manager receives each host stage packet, synthesizes child work, and
+submits the one proposal the host verifies.
 
 Stage names are host checkpoints, not Python workers or model personas. During
 Match, the Manager may ask native children for bounded candidate-fit analysis,
-then makes one evidence-based selection. V1 passes exact materialized persona
-bytes during dynamic delegation and does not depend on an unfinished or
-undocumented named custom-role registry.
+then makes one evidence-based selection. The host materializes every eligible
+Inventor through Codex's documented project-scoped custom-agent convention;
+Codex owns native spawning, routing, waiting, and synthesis.
 
-An Inventor is a native specialist bundle:
+“Inventor” is the Workshop's friendly domain name for a standard native
+subagent role. For Codex, every eligible bundle is materialized as an official
+project-scoped custom agent under `.codex/agents/`:
 
 - `TASTE.md` defines creative judgment, preferences, and rejection boundaries;
 - `inventor.json` defines stable identity, lane/eligibility, declared
-  capabilities, and the exact optional extension surface;
-- optional inventor-owned Codex skill trees contain `SKILL.md` for specialist
-  workflow and tool routing;
+  capabilities, and the exact extension surface;
+- the required `<id>-inventor` Codex skill tree contains `SKILL.md` for the
+  specialist's primary workflow and tool routing;
+- additional Inventor-prefixed skill trees are optional;
 - their optional scripts, references, assets, CAD generators, evaluators, and
   other tested deterministic tools provide specialist craft.
 
@@ -86,7 +92,8 @@ engine, semantic gate, or credential-bearing effect path. Child output remains
 a proposal: the root Manager reviews it, and the host still verifies exact
 bytes and advances the gate.
 
-The durable workspace is authoritative. Session memory never overrides exact
+The durable toy project is the Manager's working record. Trusted host state is
+kept outside that writable directory. Session memory never overrides exact
 files, manifests, gate receipts, or effect receipts.
 
 ## Trust boundary
@@ -109,7 +116,8 @@ files, manifests, gate receipts, or effect receipts.
 - Wish/run identity, private roots, immutable inputs, and durable checkpoints;
 - validation, hashing, and capability limits for every materialized Inventor
   bundle and declared extension;
-- legal transition order, leases, round budgets, and invalidation;
+- legal transition order, one exclusive host mutation lock per run, round
+  budgets, and invalidation;
 - Codex session start/resume and environment scrubbing;
 - public contracts, exact-byte manifests, deterministic CAD/evidence gates,
   and artifact sealing;
@@ -122,9 +130,10 @@ does not advance its own gate or perform credential-bearing effects.
 
 ## Workspace protocol
 
-The host materializes the product-run constitution, workflow skill, Make
-domain skills, Wish, and exact declared Inventor bundles into a private run
-root. Before each native turn it writes read-only `STAGE.json` with:
+The host materializes the product-run constitution, workflow skill, Make domain
+skills, Wish, and exact declared Inventor bundles into the persistent toy
+project. The workflow skill is the Manager's playbook, not a separate Manager
+agent. Before each native turn the host writes read-only `STAGE.json` with:
 
 ```text
 schema_version, kind, product_id, stage, checkpoint_sha256,
@@ -181,25 +190,35 @@ already happened. The host validates and seals the package before importing it.
 
 The CLI default is private. `--publish` records explicit prospective authority
 for the host to promote the exact verified Factory page after private import
-and authenticated readback. Factory credentials are never copied into the run
-workspace or Codex process. A public page is not a Deliver receipt.
+and authenticated readback. Factory credentials are stored outside the run in
+the private Workshop home, loaded only between native turns, and never copied
+into the run workspace or Codex process. A public page is not a Deliver receipt.
 
 ## Shared implementation
 
 ```text
+toys/<toy-id>/              persistent product project and coding-agent CWD
+  AGENTS.md                 product-run constitution
+  .codex/agents/            official project-scoped Inventor custom agents
+  .agents/skills/           materialized workflow, Make, and Inventor skills
+  catalog/inventors/        exact Match roster snapshot
+  artifacts/                product work and evidence
+
 inventors/<id>/
   TASTE.md                 immutable creative point of view
   inventor.json            identity, eligibility, capabilities, extension manifest
-  skills/<inventor-skill>/ optional inventor-owned Codex skill tree
+  skills/<id>-inventor/    required primary Codex skill tree
     SKILL.md               specialist workflow and tool routing
+  skills/<id>-<specialty>/ optional additional Codex skill tree
     scripts/               optional deterministic specialist tools
     references/            optional specialist reference material
     assets/                optional immutable templates and references
 
 .agents/
-  product-run/             run-only constitution source
-  skills/autonomous-workshop/
-                            run workflow and proposal finalizer
+  product-run/             complete run-only toy-project template
+    AGENTS.md              product-run constitution
+    .agents/skills/autonomous-workshop/
+                           run workflow and proposal finalizer
 
 src/
   cli/                     parsing, presentation, and exit codes only
@@ -220,6 +239,9 @@ src/
     contributors/          Taste and persona catalog tooling
 
 tests/<component>/         tests mirror component ownership
+
+$WORKSHOP_HOME/state/<toy-id>/
+                           trusted checkpoints and effects, outside agent CWD
 ```
 
 The installed distribution is `autonomous-workshop`; application imports begin
@@ -236,9 +258,9 @@ contains no lifecycle, session, gate, effect, or product reasoning.
 
 ## Engine portability
 
-Codex is the first supported native engine. The adapter seam is session
-start/resume, native specialist delegation, and the run workspace protocol—not
-the content of Codex prompts or one vendor's named-role configuration. A later
-Claude Code, OpenCode, Pi, or Hermes adapter must preserve the same root Manager
-identity, exact Inventor bundle, `STAGE.json`, exact-byte gates, authorization,
-and effect isolation.
+Codex is the first and only supported native engine today. The adapter seam is
+session start/resume, native specialist delegation, and the toy-project
+protocol—not the content of Codex prompts or one vendor's custom-agent file
+format. A future Claude Code or Grok Build adapter must preserve the
+same root Manager role, exact Inventor bundle, `STAGE.json`, exact-byte gates,
+authorization, and effect isolation.

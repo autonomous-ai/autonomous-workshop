@@ -1,6 +1,6 @@
 ---
 name: product-to-cad
-description: Turn a product, toy, game component, enclosure, mechanism, or reference concept into attractive, manufacturable, 3D-printable CAD with explicit dimensions, provenance, fit and motion intent, digital Playtest evidence, and physical claims deferred to Deliver. Use for new STEP/STL/3MF designs, CAD redesigns, image-guided form development, multipart assemblies, print-in-place mechanisms, and preparing a design for Launchpad and fulfillment.
+description: Turn a product, toy, game component, enclosure, mechanism, or reference concept into attractive, manufacturable, 3D-printable CAD with explicit dimensions, provenance, fit and motion intent, digital Playtest evidence, and physical claims deferred to Deliver. Use for new STEP/STL/3MF designs, CAD redesigns, image-guided form development, multipart assemblies, print-in-place mechanisms, and preparing a design for Factory and fulfillment.
 ---
 
 # Product to CAD

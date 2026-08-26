@@ -170,7 +170,8 @@ class DoctorTest(unittest.TestCase):
 
         def run(command, **kwargs):
             calls.append((command, kwargs))
-            return subprocess.CompletedProcess(command, 0, stdout="ok", stderr="")
+            stdout = "codex-cli 0.145.0" if command[-1] == "--version" else "ok"
+            return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
 
         environment = {
             "WORKSHOP_CODEX_BIN": "/opt/codex",
@@ -193,6 +194,21 @@ class DoctorTest(unittest.TestCase):
             self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
             self.assertNotIn("AWS_SECRET_ACCESS_KEY", kwargs["env"])
 
+    def test_old_codex_cannot_pass_the_credential_boundary_check(self):
+        def run(command, **unused_kwargs):
+            return subprocess.CompletedProcess(
+                command, 0, stdout="codex-cli 0.137.9", stderr=""
+            )
+
+        with mock.patch.dict(
+            os.environ,
+            {"WORKSHOP_CODEX_BIN": "/opt/codex", "PATH": "/usr/bin"},
+            clear=True,
+        ), mock.patch("cli.main.subprocess.run", side_effect=run):
+            check = cli_main._doctor_codex()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("0.138.0", check["next"])
+
     def test_missing_factory_credentials_report_release_wait(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
@@ -202,6 +218,8 @@ class DoctorTest(unittest.TestCase):
             "cli.main._doctor_codex", return_value=ready("codex")
         ), mock.patch(
             "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
+        ), mock.patch(
+            "cli.main.factory_credential_environment", return_value={}
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         receipt = json.loads(stdout.getvalue())
@@ -221,6 +239,9 @@ class DoctorTest(unittest.TestCase):
             "cli.main._doctor_codex", return_value=ready("codex")
         ), mock.patch(
             "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
+        ), mock.patch(
+            "cli.main.factory_credential_environment",
+            return_value={"FACTORY_PASSWORD": secret},
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         self.assertEqual(result, 1)

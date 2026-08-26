@@ -22,6 +22,8 @@ from workshop.runtime.execution import codex_subprocess_environment
 
 
 ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
+CODEX_PERMISSION_PROFILE = "workshop-product-run"
+MINIMUM_CODEX_PERMISSION_PROFILE_VERSION = (0, 138, 0)
 DEFAULT_CODEX_TIMEOUT_SECONDS = 1_200
 MAX_CODEX_EVENT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_PROMPT_BYTES = 1 * 1024 * 1024
@@ -39,6 +41,22 @@ _TRANSIENT_DIAGNOSTIC_MARKERS = (
     "service temporarily unavailable",
     "temporarily unavailable",
     "upstream request timeout",
+)
+
+_CODEX_PERMISSION_CONFIG = (
+    'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
+    'permissions.%s.description="Isolated Autonomous Workshop product run"'
+    % CODEX_PERMISSION_PROFILE,
+    'permissions.%s.extends=":workspace"' % CODEX_PERMISSION_PROFILE,
+    # Pass the whole table in one override. Codex's dotted CLI override parser
+    # otherwise treats quotes around special keys such as :root as key bytes.
+    # If the surrounding checkout becomes a workspace root, the glob still
+    # keeps legacy dotenv files unreadable inside that writable tree.
+    'permissions.%s.filesystem={":root"="deny",":minimal"="read",'
+    'glob_scan_max_depth=8,":workspace_roots"={"."="write",'
+    '"**/.env*"="deny"}}'
+    % CODEX_PERMISSION_PROFILE,
+    'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
 )
 
 
@@ -250,9 +268,31 @@ def _runtime_config_sha256(
             "ignore_rules": False,
             "ignore_user_config": True,
             "native_web_search": True,
-            "sandbox": "workspace-write",
+            "approval_policy": "never",
+            "permission_profile": CODEX_PERMISSION_PROFILE,
+            "permission_profile_config": list(_CODEX_PERMISSION_CONFIG),
         }
     )
+
+
+def codex_supports_permission_profiles(version: str) -> bool:
+    """Return whether a Codex CLI version supports enforced profiles."""
+
+    if not isinstance(version, str):
+        return False
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:[-+][A-Za-z0-9.-]+)?", version)
+    if match is None:
+        return False
+    return tuple(int(part) for part in match.groups()) >= (
+        MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+    )
+
+
+def _permission_config_arguments() -> list[str]:
+    arguments: list[str] = []
+    for value in _CODEX_PERMISSION_CONFIG:
+        arguments.extend(("--config", value))
+    return arguments
 
 
 @dataclass(frozen=True)
@@ -388,6 +428,14 @@ class CodexNativeSessionLauncher:
         self._popen_factory = popen_factory
         self._version_runner = version_runner
         self.cli_version = cli_version or self._read_cli_version()
+        if self.binary and not codex_supports_permission_profiles(self.cli_version):
+            minimum = ".".join(
+                str(part) for part in MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+            )
+            raise CodexInvocationError(
+                "Workshop requires Codex CLI %s or newer for credential-isolated "
+                "permission profiles" % minimum
+            )
         self.runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version, self.model, self.reasoning_effort
         )
@@ -560,7 +608,7 @@ class CodexNativeSessionLauncher:
             "host_state_root_sha256": _path_sha256(host_state_root),
             "runtime_config_sha256": self.runtime_config_sha256,
             "cli_version": self.cli_version,
-            "sandbox": "workspace-write",
+            "permission_profile": CODEX_PERMISSION_PROFILE,
             "native_web_search": True,
             "thread_id": _canonical_thread_id(thread_id),
         }
@@ -586,7 +634,7 @@ class CodexNativeSessionLauncher:
             "host_state_root_sha256",
             "runtime_config_sha256",
             "cli_version",
-            "sandbox",
+            "permission_profile",
             "native_web_search",
             "thread_id",
             "checkpoint_sha256",
@@ -647,16 +695,18 @@ class CodexNativeSessionLauncher:
         return [
             self.binary,
             "--search",
+            "--ask-for-approval",
+            "never",
             "exec",
             "--ignore-user-config",
             "--skip-git-repo-check",
-            "--sandbox",
-            "workspace-write",
+            "--strict-config",
             "--color",
             "never",
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *_permission_config_arguments(),
             "-C",
             str(run_root),
             "--model",
@@ -668,17 +718,19 @@ class CodexNativeSessionLauncher:
         return [
             self.binary,
             "--search",
-            "--sandbox",
-            "workspace-write",
+            "--ask-for-approval",
+            "never",
             "-C",
             str(run_root),
             "exec",
             "resume",
             "--ignore-user-config",
             "--skip-git-repo-check",
+            "--strict-config",
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
+            *_permission_config_arguments(),
             "--model",
             self.model,
             thread_id,
@@ -924,6 +976,7 @@ def _is_explicit_transient_failure(stdout: str, stderr: str) -> bool:
 
 __all__ = [
     "ALLOWED_WORKSHOP_MODELS",
+    "CODEX_PERMISSION_PROFILE",
     "CODEX_SESSION_CHECKPOINT_KIND",
     "DEFAULT_CODEX_TIMEOUT_SECONDS",
     "MAX_CODEX_EVENT_BYTES",
@@ -931,8 +984,10 @@ __all__ = [
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
+    "MINIMUM_CODEX_PERMISSION_PROFILE_VERSION",
     "CodexInvocationError",
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
+    "codex_supports_permission_profiles",
 ]

@@ -56,8 +56,8 @@ def codex_subprocess_environment(
 ) -> Mapping[str, str]:
     """Keep only Codex login/runtime inputs from the parent environment.
 
-    The allowlist deliberately excludes every ``FACTORY_*`` and
-    ``WORKSHOP_SHOP_*`` value as well as unrelated cloud, Git, package-manager,
+    The allowlist deliberately excludes every ``FACTORY_*`` value as well as
+    unrelated cloud, Git, package-manager,
     and shell credentials.  This same function is used for version probes and
     model calls so discovery cannot become a credential exfiltration path.
     """

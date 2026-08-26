@@ -10,6 +10,7 @@ from unittest import mock
 
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
+    CODEX_PERMISSION_PROFILE,
     MAX_CODEX_EVENT_BYTES,
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
@@ -21,6 +22,20 @@ from workshop.runtime.codex import (
 THREAD_ID = "12345678-1234-5678-9234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
+PERMISSION_ARGUMENTS = (
+    "--config",
+    'default_permissions="workshop-product-run"',
+    "--config",
+    'permissions.workshop-product-run.description="Isolated Autonomous Workshop product run"',
+    "--config",
+    'permissions.workshop-product-run.extends=":workspace"',
+    "--config",
+    'permissions.workshop-product-run.filesystem={":root"="deny",'
+    '":minimal"="read",glob_scan_max_depth=8,":workspace_roots"='
+    '{"."="write","**/.env*"="deny"}}',
+    "--config",
+    "permissions.workshop-product-run.network.enabled=false",
+)
 
 
 def event(value):
@@ -224,7 +239,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "CODEX_HOME": "/fixture/codex-home",
                 "OPENAI_API_KEY": "codex-auth",
                 "FACTORY_PASSWORD": "must-not-reach-codex",
-                "WORKSHOP_SHOP_TOKEN": "must-not-reach-codex",
+                "FACTORY_USERNAME": "must-not-reach-codex",
             }
             with mock.patch.dict(os.environ, parent_environment, clear=True):
                 outcome = self.start(
@@ -238,16 +253,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 (
                     "/fixture/codex",
                     "--search",
+                    "--ask-for-approval",
+                    "never",
                     "exec",
                     "--ignore-user-config",
                     "--skip-git-repo-check",
-                    "--sandbox",
-                    "workspace-write",
+                    "--strict-config",
                     "--color",
                     "never",
                     "--json",
                     "--config",
                     'model_reasoning_effort="high"',
+                    *PERMISSION_ARGUMENTS,
                     "-C",
                     str(root),
                     "--model",
@@ -260,6 +277,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "--output-schema",
                 "--ignore-rules",
                 "danger-full-access",
+                "--sandbox",
                 "--dangerously-bypass-approvals-and-sandbox",
             ):
                 self.assertNotIn(forbidden, command)
@@ -269,7 +287,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
             self.assertNotIn("FACTORY_PASSWORD", call["env"])
-            self.assertNotIn("WORKSHOP_SHOP_TOKEN", call["env"])
+            self.assertNotIn("FACTORY_USERNAME", call["env"])
             self.assertTrue(outcome.used_web_search)
             public = json.dumps(outcome.to_dict(), sort_keys=True)
             self.assertNotIn(THREAD_ID, public)
@@ -322,17 +340,19 @@ class CodexNativeSessionTest(unittest.TestCase):
                 (
                     "/fixture/codex",
                     "--search",
-                    "--sandbox",
-                    "workspace-write",
+                    "--ask-for-approval",
+                    "never",
                     "-C",
                     str(root),
                     "exec",
                     "resume",
                     "--ignore-user-config",
                     "--skip-git-repo-check",
+                    "--strict-config",
                     "--json",
                     "--config",
                     'model_reasoning_effort="high"',
+                    *PERMISSION_ARGUMENTS,
                     "--model",
                     "gpt-5.6-terra",
                     THREAD_ID,
@@ -340,6 +360,11 @@ class CodexNativeSessionTest(unittest.TestCase):
                 ),
             )
             self.assertNotIn("--ephemeral", command)
+            self.assertNotIn("--sandbox", command)
+            self.assertEqual(private_profile := json.loads(
+                (self.host_state(root) / "codex-session.json").read_text(encoding="utf-8")
+            )["permission_profile"], CODEX_PERMISSION_PROFILE)
+            self.assertEqual(private_profile, "workshop-product-run")
             self.assertEqual(resumed.status, "completed")
             self.assertEqual(
                 resumed.binding.checkpoint_sha256,
@@ -463,6 +488,15 @@ class CodexNativeSessionTest(unittest.TestCase):
             with self.assertRaisesRegex(ContractError, "binding is invalid"):
                 self.resume(changed, root)
             self.assertEqual(changed_factory.calls, [])
+
+    def test_rejects_codex_versions_without_permission_profiles(self):
+        with self.assertRaisesRegex(
+            CodexInvocationError, "0.138.0 or newer"
+        ):
+            CodexNativeSessionLauncher(
+                binary="/fixture/codex",
+                cli_version="0.137.9",
+            )
 
     def test_bounds_timeout_and_failures_are_terminated_and_redacted(self):
         secret = "FACTORY_PASSWORD=never-show-this"

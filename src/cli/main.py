@@ -40,6 +40,11 @@ from workshop.make.skill_registry import (
 from workshop.product import PLAYTHING_LANES
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
+from workshop.runtime.credentials import factory_credential_environment
+from workshop.runtime.codex import (
+    MINIMUM_CODEX_PERMISSION_PROFILE_VERSION,
+    codex_supports_permission_profiles,
+)
 from workshop.runtime.package_data import (
     packaged_inventor_catalog_root,
     product_run_domain_skill_roots,
@@ -271,6 +276,21 @@ def _doctor_codex() -> dict[str, str]:
             "The configured Codex CLI command could not run.",
             next_step="Check WORKSHOP_CODEX_BIN and the Codex installation.",
         )
+    output = version.stdout if isinstance(version.stdout, str) else ""
+    version_match = re.search(
+        r"\d+(?:\.\d+){2}(?:[-+][A-Za-z0-9.-]+)?", output
+    )
+    cli_version = version_match.group(0) if version_match else ""
+    if not codex_supports_permission_profiles(cli_version):
+        minimum = ".".join(
+            str(part) for part in MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+        )
+        return _check_record(
+            "codex",
+            "needs-attention",
+            "The Codex CLI is too old for Workshop's isolated permission profile.",
+            next_step="Upgrade Codex CLI to %s or newer." % minimum,
+        )
     try:
         login = subprocess.run(
             [binary, "login", "status"],
@@ -325,11 +345,23 @@ def _doctor_agent_assets() -> dict[str, str]:
 
 
 def _doctor_factory() -> dict[str, str]:
-    password = bool(os.environ.get("FACTORY_PASSWORD"))
-    generic_username = bool(os.environ.get("FACTORY_USERNAME"))
+    try:
+        credential_environment = factory_credential_environment()
+    except WorkshopError as exc:
+        return _check_record(
+            "factory-credentials",
+            "needs-attention",
+            str(exc),
+            next_step=(
+                "Repair the private $WORKSHOP_HOME/credentials/factory.env "
+                "file or configure a complete host environment pair."
+            ),
+        )
+    password = bool(credential_environment.get("FACTORY_PASSWORD"))
+    generic_username = bool(credential_environment.get("FACTORY_USERNAME"))
     scoped_usernames = tuple(
         name
-        for name, value in os.environ.items()
+        for name, value in credential_environment.items()
         if name.startswith("FACTORY_")
         and name.endswith("_USERNAME")
         and name != "FACTORY_USERNAME"
@@ -340,14 +372,17 @@ def _doctor_factory() -> dict[str, str]:
         return _check_record(
             "factory-credentials",
             "ready",
-            "A complete Factory credential pair is present in the host environment.",
+            "A complete host-only Factory credential pair is available.",
         )
     if not username and not password:
         return _check_record(
             "factory-credentials",
             "needs-attention",
             "Factory credentials are not configured; a Wish can start but will wait at Release.",
-            next_step="Configure host-only Factory credentials to complete the Release effect.",
+            next_step=(
+                "Configure $WORKSHOP_HOME/credentials/factory.env or host-only "
+                "Factory environment values to complete the Release effect."
+            ),
         )
     return _check_record(
         "factory-credentials",

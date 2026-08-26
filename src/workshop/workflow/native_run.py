@@ -13,9 +13,15 @@ import os
 import re
 import stat
 import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
+    fcntl = None  # type: ignore[assignment]
 
 from workshop.errors import (
     ArtifactError,
@@ -30,8 +36,8 @@ from workshop.contributors import (
     load_manifest,
     load_taste,
 )
-from workshop.integrations.factory_agent import (
-    FactoryAgentReleaseWriter,
+from workshop.integrations.factory import (
+    FactoryReleaseWriter,
     FactoryAgentSession,
     FactoryPublicTransition,
     factory_credentials_from_environment,
@@ -55,8 +61,9 @@ from workshop.runtime import (
     CodexInvocationError,
     CodexNativeSessionLauncher,
     CodexNativeSessionOutcome,
-    InventorStore,
+    EffectLedger,
     Receipt,
+    factory_credential_environment,
 )
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.package_data import (
@@ -117,9 +124,44 @@ class _FactoryCredentialsUnavailable(Exception):
 class NativeRunPaths:
     """Private sibling roots for agent-visible work and host-only state."""
 
-    container: Path
     workspace: Path
     host_state: Path
+
+
+@contextmanager
+def _native_run_mutation_lock(paths: NativeRunPaths):
+    """Fail closed when another host process is mutating this Wish.
+
+    The kernel releases the advisory lock if its owner exits or crashes, so a
+    stale lock file never grants or blocks authority by itself.
+    """
+
+    if fcntl is None:
+        raise StateConflict("native run mutation locking is unavailable")
+    lock_path = paths.host_state / "mutation.lock"
+    flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_CLOEXEC", 0)
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(str(lock_path), flags, 0o600)
+    except OSError as exc:
+        raise StateConflict("native run mutation lock is unavailable") from exc
+    try:
+        identity = os.fstat(descriptor)
+        if not stat.S_ISREG(identity.st_mode):
+            raise StateConflict("native run mutation lock must be a regular file")
+        os.fchmod(descriptor, 0o600)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise StateConflict(
+                "another Workshop process is already mutating this Wish"
+            ) from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+    finally:
+        os.close(descriptor)
 
 
 def canonical_wish_bytes(wish: Wish) -> bytes:
@@ -361,6 +403,31 @@ def _workshop_home() -> Path:
     return _existing_real_directory(selected, label="Workshop home")
 
 
+def _source_checkout_root() -> Optional[Path]:
+    """Return the repository root when this module is running from ``src/``."""
+
+    module = Path(__file__).resolve()
+    if len(module.parents) < 4:
+        return None
+    candidate = module.parents[3]
+    if (
+        (candidate / "src" / "workshop" / "workflow" / "native_run.py").resolve()
+        != module
+        or not (candidate / ".agents" / "product-run" / "AGENTS.md").is_file()
+        or not (
+            candidate
+            / ".agents"
+            / "product-run"
+            / ".agents"
+            / "skills"
+            / "autonomous-workshop"
+            / "SKILL.md"
+        ).is_file()
+    ):
+        return None
+    return _existing_real_directory(candidate, label="Workshop repository")
+
+
 def _product_run_catalog_root(assets: Any) -> Path:
     if assets.source == "repository":
         repository = assets.constitution.parents[2]
@@ -491,29 +558,51 @@ def _stage_subject(stage: str, inputs: Mapping[str, Any]) -> str:
 def native_run_paths(
     product_id: str,
     *,
-    create_container: bool = False,
+    create: bool = False,
 ) -> NativeRunPaths:
-    """Resolve the deterministic private location for one product id."""
+    """Resolve one persistent Codex toy project and sibling host state."""
 
     product_id = _validated_product_id(product_id)
     home = _workshop_home()
-    runs = home / "runs"
-    if create_container:
-        runs = _ensure_private_directory(runs, label="native runs directory")
-        container = _ensure_private_directory(
-            runs / product_id, label="native product run directory"
-        )
+    repository = _source_checkout_root()
+    toys = (repository / "toys") if repository is not None else (home / "toys")
+    states = home / "state"
+    if create:
+        if repository is not None:
+            try:
+                toys.mkdir(mode=0o700)
+            except FileExistsError:
+                pass
+            except OSError as exc:
+                raise StateConflict("toy projects directory could not be created") from exc
+            toys = _existing_real_directory(toys, label="toy projects directory")
+        else:
+            toys = _ensure_private_directory(toys, label="toy projects directory")
+        states = _ensure_private_directory(states, label="toy state directory")
+        workspace = toys / product_id
+        host_state = states / product_id
+        if workspace.exists() or workspace.is_symlink():
+            raise StateConflict("toy project already exists")
+        if host_state.exists() or host_state.is_symlink():
+            raise StateConflict("toy host state already exists")
     else:
-        runs = _existing_real_directory(runs, label="native runs directory")
-        container = _existing_real_directory(
-            runs / product_id, label="native product run directory"
+        toys = _existing_real_directory(toys, label="toy projects directory")
+        states = _existing_real_directory(states, label="toy state directory")
+        workspace = _existing_real_directory(
+            toys / product_id, label="toy project directory"
         )
-        if stat.S_IMODE(container.stat().st_mode) != 0o700:
-            raise StateConflict("native product run directory permissions must be 0700")
+        host_state = _existing_real_directory(
+            states / product_id, label="toy host-state directory"
+        )
+        for path, label in (
+            (workspace, "toy project directory"),
+            (host_state, "toy host-state directory"),
+        ):
+            if stat.S_IMODE(path.stat().st_mode) != 0o700:
+                raise StateConflict("%s permissions must be 0700" % label)
     return NativeRunPaths(
-        container=container,
-        workspace=container / "workspace",
-        host_state=container / "host-state",
+        workspace=workspace,
+        host_state=host_state,
     )
 
 
@@ -524,8 +613,14 @@ def native_run_exists(product_id: str) -> bool:
     home = Path(default_workshop_home()).expanduser()
     if not home.is_absolute():
         raise ContractError("Workshop home must be absolute")
-    candidate = home / "runs" / product_id
-    return candidate.exists() or candidate.is_symlink()
+    repository = _source_checkout_root()
+    workspace = (
+        repository / "toys" / product_id
+        if repository is not None
+        else home / "toys" / product_id
+    )
+    host_state = home / "state" / product_id
+    return any(path.exists() or path.is_symlink() for path in (workspace, host_state))
 
 
 def _open_native_run(product_id: str) -> tuple[AgentRun, AgentRunCheckpoint]:
@@ -1046,11 +1141,12 @@ def _evaluate_playtest_stage(
 
 
 def _factory_credentials(inventor_id: str) -> Any:
+    credential_environment = factory_credential_environment()
     suffix = inventor_id.upper().replace("-", "_")
-    username = os.environ.get("FACTORY_%s_USERNAME" % suffix)
+    username = credential_environment.get("FACTORY_%s_USERNAME" % suffix)
     if not isinstance(username, str) or not username:
-        username = os.environ.get("FACTORY_USERNAME")
-    password = os.environ.get("FACTORY_PASSWORD")
+        username = credential_environment.get("FACTORY_USERNAME")
+    password = credential_environment.get("FACTORY_PASSWORD")
     environment: dict[str, str] = {}
     if isinstance(username, str) and username:
         environment["FACTORY_USERNAME"] = username
@@ -1244,6 +1340,93 @@ def _write_release_effect(
     )
 
 
+def _existing_release_for_promotion(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> tuple[NativeRelease, str]:
+    """Revalidate a sealed Release after the lifecycle has reached Deliver."""
+
+    if checkpoint.stage != "deliver" or checkpoint.status not in (
+        "active",
+        "waiting",
+        "complete",
+    ):
+        raise TransitionError("public promotion requires a verified Release")
+    if any(
+        stage in checkpoint.invalidated_stages
+        for stage in ("match", "invent", "make", "playtest", "release")
+    ):
+        raise StateConflict("public promotion cannot use invalidated stage evidence")
+    catalog = _persona_catalog(run.run_root, checkpoint)
+    assignment = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "match"),
+        NativeMatchAssignment,
+        label="native Match assignment",
+    )
+    assignment.assert_context(
+        wish_sha256=checkpoint.wish_sha256, catalog=catalog
+    )
+    invented = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "invent"),
+        InventedV2,
+        label="native Invented contract",
+    )
+    invented.assert_context(assignment)
+    made = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "make"),
+        NativeMade,
+        label="native Made contract",
+    )
+    made.assert_context(
+        assignment, invented, expected_round=checkpoint.round_index
+    )
+    blueprint = ToyBlueprint.for_lane(assignment.selected_lane)
+    playtested = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "playtest"),
+        NativePlaytested,
+        label="native Playtested contract",
+    )
+    playtested.assert_context(made, blueprint)
+    if playtested.verdict != "pass":
+        raise StateConflict("public promotion requires a passing Playtest")
+    release = _read_contract(
+        run.run_root,
+        _stage_primary(checkpoint, "release"),
+        NativeRelease,
+        label="native Release contract",
+    )
+    release.assert_context(made, playtested)
+    release.validate_package_tree(run.run_root, made, playtested)
+    return release, assignment.selected_inventor_id
+
+
+def _promote_existing_release(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> bool:
+    """Promote an exact verified draft without another native-agent turn."""
+
+    release, inventor_id = _existing_release_for_promotion(run, checkpoint)
+    receipt = _read_release_effect(run, release)
+    if receipt is None:
+        raise StateConflict("verified Release has no Factory effect checkpoint")
+    if receipt.is_verified_public:
+        return False
+    try:
+        credentials = _factory_credentials(inventor_id)
+    except ContractError:
+        raise _FactoryCredentialsUnavailable(inventor_id) from None
+    ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
+    promoted = FactoryPublicTransition(
+        ledger,
+        FactoryAgentSession(credentials),
+    ).publish(receipt)
+    _write_release_effect(run, release, promoted)
+    return True
+
+
 def _execute_release_effect(
     run: AgentRun,
     release: NativeRelease,
@@ -1282,34 +1465,19 @@ def _execute_release_effect(
                 assignment.selected_inventor_id
             ) from None
     if receipt is None:
-        store = InventorStore(run.host_state_root / "factory.sqlite3")
-        product_id = run.snapshot().product_id
-        try:
-            store.register_product(
-                product_id,
-                "release",
-                artifact_sha256=release.product_artifact_sha256,
-            )
-        except StateConflict:
-            product = store.get_product(product_id)
-            if (
-                product.get("stage") != "release"
-                or product.get("artifact_sha256")
-                != release.product_artifact_sha256
-            ):
-                raise StateConflict(
-                    "Factory publication state belongs to different product bytes"
-                )
-        writer = FactoryAgentReleaseWriter(
-            store,
+        ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
+        writer = FactoryReleaseWriter(
+            ledger,
             assignment.selected_inventor_id,
             credentials,
         )
         receipt = writer(release_context, package.root, package.manifest)
         _write_release_effect(run, release, receipt)
     if publish_requested and receipt.is_verified_draft:
+        ledger = EffectLedger(run.host_state_root / "factory-effects.sqlite3")
         receipt = FactoryPublicTransition(
-            FactoryAgentSession(credentials)
+            ledger,
+            FactoryAgentSession(credentials),
         ).publish(receipt)
         _write_release_effect(run, release, receipt)
     product_release = ProductRelease.from_root(
@@ -1589,6 +1757,7 @@ def _native_receipt(
     action: str,
     publish_requested: bool = False,
     turns: int = 0,
+    need: Optional[str] = None,
 ) -> dict[str, Any]:
     publication: dict[str, Any] = {
         "status": "not-created",
@@ -1598,7 +1767,7 @@ def _native_receipt(
             "native product-run session."
         ),
     }
-    needs: tuple[str, ...] = ()
+    needs: list[str] = [need] if need is not None else []
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = AgentRun.open(
@@ -1606,27 +1775,24 @@ def _native_receipt(
             )
             effect_wait = _read_release_effect_wait(wait_run, checkpoint)
             if effect_wait is not None:
-                needs = (effect_wait["need"],)
+                if effect_wait["need"] not in needs:
+                    needs.append(effect_wait["need"])
                 publication["reason"] = effect_wait["need"]
         effect = paths.host_state / "release-effect.json"
         if effect.exists() or effect.is_symlink():
-            try:
-                identity = effect.lstat()
-                document = _strict_json_bytes(
-                    effect.read_bytes(), label="Release effect checkpoint"
-                )
-            except OSError as exc:
-                raise StateConflict("Release effect checkpoint is unavailable") from exc
-            if (
-                effect.is_symlink()
-                or not stat.S_ISREG(identity.st_mode)
-                or stat.S_IMODE(identity.st_mode) != 0o600
-            ):
-                raise StateConflict("Release effect checkpoint must be a private file")
-            try:
-                receipt = Receipt.from_dict(document["receipt"])
-            except (KeyError, TypeError, ValueError, WorkshopError) as exc:
-                raise StateConflict("Release effect checkpoint is invalid") from exc
+            effect_run = AgentRun.open(
+                paths.workspace, host_state_root=paths.host_state
+            )
+            observed_checkpoint = effect_run.snapshot()
+            if observed_checkpoint.checkpoint_sha256 != checkpoint.checkpoint_sha256:
+                raise StateConflict("Release status raced a checkpoint update")
+            release, unused_inventor_id = _existing_release_for_promotion(
+                effect_run, observed_checkpoint
+            )
+            del unused_inventor_id
+            receipt = _read_release_effect(effect_run, release)
+            if receipt is None:  # pragma: no cover - effect path exists above
+                raise StateConflict("Release effect checkpoint is unavailable")
             publication = {
                 "status": (
                     "public" if receipt.is_verified_public else "draft"
@@ -1669,7 +1835,7 @@ def start_native_run(
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session."""
 
-    paths = native_run_paths(wish.product_id, create_container=True)
+    paths = native_run_paths(wish.product_id, create=True)
     assets = product_run_agent_assets()
     run = AgentRun.create(
         paths.workspace,
@@ -1682,48 +1848,78 @@ def start_native_run(
         inventor_catalog_root=_product_run_catalog_root(assets),
         max_rounds=4,
     )
-    _record_authorization(
-        paths,
-        product_id=wish.product_id,
-        publish_requested=publish_requested,
-        create=True,
-    )
-    checkpoint = _advance_validated_wish(run)
-    launcher = CodexNativeSessionLauncher()
-    checkpoint, session, turns, action = _run_native_session(
-        run,
-        paths,
-        launcher=launcher,
-        publish_requested=publish_requested,
-    )
-    return {
-        **_native_receipt(
-            checkpoint,
-            paths=paths,
-            session=session,
-            action=action,
+    with _native_run_mutation_lock(paths):
+        _record_authorization(
+            paths,
+            product_id=wish.product_id,
             publish_requested=publish_requested,
-            turns=turns,
-        ),
-        "wish": wish.to_dict(),
-    }
+            create=True,
+        )
+        checkpoint = _advance_validated_wish(run)
+        launcher = CodexNativeSessionLauncher()
+        checkpoint, session, turns, action = _run_native_session(
+            run,
+            paths,
+            launcher=launcher,
+            publish_requested=publish_requested,
+        )
+        return {
+            **_native_receipt(
+                checkpoint,
+                paths=paths,
+                session=session,
+                action=action,
+                publish_requested=publish_requested,
+                turns=turns,
+            ),
+            "wish": wish.to_dict(),
+        }
 
 
-def resume_native_run(
+def _resume_native_run_locked(
     product_id: str,
     *,
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    paths: NativeRunPaths,
     publish_requested: bool = False,
 ) -> Mapping[str, Any]:
-    """Resume the exact native session, or safely finish an interrupted start."""
+    """Mutate one native run while its process lock is held."""
 
-    run, checkpoint = _open_native_run(product_id)
-    paths = native_run_paths(product_id)
     authorization = _record_authorization(
         paths,
         product_id=product_id,
         publish_requested=publish_requested,
         create=False,
     )
+    promotion_action: Optional[str] = None
+    if (
+        authorization["publish_requested"]
+        and checkpoint.stage == "deliver"
+        and checkpoint.status in ("active", "waiting", "complete")
+    ):
+        try:
+            promoted = _promote_existing_release(run, checkpoint)
+        except _FactoryCredentialsUnavailable:
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action="waiting-for-factory-credentials",
+                publish_requested=True,
+                need=_FACTORY_CREDENTIALS_NEED,
+            )
+        promotion_action = (
+            "published-existing-release"
+            if promoted
+            else "publication-already-public"
+        )
+        if checkpoint.status in ("waiting", "complete"):
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action=promotion_action,
+                publish_requested=True,
+            )
     if checkpoint.status == "waiting":
         effect_wait = _read_release_effect_wait(run, checkpoint)
         if effect_wait is not None:
@@ -1754,6 +1950,8 @@ def resume_native_run(
     )
     if action == "started":
         action = "started-after-interruption"
+    if promotion_action is not None and turns == 0:
+        action = promotion_action
     return _native_receipt(
         checkpoint,
         paths=paths,
@@ -1762,6 +1960,26 @@ def resume_native_run(
         publish_requested=authorization["publish_requested"],
         turns=turns,
     )
+
+
+def resume_native_run(
+    product_id: str,
+    *,
+    publish_requested: bool = False,
+) -> Mapping[str, Any]:
+    """Resume one exact native session under an exclusive host mutation lock."""
+
+    paths = native_run_paths(product_id)
+    with _native_run_mutation_lock(paths):
+        run = AgentRun.open(paths.workspace, host_state_root=paths.host_state)
+        checkpoint = run.snapshot()
+        return _resume_native_run_locked(
+            product_id,
+            run=run,
+            checkpoint=checkpoint,
+            paths=paths,
+            publish_requested=publish_requested,
+        )
 
 
 def native_run_status(product_id: str) -> Mapping[str, Any]:

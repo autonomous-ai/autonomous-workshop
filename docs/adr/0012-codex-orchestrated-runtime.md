@@ -18,8 +18,9 @@ exact-byte gates, durable state, security, and external effects.
 
 ## Decision
 
-One Wish uses one persistent native Codex session. `workshop wish` creates a
-private run workspace and launches the session before Match. `workshop resume`
+One Wish uses one persistent native Codex session. `workshop wish` creates and
+populates a persistent product project under `toys/`, then launches the session
+with that directory as its working directory before Match. `workshop resume`
 continues the recorded session id through:
 
 ```text
@@ -29,16 +30,18 @@ Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 The trusted host implementation is `workshop.workflow.native_run`. The CLI is
 only its command-line adapter and does not own lifecycle or session behavior.
 
-The host materializes a run-only `AGENTS.md`, the `autonomous-workshop` skill,
-Make domain skills, the exact Wish, and immutable declared Inventor bundles.
-Before each native stage it writes a read-only `STAGE.json` bound to the current
-checkpoint and gate subject.
+The host materializes a run-only `AGENTS.md`, the `autonomous-workshop` workflow
+skill, Make domain skills, the exact Wish, and immutable declared Inventor
+bundles. It projects every eligible Inventor into the official Codex
+project-scoped custom-agent convention under `.codex/agents/`. Before each
+native stage it writes a read-only `STAGE.json` bound to the current checkpoint
+and gate subject.
 
-The root Codex session is the Workshop Manager. It uses native dynamic
-subagents where useful for bounded Match analysis, selected-Inventor work, and
-independent inspection. V1 briefs those children from exact materialized bytes
-and does not depend on undocumented named custom-role configuration or launch
-separate OS-level Codex processes.
+The root Codex session is the Workshop Manager. It uses native subagents where
+useful for bounded Match analysis, selected-Inventor work, and independent
+inspection. Codex owns spawning, routing, waiting, and synthesis from the exact
+project-scoped custom agents; Workshop does not launch separate OS-level Codex
+processes or schedule a parallel agent system in Python.
 
 Codex uses native inspection, editing, shell, search, rendering, applicable
 skills, and specialist delegation to perform Match reasoning, research,
@@ -55,9 +58,10 @@ trusted checks, seals accepted artifacts, and alone advances the checkpoint.
 
 The outer Workshop host owns:
 
-- Wish/run identity, lifecycle order, Make–Playtest rounds, invalidation,
-  leases, and durable checkpoints;
-- native-session start/resume and sandbox/environment boundaries;
+- Wish/run identity, lifecycle order, Make–Playtest rounds, invalidation, one
+  exclusive host mutation lock per run, and durable checkpoints;
+- native-session start/resume, scrubbed environment, and an enforced
+  workspace-only filesystem permission profile;
 - contracts, exact-byte manifests, deterministic CAD/evidence gates, and
   artifact sealing;
 - authorization, credential isolation, idempotent effect intents, external

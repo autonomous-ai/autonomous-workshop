@@ -50,8 +50,11 @@ not written by Codex and is not accepted from `agent-outcome.json`.
 
 ## Credentials
 
-Supply Factory credentials only through the supported host environment or
-secret manager. Never put them in a Wish, prompt, `TASTE.md`, product-run
+Supply Factory credentials through the private
+`$WORKSHOP_HOME/credentials/factory.env` file (preferred) or a supported
+ephemeral host environment or secret manager. The trusted host loads the
+private file only when no native agent turn is running. Never put credentials
+in a Wish, prompt, `TASTE.md`, product-run
 workspace, Release package, source file, or commit. The Codex subprocess gets a
 scrubbed environment.
 

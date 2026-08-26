@@ -6,6 +6,19 @@ import shutil
 
 from setuptools import setup
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.egg_info import egg_info as _egg_info
+
+
+class egg_info(_egg_info):
+    """Regenerate source inventory instead of trusting an incremental cache."""
+
+    def run(self):
+        sources = Path(self.egg_info) / "SOURCES.txt"
+        if sources.exists() or sources.is_symlink():
+            if sources.is_symlink() or not sources.is_file():
+                raise ValueError("cached source inventory must be a regular file")
+            sources.unlink()
+        super().run()
 
 
 class build_py(_build_py):
@@ -24,11 +37,32 @@ class build_py(_build_py):
         project = Path(__file__).resolve().parent
         source_skills = project / "src" / "workshop" / "make" / "skills"
         built_skills = Path(self.build_lib) / "workshop" / "make" / "skills"
+        if source_skills.is_symlink() or not source_skills.is_dir():
+            raise FileNotFoundError(
+                "required Make skill root is missing: %s" % source_skills
+            )
+        if built_skills.exists():
+            shutil.rmtree(built_skills)
         for source in source_skills.rglob("*"):
-            if source.is_file() and not source.is_symlink():
-                built = built_skills / source.relative_to(source_skills)
-                if built.is_file():
-                    shutil.copymode(source, built)
+            if source.is_symlink():
+                raise ValueError("Make skills must not contain symlinks: %s" % source)
+            relative = source.relative_to(source_skills)
+            if (
+                "__pycache__" in relative.parts
+                or ".git" in relative.parts
+                or source.name == ".DS_Store"
+                or source.name.endswith((".pyc", ".pyo"))
+            ):
+                continue
+            if source.is_dir():
+                continue
+            if not source.is_file():
+                raise ValueError(
+                    "Make skills may contain only regular files: %s" % source
+                )
+            built = built_skills / source.relative_to(source_skills)
+            built.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, built)
 
         source_agent_assets = project / ".agents"
         built_agent_assets = (
@@ -36,18 +70,33 @@ class build_py(_build_py):
         )
         if built_agent_assets.exists():
             shutil.rmtree(built_agent_assets)
-        for relative_root in (
-            Path("product-run"),
-            Path("skills") / "autonomous-workshop",
-        ):
+        for relative_root in (Path("product-run"),):
             source_root = source_agent_assets / relative_root
-            if not source_root.is_dir():
+            if source_root.is_symlink() or not source_root.is_dir():
                 raise FileNotFoundError(
                     "required product-run agent assets are missing: %s" % source_root
                 )
             for source in source_root.rglob("*"):
-                if not source.is_file() or source.is_symlink():
+                if source.is_symlink():
+                    raise ValueError(
+                        "product-run agent assets must not contain symlinks: %s"
+                        % source
+                    )
+                relative_source = source.relative_to(source_root)
+                if (
+                    "__pycache__" in relative_source.parts
+                    or ".git" in relative_source.parts
+                    or source.name == ".DS_Store"
+                    or source.name.endswith((".pyc", ".pyo"))
+                ):
                     continue
+                if source.is_dir():
+                    continue
+                if not source.is_file():
+                    raise ValueError(
+                        "product-run agent assets may contain only regular files: %s"
+                        % source
+                    )
                 relative = Path(".agents") / source.relative_to(source_agent_assets)
                 destination = built_agent_assets / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +116,18 @@ class build_py(_build_py):
             source = project / "inventors" / inventor_id
             target = destination / inventor_id
             target.mkdir()
+            expected_root_entries = {"TASTE.md", "inventor.json", "skills"}
+            try:
+                observed_root_entries = {item.name for item in source.iterdir()}
+            except OSError as exc:
+                raise FileNotFoundError(
+                    "required bundled Inventor is missing: %s" % source
+                ) from exc
+            if observed_root_entries != expected_root_entries:
+                raise ValueError(
+                    "bundled Inventor root differs from the schema-v7 inventory: %s"
+                    % source
+                )
             for filename in ("TASTE.md", "inventor.json"):
                 source_file = source / filename
                 if source_file.is_symlink() or not source_file.is_file():
@@ -144,4 +205,4 @@ class build_py(_build_py):
                 )
 
 
-setup(cmdclass={"build_py": build_py})
+setup(cmdclass={"build_py": build_py, "egg_info": egg_info})

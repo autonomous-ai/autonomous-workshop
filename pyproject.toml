@@ -35,7 +35,6 @@ workshop = [
   "make/schemas/*.json",
   "make/skills/*",
   "make/skills/**/*",
-  "playtest/schemas/*.json",
 ]
 
 [tool.setuptools.exclude-package-data]

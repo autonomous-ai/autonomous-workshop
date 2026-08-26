@@ -1,29 +1,31 @@
 # Build an Inventor
 
-An Autonomous Workshop Inventor is a declared native specialist bundle used by
-the root Codex Workshop Manager. The Inventor may bring its own craft and
-deterministic tools, but it is not a subprocess, stage owner, prompt chain, or
-alternate orchestrator.
+An Autonomous Workshop Inventor is a standard native subagent specialized by a
+declared bundle and used by the root Codex Workshop Manager. “Inventor” is the
+friendlier product-language role name; it is not a second agent concept. The
+Inventor may bring its own craft and deterministic tools, but it is not a
+subprocess, stage owner, prompt chain, or alternate orchestrator.
 
-Every Inventor contributes the two required files below. The other entries are
-optional:
+Every Inventor contributes Taste, a catalog record, and one primary skill.
+Additional resources and Inventor-prefixed skills are optional:
 
 ```text
 inventors/<id>/
   TASTE.md        required creative judgment
   inventor.json   required identity, capabilities, and extension declaration
-  skills/<inventor-skill>/  optional inventor-owned Codex skill
-    SKILL.md      optional specialist workflow and tool routing
+  skills/<id>-inventor/     required primary Codex skill
+    SKILL.md      required specialist workflow and tool routing
     scripts/      optional tested deterministic tools
     references/   optional specialist reference material
     assets/       optional immutable templates or references
+  skills/<id>-<specialty>/  optional additional Codex skill
 ```
 
 Workshop supplies the root Codex Manager, lifecycle, contracts, gates, shared
-skills, and effect boundaries. During a run the host snapshots the exact
-declared Inventor bundle, and the Manager may dynamically delegate work to a
-native subagent briefed from those bytes. It does not launch a separate
-OS-level Codex process or depend on a custom named-role registry.
+skills, and effect boundaries. During a run the host snapshots each exact
+declared Inventor bundle and materializes it as an official project-scoped
+`.codex/agents/<id>.toml` custom agent. The Manager delegates through Codex's
+native controls; it does not launch a separate OS-level Codex process.
 
 ## 1. Write `TASTE.md`
 
@@ -74,16 +76,18 @@ The supported lanes are:
 
 `inventor.json` is operational catalog data. Keep it small and immutable during
 a product run. It identifies the Inventor, declares Match eligibility and
-capabilities, and inventories any optional skill, script, asset, or tool the
+capabilities, and inventories its required primary skill plus any additional
+skill, script, asset, or tool the
 host may materialize. Match receives a catalog snapshot whose manifest binds
 each eligible Inventor's complete declared bundle.
 
 ## 3. Add specialist craft only when it is truly Inventor-owned
 
-Use an inventor-owned Codex skill for a method unique to this Inventor: how the
+The primary skill must be named `<id>-inventor`. Use it for the specialist's
+core method: how the
 specialist reasons about its niche, when it invokes a declared tool, and what
-evidence it must leave. Its name is prefixed by the Inventor id so it cannot
-collide with a core Workshop skill. Follow normal Codex skill structure and
+evidence it must leave. Additional skills must also be prefixed by the Inventor
+id so they cannot collide with a core Workshop skill. Follow normal Codex skill structure and
 keep `SKILL.md`, referenced scripts, references, and assets inside that exact
 skill tree.
 
@@ -128,10 +132,10 @@ uv run workshop wish \
 
 The root Codex Manager compares every eligible bundle supplied in `STAGE.json`,
 records an evidence-based ranking, and selects one. Where useful, it delegates
-bounded candidate analysis to native subagents. It can then brief a selected
-Inventor child from the exact `TASTE.md`, manifest, skill, and declared
-resources. There is no profile launch, custom Python worker, or second root
-session to test.
+bounded candidate analysis to native subagents. It then spawns the selected
+project-scoped Inventor custom agent, whose instructions bind the exact
+`TASTE.md`, manifest, skill, and declared resources. There is no profile launch,
+custom Python worker, or second root session to test.
 
 ## Domain capabilities are Workshop skills
 

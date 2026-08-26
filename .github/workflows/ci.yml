@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
+      - name: install the locked dependency tool
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - name: reject a stale dependency lock
+        run: uv lock --check
       - name: reject tracked secrets and backups
         run: python tools/scan_secrets.py
       - name: verify canonical making skills are discoverable
@@ -59,7 +63,7 @@ jobs:
       - name: installed Workshop carries skills, schemas, Inventors, and runtime assets
         if: matrix.python-version == '3.14'
         run: |
-          python -m pip install .
+          python -m pip install --no-deps .
           cd "$RUNNER_TEMP"
           workshop skills list
           workshop schemas list
@@ -80,7 +84,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.14"
+          python-version: "3.11"
+      - name: seed stale package build output
+        run: |
+          mkdir -p build/lib/workshop build/lib/cli
+          touch build/lib/workshop/removed_packaging_sentinel.py
+          touch build/lib/cli/removed_packaging_sentinel.py
       - name: build direct wheel and source distribution independently
         run: |
           python -m pip install build "setuptools>=77" wheel
@@ -91,6 +100,6 @@ jobs:
       - name: verify direct and source-rebuilt wheels are byte-identical
         run: python -c 'from pathlib import Path; direct = next(Path("dist/direct").glob("autonomous_workshop-*.whl")); rebuilt = next(Path("${{ runner.temp }}/from-sdist").glob("autonomous_workshop-*.whl")); assert direct.read_bytes() == rebuilt.read_bytes(), (direct, rebuilt)'
       - name: exercise the direct wheel outside the checkout
-        run: python tests/packaging/installed_wheel_cli_acceptance.py --wheel dist/direct/autonomous_workshop-*.whl
+        run: python tests/packaging/installed_wheel_cli_acceptance.py --with-dependencies --wheel dist/direct/autonomous_workshop-*.whl
       - name: exercise the source-rebuilt wheel outside the checkout
         run: python tests/packaging/installed_wheel_cli_acceptance.py --wheel "$RUNNER_TEMP"/from-sdist/autonomous_workshop-*.whl

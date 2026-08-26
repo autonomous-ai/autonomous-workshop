@@ -134,7 +134,7 @@ class ComponentLayoutTest(unittest.TestCase):
             if not path.is_file():
                 continue
             if any(
-                part in {".git", ".venv", ".runtime", "build", "dist"}
+                part in {".git", ".venv", ".runtime", "build", "dist", "toys"}
                 for part in path.parts
             ):
                 continue

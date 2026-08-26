@@ -23,7 +23,7 @@ def _taste() -> str:
     )
 
 
-def _skill(folder: Path, name: str = "sample-kinetic") -> Path:
+def _skill(folder: Path, name: str = "sample-inventor") -> Path:
     root = folder / "skills" / name
     (root / "scripts").mkdir(parents=True)
     (root / "references").mkdir()
@@ -52,7 +52,7 @@ def _skill(folder: Path, name: str = "sample-kinetic") -> Path:
     return root
 
 
-def _persona(root: Path, name: str = "sample-kinetic"):
+def _persona(root: Path, name: str = "sample-inventor"):
     folder = root / "sample"
     folder.mkdir(parents=True)
     (folder / "TASTE.md").write_text(_taste(), encoding="utf-8")
@@ -106,7 +106,7 @@ class InventorExtensionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             folder, _ = _persona(Path(temporary))
             manifest = load_manifest(folder / "inventor.json")
-            (folder / "skills/sample-kinetic/references/geometry.md").write_text(
+            (folder / "skills/sample-inventor/references/geometry.md").write_text(
                 "changed\n", encoding="utf-8"
             )
             problems = validate_contribution(manifest)
@@ -119,6 +119,12 @@ class InventorExtensionTest(unittest.TestCase):
             (folder / "skills/undeclared").mkdir()
             problems = validate_contribution(load_manifest(folder / "inventor.json"))
             self.assertTrue(any("declared extension inventory" in item for item in problems))
+
+    def test_manifest_requires_the_canonical_primary_inventor_skill(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder, document = _persona(Path(temporary), name="sample-kinetic")
+            with self.assertRaisesRegex(ManifestError, "sample-inventor"):
+                load_manifest(folder / "inventor.json")
 
     def test_static_fingerprint_rejects_governance_secrets_and_bad_modes(self):
         mutations = (
@@ -142,7 +148,7 @@ class InventorExtensionTest(unittest.TestCase):
                     target.chmod(0o755)
                 with self.assertRaises(ManifestError):
                     fingerprint_extension_skill(
-                        skill.resolve(), expected_name="sample-kinetic"
+                        skill.resolve(), expected_name="sample-inventor"
                     )
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
@@ -156,7 +162,7 @@ class InventorExtensionTest(unittest.TestCase):
             os.symlink(outside, skill / "references/linked.md")
             with self.assertRaisesRegex(ManifestError, "regular file"):
                 fingerprint_extension_skill(
-                    skill.resolve(), expected_name="sample-kinetic"
+                    skill.resolve(), expected_name="sample-inventor"
                 )
 
     def test_v6_is_rejected_without_a_compatibility_path(self):

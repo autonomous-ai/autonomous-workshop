@@ -659,7 +659,7 @@ def _normalize_extra_excludes(extra_excludes: Iterable[str]) -> Set[str]:
 def assert_packable_content(relative_path: str, content: bytes) -> None:
     """Apply the final Pack credential policy to one named byte payload.
 
-    Both Pack and the Shop Door call this function. That prevents a
+    Both Pack construction and the Factory adapter call this function. That prevents a
     hand-built, manifest-valid zip from bypassing the source-tree exclusions.
     """
     if (

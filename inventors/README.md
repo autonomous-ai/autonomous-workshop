@@ -1,26 +1,31 @@
 # Inventor specialists
 
-Each immediate subfolder is one native-agent specialist bundle. Two files are
-required; extensions are optional and must be declared by `inventor.json`:
+Each immediate subfolder is one specialist bundle for a standard native
+subagent. “Inventor” is the Workshop's friendly role name, not a competing
+agent abstraction. Taste, the catalog record, and one primary extension skill
+are required; additional extensions are optional and must be declared by
+`inventor.json`:
 
 ```text
 inventors/<id>/
   inventor.json  identity, eligibility, capabilities, extension inventory
   TASTE.md       exact human-owned creative judgment
-  skills/<inventor-skill>/  optional inventor-owned Codex skill
-    SKILL.md     optional specialist workflow and tool routing
+  skills/<id>-inventor/     required primary Codex skill
+    SKILL.md     required specialist workflow and tool routing
     scripts/     optional tested deterministic tools
     references/  optional specialist reference material
     assets/       optional templates and static inputs
+  skills/<id>-<specialty>/  optional additional Codex skill
 ```
 
-An optional concise `README.md` may explain the bundle. One product run uses one
-root native Codex session as Workshop Manager. It dynamically briefs a selected
-native Inventor subagent from the exact host-materialized bundle; it does not
-start a profile subprocess, second root Codex session, or Python agent loop.
+An optional concise `README.md` may explain the bundle. For a product run, the
+host deterministically projects every eligible bundle into an official
+project-scoped `.codex/agents/<id>.toml` custom agent. One root native Codex
+session acts as Workshop Manager and spawns the selected Inventor through Codex;
+it does not start a profile subprocess, second root session, or Python loop.
 
 Inventor scripts may implement tested deterministic specialist operations such
-as CAD generation or evaluation. Each optional skill has an Inventor-prefixed
+as CAD generation or evaluation. Each additional skill has an Inventor-prefixed
 name and a manifest-bound tree hash. Scripts never auto-run and must not launch
 agents, schedule prompts, choose lifecycle transitions, waive gates, access
 credentials, or perform external effects. Static validation proves structure

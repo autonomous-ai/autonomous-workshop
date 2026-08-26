@@ -162,7 +162,7 @@ primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "critical"
-source = ["src/workshop/runtime/**", ".agents/product-run/**", ".agents/skills/autonomous-workshop/**"]
+source = ["src/workshop/runtime/**", ".agents/product-run/**"]
 tests = ["tests/runtime/**"]
 docs = ["src/workshop/runtime/README.md", "docs/NATIVE_AGENT_RUNTIME.md"]
 

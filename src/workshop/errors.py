@@ -43,9 +43,3 @@ class AmbiguousEffectError(EffectError):
 
 class ReceiptError(EffectError):
     """A remote response cannot produce a trustworthy Receipt."""
-
-
-# Transitional names still used by the durable Shop effect path.
-AmbiguousSendError = AmbiguousEffectError
-PublishError = EffectError
-AmbiguousPublishError = AmbiguousEffectError

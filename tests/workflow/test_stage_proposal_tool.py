@@ -26,6 +26,8 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 TOOL = (
     REPOSITORY
     / ".agents"
+    / "product-run"
+    / ".agents"
     / "skills"
     / "autonomous-workshop"
     / "scripts"

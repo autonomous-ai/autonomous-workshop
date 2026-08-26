@@ -9,7 +9,13 @@ from pathlib import Path
 from unittest import mock
 
 from cli.main import main, parser
-from workshop.workflow.native_run import canonical_wish_bytes
+from workshop.errors import StateConflict
+from workshop.workflow.native_run import (
+    NativeRunPaths,
+    _native_run_mutation_lock,
+    canonical_wish_bytes,
+    native_run_paths,
+)
 from workshop.runtime import CodexInvocationError
 from workshop.wish import Wish
 
@@ -85,6 +91,46 @@ class _FakeLauncher:
 
 
 class NativeHostTest(unittest.TestCase):
+    def test_second_mutating_host_fails_while_run_lock_is_held(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            host_state = root / "host-state"
+            host_state.mkdir(mode=0o700)
+            paths = NativeRunPaths(root / "toy", host_state)
+
+            with _native_run_mutation_lock(paths):
+                with self.assertRaisesRegex(
+                    StateConflict, "already mutating this Wish"
+                ):
+                    with _native_run_mutation_lock(paths):
+                        self.fail("a second mutating host acquired the run lock")
+
+            self.assertEqual(
+                stat.S_IMODE((host_state / "mutation.lock").stat().st_mode),
+                0o600,
+            )
+
+    def test_source_checkout_places_toy_project_at_repository_root(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            repository.mkdir(mode=0o700)
+            home = root / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=repository,
+            ):
+                paths = native_run_paths("stable-toy-id", create=True)
+
+            self.assertEqual(paths.workspace, repository / "toys/stable-toy-id")
+            self.assertEqual(paths.host_state, home / "state/stable-toy-id")
+            self.assertFalse(paths.workspace.exists())
+            self.assertFalse(paths.host_state.exists())
+            self.assertTrue((repository / "toys").is_dir())
+            self.assertTrue((home / "state").is_dir())
+
     def test_wish_starts_native_session_before_any_effect_path(self):
         launcher = _FakeLauncher()
         with tempfile.TemporaryDirectory() as temporary:
@@ -98,6 +144,9 @@ class NativeHostTest(unittest.TestCase):
                     "FACTORY_PASSWORD": "must-never-be-used",
                 },
                 clear=True,
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
@@ -119,14 +168,12 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(result, 0)
             receipt = json.loads(stdout.getvalue())
             product_id = receipt["product_id"]
-            container = home / "runs" / product_id
-            workspace = container / "workspace"
-            host_state = container / "host-state"
+            workspace = home / "toys" / product_id
+            host_state = home / "state" / product_id
             self.assertEqual(len(launcher.starts), 1)
             arguments = launcher.starts[0]
             self.assertEqual(arguments["run_root"], workspace)
             self.assertEqual(arguments["host_state_root"], host_state)
-            self.assertEqual(stat.S_IMODE(container.stat().st_mode), 0o700)
             self.assertEqual(stat.S_IMODE(workspace.stat().st_mode), 0o700)
             self.assertEqual(stat.S_IMODE(host_state.stat().st_mode), 0o700)
             self.assertEqual(
@@ -192,6 +239,9 @@ class NativeHostTest(unittest.TestCase):
             environment = {"WORKSHOP_HOME": str(home)}
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), redirect_stdout(output), redirect_stderr(StringIO()):
@@ -205,6 +255,9 @@ class NativeHostTest(unittest.TestCase):
 
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
@@ -232,7 +285,10 @@ class NativeHostTest(unittest.TestCase):
             current_assets.assert_not_called()
 
             output = StringIO()
-            with mock.patch.dict(os.environ, environment, clear=True), redirect_stdout(output):
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), redirect_stdout(output):
                 self.assertEqual(main(("status", product_id, "--json")), 0)
             status = json.loads(output.getvalue())
             self.assertEqual(status["kind"], "native-agent-run")
@@ -248,21 +304,27 @@ class NativeHostTest(unittest.TestCase):
             home = Path(temporary).resolve() / "workshop-home"
             environment = {"WORKSHOP_HOME": str(home)}
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=interrupted,
             ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 self.assertEqual(main(("wish", "a tiny orbit", "--json")), 2)
 
-            product_ids = [path.name for path in (home / "runs").iterdir()]
+            product_ids = [path.name for path in (home / "toys").iterdir()]
             self.assertEqual(len(product_ids), 1)
             product_id = product_ids[0]
             self.assertFalse(
-                (home / "runs" / product_id / "host-state" / "codex-session.json").exists()
+                (home / "state" / product_id / "codex-session.json").exists()
             )
 
             recovered = _FakeLauncher()
             output = StringIO()
             with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=recovered,
             ), redirect_stdout(output), redirect_stderr(StringIO()):

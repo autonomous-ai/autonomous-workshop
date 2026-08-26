@@ -30,6 +30,7 @@ from workshop.errors import (
     TransitionError,
 )
 from workshop._validation import require_sha256
+from workshop.runtime.agent_assets import inventor_custom_agent_bytes
 from workshop.wish import Wish
 
 
@@ -680,6 +681,7 @@ class AgentRun:
 
         catalog_files: list[tuple[PurePosixPath, bytes, int]] = []
         inventor_skill_files: list[tuple[PurePosixPath, bytes, int]] = []
+        inventor_agent_files: list[tuple[PurePosixPath, bytes, int]] = []
         if inventor_catalog_root is not None:
             try:
                 requested_catalog = Path(inventor_catalog_root)
@@ -742,6 +744,21 @@ class AgentRun:
                     raise ArtifactError(
                         "inventor schema-v7 catalog entry declares no Codex skill"
                     )
+                skill_names = tuple(bundle.extension.name for bundle in bundles)
+                agent_definition = inventor_custom_agent_bytes(
+                    entry.name,
+                    taste,
+                    skill_names=skill_names,
+                )
+                agent_destination = (
+                    PurePosixPath(".codex/agents") / (entry.name + ".toml")
+                )
+                _reject_private_agent_bytes(
+                    agent_destination.as_posix(), agent_definition
+                )
+                inventor_agent_files.append(
+                    (agent_destination, agent_definition, 0o400)
+                )
                 target = PurePosixPath("catalog/inventors") / entry.name
                 for filename, content in (("inventor.json", manifest), ("TASTE.md", taste)):
                     destination = target / filename
@@ -774,6 +791,7 @@ class AgentRun:
         all_input_files.extend(domain_files)
         all_input_files.extend(inventor_skill_files)
         all_input_files.extend(catalog_files)
+        all_input_files.extend(inventor_agent_files)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
         if len(input_paths) != len(set(input_paths)):
@@ -853,6 +871,19 @@ class AgentRun:
         ):
             os.chmod(directory, 0o500)
         os.chmod(selected / ".agents", 0o500)
+        codex_input_root = selected / ".codex"
+        if codex_input_root.exists():
+            for directory in sorted(
+                (
+                    path
+                    for path in codex_input_root.rglob("*")
+                    if path.is_dir()
+                ),
+                key=lambda path: len(path.parts),
+                reverse=True,
+            ):
+                os.chmod(directory, 0o500)
+            os.chmod(codex_input_root, 0o500)
         catalog_input_root = selected / "catalog"
         if catalog_input_root.exists():
             for directory in sorted(
@@ -1086,8 +1117,26 @@ class AgentRun:
         required = {"WISH.json", "AGENTS.md", ".agents/skills/autonomous-workshop/SKILL.md"}
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
+        roster_ids = {
+            PurePosixPath(path).parts[2]
+            for path in observed_paths
+            if len(PurePosixPath(path).parts) == 4
+            and PurePosixPath(path).parts[:2] == ("catalog", "inventors")
+            and PurePosixPath(path).name == "inventor.json"
+        }
+        expected_agent_paths = {
+            ".codex/agents/%s.toml" % inventor_id for inventor_id in roster_ids
+        }
+        observed_agent_paths = {
+            path for path in observed_paths if path.startswith(".codex/agents/")
+        }
+        if expected_agent_paths != observed_agent_paths:
+            raise StateConflict(
+                "project-scoped Codex Inventor agents differ from the roster"
+            )
         immutable_trees = (
             (self.run_root / ".agents", ".agents/", "skill"),
+            (self.run_root / ".codex", ".codex/", "Codex agent"),
             (self.run_root / "catalog", "catalog/", "catalog"),
         )
         for tree_root, prefix, label in immutable_trees:

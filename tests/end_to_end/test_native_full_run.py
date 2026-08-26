@@ -426,20 +426,15 @@ class _FactoryEffects:
         self.writer_calls = []
         self.session_calls = []
         self.publish_calls = []
-        self.registered_products = []
+        self.ledgers = []
 
     def credentials(self, inventor_id):
         self.credential_requests.append(inventor_id)
         return self.credentials_value
 
-    def writer(self, store, inventor_id, credentials):
-        self.writer_calls.append((store, inventor_id, credentials))
-        products = store.list_products()
-        if len(products) != 1 or products[0]["stage"] != "release":
-            raise AssertionError(
-                "native Release must register its durable product before publishing"
-            )
-        self.registered_products.append(products[0])
+    def writer(self, ledger, inventor_id, credentials):
+        self.writer_calls.append((ledger, inventor_id, credentials))
+        self.ledgers.append(ledger)
         fixture = self
 
         def write(context, root, manifest):
@@ -447,22 +442,24 @@ class _FactoryEffects:
             if not (Path(root) / "MANUAL.md").is_file():
                 raise AssertionError("Factory effect did not receive the verified manual")
             return Receipt(
-                pack_sha256=_sha256(b"fixture-model-handoff"),
+                payload_sha256=_sha256(b"fixture-model-handoff"),
                 artifact_sha256=context.made.artifact_sha256,
+                adapter="factory",
+                status="draft",
+                observed_at=_OBSERVED_AT,
+                reference="design-orbit-dog",
+                details={
+                    "release_sha256": manifest.artifact_sha256,
+                    "page_url": _PAGE_URL,
+                    "cover_url": _COVER_URL,
+                },
                 design_id="design-orbit-dog",
                 slug="orbit-dog",
                 owner_id="owner-alice",
                 root_id="design-orbit-dog",
                 current_history_id="history-orbit-dog-1",
                 published_history_id=None,
-                status="draft",
                 project_url="https://cdn.autonomous.ai/projects/orbit-dog-1/",
-                observed_at=_OBSERVED_AT,
-                details={
-                    "release_sha256": manifest.artifact_sha256,
-                    "page_url": _PAGE_URL,
-                    "cover_url": _COVER_URL,
-                },
             )
 
         return write
@@ -471,25 +468,27 @@ class _FactoryEffects:
         self.session_calls.append(credentials)
         return SimpleNamespace(credentials=credentials)
 
-    def transition(self, session):
+    def transition(self, ledger, session):
         fixture = self
 
         class PublicTransition:
             def publish(self, draft):
-                fixture.publish_calls.append((session, draft))
+                fixture.publish_calls.append((ledger, session, draft))
                 return Receipt(
-                    pack_sha256=draft.pack_sha256,
+                    payload_sha256=draft.payload_sha256,
                     artifact_sha256=draft.artifact_sha256,
+                    adapter="factory",
+                    status="public",
+                    observed_at=_OBSERVED_AT,
+                    reference=draft.reference,
+                    details=dict(draft.details),
                     design_id=draft.design_id,
                     slug=draft.slug,
                     owner_id=draft.owner_id,
                     root_id=draft.root_id,
                     current_history_id=draft.current_history_id,
                     published_history_id=draft.current_history_id,
-                    status="public",
                     project_url=draft.project_url,
-                    observed_at=_OBSERVED_AT,
-                    details=dict(draft.details),
                     listing_active=True,
                     listing_price_cents=2400,
                     listing_currency="USD",
@@ -522,13 +521,16 @@ class NativeFullRunTest(unittest.TestCase):
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
                 "workshop.workflow.native_run.verify_native_made_cad",
                 side_effect=verify_cad,
             ), mock.patch(
-                "workshop.workflow.native_run.FactoryAgentReleaseWriter",
+                "workshop.workflow.native_run.FactoryReleaseWriter",
                 side_effect=effects.writer,
             ), mock.patch(
                 "workshop.workflow.native_run.FactoryAgentSession",
@@ -653,6 +655,9 @@ class NativeFullRunTest(unittest.TestCase):
             with mock.patch.dict(
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
             ), mock.patch(
@@ -662,7 +667,7 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run._factory_credentials",
                 side_effect=effects.credentials,
             ), mock.patch(
-                "workshop.workflow.native_run.FactoryAgentReleaseWriter",
+                "workshop.workflow.native_run.FactoryReleaseWriter",
                 side_effect=effects.writer,
             ), mock.patch(
                 "workshop.workflow.native_run.FactoryAgentSession",
@@ -671,21 +676,36 @@ class NativeFullRunTest(unittest.TestCase):
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
             ):
-                receipt = start_native_run(wish, publish_requested=True)
+                draft_receipt = start_native_run(wish, publish_requested=False)
                 paths = native_run_paths(wish.product_id)
+                native_calls_before_promotion = len(launcher.starts) + len(
+                    launcher.resumes
+                )
+                receipt = resume_native_run(
+                    wish.product_id, publish_requested=True
+                )
                 run = AgentRun.open(
                     paths.workspace, host_state_root=paths.host_state
                 )
                 checkpoint = run.snapshot()
 
+            self.assertEqual(draft_receipt["status"], "waiting")
+            self.assertEqual(draft_receipt["stage"], "deliver")
+            self.assertEqual(draft_receipt["native_turns"], 5)
+            self.assertEqual(draft_receipt["publication"]["status"], "draft")
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 5)
+            self.assertEqual(receipt["native_turns"], 0)
+            self.assertEqual(receipt["action"], "published-existing-release")
             self.assertEqual(receipt["publication"]["status"], "public")
             self.assertTrue(receipt["publication"]["verified"])
             self.assertEqual(receipt["publication"]["page_url"], _PAGE_URL)
             self.assertEqual(checkpoint.stage, "deliver")
             self.assertEqual(checkpoint.status, "waiting")
+            self.assertEqual(
+                len(launcher.starts) + len(launcher.resumes),
+                native_calls_before_promotion,
+            )
 
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 4)
@@ -738,19 +758,17 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 self.assertEqual(made.product["title"], "Orbit Dog Draughts")
 
-            self.assertEqual(effects.credential_requests, ["alice"])
+            self.assertEqual(effects.credential_requests, ["alice", "alice"])
             self.assertEqual(len(effects.writer_calls), 2)
             self.assertIs(effects.writer_calls[0][2], effects.credentials_value)
-            self.assertEqual(len(effects.registered_products), 1)
+            self.assertEqual(len(effects.ledgers), 1)
             self.assertEqual(
-                effects.registered_products[0]["artifact_sha256"],
-                release_packet["inputs"]["made"]["product_manifest"][
-                    "artifact_sha256"
-                ],
+                effects.ledgers[0].path,
+                paths.host_state / "factory-effects.sqlite3",
             )
             self.assertEqual(len(effects.session_calls), 1)
             self.assertEqual(len(effects.publish_calls), 1)
-            self.assertTrue(effects.publish_calls[0][1].is_verified_draft)
+            self.assertTrue(effects.publish_calls[0][2].is_verified_draft)
 
             effect_path = paths.host_state / "release-effect.json"
             self.assertEqual(stat.S_IMODE(effect_path.stat().st_mode), 0o600)
@@ -865,7 +883,7 @@ class NativeFullRunTest(unittest.TestCase):
             )
             self.assertEqual(
                 release_gate["evidence"]["checks"]["publication_status"],
-                "public",
+                "draft",
             )
 
 

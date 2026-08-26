@@ -35,7 +35,7 @@
 /src/workshop/runtime/ @deehw
 /tests/runtime/ @deehw
 /.agents/product-run/ @deehw
-/.agents/skills/autonomous-workshop/ @deehw
+/.agents/product-run/.agents/skills/autonomous-workshop/ @deehw
 /src/workshop/integrations/ @deehw
 /tests/integrations/ @deehw
 /src/workshop/contributors/ @deehw

@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1660" role="img" aria-labelledby="title description">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1860" role="img" aria-labelledby="title description">
   <title id="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</title>
-  <desc id="description">A vertical journey through the Workshop from Wish and Match to Invent, Make, Playtest, Release, Deliver, and Reviews. Invent is concept exploration and industrial design. Make is mechanical and 3D design. Invent, Make, and Release have self-improving loops. AI Players send problems back to Make, and customer Reviews inspire the next revision and future Wishes.</desc>
+  <desc id="description">A vertical journey from Wish into a pluggable agentic runtime, where one root coding-agent session acts as Workshop Manager. Codex is implemented now; Claude Code and Grok Build can implement the same boundary later. The Manager matches an Inventor subagent and orchestrates product work through Release inside one persistent toy project; the trusted host owns authorized Deliver effects.</desc>
 
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
@@ -23,15 +23,21 @@
       .subtitle { font: 400 16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #626b76; }
       .legend { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #4b5560; }
       .node { fill: #ffffff; stroke: #d7d3cc; stroke-width: 2; }
+      .node-manager { fill: #f0f5f4; stroke: #56847c; stroke-width: 2.5; }
       .node-internal { fill: #fff8ec; stroke: #e8a548; stroke-width: 2; }
       .node-ai { fill: #eef8ff; stroke: #67aee0; stroke-width: 2; }
       .node-human { fill: #f7f1ff; stroke: #a782dc; stroke-width: 2; }
       .eyebrow { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.5px; fill: #747c85; }
+      .eyebrow-manager { fill: #376b61; }
       .eyebrow-internal { fill: #a85e05; }
       .eyebrow-ai { fill: #11689f; }
       .eyebrow-human { fill: #6840aa; }
       .heading { font: 700 23px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #17202a; }
       .body { font: 400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #515a65; }
+      .pill-now { fill: #376b61; }
+      .pill-future { fill: #ffffff; stroke: #82a79f; stroke-width: 1; }
+      .pill-now-text { font: 700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0.6px; fill: #ffffff; }
+      .pill-future-text { font: 700 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 0.4px; fill: #376b61; }
       .micro-copy { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1px; fill: #a85e05; }
       .gate { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #a85e05; }
       .gate-ai { font: 700 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #11689f; }
@@ -44,12 +50,11 @@
     </style>
   </defs>
 
-  <rect width="1000" height="1660" rx="28" fill="#f5f2ec"/>
-
+  <rect width="1000" height="1860" rx="28" fill="#f5f2ec"/>
   <text x="50" y="65" class="title">A peek inside the Autonomous Workshop: how a Wish becomes a toy</text>
 
   <g transform="translate(55 112)">
-    <g transform="translate(0 0)">
+    <g>
       <line x1="0" y1="0" x2="30" y2="0" stroke="#525b66" stroke-width="3"/>
       <text x="40" y="5" class="legend">through the Workshop</text>
     </g>
@@ -68,32 +73,33 @@
   </g>
 
   <!-- Main vertical journey -->
-  <path class="flow" d="M 500 280 V 340"/>
-  <path class="flow" d="M 500 450 V 510"/>
-  <path class="flow" d="M 500 650 V 710"/>
-  <path class="flow" d="M 500 850 V 910"/>
-  <path class="flow" d="M 500 1050 V 1110"/>
-  <path class="flow" d="M 500 1250 V 1310"/>
+  <path class="flow" d="M 500 280 V 320"/>
+  <path class="flow" d="M 500 470 V 520"/>
+  <path class="flow" d="M 500 630 V 680"/>
+  <path class="flow" d="M 500 820 V 880"/>
+  <path class="flow" d="M 500 1020 V 1080"/>
+  <path class="flow" d="M 500 1220 V 1280"/>
   <path class="flow" d="M 500 1420 V 1480"/>
+  <path class="flow" d="M 500 1590 V 1650"/>
 
   <!-- External feedback lanes -->
-  <path class="feedback-ai" transform="translate(0 40)" d="M 220 940 H 116 C 92 940, 80 926, 80 904 V 766 C 80 746, 94 740, 116 740 H 218"/>
-  <path class="feedback-human" transform="translate(0 40)" d="M 780 1495 H 884 C 912 1495, 925 1477, 925 1454 V 562 C 925 542, 910 540, 884 540 H 782"/>
+  <path class="feedback-ai" d="M 220 1150 H 116 C 92 1150, 80 1136, 80 1114 V 976 C 80 956, 94 950, 116 950 H 218"/>
+  <path class="feedback-human" d="M 780 1705 H 884 C 912 1705, 925 1687, 925 1664 V 752 C 925 732, 910 730, 884 730 H 782"/>
 
   <!-- Side-loop labels -->
-  <g transform="translate(0 40)">
-    <rect x="20" y="805" width="164" height="100" rx="16" fill="#eef8ff"/>
-    <text x="102" y="830" text-anchor="middle" class="edge-label-ai">AI PLAYERS SAY</text>
-    <text x="102" y="853" text-anchor="middle" class="body">what broke</text>
-    <text x="102" y="874" text-anchor="middle" class="body">what dragged</text>
-    <text x="102" y="895" text-anchor="middle" class="body">back to MAKE</text>
+  <g>
+    <rect x="20" y="1015" width="164" height="100" rx="16" fill="#eef8ff"/>
+    <text x="102" y="1040" text-anchor="middle" class="edge-label-ai">AI PLAYERS SAY</text>
+    <text x="102" y="1063" text-anchor="middle" class="body">what broke</text>
+    <text x="102" y="1084" text-anchor="middle" class="body">what dragged</text>
+    <text x="102" y="1105" text-anchor="middle" class="body">back to MAKE</text>
   </g>
-  <g transform="translate(0 40)">
-    <rect x="816" y="935" width="164" height="100" rx="16" fill="#f7f1ff"/>
-    <text x="898" y="960" text-anchor="middle" class="edge-label-human">PLAYERS SAY</text>
-    <text x="898" y="983" text-anchor="middle" class="body">what they loved</text>
-    <text x="898" y="1004" text-anchor="middle" class="body">what surprised them</text>
-    <text x="898" y="1025" text-anchor="middle" class="body">what they wish for next</text>
+  <g>
+    <rect x="816" y="1145" width="164" height="100" rx="16" fill="#f7f1ff"/>
+    <text x="898" y="1170" text-anchor="middle" class="edge-label-human">PLAYERS SAY</text>
+    <text x="898" y="1193" text-anchor="middle" class="body">what they loved</text>
+    <text x="898" y="1214" text-anchor="middle" class="body">what surprised them</text>
+    <text x="898" y="1235" text-anchor="middle" class="body">what they wish for next</text>
   </g>
 
   <!-- Wish -->
@@ -104,109 +110,122 @@
   <text x="250" y="230" class="heading">WISH</text>
   <text x="250" y="256" class="body">Say what you want, in your own words.</text>
 
-  <!-- Match -->
-  <g transform="translate(0 20)">
-    <g filter="url(#shadow)">
-      <rect class="node" x="220" y="320" width="560" height="110" rx="20"/>
-    </g>
-    <text x="250" y="348" class="eyebrow">THE WORKSHOP LISTENS</text>
-    <text x="250" y="380" class="heading">MATCH</text>
-    <text x="250" y="406" class="body">Find the Inventor who might love this Wish most.</text>
+  <!-- Workshop Manager / agentic runtime -->
+  <g filter="url(#shadow)">
+    <rect class="node-manager" x="180" y="320" width="640" height="150" rx="22"/>
   </g>
+  <text x="210" y="348" class="eyebrow eyebrow-manager">PLUGGABLE AGENTIC RUNTIME</text>
+  <text x="210" y="380" class="heading">WORKSHOP MANAGER</text>
+  <text x="210" y="405" class="body">One root coding-agent session orchestrates Match through Release</text>
+  <text x="210" y="426" class="body">inside this toy's persistent project; the host owns Deliver effects.</text>
+  <rect x="230" y="440" width="138" height="22" rx="11" class="pill-future"/>
+  <text x="299" y="455" text-anchor="middle" class="pill-future-text">CLAUDE CODE</text>
+  <rect x="382" y="440" width="138" height="22" rx="11" class="pill-now"/>
+  <text x="451" y="455" text-anchor="middle" class="pill-now-text">CODEX · NOW</text>
+  <rect x="534" y="440" width="138" height="22" rx="11" class="pill-future"/>
+  <text x="603" y="455" text-anchor="middle" class="pill-future-text">GROK BUILD</text>
+  <text x="692" y="455" class="pill-future-text">+ MORE</text>
 
-  <g transform="translate(0 40)">
+  <!-- Match -->
+  <g filter="url(#shadow)">
+    <rect class="node" x="220" y="520" width="560" height="110" rx="20"/>
+  </g>
+  <text x="250" y="548" class="eyebrow">THE MANAGER ROUTES A SUBAGENT</text>
+  <text x="250" y="580" class="heading">MATCH</text>
+  <text x="250" y="606" class="body">Choose the Inventor subagent whose Taste fits this Wish.</text>
+
   <!-- Invent -->
   <g filter="url(#shadow)">
-    <rect class="node-internal" x="220" y="470" width="560" height="140" rx="20"/>
+    <rect class="node-internal" x="220" y="680" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="490" x2="600" y2="590" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="497" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
-  <text x="250" y="531" class="heading">INVENT</text>
-  <text x="250" y="556" class="body">Explore many directions in industrial design.</text>
-  <text x="250" y="578" class="body">Choose a concept, then shape its character,</text>
-  <text x="250" y="600" class="body">play, and spark.</text>
-  <path class="micro" d="M 665 498 C 735 472, 764 525, 730 572 C 700 612, 633 583, 646 536"/>
-  <text x="697" y="507" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="529" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="551" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="573" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <line x1="600" y1="700" x2="600" y2="800" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="707" class="eyebrow eyebrow-internal">INVENTOR SUBAGENT · MANAGER REVIEW</text>
+  <text x="250" y="741" class="heading">INVENT</text>
+  <text x="250" y="766" class="body">Explore many directions in industrial design.</text>
+  <text x="250" y="788" class="body">Choose a concept, then shape its character,</text>
+  <text x="250" y="810" class="body">play, and spark.</text>
+  <path class="micro" d="M 665 708 C 735 682, 764 735, 730 782 C 700 822, 633 793, 646 746"/>
+  <text x="697" y="717" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="739" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="761" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="783" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Invent gate -->
-  <rect x="516" y="626" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="644" text-anchor="middle" class="gate">INVENT VERIFIED</text>
+  <rect x="516" y="836" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="854" text-anchor="middle" class="gate">INVENT VERIFIED</text>
 
   <!-- Make -->
   <g filter="url(#shadow)">
-    <rect class="node-internal" x="220" y="670" width="560" height="140" rx="20"/>
+    <rect class="node-internal" x="220" y="880" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="690" x2="600" y2="790" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="697" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
-  <text x="250" y="731" class="heading">MAKE</text>
-  <text x="250" y="756" class="body">Turn the concept into mechanical + 3D design.</text>
-  <text x="250" y="778" class="body">Build printable parts that fit, move,</text>
-  <text x="250" y="800" class="body">and feel right.</text>
-  <path class="micro" d="M 665 698 C 735 672, 764 725, 730 772 C 700 812, 633 783, 646 736"/>
-  <text x="697" y="707" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="729" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="751" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="773" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <line x1="600" y1="900" x2="600" y2="1000" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="907" class="eyebrow eyebrow-internal">MANAGER + SPECIALIST SKILLS · ITERATE</text>
+  <text x="250" y="941" class="heading">MAKE</text>
+  <text x="250" y="966" class="body">Turn the concept into mechanical + 3D design.</text>
+  <text x="250" y="988" class="body">Build printable parts that fit, move,</text>
+  <text x="250" y="1010" class="body">and feel right.</text>
+  <path class="micro" d="M 665 908 C 735 882, 764 935, 730 982 C 700 1022, 633 993, 646 946"/>
+  <text x="697" y="917" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="939" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="961" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="983" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Make gate -->
-  <rect x="516" y="826" width="144" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="844" text-anchor="middle" class="gate">MAKE VERIFIED</text>
+  <rect x="516" y="1036" width="144" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="1054" text-anchor="middle" class="gate">MAKE VERIFIED</text>
 
   <!-- Playtest -->
   <g filter="url(#shadow)">
-    <rect class="node-ai" x="220" y="870" width="560" height="140" rx="20"/>
+    <rect class="node-ai" x="220" y="1080" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="890" x2="600" y2="990" stroke="#9bc8e8" stroke-width="1.5"/>
-  <text x="250" y="898" class="eyebrow eyebrow-ai">AI PLAYERS · FEEDBACK LOOP</text>
-  <text x="250" y="932" class="heading">PLAYTEST</text>
-  <text x="250" y="957" class="body">Play it all the way through. Try clever,</text>
-  <text x="250" y="977" class="body">strange, and troublesome things.</text>
-  <text x="250" y="997" class="body">Find every reason to send it back.</text>
-  <text x="628" y="946" class="edge-label-ai">TROUBLE: MAKE AGAIN</text>
-  <text x="628" y="973" class="edge-label-ai">PASSES: KEEP GOING</text>
+  <line x1="600" y1="1100" x2="600" y2="1200" stroke="#9bc8e8" stroke-width="1.5"/>
+  <text x="250" y="1108" class="eyebrow eyebrow-ai">INDEPENDENT AI PLAYERS · FEEDBACK LOOP</text>
+  <text x="250" y="1142" class="heading">PLAYTEST</text>
+  <text x="250" y="1167" class="body">Play it all the way through. Try clever,</text>
+  <text x="250" y="1187" class="body">strange, and troublesome things.</text>
+  <text x="250" y="1207" class="body">Find every reason to send it back.</text>
+  <text x="628" y="1156" class="edge-label-ai">TROUBLE: MAKE AGAIN</text>
+  <text x="628" y="1183" class="edge-label-ai">PASSES: KEEP GOING</text>
 
   <!-- Playtest gate -->
-  <rect x="530" y="1026" width="136" height="26" rx="13" fill="#eef8ff"/>
-  <text x="598" y="1044" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
+  <rect x="530" y="1236" width="136" height="26" rx="13" fill="#eef8ff"/>
+  <text x="598" y="1254" text-anchor="middle" class="gate-ai">PLAYTEST PASSED</text>
 
   <!-- Release -->
   <g filter="url(#shadow)">
-    <rect class="node-internal" x="220" y="1070" width="560" height="140" rx="20"/>
+    <rect class="node-internal" x="220" y="1280" width="560" height="140" rx="20"/>
   </g>
-  <line x1="600" y1="1090" x2="600" y2="1190" stroke="#edc58a" stroke-width="1.5"/>
-  <text x="250" y="1097" class="eyebrow eyebrow-internal">NATIVE AGENT · ITERATE + VERIFY</text>
-  <text x="250" y="1131" class="heading">RELEASE</text>
-  <text x="250" y="1158" class="body">Assemble the manual, product-page facts,</text>
-  <text x="250" y="1180" class="body">evidence, attribution, and publication intent.</text>
-  <path class="micro" d="M 665 1098 C 735 1072, 764 1125, 730 1172 C 700 1212, 633 1183, 646 1136"/>
-  <text x="697" y="1107" text-anchor="middle" class="micro-copy">OBSERVE</text>
-  <text x="697" y="1129" text-anchor="middle" class="micro-copy">ACT</text>
-  <text x="697" y="1151" text-anchor="middle" class="micro-copy">VERIFY</text>
-  <text x="697" y="1173" text-anchor="middle" class="micro-copy">IMPROVE</text>
+  <line x1="600" y1="1300" x2="600" y2="1400" stroke="#edc58a" stroke-width="1.5"/>
+  <text x="250" y="1307" class="eyebrow eyebrow-internal">MANAGER · ITERATE + VERIFY</text>
+  <text x="250" y="1341" class="heading">RELEASE</text>
+  <text x="250" y="1368" class="body">Assemble the manual, product-page facts,</text>
+  <text x="250" y="1390" class="body">evidence, attribution, and publication intent.</text>
+  <path class="micro" d="M 665 1308 C 735 1282, 764 1335, 730 1382 C 700 1422, 633 1393, 646 1346"/>
+  <text x="697" y="1317" text-anchor="middle" class="micro-copy">OBSERVE</text>
+  <text x="697" y="1339" text-anchor="middle" class="micro-copy">ACT</text>
+  <text x="697" y="1361" text-anchor="middle" class="micro-copy">VERIFY</text>
+  <text x="697" y="1383" text-anchor="middle" class="micro-copy">IMPROVE</text>
 
   <!-- Release gate -->
-  <rect x="504" y="1226" width="168" height="26" rx="13" fill="#fff8ec"/>
-  <text x="588" y="1244" text-anchor="middle" class="gate">RELEASE VERIFIED</text>
+  <rect x="504" y="1436" width="168" height="26" rx="13" fill="#fff8ec"/>
+  <text x="588" y="1454" text-anchor="middle" class="gate">RELEASE VERIFIED</text>
 
   <!-- Deliver -->
   <g filter="url(#shadow)">
-    <rect class="node" x="220" y="1270" width="560" height="110" rx="20"/>
+    <rect class="node" x="220" y="1480" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1298" class="eyebrow">AUTONOMOUS</text>
-  <text x="250" y="1330" class="heading">DELIVER</text>
-  <text x="250" y="1356" class="body">Print it, check it by hand, tuck it into a box, and send it to your door.</text>
+  <text x="250" y="1508" class="eyebrow">AUTHORIZED PHYSICAL EFFECTS</text>
+  <text x="250" y="1540" class="heading">DELIVER</text>
+  <text x="250" y="1566" class="body">Print it, check it by hand, tuck it into a box, and send it to your door.</text>
 
   <!-- Reviews -->
   <g filter="url(#shadow)">
-    <rect class="node-human" x="220" y="1440" width="560" height="110" rx="20"/>
+    <rect class="node-human" x="220" y="1650" width="560" height="110" rx="20"/>
   </g>
-  <text x="250" y="1468" class="eyebrow eyebrow-human">YOU PLAY</text>
-  <text x="250" y="1500" class="heading">REVIEWS</text>
-  <text x="250" y="1526" class="body">What you say helps this toy grow—and starts the next adventure.</text>
+  <text x="250" y="1678" class="eyebrow eyebrow-human">YOU PLAY</text>
+  <text x="250" y="1710" class="heading">REVIEWS</text>
+  <text x="250" y="1736" class="body">What you say helps this toy grow—and starts the next adventure.</text>
 
-  <text x="500" y="1585" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
-  </g>
+  <text x="500" y="1810" text-anchor="middle" class="subtitle">One Wish in. One never-before-seen toy out.</text>
+
 </svg>

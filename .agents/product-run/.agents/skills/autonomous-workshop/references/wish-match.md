@@ -33,9 +33,9 @@ provenance.
 You are the Workshop Manager. Where useful, use native dynamic subagents for
 bounded candidate-fit analysis. Brief each one from the exact materialized
 candidate bytes and treat its answer as input, not a vote or gate. You must
-synthesize the complete ranking and selected Inventor. Do not launch another
-Codex process, depend on a custom named-role registry, or run candidate agents
-through Python.
+synthesize the complete ranking and selected Inventor. Use the materialized
+project-scoped custom-agent roster; do not launch another Codex process or run
+candidate agents through Python.
 
 Write one authored JSON source with exactly `selected_inventor_id` and
 `ranking`. Every ranking item must be evidence-based and refer to an eligible

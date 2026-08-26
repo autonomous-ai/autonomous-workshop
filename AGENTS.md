@@ -6,10 +6,9 @@ architecture rules come first. The section **Coding agents building this
 repository** is specifically for agents modifying, reviewing, testing, or
 documenting Workshop; it is not the product-run workflow.
 
-A normal product run is launched in a separate private run directory. The host
-materializes the product-run constitution from `.agents/product-run/AGENTS.md`
-there as its root `AGENTS.md`, together with the workflow skill at
-`.agents/skills/autonomous-workshop/SKILL.md`.
+A normal product run is launched in a separate persistent toy project. The host
+materializes the complete `.agents/product-run/` template there, including its
+root `AGENTS.md` and nested `.agents/skills/autonomous-workshop/SKILL.md`.
 
 ## Shared runtime architecture
 
@@ -34,17 +33,18 @@ All implementation and product-run work must preserve these boundaries:
   creation, inspection, and repair with its own tools and applicable skills.
 - An Inventor is a declared specialist bundle. `TASTE.md` governs creative
   judgment; `inventor.json` identifies the specialist and declares eligible
-  capabilities/extensions; optional inventor-owned Codex skill trees may
-  contain `SKILL.md`, scripts, references, assets, and tested deterministic
-  tools for specialist craft. Custom code may not become an agent scheduler,
+  capabilities/extensions; the required `<id>-inventor` skill defines its
+  primary method, while optional additional Inventor-prefixed skill trees may
+  contain scripts, references, assets, and tested deterministic tools for
+  specialist craft. Custom code may not become an agent scheduler,
   prompt loop, lifecycle engine, or effect path.
-- The Manager dynamically delegates with the exact host-materialized Inventor
-  bytes. V1 does not depend on an unfinished or undocumented named-role
-  registry. The root session alone receives host stage authority and submits a
-  stage proposal; child agents cannot advance gates or perform external
-  effects.
+- The host materializes every eligible Inventor as an official project-scoped
+  Codex custom agent under `.codex/agents/`, bound to its exact Taste, catalog
+  record, and skill bytes. Codex owns native spawning, routing, and synthesis.
+  The root session alone receives host stage authority and submits a stage
+  proposal; child agents cannot advance gates or perform external effects.
 - Python is narrow trusted substrate: typed contracts, deterministic tools and
-  gates, artifact hashing, checkpoints, leases, budgets, sandbox/session
+  gates, artifact hashing, checkpoints, exclusive run-mutation locks, budgets, sandbox/session
   boundaries, authorization, idempotency, receipts, and reconciliation.
 - External-effect credentials never enter the native agent subprocess. The
   host alone performs authorized Factory, payment, manufacture, postage,
@@ -77,11 +77,12 @@ orchestration as a compatibility layer.
   bounded Make–Playtest iteration, and the trusted whole-run host composition.
 - `src/workshop/<stage>/`: stage-owned public contracts and deterministic tools.
 - `src/workshop/make/skills/`: reusable domain skills owned by Make.
-- `.agents/product-run/`: constitution materialized only for a product run.
-- `.agents/skills/autonomous-workshop/`: product-run workflow skill.
-- `.agents/skills/autonomous-workshop/scripts/stage_proposal.py`: run-local,
-  standard-library finalizer for exact stage contracts and outcome proposals;
-  it does not reason or advance gates.
+- `.agents/product-run/`: complete template materialized only into a toy
+  project; its nested `.agents/skills/autonomous-workshop/` is intentionally
+  invisible to repo-builder sessions.
+- `.agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py`:
+  run-local standard-library finalizer for exact stage contracts and outcome
+  proposals; it does not reason or advance gates.
 - `tests/<component>/`: tests mirroring the component that owns the behavior.
 
 Keep the `src/` layout and the single `workshop` library namespace. The `cli`

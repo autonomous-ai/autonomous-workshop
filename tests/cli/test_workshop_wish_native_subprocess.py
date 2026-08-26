@@ -88,7 +88,10 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
                 "PATH": os.environ.get("PATH", os.defpath),
                 "HOME": os.environ.get("HOME", str(root)),
             }
-            with mock.patch.dict(os.environ, environment, clear=True), redirect_stdout(
+            with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), redirect_stdout(
                 output
             ), redirect_stderr(progress):
                 exit_code = main(("wish", objective, "--json"))
@@ -101,7 +104,8 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertEqual(receipt["stage"], "match")
             self.assertEqual(receipt["publication"]["status"], "not-created")
 
-            workspace = home / "runs" / receipt["product_id"] / "workspace"
+            workspace = home / "toys" / receipt["product_id"]
+            self.assertTrue((home / "state" / receipt["product_id"]).is_dir())
             observed = json.loads(
                 (workspace / "native-probe.json").read_text(encoding="utf-8")
             )
@@ -110,7 +114,22 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertTrue(observed["product_skill"])
             self.assertFalse(observed["factory_visible"])
             self.assertIn("--search", observed["arguments"])
-            self.assertIn("workspace-write", observed["arguments"])
+            self.assertIn("--strict-config", observed["arguments"])
+            self.assertNotIn("--sandbox", observed["arguments"])
+            self.assertIn(
+                'default_permissions="workshop-product-run"',
+                observed["arguments"],
+            )
+            self.assertTrue(
+                any(
+                    argument.startswith(
+                        "permissions.workshop-product-run.filesystem="
+                    )
+                    and '":root"="deny"' in argument
+                    and '"**/.env*"="deny"' in argument
+                    for argument in observed["arguments"]
+                )
+            )
             self.assertIn("current match stage", observed["prompt"])
             self.assertNotIn(objective, observed["prompt"])
             self.assertFalse((workspace / "agent-outcome.json").exists())

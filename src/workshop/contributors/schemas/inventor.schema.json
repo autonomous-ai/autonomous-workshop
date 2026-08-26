@@ -69,6 +69,15 @@
       "minItems": 1,
       "maxItems": 8,
       "uniqueItems": true,
+      "contains": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string", "pattern": "-inventor$"}
+        }
+      },
+      "minContains": 1,
+      "maxContains": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,

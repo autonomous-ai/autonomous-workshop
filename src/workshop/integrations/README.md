@@ -1,10 +1,13 @@
 # Integrations
 
-Owns external adapters and Factory-specific request canonicalization for model,
-CAD, publication, and delivery boundaries. Runtime owns the durable receipt
-contracts those adapters produce. Secrets remain in the calling process and
-never enter durable Workshop records.
+Owns the single authenticated Factory adapter used by Release. `factory.py`
+builds the exact model-only ZIP handoff, logs in with the selected Inventor's
+Factory account, performs bounded same-origin requests, proves the private
+import by authenticated readback, and performs an explicit public transition
+only after `--publish` authority. Credentials remain in the host process and
+never enter the Codex toy project, ledger, Receipt, or artifact tree.
 
-Public API: `workshop.integrations` contains only adapter protocols. Concrete
-Factory and Shop implementations stay in qualified modules and depend on
-runtime-owned proof contracts; runtime code never imports an integration.
+Public API: `workshop.integrations` exports the canonical Factory credentials,
+session, client, Release writer, and public transition. The adapter depends on
+runtime-owned `Receipt` and `EffectLedger` contracts; runtime never imports an
+integration.

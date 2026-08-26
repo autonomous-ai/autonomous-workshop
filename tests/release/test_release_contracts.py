@@ -48,19 +48,19 @@ class ProductReleaseContractTest(unittest.TestCase):
                 "https://www.autonomous.ai/factory/product/current-route"
             )
         return Receipt(
-            pack_sha256="b" * 64,
+            payload_sha256="b" * 64,
             artifact_sha256=SHA256,
+            adapter="factory",
+            status="draft",
+            observed_at="2026-08-26T00:00:00Z",
+            reference="design-1",
+            details=details,
             design_id="design-1",
             slug="current-route",
             owner_id="owner-1",
             root_id="design-1",
             current_history_id="history-1",
-            status="draft",
             project_url=project_url or "https://cdn.autonomous.ai/projects/history-1/",
-            observed_at="2026-08-26T00:00:00Z",
-            door="shop",
-            reference="design-1",
-            details=details,
         )
 
     def test_site_receipt_is_the_only_receipt_property(self):

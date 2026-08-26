@@ -157,6 +157,11 @@ def parse_inventor_extensions(
         raise ManifestError("Inventor extensions must have unique names and paths")
     if names != sorted(names):
         raise ManifestError("Inventor extensions must be sorted by name")
+    primary = "%s-inventor" % inventor_id
+    if primary not in names:
+        raise ManifestError(
+            "Inventor extensions must declare the primary %s skill" % primary
+        )
     return extensions
 
 

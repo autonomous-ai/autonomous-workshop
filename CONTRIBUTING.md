@@ -93,10 +93,10 @@ not in an Inventor. Shared text-to-3D and CAD capabilities belong under
 `src/workshop/integrations/`. The CLI only parses user commands and invokes the
 host; it does not perform product reasoning.
 
-The checked-in product-run constitution and workflow skill live under
-`.agents/`. They are Runtime-owned source assets and are packaged byte-for-byte
-for isolated product runs. Root `AGENTS.md` remains guidance for coding agents
-building this repository.
+The checked-in product-run constitution and nested workflow skill live in the
+complete `.agents/product-run/` template. They are Runtime-owned source assets
+and are packaged byte-for-byte for isolated product runs. Root `AGENTS.md`
+remains guidance for coding agents building this repository.
 
 ## Public vocabulary
 
@@ -136,7 +136,7 @@ Run repository gates from the root:
 PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py' -v
 PYTHONPATH=src python -m cli skills list
 PYTHONPATH=src python -m cli schemas list
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
+python .agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
 python tools/verify_skill_locks.py
 python tools/scan_secrets.py
 python tests/packaging/installed_wheel_cli_acceptance.py

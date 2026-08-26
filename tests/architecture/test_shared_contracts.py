@@ -27,7 +27,7 @@ class SharedContractValidationTest(unittest.TestCase):
             with self.subTest(legacy=legacy):
                 self.assertFalse(hasattr(playtest_evidence, legacy))
 
-    def test_receipt_is_canonical_while_persisted_fields_stay_readable(self):
+    def test_receipt_uses_one_canonical_in_memory_and_persisted_shape(self):
         receipt = Receipt.create(
             payload_sha256=SHA,
             artifact_sha256=SHA,
@@ -37,13 +37,12 @@ class SharedContractValidationTest(unittest.TestCase):
             details={"verified": True},
         )
         self.assertEqual(receipt.payload_sha256, SHA)
-        self.assertEqual(receipt.pack_sha256, SHA)
         self.assertEqual(receipt.adapter, "example")
-        self.assertEqual(receipt.door, "example")
         persisted = receipt.to_dict()
-        self.assertIn("pack_sha256", persisted)
-        self.assertIn("door", persisted)
-        self.assertNotIn("payload_sha256", persisted)
+        self.assertEqual(persisted["payload_sha256"], SHA)
+        self.assertEqual(persisted["adapter"], "example")
+        self.assertNotIn("pack_sha256", persisted)
+        self.assertNotIn("door", persisted)
         self.assertEqual(Receipt.from_dict(persisted), receipt)
 
     def test_exact_versions_reject_ranges_wildcards_and_moving_labels(self):

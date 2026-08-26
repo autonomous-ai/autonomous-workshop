@@ -6,7 +6,7 @@ Not from a shelf. From your imagination.
 
 Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
 
-[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=release-stage-v1)](docs/images/workshop-floorplan.svg)
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=agentic-runtime-toys-v2)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
@@ -70,7 +70,7 @@ one works the same whether there are five of them or a thousand.
 
 ## Quick start
 
-Requires Python 3.11 or newer and an installed, signed-in Codex CLI. Workshop
+Requires Python 3.11 or newer and a signed-in Codex CLI 0.138.0 or newer. Workshop
 uses the developer's existing Codex subscription; it does not require a second
 model API key.
 
@@ -83,9 +83,12 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-Every Wish starts one native Codex session in a private run workspace. The same
-session Matches an Inventor, researches and Invents the concept, builds and
-repairs the CAD, Playtests the exact product, then writes the Release package:
+Every Wish first creates one persistent Codex project under `toys/`, populates
+its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
+native Codex session with that toy project as its working directory. The same
+session Matches an Inventor subagent, researches and Invents the concept,
+builds and repairs the CAD, Playtests the exact product, then writes the Release
+package:
 
 ```text
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
@@ -102,10 +105,12 @@ uv run workshop wish --publish \
   "I wish for a pocket-size moon-phase machine I can turn by hand"
 ```
 
-Factory credentials remain in the host environment and are never passed into
-Codex. Publication does not claim that a physical toy was printed, packed, or
-delivered. Deliver waits until separately authorized production and shipment
-receipts exist.
+Factory credentials live in the host-only
+`$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
+or in a compatible host environment for ephemeral deployments. They are loaded
+only outside a native agent turn and are never passed into Codex. Publication
+does not claim that a physical toy was printed, packed, or delivered. Deliver
+waits until separately authorized production and shipment receipts exist.
 
 The command prints a Wish ID. Use that ID to inspect or continue the same
 session after a process interruption:
@@ -121,19 +126,27 @@ proof.
 
 ## How the runtime is divided
 
-Codex does nearly all product work: discovery, Match judgment, research,
-concept exploration, design, CAD iteration, artifact inspection, AI Playtest,
-repair, manual writing, and factual product-page content.
+The selected coding-agent runtime does nearly all product work: discovery,
+Match judgment, research, concept exploration, design, CAD iteration, artifact
+inspection, AI Playtest, repair, manual writing, and factual product-page
+content. Codex is the only implemented runtime today. Claude Code and Grok
+Build are future adapters to the same project and checkpoint protocol.
 
-The root Codex session is the Workshop Manager. It can use Codex-native
-subagents for bounded Match analysis, the selected Inventor specialist, and
-independent inspection while remaining the one session the host starts and
-resumes. Workshop does not launch a second Codex process or schedule those
-agents in Python.
+The root coding-agent session plays the **Workshop Manager** role. With today's
+adapter, that is Codex using standard Codex-native subagents for bounded Match
+analysis, the selected Inventor specialist, and independent inspection. An
+Inventor is our friendly product-language name for one of those normal native
+subagent roles, not a second agent framework. The root remains the one session
+the host starts and resumes; Workshop does not schedule agents in Python.
+
+The materialized `autonomous-workshop` skill is the Manager's workflow
+playbook—stage order, artifact protocol, gates, and authority boundaries. It is
+not a separate “Workshop Manager agent.”
 
 The Python host is intentionally narrow. It preserves identity and exact
 bytes, enforces lifecycle order and round budgets, launches/resumes the native
-session, validates contracts and deterministic evidence, isolates credentials,
+session under a workspace-only Codex permission profile, validates contracts
+and deterministic evidence, isolates credentials,
 and performs authorized external effects idempotently. It does not contain a
 parallel Python agent, profile subprocess, prompt chain, semantic judge, or
 reward loop.
@@ -144,12 +157,18 @@ ownership.
 
 ## Build your own Inventor
 
-An Inventor is a declared native specialist bundle. Every one has `TASTE.md`
+An Inventor is a declared specialist bundle materialized as a standard Codex
+project-scoped custom agent under `.codex/agents/`. Every one has `TASTE.md`
 for creative judgment plus a small `inventor.json` for identity, eligibility,
-capabilities, and exact extension inventory. It may also own a `SKILL.md`,
-within an inventor-prefixed Codex skill tree, with scripts, references, assets,
-or tested deterministic CAD/domain tools. The root Manager dynamically briefs
-a selected native subagent from the exact host-materialized bundle.
+capabilities, and exact extension inventory. Each Inventor owns one required
+primary skill named `<id>-inventor`; it may declare additional Inventor-prefixed
+skills with scripts, references, assets, or tested deterministic CAD/domain
+tools. The root Manager asks Codex to spawn the selected custom agent from the
+exact host-materialized bundle.
+
+This follows Codex's official [subagent and project-scoped custom-agent
+convention](https://learn.chatgpt.com/docs/agent-configuration/subagents); the
+Workshop adds the Inventor name, Taste, product craft, and lifecycle boundary.
 
 Inventor code supplies specialist operations, not orchestration: it cannot
 launch agents, choose Workshop stages, pass gates, or perform authenticated
@@ -184,12 +203,38 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 
 Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the catalog contract.
 
-## Code map
+## Repository structure
 
 The installed distribution is `autonomous-workshop`. Python code imports the
 `workshop` package, and the `workshop` command is implemented by the sibling
 `src/cli/` package. The `src/` layout keeps repository-only files from being
 imported accidentally.
+
+- [`toys/`](toys/) contains the persistent product projects and is the working
+  directory for each native runtime session. Every toy project contains its
+  product-run `AGENTS.md`, standard custom Inventors under `.codex/agents/`,
+  workflow and craft skills under `.agents/skills/`, its exact Match catalog,
+  and its Wish-to-Release artifacts.
+- [`.agents/product-run/`](.agents/product-run/) is the complete isolated
+  template copied into every new toy project before the runtime starts.
+- [`inventors/`](inventors/) is the reusable Inventor roster: identity, Taste,
+  its required primary skill, and any additional specialist skills or tools.
+- [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
+- [`src/workshop/`](src/workshop/) is the narrow trusted host, organized by
+  Wish, Match, Invent, Make, Playtest, Release, Deliver, workflow, runtime,
+  contracts, gates, and integrations.
+- [`src/workshop/make/skills/`](src/workshop/make/skills/) holds the canonical
+  shared CAD and making skills.
+- [`tests/`](tests/) mirrors the component ownership and contains the full
+  deterministic and installed-package acceptance suite.
+- [`docs/`](docs/) contains the architecture, runtime protocol, evidence, and
+  contributor guides.
+
+Trusted checkpoints, receipts, credentials, and effect state live outside the
+coding-agent working directory under `$WORKSHOP_HOME/state/<toy-id>/`. A toy
+project remains useful and inspectable without exposing host authority. New
+runtime-created toy projects are ignored by Git by default; only explicitly
+reviewed showcase or historical projects should be allowlisted for a commit.
 
 Shared code is organized by architecture component under `src/workshop/`:
 `product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
@@ -201,10 +246,11 @@ The trusted whole-run host is `src/workshop/workflow/native_run.py`; the
 `src/cli/` package only parses commands, presents results, and chooses exit
 codes.
 
-Runtime also owns the non-Python product-run assets in `.agents/product-run/`
-and `.agents/skills/autonomous-workshop/`. Packaging copies those exact bytes
-into the installed distribution; they are the constitution and workflow skill
-for a product run, not instructions for coding agents building this repository.
+Runtime also owns the complete non-Python product-run template in
+`.agents/product-run/`, including its nested workflow skill. Packaging copies
+those exact bytes into the installed distribution. Nesting the skill inside the
+template keeps it invisible to coding agents building this repository; it is
+discovered only after the template is materialized as a toy-project root.
 
 See [Workshop architecture](docs/ARCHITECTURE.md#shared-implementation) for the
 ownership and dependency rules.
@@ -216,7 +262,7 @@ uv run workshop doctor
 PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
 uv run workshop inventors --root inventors
 uv run workshop check inventors
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
+python .agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
 python tools/verify_skill_locks.py
 python tools/scan_secrets.py
 git diff --check

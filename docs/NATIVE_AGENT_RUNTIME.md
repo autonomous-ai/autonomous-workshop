@@ -10,17 +10,18 @@ Workshop. It is authoritative together with
 | Context | Purpose | Governing files |
 |---|---|---|
 | Repository builder | Builds, reviews, tests, or documents Workshop itself | root [`AGENTS.md`](../AGENTS.md) |
-| Product run | Turns one exact Wish into one product in a private workspace | materialized [`.agents/product-run/AGENTS.md`](../.agents/product-run/AGENTS.md) and [`autonomous-workshop` skill](../.agents/skills/autonomous-workshop/SKILL.md) |
+| Product run | Turns one exact Wish into one product in a persistent toy project | materialized [`.agents/product-run/AGENTS.md`](../.agents/product-run/AGENTS.md) and nested [`autonomous-workshop` skill](../.agents/product-run/.agents/skills/autonomous-workshop/SKILL.md) |
 
 The root `AGENTS.md` is Codex's equivalent of repository-scoped contributor
 guidance. It does not select a role or orchestrate a product. The product-run
-constitution is copied into a separate run root as that run's `AGENTS.md`; it
+constitution is copied into a separate toy project as that run's `AGENTS.md`; it
 does not govern ordinary source-repository work.
 
 ## Runtime boundary
 
-Every `workshop wish` launches one native Codex session before Match. That same
-session performs all cognitive and tool-using work through Release:
+Every `workshop wish` first creates and populates one persistent toy project,
+then launches one native Codex session in that directory before Match. That
+same session performs all cognitive and tool-using work through Release:
 
 ```text
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
@@ -38,8 +39,10 @@ second product-run session or weaken the one-session continuity rule.
 Python is the trusted host substrate only. It owns:
 
 - Wish/run identity and exact input bytes;
-- lifecycle order, Make–Playtest round budgets, invalidation, and leases;
-- native-session launch/resume and a scrubbed process environment;
+- lifecycle order, Make–Playtest round budgets, invalidation, and one exclusive
+  host mutation lock per run;
+- native-session launch/resume, a scrubbed process environment, and an enforced
+  workspace-only Codex permission profile that denies reads elsewhere;
 - typed contracts, artifact hashing, deterministic CAD/evidence gates, and
   durable checkpoints;
 - authorization, credential isolation, idempotency, external adapters,
@@ -56,9 +59,10 @@ advance a gate.
 workshop wish
     |
     v
-host persists the canonical Wish and creates a private run root
+host persists the canonical Wish and creates toys/<toy-id>/
     |
     +-- AGENTS.md                     product-run constitution
+    +-- .codex/agents/*.toml          project-scoped Inventor custom agents
     +-- .agents/skills/**             workflow and domain skills
     +-- catalog/inventors/**          immutable declared specialist bundles
     +-- WISH.json                     exact Wish
@@ -74,8 +78,8 @@ Codex authors run-local artifacts and finalizes one compact proposal
 host independently validates exact bytes, seals artifacts, and advances
 ```
 
-`workshop resume <wish-id>` resumes the recorded session UUID in the same
-workspace. Session memory is useful continuity, but the durable checkpoint,
+`workshop resume <wish-id>` resumes the recorded session UUID in the same toy
+project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
 
@@ -91,30 +95,37 @@ root Codex session: Workshop Manager
     |
     +-- selected Inventor subagent
     |       +-- exact TASTE.md judgment
-    |       +-- optional inventor-owned Codex skills
+    |       +-- required primary + optional additional Codex skills
     |       `-- hash-bound scripts/references/assets/deterministic tools
     |
     `-- optional independent inspection or Playtest subagents
 ```
 
-V1 creates these specialists dynamically and briefs them from exact
-host-materialized bytes. It does not depend on unfinished or undocumented
-named custom-role configuration. It also does not spawn another OS-level
-`codex` process: the host starts and resumes only the root product-run session.
+The host projects every eligible Inventor into Codex's official
+project-scoped custom-agent convention at `.codex/agents/<id>.toml`. Each file
+binds the exact host-materialized identity, Taste, and declared skill paths.
+Codex owns spawning, routing, waiting, and synthesis. Workshop does not spawn
+another OS-level `codex` process: the host starts and resumes only the root
+product-run session.
+
+See the official Codex [Subagents and custom agents
+documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents)
+for the native file schema and orchestration behavior.
 
 The source `inventors/<id>/` bundle separates four concerns:
 
 - `TASTE.md`: creative judgment and rejection boundaries;
 - `inventor.json`: identity, eligibility, capabilities, and declared extension
   inventory;
-- optional `skills/<inventor-skill>/SKILL.md`: specialist procedures and how to
-  use its resources;
+- required `skills/<id>-inventor/SKILL.md`: the specialist's primary procedure
+  and resource routing;
+- optional additional `skills/<id>-<specialty>/SKILL.md` trees;
 - optional hash-bound scripts/references/assets and tested deterministic code:
   CAD generators, evaluators, or domain tools invoked by the native Inventor
   subagent.
 
-The host admits only declared, validated, content-bound resources into the run
-workspace. Inventor code may implement specialist operations, but it may not
+The host admits only declared, validated, content-bound resources into the toy
+project. Inventor code may implement specialist operations, but it may not
 call an agent runtime, schedule prompts, select lifecycle transitions, waive a
 gate, access credentials, or perform external effects.
 
@@ -205,9 +216,14 @@ delivery. The package cannot contain remote-effect receipts or credentials.
 
 The default CLI policy is private. `--publish` records explicit authority for
 the host to promote the verified Factory page after the private import is
-reconciled. Credentials remain in the host process and never enter the Codex
-subprocess, prompt, run artifacts, or status output. Public publication is not
-evidence of physical manufacture or delivery.
+reconciled. Local credentials belong in the private
+`$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
+the native turn exits. Codex 0.138.0 or newer runs with Workshop's strict
+permission profile: all filesystem reads are denied by default, the toy project
+is writable, only minimal tool paths are readable, and dotenv files remain
+denied even if a surrounding checkout becomes a workspace root. Credentials
+never enter the Codex subprocess, prompt, run artifacts, or status output.
+Public publication is not evidence of physical manufacture or delivery.
 
 ## Materialized instructions and skills
 
@@ -215,17 +231,23 @@ Canonical product-run sources live at:
 
 ```text
 .agents/product-run/AGENTS.md
-.agents/skills/autonomous-workshop/**
+.agents/product-run/.agents/skills/autonomous-workshop/**
 src/workshop/make/skills/{cad,product-to-cad,step-parts}/**
 inventors/<id>/{inventor.json,TASTE.md,skills/**}
 ```
 
-Inventor skill trees are optional. Only exact trees declared and hash-bound by
-the Inventor manifest are packaged, materialized, and made available to a
-product run; none auto-run.
+At project creation the host also generates one deterministic
+`.codex/agents/<id>.toml` for every eligible Inventor. It follows Codex's
+project-scoped custom-agent schema and is derived from those exact source
+bytes; it is not a second hand-written persona system.
+
+Every Inventor declares one primary `<id>-inventor` skill tree. Additional
+Inventor-prefixed trees and their scripts/resources are optional. Only exact
+trees declared and hash-bound by the Inventor manifest are packaged,
+materialized, and made available to a product run; none auto-run.
 
 The installed package carries a byte-for-byte snapshot. At run creation the
-host copies these into the private workspace, hashes every instruction byte,
+host copies these into the toy project, hashes every instruction byte,
 and binds that manifest to the run. Resume fails closed if the materialized
 instructions changed. Do not install the project skill globally or maintain a
 second hand-edited copy.
@@ -233,8 +255,10 @@ second hand-edited copy.
 ## Repository ownership
 
 ```text
-.agents/product-run/                         product-run constitution source
-.agents/skills/autonomous-workshop/          native workflow instructions
+toys/<toy-id>/                              persistent product projects / Codex CWD
+.agents/product-run/                        complete toy-project template source
+  AGENTS.md                                 product-run constitution
+  .agents/skills/autonomous-workshop/       native workflow instructions
 inventors/<id>/                              specialist identity and declared extensions
 src/cli/                                     parsing, presentation, and exit codes
 src/workshop/runtime/                        session and trusted effect boundaries
@@ -260,16 +284,16 @@ private Wish demonstrate that:
 4. failed Playtest evidence returns to a new Make round and invalidates
    downstream work;
 5. Release claims exactly match passing evidence;
-6. no credential reaches the native subprocess;
+6. no credential reaches the native subprocess or its readable filesystem;
 7. `--publish` is required for public promotion and the remote receipt binds
    the exact Release package; and
 8. the run does not claim Deliver without physical receipts.
 
 ## Engine portability
 
-Codex is the first supported engine. The stable seam is the private workspace,
-`STAGE.json`, compact outcome protocol, start/resume adapter, and a bounded
-native-specialist delegation primitive—not Codex prompt syntax or one vendor's
-named-role configuration. A future Claude Code, OpenCode, Pi, or Hermes adapter
-must preserve the same root Manager identity, exact Inventor bundle,
+Codex is the first and only supported engine today. The stable seam is the
+persistent toy project, `STAGE.json`, compact outcome protocol, start/resume
+adapter, and a bounded native-specialist delegation primitive—not Codex prompt
+syntax or one vendor's custom-agent file format. A future Claude Code or Grok
+Build adapter must preserve the same root Manager role, exact Inventor bundle,
 host-owned gates, sandbox, checkpoint, and effect authority.

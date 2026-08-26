@@ -57,9 +57,11 @@ remote identifier, and exact hashes. Then:
 ## Codex session recovery
 
 Resume the same native Codex session id for the Wish. On every resume, inspect
-the durable checkpoint, manifests, working tree, and pending intents before
-acting. If session memory conflicts with sealed files or receipts, follow the
-durable evidence and note the discrepancy.
+the durable checkpoint, manifests, working tree, and only the redacted effect
+state or receipts the host explicitly provides. Durable intents themselves are
+host-only and outside the product workspace. If session memory conflicts with
+sealed files or host-provided receipts, follow the durable evidence and note
+the discrepancy.
 
 For an explicitly classified provider transport interruption that occurred
 before any effect boundary, the host may make at most one bounded reconnect or
@@ -76,8 +78,9 @@ artifact; inspect any partial workspace writes and rerun their gates.
   failure, not a warning.
 - A new Make revision invalidates Playtest, Release, and Deliver evidence
   for the prior bytes. Run those gates again in order.
-- Respect the host lease and bounded Make–Playtest round budget. Concurrent or
-  expired work must stop at a typed need instead of racing the checkpoint.
+- Respect the host's exclusive mutation lock and bounded Make–Playtest round
+  budget. Concurrent work must stop at a typed need instead of racing the
+  checkpoint.
 - Keep diagnostics bounded and redacted. Record safe failure categories and
   evidence references, never prompts, credentials, authorization headers, or
   large provider streams.

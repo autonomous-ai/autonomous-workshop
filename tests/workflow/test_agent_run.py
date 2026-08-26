@@ -4,6 +4,7 @@ import os
 import shutil
 import stat
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -215,6 +216,7 @@ class AgentRunTest(unittest.TestCase):
         )
         checkpoint = run.snapshot()
         expected_modes = {
+            ".codex/agents/alice.toml": 0o400,
             ".agents/skills/cad/SKILL.md": 0o400,
             ".agents/skills/cad/scripts/check_mesh": 0o500,
             ".agents/skills/alice-inventor/SKILL.md": 0o400,
@@ -230,9 +232,40 @@ class AgentRunTest(unittest.TestCase):
             stat.S_IMODE((run.run_root / "catalog" / "inventors").stat().st_mode),
             0o500,
         )
+        self.assertEqual(
+            stat.S_IMODE((run.run_root / ".codex").stat().st_mode),
+            0o500,
+        )
+        self.assertEqual(
+            stat.S_IMODE((run.run_root / ".codex" / "agents").stat().st_mode),
+            0o500,
+        )
+        agent = tomllib.loads(
+            (run.run_root / ".codex" / "agents" / "alice.toml").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            set(agent), {"name", "description", "developer_instructions"}
+        )
+        self.assertEqual(agent["name"], "alice")
+        instructions = agent["developer_instructions"]
+        self.assertIn("catalog/inventors/alice/TASTE.md", instructions)
+        self.assertIn(".agents/skills/alice-inventor/SKILL.md", instructions)
+        self.assertIn("bounded", instructions)
+        self.assertIn("Workshop Manager", instructions)
+        self.assertIn("Do not advance", instructions)
+        self.assertIn("Do not perform external effects", instructions)
         self.assertFalse(
             (run.run_root / "catalog" / "inventors" / "alice" / "skills").exists()
         )
+
+        agent_file = run.run_root / ".codex" / "agents" / "alice.toml"
+        agent_file.chmod(0o600)
+        with self.assertRaisesRegex(StateConflict, "immutable input mode"):
+            run.snapshot()
+        agent_file.chmod(0o400)
+        run.snapshot()
 
         run_checker = run.run_root / ".agents/skills/cad/scripts/check_mesh"
         run_checker.chmod(0o400)

@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import tempfile
@@ -23,6 +24,7 @@ SCHEMA_OWNERS = {
 }
 SKILLS = ("cad", "product-to-cad", "step-parts")
 INVENTORS = ("alice", "bob", "eve", "ivy", "leo")
+CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
 
 
 def _run(command, *, cwd: Path, environment=None) -> subprocess.CompletedProcess:
@@ -54,6 +56,55 @@ def _python_path(venv: Path) -> Path:
 
 def _workshop_path(venv: Path) -> Path:
     return venv / ("Scripts/workshop.exe" if os.name == "nt" else "bin/workshop")
+
+
+def _source_files(root: Path) -> dict[str, Path]:
+    files = {}
+    for source in root.rglob("*"):
+        if source.is_symlink():
+            raise AssertionError("source asset is a symlink: %s" % source)
+        relative = source.relative_to(root)
+        if (
+            "__pycache__" in relative.parts
+            or ".git" in relative.parts
+            or source.name == ".DS_Store"
+            or source.name.endswith((".pyc", ".pyo"))
+        ):
+            continue
+        if source.is_dir():
+            continue
+        if not source.is_file():
+            raise AssertionError("source asset is not a regular file: %s" % source)
+        files[relative.as_posix()] = source
+    return files
+
+
+def _zip_executable(info: zipfile.ZipInfo) -> bool:
+    return bool((info.external_attr >> 16) & 0o111)
+
+
+def _audit_zip_tree(
+    archive: zipfile.ZipFile,
+    infos: dict[str, zipfile.ZipInfo],
+    *,
+    source_root: Path,
+    member_root: str,
+) -> None:
+    source_files = _source_files(source_root)
+    expected = {member_root + "/" + relative for relative in source_files}
+    observed = {
+        name
+        for name, info in infos.items()
+        if name.startswith(member_root + "/") and not info.is_dir()
+    }
+    if observed != expected:
+        raise AssertionError("wheel asset inventory differs: %s" % member_root)
+    for relative, source in source_files.items():
+        member = member_root + "/" + relative
+        if archive.read(member) != source.read_bytes():
+            raise AssertionError("wheel asset bytes differ: %s" % member)
+        if _zip_executable(infos[member]) != bool(source.stat().st_mode & 0o111):
+            raise AssertionError("wheel asset executable mode differs: %s" % member)
 
 
 def _build_wheel(repository: Path, root: Path) -> Path:
@@ -105,22 +156,35 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         ):
             if any(name.startswith(forbidden) for name in members):
                 raise AssertionError("wheel contains removed tree %s" % forbidden)
+        for forbidden in (
+            "workshop/removed_packaging_sentinel.py",
+            "cli/removed_packaging_sentinel.py",
+        ):
+            if forbidden in members:
+                raise AssertionError("wheel contains stale build output %s" % forbidden)
         for required in (
             "cli/main.py",
             "workshop/runtime/_agent_assets/.agents/product-run/AGENTS.md",
-            "workshop/runtime/_agent_assets/.agents/skills/autonomous-workshop/SKILL.md",
+            (
+                "workshop/runtime/_agent_assets/.agents/product-run/.agents/skills/"
+                "autonomous-workshop/SKILL.md"
+            ),
         ):
             if required not in members:
                 raise AssertionError("wheel is missing %s" % required)
 
-        skills = repository / "src" / "workshop" / "make" / "skills"
-        for source in skills.rglob("*"):
-            if not source.is_file() or "__pycache__" in source.parts:
-                continue
-            member = "workshop/make/skills/%s" % source.relative_to(skills).as_posix()
-            if member not in infos or archive.read(member) != source.read_bytes():
-                raise AssertionError("wheel skill differs: %s" % member)
-
+        _audit_zip_tree(
+            archive,
+            infos,
+            source_root=repository / "src" / "workshop" / "make" / "skills",
+            member_root="workshop/make/skills",
+        )
+        _audit_zip_tree(
+            archive,
+            infos,
+            source_root=repository / ".agents" / "product-run",
+            member_root="workshop/runtime/_agent_assets/.agents/product-run",
+        )
         inventor_sources = repository / "inventors"
         expected_inventor_members = set()
         for inventor_id in INVENTORS:
@@ -136,7 +200,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
                 if member not in infos or archive.read(member) != source.read_bytes():
                     raise AssertionError("wheel Inventor asset differs: %s" % member)
                 source_executable = bool(source.stat().st_mode & 0o111)
-                wheel_executable = bool((infos[member].external_attr >> 16) & 0o111)
+                wheel_executable = _zip_executable(infos[member])
                 if source_executable != wheel_executable:
                     raise AssertionError(
                         "wheel Inventor executable mode differs: %s" % member
@@ -162,26 +226,395 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         if observed_schemas != expected_schemas:
             raise AssertionError("wheel schema inventory differs")
 
+        runtime_data_roots = (
+            "workshop/artifacts/schemas/",
+            "workshop/contributors/_catalog/inventors/",
+            "workshop/contributors/schemas/",
+            "workshop/make/schemas/",
+            "workshop/make/skills/",
+            "workshop/runtime/_agent_assets/",
+            "workshop/runtime/schemas/",
+        )
+        unexpected_data = {
+            name
+            for name, info in infos.items()
+            if name.startswith("workshop/")
+            and not info.is_dir()
+            and not name.endswith(".py")
+            and not name.startswith(runtime_data_roots)
+        }
+        if unexpected_data:
+            raise AssertionError(
+                "wheel contains non-runtime package data: %r"
+                % sorted(unexpected_data)
+            )
 
-def _install_wheel(wheel: Path, root: Path) -> tuple[Path, Path]:
+
+def _install_wheel(
+    wheel: Path,
+    root: Path,
+    *,
+    with_dependencies: bool,
+) -> tuple[Path, Path]:
     venv = root / "venv"
     _run((sys.executable, "-m", "venv", venv), cwd=root)
     python = _python_path(venv)
-    _run((python, "-m", "pip", "install", "--no-deps", wheel), cwd=root)
+    command = [python, "-m", "pip", "install"]
+    if not with_dependencies:
+        command.append("--no-deps")
+    command.append(wheel)
+    _run(command, cwd=root)
     return python, _workshop_path(venv)
+
+
+def _verify_declared_dependencies(python: Path, *, cwd: Path) -> None:
+    _run((python, "-m", "pip", "check"), cwd=cwd)
+    _run(
+        (
+            python,
+            "-c",
+            "import importlib.metadata as m; "
+            "requirements = m.requires('autonomous-workshop') or []; "
+            "assert 'cadgen==0.4.19' in requirements, requirements; "
+            "assert m.version('cadgen') == '0.4.19'; "
+            "import cadgen; assert cadgen.__file__",
+        ),
+        cwd=cwd,
+    )
 
 
 def _json(command, *, cwd: Path, environment) -> object:
     return json.loads(_run(command, cwd=cwd, environment=environment).stdout)
 
 
-def acceptance(wheel: Path, repository: Path) -> None:
+def _write_fake_codex(path: Path, python: Path) -> None:
+    source = """#!%s
+import json
+import os
+import sys
+import tomllib
+from pathlib import Path
+
+if sys.argv[1:] == ["--version"]:
+    print("codex-cli 0.145.0")
+    raise SystemExit(0)
+
+run_root = Path.cwd()
+wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
+stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
+catalog_root = run_root / "catalog" / "inventors"
+inventor_ids = sorted(path.name for path in catalog_root.iterdir() if path.is_dir())
+agent_root = run_root / ".codex" / "agents"
+agent_entries = tuple(agent_root.iterdir())
+if any(path.is_symlink() or not path.is_file() for path in agent_entries):
+    raise RuntimeError("project-scoped custom agents must be regular files")
+agent_files = sorted(path.name for path in agent_entries)
+if agent_files != [inventor_id + ".toml" for inventor_id in inventor_ids]:
+    raise RuntimeError("project-scoped custom agent inventory differs from the roster")
+for inventor_id in inventor_ids:
+    identity_root = catalog_root / inventor_id
+    manifest = json.loads((identity_root / "inventor.json").read_text(encoding="utf-8"))
+    agent = tomllib.loads(
+        (agent_root / (inventor_id + ".toml")).read_text(encoding="utf-8")
+    )
+    if set(agent) != {"name", "description", "developer_instructions"}:
+        raise RuntimeError("custom Inventor agent fields are not minimal")
+    if agent["name"] != manifest["id"] or manifest["id"] != inventor_id:
+        raise RuntimeError("custom Inventor agent identity differs from the roster")
+    description = agent["description"]
+    instructions = agent["developer_instructions"]
+    if (
+        not isinstance(description, str)
+        or not description.strip()
+        or len(description) > 1024
+        or not isinstance(instructions, str)
+        or not instructions.strip()
+        or len(instructions) > 8192
+    ):
+        raise RuntimeError("custom Inventor agent instructions are not bounded text")
+    required_references = [
+        "catalog/inventors/" + inventor_id + "/TASTE.md",
+        *[
+            ".agents/skills/" + extension["name"] + "/SKILL.md"
+            for extension in manifest["extensions"]
+        ],
+    ]
+    if any(reference not in instructions for reference in required_references):
+        raise RuntimeError("custom Inventor agent lacks an exact local identity reference")
+    lower = instructions.casefold()
+    if (
+        "subagent" not in lower
+        or "bounded" not in lower
+        or "workshop manager" not in lower
+        or "gate" not in lower
+        or not any(
+            phrase in lower
+            for phrase in (
+                "must not advance",
+                "cannot advance",
+                "do not advance",
+                "may not advance",
+                "never advance",
+            )
+        )
+        or "effect" not in lower
+        or not any(
+            phrase in lower
+            for phrase in (
+                "must not perform",
+                "cannot perform",
+                "do not perform",
+                "may not perform",
+                "never perform",
+            )
+        )
+    ):
+        raise RuntimeError("custom Inventor agent is not a bounded child role")
+(run_root / "agent-outcome.json").write_text(
+    json.dumps(
+        {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "subject_sha256": stage["subject_sha256"],
+            "outcome": {
+                "schema_version": 1,
+                "stage": stage["stage"],
+                "status": "waiting",
+                "artifacts": [],
+                "needs": ["installed-wheel fixture intentionally needs user input"],
+                "proposed_transition": None,
+            },
+        },
+        sort_keys=True,
+    ) + "\\n",
+    encoding="utf-8",
+)
+(run_root / "native-packaging-probe.json").write_text(
+    json.dumps(
+        {
+            "arguments": sys.argv[1:],
+            "custom_agent_ids": inventor_ids,
+            "factory_visible": "FACTORY_PASSWORD" in os.environ,
+            "prelaunch": {
+                "agents": (run_root / "AGENTS.md").is_file(),
+                "catalog": (run_root / "catalog" / "inventors").is_dir(),
+                "cad": (run_root / ".agents" / "skills" / "cad" / "SKILL.md").is_file(),
+                "inventors": all(
+                    (
+                        run_root
+                        / ".agents"
+                        / "skills"
+                        / (inventor_id + "-inventor")
+                        / "SKILL.md"
+                    ).is_file()
+                    for inventor_id in ("alice", "bob", "eve", "ivy", "leo")
+                ),
+                "product_to_cad": (run_root / ".agents" / "skills" / "product-to-cad" / "SKILL.md").is_file(),
+                "stage": (run_root / "STAGE.json").is_file(),
+                "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
+                "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),
+                "wish": (run_root / "WISH.json").is_file(),
+            },
+            "product_id": wish["product_id"],
+            "prompt": sys.stdin.read(),
+        },
+        sort_keys=True,
+    ) + "\\n",
+    encoding="utf-8",
+)
+print(json.dumps({"type": "thread.started", "thread_id": %r}))
+print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture waiting"}}))
+""" % (str(python), CODEX_THREAD_ID)
+    path.write_text(source, encoding="utf-8")
+    path.chmod(0o700)
+
+
+def _assert_materialized_tree(source_root: Path, target_root: Path) -> None:
+    expected = _source_files(source_root)
+    observed = _source_files(target_root)
+    if set(observed) != set(expected):
+        raise AssertionError("materialized asset inventory differs: %s" % target_root)
+    for relative, source in expected.items():
+        target = observed[relative]
+        if target.read_bytes() != source.read_bytes():
+            raise AssertionError("materialized asset bytes differ: %s" % target)
+        expected_mode = 0o500 if source.stat().st_mode & 0o111 else 0o400
+        if stat.S_IMODE(target.stat().st_mode) != expected_mode:
+            raise AssertionError("materialized asset mode differs: %s" % target)
+
+
+def _native_wish_smoke(
+    *,
+    workshop: Path,
+    python: Path,
+    root: Path,
+    repository: Path,
+    away: Path,
+    environment: dict[str, str],
+) -> None:
+    fake_codex = root / "fake-codex"
+    _write_fake_codex(fake_codex, python)
+    environment = dict(environment)
+    environment.update(
+        {
+            "WORKSHOP_CODEX_BIN": str(fake_codex),
+            "FACTORY_PASSWORD": "must-not-reach-native-codex",
+        }
+    )
+    receipt = _json(
+        (
+            workshop,
+            "wish",
+            "an installed native Workshop packaging probe",
+            "--json",
+        ),
+        cwd=away,
+        environment=environment,
+    )
+    if (
+        receipt.get("kind") != "native-agent-run"
+        or receipt.get("status") != "waiting"
+        or receipt.get("stage") != "match"
+        or receipt.get("native_turns") != 1
+        or receipt.get("action") != "started"
+    ):
+        raise AssertionError("installed Wish did not return a truthful wait: %r" % receipt)
+
+    product_id = receipt["product_id"]
+    workshop_home = Path(environment["WORKSHOP_HOME"])
+    expected_workspace = workshop_home / "toys" / product_id
+    expected_state = workshop_home / "state" / product_id
+    probes = tuple(workshop_home.rglob("native-packaging-probe.json"))
+    if probes != (expected_workspace / "native-packaging-probe.json",):
+        raise AssertionError("installed Wish did not launch from its toy project")
+    workspace = probes[0].parent
+    status = _json(
+        (workshop, "status", product_id, "--json"),
+        cwd=away,
+        environment=environment,
+    )
+    if status.get("status") != "waiting" or status.get("session_status") != "checkpointed":
+        raise AssertionError("installed Wish status lost its native checkpoint")
+
+    codex_checkpoints = tuple(workshop_home.rglob("codex-session.json"))
+    if codex_checkpoints != (expected_state / "codex-session.json",):
+        raise AssertionError("installed Wish did not record exactly one Codex checkpoint")
+    codex_checkpoint = json.loads(codex_checkpoints[0].read_text(encoding="utf-8"))
+    if (
+        codex_checkpoint.get("thread_id") != CODEX_THREAD_ID
+        or stat.S_IMODE(codex_checkpoints[0].stat().st_mode) != 0o600
+        or receipt["session"]["session"]["checkpoint_sha256"]
+        != codex_checkpoint.get("checkpoint_sha256")
+    ):
+        raise AssertionError("installed Codex checkpoint binding is invalid")
+
+    probe = json.loads(
+        (workspace / "native-packaging-probe.json").read_text(encoding="utf-8")
+    )
+    codex_arguments = probe["arguments"]
+    if (
+        probe["factory_visible"]
+        or "--search" not in codex_arguments
+        or "--ask-for-approval" not in codex_arguments
+        or "never" not in codex_arguments
+        or "--strict-config" not in codex_arguments
+        or "--sandbox" in codex_arguments
+        or 'default_permissions="workshop-product-run"' not in codex_arguments
+        or not any(
+            argument.startswith("permissions.workshop-product-run.filesystem=")
+            and '":root"="deny"' in argument
+            and '":workspace_roots"' in argument
+            and '"**/.env*"="deny"' in argument
+            for argument in codex_arguments
+        )
+    ):
+        raise AssertionError("installed native Codex boundary is incorrect")
+    if tuple(probe["custom_agent_ids"]) != INVENTORS:
+        raise AssertionError("installed toy has no complete custom Inventor roster")
+    if probe["product_id"] != product_id or not all(probe["prelaunch"].values()):
+        raise AssertionError("toy project was not populated before Codex launched")
+    if "current match stage" not in probe["prompt"]:
+        raise AssertionError("installed native Codex received the wrong stage prompt")
+
+    constitution = repository / ".agents" / "product-run" / "AGENTS.md"
+    if (workspace / "AGENTS.md").read_bytes() != constitution.read_bytes():
+        raise AssertionError("materialized product-run constitution differs")
+    if stat.S_IMODE((workspace / "AGENTS.md").stat().st_mode) != 0o400:
+        raise AssertionError("materialized product-run constitution mode differs")
+    manager_instructions = (workspace / "AGENTS.md").read_text(
+        encoding="utf-8"
+    ).casefold()
+    if not all(
+        phrase in manager_instructions
+        for phrase in (
+            "workshop manager",
+            "subagent",
+            "spawn",
+            "routing",
+            "synthesis",
+        )
+    ):
+        raise AssertionError("product-run constitution does not give Codex orchestration")
+    _assert_materialized_tree(
+        (
+            repository
+            / ".agents"
+            / "product-run"
+            / ".agents"
+            / "skills"
+            / "autonomous-workshop"
+        ),
+        workspace / ".agents" / "skills" / "autonomous-workshop",
+    )
+    for skill_name in SKILLS:
+        _assert_materialized_tree(
+            repository / "src" / "workshop" / "make" / "skills" / skill_name,
+            workspace / ".agents" / "skills" / skill_name,
+        )
+    expected_skill_names = {"autonomous-workshop", *SKILLS}
+    for inventor_id in INVENTORS:
+        source = repository / "inventors" / inventor_id
+        manifest = json.loads((source / "inventor.json").read_text(encoding="utf-8"))
+        target_identity = workspace / "catalog" / "inventors" / inventor_id
+        observed_identity = {path.name for path in target_identity.iterdir()}
+        if observed_identity != {"TASTE.md", "inventor.json"}:
+            raise AssertionError("materialized Inventor identity is not minimal")
+        for filename in observed_identity:
+            if (target_identity / filename).read_bytes() != (source / filename).read_bytes():
+                raise AssertionError("materialized Inventor identity differs")
+        for extension in manifest["extensions"]:
+            skill_name = extension["name"]
+            expected_skill_names.add(skill_name)
+            _assert_materialized_tree(
+                source / extension["path"],
+                workspace / ".agents" / "skills" / skill_name,
+            )
+    observed_skill_names = {
+        path.name
+        for path in (workspace / ".agents" / "skills").iterdir()
+        if path.is_dir()
+    }
+    if observed_skill_names != expected_skill_names:
+        raise AssertionError("materialized product-run skill inventory differs")
+
+
+def acceptance(
+    wheel: Path,
+    repository: Path,
+    *,
+    with_dependencies: bool = False,
+) -> None:
     _audit_wheel(wheel, repository)
     with tempfile.TemporaryDirectory(prefix="workshop-installed-wheel-") as temporary:
-        root = Path(temporary)
+        root = Path(temporary).resolve()
         away = root / "outside-checkout"
         away.mkdir()
-        python, workshop = _install_wheel(wheel, root)
+        python, workshop = _install_wheel(
+            wheel,
+            root,
+            with_dependencies=with_dependencies,
+        )
         environment = {
             name: os.environ[name]
             for name in (
@@ -196,6 +629,9 @@ def acceptance(wheel: Path, repository: Path) -> None:
             if os.environ.get(name)
         }
         environment["WORKSHOP_HOME"] = str(root / "workshop-home")
+
+        if with_dependencies:
+            _verify_declared_dependencies(python, cwd=away)
 
         _run(
             (
@@ -226,18 +662,39 @@ def acceptance(wheel: Path, repository: Path) -> None:
         )
         if tuple(item["id"] for item in inventors) != INVENTORS:
             raise AssertionError("installed inventor catalog is incomplete")
+        _native_wish_smoke(
+            workshop=workshop,
+            python=python,
+            root=root,
+            repository=repository,
+            away=away,
+            environment=environment,
+        )
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--wheel", type=Path)
+    parser.add_argument(
+        "--with-dependencies",
+        action="store_true",
+        help="resolve declared dependencies, run pip check, and import cadgen",
+    )
     args = parser.parse_args(argv)
     repository = Path(__file__).resolve().parents[2]
     if args.wheel is not None:
-        acceptance(args.wheel.resolve(strict=True), repository)
+        acceptance(
+            args.wheel.resolve(strict=True),
+            repository,
+            with_dependencies=args.with_dependencies,
+        )
     else:
         with tempfile.TemporaryDirectory(prefix="workshop-wheel-build-") as temporary:
-            acceptance(_build_wheel(repository, Path(temporary)), repository)
+            acceptance(
+                _build_wheel(repository, Path(temporary)),
+                repository,
+                with_dependencies=args.with_dependencies,
+            )
     print("installed-wheel-cli: ok")
     return 0
 
