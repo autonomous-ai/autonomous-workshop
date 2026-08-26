@@ -1,5 +1,4 @@
 import ast
-import re
 import subprocess
 import sys
 import tokenize
@@ -115,29 +114,13 @@ class ComponentLayoutTest(unittest.TestCase):
                 "%s must be owned by workshop.%s" % (name, owner),
             )
 
-    def test_checked_in_operational_cad_paths_follow_make_ownership(self):
-        project = (
-            REPOSITORY
-            / "inventors"
-            / "alice"
-            / "toys"
-            / "manhattan-nocturne"
-            / "project"
-        )
-        stale = re.compile(r"(?<!src/workshop/make/)skills/cad")
-        offenders = []
-        for path in project.rglob("*"):
-            if path.is_file() and path.suffix in {".md", ".py"}:
-                if stale.search(path.read_text(encoding="utf-8")):
-                    offenders.append(str(path.relative_to(REPOSITORY)))
-        self.assertEqual(offenders, [])
-
+    def test_canonical_cad_workflow_is_owned_by_make(self):
+        skill_root = WORKSHOP / "make" / "skills" / "cad"
+        verifier = skill_root / "scripts" / "verify_project"
+        self.assertTrue((skill_root / "SKILL.md").is_file())
+        self.assertTrue(verifier.is_file())
         completed = subprocess.run(
-            [
-                sys.executable,
-                str(project / "validation" / "slice_product.py"),
-                "--help",
-            ],
+            [sys.executable, str(verifier), "--help"],
             cwd=REPOSITORY,
             capture_output=True,
             text=True,

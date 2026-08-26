@@ -48,6 +48,7 @@ class ScriptedStream:
         self.values = list(values)
         self.callbacks = dict(callbacks or {})
         self.stop_event = stop_event
+        self.closed = False
 
     def __iter__(self):
         if self.stop_event is not None:
@@ -58,6 +59,9 @@ class ScriptedStream:
             if callback is not None:
                 callback()
             yield value
+
+    def close(self):
+        self.closed = True
 
 
 class FakeProcess:
@@ -277,6 +281,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("FACTORY_PASSWORD", public)
             self.assertNotIn(str(state_root), public)
             self.assertNotIn("message", outcome.to_dict())
+            self.assertTrue(factory.processes[0].stdin.closed)
+            self.assertTrue(factory.processes[0].stdout.closed)
+            self.assertTrue(factory.processes[0].stderr.closed)
             private = json.loads(checkpoint.read_text(encoding="utf-8"))
             self.assertEqual(private["thread_id"], THREAD_ID)
             self.assertEqual(private["wish_sha256"], WISH_SHA256)
@@ -526,6 +533,9 @@ class CodexNativeSessionTest(unittest.TestCase):
                     factory.processes[0].terminated
                     or factory.processes[0].returncode is not None
                 )
+                self.assertTrue(factory.processes[0].stdin.closed)
+                self.assertTrue(factory.processes[0].stdout.closed)
+                self.assertTrue(factory.processes[0].stderr.closed)
 
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -536,6 +546,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             ), self.assertRaisesRegex(CodexInvocationError, "timed out"):
                 self.start(launcher, root, prompt="private prompt sentinel")
             self.assertTrue(factory.processes[0].terminated)
+            self.assertTrue(factory.processes[0].stdin.closed)
+            self.assertTrue(factory.processes[0].stdout.closed)
+            self.assertTrue(factory.processes[0].stderr.closed)
 
 
 if __name__ == "__main__":

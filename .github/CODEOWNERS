@@ -15,8 +15,8 @@
 /tests/make/ @deehw
 /src/workshop/playtest/ @deehw
 /tests/playtest/ @deehw
-/src/workshop/instructions/ @deehw
-/tests/instructions/ @deehw
+/src/workshop/release/ @deehw
+/tests/release/ @deehw
 /src/workshop/deliver/ @deehw
 /tests/deliver/ @deehw
 /src/workshop/reviews/ @deehw

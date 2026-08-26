@@ -890,11 +890,37 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session could not be launched"
             ) from None
-        if process.stdin is None or process.stdout is None or process.stderr is None:
-            _terminate_safely(process)
-            raise CodexInvocationError(
-                "Codex native session streams are unavailable"
+        try:
+            if process.stdin is None or process.stdout is None or process.stderr is None:
+                raise CodexInvocationError(
+                    "Codex native session streams are unavailable"
+                )
+            return self._consume_native_stream(
+                process=process,
+                prompt=prompt,
+                deadline=deadline,
+                expected_thread_id=expected_thread_id,
+                bind_thread=bind_thread,
             )
+        finally:
+            # Popen's pipe objects are owned by this adapter.  Closing only stdin
+            # after sending the prompt leaves stdout/stderr descriptors alive until
+            # garbage collection, which is both a ResourceWarning and a real leak
+            # for long-running Workshop hosts.  Reap first so the diagnostic thread
+            # reaches EOF, then close every stream on every success/failure path.
+            _terminate_safely(process)
+            _close_process_streams(process)
+
+    def _consume_native_stream(
+        self,
+        *,
+        process: Any,
+        prompt: str,
+        deadline: float,
+        expected_thread_id: Optional[str],
+        bind_thread: Any,
+    ) -> tuple[bool, Optional[str]]:
+        """Consume one already-launched process; ``_stream`` owns its cleanup."""
 
         stderr_size = 0
         stderr_tail = ""
@@ -1089,6 +1115,19 @@ def _terminate_safely(process: Any) -> None:
         process.wait(timeout=0.5)
     except (AttributeError, OSError, ValueError, subprocess.SubprocessError):
         pass
+
+
+def _close_process_streams(process: Any) -> None:
+    """Close Popen pipes without allowing cleanup errors to mask the outcome."""
+
+    for name in ("stdin", "stdout", "stderr"):
+        stream = getattr(process, name, None)
+        if stream is None:
+            continue
+        try:
+            stream.close()
+        except (AttributeError, OSError, ValueError):
+            pass
 
 
 def _diagnostic_tail(value: str) -> str:

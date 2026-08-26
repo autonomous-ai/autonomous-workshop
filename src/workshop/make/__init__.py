@@ -24,6 +24,7 @@ from workshop.make.moving_machine import (
     validate_moving_machine_lane_contract,
     workshop_pinned_wear_model,
 )
+from workshop.make.native import NATIVE_MADE_KIND, NativeMade
 from workshop.make.ports import CadDoor, CadInspectionDoor, InspectionDoor, ModelDoor
 
 __all__ = [
@@ -38,9 +39,11 @@ __all__ = [
     "LOCKED_CAD_GENERATOR_VERSION",
     "MOVING_MACHINE_BINDING_KIND",
     "MOVING_MACHINE_BINDING_VERSION",
+    "NATIVE_MADE_KIND",
     "Made",
     "MakeContext",
     "ModelDoor",
+    "NativeMade",
     "canonical_cad_project_sources",
     "inspect_stl_topology",
     "locked_cad_project_verifier",

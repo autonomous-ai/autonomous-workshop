@@ -1044,7 +1044,10 @@ class CliTest(unittest.TestCase):
             destination = root / "inventors" / "orbit-muse"
             self.assertEqual(result, 0)
             self.assertEqual((destination / "TASTE.md").read_bytes(), taste.read_bytes())
-            self.assertTrue((destination / "run.py").is_file())
+            self.assertEqual(
+                {path.name for path in destination.iterdir()},
+                {"inventor.json", "TASTE.md"},
+            )
             self.assertIn("Orbit Muse joined the Workshop", output.getvalue())
             self.assertIn("Start:", output.getvalue())
             self.assertIn("workshop wish", output.getvalue())
@@ -1344,16 +1347,18 @@ class CliTest(unittest.TestCase):
                         "--lane",
                         "invented-games",
                         "--level",
-                        "custom-make",
+                        "taste-only",
                         "--root",
                         str(collection),
                     )
                 )
             self.assertEqual(result, 0)
             self.assertTrue((collection / "deduction-games/inventor.json").is_file())
-            hook = collection / "deduction-games/src/deduction_games/inventor.py"
-            self.assertIn("def make(", hook.read_text(encoding="utf-8"))
-            self.assertNotIn("def playtest(", hook.read_text(encoding="utf-8"))
+            destination = collection / "deduction-games"
+            self.assertEqual(
+                {path.name for path in destination.iterdir()},
+                {"inventor.json", "TASTE.md"},
+            )
 
     def test_inventors_lists_taste_identity_not_legacy_manifest_prose(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1416,8 +1421,8 @@ class CliTest(unittest.TestCase):
             self.assertNotIn(old_lane, help_text)
         self.assertIn("--level", help_text)
         self.assertIn("taste-only", help_text)
-        self.assertIn("custom-make", help_text)
-        self.assertIn("custom-playtest", help_text)
+        self.assertNotIn("custom-make", help_text)
+        self.assertNotIn("custom-playtest", help_text)
         self.assertNotIn("--template", help_text)
         self.assertNotIn("physical-product", help_text)
 

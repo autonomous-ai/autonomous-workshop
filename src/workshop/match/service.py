@@ -180,7 +180,13 @@ def _load_manifest_snapshot(path: Path) -> Tuple[InventorManifest, str]:
 
 
 def _implementation_sha256(root: Path) -> str:
-    """Fingerprint bounded local implementation files for a shortlisted inventor."""
+    """Fingerprint bounded local implementation files for a shortlisted inventor.
+
+    A schema-v6 native persona intentionally has no executable implementation;
+    its exact manifest and Taste are bound separately by the routing context.
+    The empty implementation set therefore has a canonical identity instead of
+    being mistaken for a malformed legacy contribution.
+    """
 
     records = []
     total = 0
@@ -222,8 +228,6 @@ def _implementation_sha256(root: Path) -> str:
                 "inventor implementation exceeds %d files: %s"
                 % (MAX_IMPLEMENTATION_FILES, root)
             )
-    if not records:
-        raise ManifestError("inventor implementation has no bounded source files: %s" % root)
     return _sha256_json({"schema_version": 1, "files": records})
 
 
@@ -282,7 +286,10 @@ class InventorCard:
         _text(self.description, "InventorCard description", MAX_CARD_DESCRIPTION_CHARS)
         _text(self.status, "InventorCard status", 100)
         _text(self.source_kind, "InventorCard source_kind", 100)
-        entrypoint = _texts(self.entrypoint, "InventorCard entrypoint", allow_empty=False)
+        # Schema-v6 native personas deliberately have no executable entrypoint.
+        # Legacy cards still carry their exact command, while Match may route a
+        # data-only persona for the host-owned native session.
+        entrypoint = _texts(self.entrypoint, "InventorCard entrypoint")
         manifest_path = Path(self.manifest_path)
         taste_path = Path(self.taste_path)
         if (
@@ -1227,7 +1234,9 @@ class InventorAssignment:
             raise ContractError("InventorAssignment requires a RoutingDecision")
         if type(self.playtest_rounds) is not int or not 1 <= self.playtest_rounds <= 100:
             raise ContractError("playtest_rounds must be a trusted integer from 1 to 100")
-        entrypoint = _texts(self.entrypoint, "InventorAssignment entrypoint", allow_empty=False)
+        # A native persona assignment is an exact Taste/manifest binding, not a
+        # command dispatch.  Legacy assignments continue to bind their command.
+        entrypoint = _texts(self.entrypoint, "InventorAssignment entrypoint")
         if entrypoint != tuple(self.decision.selected.card.entrypoint):
             raise ContractError("InventorAssignment entrypoint must match the selected inventor")
         require_sha256(self.assignment_sha256, "InventorAssignment assignment_sha256")

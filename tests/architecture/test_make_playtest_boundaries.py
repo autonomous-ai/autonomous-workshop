@@ -81,6 +81,8 @@ class MakePlaytestBoundaryTest(unittest.TestCase):
             "ModelDoor",
             "MOVING_MACHINE_BINDING_KIND",
             "MOVING_MACHINE_BINDING_VERSION",
+            "NATIVE_MADE_KIND",
+            "NativeMade",
             "canonical_cad_project_sources",
             "locked_cad_project_verifier",
             "moving_machine_parts",

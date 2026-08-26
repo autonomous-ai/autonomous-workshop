@@ -20,7 +20,7 @@ second reviewer is required for critical changes whenever one is available.
 | Invent | `src/workshop/invent`, `tests/invent` | `@deehw` | Vacant | Standard |
 | Make | `src/workshop/make`, `tests/make` | `@deehw` | Vacant | High |
 | Playtest | `src/workshop/playtest`, `tests/playtest` | `@deehw` | Vacant | High |
-| Instructions | `src/workshop/instructions`, `tests/instructions` | `@deehw` | Vacant | High |
+| Release | `src/workshop/release`, `tests/release` | `@deehw` | Vacant | High |
 | Deliver | `src/workshop/deliver`, `tests/deliver` | `@deehw` | Vacant | High |
 | Reviews | `src/workshop/reviews`, `tests/reviews` | `@deehw` | Vacant | Standard |
 | Workflow | `src/workshop/workflow`, `tests/workflow`, end-to-end tests | `@deehw` | Vacant | Critical |

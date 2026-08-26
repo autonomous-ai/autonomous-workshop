@@ -83,18 +83,18 @@ tests = ["tests/playtest/**"]
 docs = ["src/workshop/playtest/README.md"]
 
 [[components]]
-id = "instructions"
-name = "Instructions"
-purpose = "Produce exact in-box instructions and the authenticated private content handoff."
-primary_role = "Instructions maintainer"
-backup_role = "Instructions backup maintainer"
+id = "release"
+name = "Release"
+purpose = "Own the evidence-bound manual, product facts, media references, attribution, and publication intent after Playtest."
+primary_role = "Release maintainer"
+backup_role = "Release backup maintainer"
 primary_github = ["@deehw"]
 backup_github = []
 backup_status = "vacant"
 risk = "high"
-source = ["src/workshop/instructions/**"]
-tests = ["tests/instructions/**"]
-docs = ["src/workshop/instructions/README.md"]
+source = ["src/workshop/release/**"]
+tests = ["tests/release/**"]
+docs = ["src/workshop/release/README.md"]
 
 [[components]]
 id = "deliver"

@@ -2398,9 +2398,9 @@ def parser() -> argparse.ArgumentParser:
     )
     creator.add_argument(
         "--level",
-        choices=CUSTOMIZATION_LEVELS,
+        choices=("taste-only",),
         default="taste-only",
-        help="creative code owned by the inventor (default: taste-only)",
+        help="native persona customization (taste-only)",
     )
     creator.add_argument(
         "--root",
@@ -2428,9 +2428,9 @@ def parser() -> argparse.ArgumentParser:
     )
     new.add_argument(
         "--level",
-        choices=CUSTOMIZATION_LEVELS,
+        choices=("taste-only",),
         default="taste-only",
-        help="how much Make and Playtest code this inventor owns (default: taste-only)",
+        help="native persona customization (taste-only)",
     )
     new.add_argument(
         "--template",

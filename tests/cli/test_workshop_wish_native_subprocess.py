@@ -16,6 +16,16 @@ class WorkshopWishNativeSubprocessTest(unittest.TestCase):
             root = Path(temporary).resolve()
             home = root / "workshop-home"
             fake_codex = root / "fake-codex"
+            repository = Path(__file__).resolve().parents[2]
+            catalog = root / "inventors"
+            catalog.mkdir()
+            for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
+                destination = catalog / inventor_id
+                destination.mkdir()
+                for filename in ("inventor.json", "TASTE.md"):
+                    (destination / filename).write_bytes(
+                        (repository / "inventors" / inventor_id / filename).read_bytes()
+                    )
             fake_codex.write_text(
                 """#!/usr/bin/env python3
 import json
@@ -29,19 +39,27 @@ if sys.argv[1:] == ["--version"]:
 
 run_root = Path.cwd()
 wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
+stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
 prompt = sys.stdin.read()
 (run_root / "agent-outcome.json").write_text(
     json.dumps(
         {
             "schema_version": 1,
-            "stage": "wish",
-            "status": "waiting",
-            "artifacts": [],
-            "needs": ["fixture stops before the host gate"],
-            "proposed_transition": None,
+            "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "subject_sha256": stage["subject_sha256"],
+            "outcome": {
+                "schema_version": 1,
+                "stage": stage["stage"],
+                "status": "waiting",
+                "artifacts": [],
+                "needs": ["fixture stops after one native turn"],
+                "proposed_transition": None,
+            },
         },
         sort_keys=True,
-    ),
+        separators=(",", ":"),
+    ) + "\\n",
     encoding="utf-8",
 )
 (run_root / "native-probe.json").write_text(
@@ -51,6 +69,7 @@ prompt = sys.stdin.read()
             "factory_visible": "FACTORY_PASSWORD" in os.environ,
             "objective": wish["objective"],
             "prompt": prompt,
+            "stage": stage,
             "product_agents": (run_root / "AGENTS.md").is_file(),
             "product_skill": (
                 run_root
@@ -83,7 +102,9 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             }
             with mock.patch.dict(os.environ, environment, clear=True), redirect_stdout(
                 output
-            ), redirect_stderr(progress):
+            ), redirect_stderr(progress), mock.patch(
+                "cli.native_run._product_run_catalog_root", return_value=catalog
+            ):
                 exit_code = main(("wish", objective, "--json"))
 
             self.assertEqual(exit_code, 0, progress.getvalue())
@@ -91,8 +112,10 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertEqual(receipt["wish"]["objective"], objective)
             self.assertEqual(receipt["wish"]["context"], {"source": "workshop-cli"})
             self.assertEqual(receipt["kind"], "native-agent-run")
-            self.assertEqual(receipt["stage"], "wish")
-            self.assertEqual(receipt["publication"]["status"], "draft")
+            self.assertEqual(receipt["status"], "waiting")
+            self.assertEqual(receipt["stage"], "match")
+            self.assertEqual(receipt["native_turns"], 1)
+            self.assertEqual(receipt["publication"]["status"], "not-created")
 
             workspace = home / "runs" / receipt["product_id"] / "workspace"
             observed = json.loads(
@@ -104,9 +127,16 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertFalse(observed["factory_visible"])
             self.assertIn("--search", observed["arguments"])
             self.assertIn("workspace-write", observed["arguments"])
-            self.assertIn("current wish stage", observed["prompt"])
+            self.assertIn("current match stage", observed["prompt"])
             self.assertNotIn(objective, observed["prompt"])
-            self.assertTrue((workspace / "agent-outcome.json").is_file())
+            self.assertEqual(observed["stage"]["stage"], "match")
+            self.assertRegex(
+                observed["stage"]["checkpoint_sha256"], r"^[0-9a-f]{64}$"
+            )
+            self.assertRegex(
+                observed["stage"]["subject_sha256"], r"^[0-9a-f]{64}$"
+            )
+            self.assertFalse((workspace / "agent-outcome.json").exists())
 
 
 if __name__ == "__main__":

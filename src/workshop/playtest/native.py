@@ -22,8 +22,7 @@ from workshop.artifacts import (
     build_artifact_manifest,
 )
 from workshop.errors import ArtifactError, ContractError
-from workshop.make import Feedback
-from workshop.make.native import NativeMade
+from workshop.make import Feedback, NativeMade
 from workshop.playtest.contracts import Playtested
 from workshop.playtest.evidence import PlaytestResult
 from workshop.playtest.service import Playtest
