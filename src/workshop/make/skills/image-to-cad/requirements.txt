@@ -1,0 +1,15 @@
+# Measurement instruments, plus one renderer.
+#
+# numpy and scipy also arrive with the `cad` skill's requirements (build123d
+# depends on both). Pillow does NOT: it turns up in a CAD venv only when
+# something incidental -- vtk, matplotlib -- drags it in, so declare it here
+# rather than assume it.
+pillow>=10.0
+numpy>=1.24
+scipy>=1.10
+
+# `render_views.py` is the exception to "this skill writes no geometry": it
+# builds the model to photograph it, so it needs the same kernel the `cad`
+# skill does. Every other script here runs without it, and the import is the
+# renderer's whole fixed cost -- 5.4 s of the ~7 s a render takes.
+build123d>=0.5

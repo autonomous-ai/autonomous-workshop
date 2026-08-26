@@ -196,7 +196,13 @@ class NativeHostTest(unittest.TestCase):
                     / "SKILL.md"
                 ).is_file()
             )
-            for skill_name in ("cad", "product-to-cad", "step-parts"):
+            for skill_name in (
+                "cad",
+                "design-reference",
+                "image-to-cad",
+                "product-to-cad",
+                "step-parts",
+            ):
                 self.assertTrue(
                     (
                         workspace

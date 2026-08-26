@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
-dependencies = ["cadgen==0.4.19"]
+dependencies = ["cadgen==0.4.19", "pillow>=10.0"]
 
 [project.urls]
 Homepage = "https://github.com/autonomous-ai/autonomous-workshop"

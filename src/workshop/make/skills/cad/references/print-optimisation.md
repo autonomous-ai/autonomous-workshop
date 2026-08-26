@@ -128,6 +128,28 @@ Ray thickness is also bimodal by nature on a shell: a sample near an edge marche
 along the wall rather than across it and legitimately reads the full span. The
 median is the number to use; `max` is not a defect.
 
+## Knife edges are walls too
+
+A boolean can leave a mathematically valid solid whose material tapers to zero:
+a round port meeting a circular chamber almost tangentially, a triangular brace
+ending at one point, or a constant-width radial slot breaking through a curved
+rim. `validate` and `check_mesh` pass all three; `check_thickness` correctly
+finds the sub-nozzle wedge near the intersection.
+
+Repair the construction, not the STL and not the threshold:
+
+- replace a point contact on a brace with a finite seating edge;
+- give a port a planar or otherwise non-tangent throat into the chamber;
+- flare a slot mouth continuously from the guide width, then fillet the two
+  outer breakthrough edges;
+- fillet exposed inner and outer rim edges when the print orientation turns
+  them into unsupported knife edges.
+
+A stepped mouth merely moves the defect from the outer rim to the step. Keep
+the guide region at its derived `cadfits` width, start the flare with that same
+width, and widen only toward the opening. Rerun `check_mesh` and
+`check_thickness` on the freshly exported part after every such repair.
+
 ## Record it
 
 Do not call a part optimised from a volume in a chat log. `--report` writes a

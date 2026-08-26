@@ -24,7 +24,13 @@ from workshop.errors import ManifestError, WorkshopError
 
 BUNDLED_INVENTOR_IDS = ("alice", "bob", "eve", "ivy", "leo")
 BUNDLED_INVENTOR_FILES = ("TASTE.md", "inventor.json")
-PRODUCT_RUN_DOMAIN_SKILLS = ("cad", "product-to-cad", "step-parts")
+PRODUCT_RUN_DOMAIN_SKILLS = (
+    "cad",
+    "design-reference",
+    "image-to-cad",
+    "product-to-cad",
+    "step-parts",
+)
 _MAX_BUNDLED_FILE_BYTES = 512 * 1024
 
 

@@ -56,6 +56,67 @@ Two of those numbers were taken twice, under load ~25 from a second agent
 session and again on a quiet machine. `validate` cost 8 minutes both times; the
 `gen` and `check_motion` numbers are the contended ones and are upper bounds.
 
+## A second measurement, and it inverts the table above
+
+The same suite on a **six-part prismatic mechanism** — a vane pump: cylinders,
+revolves, polar-patterned cuts, ~110 faces on its largest part, no lofts:
+
+| step | time |
+|---|---|
+| `check_layout` | 0.1 s |
+| `gen` (7 entries, `--write`, warm) | 2.8 s |
+| `inspect interfere` | **1.0 s** |
+| `inspect validate` | **2.2 s** |
+| `measure/check_fit.py` (local) | 2.7 s |
+| `measure/check_spec.py` (local) | 3.8 s |
+| `measure/check_landmarks.py` (local) | 3.8 s |
+| `check_fit` | 4.1 s |
+| `check_motion` (8 conditions) | 10.0 s |
+| `export --stl` x6 | 1.0 s |
+| `check_mesh` x6 | 1.3 s |
+| `check_thickness` x6 | **36.9 s** |
+| `render_views` (4 views + 3 searched poses + `--compare-step`) | **42.1 s** |
+| `check_likeness` | 0.8 s |
+| **the whole suite, once** | **1 m 53 s** |
+
+`validate` and `interfere` are 3.2 s between them here — **not** half the run but
+3 % of it. Their cost is B-rep complexity, and a lofted organic assembly has two
+orders of magnitude more of it than a barrel with some pockets. So read the
+first table as *what an organic multi-part reconstruction costs*, not as the
+price of a run: on a prismatic model the expensive commands are the two that
+scale with **surface area and pixels** instead, `check_thickness` and
+`render_views`.
+
+What that changes about how to spend a round:
+
+- **Batch `render_views`, and replay its poses while sweeping.** Where its
+  42.1 s goes, on this model:
+
+  | | time | marginal |
+  |---|---|---|
+  | `import build123d` alone | 5.2 s | the fixed cost of *every* invocation |
+  | + build + tessellate + 4 named views | 6.3 s | +1.1 s |
+  | + `--compare-step` | 11.9 s | +5.6 s — final run only |
+  | 1 `--match`, one FOV | 13.1 s | +6.8 s per reference |
+  | 1 `--match`, `--search-fov 0,25,40` | 23.1 s | 2.6x — final run only |
+  | 3 `--match` **with `--poses-from`** | **7.8 s** | the search skipped, same IoU |
+
+  So one call with every `--view` and every `--match` costs about what one call
+  with a single match costs, and adding `--poses-from` to that same command line
+  turns 59.2 s of searching into 7.8 s of replay with identical numbers. Search
+  once, replay while editing, search again at the end.
+- **`check_thickness` is the per-part tax.** 8 s on a 65 cm3 housing, 1.3 s on a
+  vane. Run it on the part you changed while iterating, all six once at the end.
+- **Do not let a local audit go unmeasured.** `measure/check_landmarks.py` on
+  this project cost **61.1 s** — 62 % of the entire suite — until one ledger row
+  stopped sampling the solid and started reading its edges, which took it to
+  0.004 s. `image-derived-verification.md` has the numbers.
+- **"One machine, one run" is not advice.** Nine stale audit processes and two
+  concurrent parameter sweeps on this host inflated `check_thickness` from 8 s
+  to 40 s — a 5x tax on every measurement taken while they were alive, and one
+  that looks like a slow tool rather than a busy machine. Check `ps` before
+  believing a timing.
+
 ## Spend that time deliberately
 
 - **Run `validate` and `interfere` once, at the end.** They are the two most

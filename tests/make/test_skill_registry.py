@@ -40,7 +40,16 @@ class SkillFingerprintTest(unittest.TestCase):
 
     def test_checkout_discovery_finds_canonical_workshop_skills(self):
         observed = {skill.name for skill in discover_skills()}
-        self.assertEqual(observed, {"cad", "product-to-cad", "step-parts"})
+        self.assertEqual(
+            observed,
+            {
+                "cad",
+                "design-reference",
+                "image-to-cad",
+                "product-to-cad",
+                "step-parts",
+            },
+        )
 
     def test_reviewed_skill_lock_matches_exact_tree_fingerprints(self):
         workshop_root = Path(__file__).resolve().parents[2]
@@ -101,6 +110,27 @@ class SkillFingerprintTest(unittest.TestCase):
         self.assertIn(
             'python "$STEP_PARTS_SKILL_ROOT/scripts/download_step_part.py"',
             skill_text,
+        )
+
+    def test_design_reference_command_guidance_uses_the_installed_skill_root(self):
+        skill_text = (
+            resolve_skills_root() / "design-reference" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("python skills/design-reference/", skill_text)
+        self.assertIn(
+            'DESIGN_REFERENCE_SKILL_ROOT="$(workshop skills path)/design-reference"',
+            skill_text,
+        )
+
+    def test_image_to_cad_command_guidance_uses_the_installed_skill_root(self):
+        skill = resolve_skills_root() / "image-to-cad"
+        checked = (skill / "SKILL.md", skill / "scripts" / "render_views.py")
+        for path in checked:
+            with self.subTest(path=path.name):
+                self.assertNotIn("python skills/image-to-cad/", path.read_text(encoding="utf-8"))
+        self.assertIn(
+            'IMAGE_TO_CAD_SKILL_ROOT="$(workshop skills path)/image-to-cad"',
+            checked[0].read_text(encoding="utf-8"),
         )
 
     def test_warm_daemon_fingerprints_the_installed_skill_tree(self):

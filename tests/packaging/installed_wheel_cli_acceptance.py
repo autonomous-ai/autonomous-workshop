@@ -25,7 +25,13 @@ SCHEMA_OWNERS = {
     "verification-receipt.schema.json": "make",
     "receipt.schema.json": "runtime",
 }
-SKILLS = ("cad", "product-to-cad", "step-parts")
+SKILLS = (
+    "cad",
+    "design-reference",
+    "image-to-cad",
+    "product-to-cad",
+    "step-parts",
+)
 INVENTORS = ("alice", "bob", "eve", "ivy", "leo")
 CODEX_THREAD_ID = "12345678-1234-5678-9234-567812345678"
 
@@ -445,6 +451,7 @@ for inventor_id in inventor_ids:
                 "agents": (run_root / "AGENTS.md").is_file(),
                 "cad": (run_root / ".agents" / "skills" / "cad" / "SKILL.md").is_file(),
                 "codex_agents": agent_root.is_dir(),
+                "design_reference": (run_root / ".agents" / "skills" / "design-reference" / "SKILL.md").is_file(),
                 "inventors": all(
                     (
                         run_root
@@ -464,6 +471,7 @@ for inventor_id in inventor_ids:
                 ),
                 "product_to_cad": (run_root / ".agents" / "skills" / "product-to-cad" / "SKILL.md").is_file(),
                 "root_marker": (run_root / ".workshop-product-run-root").is_file(),
+                "image_to_cad": (run_root / ".agents" / "skills" / "image-to-cad" / "SKILL.md").is_file(),
                 "stage": (run_root / "STAGE.json").is_file(),
                 "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
                 "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),

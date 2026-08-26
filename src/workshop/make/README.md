@@ -9,11 +9,12 @@ Reusable Codex-native creation capabilities live once in `skills/`. The host
 materializes their exact locked bytes into each private product run; Inventors
 use those shared capabilities without copying or wrapping them in Python.
 
-The `cad` and `step-parts` skills are reviewed MIT-licensed snapshots of
-`autonomous-ai/autonomous-text-to-3d`. `LOCK.json` binds their canonical trees
-to an exact upstream revision, while `PROVENANCE.md` records the allowed local
-adaptations and the boundary around upstream folders that are not licensed for
-vendoring.
+The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills are
+reviewed snapshots of `autonomous-ai/autonomous-product-to-cad`. `LOCK.json` binds
+their canonical trees to an exact upstream revision, while `PROVENANCE.md`
+records local path adaptations and the distinct license status of each
+upstream tree. The repository-authored `product-to-cad` skill remains available
+for broader product-design briefs.
 
 The locked MVP geometry vocabulary is 2–12 printable boxes or vertical
 cylinders. Every part declares `top_grooves_mm`; cylinders leave it empty, while
