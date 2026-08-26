@@ -243,10 +243,17 @@ def _source_tree_files(
     files: list[tuple[PurePosixPath, bytes, int]] = []
     for directory, dirnames, filenames in os.walk(str(requested), followlinks=False):
         base = Path(directory)
+        dirnames[:] = [
+            dirname
+            for dirname in dirnames
+            if dirname not in ("__pycache__", ".git")
+        ]
         for dirname in tuple(dirnames):
             if (base / dirname).is_symlink():
                 raise ArtifactError("%s contains a symlink" % label)
         for filename in sorted(filenames):
+            if filename == ".DS_Store" or filename.endswith((".pyc", ".pyo")):
+                continue
             source = base / filename
             if source.is_symlink():
                 raise ArtifactError("%s contains a symlink" % label)

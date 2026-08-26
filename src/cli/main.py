@@ -20,6 +20,12 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Mapping, Optional, Sequence
 
+from cli.native_run import (
+    native_run_exists,
+    native_run_status,
+    resume_native_run,
+    start_native_run,
+)
 from workshop.runtime.package_data import (
     existing_bundled_catalog_roots,
     materialize_bundled_inventors,
@@ -1446,7 +1452,32 @@ def _print_status_receipt(receipt: Mapping[str, Any], *, root: Path) -> None:
             )
 
 
+def _print_native_status_receipt(receipt: Mapping[str, Any]) -> None:
+    print("Wish: %s" % receipt["product_id"])
+    print(
+        "Status: %s at %s (revision %s, round %s/%s)"
+        % (
+            receipt["status"],
+            str(receipt["stage"]).title(),
+            receipt["revision"],
+            receipt["round"],
+            receipt["max_rounds"],
+        )
+    )
+    session_status = receipt.get("session_status")
+    if isinstance(session_status, str):
+        print("Native session: %s" % session_status)
+    print("Checkpoint: %s" % receipt["checkpoint_sha256"])
+
+
 def _status(args: argparse.Namespace) -> int:
+    if args.product_id is not None and native_run_exists(args.product_id):
+        receipt = native_run_status(args.product_id)
+        if args.json:
+            print(json.dumps(receipt, indent=2, sort_keys=True))
+        else:
+            _print_native_status_receipt(receipt)
+        return 0
     roots = _catalog_roots(args.root, include_retained=args.root is None)
     if args.product_id is None:
         products: dict[str, Path] = {}
@@ -1549,6 +1580,20 @@ def _resume_assignment(root: Path, product_id: str) -> tuple[Any, Mapping[str, A
 
 
 def _resume(args: argparse.Namespace) -> int:
+    if native_run_exists(args.product_id):
+        receipt = resume_native_run(
+            args.product_id,
+            publish_requested=args.publish,
+        )
+        if args.json:
+            print(json.dumps(receipt, indent=2, sort_keys=True))
+        else:
+            _print_native_status_receipt(receipt)
+            print(
+                "Track: %s"
+                % _shell_command("workshop", "status", args.product_id)
+            )
+        return 0
     roots = _catalog_roots(args.root, include_retained=args.root is None)
     selected_root, _ = _root_for_durable_wish(roots, args.product_id)
     assignment, located = _resume_assignment(selected_root, args.product_id)
@@ -1833,7 +1878,6 @@ def _doctor(args: argparse.Namespace) -> int:
 
 
 def _wish(args: argparse.Namespace) -> int:
-    root = _catalog_roots(args.root)[0]
     objective = " ".join(args.objective)
     wish = Wish.create(
         generate_wish_id(),
@@ -1843,84 +1887,25 @@ def _wish(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print(
-        "Page: will be public after exact verification (--draft keeps it private)."
-        if args.publish
-        else "Page: will remain a private authenticated draft.",
+        "Page: remains a private draft unless a later host-authorized effect publishes it.",
         file=progress,
         flush=True,
     )
-    print("Matching your Wish with an Inventor...", file=progress, flush=True)
-    semantic = CodexSemanticManager()
-    manager = WorkshopManager(
-        root=root,
-        retriever=semantic.retrieve,
-        judge=semantic.judge,
-        judge_identity=semantic.judge_identity,
-        judge_version=semantic.judge_version,
-        judge_config_sha256=semantic.judge_config_sha256,
+    print(
+        "Starting one native Codex session before Match...",
+        file=progress,
+        flush=True,
     )
-    try:
-        assignment = manager.assign(
-            wish, playtest_rounds=DEFAULT_WISH_PLAYTEST_ROUNDS
-        )
-    except WaitingFor as waiting:
-        receipt = {
-            **_waiting_receipt(wish, waiting),
-            "next_command": _wish_command(
-                wish.objective, root, draft=not args.publish
-            ),
-        }
-        showed_match = False
-    else:
-        _save_manager_assignment(assignment)
-        print(
-            "Matched with %s." % assignment.decision.selected.card.name,
-            file=progress,
-            flush=True,
-        )
-        print(
-            "Track: %s" % _status_command(wish.product_id, root),
-            file=progress,
-            flush=True,
-        )
-        print(
-            "Inventing, making, and playtesting (up to 60 minutes). "
-            "Use Track in another terminal for durable status.",
-            file=progress,
-            flush=True,
-        )
-        result = _run_inventor(assignment)
-        result = _resume_factory_instructions(assignment, result)
-        if args.publish:
-            result = {
-                **result,
-                "publication": _publish_inventor_draft(assignment, result),
-            }
-        decision = assignment.decision
-        receipt = {
-            "schema_version": 1,
-            "status": result.get("status", "started"),
-            "wish": wish.to_dict(),
-            "match": {
-                "inventor_id": assignment.inventor_id,
-                "name": decision.selected.card.name,
-                "score": decision.fit.score,
-                "explanation": decision.fit.explanation,
-                "decision_sha256": decision.decision_sha256,
-            },
-            "assignment_sha256": assignment.assignment_sha256,
-            "result": result,
-        }
-        showed_match = True
+    receipt = start_native_run(wish, publish_requested=args.publish)
     if args.json:
         print(json.dumps(receipt, indent=2, sort_keys=True))
     else:
-        _print_wish_receipt(
-            receipt,
-            root=root,
-            show_wish=False,
-            show_match=not showed_match,
+        print(
+            "Status: %s at %s."
+            % (receipt["status"], str(receipt["stage"]).title())
         )
+        print("Track: %s" % _shell_command("workshop", "status", wish.product_id))
+        print("Resume: %s" % _shell_command("workshop", "resume", wish.product_id))
     return (
         1
         if getattr(args, "strict", False) and receipt.get("status") == "waiting"
@@ -2164,17 +2149,16 @@ def parser() -> argparse.ArgumentParser:
 
     wish = subcommands.add_parser(
         "wish",
-        help="wish for a toy; matching and a verified public page are automatic",
+        help="persist one Wish and start its native coding-agent session",
         description=(
-            "Say what you wish existed. The Manager reads Inventor Tastes, chooses "
-            "one exact match, and starts the shared Workshop. The run includes up to "
-            "four AI Playtest-to-Make improvement passes. A verified Factory page goes public by "
-            "default; this never claims the physical toy was printed or delivered."
+            "Say what you wish existed. Workshop persists the exact Wish in a private "
+            "run workspace, then starts one native Codex session before Match. Codex "
+            "does the cognitive work; host checkpoints and deterministic gates retain "
+            "authority. Publication is never automatic."
         ),
         epilog=(
-            "Prerequisites: a discoverable Inventor catalog, an installed and signed-in "
-            "Codex CLI, the shared CAD/printability runtime, and FACTORY_PASSWORD for a "
-            "live page. Run 'workshop doctor' first. A truthful waiting result exits 0; "
+            "Prerequisite: an installed and signed-in Codex CLI. Factory credentials "
+            "are not passed to the native session. A truthful waiting result exits 0; "
             "use --strict when automation should exit 1 on a wait."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -2189,7 +2173,7 @@ def parser() -> argparse.ArgumentParser:
         "--root",
         type=Path,
         default=None,
-        help="Workshop checkout or inventor collection (default: auto-detected)",
+        help="legacy catalog override; native run state always lives under WORKSHOP_HOME",
     )
     wish.add_argument(
         "--json",
@@ -2207,17 +2191,16 @@ def parser() -> argparse.ArgumentParser:
         dest="publish",
         action="store_true",
         help=(
-            "make the exact authenticated Instructions page public (default; "
-            "kept for explicit scripts)"
+            "record a future publication request; never gives the native session credentials"
         ),
     )
     publication.add_argument(
         "--draft",
         dest="publish",
         action="store_false",
-        help="stop after the exact authenticated private draft; do not make it public",
+        help="keep all output private (default)",
     )
-    wish.set_defaults(handler=_wish, publish=True)
+    wish.set_defaults(handler=_wish, publish=False)
 
     status = subcommands.add_parser(
         "status",
@@ -2244,11 +2227,10 @@ def parser() -> argparse.ArgumentParser:
 
     resume = subcommands.add_parser(
         "resume",
-        help="continue an exact sealed Instructions handoff",
+        help="resume the exact native session for a saved Wish",
         description=(
-            "Resume only the exact, artifact-bound Instructions handoff saved by "
-            "'workshop wish'. Invent, Make, or Playtest waits are reported without "
-            "mutation because those stages do not yet have a safe generic resume."
+            "Resume the exact native coding-agent session bound to the private Wish "
+            "workspace. Legacy Instructions-only runs remain readable during migration."
         ),
     )
     resume.add_argument("product_id", help="saved Wish id")
@@ -2256,7 +2238,7 @@ def parser() -> argparse.ArgumentParser:
         "--root",
         type=Path,
         default=None,
-        help="Workshop checkout or inventor collection (default: find the exact retained run)",
+        help="legacy catalog override; native run state is found under WORKSHOP_HOME",
     )
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume_publication = resume.add_mutually_exclusive_group()
@@ -2264,15 +2246,15 @@ def parser() -> argparse.ArgumentParser:
         "--publish",
         dest="publish",
         action="store_true",
-        help="make the verified page public (default)",
+        help="record a future publication request; does not expose credentials to Codex",
     )
     resume_publication.add_argument(
         "--draft",
         dest="publish",
         action="store_false",
-        help="create/reconcile the authenticated draft without making it public",
+        help="keep all output private (default)",
     )
-    resume.set_defaults(handler=_resume, publish=True)
+    resume.set_defaults(handler=_resume, publish=False)
 
     doctor = subcommands.add_parser(
         "doctor",

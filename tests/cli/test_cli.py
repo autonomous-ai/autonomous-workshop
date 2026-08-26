@@ -27,11 +27,7 @@ from workshop.match.handoff import (
     bind_manager_assignment_result,
 )
 from workshop.errors import AmbiguousEffectError, WorkshopError
-from workshop.match.service import (
-    TasteFit,
-    create_shortlist,
-    discover_inventor_catalog,
-)
+from workshop.match.service import discover_inventor_catalog
 from workshop.wish import Wish
 from workshop.runtime import Receipt
 from workshop.runtime.effects import Runtime
@@ -863,63 +859,30 @@ class CliTest(unittest.TestCase):
 
     def test_wish_is_the_simple_customer_command(self):
         root = Path(__file__).resolve().parents[2]
+        observed = {}
 
-        class FakeSemanticManager:
-            judge_identity = "fixture-description-matcher"
-            judge_version = "1.0.0"
-            judge_config_sha256 = "a" * 64
-
-            def retrieve(self, context):
-                return create_shortlist(
-                    context,
-                    ("bob",),
-                    retriever="fixture-description-matcher",
-                    retriever_version="1.0.0",
-                    rationale="Bob turns a playful movement into a real mechanism.",
-                )
-
-            def judge(self, context):
-                finalist = context.finalists[0]
-                return (
-                    TasteFit(
-                        inventor_id="bob",
-                        taste_sha256=finalist.taste.sha256,
-                        score=94,
-                        accepted=True,
-                        explanation=(
-                            "Bob turns a playful movement into a real mechanism."
-                        ),
-                    ),
-                )
+        def native_start(wish, *, publish_requested):
+            observed["wish"] = wish
+            observed["publish_requested"] = publish_requested
+            return {
+                "schema_version": 1,
+                "kind": "native-agent-run",
+                "product_id": wish.product_id,
+                "status": "active",
+                "stage": "wish",
+                "wish": wish.to_dict(),
+                "publication": {"status": "draft", "requested": False},
+            }
 
         output = StringIO()
         progress = StringIO()
-        with mock.patch(
-            "cli.main.CodexSemanticManager",
-            return_value=FakeSemanticManager(),
-        ), mock.patch(
-            "cli.main._run_inventor",
-            return_value={
-                "status": "waiting",
-                "job": "make",
-                "needs": [
-                    {
-                        "job": "make",
-                        "capability": "mechanical-designer",
-                        "reason": "The mechanical designer is not connected yet.",
-                        "instructions": "Connect it.",
-                    }
-                ],
-            },
-        ), mock.patch(
-            "cli.main._save_manager_assignment"
-        ), mock.patch(
-            "cli.main._publish_inventor_draft",
-            return_value={
-                "status": "waiting",
-                "reason": "Instructions has not produced a draft yet.",
-            },
-        ) as publish, redirect_stdout(output), redirect_stderr(progress):
+        with mock.patch("cli.main.start_native_run", side_effect=native_start), mock.patch(
+            "cli.main.CodexSemanticManager"
+        ) as semantic, mock.patch("cli.main.WorkshopManager") as manager, mock.patch(
+            "cli.main._run_inventor"
+        ) as profile, mock.patch("cli.main._publish_inventor_draft") as publish, redirect_stdout(
+            output
+        ), redirect_stderr(progress):
             result = main(
                 (
                     "wish",
@@ -943,17 +906,20 @@ class CliTest(unittest.TestCase):
         self.assertEqual(
             receipt["wish"]["objective"], "a wind-up version of my dog"
         )
-        self.assertEqual(receipt["match"]["inventor_id"], "bob")
-        self.assertEqual(receipt["match"]["score"], 94)
-        self.assertEqual(receipt["result"]["status"], "waiting")
-        self.assertEqual(publish.call_count, 1)
+        self.assertEqual(receipt["kind"], "native-agent-run")
+        self.assertEqual(receipt["stage"], "wish")
+        self.assertEqual(receipt["publication"]["status"], "draft")
+        self.assertFalse(observed["publish_requested"])
+        semantic.assert_not_called()
+        manager.assert_not_called()
+        profile.assert_not_called()
+        publish.assert_not_called()
         self.assertIn("Wish:", progress.getvalue())
-        self.assertIn("Track: workshop status", progress.getvalue())
-        self.assertIn("will be public", progress.getvalue())
-        self.assertIn("up to 60 minutes", progress.getvalue())
+        self.assertIn("private draft", progress.getvalue())
+        self.assertIn("before Match", progress.getvalue())
         self.assertNotIn("Wish:", output.getvalue().splitlines()[0])
 
-    def test_wish_help_discloses_default_public_wait_and_json_semantics(self):
+    def test_wish_help_discloses_native_session_private_default_and_json_semantics(self):
         command = parser()
         subcommands = next(
             action
@@ -961,12 +927,12 @@ class CliTest(unittest.TestCase):
             if hasattr(action, "choices") and action.choices
         )
         help_text = subcommands.choices["wish"].format_help()
-        self.assertIn("public", help_text)
+        self.assertIn("one native Codex session", help_text)
+        self.assertIn("Publication is never automatic", help_text)
         self.assertIn("--draft", help_text)
         self.assertIn("--strict", help_text)
         self.assertIn("progress goes to stderr", help_text)
-        self.assertIn("four", help_text)
-        self.assertTrue(command.parse_args(("wish", "a moon")).publish)
+        self.assertFalse(command.parse_args(("wish", "a moon")).publish)
         self.assertFalse(
             command.parse_args(("wish", "a moon", "--draft")).publish
         )
