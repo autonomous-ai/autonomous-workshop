@@ -60,6 +60,44 @@ Compute dependent values from the real constraints:
 
 If a parameter changes a source-level CAD generator, regenerate STEP and validate the exported geometry — that is the only way a parameter change is confirmed here.
 
+## Derive The Second Half Of A Mate — `cadfits`
+
+```python
+import cadfits
+stem = cadfits.peg_for(SEAT_BORE_D, "slip")   # male from female
+bore = cadfits.slot_for(PIN_D, 0.15)          # female from male
+```
+
+`scripts/cadfits.py` holds the FDM clearance table (`press -0.05`, `snug 0.10`,
+`slip 0.20`, `free 0.40`, per side) and the two derivations. Every CLI launcher
+in `scripts/` puts that directory on `sys.path` before it loads a generator, so
+a `*_lib.py` can `import cadfits` with no setup; a `measure/*.py` run directly
+by the interpreter adds the scripts directory to `sys.path` itself. Run
+`python "$CAD_SKILL_ROOT/scripts/cadfits.py"` for its self-check.
+
+**Write the mate as a derivation, not as an assertion.** A mating pair sized by
+hand — `hole = PIN_D + 2 * PIN_CLEAR` in one file, the pin in another — cannot
+be audited afterwards, because the only check available restates the arithmetic:
+
+```python
+assert math.isclose((PIN_D + 2 * PIN_CLEAR) - PIN_D, 2 * PIN_CLEAR)   # 2C == 2C
+```
+
+That reduces to `True` and passes whatever the geometry does. Use derivations
+through `cadfits`, and have the project's fit audit recompute module-level
+results *independently*, band-check every per-side clearance, and grep the
+library for the `± 2 * SOME_CLEAR` idiom so a hand-written mate cannot come
+back. Both new forms fail when broken on purpose; the old ones could not.
+
+Migrating an existing project to this form must not move any geometry. Prove it:
+fingerprint every entry's volume, body count and bbox straight from source
+before and after, and diff.
+
+`cadfits` lives in `scripts/` and deliberately not inside the `cadgen` package:
+`cadgen` is installed into the project venv as a *copy* while the launchers
+prefer the vendored `scripts/packages/cadgen/src`, so a module placed there is
+read from two different files depending on how the process started.
+
 ## Features And Refs
 
 Named features are the bridge between parameters and geometry.
@@ -86,10 +124,10 @@ Use deterministic checks first:
 - `scripts/inspect frame`, `measure`, or `align` for pivots, axes, mating faces, and distances.
 - Source-level assertions for derived dimensions or joint limits when practical.
 
-**There is no renderer in this toolchain**, so a parameter sweep cannot be
-reviewed by looking at it. The sidecar is still worth declaring — it travels
-with the STEP for whoever opens it downstream — but every claim about a pose
-has to come from geometry:
+The image-derived workflow has a silhouette renderer, but a parameter sweep
+still cannot establish a geometric claim by looking at it. The sidecar is
+worth declaring — it travels with the STEP for whoever opens it downstream —
+but every claim about a pose has to come from geometry:
 
 - Assert derived dimensions and joint limits in the source, at the poses that
   matter (both end stops, not just the rest pose).

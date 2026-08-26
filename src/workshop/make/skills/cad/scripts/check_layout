@@ -5,6 +5,20 @@ Enforces the split rule in SKILL.md step 6: a model with separately printable
 parts, 3+ named parts, or more than ~120 code lines gets a project directory
 (library + assembly entry + one entry per part) rather than a single file.
 
+**Once a project has `part_*.step.py` entries beside its assembly entry, the
+whole layout in `references/project-structure.md` is mandatory, not advisory.**
+That is what the third rule below is for: the two-tier split is easy to reach
+and then easy to outgrow, and a library that has quietly passed the Tier 3
+threshold looks identical to a healthy one from every other gate.
+
+Three rules, all failing:
+
+* `unsplit-entry` — an entry over the thresholds with no `part_*` beside it.
+* `missing-assembly-entry` — part entries with no combined assembly entry.
+* `oversized-library` — a project WITH part entries whose importable modules
+  have outgrown Tier 2. Split into the Tier 3 package: `params.py`,
+  `parts/`, `features/`, `assemblies/`.
+
 Static only: it reads source, never imports build123d, so it costs milliseconds
 and can run before `gen`. That also means the named-part count is an
 approximation from `label=` / `.label =` string literals, which is why it is a
@@ -29,8 +43,19 @@ from pathlib import Path
 MAX_ENTRY_CODE_LINES = 120
 MAX_ENTRY_NAMED_PARTS = 2  # 3+ named parts must be split
 
+# Tier 2 -> Tier 3. `project-structure.md`: "When the library file itself passes
+# ~400 lines or the parts stop being readable side by side, split it." Only the
+# first half of that is machine-checkable, so this is the floor, not the whole
+# test — a 300-line library whose parts have stopped being readable side by side
+# is still due the package.
+MAX_LIBRARY_CODE_LINES = 400
+
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
+
+# Subdirectories of a project that hold no geometry, so nothing in them is a
+# library module: probes and ledgers, references, exported artifacts.
+NON_SOURCE_DIR_NAMES = {"measure", "ref", "refs", "docs", "export", "exports"}
 
 IGNORED_DIR_NAMES = {
     "__cadgen__",
@@ -116,6 +141,25 @@ def named_parts(path: Path) -> int:
     return len(labels)
 
 
+def iter_library_modules(directory: Path):
+    """Importable geometry modules of a project: every `.py` that is not an entry.
+
+    Walks the project's own subpackages (`parts/`, `features/`, `assemblies/`)
+    because Tier 3 only helps if the split modules are themselves readable —
+    moving 700 lines into one `parts/everything.py` is not the layout.
+    `measure/` and the other non-source directories are skipped: an audit script
+    is not part of the model.
+    """
+    for path in sorted(directory.rglob("*.py")):
+        relative = path.relative_to(directory).parts[:-1]
+        if any(part in IGNORED_DIR_NAMES or part in NON_SOURCE_DIR_NAMES
+               for part in relative):
+            continue
+        if path.name.endswith(ENTRY_SUFFIX):
+            continue
+        yield path
+
+
 def iter_entries(root: Path):
     for path in sorted(root.rglob("*" + ENTRY_SUFFIX)):
         if any(part in IGNORED_DIR_NAMES for part in path.relative_to(root).parts[:-1]):
@@ -145,6 +189,23 @@ def check(root: Path) -> list[dict]:
                     "add <name>.step.py that places every part"
                 ),
             })
+
+        # Once a project has part entries, the full layout is mandatory.
+        if part_entries:
+            for module in iter_library_modules(directory):
+                lines = code_lines(module)
+                if lines <= MAX_LIBRARY_CODE_LINES:
+                    continue
+                findings.append({
+                    "path": str(module.relative_to(root)),
+                    "rule": "oversized-library",
+                    "detail": (
+                        f"{lines} code lines > {MAX_LIBRARY_CODE_LINES} in a project "
+                        f"with {len(part_entries)} part entries; this is Tier 3 — "
+                        "split into params.py + parts/ + features/ + assemblies/"
+                    ),
+                    "codeLines": lines,
+                })
 
         for entry in assembly_entries:
             lines = code_lines(entry)
@@ -193,7 +254,7 @@ def main() -> int:
     print(f"check_layout: {len(findings)} layout violation(s)\n", file=sys.stderr)
     for finding in findings:
         print(f"  {finding['path']}\n    [{finding['rule']}] {finding['detail']}\n", file=sys.stderr)
-    print("See the CAD skill's references/project-structure.md for the layout.", file=sys.stderr)
+    print("See skills/cad/references/project-structure.md for the layout.", file=sys.stderr)
     return 1
 
 

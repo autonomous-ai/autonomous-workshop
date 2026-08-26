@@ -24,7 +24,7 @@ from cadgen._internal.step_hash import step_file_hash
 
 
 STEP_SUFFIXES = (".step", ".stp")
-REGENERATE_STEP_COMMAND = 'python "$CAD_SKILL_ROOT/scripts/gen"'
+REGENERATE_STEP_COMMAND = "python scripts/gen"
 REGENERATE_STEP_PROMPT = "Regenerate STEP artifacts with the following command using the CAD skill:"
 
 

@@ -4,6 +4,18 @@ Read this when a model outgrows one file: a multi-part assembly, a part with
 more than ~120 lines of geometry, anything with separately printable pieces, or
 anything the user will come back and tweak.
 
+**Once `gen` has part entries, this layout is not advisory.** A project with
+`part_*.step.py` files beside its assembly entry owes the whole format below —
+the right tier, one parameter block, one module per part, assembly-is-positioning
+— and `scripts/check_layout` fails it when it does not.
+
+Making it mandatory rather than recommended is a response to how it actually
+fails. Reaching Tier 2 is easy; *outgrowing* Tier 2 is invisible. A 700-line
+library builds, writes its STEP, and passes `validate`, `interfere`,
+`check_motion`, `check_fit` and `check_mesh` exactly like a healthy one — none of
+those gates has an opinion about where code lives. Only a line count catches it,
+so the line count is a gate.
+
 ## How many printed parts?
 
 Decide this before the layout, because it decides the layout. **Default to one
@@ -56,13 +68,21 @@ safe to run before the model builds:
 
 ```bash
 python "$CAD_SKILL_ROOT/scripts/check_layout" <project-dir>
-python "$CAD_SKILL_ROOT/scripts/check_layout" <project-dir> --json
+python "$CAD_SKILL_ROOT/scripts/check_layout" --json
 ```
 
-It fails a project two ways: an entry generator over the thresholds with no
-`part_*.step.py` beside it (`unsplit-entry`), and part entries with no combined
-assembly entry (`missing-assembly-entry`). Both halves are required — see
-SKILL.md step 6.
+It fails a project three ways:
+
+| rule | what it caught |
+|---|---|
+| `unsplit-entry` | an entry generator over the thresholds with no `part_*.step.py` beside it |
+| `missing-assembly-entry` | part entries with no combined assembly entry — both halves are required, see SKILL.md step 6 |
+| `oversized-library` | a project **that has part entries** whose importable modules have passed the Tier 3 threshold below |
+
+The third only fires once part entries exist, which is the point at which the
+layout stops being a suggestion. It walks the project's own subpackages too, so
+moving 700 lines into a single `parts/everything.py` does not satisfy it — Tier 3
+is only worth the churn if the modules that come out of it are readable.
 
 ## Three tiers
 
@@ -84,7 +104,10 @@ object:
 ```
 
 **Tier 3 — project package.** When the library file itself passes ~400 lines or
-the parts stop being readable side by side, split it:
+the parts stop being readable side by side, split it. The first half of that
+sentence is what `check_layout` measures — **400 code lines**, comments and
+docstrings excluded — and it is a floor, not the whole test: a 300-line library
+whose parts have stopped being readable side by side is still due the package.
 
 ```
 <project>/
@@ -214,6 +237,14 @@ Two consequences:
    register it in the assembly, add a `part_<role>.step.py` print entry.
 5. **Tighter or looser fit** → adjust the clearance parameter, nothing else.
 6. **Different printer or material** → adjust the validation constants.
+7. **Moving up a tier** → a pure move. Prove it the way `parameters.md` asks a
+   `cadfits` migration to be proved: fingerprint every entry's volume, solid
+   count and bbox straight from source before the split, again after, and diff.
+   A tier migration touches every import in the project and is exactly the kind
+   of edit that silently drops a feature — the diff is what turns "I only moved
+   code" from a claim into a check. Measured on a 10-part project: 440 code
+   lines of library became `params.py` + `validation.py` + `features/` +
+   `parts/` + `assemblies/`, and the fingerprint was byte-identical.
 
 After an entry-only edit, run `scripts/gen` on that affected entry, then the
 checks tied to the changed feature. After a shared `*_lib.py` edit, delete the

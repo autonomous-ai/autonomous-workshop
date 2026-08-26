@@ -12,15 +12,21 @@ reviewed revisions and local adaptations are recorded in
 `src/workshop/make/skills/LOCK.json`.
 
 Each skill includes its MIT license, copyright 2026 Thompson Labs LLC. The
-`cadgen` material used by the CAD skill, including the pinned `cadgen==0.4.19`
-distribution, carries the same included MIT notice.
+complete vendored `cadgen` 0.4.19 source inside the CAD skill, and the pinned
+`cadgen==0.4.19` distribution dependency, carry the same included MIT notice.
+
+The reviewed upstream `design-reference` and `image-to-cad` directories are
+not shipped because they did not include license files. The licensed CAD
+skill's optional image-derived integration remains fail-closed when a
+separately authorized compatible renderer is absent.
 
 ## Repository-authored work
 
 The `product-to-cad` skill and the Workshop Python host were authored for this
 repository. `product-to-cad` applies general measurement-provenance,
 multi-view-form, manufacturing, and fail-closed evidence principles without
-copying the unlicensed `text-to-3d/skills/image-to-cad` source.
+copying the unlicensed `text-to-3d/skills/design-reference` or
+`text-to-3d/skills/image-to-cad` source.
 
 Earlier research examined internal Inventor projects including `text2cad`,
 `text2game`, and `vibe-ideas`. Their legacy Python workers and source snapshots

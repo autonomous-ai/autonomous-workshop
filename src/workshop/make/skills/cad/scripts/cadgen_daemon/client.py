@@ -30,9 +30,9 @@ SPAWN_WAIT_SECONDS = 30.0  # first daemon start pays the full OCP import
 # legitimate large build can be silent for a long time, so the default is
 # generous, but it is finite, so the documented cold fallback actually happens.
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 600.0
-# Every Python file owned by this installed skill contributes to the daemon's
-# version token, including both its CLIs and bundled cadgen package. A newer
-# file anywhere in this tree restarts stale daemon code on the next call.
+# Every Python file owned by this materialized skill contributes to the
+# daemon's version token, including both its CLIs and bundled cadgen package. A
+# newer file anywhere in this tree restarts stale daemon code on the next call.
 _VERSION_TREES = ("scripts",)
 
 _RESTART = object()

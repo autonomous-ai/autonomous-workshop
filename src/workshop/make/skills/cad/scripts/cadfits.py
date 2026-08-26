@@ -24,7 +24,7 @@ here and every project that reads the table follows.
 
 Importing it
 ------------
-Every CLI launcher in this skill's `scripts/` directory puts its own directory on
+Every CLI launcher in `skills/cad/scripts/` puts its own directory on
 `sys.path` before loading a generator, so a generator, a `*_lib.py`, or a
 `measure/*.py` run through `scripts/gen` / `export` / `inspect` / `check_*`
 can `import cadfits` with no path setup. A script run directly by the

@@ -167,5 +167,6 @@ it. Two habits keep the edit loop short:
 - Build and check the pieces in a plain Python session (`build_body()`,
   `build_tail()`) before running `scripts/gen`, which additionally writes the
   GLB package.
-- Remember `rm -rf __cadgen__` after editing the `_lib.py` — see the repo's
-  CLAUDE.md.
+- Remember to delete `__cadgen__` after editing the `_lib.py`; `--force` does
+  not repair a stale package. See "Shared-library cache defect" in
+  `step-generation.md`.

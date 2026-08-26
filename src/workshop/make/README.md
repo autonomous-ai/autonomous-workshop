@@ -5,9 +5,14 @@ contracts, and the Workshop's single locked skill tree in `skills/`.
 
 Public API: `workshop.make`.
 
-Make declares its replaceable model, CAD build, verification, and evaluation
-ports in `workshop.make.ports`; integration packages only implement or
-compatibly re-export them.
+Reusable Codex-native creation capabilities live once in `skills/`. The host
+materializes their exact locked bytes into each private product run; Inventors
+use those shared capabilities without copying or wrapping them in Python.
+
+The `cad` and `step-parts` skills are reviewed MIT-licensed snapshots of
+`peterat617/text-to-3d`. `LOCK.json` binds their canonical trees to an exact
+upstream revision, while `PROVENANCE.md` records the allowed local adaptations
+and the boundary around upstream folders that are not licensed for vendoring.
 
 The locked MVP geometry vocabulary is 2–12 printable boxes or vertical
 cylinders. Every part declares `top_grooves_mm`; cylinders leave it empty, while

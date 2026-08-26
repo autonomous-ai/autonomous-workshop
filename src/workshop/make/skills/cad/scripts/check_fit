@@ -3,8 +3,8 @@
 
 `validate`, `interfere` and `snapshot` all pass a model that cannot be printed:
 they say the solid is sound and that nothing clashes in assembly pose, not that
-each part sits on the bed. This gate answers the part of CLAUDE.md's
-"Printable and connectors need their own gate" that needs no project knowledge:
+each part sits on the bed. This gate answers the part of the printable/connector
+question that needs no project knowledge:
 
     print-datum       every part_*.step.py returns min(Z) == 0
     bed-footprint     its footprint fits the stated bed, in either yaw
@@ -390,7 +390,7 @@ def main() -> int:
     print(f"\ncheck_fit: {len(findings)} fit/print violation(s)\n", file=sys.stderr)
     for finding in findings:
         print(f"  {finding['path']}\n    [{finding['rule']}] {finding['detail']}\n", file=sys.stderr)
-    print('See CLAUDE.md, "Printable and connectors need their own gate".', file=sys.stderr)
+    print("See the cad skill's SKILL.md, \"Do not declare a part printable\".", file=sys.stderr)
     return 1
 
 

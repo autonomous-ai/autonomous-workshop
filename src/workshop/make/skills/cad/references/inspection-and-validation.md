@@ -4,7 +4,15 @@ Read this file for every generated STEP artifact and whenever the user asks for 
 
 ## Principle
 
-Deterministic geometry checks decide pass/fail, and they are the only evidence this toolchain produces — there is no renderer, so a semantic error the checks do not encode goes unseen. Scale the deterministic checks to the user's spec: every dimension, clearance, or relationship the user specified — including dimensions taken from a technical drawing — must be verified with `measure`, `align`, or `frame`. The facts/planes/positioning baseline runs for every generated artifact regardless of spec.
+Deterministic geometry checks decide geometry pass/fail; a renderer cannot
+establish a dimension, clearance, sound solid, or absence of interference. The
+image-derived workflow adds silhouette evidence through the sibling
+`image-to-cad` renderer, but a semantic error that neither a local audit nor a
+declared check encodes still goes unseen. Scale the deterministic checks to the
+user's spec: every dimension, clearance, or relationship the user specified —
+including dimensions taken from a technical drawing — must be verified with
+`measure`, `align`, or `frame`. The facts/planes/positioning baseline runs for
+every generated artifact regardless of spec.
 
 During quick iteration, rerun the checks affected by the current edit. The full
 sequence below is the final verification gate and runs after the source has

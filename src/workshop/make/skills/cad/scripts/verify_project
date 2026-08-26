@@ -11,15 +11,22 @@ queue.
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --dry-run
 
 Final mode (the default) runs layout, multi-target generation with STEP writes,
-refs + validate for every entry, assembly interference, print fit, a
-local measure/check_fit.py when present, and motion when a manifest is present.
---exports additionally writes the assembly GLB and per-part STLs from the fresh
-STEP files, then checks meshes.
+print fit, local audits, bought-part mounts and motion when declared, then refs
++ validate for every entry and assembly interference.  --exports additionally
+writes the assembly GLB and per-part STLs from the fresh STEP files, then checks
+each mesh and its printable wall thickness.
+
+Image-derived mode adds the gates geometry-only CAD cannot answer: spec/source
+reconciliation, landmark coverage, orthogonal and reference-pose renders,
+source-vs-STEP drift, and silhouette likeness.  It deliberately requires local
+measure/check_spec.py and measure/check_landmarks.py audits because those claims
+are project-specific and cannot be inferred generically.
 """
 
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 import re
@@ -33,6 +40,7 @@ from typing import Sequence
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
+IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
@@ -40,6 +48,7 @@ DEFAULT_BED = (220.0, 220.0, 220.0)
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
+SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -100,6 +109,24 @@ def _parse_bed(raw: str) -> tuple[float, float, float]:
     return values  # type: ignore[return-value]
 
 
+def _parse_likeness_ref(raw: str) -> tuple[str, str]:
+    if "=" not in raw:
+        raise argparse.ArgumentTypeError(
+            "likeness reference must be LABEL=PATH, for example hero=ref/hero.png"
+        )
+    label, path = raw.split("=", 1)
+    label = label.strip()
+    path = path.strip()
+    if not SAFE_LABEL.fullmatch(label):
+        raise argparse.ArgumentTypeError(
+            "likeness label must start with a letter or digit and contain only "
+            "letters, digits, dot, underscore, or hyphen"
+        )
+    if not path:
+        raise argparse.ArgumentTypeError("likeness reference path is empty")
+    return label, path
+
+
 def _declared_bed(project: Path) -> tuple[float, float, float] | None:
     for path in (project / "README.md", *sorted(project.glob("*_spec.md"))):
         if not path.is_file():
@@ -123,6 +150,7 @@ class Runner:
         self.cwd = cwd
         self.dry_run = dry_run
         self.verbose = verbose
+        self.records: list[dict[str, object]] = []
 
     def command(
         self,
@@ -134,6 +162,7 @@ class Runner:
         args = [str(item) for item in argv]
         print(f"[verify_project] {shlex.join(args)}", flush=True)
         if self.dry_run:
+            self.records.append({"command": shlex.join(args), "status": "planned", "seconds": 0.0})
             return 0
         env = dict(os.environ)
         if warm:
@@ -142,9 +171,13 @@ class Runner:
             env.update(env_extra)
         started = time.perf_counter()
         return_code = subprocess.run(args, cwd=self.cwd, env=env, check=False).returncode
+        elapsed = time.perf_counter() - started
+        self.records.append(
+            {"command": shlex.join(args), "status": f"rc={return_code}", "seconds": elapsed}
+        )
         print(
             f"[verify_project] {_command_label(args)}: rc={return_code} "
-            f"in {time.perf_counter() - started:.2f}s",
+            f"in {elapsed:.2f}s",
             flush=True,
         )
         return return_code
@@ -155,6 +188,10 @@ class Runner:
         if self.dry_run:
             for request in requests:
                 print(json.dumps(request, separators=(",", ":")))
+            self.records.append(
+                {"command": f"{shlex.join(argv)} ({len(requests)} JSONL requests)",
+                 "status": "planned", "seconds": 0.0}
+            )
             return 0
         payload = "".join(json.dumps(request, separators=(",", ":")) + "\n" for request in requests)
         env = dict(os.environ)
@@ -199,9 +236,14 @@ class Runner:
                 file=sys.stderr,
             )
             failed = True
+        elapsed = time.perf_counter() - started
+        self.records.append(
+            {"command": f"{shlex.join(argv)} ({len(requests)} JSONL requests)",
+             "status": f"rc={1 if failed else 0}", "seconds": elapsed}
+        )
         print(
             f"[verify_project] inspect batch: rc={1 if failed else 0} "
-            f"in {time.perf_counter() - started:.2f}s",
+            f"in {elapsed:.2f}s",
             flush=True,
         )
         return 1 if failed else 0
@@ -217,6 +259,46 @@ def _stl_for_entry(entry: Path) -> Path:
 
 def _run_or_stop(runner: Runner, argv: Sequence[str | Path], **kwargs) -> bool:
     return runner.command(argv, **kwargs) == 0
+
+
+def _audit_env(project: Path) -> dict[str, str]:
+    current_pythonpath = os.environ.get("PYTHONPATH", "")
+    value = str(project)
+    if current_pythonpath:
+        value += os.pathsep + current_pythonpath
+    return {"PYTHONPATH": value}
+
+
+def _write_report(
+    path: Path,
+    runner: Runner,
+    *,
+    mode: str,
+    result: int,
+    elapsed: float,
+    bed: tuple[float, float, float],
+) -> None:
+    lines = [
+        "# Verification pipeline record",
+        "",
+        f"- Recorded: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
+        f"- Mode: `{mode}`",
+        f"- Result: **{'PASS' if result == 0 else 'FAIL'}** (exit {result})",
+        f"- Elapsed: {elapsed:.2f} s",
+        f"- Bed: {bed[0]:g} x {bed[1]:g} x {bed[2]:g} mm",
+        "",
+        "| # | command | result | seconds |",
+        "|---:|---|---:|---:|",
+    ]
+    for index, record in enumerate(runner.records, 1):
+        command = str(record["command"]).replace("|", "\\|")
+        lines.append(
+            f"| {index} | `{command}` | {record['status']} | "
+            f"{float(record['seconds']):.2f} |"
+        )
+    lines.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _quick(
@@ -251,7 +333,14 @@ def _final(
     motion_manifest: Path | None,
     exports: bool,
     strict_fit: bool,
+    strict_mount: bool,
     bed: tuple[float, float, float],
+    nozzle: float,
+    skip_thickness: bool,
+    image_derived: bool,
+    likeness_refs: list[tuple[str, Path]],
+    likeness_min: float,
+    search_fov: str,
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
@@ -261,6 +350,112 @@ def _final(
         warm=True,
     ):
         return 1
+
+    if parts:
+        fit_args: list[str | Path] = [
+            sys.executable,
+            SCRIPTS_DIR / "check_fit",
+            _path_arg(project, runner.cwd),
+            "--bed",
+            str(bed[0]),
+            str(bed[1]),
+        ]
+        if strict_fit:
+            fit_args.append("--strict")
+        if not _run_or_stop(runner, fit_args):
+            return 1
+
+    for audit_name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
+        local_audit = project / "measure" / audit_name
+        if local_audit.is_file():
+            if not _run_or_stop(
+                runner,
+                [sys.executable, _path_arg(local_audit, runner.cwd)],
+                env_extra=_audit_env(project),
+            ):
+                return 1
+
+    mount_manifest = project / "measure" / "mounts.json"
+    if mount_manifest.is_file():
+        mount_args: list[str | Path] = [
+            sys.executable,
+            SCRIPTS_DIR / "check_mount",
+            _path_arg(project, runner.cwd),
+        ]
+        if strict_mount:
+            mount_args.append("--strict")
+        if not _run_or_stop(
+            runner,
+            mount_args,
+        ):
+            return 1
+
+    if motion_manifest is not None:
+        if not motion_manifest.is_file():
+            print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
+            return 2
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                SCRIPTS_DIR / "check_motion",
+                _path_arg(project, runner.cwd),
+                "--manifest",
+                _path_arg(motion_manifest, runner.cwd),
+            ],
+        ):
+            return 1
+
+    if image_derived:
+        snap_dir = project / "snap"
+        render_args: list[str | Path] = [
+            sys.executable,
+            IMAGE_SCRIPTS_DIR / "render_views.py",
+            _path_arg(assembly, runner.cwd),
+            "--view", "front",
+            "--view", "right",
+            "--view", "top",
+            "--view", "iso",
+        ]
+        for label, reference in likeness_refs:
+            render_args.extend(
+                ["--match", _path_arg(reference, runner.cwd), "--label", f"match-{label}"]
+            )
+        render_args.extend(
+            [
+                "--search-fov", search_fov,
+                # check_likeness is the acceptance gate below.  Zero here lets
+                # the renderer finish writing every view even when likeness is
+                # poor; a non-zero exit still catches source-vs-STEP drift.
+                "--min", "0",
+                "--compare-step",
+                "--json",
+                "-o", _path_arg(snap_dir, runner.cwd),
+            ]
+        )
+        if not _run_or_stop(runner, render_args):
+            return 1
+
+        likeness_args: list[str | Path] = [
+            sys.executable,
+            IMAGE_SCRIPTS_DIR / "check_likeness.py",
+        ]
+        for label, reference in likeness_refs:
+            likeness_args.extend(
+                [
+                    "--pair", _path_arg(snap_dir / f"match-{label}.png", runner.cwd),
+                    _path_arg(reference, runner.cwd),
+                    "--label", label,
+                ]
+            )
+        likeness_args.extend(
+            [
+                "--min", str(likeness_min),
+                "--report", _path_arg(project / "measure" / "likeness.md", runner.cwd),
+            ]
+        )
+        if not _run_or_stop(runner, likeness_args):
+            return 1
 
     requests: list[dict[str, object]] = []
     for index, entry in enumerate(entry_args):
@@ -282,49 +477,6 @@ def _final(
     )
     if runner.inspect_batch(requests) != 0:
         return 1
-
-    if parts:
-        fit_args: list[str | Path] = [
-            sys.executable,
-            SCRIPTS_DIR / "check_fit",
-            _path_arg(project, runner.cwd),
-            "--bed",
-            str(bed[0]),
-            str(bed[1]),
-        ]
-        if strict_fit:
-            fit_args.append("--strict")
-        if not _run_or_stop(runner, fit_args):
-            return 1
-
-    local_audit = project / "measure" / "check_fit.py"
-    if local_audit.is_file():
-        current_pythonpath = os.environ.get("PYTHONPATH", "")
-        project_pythonpath = str(project)
-        if current_pythonpath:
-            project_pythonpath += os.pathsep + current_pythonpath
-        if not _run_or_stop(
-            runner,
-            [sys.executable, _path_arg(local_audit, runner.cwd)],
-            env_extra={"PYTHONPATH": project_pythonpath},
-        ):
-            return 1
-
-    if motion_manifest is not None:
-        if not motion_manifest.is_file():
-            print(f"verify_project: motion manifest not found: {motion_manifest}", file=sys.stderr)
-            return 2
-        if not _run_or_stop(
-            runner,
-            [
-                sys.executable,
-                SCRIPTS_DIR / "check_motion",
-                _path_arg(project, runner.cwd),
-                "--manifest",
-                _path_arg(motion_manifest, runner.cwd),
-            ],
-        ):
-            return 1
 
     if exports:
         assembly_step = _step_for_entry(assembly)
@@ -353,6 +505,20 @@ def _final(
                 ],
             ):
                 return 1
+            if not skip_thickness:
+                role = part.name.removeprefix(PART_PREFIX).removesuffix(ENTRY_SUFFIX)
+                if not _run_or_stop(
+                    runner,
+                    [
+                        sys.executable,
+                        SCRIPTS_DIR / "check_thickness",
+                        _path_arg(_stl_for_entry(part), runner.cwd),
+                        "--nozzle", str(nozzle),
+                        "--report",
+                        _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
+                    ],
+                ):
+                    return 1
 
     return 0
 
@@ -363,11 +529,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
     parser.add_argument("--quick", action="store_true", help="combined-entry preview generation only")
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
-    parser.add_argument("--exports", action="store_true", help="final mode: write GLB/STLs from fresh STEP files and check meshes")
+    parser.add_argument("--exports", action="store_true", help="final mode: write GLB/STLs, then check each mesh and wall thickness")
     parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
+    parser.add_argument("--strict-mount", action="store_true", help="final mode: promote check_mount advisory notes to failures")
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
+    parser.add_argument("--nozzle", type=float, default=0.4, help="nozzle diameter for exported-part thickness gates (default: 0.4 mm)")
+    parser.add_argument("--skip-thickness", action="store_true", help="export/check meshes without the print-thickness gate; output cannot be called print-ready")
+    parser.add_argument("--image-derived", action="store_true", help="require spec/landmark audits and run render, STEP-drift, and likeness gates")
+    parser.add_argument(
+        "--likeness-ref",
+        action="append",
+        type=_parse_likeness_ref,
+        default=[],
+        metavar="LABEL=PATH",
+        help="reference image inside the project; repeat for every usable viewpoint",
+    )
+    parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair (default: 0.90)")
+    parser.add_argument("--search-fov", default="0,25,40", help="comma-separated FOVs for reference-pose search (default: 0,25,40)")
+    parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
+    parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
     parser.add_argument("--verbose", action="store_true", help="print complete successful inspect JSON responses")
     return parser
@@ -386,13 +568,36 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error(f"project must be inside the command cwd: {project}")
     if args.preview_tolerance <= 0:
         parser.error("--preview-tolerance must be positive")
+    if args.nozzle <= 0:
+        parser.error("--nozzle must be positive")
+    if not 0 <= args.likeness_min <= 1:
+        parser.error("--likeness-min must be between 0 and 1")
     if args.quick and args.exports:
         parser.error("--exports is a final-mode option and cannot be combined with --quick")
     if args.quick and args.strict_fit:
         parser.error("--strict-fit is a final-mode option and cannot be combined with --quick")
+    if args.quick and (args.image_derived or args.likeness_ref):
+        parser.error("image-derived gates are final-mode options and cannot be combined with --quick")
+    if args.quick and (args.strict_mount or args.skip_thickness):
+        parser.error("--strict-mount/--skip-thickness are final-mode options and cannot be combined with --quick")
+    if args.likeness_ref and not args.image_derived:
+        parser.error("--likeness-ref requires --image-derived")
+    if args.image_derived and not args.exports:
+        parser.error("--image-derived is a completion gate and requires --exports")
+    if args.image_derived and args.skip_thickness:
+        parser.error("--image-derived cannot skip the required thickness gate")
+    if args.skip_thickness and not args.exports:
+        parser.error("--skip-thickness only applies with --exports")
+    if args.report and args.no_report:
+        parser.error("--report and --no-report are mutually exclusive")
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
         explicit_motion = _resolve_inside_project(args.motion_manifest, project, cwd)
+        report_path = _resolve_inside_project(args.report, project, cwd)
+        likeness_refs = [
+            (label, _resolve_inside_project(raw_path, project, cwd))
+            for label, raw_path in args.likeness_ref
+        ]
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -400,19 +605,57 @@ def main(argv: Sequence[str] | None = None) -> int:
     if motion_manifest is None and (project / "measure" / "motion.json").is_file():
         motion_manifest = project / "measure" / "motion.json"
 
+    resolved_likeness_refs: list[tuple[str, Path]] = []
+    for label, reference in likeness_refs:
+        if reference is None or not reference.is_file():
+            parser.error(f"likeness reference not found: {label}={reference}")
+        resolved_likeness_refs.append((label, reference))
+
+    if args.image_derived:
+        specs = sorted(project.glob("*_spec.md"))
+        if len(specs) != 1:
+            parser.error(
+                f"--image-derived requires exactly one *_spec.md in the project; found {len(specs)}"
+            )
+        if not resolved_likeness_refs:
+            parser.error("--image-derived requires at least one --likeness-ref LABEL=PATH")
+        for audit_name in ("check_spec.py", "check_landmarks.py"):
+            audit = project / "measure" / audit_name
+            if not audit.is_file():
+                parser.error(
+                    f"--image-derived requires {audit.relative_to(project)}; "
+                    "the project-specific claim cannot be checked generically"
+                )
+        for tool in ("render_views.py", "check_likeness.py"):
+            if not (IMAGE_SCRIPTS_DIR / tool).is_file():
+                parser.error(f"image-derived tool not found: {IMAGE_SCRIPTS_DIR / tool}")
+
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
     workflow_started = time.perf_counter()
-    if runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)]) != 0:
-        return 1
+    result = runner.command([sys.executable, SCRIPTS_DIR / "check_layout", _path_arg(project, cwd)])
 
     cache = project / "__cadgen__"
-    if args.fresh and cache.exists():
+    if result == 0 and args.fresh and cache.exists():
         print(f"[verify_project] delete cache {cache}", flush=True)
-        if not args.dry_run:
+        if args.dry_run:
+            runner.records.append(
+                {"command": f"delete cache {cache}", "status": "planned", "seconds": 0.0}
+            )
+        else:
+            cache_started = time.perf_counter()
             shutil.rmtree(cache)
+            runner.records.append(
+                {
+                    "command": f"delete cache {cache}",
+                    "status": "rc=0",
+                    "seconds": time.perf_counter() - cache_started,
+                }
+            )
 
-    if args.quick:
+    if result != 0:
+        mode = "quick" if args.quick else ("image-derived final" if args.image_derived else "final")
+    elif args.quick:
         result = _quick(
             runner,
             assembly,
@@ -428,12 +671,24 @@ def main(argv: Sequence[str] | None = None) -> int:
             motion_manifest=motion_manifest,
             exports=bool(args.exports),
             strict_fit=bool(args.strict_fit),
+            strict_mount=bool(args.strict_mount),
             bed=bed,
+            nozzle=float(args.nozzle),
+            skip_thickness=bool(args.skip_thickness),
+            image_derived=bool(args.image_derived),
+            likeness_refs=resolved_likeness_refs,
+            likeness_min=float(args.likeness_min),
+            search_fov=str(args.search_fov),
         )
-        mode = "final"
+        mode = "image-derived final" if args.image_derived else "final"
+    elapsed = time.perf_counter() - workflow_started
+    if not args.quick and not args.no_report and not args.dry_run:
+        final_report = report_path or (project / "measure" / "verification-pipeline.md")
+        _write_report(final_report, runner, mode=mode, result=result, elapsed=elapsed, bed=bed)
+        print(f"[verify_project] wrote report {final_report}", flush=True)
     print(
         f"[verify_project] {mode} workflow: rc={result} "
-        f"in {time.perf_counter() - workflow_started:.2f}s",
+        f"in {elapsed:.2f}s",
         flush=True,
     )
     return result

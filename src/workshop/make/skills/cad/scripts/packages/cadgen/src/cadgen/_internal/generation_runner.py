@@ -56,7 +56,7 @@ def _load_generator_module(script_path: Path) -> object:
     # robot_common / STEP) resolve. Derive everything from the generator script's OWN location —
     # its folder, plus any ancestor that is a package root (contains a STEP/ or robot_common/
     # package) — so resolution is independent of the process working directory. Deliberately NOT
-    # seeding the project or CAD skill scripts directory: a generator must not depend on the host's
+    # seeding the repo root or skills/cad/scripts: a generator must not depend on the repository's
     # skills/ being importable (AGENTS.md skill isolation).
     search_paths = [str(resolved_script_path.parent)]
     for parent in resolved_script_path.parents:
@@ -528,4 +528,3 @@ def _write_lock_without_reporting(
 ) -> Iterator[None]:
     with exclusive(path, on_wait=on_wait):
         yield None
-

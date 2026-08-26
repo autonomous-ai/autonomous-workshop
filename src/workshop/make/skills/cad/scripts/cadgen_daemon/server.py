@@ -2,7 +2,7 @@
 
 One long-lived process imports cadgen / OCP / build123d ONCE and then services
 ``scripts/gen`` / ``scripts/export`` / ``scripts/artifact`` / ``scripts/inspect``
-invocations over a socket shared by one installed CAD skill tree, so opted-in
+invocations over a socket shared by one materialized CAD skill tree, so opted-in
 sessions (``CADGEN_WARM=1``) skip the multi-second interpreter+OCP startup on
 every call. The daemon runs with ``CADGEN_DAEMON_CHILD=1`` so the launcher shim
 never recurses into it.

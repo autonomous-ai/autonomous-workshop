@@ -122,7 +122,7 @@ def ensure_ref_file_matches(file_prefix: str, entry_target: str, *, source_label
     report a confident answer about geometry the user never asked about.
 
     CLIs do not resolve prefixes to paths -- the agent does that, then passes the file and the
-    ref separately. See the CAD skill's ``references/inspection-and-validation.md``.
+    ref separately. See ``skills/cad/references/inspection-and-validation.md``.
     """
     prefix = str(file_prefix or "").strip()
     if not prefix:

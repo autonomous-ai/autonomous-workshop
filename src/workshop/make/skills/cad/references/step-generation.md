@@ -57,11 +57,34 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --qu
 
 # Complete sequential gate; also refresh GLB/STLs and validate each STL
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports
+
+# Image-derived final: add every usable reference viewpoint
+CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports \
+  --image-derived \
+  --likeness-ref hero=ref/hero.png \
+  --likeness-ref side=ref/side.png
 ```
 
-`verify_project` runs `check_layout`, generation, batched inspection,
-`check_fit`, a local `measure/check_fit.py` when present, a discovered motion
-manifest, and exports/mesh checks when requested.
+`verify_project` runs `check_layout`, one final multi-target generation,
+`check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
+`check_mount` and `check_motion` when their manifests exist, then one batched
+refs/validate/interfere pass. With `--exports`, it exports each printable STL,
+runs `check_mesh` first, then `check_thickness`, and writes each thickness
+report under `measure/`.
+
+`--image-derived` is an explicit completion mode rather than an inferred one.
+It requires exactly one `*_spec.md`, both `measure/check_spec.py` and
+`measure/check_landmarks.py`, and at least one `--likeness-ref LABEL=PATH`.
+Before the expensive validation batch it writes clean front/right/top/iso
+views, searches the camera for every reference, compares the source with the
+fresh STEP, and runs the 0.90 likeness gate. Read
+`image-derived-verification.md` before writing the two local audits.
+
+Every non-quick run persists the command, result, and elapsed time for each
+phase to `measure/verification-pipeline.md`, including failed runs. Use
+`--report` to choose another path inside the project or `--no-report` only when
+the caller already captures an equivalent record.
+
 It stops at the first failed phase and verifies that inspect emitted exactly
 one successful response per request. It is the generic project baseline, not a
 replacement for spec-specific `measure`, `align`, `frame`, or `diff` requests;
@@ -73,6 +96,8 @@ JSON is needed. `--bed` overrides the first `--bed WxDxH` declaration in the
 project README/spec, which otherwise overrides the 220 x 220 x 220 default.
 Pass `--strict-fit` when a project's advisory disconnected-body and local-audit
 notes are also meant to fail the run; legitimate print plates may leave it off.
+Pass `--skip-thickness` only for an explicit mesh-only delivery; doing so makes
+the resulting artifacts ineligible for a print-ready claim.
 
 ## Generated vs imported STEP
 
@@ -223,11 +248,11 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/gen" path/to/part.step.py
   later call runs in the warm process, streaming the CLI's stdout/stderr and
   exit code back unchanged. Arguments, cwd resolution, and outputs match the
   cold CLIs; requests are handled sequentially.
-- The daemon is **per installed CAD skill tree**: the socket is
+- The daemon is **per materialized CAD skill tree**: the socket is
   `$TMPDIR/cadgen-daemon-<sha256(skill-root)[:12]>.sock` (falling back to
   `/tmp`), with a `.log` file beside it for daemon lifecycle and C-level OCP
-  noise. Projects using the same installed skill share that sequential daemon.
-  `CADGEN_DAEMON_SOCKET` overrides the socket path.
+  noise. Product runs using the same materialized skill share that sequential
+  daemon. `CADGEN_DAEMON_SOCKET` overrides the socket path.
 - **Staleness:** the daemon records a version token (max mtime over the CAD
   skill's `scripts/**/*.py`, including its bundled `cadgen` package) at
   startup. When a client's token differs — i.e. cadgen or the skill CLIs
