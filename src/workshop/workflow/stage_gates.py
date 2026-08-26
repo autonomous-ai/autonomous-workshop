@@ -39,7 +39,13 @@ INVENTED_V2_PATH = "artifacts/invent/invented.json"
 VALIDATOR_VERSION = "1.0.0"
 STAGE_SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _GATE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
-_FORWARD = {"match": "invent", "invent": "make"}
+_FORWARD = {
+    "match": "invent",
+    "invent": "make",
+    "make": "playtest",
+    "playtest": "release",
+    "release": "deliver",
+}
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -233,7 +239,12 @@ class StageGateDecision:
         if not isinstance(self.evidence, StageGateEvidence):
             raise ContractError("stage gate decision requires host evidence")
         expected = _FORWARD.get(self.evidence.stage)
-        if self.evidence.passed:
+        if self.evidence.stage == "playtest" and not self.evidence.passed:
+            if self.transition != "make":
+                raise ContractError(
+                    "failed Playtest gate must return actionable feedback to Make"
+                )
+        elif self.evidence.passed:
             if expected is None or self.transition != expected:
                 raise ContractError("passed stage gate has an invalid transition")
         elif self.transition is not None:

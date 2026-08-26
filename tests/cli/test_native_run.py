@@ -43,16 +43,44 @@ class _FakeLauncher:
         checkpoint.write_text("{}\n", encoding="utf-8")
         os.chmod(checkpoint, 0o600)
 
+    @staticmethod
+    def _write_waiting(arguments):
+        stage = json.loads(
+            (Path(arguments["run_root"]) / "STAGE.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        proposal = {
+            "schema_version": 1,
+            "kind": "autonomous-workshop.agent-outcome-proposal",
+            "checkpoint_sha256": stage["checkpoint_sha256"],
+            "subject_sha256": stage["subject_sha256"],
+            "outcome": {
+                "schema_version": 1,
+                "stage": stage["stage"],
+                "status": "waiting",
+                "artifacts": [],
+                "needs": ["fixture stops after one native turn"],
+                "proposed_transition": None,
+            },
+        }
+        (Path(arguments["run_root"]) / "agent-outcome.json").write_text(
+            json.dumps(proposal, sort_keys=True, separators=(",", ":")) + "\n",
+            encoding="utf-8",
+        )
+
     def start(self, **arguments):
         self.starts.append(dict(arguments))
         if self.fail_first_start:
             self.fail_first_start = False
             raise CodexInvocationError("fixture interruption before thread.started")
         self._checkpoint(arguments)
+        self._write_waiting(arguments)
         return _FakeOutcome(arguments)
 
     def resume(self, **arguments):
         self.resumes.append(dict(arguments))
+        self._write_waiting(arguments)
         return _FakeOutcome(arguments)
 
 
@@ -151,12 +179,13 @@ class NativeCliRunTest(unittest.TestCase):
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
-            self.assertIn("current wish stage", prompt)
+            self.assertIn("current match stage", prompt)
+            self.assertIn("STAGE.json", prompt)
             self.assertIn("agent-outcome.json", prompt)
             self.assertNotIn("wind-up", prompt)
             self.assertNotIn(str(home), prompt)
             self.assertNotIn("FACTORY", prompt)
-            self.assertEqual(receipt["publication"]["status"], "draft")
+            self.assertEqual(receipt["publication"]["status"], "not-created")
             self.assertTrue(receipt["publication"]["requested"])
             self.assertIn("before Match", stderr.getvalue())
             for called in legacy.values():

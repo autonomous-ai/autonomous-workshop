@@ -58,7 +58,7 @@ class build_py(_build_py):
             source = project / "inventors" / inventor_id
             target = destination / inventor_id
             target.mkdir()
-            for filename in ("TASTE.md", "inventor.json", "profile.py"):
+            for filename in ("TASTE.md", "inventor.json"):
                 shutil.copy2(source / filename, target / filename)
 
 

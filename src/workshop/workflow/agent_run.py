@@ -42,6 +42,7 @@ MAX_AGENT_INPUT_FILES = 256
 MAX_AGENT_ARTIFACT_BYTES = 16 * 1024 * 1024
 MAX_AGENT_REFERENCED_BYTES = 64 * 1024 * 1024
 MAX_AGENT_ARTIFACTS_PER_OUTCOME = 16
+MAX_HOST_SEALED_ARTIFACTS_PER_GATE = 512
 MAX_AGENT_NEEDS = 16
 MAX_AGENT_NEED_CHARS = 1_024
 AGENT_RUN_CHECKPOINT_KIND = "autonomous-workshop-agent-run"
@@ -1225,12 +1226,15 @@ class AgentRun:
                 raise TransitionError("agent proposed an illegal lifecycle transition")
 
     def _verify_outcome_artifacts(
-        self, payload: Mapping[str, Any], outcome: AgentOutcome
+        self,
+        payload: Mapping[str, Any],
+        outcome: AgentOutcome,
+        additional_artifacts: Sequence[AgentArtifact] = (),
     ) -> list[dict[str, Any]]:
         existing = {item["path"]: item for item in payload["sealed_artifacts"]}
         additions: list[dict[str, Any]] = []
         total = sum(item["size"] for item in payload["sealed_artifacts"])
-        for artifact in outcome.artifacts:
+        for artifact in tuple(outcome.artifacts) + tuple(additional_artifacts):
             relative = _safe_relative(artifact.path, "agent artifact path")
             content, size = _read_relative_regular(self.run_root, relative)
             _reject_private_agent_bytes(artifact.path, content)
@@ -1253,11 +1257,33 @@ class AgentRun:
         value: AgentOutcome | Mapping[str, Any],
         *,
         gate: Optional[DeterministicGateReceipt] = None,
+        gate_subject_sha256: Optional[str] = None,
+        additional_artifacts: Sequence[AgentArtifact] = (),
     ) -> AgentRunCheckpoint:
         outcome = value if isinstance(value, AgentOutcome) else AgentOutcome.from_mapping(value)
         payload = self._load()
         self._validate_current_outcome(payload, outcome)
-        additions = self._verify_outcome_artifacts(payload, outcome)
+        host_artifacts = tuple(additional_artifacts)
+        if len(host_artifacts) > MAX_HOST_SEALED_ARTIFACTS_PER_GATE:
+            raise ArtifactError("host gate selected too many artifacts to seal")
+        if not all(isinstance(item, AgentArtifact) for item in host_artifacts):
+            raise ContractError("additional artifacts must use AgentArtifact values")
+        if outcome.status != "ready" and host_artifacts:
+            raise TransitionError("only a ready gated outcome may seal additional artifacts")
+        outcome_paths = {item.path for item in outcome.artifacts}
+        host_paths = [item.path for item in host_artifacts]
+        if len(host_paths) != len(set(host_paths)) or outcome_paths & set(host_paths):
+            raise ArtifactError("gate artifact paths must be unique")
+        for artifact in host_artifacts:
+            parts = _safe_relative(artifact.path, "host gate artifact path").parts
+            if len(parts) < 3 or parts[:2] != ("artifacts", outcome.stage):
+                raise ArtifactError(
+                    "host gate artifacts must live under artifacts/%s" % outcome.stage
+                )
+        all_artifacts = tuple(outcome.artifacts) + host_artifacts
+        additions = self._verify_outcome_artifacts(
+            payload, outcome, additional_artifacts=host_artifacts
+        )
         if outcome.status != "ready":
             if gate is not None:
                 raise TransitionError("waiting or failed outcomes cannot consume a gate")
@@ -1280,7 +1306,12 @@ class AgentRun:
 
         if not isinstance(gate, DeterministicGateReceipt):
             raise TransitionError("a host deterministic gate receipt is required")
-        subject = self.expected_gate_subject_sha256()
+        if gate_subject_sha256 is None:
+            subject = self.expected_gate_subject_sha256()
+        else:
+            subject = require_sha256(
+                gate_subject_sha256, "expected deterministic gate subject sha256"
+            )
         if (
             gate.stage != outcome.stage
             or gate.outcome_sha256 != outcome.sha256
@@ -1310,13 +1341,13 @@ class AgentRun:
                     (path, by_path[path]["sha256"]) for path in old_paths
                 )
             new_binding = tuple(
-                (artifact.path, artifact.sha256) for artifact in outcome.artifacts
+                (artifact.path, artifact.sha256) for artifact in all_artifacts
             )
             if old_binding and old_binding != new_binding:
                 for stage in _DOWNSTREAM_OF_MAKE:
                     stage_artifacts.pop(stage, None)
                     invalidated.add(stage)
-        stage_artifacts[outcome.stage] = [item.path for item in outcome.artifacts]
+        stage_artifacts[outcome.stage] = [item.path for item in all_artifacts]
         invalidated.discard(outcome.stage)
 
         transition = outcome.proposed_transition
@@ -1328,7 +1359,6 @@ class AgentRun:
         elif outcome.stage == "playtest" and transition == "make":
             round_index += 1
             for stage in _DOWNSTREAM_OF_MAKE:
-                stage_artifacts.pop(stage, None)
                 invalidated.add(stage)
             next_stage = "make"
         elif transition == "complete":
@@ -1348,7 +1378,7 @@ class AgentRun:
                 "stage": outcome.stage,
                 "status": outcome.status,
                 "outcome_sha256": outcome.sha256,
-                "artifact_paths": [item.path for item in outcome.artifacts],
+                "artifact_paths": [item.path for item in all_artifacts],
                 "gate_sha256": gate.sha256,
                 "gate_id": gate.gate_id,
                 "gate_passed": gate.passed,

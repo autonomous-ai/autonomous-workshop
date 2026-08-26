@@ -321,6 +321,53 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "fields"):
             AgentOutcome.from_mapping(forged)
 
+    def test_host_gate_can_bind_full_subject_and_seal_a_verified_tree(self):
+        run = self.create()
+        outcome = self.outcome(run, "wish", "match")
+        tree_file = self.artifact(
+            run,
+            "wish",
+            name="product/notes.txt",
+            content=b"exact gated bytes\n",
+        )
+        full_subject = "f" * 64
+        gate = self.gate(run, outcome, subject=full_subject)
+
+        checkpoint = run.apply_outcome(
+            outcome,
+            gate=gate,
+            gate_subject_sha256=full_subject,
+            additional_artifacts=(tree_file,),
+        )
+
+        self.assertEqual(
+            [item.path for item in checkpoint.stage_artifacts["wish"]],
+            [outcome.artifacts[0].path, tree_file.path],
+        )
+        (run.run_root / tree_file.path).write_bytes(b"changed\n")
+        with self.assertRaisesRegex(StateConflict, "sealed agent artifact changed"):
+            run.snapshot()
+
+    def test_additional_gate_artifacts_are_bounded_and_stage_scoped(self):
+        run = self.create()
+        outcome = self.outcome(run, "wish", "match")
+        wrong_stage = self.artifact(run, "match", name="wrong.txt")
+        gate = self.gate(run, outcome)
+        with self.assertRaisesRegex(ArtifactError, "must live under artifacts/wish"):
+            run.apply_outcome(
+                outcome,
+                gate=gate,
+                additional_artifacts=(wrong_stage,),
+            )
+
+        duplicate = outcome.artifacts[0]
+        with self.assertRaisesRegex(ArtifactError, "paths must be unique"):
+            run.apply_outcome(
+                outcome,
+                gate=gate,
+                additional_artifacts=(duplicate,),
+            )
+
     def test_complete_lifecycle_uses_one_bounded_host_checkpoint(self):
         run = self.create()
         for stage, transition in (
@@ -392,6 +439,9 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(
             checkpoint.invalidated_stages,
             ("playtest", "release", "deliver"),
+        )
+        self.assertEqual(
+            checkpoint.stage_artifacts["playtest"][0], failed_playtest.artifacts[0]
         )
 
         support = self.artifact(
