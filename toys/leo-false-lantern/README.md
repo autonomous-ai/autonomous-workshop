@@ -6,10 +6,20 @@ Release.
 
 [View the verified public product page](https://www.autonomous.ai/factory/product/false-lantern)
 
+## Play it
+
+`MANUAL.pdf` is the complete, self-contained in-box field guide. It teaches the
+game through a scripted first exchange, then leaves the back cover usable as a
+table-side quick reference. It requires no website, video, QR code, or phone.
+
+For the physical box, print it at 100% on A6 pages in reading order. A print
+shop can impose the 12 pages as a saddle-stitched booklet; office printers can
+use their booklet setting on larger paper. Do not scale the pages to fill.
+
 ## Print it
 
-1. Read [MANUAL.md](MANUAL.md), especially the evidence boundary and safety
-   sections.
+1. Read [MANUAL.md](MANUAL.md), the full production and rules reference,
+   especially its evidence boundary and safety sections.
 2. Print `calibration/clearance-coupon.stl` first with the intended Bambu Lab
    printer, filament, nozzle, and layer profile. Measure the coupon before
    relying on any nominal clearance.
@@ -27,7 +37,8 @@ print, Bambu-specific settings, calibrated fit, durability, or human response.
 ## Snapshot contents
 
 - `product.json` — the exact public Release page contract.
-- `MANUAL.md` — complete setup, rules, printing, assembly, care, and safety.
+- `MANUAL.pdf` — the finished printable customer guide that goes in the box.
+- `MANUAL.md` — complete rules and production reference in accessible text.
 - `PUBLICATION.json` — sanitized Factory verification and content identities.
 - `print/*.stl` — the six exact printable game components.
 - `calibration/clearance-coupon.stl` — the exact clearance coupon referenced by
