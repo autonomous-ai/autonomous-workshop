@@ -5,7 +5,7 @@
     "cad": {
       "sha256": "9b158b2871413ac365f440f963b15ea43e795c194920001f3611249c9e0240d3",
       "source_commit": "40667dec4f1ae1ab630062964cb08085990b0d04",
-      "source_url": "https://github.com/peterat617/text-to-3d"
+      "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
     },
     "product-to-cad": {
       "sha256": "1640f305166a3a868cbb10b9eb3bb1d6c9edb57b2afdb461c2183332b594f1fc",
@@ -14,7 +14,7 @@
     "step-parts": {
       "sha256": "aee167b76132b6799b62f31e7d09bd78d2a2c152f010ec4b7bb033dccd9767ee",
       "source_commit": "40667dec4f1ae1ab630062964cb08085990b0d04",
-      "source_url": "https://github.com/peterat617/text-to-3d"
+      "source_url": "https://github.com/autonomous-ai/autonomous-text-to-3d"
     }
   }
 }
