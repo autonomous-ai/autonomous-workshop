@@ -7,12 +7,12 @@ import unittest
 from pathlib import Path
 
 from workshop.errors import ArtifactError, ContractError, StateConflict
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.match.native import (
+    InventorRoster,
+    InventorRosterEntry,
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
 )
 from workshop.product.blueprints import ToyBlueprint
 from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
@@ -22,7 +22,7 @@ from workshop.workflow.proposals import (
     read_agent_outcome_proposal,
 )
 from workshop.workflow.stage_gates import (
-    INVENTED_V2_PATH,
+    INVENTED_PATH,
     INVENT_GATE_ID,
     MATCH_ASSIGNMENT_PATH,
     MATCH_GATE_ID,
@@ -57,33 +57,36 @@ class NativeStageGateTest(unittest.TestCase):
         self.run_root.mkdir()
         self.wish_sha256 = digest("f")
         self.checkpoint_sha256 = digest("e")
-        alice = PersonaCatalogEntry(
+        alice = InventorRosterEntry(
             inventor_id="alice",
-            lane="classics-made-yours",
-            manifest_sha256=digest("a"),
+            agent_path=".codex/agents/alice.toml",
+            agent_sha256=digest("a"),
+            source_manifest_sha256=digest("1"),
             taste_sha256=digest("b"),
         )
-        bob = PersonaCatalogEntry(
+        bob = InventorRosterEntry(
             inventor_id="bob",
-            lane="moving-machines",
-            manifest_sha256=digest("c"),
+            agent_path=".codex/agents/bob.toml",
+            agent_sha256=digest("c"),
+            source_manifest_sha256=digest("2"),
             taste_sha256=digest("d"),
         )
-        self.catalog = PersonaCatalog((alice, bob))
+        self.roster = InventorRoster((alice, bob))
         self.assignment = NativeMatchAssignment(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
             selected_inventor_id="bob",
-            selected_lane="moving-machines",
-            selected_manifest_sha256=bob.manifest_sha256,
+            selected_agent_path=bob.agent_path,
+            selected_agent_sha256=bob.agent_sha256,
+            selected_source_manifest_sha256=bob.source_manifest_sha256,
             selected_taste_sha256=bob.taste_sha256,
-            blueprint_sha256=ToyBlueprint.for_lane("moving-machines").sha256,
+            blueprint_sha256=ToyBlueprint().sha256,
             ranking=(
                 MatchRankingEntry(
-                    "bob", "The mechanism-first persona is the closest structural fit."
+                    "bob", "The mechanism-first specialist is the closest structural fit."
                 ),
                 MatchRankingEntry(
-                    "alice", "The classic-game persona is valid but less direct."
+                    "alice", "The classic-game specialist is valid but less direct."
                 ),
             ),
         )
@@ -116,7 +119,7 @@ class NativeStageGateTest(unittest.TestCase):
         artifact = self.artifact(MATCH_ASSIGNMENT_PATH, self.assignment.to_dict())
         subject = match_gate_subject_sha256(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
         )
         proposal = self.ready_proposal("match", "invent", artifact, subject)
         self.write_proposal(proposal)
@@ -144,7 +147,7 @@ class NativeStageGateTest(unittest.TestCase):
         artifact = self.artifact(MATCH_ASSIGNMENT_PATH, self.assignment.to_dict())
         subject = match_gate_subject_sha256(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
         )
         proposal = self.ready_proposal("match", "invent", artifact, subject)
         encoded = canonical_json(proposal.to_dict())
@@ -186,7 +189,7 @@ class NativeStageGateTest(unittest.TestCase):
         )
         match_subject = match_gate_subject_sha256(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
         )
         match_proposal = self.ready_proposal(
             "match", "invent", match_artifact, match_subject
@@ -196,7 +199,7 @@ class NativeStageGateTest(unittest.TestCase):
             run_root=self.run_root,
             expected_checkpoint_sha256=self.checkpoint_sha256,
             wish_sha256=self.wish_sha256,
-            catalog=self.catalog,
+            roster=self.roster,
         )
         self.assertTrue(match_decision.passed)
         self.assertEqual(match_decision.transition, "invent")
@@ -207,12 +210,11 @@ class NativeStageGateTest(unittest.TestCase):
             match_decision.evidence,
         )
 
-        invented = InventedV2(
+        invented = NativeInvented(
             wish_sha256=self.assignment.wish_sha256,
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            lane=self.assignment.selected_lane,
             concept={
                 "title": "Moonstep Orrery",
                 "summary": "A wound crank turns the Wish into a visible lunar gait.",
@@ -226,7 +228,7 @@ class NativeStageGateTest(unittest.TestCase):
                 ]
             },
         )
-        invent_artifact = self.artifact(INVENTED_V2_PATH, invented.to_dict())
+        invent_artifact = self.artifact(INVENTED_PATH, invented.to_dict())
         invent_subject = invent_gate_subject_sha256(self.assignment)
         invent_proposal = self.ready_proposal(
             "invent",
@@ -253,13 +255,17 @@ class NativeStageGateTest(unittest.TestCase):
     def test_subjects_are_domain_separated_complete_input_vectors(self):
         match_subject = match_gate_subject_sha256(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
         )
-        different_catalog = PersonaCatalog(
-            self.catalog.personas
+        different_roster = InventorRoster(
+            self.roster.inventors
             + (
-                PersonaCatalogEntry(
-                    "eve", "little-worlds", digest("1"), digest("2")
+                InventorRosterEntry(
+                    "eve",
+                    ".codex/agents/eve.toml",
+                    digest("3"),
+                    digest("4"),
+                    digest("5"),
                 ),
             )
         )
@@ -267,7 +273,7 @@ class NativeStageGateTest(unittest.TestCase):
             match_subject,
             match_gate_subject_sha256(
                 wish_sha256=self.wish_sha256,
-                persona_catalog_sha256=different_catalog.catalog_sha256,
+                inventor_roster_sha256=different_roster.roster_sha256,
             ),
         )
         self.assertNotEqual(match_subject, invent_gate_subject_sha256(self.assignment))
@@ -277,10 +283,13 @@ class NativeStageGateTest(unittest.TestCase):
         changed_payload.pop("assignment_sha256")
         changed = NativeMatchAssignment(
             wish_sha256=changed_payload["wish_sha256"],
-            persona_catalog_sha256=changed_payload["persona_catalog_sha256"],
+            inventor_roster_sha256=changed_payload["inventor_roster_sha256"],
             selected_inventor_id=changed_payload["selected_inventor_id"],
-            selected_lane=changed_payload["selected_lane"],
-            selected_manifest_sha256=changed_payload["selected_manifest_sha256"],
+            selected_agent_path=changed_payload["selected_agent_path"],
+            selected_agent_sha256=changed_payload["selected_agent_sha256"],
+            selected_source_manifest_sha256=changed_payload[
+                "selected_source_manifest_sha256"
+            ],
             selected_taste_sha256=changed_payload["selected_taste_sha256"],
             blueprint_sha256=changed_payload["blueprint_sha256"],
             ranking=tuple(
@@ -296,7 +305,7 @@ class NativeStageGateTest(unittest.TestCase):
     def test_gates_reject_wrong_paths_subjects_and_changed_bytes(self):
         subject = match_gate_subject_sha256(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
         )
         wrong_path = self.artifact(
             "artifacts/match/other.json", self.assignment.to_dict()
@@ -307,7 +316,7 @@ class NativeStageGateTest(unittest.TestCase):
                 run_root=self.run_root,
                 expected_checkpoint_sha256=self.checkpoint_sha256,
                 wish_sha256=self.wish_sha256,
-                catalog=self.catalog,
+                roster=self.roster,
             )
 
         artifact = self.artifact(MATCH_ASSIGNMENT_PATH, self.assignment.to_dict())
@@ -317,7 +326,7 @@ class NativeStageGateTest(unittest.TestCase):
                 run_root=self.run_root,
                 expected_checkpoint_sha256=digest("2"),
                 wish_sha256=self.wish_sha256,
-                catalog=self.catalog,
+                roster=self.roster,
             )
 
         with self.assertRaisesRegex(StateConflict, "input vector"):
@@ -326,7 +335,7 @@ class NativeStageGateTest(unittest.TestCase):
                 run_root=self.run_root,
                 expected_checkpoint_sha256=self.checkpoint_sha256,
                 wish_sha256=self.wish_sha256,
-                catalog=self.catalog,
+                roster=self.roster,
             )
 
         (self.run_root / MATCH_ASSIGNMENT_PATH).write_bytes(b"{}")
@@ -336,7 +345,7 @@ class NativeStageGateTest(unittest.TestCase):
                 run_root=self.run_root,
                 expected_checkpoint_sha256=self.checkpoint_sha256,
                 wish_sha256=self.wish_sha256,
-                catalog=self.catalog,
+                roster=self.roster,
             )
 
 

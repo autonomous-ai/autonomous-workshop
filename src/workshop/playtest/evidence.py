@@ -11,7 +11,6 @@ from workshop._validation import (
     require_safe_evidence_path,
     require_sha256,
     require_utc_timestamp,
-    utc_now,
 )
 from workshop.errors import ContractError
 
@@ -54,32 +53,6 @@ class PlaytestResult:
         if not self.evidence:
             raise ContractError("PlaytestResult evidence must be a non-empty object")
         require_json_mapping(self.evidence, "PlaytestResult evidence")
-
-    @classmethod
-    def create(
-        cls,
-        playtest_id: str,
-        passed: bool,
-        artifact_sha256: str,
-        evidence: Mapping[str, Any],
-        evaluator: str,
-        evaluator_version: str,
-        config_sha256: str,
-        evidence_ref: str,
-        evidence_sha256: str,
-    ) -> "PlaytestResult":
-        return cls(
-            playtest_id,
-            passed,
-            artifact_sha256,
-            evidence,
-            evaluator,
-            evaluator_version,
-            config_sha256,
-            evidence_ref,
-            evidence_sha256,
-            utc_now(),
-        )
 
     def to_dict(self) -> Dict[str, Any]:
         self.assert_valid()

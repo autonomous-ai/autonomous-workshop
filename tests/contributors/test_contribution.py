@@ -43,10 +43,9 @@ def _inventor(root: Path) -> Path:
     (folder / "inventor.json").write_text(
         json.dumps(
             {
-                "schema_version": 7,
+                "schema_version": 8,
                 "id": "sample",
                 "status": "experimental",
-                "capabilities": ["invented-games"],
                 "source": {"kind": "local"},
                 "extensions": [
                     {

@@ -28,6 +28,7 @@ from workshop.contributors.taste import (
     TasteHeader,
     load_taste,
     load_taste_header,
+    parse_taste_bytes,
 )
 
 __all__ = [
@@ -46,6 +47,7 @@ __all__ = [
     "load_inventor_extension_bundles",
     "load_taste",
     "load_taste_header",
+    "parse_taste_bytes",
     "manifests_for_target",
     "prepare_inventor_collection",
     "validate_contribution",

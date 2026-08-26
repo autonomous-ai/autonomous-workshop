@@ -7,13 +7,13 @@ from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
+    InventorRoster,
+    InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytestCheck, NativePlaytested
 from workshop.product import ToyBlueprint
@@ -46,17 +46,26 @@ class NativeReleaseTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
-        self.blueprint = ToyBlueprint.for_lane("little-worlds")
-        catalog = PersonaCatalog(
-            (PersonaCatalogEntry("eve", "little-worlds", "b" * 64, "c" * 64),)
+        self.blueprint = ToyBlueprint()
+        roster = InventorRoster(
+            (
+                InventorRosterEntry(
+                    inventor_id="eve",
+                    agent_path=".codex/agents/eve.toml",
+                    agent_sha256="b" * 64,
+                    source_manifest_sha256="c" * 64,
+                    taste_sha256="d" * 64,
+                ),
+            )
         )
         self.assignment = NativeMatchAssignment(
             wish_sha256="a" * 64,
-            persona_catalog_sha256=catalog.catalog_sha256,
+            inventor_roster_sha256=roster.roster_sha256,
             selected_inventor_id="eve",
-            selected_lane="little-worlds",
-            selected_manifest_sha256="b" * 64,
-            selected_taste_sha256="c" * 64,
+            selected_agent_path=".codex/agents/eve.toml",
+            selected_agent_sha256="b" * 64,
+            selected_source_manifest_sha256="c" * 64,
+            selected_taste_sha256="d" * 64,
             blueprint_sha256=self.blueprint.sha256,
             ranking=(
                 MatchRankingEntry(
@@ -64,12 +73,11 @@ class NativeReleaseTest(unittest.TestCase):
                 ),
             ),
         )
-        self.invented = InventedV2(
+        self.invented = NativeInvented(
             wish_sha256=self.assignment.wish_sha256,
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            lane="little-worlds",
             concept={"title": "Moon Nook", "summary": "A tiny lunar observatory."},
             research={
                 "sources": [{"url": "https://example.test/moon", "claim": "scale"}]
@@ -85,7 +93,6 @@ class NativeReleaseTest(unittest.TestCase):
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
             "components": ["observatory shell", "moon rover"],
             "instructions": "Arrange the rover and explore the observatory.",
             "limitations": ["AI-simulated playtest only"],
@@ -121,7 +128,7 @@ class NativeReleaseTest(unittest.TestCase):
         root = self.run_root / "artifacts/playtest/r0001/evidence"
         root.mkdir(parents=True)
         checks = []
-        for check_id in self.blueprint.required_capabilities("playtest"):
+        for check_id in self.blueprint.required_playtest_checks():
             evidence = _canonical({"check": check_id, "ok": True})
             path = "%s.json" % check_id
             (root / path).write_bytes(evidence)
@@ -180,12 +187,39 @@ class NativeReleaseTest(unittest.TestCase):
         )
         (root / NATIVE_RELEASE_MANUAL_PATH).write_text(manual, encoding="utf-8")
         product = {
-            "schema_version": 2,
+            "schema_version": 3,
             "kind": "workshop.release-package",
-            "status": "facts-ready",
+            "status": "page-ready",
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
+            "hero": {
+                "headline": "A moon base in the palm of your hand",
+                "body": "Arrange the rover beside a tiny lunar observatory.",
+                "visual_direction": "Show the exact assembled model from a low lunar angle.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "cinematic": {
+                "headline": "The lights are on at Moon Nook",
+                "body": "A compact observatory and rover turn a tabletop into a lunar outpost.",
+                "visual_direction": "Use the exact model silhouette against a dark moon horizon.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "use_case": {
+                "headline": "Set the scene, then explore",
+                "body": "Place the rover around the observatory and invent a new expedition.",
+                "visual_direction": "Show both included components without adding accessories.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "story_blocks": [
+                {
+                    "headline": "Checked before Release",
+                    "body": "The sealed digital design passed every required automated check.",
+                    "visual_direction": "Pair the exact CAD model with a restrained check motif.",
+                    "evidence_refs": [
+                        "playtest:%s" % next(iter(self._claims()))
+                    ],
+                }
+            ],
             "what_arrives": ["observatory shell", "moon rover"],
             "limitations": ["AI-simulated playtest only"],
             "product_artifact_sha256": self.made.product_manifest.artifact_sha256,
@@ -193,11 +227,6 @@ class NativeReleaseTest(unittest.TestCase):
                 self.playtested.evidence_manifest.artifact_sha256
             ),
             "claims": self._claims(),
-            "factory_enrichment": {
-                "copy_owner": "factory",
-                "media_owner": "factory",
-                "status": "pending",
-            },
         }
         product.update(product_overrides or {})
         product_bytes = _canonical(product)
@@ -259,10 +288,8 @@ class NativeReleaseTest(unittest.TestCase):
         self.assertEqual(package.made.artifact_sha256, release.product_artifact_sha256)
         self.assertTrue(package.playtested.passed)
         self.assertEqual(dict(package.claims), dict(release.claims))
-        self.assertEqual(
-            dict(package.factory_enrichment),
-            {"copy_owner": "factory", "media_owner": "factory", "status": "pending"},
-        )
+        self.assertEqual(package.product["status"], "page-ready")
+        self.assertEqual(package.product["hero"]["evidence_refs"], ("made:product.json",))
         serialized = json.dumps(release.to_dict(), sort_keys=True)
         for forbidden in ("credentials", "factory_receipt", "site_receipt"):
             self.assertNotIn(forbidden, serialized)
@@ -317,6 +344,22 @@ class NativeReleaseTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
             release.assert_context(self.made, other_playtest)
+
+    def test_requires_complete_evidence_bound_page_copy(self):
+        with self.assertRaisesRegex(ContractError, "fields are invalid"):
+            self._release(product_overrides={"factory_enrichment": {"status": "pending"}})
+
+        with self.assertRaisesRegex(ContractError, "evidence_refs"):
+            self._release(
+                product_overrides={
+                    "hero": {
+                        "headline": "Unsupported",
+                        "body": "This copy cites evidence outside the sealed run.",
+                        "visual_direction": "No invented geometry.",
+                        "evidence_refs": ["playtest:not-a-check"],
+                    }
+                }
+            )
 
     def test_rejects_noncanonical_invalid_json_and_changed_bytes(self):
         release = self._release(

@@ -1,19 +1,14 @@
-"""Inputs, feedback, and immutable outputs owned by the Make stage."""
+"""Immutable outputs owned by the Make stage."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from workshop._validation import bounded_text, copy_json_mapping
 from workshop.artifacts.core import ArtifactManifest, build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
-from workshop.product import PLAYTHING_LANES
-
-
-_SEVERITIES = frozenset(("note", "improve", "block"))
-_FEEDBACK_INVALIDATION_STAGES = frozenset(("playtest", "release", "deliver"))
 
 
 def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
@@ -21,46 +16,6 @@ def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
     if current.to_dict() != manifest.to_dict():
         raise ArtifactError("artifact bytes changed after the job completed")
     return current
-
-
-@dataclass(frozen=True)
-class Feedback:
-    """One actionable finding that sends the product back through Make."""
-
-    code: str
-    area: str
-    severity: str
-    finding: str
-    change: str
-    evidence_refs: Sequence[str] = field(default_factory=tuple)
-    invalidates: Sequence[str] = ("playtest", "release", "deliver")
-
-    def __post_init__(self) -> None:
-        bounded_text(self.code, "feedback code", 200)
-        bounded_text(self.area, "feedback area", 200)
-        if self.severity not in _SEVERITIES:
-            raise ContractError("feedback severity must be note, improve, or block")
-        bounded_text(self.finding, "feedback finding")
-        bounded_text(self.change, "feedback change")
-        refs = tuple(self.evidence_refs)
-        invalidates = tuple(self.invalidates)
-        if any(not isinstance(item, str) or not item for item in refs):
-            raise ContractError("feedback evidence_refs must be non-empty strings")
-        if any(item not in _FEEDBACK_INVALIDATION_STAGES for item in invalidates):
-            raise ContractError("feedback invalidates a non-downstream Make stage")
-        object.__setattr__(self, "evidence_refs", refs)
-        object.__setattr__(self, "invalidates", invalidates)
-
-    def to_dict(self):
-        return {
-            "code": self.code,
-            "area": self.area,
-            "severity": self.severity,
-            "finding": self.finding,
-            "change": self.change,
-            "evidence_refs": list(self.evidence_refs),
-            "invalidates": list(self.invalidates),
-        }
 
 
 @dataclass(frozen=True)
@@ -78,10 +33,8 @@ class Made:
         if not isinstance(self.artifact_manifest, ArtifactManifest):
             raise ContractError("Made requires an ArtifactManifest")
         product = copy_json_mapping(self.product, "Made product", nonempty=True)
-        for key in ("title", "summary", "lane"):
+        for key in ("title", "summary"):
             bounded_text(product.get(key), "Made product %s" % key, 2_000)
-        if product["lane"] not in PLAYTHING_LANES:
-            raise ContractError("Made product lane must be a Workshop plaything lane")
         _fresh_manifest(root, self.artifact_manifest)
         object.__setattr__(self, "artifact_root", root.resolve(strict=True))
         object.__setattr__(self, "product", product)
@@ -103,4 +56,4 @@ class Made:
         _fresh_manifest(self.artifact_root, self.artifact_manifest)
 
 
-__all__ = ["Feedback", "Made"]
+__all__ = ["Made"]

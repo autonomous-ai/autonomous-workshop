@@ -7,7 +7,6 @@ from pathlib import Path
 from workshop.contributors.contribution import validate_contribution
 from workshop.contributors.manifest import discover_inventors, load_manifest
 from workshop.errors import ManifestError
-from workshop.product import PLAYTHING_LANES
 
 
 def _taste(name: str = "Sample") -> str:
@@ -20,13 +19,12 @@ def _taste(name: str = "Sample") -> str:
     )
 
 
-def _manifest(inventor_id: str = "sample", lane: str = "invented-games"):
+def _manifest(inventor_id: str = "sample"):
     skill_name = "%s-inventor" % inventor_id
     return {
-        "schema_version": 7,
+        "schema_version": 8,
         "id": inventor_id,
         "status": "experimental",
-        "capabilities": [lane],
         "source": {"kind": "local"},
         "extensions": [
             {
@@ -40,7 +38,7 @@ def _manifest(inventor_id: str = "sample", lane: str = "invented-games"):
 
 
 class RegistryTest(unittest.TestCase):
-    def test_bundled_inventors_are_valid_v7_skill_bundles(self):
+    def test_bundled_inventors_are_valid_v8_skill_bundles(self):
         root = Path(__file__).resolve().parents[2]
         manifests = discover_inventors(root)
         self.assertEqual(
@@ -49,7 +47,7 @@ class RegistryTest(unittest.TestCase):
         )
         for manifest in manifests:
             with self.subTest(inventor_id=manifest.inventor_id):
-                self.assertEqual(manifest.schema_version, 7)
+                self.assertEqual(manifest.schema_version, 8)
                 self.assertEqual(len(manifest.extensions), 1)
                 self.assertEqual(validate_contribution(manifest), [])
                 self.assertEqual(
@@ -57,7 +55,7 @@ class RegistryTest(unittest.TestCase):
                     {"TASTE.md", "inventor.json", "skills"},
                 )
 
-    def test_manifest_round_trips_only_the_v7_contract(self):
+    def test_manifest_round_trips_only_the_v8_contract(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary) / "sample"
             folder.mkdir()
@@ -72,24 +70,23 @@ class RegistryTest(unittest.TestCase):
                     "schema_version",
                     "inventor_id",
                     "status",
-                    "capabilities",
                     "source",
                     "extensions",
                     "path",
                 },
             )
 
-    def test_every_pre_v7_manifest_is_rejected(self):
+    def test_every_pre_v8_manifest_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary) / "sample"
             folder.mkdir()
             path = folder / "inventor.json"
-            for version in range(1, 7):
+            for version in range(1, 8):
                 document = _manifest()
                 document["schema_version"] = version
                 path.write_text(json.dumps(document), encoding="utf-8")
                 with self.subTest(version=version), self.assertRaisesRegex(
-                    ManifestError, "schema_version must be 7"
+                    ManifestError, "schema_version must be 8"
                 ):
                     load_manifest(path)
 
@@ -103,6 +100,8 @@ class RegistryTest(unittest.TestCase):
                 ("checks", [["python3", "-m", "unittest"]]),
                 ("name", "Sample"),
                 ("workshop_features", []),
+                ("capabilities", ["invented-games"]),
+                ("lane", "invented-games"),
             ):
                 document = dict(_manifest(), **{field: value})
                 path.write_text(json.dumps(document), encoding="utf-8")
@@ -110,20 +109,6 @@ class RegistryTest(unittest.TestCase):
                     ManifestError, "unknown fields"
                 ):
                     load_manifest(path)
-
-    def test_manifest_requires_exactly_one_known_lane(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
-            for capabilities in ([], ["taste-only"], list(PLAYTHING_LANES[:2])):
-                with self.subTest(capabilities=capabilities):
-                    path.write_text(
-                        json.dumps(dict(_manifest(), capabilities=capabilities)),
-                        encoding="utf-8",
-                    )
-                    with self.assertRaises(ManifestError):
-                        load_manifest(path)
 
     def test_manifest_rejects_booleans_missing_fields_and_unpinned_sources(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -151,24 +136,20 @@ class RegistryTest(unittest.TestCase):
                     with self.assertRaises(ManifestError):
                         load_manifest(path)
 
-    def test_schema_describes_only_the_v7_contract(self):
+    def test_schema_describes_only_the_v8_contract(self):
         schema_path = (
             Path(__file__).resolve().parents[2]
             / "src/workshop/contributors/schemas/inventor.schema.json"
         )
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        self.assertEqual(schema["$id"].rsplit("/", 1)[-1], "v7.json")
-        self.assertEqual(schema["properties"]["schema_version"], {"const": 7})
+        self.assertEqual(schema["$id"].rsplit("/", 1)[-1], "v8.json")
+        self.assertEqual(schema["properties"]["schema_version"], {"const": 8})
         self.assertNotIn("oneOf", schema)
         self.assertEqual(
             set(schema["properties"]),
-            {"schema_version", "id", "status", "capabilities", "source", "extensions"},
+            {"schema_version", "id", "status", "source", "extensions"},
         )
         self.assertEqual(set(schema["required"]), set(schema["properties"]))
-        self.assertEqual(
-            set(schema["properties"]["capabilities"]["items"]["enum"]),
-            set(PLAYTHING_LANES),
-        )
 
     def test_registry_fails_closed_for_missing_taste(self):
         with tempfile.TemporaryDirectory() as temporary:

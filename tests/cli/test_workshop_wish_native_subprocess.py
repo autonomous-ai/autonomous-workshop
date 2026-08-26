@@ -114,6 +114,11 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
             self.assertTrue(observed["product_skill"])
             self.assertFalse(observed["factory_visible"])
             self.assertIn("--search", observed["arguments"])
+            for feature in ("goals", "multi_agent"):
+                feature_index = observed["arguments"].index(feature)
+                self.assertEqual(
+                    observed["arguments"][feature_index - 1], "--enable"
+                )
             self.assertIn("--strict-config", observed["arguments"])
             self.assertNotIn("--sandbox", observed["arguments"])
             self.assertIn(
@@ -126,9 +131,15 @@ print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": 
                         "permissions.workshop-product-run.filesystem="
                     )
                     and '":root"="deny"' in argument
-                    and '"**/.env*"="deny"' in argument
+                    and json.dumps(str(workspace)) + '="write"' in argument
+                    and json.dumps(str(workspace / "**/.env*")) + '="deny"'
+                    in argument
                     for argument in observed["arguments"]
                 )
+            )
+            self.assertIn(
+                'project_root_markers=[".workshop-product-run-root"]',
+                observed["arguments"],
             )
             self.assertIn("current match stage", observed["prompt"])
             self.assertNotIn(objective, observed["prompt"])

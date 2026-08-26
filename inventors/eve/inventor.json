@@ -1,15 +1,14 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "id": "eve",
   "status": "experimental",
-  "capabilities": ["little-worlds"],
   "source": {"kind": "local"},
   "extensions": [
     {
       "kind": "codex-skill",
       "name": "eve-inventor",
       "path": "skills/eve-inventor",
-      "artifact_sha256": "8065c0b17e3a26d7580df8989b4827358c25f8971b71d716a0cb7f3817fde661"
+      "artifact_sha256": "71b5d9ec9e3767444465e585f8d8664997713a9495d3a259b69aa3a339d305d3"
     }
   ]
 }

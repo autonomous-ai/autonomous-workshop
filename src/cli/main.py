@@ -37,16 +37,15 @@ from workshop.make.skill_registry import (
     fingerprint_skill_tree,
     resolve_skills_root,
 )
-from workshop.product import PLAYTHING_LANES
 from workshop.runtime.agent_assets import product_run_agent_assets
 from workshop.runtime.execution import codex_subprocess_environment
 from workshop.runtime.credentials import factory_credential_environment
 from workshop.runtime.codex import (
-    MINIMUM_CODEX_PERMISSION_PROFILE_VERSION,
-    codex_supports_permission_profiles,
+    MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
+    codex_supports_native_workshop,
 )
 from workshop.runtime.package_data import (
-    packaged_inventor_catalog_root,
+    packaged_inventors_root,
     product_run_domain_skill_roots,
 )
 from workshop.wish import Wish, generate_wish_id
@@ -88,7 +87,7 @@ def _default_inventor_name(inventor_id: str) -> str:
     return " ".join(part.capitalize() for part in inventor_id.split("-"))
 
 
-def _looks_like_catalog(root: Path) -> bool:
+def _looks_like_inventor_source(root: Path) -> bool:
     try:
         resolved = root.resolve(strict=True)
     except OSError:
@@ -110,23 +109,23 @@ def _looks_like_catalog(root: Path) -> bool:
         return False
 
 
-def _catalog_root(requested: Optional[Path]) -> Path:
-    """Resolve a read-only Inventor catalog without creating installed state."""
+def _inventor_source_root(requested: Optional[Path]) -> Path:
+    """Resolve read-only Inventor sources without creating installed state."""
 
     if requested is not None:
         candidate = Path(requested).resolve(strict=True)
-        if not _looks_like_catalog(candidate):
-            raise WorkshopError("inventor catalog has no native Inventor bundles: %s" % candidate)
+        if not _looks_like_inventor_source(candidate):
+            raise WorkshopError("source has no native Inventor bundles: %s" % candidate)
         return candidate
 
     source_root = Path(__file__).resolve().parents[2]
-    if _looks_like_catalog(source_root):
+    if _looks_like_inventor_source(source_root):
         return source_root
-    packaged = packaged_inventor_catalog_root()
-    if packaged is not None and _looks_like_catalog(packaged):
+    packaged = packaged_inventors_root()
+    if packaged is not None and _looks_like_inventor_source(packaged):
         return packaged
     raise WorkshopError(
-        "cannot find the inventor catalog; provide --root with a Workshop checkout"
+        "cannot find Inventor sources; provide --root with a Workshop checkout"
     )
 
 
@@ -239,7 +238,7 @@ def _doctor_catalog(root: Path) -> dict[str, str]:
             "inventor-catalog",
             "needs-attention",
             str(exc),
-            next_step="Repair the schema-v7 Inventor bundles and their declared skill hashes.",
+            next_step="Repair the schema-v8 Inventor bundles and their declared skill hashes.",
         )
     return _check_record(
         "inventor-catalog",
@@ -281,14 +280,14 @@ def _doctor_codex() -> dict[str, str]:
         r"\d+(?:\.\d+){2}(?:[-+][A-Za-z0-9.-]+)?", output
     )
     cli_version = version_match.group(0) if version_match else ""
-    if not codex_supports_permission_profiles(cli_version):
+    if not codex_supports_native_workshop(cli_version):
         minimum = ".".join(
-            str(part) for part in MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+            str(part) for part in MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
         )
         return _check_record(
             "codex",
             "needs-attention",
-            "The Codex CLI is too old for Workshop's isolated permission profile.",
+            "The Codex CLI is too old for Workshop goals, subagents, and isolation.",
             next_step="Upgrade Codex CLI to %s or newer." % minimum,
         )
     try:
@@ -393,7 +392,7 @@ def _doctor_factory() -> dict[str, str]:
 
 
 def _doctor(args: argparse.Namespace) -> int:
-    root = _catalog_root(args.root)
+    root = _inventor_source_root(args.root)
     checks = [
         _doctor_catalog(root),
         _doctor_codex(),
@@ -424,7 +423,7 @@ def _doctor(args: argparse.Namespace) -> int:
 
 
 def _inventors(args: argparse.Namespace) -> int:
-    root = _catalog_root(args.root)
+    root = _inventor_source_root(args.root)
     manifests = _validated_inventors(root)
     records = []
     for manifest in manifests:
@@ -436,7 +435,6 @@ def _inventors(args: argparse.Namespace) -> int:
                 "status": manifest.status,
                 "name": header.name,
                 "description": header.description,
-                "lane": manifest.capabilities[0],
                 "taste_sha256": taste.sha256,
                 "skills": [extension.name for extension in manifest.extensions],
             }
@@ -446,11 +444,10 @@ def _inventors(args: argparse.Namespace) -> int:
     else:
         for record in records:
             print(
-                "%-12s %-13s %-20s %-20s %s"
+                "%-12s %-13s %-20s %s"
                 % (
                     record["id"],
                     record["status"],
-                    record["lane"],
                     record["name"],
                     record["description"],
                 )
@@ -476,7 +473,6 @@ def _create_inventor(args: argparse.Namespace) -> int:
         inventor_id,
         name,
         args.description,
-        lane=args.lane,
         taste_path=args.taste,
     )
     manifest = load_manifest(destination / "inventor.json")
@@ -494,7 +490,6 @@ def _create_inventor(args: argparse.Namespace) -> int:
         "id": manifest.inventor_id,
         "name": taste.name,
         "description": taste.description,
-        "lane": manifest.capabilities[0],
         "path": str(destination),
         "taste_sha256": taste.sha256,
         "manifest_sha256": manifest_sha256,
@@ -658,7 +653,7 @@ def parser() -> argparse.ArgumentParser:
     doctor.set_defaults(handler=_doctor)
 
     inventors = subcommands.add_parser(
-        "inventors", help="list statically validated schema-v7 Inventor bundles"
+        "inventors", help="list statically validated schema-v8 Inventor bundles"
     )
     inventors.add_argument("--root", type=Path, help="Workshop checkout or inventor catalog")
     inventors.add_argument("--json", action="store_true")
@@ -669,7 +664,7 @@ def parser() -> argparse.ArgumentParser:
         dest="create_kind", required=True, metavar="THING"
     )
     inventor = create_commands.add_parser(
-        "inventor", help="create TASTE.md, a namespaced skill, and a v7 manifest"
+        "inventor", help="create TASTE.md, a namespaced skill, and a v8 manifest"
     )
     inventor.add_argument("inventor_id", nargs="?")
     inventor.add_argument("--taste", type=Path, help="existing TASTE.md to preserve exactly")
@@ -678,7 +673,6 @@ def parser() -> argparse.ArgumentParser:
         "--description",
         help="routing boundary for a generated Taste (required without --taste)",
     )
-    inventor.add_argument("--lane", choices=PLAYTHING_LANES, required=True)
     inventor.add_argument("--root", type=Path, default=Path.cwd())
     inventor.add_argument("--json", action="store_true")
     inventor.set_defaults(handler=_create_inventor)

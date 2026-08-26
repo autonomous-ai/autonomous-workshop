@@ -1,5 +1,5 @@
 """Native Invent contract authored by the product-run coding agent."""
 
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 
-__all__ = ["InventedV2"]
+__all__ = ["NativeInvented"]

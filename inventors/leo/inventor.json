@@ -1,15 +1,14 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "id": "leo",
   "status": "experimental",
-  "capabilities": ["invented-games"],
   "source": {"kind": "local"},
   "extensions": [
     {
       "kind": "codex-skill",
       "name": "leo-inventor",
       "path": "skills/leo-inventor",
-      "artifact_sha256": "b4049de30489e9704adab6c2a2090a9e5a7f5ab0a999792b84a39d769e6f545c"
+      "artifact_sha256": "40b2c012f35ce8ec3d64ee0eb3c7c0f0c3b516a445c75b164c3ce72e1dd713a6"
     }
   ]
 }

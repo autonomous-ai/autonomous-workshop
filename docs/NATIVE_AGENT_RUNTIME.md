@@ -29,12 +29,25 @@ Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 
 Codex owns understanding, native search, concept exploration, design, CAD and
 artifact creation, render inspection, repair, AI Playtest judgment, manual
-writing, and factual product-page content. Stages are durable checkpoints, not
-separate model personas or one-shot API calls.
+writing, and complete evidence-bound product-page content. Stages are durable
+checkpoints, not separate model roles or one-shot API calls.
 
 The root Codex session is the Workshop Manager. Native subagents are bounded
 children it can use for parallel or specialist work; they do not create a
 second product-run session or weaken the one-session continuity rule.
+
+For each active Match, Invent, Make, Playtest, or Release attempt, the Manager
+creates one native Codex Goal. Only one Goal is active. It binds one objective,
+the current `STAGE.json`, proof artifacts and checks, and the verifiable
+stopping condition that the stage finalizer succeeds. Codex observes, acts,
+evaluates the actual artifact, and improves while pursuing that Goal. This is
+native-agent behavior inside the Goal, not a Python loop. The Goal completes
+only after the finalizer succeeds, then Codex returns to the host. Wish and
+Deliver are host boundaries and do not receive agent Goals.
+
+This follows Codex's official guidance for [durable
+Goals](https://learn.chatgpt.com/use-cases/follow-goals) and [eval-driven
+iteration](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
 
 Python is the trusted host substrate only. It owns:
 
@@ -42,14 +55,14 @@ Python is the trusted host substrate only. It owns:
 - lifecycle order, Make–Playtest round budgets, invalidation, and one exclusive
   host mutation lock per run;
 - native-session launch/resume, a scrubbed process environment, and an enforced
-  workspace-only Codex permission profile that denies reads elsewhere;
+  exact-toy-root Codex permission profile that denies the surrounding checkout;
 - typed contracts, artifact hashing, deterministic CAD/evidence gates, and
   durable checkpoints;
 - authorization, credential isolation, idempotency, external adapters,
   reconciliation, and receipts.
 
 Python does not choose research strategy, generate candidate concepts, act as
-Inventor profiles, judge semantic quality, run prompt chains, or implement a
+Inventors, judge semantic quality, run prompt chains, or implement a
 reward loop. Model prose and self-assessment are proposals; only the host can
 advance a gate.
 
@@ -61,10 +74,10 @@ workshop wish
     v
 host persists the canonical Wish and creates toys/<toy-id>/
     |
+    +-- .workshop-product-run-root    immutable Codex project-root marker
     +-- AGENTS.md                     product-run constitution
     +-- .codex/agents/*.toml          project-scoped Inventor custom agents
     +-- .agents/skills/**             workflow and domain skills
-    +-- catalog/inventors/**          immutable declared specialist bundles
     +-- WISH.json                     exact Wish
     +-- STAGE.json                    current host-written stage packet
     |
@@ -94,7 +107,7 @@ root Codex session: Workshop Manager
     +-- optional bounded Match/candidate subagents
     |
     +-- selected Inventor subagent
-    |       +-- exact TASTE.md judgment
+    |       +-- exact embedded Taste judgment
     |       +-- required primary + optional additional Codex skills
     |       `-- hash-bound scripts/references/assets/deterministic tools
     |
@@ -104,19 +117,20 @@ root Codex session: Workshop Manager
 The host projects every eligible Inventor into Codex's official
 project-scoped custom-agent convention at `.codex/agents/<id>.toml`. Each file
 binds the exact host-materialized identity, Taste, and declared skill paths.
-Codex owns spawning, routing, waiting, and synthesis. Workshop does not spawn
-another OS-level `codex` process: the host starts and resumes only the root
-product-run session.
+That directory is the sole Inventor roster in the toy project. Codex owns
+spawning, routing, waiting, and synthesis. Workshop does not spawn another
+OS-level `codex` process: the host starts and resumes only the root product-run
+session.
 
 See the official Codex [Subagents and custom agents
 documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents)
 for the native file schema and orchestration behavior.
 
-The source `inventors/<id>/` bundle separates four concerns:
+The source `inventors/<id>/` bundle contains:
 
 - `TASTE.md`: creative judgment and rejection boundaries;
-- `inventor.json`: identity, eligibility, capabilities, and declared extension
-  inventory;
+- schema-v8 `inventor.json`: stable source metadata and exact skill-tree
+  hashes;
 - required `skills/<id>-inventor/SKILL.md`: the specialist's primary procedure
   and resource routing;
 - optional additional `skills/<id>-<specialty>/SKILL.md` trees;
@@ -145,11 +159,19 @@ schema_version, kind, product_id, stage, checkpoint_sha256,
 subject_sha256, next_transition, round, max_rounds, inputs
 ```
 
-`inputs` contains the exact upstream contracts, artifact bindings, catalog
-snapshot, lane blueprint, required capabilities, and canonical output paths
-needed by the current stage. Codex must read it and must not edit it. A stale
-proposal cannot be replayed because the host verifies both
+`inputs` contains the exact upstream contracts, artifact bindings, universal
+blueprint, Inventor roster bindings, required checks, and canonical output
+paths needed by the current stage. Codex must read it and must not edit it. A
+stale proposal cannot be replayed because the host verifies both
 `checkpoint_sha256` and `subject_sha256`.
+
+The universal baseline comes from
+`ToyBlueprint.required_playtest_checks()` and currently contains
+`agent-playtest`, `mechanical-check`, and `printability-check`. Those are
+Codex-authored digital assessments unless host-replayed evidence or an
+authenticated physical receipt explicitly proves more. They cannot establish
+successful printing, physical fit, durability, or human response by
+themselves.
 
 The Wish gate is host-validated before the first native Match turn. Deliver is
 also host/effect work; native stage packets currently cover Match, Invent,
@@ -192,36 +214,47 @@ python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
 The tool does no research, reasoning, model calls, or gate advancement. It
 validates authored inputs, hashes the exact run-local bytes, writes the
 canonical stage contract, and atomically writes `agent-outcome.json` bound to
-the current stage packet. Codex then returns control. The host rereads the
+the current stage packet. It performs no improvement loop. After it succeeds,
+Codex completes the active Goal and returns control. The host rereads the
 proposal and artifact tree independently, reruns its trusted gates, seals all
 accepted bytes, and alone decides the transition.
 
 Playtest is the only backward transition: a verdict of `improve` or `block`
-proposes Make and preserves exact evidence as feedback. A new Make revision
-invalidates old Playtest and Release evidence.
+proposes Make and preserves exact evidence as feedback. The host applies the
+round budget and invalidation; Codex interprets the feedback and performs the
+repair in the next Make Goal. A new Make revision invalidates old Playtest and
+Release evidence.
 
 ## Release and publication
 
 Release replaces the former instruction-only stage because it owns more than an
-instruction sheet. Codex prepares a local factual package rooted at
-`artifacts/release/package` with at least:
+instruction sheet. Codex prepares a complete schema-v3, page-ready package
+rooted at `artifacts/release/package` with at least:
 
 - `MANUAL.md`;
-- canonical `product.json` with product facts, evidence-bound claims, page
-  metadata, and pending Factory enrichment;
-- any additional non-media factual package files.
+- canonical `product.json` with `kind=workshop.release-package`,
+  `status=page-ready`, exact product/evidence hashes, evidence-bound claims,
+  `title`, `summary`, `hero`, `cinematic`, `use_case`, one or more
+  `story_blocks`, `what_arrives`, and `limitations`; each page section carries
+  `headline`, `body`, `visual_direction`, and valid `evidence_refs`;
+- any additional non-media supporting package files.
 
-The agent does not claim Factory copy, images, publication, manufacture, or
-delivery. The package cannot contain remote-effect receipts or credentials.
+Codex authors the complete page copy and visual direction. It does not claim
+publication, manufacture, physical performance, human response, or delivery.
+The package cannot contain images, audio, video, remote-effect receipts, or
+credentials. Factory transports the host-sealed page and model bytes without
+creative enrichment.
 
 The default CLI policy is private. `--publish` records explicit authority for
 the host to promote the verified Factory page after the private import is
 reconciled. Local credentials belong in the private
 `$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
-the native turn exits. Codex 0.138.0 or newer runs with Workshop's strict
-permission profile: all filesystem reads are denied by default, the toy project
-is writable, only minimal tool paths are readable, and dotenv files remain
-denied even if a surrounding checkout becomes a workspace root. Credentials
+the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
+permission profile: all filesystem reads are denied by default, the exact
+absolute toy project is writable, immutable instructions remain read-only,
+only minimal tool paths are readable, and the surrounding checkout and sibling
+toys stay denied. The immutable project-root marker also prevents builder
+`AGENTS.md` inheritance, and dotenv files remain denied. Credentials
 never enter the Codex subprocess, prompt, run artifacts, or status output.
 Public publication is not evidence of physical manufacture or delivery.
 
@@ -239,7 +272,7 @@ inventors/<id>/{inventor.json,TASTE.md,skills/**}
 At project creation the host also generates one deterministic
 `.codex/agents/<id>.toml` for every eligible Inventor. It follows Codex's
 project-scoped custom-agent schema and is derived from those exact source
-bytes; it is not a second hand-written persona system.
+bytes; it is not a second hand-written identity system.
 
 Every Inventor declares one primary `<id>-inventor` skill tree. Additional
 Inventor-prefixed trees and their scripts/resources are optional. Only exact
@@ -255,11 +288,11 @@ second hand-edited copy.
 ## Repository ownership
 
 ```text
-toys/<toy-id>/                              persistent product projects / Codex CWD
+toys/<toy-id>/                              persistent toy projects / Codex CWD
 .agents/product-run/                        complete toy-project template source
   AGENTS.md                                 product-run constitution
   .agents/skills/autonomous-workshop/       native workflow instructions
-inventors/<id>/                              specialist identity and declared extensions
+inventors/<id>/                              reusable Taste, source manifest, and skills
 src/cli/                                     parsing, presentation, and exit codes
 src/workshop/runtime/                        session and trusted effect boundaries
 src/workshop/workflow/native_run.py          trusted whole-run host composition
@@ -291,9 +324,15 @@ private Wish demonstrate that:
 
 ## Engine portability
 
-Codex is the first and only supported engine today. The stable seam is the
-persistent toy project, `STAGE.json`, compact outcome protocol, start/resume
-adapter, and a bounded native-specialist delegation primitive—not Codex prompt
-syntax or one vendor's custom-agent file format. A future Claude Code or Grok
-Build adapter must preserve the same root Manager role, exact Inventor bundle,
-host-owned gates, sandbox, checkpoint, and effect authority.
+| Manager runtime | Status |
+|---|---|
+| Codex | Implemented |
+| Claude Code | Planned adapter |
+| Grok Build | Planned adapter |
+
+The stable seam is the persistent toy project, stage objective and proof
+condition, `STAGE.json`, compact outcome protocol, start/resume adapter, and
+bounded native-specialist delegation—not Codex prompt syntax or one vendor's
+custom-agent file format. Every future adapter must preserve the root Manager
+role, exact Inventor binding, host-owned gates, sandbox, checkpoint, and effect
+authority.

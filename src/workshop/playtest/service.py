@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Sequence, Tuple
+from typing import Any, Dict, Sequence
 
 from workshop.artifacts.core import ArtifactManifest
-from workshop.errors import ContractError, TransitionError
+from workshop.errors import ContractError
 from workshop.playtest.evidence import PlaytestResult
 
 
@@ -17,8 +17,8 @@ class Playtest:
     Product files stay bound to ``artifact_manifest``. Playtest evidence files
     may be sealed separately in ``evidence_manifest`` so AI-player feedback can
     improve the next Make without changing the exact product bytes that were
-    tested. Failed results are useful feedback; :meth:`require` is the
-    approval boundary and refuses to finish until every required check passes.
+    tested. Failed results remain useful feedback; the native stage contract
+    and host gate own approval.
 
     """
 
@@ -76,24 +76,6 @@ class Playtest:
                     "PlaytestResult %s evidence is absent or hash-mismatched "
                     "in the sealed evidence artifact" % result.playtest_id
                 )
-
-    def require(self, playtest_ids: Iterable[str]) -> Tuple[PlaytestResult, ...]:
-        """Return requested results in stable order or fail closed."""
-
-        self.assert_valid()
-        required = set(playtest_ids)
-        by_id = {result.playtest_id: result for result in self.results}
-        missing = required - set(by_id)
-        if missing:
-            raise TransitionError(
-                "Playtest lacks required results: %s" % sorted(missing)
-            )
-        failed = sorted(name for name in required if not by_id[name].passed)
-        if failed:
-            raise TransitionError(
-                "Playtest did not pass required results: %s" % failed
-            )
-        return tuple(by_id[name] for name in sorted(required))
 
     def to_dict(self) -> Dict[str, Any]:
         self.assert_valid()

@@ -8,13 +8,13 @@ import unittest
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.match.native import (
+    InventorRoster,
+    InventorRosterEntry,
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
 )
 from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
@@ -32,13 +32,6 @@ TOOL = (
     / "autonomous-workshop"
     / "scripts"
     / "stage_proposal.py"
-)
-LANES = (
-    "classics-made-yours",
-    "invented-games",
-    "moving-machines",
-    "holdable-science",
-    "little-worlds",
 )
 FORWARD = {
     "match": "invent",
@@ -68,20 +61,29 @@ class StageProposalToolTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
-        self.blueprint = ToyBlueprint.for_lane("little-worlds")
-        alice = PersonaCatalogEntry(
-            "alice", "classics-made-yours", "a" * 64, "b" * 64
+        self.blueprint = ToyBlueprint()
+        alice = InventorRosterEntry(
+            "alice",
+            ".codex/agents/alice.toml",
+            "a" * 64,
+            "1" * 64,
+            "b" * 64,
         )
-        eve = PersonaCatalogEntry(
-            "eve", "little-worlds", "c" * 64, "d" * 64
+        eve = InventorRosterEntry(
+            "eve",
+            ".codex/agents/eve.toml",
+            "c" * 64,
+            "2" * 64,
+            "d" * 64,
         )
-        self.catalog = PersonaCatalog((alice, eve))
+        self.roster = InventorRoster((alice, eve))
         self.assignment = NativeMatchAssignment(
             wish_sha256="e" * 64,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
             selected_inventor_id="eve",
-            selected_lane="little-worlds",
-            selected_manifest_sha256=eve.manifest_sha256,
+            selected_agent_path=eve.agent_path,
+            selected_agent_sha256=eve.agent_sha256,
+            selected_source_manifest_sha256=eve.source_manifest_sha256,
             selected_taste_sha256=eve.taste_sha256,
             blueprint_sha256=self.blueprint.sha256,
             ranking=(
@@ -89,16 +91,15 @@ class StageProposalToolTest(unittest.TestCase):
                     "eve", "The Wish asks for a specific coherent tiny world."
                 ),
                 MatchRankingEntry(
-                    "alice", "The classic-edition lane is less direct for this Wish."
+                    "alice", "The classic-edition specialist is less direct for this Wish."
                 ),
             ),
         )
-        self.invented = InventedV2(
+        self.invented = NativeInvented(
             wish_sha256=self.assignment.wish_sha256,
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            lane=self.assignment.selected_lane,
             concept={
                 "title": "Moon Nook",
                 "summary": "A tiny lunar observatory shaped by the Wish.",
@@ -185,29 +186,32 @@ class StageProposalToolTest(unittest.TestCase):
     def match_inputs(self):
         return {
             "wish_sha256": self.assignment.wish_sha256,
-            "persona_catalog": self.catalog.to_dict(),
-            "blueprint_sha256_by_lane": {
-                lane: ToyBlueprint.for_lane(lane).sha256 for lane in LANES
-            },
+            "inventor_roster": self.roster.to_dict(),
+            "blueprint_sha256": self.blueprint.sha256,
         }
 
     def create_product(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
+        (product_root / "exports/stl").mkdir(parents=True)
         (product_root / "validation").mkdir()
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
         }
         product_bytes = canonical_json(product) + b"\n"
         verification = b'{"ok":true,"validator":"cad-final"}\n'
         (product_root / "product.json").write_bytes(product_bytes)
         (product_root / "cad/project/moon.step.py").write_text("pass\n")
-        (product_root / "cad/project/moon.step").write_bytes(b"ISO-10303-21;\n")
-        (product_root / "cad/project/moon.stl").write_bytes(
+        (product_root / "assembled.step").write_bytes(b"ISO-10303-21;\n")
+        (product_root / "assembled.step.json").write_bytes(
+            canonical_json({"assembly": "Moon Nook", "parts": 1}) + b"\n"
+        )
+        assembled_stl = (
             b"solid moon\nendsolid moon\n"
         )
+        (product_root / "assembled.stl").write_bytes(assembled_stl)
+        (product_root / "exports/stl/assembled.stl").write_bytes(assembled_stl)
         (product_root / "validation/cad-build.json").write_bytes(verification)
         return product_root, product, product_bytes, verification
 
@@ -274,7 +278,7 @@ class StageProposalToolTest(unittest.TestCase):
         invented_document, invented_bytes = self.assert_canonical_file(
             "artifacts/invent/invented.json"
         )
-        observed_invented = InventedV2.from_mapping(invented_document)
+        observed_invented = NativeInvented.from_mapping(invented_document)
         self.assertEqual(observed_invented, self.invented)
         self.assert_outcome(
             "invent",
@@ -329,7 +333,7 @@ class StageProposalToolTest(unittest.TestCase):
         config = b'{"seed":42,"version":1}\n'
         (evidence_root / "config.json").write_bytes(config)
         checks = []
-        for check_id in self.blueprint.required_capabilities("playtest"):
+        for check_id in self.blueprint.required_playtest_checks():
             evidence_ref = "%s.json" % check_id
             (evidence_root / evidence_ref).write_bytes(
                 canonical_json({"check": check_id, "ok": True}) + b"\n"
@@ -351,7 +355,7 @@ class StageProposalToolTest(unittest.TestCase):
             {
                 "made": made.to_dict(),
                 "required_check_ids": list(
-                    self.blueprint.required_capabilities("playtest")
+                    self.blueprint.required_playtest_checks()
                 ),
             },
             round_index=1,
@@ -418,14 +422,14 @@ class StageProposalToolTest(unittest.TestCase):
             "make",
         )
 
-    def test_release_seals_exact_factual_package_and_matches_native_release(self):
+    def test_release_seals_exact_codex_authored_page_and_matches_native_release(self):
         made = self.create_made()
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
         evidence_root.mkdir(parents=True)
         (evidence_root / "config.json").write_bytes(b'{"version":1}\n')
         checks = []
         expected_claims = {}
-        for check_id in self.blueprint.required_capabilities("playtest"):
+        for check_id in self.blueprint.required_playtest_checks():
             evidence_ref = "%s.json" % check_id
             evidence = canonical_json({"check": check_id, "ok": True}) + b"\n"
             (evidence_root / evidence_ref).write_bytes(evidence)
@@ -459,7 +463,7 @@ class StageProposalToolTest(unittest.TestCase):
             {
                 "made": made.to_dict(),
                 "required_check_ids": list(
-                    self.blueprint.required_capabilities("playtest")
+                    self.blueprint.required_playtest_checks()
                 ),
             },
             round_index=1,
@@ -486,23 +490,45 @@ class StageProposalToolTest(unittest.TestCase):
             "# Moon Nook\n\nUse only as described in the factual product record.\n",
             encoding="utf-8",
         )
+        page_section = {
+            "headline": "A tiny observatory with a tested physical heart",
+            "body": "Moon Nook turns the accepted concept into the exact tested revision.",
+            "visual_direction": "Show the assembled Moon Nook and its moving feature honestly.",
+            "evidence_refs": [
+                "made:product.json",
+                "playtest:mechanical-check",
+            ],
+        }
         product = {
-            "schema_version": 2,
+            "schema_version": 3,
             "kind": "workshop.release-package",
-            "status": "facts-ready",
+            "status": "page-ready",
             "title": made.product["title"],
-            "summary": "A factual package for the exact tested Moon Nook revision.",
-            "lane": made.product["lane"],
+            "summary": "A page package for the exact tested Moon Nook revision.",
+            "hero": dict(page_section),
+            "cinematic": {
+                **page_section,
+                "headline": "Watch the lunar mechanism move",
+            },
+            "use_case": {
+                **page_section,
+                "headline": "Explore a tiny mechanical lunar world",
+            },
+            "story_blocks": [
+                {
+                    **page_section,
+                    "headline": "Designed and tested as one exact revision",
+                }
+            ],
+            "what_arrives": ["One tested Moon Nook product revision", "One manual"],
+            "limitations": [
+                "Claims describe only the sealed product and Playtest evidence."
+            ],
             "product_artifact_sha256": made.product_manifest.artifact_sha256,
             "playtest_evidence_artifact_sha256": (
                 playtested.evidence_manifest.artifact_sha256
             ),
             "claims": expected_claims,
-            "factory_enrichment": {
-                "copy_owner": "factory",
-                "media_owner": "factory",
-                "status": "pending",
-            },
         }
         (package_root / "product.json").write_bytes(canonical_json(product))
         (package_root / "trace.json").write_bytes(

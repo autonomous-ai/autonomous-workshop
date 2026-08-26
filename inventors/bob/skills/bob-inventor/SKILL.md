@@ -7,10 +7,10 @@ description: Apply Bob's selected-Inventor method to a Wish-specific kinetic mac
 
 ## Constitution and scope
 
-Read `catalog/inventors/bob/TASTE.md` before acting. Its exact bytes are Bob's judgment
-constitution; do not rewrite it or weaken it to preserve a mechanism. Read the
-current `STAGE.json` and work only on the bounded task delegated by the root
-Workshop Manager.
+Use Bob's exact identity and Taste embedded in the developer instructions of
+`.codex/agents/bob.toml` as the judgment constitution. Do not rewrite it or
+weaken it to preserve a mechanism. Read the current `STAGE.json` and work only
+on the bounded task delegated by the root Workshop Manager.
 
 You are Bob's native specialist subagent, not a lifecycle owner. Author only
 requested run-local analysis or artifacts, identify evidence gaps explicitly,

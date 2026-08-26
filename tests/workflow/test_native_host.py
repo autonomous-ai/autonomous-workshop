@@ -207,10 +207,9 @@ class NativeHostTest(unittest.TestCase):
                     ).is_file()
                 )
             for inventor_id in ("alice", "bob", "eve", "ivy", "leo"):
-                persona = workspace / "catalog" / "inventors" / inventor_id
-                self.assertTrue((persona / "inventor.json").is_file())
-                self.assertTrue((persona / "TASTE.md").is_file())
-                self.assertFalse((persona / "skills").exists())
+                self.assertTrue(
+                    (workspace / ".codex" / "agents" / (inventor_id + ".toml")).is_file()
+                )
                 self.assertTrue(
                     (
                         workspace
@@ -220,10 +219,15 @@ class NativeHostTest(unittest.TestCase):
                         / "SKILL.md"
                     ).is_file()
                 )
+            self.assertFalse((workspace / "catalog").exists())
             prompt = arguments["prompt"]
             self.assertIn("local AGENTS.md", prompt)
             self.assertIn("autonomous-workshop skill", prompt)
             self.assertIn("current match stage", prompt)
+            self.assertIn("Create one native Codex goal", prompt)
+            self.assertIn("successful finalization as its stopping condition", prompt)
+            self.assertIn("inspecting, acting, evaluating, and improving", prompt)
+            self.assertIn("complete the goal", prompt)
             self.assertIn("STAGE.json", prompt)
             self.assertIn("agent-outcome.json", prompt)
             self.assertNotIn("wind-up", prompt)

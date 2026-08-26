@@ -10,6 +10,7 @@ from pathlib import Path
 
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
+from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
 from workshop.workflow import (
     AgentArtifact,
     AgentOutcome,
@@ -124,6 +125,7 @@ class AgentRunTest(unittest.TestCase):
             hashlib.sha256(self.wish_bytes).hexdigest(),
         )
         expected = {
+            ".workshop-product-run-root": b"autonomous-workshop-product-run\n",
             "WISH.json": self.wish_bytes,
             "AGENTS.md": b"# Product run constitution\n",
             ".agents/skills/autonomous-workshop/SKILL.md": b"# Workshop skill\n",
@@ -141,6 +143,11 @@ class AgentRunTest(unittest.TestCase):
             0o600,
         )
         self.assertFalse((run.run_root / ".workshop").exists())
+        checkpoint_document = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(checkpoint_document["schema_version"], 3)
+        self.assertEqual(checkpoint.inventor_roster, ())
         for relative, content in expected.items():
             path = run.run_root / relative
             self.assertEqual(path.read_bytes(), content)
@@ -156,7 +163,7 @@ class AgentRunTest(unittest.TestCase):
         )
         self.assertEqual(reopened.snapshot(), checkpoint)
 
-    def test_create_materializes_catalog_and_executable_domain_skills(self):
+    def test_create_materializes_custom_agent_roster_and_executable_skills(self):
         cad = self.root / "cad-skill"
         (cad / "scripts").mkdir(parents=True)
         (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
@@ -164,8 +171,8 @@ class AgentRunTest(unittest.TestCase):
         checker.write_bytes(b"#!/bin/sh\nexit 0\n")
         checker.chmod(0o755)
 
-        catalog = self.root / "inventors"
-        alice = catalog / "alice"
+        inventor_source = self.root / "inventors"
+        alice = inventor_source / "alice"
         alice.mkdir(parents=True)
         inventor_skill = alice / "skills" / "alice-inventor"
         (inventor_skill / "scripts").mkdir(parents=True)
@@ -186,10 +193,9 @@ class AgentRunTest(unittest.TestCase):
         (alice / "inventor.json").write_text(
             json.dumps(
                 {
-                    "schema_version": 7,
+                    "schema_version": 8,
                     "id": "alice",
                     "status": "experimental",
-                    "capabilities": ["classics-made-yours"],
                     "source": {"kind": "local"},
                     "extensions": [
                         {
@@ -212,7 +218,7 @@ class AgentRunTest(unittest.TestCase):
 
         run = self.create(
             domain_skill_roots={"cad": cad},
-            inventor_catalog_root=catalog,
+            inventor_source_root=inventor_source,
         )
         checkpoint = run.snapshot()
         expected_modes = {
@@ -221,17 +227,12 @@ class AgentRunTest(unittest.TestCase):
             ".agents/skills/cad/scripts/check_mesh": 0o500,
             ".agents/skills/alice-inventor/SKILL.md": 0o400,
             ".agents/skills/alice-inventor/scripts/custom_tool": 0o500,
-            "catalog/inventors/alice/inventor.json": 0o400,
-            "catalog/inventors/alice/TASTE.md": 0o400,
         }
         for relative, mode in expected_modes.items():
             path = run.run_root / relative
             self.assertIn(relative, checkpoint.input_sha256s)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), mode)
-        self.assertEqual(
-            stat.S_IMODE((run.run_root / "catalog" / "inventors").stat().st_mode),
-            0o500,
-        )
+        self.assertFalse((run.run_root / "catalog").exists())
         self.assertEqual(
             stat.S_IMODE((run.run_root / ".codex").stat().st_mode),
             0o500,
@@ -240,27 +241,37 @@ class AgentRunTest(unittest.TestCase):
             stat.S_IMODE((run.run_root / ".codex" / "agents").stat().st_mode),
             0o500,
         )
-        agent = tomllib.loads(
-            (run.run_root / ".codex" / "agents" / "alice.toml").read_text(
-                encoding="utf-8"
-            )
-        )
+        agent_file = run.run_root / ".codex" / "agents" / "alice.toml"
+        agent = tomllib.loads(agent_file.read_text(encoding="utf-8"))
         self.assertEqual(
             set(agent), {"name", "description", "developer_instructions"}
         )
         self.assertEqual(agent["name"], "alice")
         instructions = agent["developer_instructions"]
-        self.assertIn("catalog/inventors/alice/TASTE.md", instructions)
+        self.assertIn("AUTONOMOUS_WORKSHOP_EXACT_MANIFEST", instructions)
+        self.assertIn("AUTONOMOUS_WORKSHOP_EXACT_TASTE", instructions)
+        self.assertIn("AUTONOMOUS_WORKSHOP_EXACT_SKILLS", instructions)
+        self.assertIn("Exact classics.", instructions)
+        self.assertNotIn("catalog/inventors", instructions)
         self.assertIn(".agents/skills/alice-inventor/SKILL.md", instructions)
         self.assertIn("bounded", instructions)
         self.assertIn("Workshop Manager", instructions)
         self.assertIn("Do not advance", instructions)
         self.assertIn("Do not perform external effects", instructions)
-        self.assertFalse(
-            (run.run_root / "catalog" / "inventors" / "alice" / "skills").exists()
+        binding = parse_inventor_custom_agent_bytes(agent_file.read_bytes())
+        self.assertEqual(binding.inventor_id, "alice")
+        self.assertEqual(binding.skills[0].name, "alice-inventor")
+        self.assertEqual(binding.skills[0].artifact_sha256, fingerprint.artifact_sha256)
+        self.assertEqual(len(checkpoint.inventor_roster), 1)
+        self.assertEqual(dict(checkpoint.inventor_roster[0]), binding.to_host_dict())
+        checkpoint_document = json.loads(
+            (run.host_state_root / "agent-run.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(checkpoint_document["schema_version"], 3)
+        self.assertEqual(
+            checkpoint_document["inventor_roster"], [binding.to_host_dict()]
         )
 
-        agent_file = run.run_root / ".codex" / "agents" / "alice.toml"
         agent_file.chmod(0o600)
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
             run.snapshot()
@@ -272,26 +283,26 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(StateConflict, "immutable input mode"):
             run.snapshot()
 
-    def test_creation_rejects_legacy_schema_six_inventor_catalog(self):
-        catalog = self.root / "inventors"
-        alice = catalog / "alice"
+    def test_creation_rejects_legacy_schema_seven_inventor_source(self):
+        inventor_source = self.root / "inventors"
+        alice = inventor_source / "alice"
         alice.mkdir(parents=True)
         (alice / "inventor.json").write_text(
             json.dumps(
                 {
-                    "schema_version": 6,
+                    "schema_version": 7,
                     "id": "alice",
                     "status": "experimental",
-                    "capabilities": ["classics-made-yours"],
                     "source": {"kind": "local"},
+                    "extensions": [],
                 }
             ),
             encoding="utf-8",
         )
         (alice / "TASTE.md").write_text("# Alice\n", encoding="utf-8")
 
-        with self.assertRaisesRegex(ArtifactError, "schema_version 7"):
-            self.create(inventor_catalog_root=catalog)
+        with self.assertRaisesRegex(ArtifactError, "schema_version 8"):
+            self.create(inventor_source_root=inventor_source)
         self.assertFalse(self.run_root.exists())
 
     def test_creation_requires_explicit_product_run_constitution_source(self):

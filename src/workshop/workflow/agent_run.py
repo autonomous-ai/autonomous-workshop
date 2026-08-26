@@ -20,7 +20,10 @@ from types import MappingProxyType
 from typing import Any, Mapping, Optional, Sequence
 
 from workshop.artifacts import assert_packable_content
-from workshop.contributors.extensions import load_inventor_extension_bundles
+from workshop.contributors.extensions import (
+    fingerprint_extension_skill,
+    load_inventor_extension_bundles,
+)
 from workshop.contributors.manifest import load_manifest
 from workshop.errors import (
     ArtifactError,
@@ -30,7 +33,15 @@ from workshop.errors import (
     TransitionError,
 )
 from workshop._validation import require_sha256
-from workshop.runtime.agent_assets import inventor_custom_agent_bytes
+from workshop.runtime.agent_assets import (
+    InventorSkillBinding,
+    inventor_custom_agent_bytes,
+    parse_inventor_custom_agent_bytes,
+)
+from workshop.runtime.project_boundary import (
+    PRODUCT_RUN_ROOT_MARKER,
+    PRODUCT_RUN_ROOT_MARKER_BYTES,
+)
 from workshop.wish import Wish
 
 
@@ -547,6 +558,7 @@ class AgentRunCheckpoint:
     host_state_root_sha256: str
     checkpoint_sha256: str
     input_sha256s: Mapping[str, str]
+    inventor_roster: tuple[Mapping[str, Any], ...]
     stage_artifacts: Mapping[str, tuple[AgentArtifact, ...]]
     invalidated_stages: tuple[str, ...]
 
@@ -580,7 +592,7 @@ class AgentRun:
         product_run_constitution_source: Path,
         skill_root: Path,
         domain_skill_roots: Optional[Mapping[str, Path]] = None,
-        inventor_catalog_root: Optional[Path] = None,
+        inventor_source_root: Optional[Path] = None,
         max_rounds: int = 4,
     ) -> "AgentRun":
         _identifier(product_id, "agent run product_id")
@@ -679,40 +691,45 @@ class AgentRun:
                 _reject_private_agent_bytes(destination.as_posix(), content)
                 domain_files.append((destination, content, mode))
 
-        catalog_files: list[tuple[PurePosixPath, bytes, int]] = []
         inventor_skill_files: list[tuple[PurePosixPath, bytes, int]] = []
         inventor_agent_files: list[tuple[PurePosixPath, bytes, int]] = []
-        if inventor_catalog_root is not None:
+        inventor_roster: list[dict[str, Any]] = []
+        if inventor_source_root is not None:
             try:
-                requested_catalog = Path(inventor_catalog_root)
+                requested_inventors = Path(inventor_source_root)
             except TypeError as exc:
-                raise ContractError("inventor catalog root must be path-like") from exc
-            if not requested_catalog.is_absolute() or requested_catalog.is_symlink():
+                raise ContractError("Inventor source root must be path-like") from exc
+            if not requested_inventors.is_absolute() or requested_inventors.is_symlink():
                 raise ContractError(
-                    "inventor catalog root must be an absolute real directory"
+                    "Inventor source root must be an absolute real directory"
                 )
             try:
-                resolved_catalog = requested_catalog.resolve(strict=True)
+                resolved_inventors = requested_inventors.resolve(strict=True)
             except OSError as exc:
-                raise ArtifactError("inventor catalog root is unavailable") from exc
-            if resolved_catalog != requested_catalog or not requested_catalog.is_dir():
-                raise ArtifactError("inventor catalog root must be a real directory")
+                raise ArtifactError("Inventor source root is unavailable") from exc
+            if (
+                resolved_inventors != requested_inventors
+                or not requested_inventors.is_dir()
+            ):
+                raise ArtifactError("Inventor source root must be a real directory")
             try:
-                entries = sorted(requested_catalog.iterdir(), key=lambda item: item.name)
+                entries = sorted(
+                    requested_inventors.iterdir(), key=lambda item: item.name
+                )
             except OSError as exc:
-                raise ArtifactError("inventor catalog cannot be listed") from exc
+                raise ArtifactError("Inventor source root cannot be listed") from exc
             for entry in entries:
                 if entry.is_symlink():
-                    raise ArtifactError("inventor catalog contains a symlink")
+                    raise ArtifactError("Inventor source root contains a symlink")
                 if not entry.is_dir():
                     continue
                 if _AGENT_SKILL_NAME.fullmatch(entry.name) is None:
-                    raise ArtifactError("inventor catalog id is not a safe path name")
+                    raise ArtifactError("Inventor id is not a safe path name")
                 manifest_path = entry / "inventor.json"
                 taste_path = entry / "TASTE.md"
                 if not manifest_path.is_file() or not taste_path.is_file():
                     raise ArtifactError(
-                        "inventor catalog entry must contain inventor.json and TASTE.md"
+                        "Inventor source must contain inventor.json and TASTE.md"
                     )
                 manifest = _read_regular(
                     manifest_path, "inventor manifest", MAX_AGENT_INPUT_BYTES
@@ -731,24 +748,32 @@ class AgentRun:
                     raise ArtifactError("inventor manifest id differs from its folder")
                 try:
                     inventor_manifest = load_manifest(manifest_path)
-                    if inventor_manifest.schema_version != 7:
+                    if inventor_manifest.schema_version != 8:
                         raise ArtifactError(
-                            "inventor catalog requires native schema_version 7"
+                            "Inventor source requires schema_version 8"
                         )
                     bundles = load_inventor_extension_bundles(inventor_manifest)
                 except ManifestError as exc:
                     raise ArtifactError(
-                        "inventor schema_version 7 skill inventory is invalid"
+                        "Inventor schema_version 8 skill inventory is invalid"
                     ) from exc
                 if not bundles:
                     raise ArtifactError(
-                        "inventor schema-v7 catalog entry declares no Codex skill"
+                        "Inventor source declares no Codex skill"
                     )
-                skill_names = tuple(bundle.extension.name for bundle in bundles)
+                skills = tuple(
+                    InventorSkillBinding(
+                        name=bundle.extension.name,
+                        path=bundle.extension.path,
+                        artifact_sha256=bundle.extension.artifact_sha256,
+                    )
+                    for bundle in bundles
+                )
                 agent_definition = inventor_custom_agent_bytes(
                     entry.name,
+                    manifest,
                     taste,
-                    skill_names=skill_names,
+                    skills=skills,
                 )
                 agent_destination = (
                     PurePosixPath(".codex/agents") / (entry.name + ".toml")
@@ -759,11 +784,8 @@ class AgentRun:
                 inventor_agent_files.append(
                     (agent_destination, agent_definition, 0o400)
                 )
-                target = PurePosixPath("catalog/inventors") / entry.name
-                for filename, content in (("inventor.json", manifest), ("TASTE.md", taste)):
-                    destination = target / filename
-                    _reject_private_agent_bytes(destination.as_posix(), content)
-                    catalog_files.append((destination, content, 0o400))
+                binding = parse_inventor_custom_agent_bytes(agent_definition)
+                inventor_roster.append(binding.to_host_dict())
                 for bundle in bundles:
                     files = _source_tree_files(
                         bundle.root,
@@ -776,10 +798,15 @@ class AgentRun:
                         destination = skill_target / relative
                         _reject_private_agent_bytes(destination.as_posix(), content)
                         inventor_skill_files.append((destination, content, mode))
-            if not catalog_files:
-                raise ArtifactError("inventor catalog contains no Inventors")
+            if not inventor_roster:
+                raise ArtifactError("Inventor source root contains no Inventors")
 
         all_input_files: list[tuple[PurePosixPath, bytes, int]] = [
+            (
+                PurePosixPath(PRODUCT_RUN_ROOT_MARKER),
+                PRODUCT_RUN_ROOT_MARKER_BYTES,
+                0o400,
+            ),
             (PurePosixPath("WISH.json"), wish_bytes, 0o400),
             (PurePosixPath("AGENTS.md"), constitution_bytes, 0o400),
         ]
@@ -790,7 +817,6 @@ class AgentRun:
         )
         all_input_files.extend(domain_files)
         all_input_files.extend(inventor_skill_files)
-        all_input_files.extend(catalog_files)
         all_input_files.extend(inventor_agent_files)
         all_input_files.sort(key=lambda item: item[0].as_posix())
         input_paths = [relative.as_posix() for relative, _, _ in all_input_files]
@@ -884,22 +910,8 @@ class AgentRun:
             ):
                 os.chmod(directory, 0o500)
             os.chmod(codex_input_root, 0o500)
-        catalog_input_root = selected / "catalog"
-        if catalog_input_root.exists():
-            for directory in sorted(
-                (
-                    path
-                    for path in catalog_input_root.rglob("*")
-                    if path.is_dir()
-                ),
-                key=lambda path: len(path.parts),
-                reverse=True,
-            ):
-                os.chmod(directory, 0o500)
-            os.chmod(catalog_input_root, 0o500)
-
         core: dict[str, Any] = {
-            "schema_version": 2,
+            "schema_version": 3,
             "kind": AGENT_RUN_CHECKPOINT_KIND,
             "product_id": product_id,
             "run_root_sha256": _sha256(str(selected).encode("utf-8")),
@@ -912,6 +924,9 @@ class AgentRun:
             "round_index": 0,
             "max_rounds": max_rounds,
             "inputs": sorted(inputs, key=lambda item: item["path"]),
+            "inventor_roster": sorted(
+                inventor_roster, key=lambda item: item["inventor_id"]
+            ),
             "sealed_artifacts": [],
             "stage_artifacts": {},
             "invalidated_stages": [],
@@ -1046,6 +1061,7 @@ class AgentRun:
             "round_index",
             "max_rounds",
             "inputs",
+            "inventor_roster",
             "sealed_artifacts",
             "stage_artifacts",
             "invalidated_stages",
@@ -1058,7 +1074,7 @@ class AgentRun:
             raise StateConflict("agent run checkpoint fields are invalid")
         if (
             type(payload["schema_version"]) is not int
-            or payload["schema_version"] != 2
+            or payload["schema_version"] != 3
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
             or payload["stage"] not in AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
@@ -1089,6 +1105,7 @@ class AgentRun:
         if not isinstance(inputs, list) or not 3 <= len(inputs) <= MAX_AGENT_INPUT_FILES:
             raise StateConflict("agent run input manifest is invalid")
         observed_paths = []
+        input_content: dict[str, bytes] = {}
         total = 0
         for item in inputs:
             if not isinstance(item, Mapping) or set(item) != {
@@ -1111,22 +1128,58 @@ class AgentRun:
             if size != item["size"] or _sha256(content) != item["sha256"]:
                 raise StateConflict("agent run immutable input bytes changed")
             observed_paths.append(relative.as_posix())
+            input_content[relative.as_posix()] = content
             total += size
         if len(observed_paths) != len(set(observed_paths)) or total > MAX_AGENT_INPUT_BYTES:
             raise StateConflict("agent run input manifest is invalid")
-        required = {"WISH.json", "AGENTS.md", ".agents/skills/autonomous-workshop/SKILL.md"}
+        required = {
+            PRODUCT_RUN_ROOT_MARKER,
+            "WISH.json",
+            "AGENTS.md",
+            ".agents/skills/autonomous-workshop/SKILL.md",
+        }
         if not required <= set(observed_paths):
             raise StateConflict("agent run required inputs are missing")
-        roster_ids = {
-            PurePosixPath(path).parts[2]
-            for path in observed_paths
-            if len(PurePosixPath(path).parts) == 4
-            and PurePosixPath(path).parts[:2] == ("catalog", "inventors")
-            and PurePosixPath(path).name == "inventor.json"
-        }
-        expected_agent_paths = {
-            ".codex/agents/%s.toml" % inventor_id for inventor_id in roster_ids
-        }
+        if any(path == "catalog" or path.startswith("catalog/") for path in observed_paths):
+            raise StateConflict("product projects must not contain an Inventor catalog")
+        legacy_catalog = self.run_root / "catalog"
+        if legacy_catalog.exists() or legacy_catalog.is_symlink():
+            raise StateConflict("product projects must not contain an Inventor catalog")
+        roster = payload.get("inventor_roster")
+        if not isinstance(roster, list) or len(roster) > 256:
+            raise StateConflict("agent run Inventor roster is invalid")
+        roster_ids: list[str] = []
+        expected_agent_paths: set[str] = set()
+        for item in roster:
+            if not isinstance(item, Mapping):
+                raise StateConflict("agent run Inventor roster is invalid")
+            agent_path = item.get("agent_path")
+            if not isinstance(agent_path, str) or agent_path not in input_content:
+                raise StateConflict("Inventor roster agent is absent from run inputs")
+            try:
+                binding = parse_inventor_custom_agent_bytes(input_content[agent_path])
+            except ContractError as exc:
+                raise StateConflict("materialized Inventor custom agent is invalid") from exc
+            if binding.to_host_dict() != dict(item):
+                raise StateConflict("materialized Inventor differs from its host binding")
+            roster_ids.append(binding.inventor_id)
+            expected_agent_paths.add(binding.agent_path)
+            for skill in binding.skills:
+                skill_root = self.run_root / ".agents" / "skills" / skill.name
+                try:
+                    fingerprint = fingerprint_extension_skill(
+                        skill_root, expected_name=skill.name
+                    )
+                except ManifestError as exc:
+                    raise StateConflict(
+                        "materialized Inventor skill is invalid: %s" % skill.name
+                    ) from exc
+                if fingerprint.artifact_sha256 != skill.artifact_sha256:
+                    raise StateConflict(
+                        "materialized Inventor skill differs from its host binding"
+                    )
+        if roster_ids != sorted(roster_ids) or len(roster_ids) != len(set(roster_ids)):
+            raise StateConflict("agent run Inventor roster is not canonical")
         observed_agent_paths = {
             path for path in observed_paths if path.startswith(".codex/agents/")
         }
@@ -1137,7 +1190,6 @@ class AgentRun:
         immutable_trees = (
             (self.run_root / ".agents", ".agents/", "skill"),
             (self.run_root / ".codex", ".codex/", "Codex agent"),
-            (self.run_root / "catalog", "catalog/", "catalog"),
         )
         for tree_root, prefix, label in immutable_trees:
             expected_files = {path for path in observed_paths if path.startswith(prefix)}
@@ -1272,6 +1324,9 @@ class AgentRun:
             checkpoint_sha256=payload["checkpoint_sha256"],
             input_sha256s=MappingProxyType(
                 {item["path"]: item["sha256"] for item in payload["inputs"]}
+            ),
+            inventor_roster=tuple(
+                MappingProxyType(dict(item)) for item in payload["inventor_roster"]
             ),
             stage_artifacts=MappingProxyType(self._stage_artifacts(payload, by_path)),
             invalidated_stages=tuple(payload["invalidated_stages"]),

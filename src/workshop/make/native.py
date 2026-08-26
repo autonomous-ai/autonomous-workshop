@@ -21,7 +21,7 @@ from workshop.artifacts import (
     build_artifact_manifest,
 )
 from workshop.errors import ArtifactError, ContractError
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.make.contracts import Made
 from workshop.match.native import NativeMatchAssignment
 
@@ -232,12 +232,12 @@ class NativeMade:
     def assert_context(
         self,
         assignment: NativeMatchAssignment,
-        invented: InventedV2,
+        invented: NativeInvented,
         *,
         expected_round: int,
     ) -> None:
         if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
-            invented, InventedV2
+            invented, NativeInvented
         ):
             raise ContractError("native Made context requires Match and Invent")
         invented.assert_context(assignment)

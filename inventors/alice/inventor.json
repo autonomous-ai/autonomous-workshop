@@ -1,15 +1,14 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "id": "alice",
   "status": "experimental",
-  "capabilities": ["classics-made-yours"],
   "source": {"kind": "local"},
   "extensions": [
     {
       "kind": "codex-skill",
       "name": "alice-inventor",
       "path": "skills/alice-inventor",
-      "artifact_sha256": "19ddeee80284325381629d866763389e3524e5c92186945c8b93977c3bc52e3c"
+      "artifact_sha256": "e933853e9957b8bd8ebaa1a95bc4d1ede47eefd1dd7233606af9fbc5dc303cb1"
     }
   ]
 }

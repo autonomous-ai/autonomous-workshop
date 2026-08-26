@@ -48,6 +48,13 @@ skills, and specialist delegation to perform Match reasoning, research,
 concept exploration, design, CAD, Playtest, repair, manual writing, and factual
 product-page work. Substantive output stays in the run workspace.
 
+For each Match, Invent, Make, Playtest, or Release attempt, Codex creates one
+native Goal whose stopping condition is successful stage finalization. Only
+one Goal is active at a time. Codex performs the observe, act, evaluate, and
+improve cycle inside that Goal; Python does not emulate the Goal or implement a
+reward, judge, research, or repair loop. Wish validation and Deliver effects
+remain host boundaries and do not create agent Goals.
+
 After authoring one stage, Codex invokes the materialized standard-library
 `stage_proposal.py` finalizer. It validates and hashes exact bytes, writes the
 canonical stage contract, and produces a checkpoint-bound
@@ -78,21 +85,23 @@ Codex owns:
 - CAD/artifact creation, native tool and skill use, inspection, and repair;
 - AI Playtest judgment and evidence-linked feedback without overriding
   deterministic results;
-- the Release package: `MANUAL.md`, canonical facts, evidence-bound claims,
-  page metadata, and factual Factory input;
+- the Release package: `MANUAL.md` and the complete canonical schema-v3
+  page-ready product content, with every claim and story block bound to sealed
+  Made or Playtest evidence;
 - compact needs and proposed transitions.
 
 Model prose and self-assessment are untrusted. Python does not run a parallel
 prompt chain, semantic judge, persona subprocess, candidate fan-out, or reward
 loop.
 
-An Inventor bundle keeps judgment in `TASTE.md`, identity/capabilities and
-declared extensions in `inventor.json`, and may include an inventor-owned
-Codex skill tree with `SKILL.md`, scripts, references, assets, CAD generators,
-evaluators, or other tested deterministic tools. A native Inventor subagent
-reasons and invokes these resources. Custom code cannot become an agent
-orchestrator, lifecycle engine, gate, or effect path. The root Manager reviews
-child work; the host alone advances the checkpoint.
+An Inventor bundle keeps judgment in `TASTE.md`, stable source metadata and
+exact skill-tree bindings in schema-v8 `inventor.json`, and may include an
+inventor-owned Codex skill tree with `SKILL.md`, scripts, references, assets,
+CAD generators, evaluators, or other tested deterministic tools. The host
+projects those exact bytes into `.codex/agents/*.toml`, the sole run roster. A
+native Inventor subagent reasons and invokes these resources. Custom code
+cannot become an agent orchestrator, lifecycle engine, gate, or effect path.
+The root Manager reviews child work; the host alone advances the checkpoint.
 
 ### Effects
 
@@ -144,6 +153,11 @@ developer uses, while Workshop remains small and fail-closed. The filesystem
 protocol and host gates provide an adapter seam for future Claude Code,
 OpenCode, Pi, or Hermes runtimes.
 
+Workshop deliberately inherits improvements to Codex's reasoning, tools,
+Goals, and subagents instead of replacing them with a parallel framework. Its
+own durable value is the product workflow, Inventor Taste, artifacts, evidence,
+gates, and safety boundaries.
+
 Python stage agents, profile subprocesses, `CodexStructuredRunner`, and numeric
 Invent/reward loops are not part of the supported architecture and must not be
 reintroduced as compatibility extensions. Useful deterministic contracts and
@@ -152,6 +166,8 @@ tools remain at their owning component boundaries.
 ## Verification
 
 - One end-to-end Wish reuses one session id across all native stages.
+- Each active cognitive stage uses one native Goal and completes it only after
+  the deterministic finalizer succeeds.
 - Native Inventor children use exact hash-bound bundles without launching a
   second root Codex process.
 - Child agents and Inventor tools cannot advance gates or receive effect

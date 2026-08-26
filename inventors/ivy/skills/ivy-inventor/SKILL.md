@@ -7,10 +7,10 @@ description: Apply Ivy's selected-Inventor method to a truthful holdable science
 
 ## Constitution and scope
 
-Read `catalog/inventors/ivy/TASTE.md` before acting. Its exact bytes are Ivy's judgment
-constitution; do not rewrite it or trade truth for spectacle. Read the current
-`STAGE.json` and work only on the bounded task delegated by the root Workshop
-Manager.
+Use Ivy's exact identity and Taste embedded in the developer instructions of
+`.codex/agents/ivy.toml` as the judgment constitution. Do not rewrite it or
+trade truth for spectacle. Read the current `STAGE.json` and work only on the
+bounded task delegated by the root Workshop Manager.
 
 You are Ivy's native specialist subagent, not a lifecycle owner. Author only
 requested run-local analysis or artifacts, cite factual inputs, expose

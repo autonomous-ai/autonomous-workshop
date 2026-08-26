@@ -20,6 +20,7 @@ from workshop.runtime import Receipt
 from workshop.make.contracts import Made
 from workshop.playtest.contracts import Playtested
 from workshop.product import ToyBlueprint
+from workshop.release.native import validate_release_product
 from workshop.wish import Wish
 
 
@@ -58,10 +59,6 @@ class ReleaseContext:
             raise ContractError(
                 "ReleaseContext requires Made and Playtested results"
             )
-        if self.made.product["lane"] != self.blueprint.lane:
-            raise ContractError(
-                "ReleaseContext product belongs to a different lane"
-            )
         if not self.playtested.passed:
             raise ContractError("Release cannot begin before Playtest passes")
         root = Path(self.workspace)
@@ -86,13 +83,14 @@ class ReleaseContext:
 
 @dataclass(frozen=True)
 class ProductRelease:
-    """One sealed box insert, factual brief, and authenticated model draft.
+    """One sealed box insert, complete product page, and authenticated draft.
 
-    Factory owns customer-facing copy and media. The site receipt binds the
-    complete Release tree (facts and paper) to an authenticated private
-    draft for the exact product artifact. A verified public receipt remains
-    accepted for older/custom writers, but public visibility is not part of the
-    shared Release job.
+    Codex authors the evidence-bound customer page before this contract can be
+    created. Factory transports the exact sealed page and model bytes; it does
+    not own a creative enrichment step. The site receipt binds the complete
+    Release tree to an authenticated private draft for the exact product
+    artifact. A verified public receipt remains accepted for custom writers,
+    but public visibility is not part of the shared Release job.
     """
 
     root: Path
@@ -140,19 +138,7 @@ class ProductRelease:
             raise ContractError(
                 "ProductRelease product.json must be valid UTF-8 JSON"
             ) from exc
-        page = _mapping(
-            page_value,
-            "ProductRelease product.json",
-            nonempty=True,
-        )
-        if (
-            page.get("schema_version") != 2
-            or page.get("kind") != "workshop.release-package"
-            or page.get("status") != "facts-ready"
-        ):
-            raise ContractError(
-                "ProductRelease product.json must be a sealed factual handoff"
-            )
+        page = validate_release_product(page_value)
         if page.get("product_artifact_sha256") != self.product_artifact_sha256:
             raise ContractError(
                 "ProductRelease product.json describes different product bytes"
@@ -165,21 +151,6 @@ class ProductRelease:
         if page_claims != claims:
             raise ContractError(
                 "ProductRelease claims differ from the sealed product facts"
-            )
-        forbidden_page_fields = {"images", "use_case", "story_blocks"} & set(page)
-        if forbidden_page_fields:
-            raise ContractError(
-                "ProductRelease cannot contain creator-owned page copy or media: %s"
-                % sorted(forbidden_page_fields)
-            )
-        enrichment = page.get("factory_enrichment")
-        if enrichment != {
-            "copy_owner": "factory",
-            "media_owner": "factory",
-            "status": "pending",
-        }:
-            raise ContractError(
-                "ProductRelease must leave Factory copy and media enrichment pending"
             )
         forbidden_media = [
             entry.path
@@ -232,6 +203,18 @@ class ProductRelease:
         ):
             raise ContractError(
                 "ProductRelease site Receipt describes different facts or paper bytes"
+            )
+        product_entry = next(
+            (entry for entry in self.manifest.entries if entry.path == "product.json"),
+            None,
+        )
+        if (
+            product_entry is None
+            or self.site_receipt.details.get("product_page_sha256")
+            != product_entry.sha256
+        ):
+            raise ContractError(
+                "ProductRelease site Receipt describes different product-page bytes"
             )
 
     def _site_page_url(self) -> str:

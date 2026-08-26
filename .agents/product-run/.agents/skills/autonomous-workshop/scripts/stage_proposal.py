@@ -32,7 +32,7 @@ from typing import Any, Mapping, Sequence
 
 STAGE_KIND = "autonomous-workshop.stage-input"
 OUTCOME_KIND = "autonomous-workshop.agent-outcome-proposal"
-CATALOG_KIND = "autonomous-workshop.persona-catalog"
+INVENTOR_ROSTER_KIND = "autonomous-workshop.inventor-roster"
 MATCH_KIND = "autonomous-workshop.match-assignment"
 INVENTED_KIND = "autonomous-workshop.invented"
 MADE_KIND = "autonomous-workshop.made"
@@ -40,13 +40,6 @@ PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
 STAGES = ("match", "invent", "make", "playtest", "release")
-LANES = (
-    "classics-made-yours",
-    "invented-games",
-    "moving-machines",
-    "holdable-science",
-    "little-worlds",
-)
 JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
 FORWARD = {
     "match": "invent",
@@ -80,7 +73,7 @@ MAX_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
 MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_TREE_BYTES = 512 * 1024 * 1024
 MAX_TREE_ENTRIES = 4096
-MAX_PERSONAS = 256
+MAX_INVENTORS = 256
 
 EXCLUDED_DIRS = frozenset(
     (
@@ -145,7 +138,7 @@ EXCLUDED_SUFFIXES = (
 EXCLUDED_PREFIXES = (".env", "auth.", "credential.", "credentials.", "secrets.")
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-PERSONA_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+INVENTOR_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 PRODUCT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 CHECK_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 VERSION_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
@@ -183,22 +176,27 @@ FORBIDDEN_RELEASE_MEDIA_SUFFIXES = frozenset(
         ".webp",
     )
 )
-FORBIDDEN_RELEASE_EFFECT_FIELDS = frozenset(
+RELEASE_PAGE_SECTION_FIELDS = frozenset(
+    ("headline", "body", "visual_direction", "evidence_refs")
+)
+RELEASE_PRODUCT_FIELDS = frozenset(
     (
-        "credentials",
-        "factory_receipt",
-        "listing_active",
-        "page_ready",
-        "publication_receipt",
-        "published_history_id",
-        "site_receipt",
+        "schema_version",
+        "kind",
+        "status",
+        "title",
+        "summary",
+        "hero",
+        "cinematic",
+        "use_case",
+        "story_blocks",
+        "what_arrives",
+        "limitations",
+        "product_artifact_sha256",
+        "playtest_evidence_artifact_sha256",
+        "claims",
     )
 )
-FACTORY_ENRICHMENT_PENDING = {
-    "copy_owner": "factory",
-    "media_owner": "factory",
-    "status": "pending",
-}
 
 
 class ProposalError(Exception):
@@ -323,8 +321,8 @@ def _bounded_text(value: Any, label: str, maximum: int = 10_000) -> str:
     return value
 
 
-def _persona_id(value: Any, label: str) -> str:
-    if not isinstance(value, str) or PERSONA_RE.fullmatch(value) is None:
+def _inventor_id(value: Any, label: str) -> str:
+    if not isinstance(value, str) or INVENTOR_RE.fullmatch(value) is None:
         raise ProposalError("%s must be a lowercase path-safe id" % label)
     return value
 
@@ -686,53 +684,65 @@ def _load_stage(run_root: Path, expected_stage: str) -> dict[str, Any]:
     return stage
 
 
-def _validate_catalog(value: Any) -> dict[str, Any]:
-    catalog = _fields(
+def _validate_roster(value: Any) -> dict[str, Any]:
+    roster = _fields(
         value,
-        {"schema_version", "kind", "personas", "catalog_sha256"},
-        "persona catalog",
+        {"schema_version", "kind", "inventors", "roster_sha256"},
+        "Inventor roster",
     )
-    if type(catalog["schema_version"]) is not int or catalog["schema_version"] != 1:
-        raise ProposalError("persona catalog schema_version must be 1")
-    if catalog["kind"] != CATALOG_KIND:
-        raise ProposalError("persona catalog kind is invalid")
-    personas = _array(catalog["personas"], "persona catalog personas", nonempty=True)
-    if len(personas) > MAX_PERSONAS:
-        raise ProposalError("persona catalog has too many personas")
+    if type(roster["schema_version"]) is not int or roster["schema_version"] != 1:
+        raise ProposalError("Inventor roster schema_version must be 1")
+    if roster["kind"] != INVENTOR_ROSTER_KIND:
+        raise ProposalError("Inventor roster kind is invalid")
+    inventors = _array(
+        roster["inventors"], "Inventor roster entries", nonempty=True
+    )
+    if len(inventors) > MAX_INVENTORS:
+        raise ProposalError("Inventor roster has too many entries")
     normalized: list[dict[str, Any]] = []
-    for raw in personas:
-        persona = _fields(
+    for raw in inventors:
+        inventor = _fields(
             raw,
-            {"inventor_id", "lane", "manifest_sha256", "taste_sha256"},
-            "persona catalog entry",
+            {
+                "inventor_id",
+                "agent_path",
+                "agent_sha256",
+                "source_manifest_sha256",
+                "taste_sha256",
+            },
+            "Inventor roster entry",
         )
-        _persona_id(persona["inventor_id"], "persona inventor_id")
-        if persona["lane"] not in LANES:
-            raise ProposalError("persona lane is invalid")
-        _sha256(persona["manifest_sha256"], "persona manifest_sha256")
-        _sha256(persona["taste_sha256"], "persona taste_sha256")
-        normalized.append(dict(persona))
+        inventor_id = _inventor_id(inventor["inventor_id"], "Inventor id")
+        if inventor["agent_path"] != ".codex/agents/%s.toml" % inventor_id:
+            raise ProposalError("Inventor custom-agent path is invalid")
+        _sha256(inventor["agent_sha256"], "Inventor custom-agent sha256")
+        _sha256(
+            inventor["source_manifest_sha256"],
+            "Inventor source manifest sha256",
+        )
+        _sha256(inventor["taste_sha256"], "Inventor Taste sha256")
+        normalized.append(dict(inventor))
     ids = [item["inventor_id"] for item in normalized]
     if ids != sorted(ids) or len(ids) != len(set(ids)):
-        raise ProposalError("persona catalog ids must be unique and sorted")
+        raise ProposalError("Inventor roster ids must be unique and sorted")
     identity = {
         "schema_version": 1,
-        "kind": CATALOG_KIND,
-        "personas": normalized,
+        "kind": INVENTOR_ROSTER_KIND,
+        "inventors": normalized,
     }
-    if catalog["catalog_sha256"] != json_sha256(identity):
-        raise ProposalError("persona catalog sha256 is invalid")
-    return dict(catalog)
+    if roster["roster_sha256"] != json_sha256(identity):
+        raise ProposalError("Inventor roster sha256 is invalid")
+    return dict(roster)
 
 
 def _validate_ranking(value: Any) -> list[dict[str, str]]:
     raw_ranking = _array(value, "Match ranking", nonempty=True)
-    if len(raw_ranking) > MAX_PERSONAS:
+    if len(raw_ranking) > MAX_INVENTORS:
         raise ProposalError("Match ranking has too many entries")
     ranking: list[dict[str, str]] = []
     for raw in raw_ranking:
         item = _fields(raw, {"inventor_id", "rationale"}, "Match ranking entry")
-        inventor_id = _persona_id(item["inventor_id"], "ranked inventor_id")
+        inventor_id = _inventor_id(item["inventor_id"], "ranked inventor_id")
         rationale = _bounded_text(item["rationale"], "ranking rationale", 2_000)
         ranking.append({"inventor_id": inventor_id, "rationale": rationale})
     ids = [item["inventor_id"] for item in ranking]
@@ -746,31 +756,35 @@ def _validate_assignment(value: Any) -> dict[str, Any]:
         "schema_version",
         "kind",
         "wish_sha256",
-        "persona_catalog_sha256",
+        "inventor_roster_sha256",
         "selected_inventor_id",
-        "selected_lane",
-        "selected_manifest_sha256",
+        "selected_agent_path",
+        "selected_agent_sha256",
+        "selected_source_manifest_sha256",
         "selected_taste_sha256",
         "blueprint_sha256",
         "ranking",
         "assignment_sha256",
     }
     assignment = _fields(value, expected, "native Match assignment")
-    if type(assignment["schema_version"]) is not int or assignment["schema_version"] != 1:
-        raise ProposalError("native Match assignment schema_version must be 1")
+    if type(assignment["schema_version"]) is not int or assignment["schema_version"] != 3:
+        raise ProposalError("native Match assignment schema_version must be 3")
     if assignment["kind"] != MATCH_KIND:
         raise ProposalError("native Match assignment kind is invalid")
     for key in (
         "wish_sha256",
-        "persona_catalog_sha256",
-        "selected_manifest_sha256",
+        "inventor_roster_sha256",
+        "selected_agent_sha256",
+        "selected_source_manifest_sha256",
         "selected_taste_sha256",
         "blueprint_sha256",
     ):
         _sha256(assignment[key], "assignment %s" % key)
-    _persona_id(assignment["selected_inventor_id"], "selected inventor_id")
-    if assignment["selected_lane"] not in LANES:
-        raise ProposalError("selected lane is invalid")
+    selected_id = _inventor_id(
+        assignment["selected_inventor_id"], "selected inventor_id"
+    )
+    if assignment["selected_agent_path"] != ".codex/agents/%s.toml" % selected_id:
+        raise ProposalError("selected custom-agent path is invalid")
     ranking = _validate_ranking(assignment["ranking"])
     if ranking[0]["inventor_id"] != assignment["selected_inventor_id"]:
         raise ProposalError("selected inventor must be first in the Match ranking")
@@ -789,18 +803,17 @@ def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, A
         "assignment_sha256",
         "taste_sha256",
         "blueprint_sha256",
-        "lane",
         "concept",
         "concept_sha256",
         "research",
         "research_sha256",
         "invented_sha256",
     }
-    invented = _fields(value, expected, "Invented v2")
-    if type(invented["schema_version"]) is not int or invented["schema_version"] != 2:
-        raise ProposalError("Invented v2 schema_version must be 2")
+    invented = _fields(value, expected, "Invented")
+    if type(invented["schema_version"]) is not int or invented["schema_version"] != 3:
+        raise ProposalError("Invented schema_version must be 3")
     if invented["kind"] != INVENTED_KIND:
-        raise ProposalError("Invented v2 kind is invalid")
+        raise ProposalError("Invented kind is invalid")
     concept = _mapping(invented["concept"], "Invented concept", nonempty=True)
     research = _mapping(invented["research"], "Invented research", nonempty=True)
     _bounded_text(concept.get("title"), "Invented concept title", 2_000)
@@ -814,13 +827,12 @@ def _validate_invented(value: Any, assignment: Mapping[str, Any]) -> dict[str, A
         "assignment_sha256": assignment["assignment_sha256"],
         "taste_sha256": assignment["selected_taste_sha256"],
         "blueprint_sha256": assignment["blueprint_sha256"],
-        "lane": assignment["selected_lane"],
     }
     if any(invented[key] != expected_value for key, expected_value in bindings.items()):
-        raise ProposalError("Invented v2 belongs to another Match assignment")
+        raise ProposalError("Invented belongs to another Match assignment")
     identity = {key: invented[key] for key in expected - {"invented_sha256"}}
     if invented["invented_sha256"] != json_sha256(identity):
-        raise ProposalError("Invented v2 sha256 is invalid")
+        raise ProposalError("Invented sha256 is invalid")
     return dict(invented)
 
 
@@ -910,40 +922,43 @@ def _validate_made(value: Any) -> dict[str, Any]:
 def _match_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dict[str, Any]:
     inputs = _required_fields(
         stage["inputs"],
-        {"wish_sha256", "persona_catalog", "blueprint_sha256_by_lane"},
+        {"wish_sha256", "inventor_roster", "blueprint_sha256"},
         "Match STAGE inputs",
     )
     wish_sha256 = _sha256(inputs["wish_sha256"], "Match Wish sha256")
-    catalog = _validate_catalog(inputs["persona_catalog"])
-    blueprints = _mapping(
-        inputs["blueprint_sha256_by_lane"], "Match blueprint hashes"
+    roster = _validate_roster(inputs["inventor_roster"])
+    blueprint_sha256 = _sha256(
+        inputs["blueprint_sha256"], "Match blueprint sha256"
     )
-    if set(blueprints) != set(LANES):
-        raise ProposalError("Match blueprint hashes must cover every lane")
-    for lane, digest in blueprints.items():
-        _sha256(digest, "blueprint sha256 for %s" % lane)
     authored = _fields(
         source, {"selected_inventor_id", "ranking"}, "Match authored source"
     )
-    selected_id = _persona_id(authored["selected_inventor_id"], "selected inventor_id")
+    selected_id = _inventor_id(
+        authored["selected_inventor_id"], "selected inventor_id"
+    )
     ranking = _validate_ranking(authored["ranking"])
-    catalog_ids = [item["inventor_id"] for item in catalog["personas"]]
+    roster_ids = [item["inventor_id"] for item in roster["inventors"]]
     ranked_ids = [item["inventor_id"] for item in ranking]
-    if len(ranked_ids) != len(catalog_ids) or set(ranked_ids) != set(catalog_ids):
-        raise ProposalError("Match ranking must cover the immutable catalog exactly")
+    if len(ranked_ids) != len(roster_ids) or set(ranked_ids) != set(roster_ids):
+        raise ProposalError("Match ranking must cover the immutable roster exactly")
     if ranking[0]["inventor_id"] != selected_id:
         raise ProposalError("selected inventor must be first in the Match ranking")
-    selected = next(item for item in catalog["personas"] if item["inventor_id"] == selected_id)
+    selected = next(
+        item for item in roster["inventors"] if item["inventor_id"] == selected_id
+    )
     identity = {
-        "schema_version": 1,
+        "schema_version": 3,
         "kind": MATCH_KIND,
         "wish_sha256": wish_sha256,
-        "persona_catalog_sha256": catalog["catalog_sha256"],
+        "inventor_roster_sha256": roster["roster_sha256"],
         "selected_inventor_id": selected_id,
-        "selected_lane": selected["lane"],
-        "selected_manifest_sha256": selected["manifest_sha256"],
+        "selected_agent_path": selected["agent_path"],
+        "selected_agent_sha256": selected["agent_sha256"],
+        "selected_source_manifest_sha256": selected[
+            "source_manifest_sha256"
+        ],
         "selected_taste_sha256": selected["taste_sha256"],
-        "blueprint_sha256": blueprints[selected["lane"]],
+        "blueprint_sha256": blueprint_sha256,
         "ranking": ranking,
     }
     return {**identity, "assignment_sha256": json_sha256(identity)}
@@ -960,13 +975,12 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
     _bounded_text(concept.get("title"), "Invent concept title", 2_000)
     _bounded_text(concept.get("summary"), "Invent concept summary", 2_000)
     identity = {
-        "schema_version": 2,
+        "schema_version": 3,
         "kind": INVENTED_KIND,
         "wish_sha256": assignment["wish_sha256"],
         "assignment_sha256": assignment["assignment_sha256"],
         "taste_sha256": assignment["selected_taste_sha256"],
         "blueprint_sha256": assignment["blueprint_sha256"],
-        "lane": assignment["selected_lane"],
         "concept": concept,
         "concept_sha256": json_sha256(concept),
         "research": research,
@@ -974,7 +988,7 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
     }
     result = {**identity, "invented_sha256": json_sha256(identity)}
     if len(canonical_json(result)) > MAX_JSON_BYTES:
-        raise ProposalError("Invented v2 exceeds its byte limit")
+        raise ProposalError("Invented exceeds its byte limit")
     return result
 
 
@@ -1260,6 +1274,148 @@ def _expected_release_claims(playtested: Mapping[str, Any]) -> dict[str, Any]:
     return claims
 
 
+def _release_page_text(value: Any, label: str, maximum: int) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or value != value.strip()
+        or len(value) > maximum
+        or any(
+            ord(character) < 32 and character not in "\n\t"
+            for character in value
+        )
+        or any(ord(character) == 127 for character in value)
+    ):
+        raise ProposalError("%s must be bounded substantive text" % label)
+    return value
+
+
+def _release_page_text_list(
+    value: Any,
+    label: str,
+    *,
+    maximum_items: int,
+    maximum_item_length: int,
+) -> list[str]:
+    items = _array(value, label, nonempty=True)
+    if len(items) > maximum_items:
+        raise ProposalError("%s has too many items" % label)
+    result = [
+        _release_page_text(item, "%s item" % label, maximum_item_length)
+        for item in items
+    ]
+    if len({item.casefold() for item in result}) != len(result):
+        raise ProposalError("%s must not contain duplicate items" % label)
+    return result
+
+
+def _release_page_section(
+    value: Any,
+    label: str,
+    *,
+    valid_evidence_refs: frozenset[str],
+) -> dict[str, Any]:
+    section = _fields(value, RELEASE_PAGE_SECTION_FIELDS, label)
+    refs = _array(section["evidence_refs"], "%s evidence_refs" % label, nonempty=True)
+    if (
+        len(refs) > 32
+        or any(
+            not isinstance(reference, str)
+            or reference not in valid_evidence_refs
+            for reference in refs
+        )
+        or len(refs) != len(set(refs))
+    ):
+        raise ProposalError(
+            "%s evidence_refs are not bound to Made or Playtest" % label
+        )
+    return {
+        "headline": _release_page_text(
+            section["headline"], "%s headline" % label, 300
+        ),
+        "body": _release_page_text(section["body"], "%s body" % label, 4_000),
+        "visual_direction": _release_page_text(
+            section["visual_direction"],
+            "%s visual_direction" % label,
+            2_000,
+        ),
+        "evidence_refs": list(refs),
+    }
+
+
+def _validate_release_product(value: Any) -> dict[str, Any]:
+    product = _fields(value, RELEASE_PRODUCT_FIELDS, "Release product.json")
+    if (
+        product["schema_version"] != 3
+        or product["kind"] != "workshop.release-package"
+        or product["status"] != "page-ready"
+    ):
+        raise ProposalError("Release product.json is not a page-ready package")
+    _sha256(
+        product["product_artifact_sha256"],
+        "Release product artifact sha256",
+    )
+    _sha256(
+        product["playtest_evidence_artifact_sha256"],
+        "Release Playtest evidence sha256",
+    )
+    claims = _mapping(product["claims"], "Release claims", nonempty=True)
+    valid_refs = frozenset(
+        {"made:product.json"}
+        | {"playtest:%s" % check_id for check_id in claims}
+    )
+    story_blocks = _array(
+        product["story_blocks"], "Release story_blocks", nonempty=True
+    )
+    if len(story_blocks) > 12:
+        raise ProposalError("Release story_blocks has too many entries")
+    return {
+        "schema_version": 3,
+        "kind": "workshop.release-package",
+        "status": "page-ready",
+        "title": _release_page_text(product["title"], "Release title", 300),
+        "summary": _release_page_text(product["summary"], "Release summary", 2_000),
+        "hero": _release_page_section(
+            product["hero"], "Release hero", valid_evidence_refs=valid_refs
+        ),
+        "cinematic": _release_page_section(
+            product["cinematic"],
+            "Release cinematic",
+            valid_evidence_refs=valid_refs,
+        ),
+        "use_case": _release_page_section(
+            product["use_case"],
+            "Release use_case",
+            valid_evidence_refs=valid_refs,
+        ),
+        "story_blocks": [
+            _release_page_section(
+                block,
+                "Release story_blocks[%d]" % index,
+                valid_evidence_refs=valid_refs,
+            )
+            for index, block in enumerate(story_blocks)
+        ],
+        "what_arrives": _release_page_text_list(
+            product["what_arrives"],
+            "Release what_arrives",
+            maximum_items=100,
+            maximum_item_length=1_000,
+        ),
+        "limitations": _release_page_text_list(
+            product["limitations"],
+            "Release limitations",
+            maximum_items=100,
+            maximum_item_length=2_000,
+        ),
+        "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_evidence_artifact_sha256": product[
+            "playtest_evidence_artifact_sha256"
+        ],
+        "claims": dict(claims),
+    }
+
+
 def _playtest_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1442,15 +1598,9 @@ def _release_contract(
             product_bytes = content
     if product is None or product_bytes is None:
         raise ProposalError("Release product.json is unavailable")
-    _mapping(product, "Release product.json", nonempty=True)
-    if (
-        product.get("schema_version") != 2
-        or product.get("kind") != "workshop.release-package"
-        or product.get("status") != "facts-ready"
-    ):
-        raise ProposalError("Release product.json is not a factual package")
-    for key in ("title", "summary", "lane"):
-        _bounded_text(product.get(key), "Release product.json %s" % key, 2_000)
+    validated_product = _validate_release_product(product)
+    if validated_product != product:
+        raise ProposalError("Release product.json is not canonical page content")
 
     product_artifact_sha256 = made["product_manifest"]["artifact_sha256"]
     evidence_artifact_sha256 = playtested["evidence_manifest"]["artifact_sha256"]
@@ -1461,24 +1611,11 @@ def _release_contract(
         != evidence_artifact_sha256
     ):
         raise ProposalError("Release product.json identifies other Playtest evidence")
-    claims = _mapping(product.get("claims"), "Release claims", nonempty=True)
+    claims = _mapping(product["claims"], "Release claims", nonempty=True)
     if claims != _expected_release_claims(playtested):
         raise ProposalError("Release claims differ from exact Playtest evidence")
-    if product.get("factory_enrichment") != FACTORY_ENRICHMENT_PENDING:
-        raise ProposalError("Release must leave Factory enrichment pending")
-    forbidden_fields = (
-        {"images", "story_blocks", "use_case"}
-        | FORBIDDEN_RELEASE_EFFECT_FIELDS
-    ) & set(product)
-    if forbidden_fields:
-        raise ProposalError(
-            "Release product.json contains media or effect proof: %s"
-            % sorted(forbidden_fields)
-        )
     if product.get("title") != made["product"].get("title"):
         raise ProposalError("Release title differs from the exact Made product")
-    if product.get("lane") != made["product"].get("lane"):
-        raise ProposalError("Release lane differs from the exact Made product")
 
     unchanged = _tree_manifest(
         run_root, package_root_value, "Release package tree"

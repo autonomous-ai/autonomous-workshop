@@ -34,7 +34,6 @@ Inventor's implementation:
 uv run workshop create inventor ada-deduction-games \
   --name Ada \
   --description "Choose Ada for Wish-shaped two-player deduction games; not known classics, kinetic machines, or decorative miniatures." \
-  --lane invented-games \
   --root .
 ```
 
@@ -56,9 +55,9 @@ inventors/ada-deduction-games/
 recognizable qualities, explicit rejects, a signature product moment, and the
 external evidence that could motivate a human-approved revision.
 
-`inventor.json` identifies the specialist, declares its eligible lane, and
-binds every inventor-owned Codex skill tree by exact content hash. Capability
-claims must describe real specialist behavior, not shared Workshop stages.
+`inventor.json` is a schema-v8 source manifest. It records the stable id,
+status, source, and exact content hash for every inventor-owned Codex skill
+tree. Match fit comes from the full Taste and Wish, not a product category.
 
 The skill tells a selected native Codex subagent how to apply that Taste during
 bounded Match, Invent, Make, Playtest, or Release work. Optional scripts are
@@ -67,7 +66,7 @@ host gates, access effect credentials, or duplicate shared Make and Playtest
 machinery.
 
 Start with instructions alone. Add scripts, dependencies, or large assets only
-when they provide a genuine niche capability and have deterministic tests,
+when they provide a genuine specialist operation and have deterministic tests,
 clear licensing, and a measurable evidence bar.
 
 ## Keep ownership clear
@@ -84,11 +83,14 @@ Workshop owns:
 - Wish identity and the Match -> Invent -> Make <-> Playtest -> Release ->
   Deliver lifecycle;
 - the root Codex session, checkpoint protocol, invalidation, and round budgets;
+- one native Codex Goal for each active Match, Invent, Make, Playtest, or
+  Release attempt, with observe -> act -> evaluate -> improve behavior inside
+  that Goal rather than in Python;
 - shared CAD, artifact, evidence, schema, and publication contracts;
 - credentials, authenticated effects, idempotency, receipts, and recovery.
 
 Put reusable implementation in its owning component under `src/workshop/`,
-not in an Inventor. Shared text-to-3D and CAD capabilities belong under
+not in an Inventor. Shared text-to-3D and CAD skills and tools belong under
 `src/workshop/make/skills/`. Provider transport belongs under
 `src/workshop/integrations/`. The CLI only parses user commands and invokes the
 host; it does not perform product reasoning.
@@ -107,8 +109,8 @@ Use these lifecycle names consistently:
 - **Invent** researches and selects an industrial-design concept.
 - **Make** creates the mechanical, CAD, and printable product artifacts.
 - **Playtest** checks the exact Make and returns bounded repair feedback.
-- **Release** creates the manual, product facts, page content, and authorized
-  private Factory handoff.
+- **Release** creates the manual and complete evidence-bound, page-ready product
+  content; the host owns any authorized private Factory handoff.
 - **Deliver** waits for separately authorized production, physical QA, packing,
   and carrier receipts.
 

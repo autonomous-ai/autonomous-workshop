@@ -1,4 +1,4 @@
-"""Entirely static checks for schema-v7 Inventor contributions."""
+"""Entirely static checks for schema-v8 Inventor contributions."""
 
 from __future__ import annotations
 
@@ -111,7 +111,7 @@ def check_target(target: Path) -> List[str]:
 def validate_inventor_collection(
     root: Path, *, required_routable_id: Optional[str] = None
 ) -> Tuple[InventorManifest, ...]:
-    """Validate a complete contributor-owned Inventor catalog."""
+    """Validate a complete contributor-owned Inventor collection."""
 
     requested = Path(root)
     if requested.is_symlink():

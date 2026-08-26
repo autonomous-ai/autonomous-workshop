@@ -51,6 +51,9 @@ Explicitly out of scope:
 - [ ] The change stays in its owning source and mirrored test directories.
 - [ ] Components import public contracts, not sibling private implementations.
 - [ ] Workflow remains the only stage sequencer.
+- [ ] Product work remains one persistent native session per Wish and one
+      active Codex Goal per cognitive stage attempt; Python does not own the
+      improvement loop.
 - [ ] CLI and inventor code depend on Workshop; Workshop does not import them.
 - [ ] No new `core`, `foundation`, `common`, or `utils` dumping ground was added.
 
@@ -58,10 +61,11 @@ Explicitly out of scope:
 
 ### Inventor
 
-- Inventor ID and Taste lane:
-- Declared Codex skill extensions:
+- Inventor ID and Taste boundary:
+- Declared Codex skill trees:
 - [ ] Root `TASTE.md` remains canonical and workflow-bound.
-- [ ] Manifest capabilities and exact extension inventory match the submitted bytes.
+- [ ] The schema-v8 manifest and exact skill-tree hashes match the submitted bytes.
+- [ ] The run materializes identity, Taste, and skill bindings only through `.codex/agents/`.
 - [ ] Inventor scripts are deterministic specialist tools, not agent or lifecycle orchestration.
 - [ ] Shared Workshop machinery is reused instead of copied.
 

@@ -83,7 +83,7 @@ def _safe_path(value: Any, label: str) -> PurePosixPath:
 
 @dataclass(frozen=True)
 class InventorExtension:
-    """One exact Codex skill declared by a schema-v7 Inventor."""
+    """One exact Codex skill declared by a schema-v8 Inventor."""
 
     kind: str
     name: str
@@ -137,14 +137,14 @@ class InventorExtension:
 def parse_inventor_extensions(
     value: Any, *, inventor_id: str
 ) -> tuple[InventorExtension, ...]:
-    """Parse schema-v7 descriptors without inspecting or executing their trees."""
+    """Parse schema-v8 descriptors without inspecting or executing their trees."""
 
     if (
         not isinstance(value, list)
         or not 1 <= len(value) <= MAX_INVENTOR_EXTENSIONS
     ):
         raise ManifestError(
-            "schema_version 7 extensions must contain 1 to %d records"
+            "schema_version 8 extensions must contain 1 to %d records"
             % MAX_INVENTOR_EXTENSIONS
         )
     extensions = tuple(
@@ -449,7 +449,7 @@ def load_inventor_extension_bundles(
         raise ManifestError("Inventor extension root is unavailable") from exc
     skills_root = inventor_root / "skills"
     if skills_root.is_symlink() or not skills_root.is_dir():
-        raise ManifestError("schema_version 7 Inventor requires a real skills directory")
+        raise ManifestError("schema_version 8 Inventor requires a real skills directory")
     try:
         children = tuple(sorted(skills_root.iterdir(), key=lambda item: item.name))
     except OSError as exc:

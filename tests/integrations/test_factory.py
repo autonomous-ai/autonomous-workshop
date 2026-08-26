@@ -61,6 +61,16 @@ endsolid workshop
 """
 
 
+def canonical_json(value):
+    return json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+
+
 def login_response(number=1):
     return HttpResponse(
         200,
@@ -195,7 +205,7 @@ class FactoryTransport:
             "status": "public" if self.public else "draft",
             "project_url": "https://cdn.autonomous.ai/projects/history-1/",
             "origin": "import",
-            "tags": ["toy", "classics-made-yours"],
+            "tags": ["toy"],
             "category": {"slug": "toys"},
             "author": {"id": "owner-alice"},
             "thumbnail_urls": ["https://cdn.example/cover.png"],
@@ -268,7 +278,6 @@ class FactoryReleaseTest(unittest.TestCase):
             "title": "Verified Toy",
             "summary": "A small exact toy.",
             "description": "A small exact toy. By Alice.",
-            "lane": "classics-made-yours",
             "components": ["one puzzle", "one rule card"],
             "instructions": "Turn it.",
             "rules": {"goal": "align the star"},
@@ -283,27 +292,45 @@ class FactoryReleaseTest(unittest.TestCase):
         self.release.mkdir()
         (self.release / "MANUAL.md").write_text("# Verified Toy\n\nTurn it.\n")
         self.playtest_sha256 = "e" * 64
-        (self.release / "product.json").write_text(
-            json.dumps(
+        self.page = {
+            "schema_version": 3,
+            "kind": "workshop.release-package",
+            "status": "page-ready",
+            "title": "Verified Toy",
+            "summary": "An exact toy page authored before Factory import.",
+            "hero": {
+                "headline": "Turn the star",
+                "body": "A small exact puzzle for one tabletop.",
+                "visual_direction": "Show only the exact sealed assembly.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "cinematic": {
+                "headline": "One turn changes the pattern",
+                "body": "Rotate the puzzle and watch the star align.",
+                "visual_direction": "Use the exact model at a low three-quarter angle.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "use_case": {
+                "headline": "A quick tabletop challenge",
+                "body": "Set down the puzzle and align the star.",
+                "visual_direction": "Show one puzzle and one rule card only.",
+                "evidence_refs": ["made:product.json"],
+            },
+            "story_blocks": [
                 {
-                    "schema_version": 2,
-                    "kind": "workshop.release-package",
-                    "status": "facts-ready",
-                    "title": "Verified Toy",
-                    "summary": "An exact toy page.",
-                    "lane": "classics-made-yours",
-                    "factory_enrichment": {
-                        "copy_owner": "factory",
-                        "media_owner": "factory",
-                        "status": "pending",
-                    },
-                    "product_artifact_sha256": self.made.artifact_sha256,
-                    "playtest_evidence_artifact_sha256": self.playtest_sha256,
-                },
-                sort_keys=True,
-            )
-            + "\n"
-        )
+                    "headline": "Digitally checked",
+                    "body": "The sealed design passed the required mechanical check.",
+                    "visual_direction": "Pair the exact model with a restrained check mark.",
+                    "evidence_refs": ["playtest:mechanical-check"],
+                }
+            ],
+            "what_arrives": ["one puzzle", "one rule card"],
+            "limitations": ["digital Playtest only"],
+            "product_artifact_sha256": self.made.artifact_sha256,
+            "playtest_evidence_artifact_sha256": self.playtest_sha256,
+            "claims": {"mechanical-check": {"passed": True}},
+        }
+        (self.release / "product.json").write_bytes(canonical_json(self.page))
         self.manifest = build_artifact_manifest(
             self.release, created_at="content-addressed"
         )
@@ -331,9 +358,16 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(import_call[2]["User-Agent"], FACTORY_USER_AGENT)
         self.assertRegex(import_call[2]["Idempotency-Key"], r"^autonomous-workshop-[0-9a-f]{64}$")
         parts = multipart_parts(import_call[2], import_call[3])
+        self.assertNotIn("prompt", parts)
+        self.assertEqual(parts["title"], [b"Verified Toy"])
+        self.assertEqual(
+            parts["description"],
+            [b"An exact toy page authored before Factory import."],
+        )
         with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
             names = set(archive.namelist())
             self.assertIn("assembled.stl", names)
+            self.assertIn("workshop-release-page.json", names)
             self.assertIn("workshop-product-facts.json", names)
             self.assertNotIn("main.py", names)
             self.assertNotIn("page.json", names)
@@ -342,6 +376,15 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertFalse(any(name.endswith(".png") for name in names))
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(facts["primary_model"]["path"], "assembled.stl")
+            self.assertEqual(
+                archive.read("workshop-release-page.json"),
+                canonical_json(self.page),
+            )
+        self.assertEqual(
+            receipt.details["product_page_sha256"],
+            hashlib.sha256(canonical_json(self.page)).hexdigest(),
+        )
+        self.assertEqual(receipt.details["content_owner"], "workshop-manager")
         replay = self.writer(transport)(self.context, self.release, self.manifest)
         self.assertEqual(replay, receipt)
         self.assertEqual(transport.imports, 1)
@@ -354,9 +397,7 @@ class FactoryReleaseTest(unittest.TestCase):
         release_facts_path = self.release / "product.json"
         release_facts = json.loads(release_facts_path.read_text(encoding="utf-8"))
         release_facts["product_artifact_sha256"] = self.made.artifact_sha256
-        release_facts_path.write_text(
-            json.dumps(release_facts, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        release_facts_path.write_bytes(canonical_json(release_facts))
         self.manifest = build_artifact_manifest(
             self.release, created_at="content-addressed"
         )
@@ -443,9 +484,7 @@ class FactoryReleaseTest(unittest.TestCase):
         release_facts_path = self.release / "product.json"
         release_facts = json.loads(release_facts_path.read_text(encoding="utf-8"))
         release_facts["product_artifact_sha256"] = self.made.artifact_sha256
-        release_facts_path.write_text(
-            json.dumps(release_facts, sort_keys=True) + "\n", encoding="utf-8"
-        )
+        release_facts_path.write_bytes(canonical_json(release_facts))
         self.manifest = build_artifact_manifest(
             self.release, created_at="content-addressed"
         )

@@ -13,9 +13,11 @@ root `AGENTS.md` and nested `.agents/skills/autonomous-workshop/SKILL.md`.
 ## Shared runtime architecture
 
 Autonomous Workshop is a thin, trustworthy workflow harness around a native
-coding-agent runtime. One product run gives Codex the cognitive and tool-using
-work. The Workshop host retains lifecycle order, durable state, deterministic
-gates, budgets, and authorized external effects.
+coding-agent runtime. Codex is the implemented Manager runtime; Claude Code and
+Grok Build are planned adapters to the same boundary. One product run gives the
+selected runtime the cognitive and tool-using work. The Workshop host retains
+lifecycle order, durable state, deterministic gates, budgets, and authorized
+external effects.
 
 The root native Codex session is the Workshop Manager. It may use Codex-native
 subagents for bounded parallel or specialist work, including matching and
@@ -31,18 +33,30 @@ All implementation and product-run work must preserve these boundaries:
   checkpoints, not separate one-shot model sessions or personas.
 - Native Codex performs Match reasoning, research, concept exploration,
   creation, inspection, and repair with its own tools and applicable skills.
+- The universal digital Playtest baseline is `agent-playtest`,
+  `mechanical-check`, and `printability-check`, as returned by
+  `ToyBlueprint.required_playtest_checks()`. Codex-authored assessment is not
+  evidence of successful printing, physical fit, durability, or human response
+  unless a host-replayed check or authenticated physical receipt proves it.
+- Every active Match, Invent, Make, Playtest, or Release attempt uses one native
+  Codex Goal with one objective, proof artifacts, and a verifiable stopping
+  condition: the current stage finalizer succeeds. Only one Goal is active at a
+  time. Codex works toward it by observing, acting, evaluating exact output,
+  and improving. That loop is native-agent behavior, not a Python program.
+  Wish and Deliver remain host boundaries rather than agent Goals.
 - An Inventor is a declared specialist bundle. `TASTE.md` governs creative
-  judgment; `inventor.json` identifies the specialist and declares eligible
-  capabilities/extensions; the required `<id>-inventor` skill defines its
+  judgment; `inventor.json` identifies the specialist and binds its exact
+  extension trees; the required `<id>-inventor` skill defines its
   primary method, while optional additional Inventor-prefixed skill trees may
   contain scripts, references, assets, and tested deterministic tools for
   specialist craft. Custom code may not become an agent scheduler,
   prompt loop, lifecycle engine, or effect path.
 - The host materializes every eligible Inventor as an official project-scoped
-  Codex custom agent under `.codex/agents/`, bound to its exact Taste, catalog
-  record, and skill bytes. Codex owns native spawning, routing, and synthesis.
-  The root session alone receives host stage authority and submits a stage
-  proposal; child agents cannot advance gates or perform external effects.
+  Codex custom agent under `.codex/agents/`, bound to its exact identity, Taste,
+  and skill bytes. That directory is the sole Inventor roster in a run. Codex
+  owns native spawning, routing, and synthesis. The root session alone receives
+  host stage authority and submits a stage proposal; child agents cannot
+  advance gates or perform external effects.
 - Python is narrow trusted substrate: typed contracts, deterministic tools and
   gates, artifact hashing, checkpoints, exclusive run-mutation locks, budgets, sandbox/session
   boundaries, authorization, idempotency, receipts, and reconciliation.
@@ -74,7 +88,7 @@ orchestration as a compatibility layer.
 - `src/workshop/runtime/`: native engine adapters and trusted state/effect
   boundaries.
 - `src/workshop/workflow/`: lifecycle protocol, checkpoints, invalidation,
-  bounded Make–Playtest iteration, and the trusted whole-run host composition.
+  Make–Playtest round budgets, and the trusted whole-run host composition.
 - `src/workshop/<stage>/`: stage-owned public contracts and deterministic tools.
 - `src/workshop/make/skills/`: reusable domain skills owned by Make.
 - `.agents/product-run/`: complete template materialized only into a toy

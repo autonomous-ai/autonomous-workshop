@@ -4,6 +4,7 @@ import stat
 import subprocess
 import tempfile
 import threading
+import tomllib
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -14,28 +15,53 @@ from workshop.runtime.codex import (
     MAX_CODEX_EVENT_BYTES,
     MAX_CODEX_MESSAGE_BYTES,
     MAX_CODEX_STDERR_BYTES,
+    MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     CodexInvocationError,
     CodexNativeSessionLauncher,
+    codex_supports_native_workshop,
 )
 
 
 THREAD_ID = "12345678-1234-5678-9234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
-PERMISSION_ARGUMENTS = (
-    "--config",
-    'default_permissions="workshop-product-run"',
-    "--config",
-    'permissions.workshop-product-run.description="Isolated Autonomous Workshop product run"',
-    "--config",
-    'permissions.workshop-product-run.extends=":workspace"',
-    "--config",
-    'permissions.workshop-product-run.filesystem={":root"="deny",'
-    '":minimal"="read",glob_scan_max_depth=8,":workspace_roots"='
-    '{"."="write","**/.env*"="deny"}}',
-    "--config",
-    "permissions.workshop-product-run.network.enabled=false",
-)
+ROOT_MARKER = ".workshop-product-run-root"
+
+
+def permission_arguments(root):
+    immutable = (
+        ".agents",
+        ".codex",
+        ROOT_MARKER,
+        "AGENTS.md",
+        "STAGE.json",
+        "WISH.json",
+    )
+    entries = [
+        '":root"="deny"',
+        '":minimal"="read"',
+        "glob_scan_max_depth=8",
+        "%s=\"write\"" % json.dumps(str(root)),
+    ]
+    entries.extend(
+        "%s=\"read\"" % json.dumps(str(root / relative))
+        for relative in immutable
+    )
+    entries.append(
+        "%s=\"deny\"" % json.dumps(str(root / "**/.env*"))
+    )
+    return (
+        "--config",
+        'default_permissions="workshop-product-run"',
+        "--config",
+        'permissions.workshop-product-run.description="Isolated Autonomous Workshop product run"',
+        "--config",
+        "permissions.workshop-product-run.filesystem={%s}" % ",".join(entries),
+        "--config",
+        "permissions.workshop-product-run.network.enabled=false",
+        "--config",
+        'project_root_markers=[".workshop-product-run-root"]',
+    )
 
 
 def event(value):
@@ -136,7 +162,7 @@ class ImmediateTimer:
 
 
 class CodexNativeSessionTest(unittest.TestCase):
-    def launcher(self, scripts, *, model="gpt-5.6-terra", effort="high"):
+    def launcher(self, scripts, *, model="gpt-5.6-sol", effort="high"):
         factory = FakePopenFactory(scripts)
         return (
             CodexNativeSessionLauncher(
@@ -253,6 +279,10 @@ class CodexNativeSessionTest(unittest.TestCase):
                 (
                     "/fixture/codex",
                     "--search",
+                    "--enable",
+                    "goals",
+                    "--enable",
+                    "multi_agent",
                     "--ask-for-approval",
                     "never",
                     "exec",
@@ -264,11 +294,11 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "--json",
                     "--config",
                     'model_reasoning_effort="high"',
-                    *PERMISSION_ARGUMENTS,
+                    *permission_arguments(root),
                     "-C",
                     str(root),
                     "--model",
-                    "gpt-5.6-terra",
+                    "gpt-5.6-sol",
                     "-",
                 ),
             )
@@ -284,10 +314,31 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("run this exact Wish", command)
             self.assertEqual(factory.processes[0].stdin.value, "run this exact Wish")
             self.assertEqual(call["cwd"], str(root))
+            self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
+            self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
+            self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
+            self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
             self.assertNotIn("FACTORY_PASSWORD", call["env"])
             self.assertNotIn("FACTORY_USERNAME", call["env"])
+            filesystem_override = next(
+                value
+                for value in command
+                if value.startswith(
+                    "permissions.workshop-product-run.filesystem="
+                )
+            )
+            filesystem = tomllib.loads(filesystem_override)["permissions"][
+                "workshop-product-run"
+            ]["filesystem"]
+            self.assertEqual(filesystem[str(root)], "write")
+            self.assertEqual(filesystem[str(root / ".agents")], "read")
+            self.assertEqual(filesystem[str(root / ".codex")], "read")
+            self.assertEqual(filesystem[":root"], "deny")
+            self.assertEqual(filesystem[":minimal"], "read")
+            self.assertNotIn(str(root.parent), filesystem)
+            self.assertNotIn(":workspace_roots", filesystem)
             self.assertTrue(outcome.used_web_search)
             public = json.dumps(outcome.to_dict(), sort_keys=True)
             self.assertNotIn(THREAD_ID, public)
@@ -340,6 +391,10 @@ class CodexNativeSessionTest(unittest.TestCase):
                 (
                     "/fixture/codex",
                     "--search",
+                    "--enable",
+                    "goals",
+                    "--enable",
+                    "multi_agent",
                     "--ask-for-approval",
                     "never",
                     "-C",
@@ -352,15 +407,25 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "--json",
                     "--config",
                     'model_reasoning_effort="high"',
-                    *PERMISSION_ARGUMENTS,
+                    *permission_arguments(root),
                     "--model",
-                    "gpt-5.6-terra",
+                    "gpt-5.6-sol",
                     THREAD_ID,
                     "-",
                 ),
             )
             self.assertNotIn("--ephemeral", command)
             self.assertNotIn("--sandbox", command)
+            serialized_command = "\n".join(command)
+            self.assertNotIn(":workspace_roots", serialized_command)
+            self.assertNotIn("extends=", serialized_command)
+            self.assertIn(
+                json.dumps(str(root)) + '=\"write\"', serialized_command
+            )
+            self.assertIn(
+                'project_root_markers=[".workshop-product-run-root"]',
+                command,
+            )
             self.assertEqual(private_profile := json.loads(
                 (self.host_state(root) / "codex-session.json").read_text(encoding="utf-8")
             )["permission_profile"], CODEX_PERMISSION_PROFILE)
@@ -371,6 +436,21 @@ class CodexNativeSessionTest(unittest.TestCase):
                 started.binding.checkpoint_sha256,
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
+
+    def test_rejects_product_temp_symlink_before_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            outside = root.parent / "outside-temp"
+            outside.mkdir()
+            (root / ".tmp").symlink_to(outside, target_is_directory=True)
+            launcher, factory = self.launcher([{"stdout": self.start_events()}])
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "temp directory must be a real 0700"
+            ):
+                self.start(launcher, root)
+            self.assertEqual(factory.calls, [])
 
     def test_resume_rejects_wrong_or_tampered_bindings_without_launching(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -489,13 +569,18 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.resume(changed, root)
             self.assertEqual(changed_factory.calls, [])
 
-    def test_rejects_codex_versions_without_permission_profiles(self):
+    def test_native_runtime_version_requires_goals_and_subagents(self):
+        self.assertEqual(MINIMUM_CODEX_NATIVE_RUNTIME_VERSION, (0, 145, 0))
+        self.assertFalse(codex_supports_native_workshop("0.144.9"))
+        self.assertTrue(codex_supports_native_workshop("0.145.0"))
+
+    def test_rejects_codex_versions_without_native_workshop_primitives(self):
         with self.assertRaisesRegex(
-            CodexInvocationError, "0.138.0 or newer"
+            CodexInvocationError, "0.145.0 or newer"
         ):
             CodexNativeSessionLauncher(
                 binary="/fixture/codex",
-                cli_version="0.137.9",
+                cli_version="0.144.9",
             )
 
     def test_bounds_timeout_and_failures_are_terminated_and_redacted(self):

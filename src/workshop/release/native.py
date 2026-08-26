@@ -38,12 +38,29 @@ NATIVE_RELEASE_MANUAL_PATH = "MANUAL.md"
 NATIVE_RELEASE_PRODUCT_PATH = "product.json"
 MAX_NATIVE_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_NATIVE_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
-
-_FACTORY_ENRICHMENT_PENDING = {
-    "copy_owner": "factory",
-    "media_owner": "factory",
-    "status": "pending",
-}
+RELEASE_PRODUCT_SCHEMA_VERSION = 3
+RELEASE_PRODUCT_STATUS = "page-ready"
+_PAGE_SECTION_FIELDS = frozenset(
+    ("headline", "body", "visual_direction", "evidence_refs")
+)
+_RELEASE_PRODUCT_FIELDS = frozenset(
+    (
+        "schema_version",
+        "kind",
+        "status",
+        "title",
+        "summary",
+        "hero",
+        "cinematic",
+        "use_case",
+        "story_blocks",
+        "what_arrives",
+        "limitations",
+        "product_artifact_sha256",
+        "playtest_evidence_artifact_sha256",
+        "claims",
+    )
+)
 _FORBIDDEN_MEDIA_SUFFIXES = frozenset(
     (
         ".3g2",
@@ -274,6 +291,154 @@ def _expected_claims(playtested: Playtested) -> dict[str, Any]:
     return claims
 
 
+def _page_text(value: Any, label: str, maximum: int) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or value != value.strip()
+        or len(value) > maximum
+        or any(ord(character) < 32 and character not in "\n\t" for character in value)
+        or any(ord(character) == 127 for character in value)
+    ):
+        raise ContractError("%s must be bounded substantive text" % label)
+    return value
+
+
+def _page_text_list(
+    value: Any,
+    label: str,
+    *,
+    maximum_items: int,
+    maximum_item_length: int,
+) -> list[str]:
+    if (
+        not isinstance(value, list)
+        or not 1 <= len(value) <= maximum_items
+    ):
+        raise ContractError("%s must be a non-empty bounded list" % label)
+    result = [
+        _page_text(item, "%s item" % label, maximum_item_length)
+        for item in value
+    ]
+    if len({item.casefold() for item in result}) != len(result):
+        raise ContractError("%s must not contain duplicate items" % label)
+    return result
+
+
+def _page_section(
+    value: Any,
+    label: str,
+    *,
+    valid_evidence_refs: frozenset[str],
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != _PAGE_SECTION_FIELDS:
+        raise ContractError("%s fields are invalid" % label)
+    refs = value.get("evidence_refs")
+    if (
+        not isinstance(refs, list)
+        or not 1 <= len(refs) <= 32
+        or any(not isinstance(ref, str) or ref not in valid_evidence_refs for ref in refs)
+        or len(refs) != len(set(refs))
+    ):
+        raise ContractError("%s evidence_refs are not bound to Made or Playtest" % label)
+    return {
+        "headline": _page_text(value.get("headline"), "%s headline" % label, 300),
+        "body": _page_text(value.get("body"), "%s body" % label, 4_000),
+        "visual_direction": _page_text(
+            value.get("visual_direction"),
+            "%s visual_direction" % label,
+            2_000,
+        ),
+        "evidence_refs": list(refs),
+    }
+
+
+def validate_release_product(value: Any) -> dict[str, Any]:
+    """Validate the exact Codex-authored customer-page contract.
+
+    The host can prove byte identity and evidence references, not the semantic
+    quality of prose.  Every page section therefore names the immutable Made
+    product or one of the sealed Playtest checks it relies on.  Factory is not
+    a copywriter or media prompt target at this boundary.
+    """
+
+    product = copy_json_mapping(value, "native Release product.json", nonempty=True)
+    if set(product) != _RELEASE_PRODUCT_FIELDS:
+        raise ContractError("native Release product.json fields are invalid")
+    if (
+        product.get("schema_version") != RELEASE_PRODUCT_SCHEMA_VERSION
+        or product.get("kind") != "workshop.release-package"
+        or product.get("status") != RELEASE_PRODUCT_STATUS
+    ):
+        raise ContractError("native Release product.json is not a page-ready package")
+    require_sha256(
+        product.get("product_artifact_sha256"),
+        "native Release product artifact sha256",
+    )
+    require_sha256(
+        product.get("playtest_evidence_artifact_sha256"),
+        "native Release Playtest evidence sha256",
+    )
+    claims = copy_json_mapping(
+        product.get("claims"), "native Release claims", nonempty=True
+    )
+    valid_refs = frozenset(
+        {"made:product.json"}
+        | {"playtest:%s" % check_id for check_id in claims}
+    )
+    story_blocks = product.get("story_blocks")
+    if not isinstance(story_blocks, list) or not 1 <= len(story_blocks) <= 12:
+        raise ContractError("native Release story_blocks must be a non-empty bounded list")
+    validated = {
+        "schema_version": RELEASE_PRODUCT_SCHEMA_VERSION,
+        "kind": "workshop.release-package",
+        "status": RELEASE_PRODUCT_STATUS,
+        "title": _page_text(product.get("title"), "native Release title", 300),
+        "summary": _page_text(product.get("summary"), "native Release summary", 2_000),
+        "hero": _page_section(
+            product.get("hero"),
+            "native Release hero",
+            valid_evidence_refs=valid_refs,
+        ),
+        "cinematic": _page_section(
+            product.get("cinematic"),
+            "native Release cinematic",
+            valid_evidence_refs=valid_refs,
+        ),
+        "use_case": _page_section(
+            product.get("use_case"),
+            "native Release use_case",
+            valid_evidence_refs=valid_refs,
+        ),
+        "story_blocks": [
+            _page_section(
+                block,
+                "native Release story_blocks[%d]" % index,
+                valid_evidence_refs=valid_refs,
+            )
+            for index, block in enumerate(story_blocks)
+        ],
+        "what_arrives": _page_text_list(
+            product.get("what_arrives"),
+            "native Release what_arrives",
+            maximum_items=100,
+            maximum_item_length=1_000,
+        ),
+        "limitations": _page_text_list(
+            product.get("limitations"),
+            "native Release limitations",
+            maximum_items=100,
+            maximum_item_length=2_000,
+        ),
+        "product_artifact_sha256": product["product_artifact_sha256"],
+        "playtest_evidence_artifact_sha256": product[
+            "playtest_evidence_artifact_sha256"
+        ],
+        "claims": claims,
+    }
+    return validated
+
+
 @dataclass(frozen=True)
 class NativeReleasePackage:
     """Validated, effect-free inputs for the host's Release adapter."""
@@ -283,18 +448,12 @@ class NativeReleasePackage:
     manual_path: str
     product: Mapping[str, Any]
     claims: Mapping[str, Any]
-    factory_enrichment: Mapping[str, Any]
     made: Made
     playtested: Playtested
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "product", _freeze(_thaw(self.product)))
         object.__setattr__(self, "claims", _freeze(_thaw(self.claims)))
-        object.__setattr__(
-            self,
-            "factory_enrichment",
-            _freeze(_thaw(self.factory_enrichment)),
-        )
 
 
 @dataclass(frozen=True)
@@ -363,27 +522,9 @@ class NativeRelease:
         if inventory[self.product_json_path].sha256 != self.product_json_sha256:
             raise ContractError("native Release product.json is not bound to its manifest")
 
-        product = copy_json_mapping(
-            self.product, "native Release product.json", nonempty=True
-        )
+        product = validate_release_product(self.product)
         if hashlib.sha256(_canonical_json(product)).hexdigest() != self.product_json_sha256:
             raise ContractError("native Release product.json hash is not canonical")
-        if (
-            product.get("schema_version") != 2
-            or product.get("kind") != "workshop.release-package"
-            or product.get("status") != "facts-ready"
-        ):
-            raise ContractError("native Release product.json is not a factual package")
-        for key in ("title", "summary", "lane"):
-            value = product.get(key)
-            if (
-                not isinstance(value, str)
-                or not value.strip()
-                or len(value) > 2_000
-            ):
-                raise ContractError(
-                    "native Release product.json %s must be factual text" % key
-                )
         if product.get("product_artifact_sha256") != self.product_artifact_sha256:
             raise ContractError("native Release product.json identifies another product")
         if (
@@ -391,18 +532,10 @@ class NativeRelease:
             != self.playtest_evidence_artifact_sha256
         ):
             raise ContractError("native Release product.json identifies other Playtest evidence")
-        claims = copy_json_mapping(
-            product.get("claims"), "native Release claims", nonempty=True
-        )
-        if product.get("factory_enrichment") != _FACTORY_ENRICHMENT_PENDING:
-            raise ContractError("native Release must leave Factory enrichment pending")
-        forbidden_fields = (
-            {"images", "story_blocks", "use_case"}
-            | _FORBIDDEN_EFFECT_FIELDS
-        ) & set(product)
+        forbidden_fields = _FORBIDDEN_EFFECT_FIELDS & set(product)
         if forbidden_fields:
             raise ContractError(
-                "native Release product.json contains media or effect proof: %s"
+                "native Release product.json contains effect proof: %s"
                 % sorted(forbidden_fields)
             )
         object.__setattr__(self, "product", _freeze(product))
@@ -415,10 +548,6 @@ class NativeRelease:
     @property
     def claims(self) -> Mapping[str, Any]:
         return self.product["claims"]
-
-    @property
-    def factory_enrichment(self) -> Mapping[str, Any]:
-        return self.product["factory_enrichment"]
 
     @property
     def contract_sha256(self) -> str:
@@ -573,9 +702,6 @@ class NativeRelease:
             raise ContractError("native Release claims differ from exact Playtest evidence")
         if observed_product.get("title") != canonical_made.product.get("title"):
             raise ContractError("native Release title differs from the exact Made product")
-        if observed_product.get("lane") != canonical_made.product.get("lane"):
-            raise ContractError("native Release lane differs from the exact Made product")
-
         unchanged = build_artifact_manifest(
             package_root, created_at=self.package_manifest.created_at
         )
@@ -587,7 +713,6 @@ class NativeRelease:
             manual_path=self.manual_path,
             product=observed_product,
             claims=expected_claims,
-            factory_enrichment=_FACTORY_ENRICHMENT_PENDING,
             made=canonical_made,
             playtested=canonical_playtested,
         )
@@ -620,7 +745,10 @@ __all__ = [
     "NATIVE_RELEASE_PACKAGE_ROOT",
     "NATIVE_RELEASE_PATH",
     "NATIVE_RELEASE_PRODUCT_PATH",
+    "RELEASE_PRODUCT_SCHEMA_VERSION",
+    "RELEASE_PRODUCT_STATUS",
     "NativeRelease",
     "NativeReleasePackage",
     "read_native_release",
+    "validate_release_product",
 ]

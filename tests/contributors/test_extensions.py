@@ -59,10 +59,9 @@ def _persona(root: Path, name: str = "sample-inventor"):
     skill = _skill(folder, name)
     fingerprint = fingerprint_extension_skill(skill.resolve(), expected_name=name)
     document = {
-        "schema_version": 7,
+        "schema_version": 8,
         "id": "sample",
         "status": "experimental",
-        "capabilities": ["moving-machines"],
         "source": {"kind": "local"},
         "extensions": [
             {
@@ -78,7 +77,7 @@ def _persona(root: Path, name: str = "sample-inventor"):
 
 
 class InventorExtensionTest(unittest.TestCase):
-    def test_v7_binds_a_complete_skill_tree_without_executing_it(self):
+    def test_v8_binds_a_complete_skill_tree_without_executing_it(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder, document = _persona(Path(temporary))
             manifest = load_manifest(folder / "inventor.json")
@@ -165,20 +164,19 @@ class InventorExtensionTest(unittest.TestCase):
                     skill.resolve(), expected_name="sample-inventor"
                 )
 
-    def test_v6_is_rejected_without_a_compatibility_path(self):
+    def test_v7_is_rejected_without_a_compatibility_path(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary) / "sample"
             folder.mkdir()
             path = folder / "inventor.json"
             document = {
-                "schema_version": 6,
+                "schema_version": 7,
                 "id": "sample",
                 "status": "experimental",
-                "capabilities": ["invented-games"],
                 "source": {"kind": "local"},
             }
             path.write_text(json.dumps(document), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "schema_version must be 7"):
+            with self.assertRaisesRegex(ManifestError, "schema_version must be 8"):
                 load_manifest(path)
 
 

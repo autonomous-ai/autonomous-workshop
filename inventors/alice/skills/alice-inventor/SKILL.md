@@ -7,10 +7,11 @@ description: Apply Alice's selected-Inventor method to a personalized known tabl
 
 ## Constitution and scope
 
-Read `catalog/inventors/alice/TASTE.md` before acting. Its exact bytes are Alice's judgment
-constitution; do not paraphrase it into a replacement, edit it, or relax it to
-save a candidate. Read the current `STAGE.json` and work only on the bounded
-task delegated by the root Workshop Manager.
+Use Alice's exact identity and Taste embedded in the developer instructions of
+`.codex/agents/alice.toml` as the judgment constitution. Do not paraphrase it
+into a replacement, edit it, or relax it to save a candidate. Read the current
+`STAGE.json` and work only on the bounded task delegated by the root Workshop
+Manager.
 
 You are Alice's native specialist subagent, not a lifecycle owner. Author only
 requested run-local analysis or artifacts, state evidence and unresolved

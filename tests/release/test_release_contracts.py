@@ -18,21 +18,47 @@ class ProductReleaseContractTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name).resolve() / "release"
         self.root.mkdir()
-        self.claims = {"mechanical-test": {"passed": True}}
+        self.claims = {"mechanical-check": {"passed": True}}
         (self.root / "MANUAL.md").write_text("# Manual\n\nUse the toy safely.\n")
         (self.root / "product.json").write_text(
             json.dumps(
                 {
-                    "schema_version": 2,
+                    "schema_version": 3,
                     "kind": "workshop.release-package",
-                    "status": "facts-ready",
-                    "product_artifact_sha256": SHA256,
-                    "claims": self.claims,
-                    "factory_enrichment": {
-                        "copy_owner": "factory",
-                        "media_owner": "factory",
-                        "status": "pending",
+                    "status": "page-ready",
+                    "title": "Verified Toy",
+                    "summary": "A sealed toy with a complete product page.",
+                    "hero": {
+                        "headline": "Verified Toy",
+                        "body": "A compact toy described by the sealed Made artifact.",
+                        "visual_direction": "Show only the exact assembled model.",
+                        "evidence_refs": ["made:product.json"],
                     },
+                    "cinematic": {
+                        "headline": "Ready for a closer look",
+                        "body": "Explore the exact shape and included parts.",
+                        "visual_direction": "Use a close view of the exact model.",
+                        "evidence_refs": ["made:product.json"],
+                    },
+                    "use_case": {
+                        "headline": "Made for tabletop play",
+                        "body": "Follow the sealed manual to begin.",
+                        "visual_direction": "Show the model beside its manual.",
+                        "evidence_refs": ["made:product.json"],
+                    },
+                    "story_blocks": [
+                        {
+                            "headline": "Evidence attached",
+                            "body": "The required mechanical check passed.",
+                            "visual_direction": "Use a simple verified-check motif.",
+                            "evidence_refs": ["playtest:mechanical-check"],
+                        }
+                    ],
+                    "what_arrives": ["one sealed toy"],
+                    "limitations": ["No physical-use claim is made"],
+                    "product_artifact_sha256": SHA256,
+                    "playtest_evidence_artifact_sha256": "c" * 64,
+                    "claims": self.claims,
                 }
             )
             + "\n"
@@ -41,8 +67,26 @@ class ProductReleaseContractTest(unittest.TestCase):
             self.root, created_at="content-addressed"
         )
 
-    def receipt(self, *, page_url=True, project_url=None):
-        details = {"release_sha256": self.manifest.artifact_sha256}
+    def receipt(
+        self,
+        *,
+        page_url=True,
+        project_url=None,
+        product_page_sha256=None,
+    ):
+        expected_product_page_sha256 = next(
+            entry.sha256
+            for entry in self.manifest.entries
+            if entry.path == "product.json"
+        )
+        details = {
+            "release_sha256": self.manifest.artifact_sha256,
+            "product_page_sha256": (
+                expected_product_page_sha256
+                if product_page_sha256 is None
+                else product_page_sha256
+            ),
+        }
         if page_url:
             details["page_url"] = (
                 "https://www.autonomous.ai/factory/product/current-route"
@@ -83,6 +127,14 @@ class ProductReleaseContractTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(ContractError, "customer product page URL"):
+            ProductRelease.from_root(
+                self.root, SHA256, "MANUAL.md", self.claims, receipt
+            )
+
+    def test_receipt_must_bind_exact_product_page_bytes(self):
+        receipt = self.receipt(product_page_sha256="f" * 64)
+
+        with self.assertRaisesRegex(ContractError, "product-page bytes"):
             ProductRelease.from_root(
                 self.root, SHA256, "MANUAL.md", self.claims, receipt
             )

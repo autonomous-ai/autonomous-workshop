@@ -1,6 +1,6 @@
 # ADR 0002: Dependency and orchestration boundaries
 
-- Status: Accepted
+- Status: Superseded by ADR 0012
 - Date: 2026-08-25
 - Owners: Workflow maintainer and all component DRIs
 

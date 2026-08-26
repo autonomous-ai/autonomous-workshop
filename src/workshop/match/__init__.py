@@ -1,15 +1,15 @@
-"""Native Match contracts for selecting one immutable inventor persona."""
+"""Native Match contracts for selecting one immutable Inventor."""
 
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
+    InventorRoster,
+    InventorRosterEntry,
 )
 
 __all__ = [
     "MatchRankingEntry",
     "NativeMatchAssignment",
-    "PersonaCatalog",
-    "PersonaCatalogEntry",
+    "InventorRoster",
+    "InventorRosterEntry",
 ]

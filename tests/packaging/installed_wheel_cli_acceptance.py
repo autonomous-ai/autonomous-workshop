@@ -4,13 +4,16 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import subprocess
 import sys
 import tempfile
+import tomllib
 import zipfile
 
 
@@ -193,7 +196,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
                 if not source.is_file() or source.is_symlink():
                     continue
                 member = (
-                    "workshop/contributors/_catalog/inventors/%s/%s"
+                    "workshop/contributors/_inventors/%s/%s"
                     % (inventor_id, source.relative_to(source_root).as_posix())
                 )
                 expected_inventor_members.add(member)
@@ -208,11 +211,11 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
         observed_inventor_members = {
             name
             for name, info in infos.items()
-            if name.startswith("workshop/contributors/_catalog/inventors/")
+            if name.startswith("workshop/contributors/_inventors/")
             and not info.is_dir()
         }
         if observed_inventor_members != expected_inventor_members:
-            raise AssertionError("wheel Inventor catalog inventory differs")
+            raise AssertionError("wheel bundled Inventor inventory differs")
 
         expected_schemas = {
             "workshop/%s/schemas/%s" % (owner, name)
@@ -228,7 +231,7 @@ def _audit_wheel(wheel: Path, repository: Path) -> None:
 
         runtime_data_roots = (
             "workshop/artifacts/schemas/",
-            "workshop/contributors/_catalog/inventors/",
+            "workshop/contributors/_inventors/",
             "workshop/contributors/schemas/",
             "workshop/make/schemas/",
             "workshop/make/skills/",
@@ -290,7 +293,9 @@ def _json(command, *, cwd: Path, environment) -> object:
 def _write_fake_codex(path: Path, python: Path) -> None:
     source = """#!%s
 import json
+import hashlib
 import os
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -302,25 +307,45 @@ if sys.argv[1:] == ["--version"]:
 run_root = Path.cwd()
 wish = json.loads((run_root / "WISH.json").read_text(encoding="utf-8"))
 stage = json.loads((run_root / "STAGE.json").read_text(encoding="utf-8"))
-catalog_root = run_root / "catalog" / "inventors"
-inventor_ids = sorted(path.name for path in catalog_root.iterdir() if path.is_dir())
 agent_root = run_root / ".codex" / "agents"
 agent_entries = tuple(agent_root.iterdir())
 if any(path.is_symlink() or not path.is_file() for path in agent_entries):
     raise RuntimeError("project-scoped custom agents must be regular files")
 agent_files = sorted(path.name for path in agent_entries)
-if agent_files != [inventor_id + ".toml" for inventor_id in inventor_ids]:
-    raise RuntimeError("project-scoped custom agent inventory differs from the roster")
+expected_inventor_ids = %r
+if agent_files != [inventor_id + ".toml" for inventor_id in expected_inventor_ids]:
+    raise RuntimeError(".codex/agents is not the complete Inventor roster")
+inventor_ids = [Path(filename).stem for filename in agent_files]
+
+def exact_block(instructions, label):
+    encoded = instructions.encode("utf-8")
+    encoded_label = label.encode("ascii")
+    pattern = re.compile(
+        rb"<<<AUTONOMOUS_WORKSHOP_EXACT_" + encoded_label
+        + rb" bytes=([0-9]{1,9}) sha256=([0-9a-f]{64})>>>\\n"
+    )
+    match = pattern.search(encoded)
+    if match is None:
+        raise RuntimeError("custom Inventor agent exact source block is missing")
+    size = int(match.group(1))
+    start = match.end()
+    end = start + size
+    content = encoded[start:end]
+    terminator = b"\\n<<<END_AUTONOMOUS_WORKSHOP_EXACT_" + encoded_label + b">>>"
+    if encoded[end : end + len(terminator)] != terminator:
+        raise RuntimeError("custom Inventor agent exact source block is malformed")
+    if hashlib.sha256(content).hexdigest().encode("ascii") != match.group(2):
+        raise RuntimeError("custom Inventor agent exact source block hash differs")
+    return content
+
 for inventor_id in inventor_ids:
-    identity_root = catalog_root / inventor_id
-    manifest = json.loads((identity_root / "inventor.json").read_text(encoding="utf-8"))
     agent = tomllib.loads(
         (agent_root / (inventor_id + ".toml")).read_text(encoding="utf-8")
     )
     if set(agent) != {"name", "description", "developer_instructions"}:
         raise RuntimeError("custom Inventor agent fields are not minimal")
-    if agent["name"] != manifest["id"] or manifest["id"] != inventor_id:
-        raise RuntimeError("custom Inventor agent identity differs from the roster")
+    if agent["name"] != inventor_id:
+        raise RuntimeError("custom Inventor agent name differs from its roster path")
     description = agent["description"]
     instructions = agent["developer_instructions"]
     if (
@@ -332,15 +357,35 @@ for inventor_id in inventor_ids:
         or len(instructions) > 8192
     ):
         raise RuntimeError("custom Inventor agent instructions are not bounded text")
-    required_references = [
-        "catalog/inventors/" + inventor_id + "/TASTE.md",
-        *[
-            ".agents/skills/" + extension["name"] + "/SKILL.md"
+    manifest = json.loads(exact_block(instructions, "MANIFEST"))
+    taste = exact_block(instructions, "TASTE")
+    skills = json.loads(exact_block(instructions, "SKILLS"))
+    if (
+        set(manifest) != {"schema_version", "id", "status", "source", "extensions"}
+        or manifest["schema_version"] != 8
+        or manifest["id"] != inventor_id
+        or not isinstance(manifest["extensions"], list)
+        or not manifest["extensions"]
+        or not taste.startswith(b"---\\nname:")
+        or skills
+        != [
+            {
+                "name": extension["name"],
+                "path": extension["path"],
+                "artifact_sha256": extension["artifact_sha256"],
+            }
             for extension in manifest["extensions"]
-        ],
+        ]
+    ):
+        raise RuntimeError("custom Inventor agent does not bind schema-v8 source bytes")
+    required_references = [
+        ".agents/skills/" + extension["name"] + "/SKILL.md"
+        for extension in manifest["extensions"]
     ]
     if any(reference not in instructions for reference in required_references):
-        raise RuntimeError("custom Inventor agent lacks an exact local identity reference")
+        raise RuntimeError("custom Inventor agent lacks an exact skill reference")
+    if "catalog/inventors" in instructions:
+        raise RuntimeError("custom Inventor agent refers to the removed product catalog")
     lower = instructions.casefold()
     if (
         "subagent" not in lower
@@ -398,8 +443,8 @@ for inventor_id in inventor_ids:
             "factory_visible": "FACTORY_PASSWORD" in os.environ,
             "prelaunch": {
                 "agents": (run_root / "AGENTS.md").is_file(),
-                "catalog": (run_root / "catalog" / "inventors").is_dir(),
                 "cad": (run_root / ".agents" / "skills" / "cad" / "SKILL.md").is_file(),
+                "codex_agents": agent_root.is_dir(),
                 "inventors": all(
                     (
                         run_root
@@ -410,7 +455,15 @@ for inventor_id in inventor_ids:
                     ).is_file()
                     for inventor_id in ("alice", "bob", "eve", "ivy", "leo")
                 ),
+                "no_catalog": not (run_root / "catalog").exists(),
+                "private_temp": (
+                    (run_root / ".tmp").is_dir()
+                    and os.environ.get("TMPDIR") == str(run_root / ".tmp")
+                    and os.environ.get("TMP") == str(run_root / ".tmp")
+                    and os.environ.get("TEMP") == str(run_root / ".tmp")
+                ),
                 "product_to_cad": (run_root / ".agents" / "skills" / "product-to-cad" / "SKILL.md").is_file(),
+                "root_marker": (run_root / ".workshop-product-run-root").is_file(),
                 "stage": (run_root / "STAGE.json").is_file(),
                 "step_parts": (run_root / ".agents" / "skills" / "step-parts" / "SKILL.md").is_file(),
                 "workflow": (run_root / ".agents" / "skills" / "autonomous-workshop" / "SKILL.md").is_file(),
@@ -425,7 +478,7 @@ for inventor_id in inventor_ids:
 )
 print(json.dumps({"type": "thread.started", "thread_id": %r}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture waiting"}}))
-""" % (str(python), CODEX_THREAD_ID)
+""" % (str(python), INVENTORS, CODEX_THREAD_ID)
     path.write_text(source, encoding="utf-8")
     path.chmod(0o700)
 
@@ -442,6 +495,34 @@ def _assert_materialized_tree(source_root: Path, target_root: Path) -> None:
         expected_mode = 0o500 if source.stat().st_mode & 0o111 else 0o400
         if stat.S_IMODE(target.stat().st_mode) != expected_mode:
             raise AssertionError("materialized asset mode differs: %s" % target)
+
+
+def _exact_custom_agent_block(instructions: str, label: str) -> bytes:
+    encoded = instructions.encode("utf-8")
+    match = re.search(
+        (
+            rb"<<<AUTONOMOUS_WORKSHOP_EXACT_"
+            + label.encode("ascii")
+            + rb" bytes=([0-9]{1,9}) sha256=([0-9a-f]{64})>>>\n"
+        ),
+        encoded,
+    )
+    if match is None:
+        raise AssertionError("materialized Inventor lacks exact %s bytes" % label)
+    size = int(match.group(1))
+    start = match.end()
+    end = start + size
+    content = encoded[start:end]
+    terminator = (
+        b"\n<<<END_AUTONOMOUS_WORKSHOP_EXACT_"
+        + label.encode("ascii")
+        + b">>>"
+    )
+    if encoded[end : end + len(terminator)] != terminator:
+        raise AssertionError("materialized Inventor %s framing differs" % label)
+    if hashlib.sha256(content).hexdigest() != match.group(2).decode("ascii"):
+        raise AssertionError("materialized Inventor %s hash differs" % label)
+    return content
 
 
 def _native_wish_smoke(
@@ -509,23 +590,58 @@ def _native_wish_smoke(
     ):
         raise AssertionError("installed Codex checkpoint binding is invalid")
 
+    agent_checkpoint_path = expected_state / "agent-run.json"
+    if not agent_checkpoint_path.is_file():
+        raise AssertionError("installed Wish did not persist its host checkpoint")
+    agent_checkpoint = json.loads(
+        agent_checkpoint_path.read_text(encoding="utf-8")
+    )
+    roster = agent_checkpoint.get("inventor_roster")
+    if (
+        agent_checkpoint.get("schema_version") != 3
+        or not isinstance(roster, list)
+        or tuple(item.get("inventor_id") for item in roster) != INVENTORS
+        or tuple(item.get("agent_path") for item in roster)
+        != tuple(".codex/agents/%s.toml" % item for item in INVENTORS)
+        or any(
+            legacy in agent_checkpoint
+            for legacy in ("catalog", "inventor_catalog", "persona_catalog")
+        )
+        or stat.S_IMODE(agent_checkpoint_path.stat().st_mode) != 0o600
+    ):
+        raise AssertionError("installed Wish host roster is not the schema-v3 roster")
+
     probe = json.loads(
         (workspace / "native-packaging-probe.json").read_text(encoding="utf-8")
     )
     codex_arguments = probe["arguments"]
+    argument_pairs = set(zip(codex_arguments, codex_arguments[1:]))
     if (
         probe["factory_visible"]
         or "--search" not in codex_arguments
+        or ("--enable", "goals") not in argument_pairs
+        or ("--enable", "multi_agent") not in argument_pairs
         or "--ask-for-approval" not in codex_arguments
         or "never" not in codex_arguments
         or "--strict-config" not in codex_arguments
+        or ("--model", "gpt-5.6-sol") not in argument_pairs
         or "--sandbox" in codex_arguments
         or 'default_permissions="workshop-product-run"' not in codex_arguments
+        or 'project_root_markers=[".workshop-product-run-root"]'
+        not in codex_arguments
         or not any(
             argument.startswith("permissions.workshop-product-run.filesystem=")
             and '":root"="deny"' in argument
-            and '":workspace_roots"' in argument
-            and '"**/.env*"="deny"' in argument
+            and '":minimal"="read"' in argument
+            and json.dumps(str(expected_workspace)) + '="write"' in argument
+            and json.dumps(str(expected_workspace / ".agents")) + '="read"'
+            in argument
+            and json.dumps(str(expected_workspace / ".codex")) + '="read"'
+            in argument
+            and json.dumps(str(expected_workspace / "**/.env*")) + '="deny"'
+            in argument
+            and '":workspace_roots"' not in argument
+            and "extends=" not in argument
             for argument in codex_arguments
         )
     ):
@@ -542,6 +658,14 @@ def _native_wish_smoke(
         raise AssertionError("materialized product-run constitution differs")
     if stat.S_IMODE((workspace / "AGENTS.md").stat().st_mode) != 0o400:
         raise AssertionError("materialized product-run constitution mode differs")
+    marker = workspace / ".workshop-product-run-root"
+    if (
+        marker.read_bytes() != b"autonomous-workshop-product-run\n"
+        or stat.S_IMODE(marker.stat().st_mode) != 0o400
+    ):
+        raise AssertionError("materialized product-run root marker differs")
+    if stat.S_IMODE((workspace / ".tmp").stat().st_mode) != 0o700:
+        raise AssertionError("product-run private temp directory mode differs")
     manager_instructions = (workspace / "AGENTS.md").read_text(
         encoding="utf-8"
     ).casefold()
@@ -573,16 +697,61 @@ def _native_wish_smoke(
             workspace / ".agents" / "skills" / skill_name,
         )
     expected_skill_names = {"autonomous-workshop", *SKILLS}
+    if (workspace / "catalog").exists() or (workspace / "catalog").is_symlink():
+        raise AssertionError("product run contains the removed Inventor catalog")
+    agent_root = workspace / ".codex" / "agents"
+    observed_agent_names = {
+        path.name for path in agent_root.iterdir() if path.is_file()
+    }
+    if observed_agent_names != {"%s.toml" % item for item in INVENTORS}:
+        raise AssertionError("materialized .codex/agents roster differs")
+    if stat.S_IMODE(agent_root.stat().st_mode) != 0o500:
+        raise AssertionError("materialized .codex/agents roster is mutable")
     for inventor_id in INVENTORS:
         source = repository / "inventors" / inventor_id
         manifest = json.loads((source / "inventor.json").read_text(encoding="utf-8"))
-        target_identity = workspace / "catalog" / "inventors" / inventor_id
-        observed_identity = {path.name for path in target_identity.iterdir()}
-        if observed_identity != {"TASTE.md", "inventor.json"}:
-            raise AssertionError("materialized Inventor identity is not minimal")
-        for filename in observed_identity:
-            if (target_identity / filename).read_bytes() != (source / filename).read_bytes():
-                raise AssertionError("materialized Inventor identity differs")
+        if (
+            manifest.get("schema_version") != 8
+            or "lane" in manifest
+            or "capabilities" in manifest
+        ):
+            raise AssertionError("source Inventor does not use schema version 8")
+        agent_path = agent_root / (inventor_id + ".toml")
+        if (
+            agent_path.is_symlink()
+            or not agent_path.is_file()
+            or stat.S_IMODE(agent_path.stat().st_mode) != 0o400
+        ):
+            raise AssertionError("materialized Inventor agent is not immutable")
+        agent = tomllib.loads(agent_path.read_text(encoding="utf-8"))
+        if set(agent) != {"name", "description", "developer_instructions"}:
+            raise AssertionError("materialized Inventor custom agent fields differ")
+        if agent["name"] != inventor_id:
+            raise AssertionError("materialized Inventor custom agent name differs")
+        instructions = agent["developer_instructions"]
+        if "catalog/inventors" in instructions:
+            raise AssertionError("materialized Inventor retains a catalog reference")
+        if _exact_custom_agent_block(instructions, "MANIFEST") != (
+            source / "inventor.json"
+        ).read_bytes():
+            raise AssertionError("materialized Inventor manifest bytes differ")
+        if _exact_custom_agent_block(instructions, "TASTE") != (
+            source / "TASTE.md"
+        ).read_bytes():
+            raise AssertionError("materialized Inventor Taste bytes differ")
+        expected_skill_bindings = [
+            {
+                "name": extension["name"],
+                "path": extension["path"],
+                "artifact_sha256": extension["artifact_sha256"],
+            }
+            for extension in manifest["extensions"]
+        ]
+        observed_skill_bindings = json.loads(
+            _exact_custom_agent_block(instructions, "SKILLS")
+        )
+        if observed_skill_bindings != expected_skill_bindings:
+            raise AssertionError("materialized Inventor skill binding differs")
         for extension in manifest["extensions"]:
             skill_name = extension["name"]
             expected_skill_names.add(skill_name)

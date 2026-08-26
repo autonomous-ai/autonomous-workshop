@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/v7.json",
+  "$id": "https://autonomous.ai/schemas/inventor/v8.json",
   "title": "Autonomous Workshop Inventor bundle manifest",
   "type": "object",
   "additionalProperties": false,
@@ -8,30 +8,14 @@
     "schema_version",
     "id",
     "status",
-    "capabilities",
     "source",
     "extensions"
   ],
   "properties": {
-    "schema_version": {"const": 7},
+    "schema_version": {"const": 8},
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
     "status": {
       "enum": ["active", "experimental", "blocked", "reference", "archived"]
-    },
-    "capabilities": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "enum": [
-          "classics-made-yours",
-          "invented-games",
-          "moving-machines",
-          "holdable-science",
-          "little-worlds"
-        ]
-      }
     },
     "source": {
       "type": "object",

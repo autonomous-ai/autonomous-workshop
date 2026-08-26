@@ -16,8 +16,8 @@ from workshop._validation import (
     require_sha256,
 )
 from workshop.errors import ContractError, StateConflict
-from workshop.invent.native import InventedV2
-from workshop.match.native import NativeMatchAssignment, PersonaCatalog
+from workshop.invent.native import NativeInvented
+from workshop.match.native import NativeMatchAssignment, InventorRoster
 from workshop.workflow.agent_run import (
     AGENT_RUN_STAGES,
     AgentArtifact,
@@ -32,11 +32,11 @@ from workshop.workflow.proposals import (
 
 STAGE_GATE_EVIDENCE_KIND = "autonomous-workshop.stage-gate-evidence"
 STAGE_GATE_DECISION_KIND = "autonomous-workshop.stage-gate-decision"
-MATCH_GATE_ID = "match.assignment-v1"
-INVENT_GATE_ID = "invent.concept-v2"
+MATCH_GATE_ID = "match.assignment-v3"
+INVENT_GATE_ID = "invent.concept-v3"
 MATCH_ASSIGNMENT_PATH = "artifacts/match/assignment.json"
-INVENTED_V2_PATH = "artifacts/invent/invented.json"
-VALIDATOR_VERSION = "1.0.0"
+INVENTED_PATH = "artifacts/invent/invented.json"
+VALIDATOR_VERSION = "2.0.0"
 STAGE_SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _GATE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _FORWARD = {
@@ -85,17 +85,17 @@ def _stage_subject(stage: str, inputs: Mapping[str, Any]) -> str:
 
 
 def match_gate_subject_sha256(
-    *, wish_sha256: str, persona_catalog_sha256: str
+    *, wish_sha256: str, inventor_roster_sha256: str
 ) -> str:
     """Derive Match's subject from its complete immutable input vector."""
 
     require_sha256(wish_sha256, "Match subject Wish sha256")
-    require_sha256(persona_catalog_sha256, "Match subject persona catalog sha256")
+    require_sha256(inventor_roster_sha256, "Match subject inventor roster sha256")
     return _stage_subject(
         "match",
         {
             "wish_sha256": wish_sha256,
-            "persona_catalog_sha256": persona_catalog_sha256,
+            "inventor_roster_sha256": inventor_roster_sha256,
         },
     )
 
@@ -110,9 +110,9 @@ def invent_gate_subject_sha256(assignment: NativeMatchAssignment) -> str:
         {
             "wish_sha256": assignment.wish_sha256,
             "assignment_sha256": assignment.assignment_sha256,
+            "agent_sha256": assignment.selected_agent_sha256,
             "taste_sha256": assignment.selected_taste_sha256,
             "blueprint_sha256": assignment.blueprint_sha256,
-            "lane": assignment.selected_lane,
         },
     )
 
@@ -324,19 +324,19 @@ def evaluate_match_stage(
     run_root: Any,
     expected_checkpoint_sha256: str,
     wish_sha256: str,
-    catalog: PersonaCatalog,
+    roster: InventorRoster,
 ) -> StageGateDecision:
     """Validate the one canonical native Match assignment and derive a receipt."""
 
     require_sha256(expected_checkpoint_sha256, "expected Match checkpoint sha256")
     require_sha256(wish_sha256, "expected Match Wish sha256")
-    if not isinstance(catalog, PersonaCatalog):
-        raise ContractError("Match gate requires a PersonaCatalog")
+    if not isinstance(roster, InventorRoster):
+        raise ContractError("Match gate requires a InventorRoster")
     if proposal.checkpoint_sha256 != expected_checkpoint_sha256:
         raise StateConflict("Match proposal belongs to another checkpoint")
     expected_subject = match_gate_subject_sha256(
         wish_sha256=wish_sha256,
-        persona_catalog_sha256=catalog.catalog_sha256,
+        inventor_roster_sha256=roster.roster_sha256,
     )
     if proposal.subject_sha256 != expected_subject:
         raise StateConflict("Match proposal subject is not the full Match input vector")
@@ -349,7 +349,7 @@ def evaluate_match_stage(
     assignment = NativeMatchAssignment.from_mapping(
         _artifact_document(run_root, artifact, label="native Match assignment")
     )
-    assignment.assert_context(wish_sha256=wish_sha256, catalog=catalog)
+    assignment.assert_context(wish_sha256=wish_sha256, roster=roster)
     evidence = StageGateEvidence(
         stage="match",
         gate_id=MATCH_GATE_ID,
@@ -363,9 +363,14 @@ def evaluate_match_stage(
         checks={
             "assignment_sha256": assignment.assignment_sha256,
             "blueprint_sha256": assignment.blueprint_sha256,
-            "catalog_sha256": catalog.catalog_sha256,
-            "ranking_covers_catalog": True,
-            "selected_persona_bytes_bound": True,
+            "roster_sha256": roster.roster_sha256,
+            "ranking_covers_roster": True,
+            "selected_custom_agent_bound": True,
+            "selected_agent_sha256": assignment.selected_agent_sha256,
+            "selected_source_manifest_sha256": (
+                assignment.selected_source_manifest_sha256
+            ),
+            "selected_taste_sha256": assignment.selected_taste_sha256,
             "wish_bound": True,
         },
     )
@@ -379,7 +384,7 @@ def evaluate_invent_stage(
     expected_checkpoint_sha256: str,
     assignment: NativeMatchAssignment,
 ) -> StageGateDecision:
-    """Validate Invented v2 against the accepted Match assignment."""
+    """Validate Invented against the accepted Match assignment."""
 
     if not isinstance(assignment, NativeMatchAssignment):
         raise ContractError("Invent gate requires a native Match assignment")
@@ -393,10 +398,10 @@ def evaluate_invent_stage(
         proposal,
         stage="invent",
         transition="make",
-        canonical_path=INVENTED_V2_PATH,
+        canonical_path=INVENTED_PATH,
     )
-    invented = InventedV2.from_mapping(
-        _artifact_document(run_root, artifact, label="Invented v2 artifact")
+    invented = NativeInvented.from_mapping(
+        _artifact_document(run_root, artifact, label="Invented artifact")
     )
     invented.assert_context(assignment)
     evidence = StageGateEvidence(
@@ -422,7 +427,7 @@ def evaluate_invent_stage(
 
 
 __all__ = [
-    "INVENTED_V2_PATH",
+    "INVENTED_PATH",
     "INVENT_GATE_ID",
     "MATCH_ASSIGNMENT_PATH",
     "MATCH_GATE_ID",

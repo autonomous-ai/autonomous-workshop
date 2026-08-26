@@ -71,9 +71,18 @@ class NativeCommandTest(unittest.TestCase):
             ("wish", "a moon", "--root", "/tmp/legacy"),
             ("resume", "wish-one", "--root", "/tmp/legacy"),
             ("inventors", "--check-entrypoints"),
-            ("create", "inventor", "mira", "--lane", "little-worlds", "--level", "taste-only"),
-            ("create", "inventor", "mira", "--lane", "little-worlds", "--template", "custom"),
-            ("create", "inventor", "mira", "--lane", "little-worlds", "--run-checks"),
+            ("create", "inventor", "mira", "--level", "taste-only"),
+            ("create", "inventor", "mira", "--template", "custom"),
+            ("create", "inventor", "mira", "--run-checks"),
+            (
+                "create",
+                "inventor",
+                "mira",
+                "--description",
+                "specific physical playthings",
+                "--lane",
+                "little-worlds",
+            ),
             ("check", ".", "--run"),
             ("wish", "a moon", "--draft"),
         ):
@@ -194,10 +203,10 @@ class DoctorTest(unittest.TestCase):
             self.assertNotIn("FACTORY_PASSWORD", kwargs["env"])
             self.assertNotIn("AWS_SECRET_ACCESS_KEY", kwargs["env"])
 
-    def test_old_codex_cannot_pass_the_credential_boundary_check(self):
+    def test_old_codex_cannot_pass_the_native_runtime_check(self):
         def run(command, **unused_kwargs):
             return subprocess.CompletedProcess(
-                command, 0, stdout="codex-cli 0.137.9", stderr=""
+                command, 0, stdout="codex-cli 0.144.9", stderr=""
             )
 
         with mock.patch.dict(
@@ -207,14 +216,15 @@ class DoctorTest(unittest.TestCase):
         ), mock.patch("cli.main.subprocess.run", side_effect=run):
             check = cli_main._doctor_codex()
         self.assertEqual(check["status"], "needs-attention")
-        self.assertIn("0.138.0", check["next"])
+        self.assertIn("goals, subagents, and isolation", check["detail"])
+        self.assertIn("0.145.0", check["next"])
 
     def test_missing_factory_credentials_report_release_wait(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
-            "cli.main._catalog_root", return_value=Path("/catalog")
-        ), mock.patch("cli.main._doctor_catalog", return_value=ready("inventor-catalog")), mock.patch(
+            "cli.main._inventor_source_root", return_value=Path("/inventors")
+        ), mock.patch("cli.main._doctor_catalog", return_value=ready("inventor-sources")), mock.patch(
             "cli.main._doctor_codex", return_value=ready("codex")
         ), mock.patch(
             "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
@@ -234,8 +244,8 @@ class DoctorTest(unittest.TestCase):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {"FACTORY_PASSWORD": secret}, clear=True), mock.patch(
-            "cli.main._catalog_root", return_value=Path("/catalog")
-        ), mock.patch("cli.main._doctor_catalog", return_value=ready("inventor-catalog")), mock.patch(
+            "cli.main._inventor_source_root", return_value=Path("/inventors")
+        ), mock.patch("cli.main._doctor_catalog", return_value=ready("inventor-sources")), mock.patch(
             "cli.main._doctor_codex", return_value=ready("codex")
         ), mock.patch(
             "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
@@ -253,7 +263,7 @@ class DoctorTest(unittest.TestCase):
 
 
 class PersonaCommandTest(unittest.TestCase):
-    def test_create_list_and_check_use_only_v7_inventor_bundles(self):
+    def test_create_list_and_check_use_only_v8_inventor_bundles(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             created_stdout = StringIO()
@@ -265,8 +275,6 @@ class PersonaCommandTest(unittest.TestCase):
                         "mira",
                         "--description",
                         "kinetic desk toys, never board games",
-                        "--lane",
-                        "moving-machines",
                         "--root",
                         str(root),
                         "--json",
@@ -276,8 +284,8 @@ class PersonaCommandTest(unittest.TestCase):
             receipt = json.loads(created_stdout.getvalue())
             persona = root / "inventors" / "mira"
             manifest = json.loads((persona / "inventor.json").read_text(encoding="utf-8"))
-            self.assertEqual(manifest["schema_version"], 7)
-            self.assertEqual(manifest["capabilities"], ["moving-machines"])
+            self.assertEqual(manifest["schema_version"], 8)
+            self.assertNotIn("capabilities", manifest)
             self.assertNotIn("entrypoint", manifest)
             self.assertNotIn("checks", manifest)
             self.assertEqual(
@@ -287,13 +295,14 @@ class PersonaCommandTest(unittest.TestCase):
             self.assertEqual(manifest["extensions"][0]["name"], "mira-inventor")
             self.assertEqual(receipt["skills"], manifest["extensions"])
             self.assertEqual(receipt["validation"], "static-passed")
+            self.assertNotIn("lane", receipt)
 
             listed_stdout = StringIO()
             with redirect_stdout(listed_stdout):
                 self.assertEqual(main(("inventors", "--root", str(root), "--json")), 0)
             listed = json.loads(listed_stdout.getvalue())
             self.assertEqual([item["id"] for item in listed], ["mira"])
-            self.assertEqual(listed[0]["lane"], "moving-machines")
+            self.assertNotIn("lane", listed[0])
             self.assertEqual(listed[0]["skills"], ["mira-inventor"])
 
             checked_stdout = StringIO()
@@ -323,8 +332,6 @@ class PersonaCommandTest(unittest.TestCase):
                         "inventor",
                         "--taste",
                         str(taste),
-                        "--lane",
-                        "holdable-science",
                         "--root",
                         str(root),
                         "--json",
@@ -336,7 +343,7 @@ class PersonaCommandTest(unittest.TestCase):
                 content,
             )
 
-    def test_check_rejects_pre_v7_manifests_without_executing_them(self):
+    def test_check_rejects_pre_v8_manifests_without_executing_them(self):
         with tempfile.TemporaryDirectory() as temporary:
             persona = Path(temporary) / "legacy"
             persona.mkdir()
@@ -368,7 +375,7 @@ class PersonaCommandTest(unittest.TestCase):
             process.assert_not_called()
             self.assertEqual(result, 2)
             self.assertEqual(output.getvalue(), "")
-            self.assertIn("schema_version must be 7", errors.getvalue())
+            self.assertIn("schema_version must be 8", errors.getvalue())
 
     def test_json_error_does_not_pollute_stdout(self):
         stdout = StringIO()
@@ -379,8 +386,6 @@ class PersonaCommandTest(unittest.TestCase):
                     "create",
                     "inventor",
                     "mira",
-                    "--lane",
-                    "little-worlds",
                     "--root",
                     temporary,
                     "--json",

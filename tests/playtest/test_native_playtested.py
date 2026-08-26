@@ -6,14 +6,14 @@ from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
-from workshop.invent.native import InventedV2
-from workshop.make import Feedback
+from workshop.invent.native import NativeInvented
+from workshop.playtest import Feedback
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
+    InventorRoster,
+    InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytestCheck, NativePlaytested
 from workshop.product import ToyBlueprint
@@ -28,17 +28,26 @@ class NativePlaytestedTest(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
-        self.blueprint = ToyBlueprint.for_lane("little-worlds")
-        catalog = PersonaCatalog(
-            (PersonaCatalogEntry("eve", "little-worlds", "b" * 64, "c" * 64),)
+        self.blueprint = ToyBlueprint()
+        roster = InventorRoster(
+            (
+                InventorRosterEntry(
+                    "eve",
+                    ".codex/agents/eve.toml",
+                    "b" * 64,
+                    "c" * 64,
+                    "d" * 64,
+                ),
+            )
         )
         self.assignment = NativeMatchAssignment(
             wish_sha256="a" * 64,
-            persona_catalog_sha256=catalog.catalog_sha256,
+            inventor_roster_sha256=roster.roster_sha256,
             selected_inventor_id="eve",
-            selected_lane="little-worlds",
-            selected_manifest_sha256="b" * 64,
-            selected_taste_sha256="c" * 64,
+            selected_agent_path=".codex/agents/eve.toml",
+            selected_agent_sha256="b" * 64,
+            selected_source_manifest_sha256="c" * 64,
+            selected_taste_sha256="d" * 64,
             blueprint_sha256=self.blueprint.sha256,
             ranking=(
                 MatchRankingEntry(
@@ -46,12 +55,11 @@ class NativePlaytestedTest(unittest.TestCase):
                 ),
             ),
         )
-        self.invented = InventedV2(
+        self.invented = NativeInvented(
             wish_sha256=self.assignment.wish_sha256,
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            lane="little-worlds",
             concept={"title": "Moon Nook", "summary": "A tiny lunar observatory."},
             research={
                 "sources": [
@@ -68,7 +76,6 @@ class NativePlaytestedTest(unittest.TestCase):
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
         }
         product_bytes = (
             json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
@@ -103,7 +110,7 @@ class NativePlaytestedTest(unittest.TestCase):
         evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
         evidence_root.mkdir(parents=True, exist_ok=True)
         checks = []
-        for check_id in self.blueprint.required_capabilities("playtest"):
+        for check_id in self.blueprint.required_playtest_checks():
             content = (json.dumps({"check": check_id, "ok": check_id != failed}) + "\n").encode()
             path = "%s.json" % check_id
             (evidence_root / path).write_bytes(content)
@@ -156,12 +163,12 @@ class NativePlaytestedTest(unittest.TestCase):
         self.assertTrue(canonical.passed)
         self.assertEqual(
             {item.playtest_id for item in canonical.evidence.results},
-            set(self.blueprint.required_capabilities("playtest")),
+            set(self.blueprint.required_playtest_checks()),
         )
 
-    def test_tamper_missing_capability_and_false_pass_fail_closed(self):
+    def test_tamper_missing_check_and_false_pass_fail_closed(self):
         playtested = self._playtested()
-        evidence = self.run_root / "artifacts/playtest/r0001/evidence/world-test.json"
+        evidence = self.run_root / "artifacts/playtest/r0001/evidence/agent-playtest.json"
         evidence.write_text('{"changed":true}\n')
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             playtested.validate_evidence_tree(self.run_root, self.made)
@@ -180,7 +187,7 @@ class NativePlaytestedTest(unittest.TestCase):
             ).assert_context(self.made, self.blueprint)
 
         with self.assertRaisesRegex(ContractError, "cannot contain failures"):
-            self._playtested(verdict="pass", failed="world-test")
+            self._playtested(verdict="pass", failed="agent-playtest")
 
 
 if __name__ == "__main__":

@@ -350,6 +350,38 @@ def load_taste(inventor_root: Path) -> Taste:
     )
 
 
+def parse_taste_bytes(source: bytes, *, path: Path) -> Taste:
+    """Parse exact embedded Taste bytes without requiring a duplicate file.
+
+    Product projects bind Taste inside ``.codex/agents/<inventor>.toml``.  The
+    trusted host uses this parser after validating that custom-agent file,
+    rather than materializing a second Inventor identity tree.
+    """
+
+    selected_path = Path(path)
+    if (
+        not selected_path.is_absolute()
+        or selected_path.name != "TASTE.md"
+        or not isinstance(source, bytes)
+        or not 1 <= len(source) <= MAX_TASTE_BYTES
+    ):
+        raise ManifestError("embedded Inventor Taste path or bytes are invalid")
+    try:
+        content = source.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ManifestError("embedded Inventor Taste must be UTF-8") from exc
+    header_source = _header_prefix(source, selected_path)
+    header = _parse_taste_header(header_source, selected_path)
+    return Taste(
+        schema_version=1,
+        path=selected_path,
+        content=content,
+        sha256=hashlib.sha256(source).hexdigest(),
+        byte_count=len(source),
+        header=header,
+    )
+
+
 __all__ = [
     "MAX_TASTE_BYTES",
     "MAX_TASTE_DESCRIPTION_CHARS",
@@ -358,5 +390,6 @@ __all__ = [
     "Taste",
     "TasteHeader",
     "load_taste",
+    "parse_taste_bytes",
     "load_taste_header",
 ]

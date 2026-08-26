@@ -22,9 +22,8 @@ from workshop.artifacts import (
     build_artifact_manifest,
 )
 from workshop.errors import ArtifactError, ContractError
-from workshop.make.contracts import Feedback
 from workshop.make.native import NativeMade
-from workshop.playtest.contracts import Playtested
+from workshop.playtest.contracts import Feedback, Playtested
 from workshop.playtest.evidence import PlaytestResult
 from workshop.playtest.service import Playtest
 from workshop.product import ToyBlueprint
@@ -170,7 +169,7 @@ def _feedback_from_mapping(value: Any) -> Feedback:
 
 @dataclass(frozen=True)
 class NativePlaytested:
-    """All required lane evidence for one exact Made revision."""
+    """All required baseline evidence for one exact Made revision."""
 
     round: int
     made_sha256: str
@@ -301,7 +300,7 @@ class NativePlaytested:
     def assert_context(self, made: NativeMade, blueprint: ToyBlueprint) -> None:
         if not isinstance(made, NativeMade) or not isinstance(blueprint, ToyBlueprint):
             raise ContractError("native Playtested context requires Made and blueprint")
-        required = set(blueprint.required_capabilities("playtest"))
+        required = set(blueprint.required_playtest_checks())
         observed = {item.check_id for item in self.checks}
         if (
             self.round != made.round

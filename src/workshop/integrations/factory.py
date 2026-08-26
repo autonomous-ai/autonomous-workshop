@@ -1,8 +1,9 @@
-"""Credential-isolated Factory import and explicit publication effects.
+"""Credential-isolated Factory transport and explicit publication effects.
 
 This module is the only authenticated Factory boundary. It builds a narrowed,
-model-only handoff from exact sealed Make bytes, records an effect intent before
-network I/O, and accepts success only from authenticated readback.
+model-and-page handoff from exact sealed Make and Release bytes, records an
+effect intent before network I/O, and accepts success only from authenticated
+readback. Customer-page authorship is complete before this adapter runs.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ from workshop.errors import (
     StateConflict,
 )
 from workshop.make.cad.mesh import inspect_stl_path
-from workshop.product import attribute_product_description
+from workshop.release.native import validate_release_product
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
 
 
@@ -52,15 +53,9 @@ FACTORY_IMPORT_STRING_LIMITS = {
     "title": 300,
     "description": 2_000,
     "category": 100,
-    "prompt": 50_000,
 }
-FACTORY_CATEGORY_BY_LANE = {
-    "classics-made-yours": "toys",
-    "invented-games": "toys",
-    "moving-machines": "toys",
-    "holdable-science": "toys",
-    "little-worlds": "toys",
-}
+FACTORY_PRODUCT_CATEGORY = "toys"
+FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 # Only these exact metadata files and CAD/project source types may cross the
 # Factory boundary.  This is deliberately an allowlist: a creator-facing file
 # must not become uploadable merely because its directory or suffix was not in
@@ -70,6 +65,7 @@ FACTORY_MODEL_METADATA_PATHS = frozenset(
         "_inventor-artifact.json",
         "product.json",
         "project.json",
+        FACTORY_RELEASE_PAGE_PATH,
         "workshop-product-facts.json",
     )
 )
@@ -98,7 +94,9 @@ FACTORY_FORBIDDEN_MEDIA_SUFFIXES = frozenset(
         ".tiff", ".webm", ".webp",
     )
 )
-FACTORY_OUTPUT_FIELDS = frozenset(("attachments", "images", "story_blocks", "use_case"))
+FACTORY_MADE_FORBIDDEN_PAGE_FIELDS = frozenset(
+    ("attachments", "cinematic", "hero", "images", "story_blocks", "use_case")
+)
 PROVEN_NO_EFFECT_STATUSES = frozenset(
     (400, 401, 403, 404, 405, 406, 410, 411, 412, 413, 414, 415,
      416, 417, 421, 422, 426, 428, 431, 451)
@@ -149,12 +147,6 @@ def _factory_product_page_url(slug: Any) -> str:
         DEFAULT_FACTORY_PAGE_BASE + "/" + urllib.parse.quote(slug, safe=""),
         "Factory product page URL",
     )
-
-
-def _factory_category(lane: Any) -> str:
-    if not isinstance(lane, str) or lane not in FACTORY_CATEGORY_BY_LANE:
-        raise ContractError("product lane has no Factory category mapping")
-    return FACTORY_CATEGORY_BY_LANE[lane]
 
 
 def _is_factory_model_path(
@@ -520,11 +512,27 @@ def _assert_model_only(content: bytes) -> None:
                     raise ContractError("Factory handoff product.json is malformed") from exc
                 if not isinstance(product, Mapping):
                     raise ContractError("Factory handoff product.json is malformed")
-                forbidden = FACTORY_OUTPUT_FIELDS & set(product)
+                forbidden = FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(product)
                 if forbidden:
                     raise ContractError(
-                        "Factory handoff product.json contains creator output: %s"
+                        "Factory handoff Made product.json contains Release page fields: %s"
                         % sorted(forbidden)
+                    )
+            if FACTORY_RELEASE_PAGE_PATH in names:
+                try:
+                    release_page = json.loads(
+                        archive.read(FACTORY_RELEASE_PAGE_PATH).decode("utf-8")
+                    )
+                except (UnicodeError, ValueError) as exc:
+                    raise ContractError(
+                        "Factory handoff Release product page is malformed"
+                    ) from exc
+                canonical_page = _canonical_json(
+                    validate_release_product(release_page)
+                )
+                if archive.read(FACTORY_RELEASE_PAGE_PATH) != canonical_page:
+                    raise ContractError(
+                        "Factory handoff Release product page is not canonical"
                     )
     except ContractError:
         raise
@@ -536,8 +544,9 @@ def _build_model_handoff(
     context: Any,
     destination: Path,
     facts: Mapping[str, Any],
+    release_page_content: bytes,
 ) -> Mapping[str, Any]:
-    """Create the exact model-only ZIP that crosses the Factory boundary."""
+    """Create the exact model-and-page ZIP that crosses Factory's boundary."""
 
     context.made.assert_current()
     root = Path(context.made.artifact_root).resolve(strict=True)
@@ -612,6 +621,15 @@ def _build_model_handoff(
         }
     facts_payload = _canonical_json(transport_facts) + b"\n"
     assert_packable_content("workshop-product-facts.json", facts_payload)
+    if not isinstance(release_page_content, bytes) or not release_page_content:
+        raise ContractError("Factory handoff requires sealed Release page bytes")
+    try:
+        release_page = json.loads(release_page_content.decode("utf-8"))
+    except (UnicodeError, ValueError) as exc:
+        raise ContractError("Factory handoff Release page bytes are malformed") from exc
+    if _canonical_json(validate_release_product(release_page)) != release_page_content:
+        raise ContractError("Factory handoff Release page bytes are not canonical")
+    assert_packable_content(FACTORY_RELEASE_PAGE_PATH, release_page_content)
 
     skip_paths = set()
     if occurrence is not None:
@@ -665,9 +683,14 @@ def _build_model_handoff(
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(_read_bound_file(root, manifest, item["source_path"]))
                 target.chmod(0o644)
-        if (staging / "workshop-product-facts.json").exists():
-            raise ContractError("Made reserves workshop-product-facts.json")
+        reserved = (
+            "workshop-product-facts.json",
+            FACTORY_RELEASE_PAGE_PATH,
+        )
+        if any((staging / path).exists() for path in reserved):
+            raise ContractError("Made contains a reserved Factory handoff path")
         (staging / "workshop-product-facts.json").write_bytes(facts_payload)
+        (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
         result = dict(build_pack(staging, destination))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
     if (
@@ -683,45 +706,12 @@ def _build_model_handoff(
             "content": content,
             "primary_model": primary_model,
             "product_facts_sha256": hashlib.sha256(facts_payload).hexdigest(),
+            "product_page_sha256": hashlib.sha256(
+                release_page_content
+            ).hexdigest(),
         }
     )
     return result
-
-
-def _bounded_fact(value: Any, maximum: int) -> str:
-    rendered = value.strip() if isinstance(value, str) else _canonical_json(value).decode("utf-8")
-    if len(rendered) <= maximum:
-        return rendered
-    digest = hashlib.sha256(rendered.encode("utf-8")).hexdigest()
-    marker = " … [full value sha256=%s]" % digest
-    return rendered[: maximum - len(marker)].rstrip() + marker
-
-
-def _factory_story_prompt(context: Any, page: Mapping[str, Any]) -> str:
-    """Bound verified facts for Factory-owned customer copy and media."""
-
-    context.made.assert_current()
-    inventor_name = context.taste.name
-    if not isinstance(inventor_name, str) or not inventor_name.strip():
-        raise ContractError("Factory story prompt requires an inventor name")
-    sections = [
-        "FACTORY STORY INPUT — verified facts, not pre-authored page copy.",
-        (
-            "Generate the complete customer page from the exact primary model: "
-            "hero, cinematic intro, illustrated use case, and story blocks. Preserve "
-            "geometry, mechanisms, component identity, and repeated-piece counts. "
-            "Do not claim a physical print, delivery, human review, durability, fit, "
-            "finish, balance, or feel from AI Playtest or CAD evidence."
-        ),
-        "Wish:\n" + _bounded_fact(context.wish.objective, 3_000),
-        "Made product facts:\n" + _bounded_fact(dict(context.made.product), 25_000),
-        "Release facts:\n" + _bounded_fact(dict(page), 12_000),
-        "Inventor attribution (retain exactly): By %s." % inventor_name,
-    ]
-    prompt = "\n\n".join(sections)
-    if len(prompt) > FACTORY_IMPORT_STRING_LIMITS["prompt"]:
-        raise ContractError("Factory story prompt exceeds the import limit")
-    return prompt
 
 
 @dataclass(frozen=True)
@@ -860,7 +850,7 @@ def _multipart(
 def _normalize_import(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
     if not isinstance(metadata, Mapping):
         raise ContractError("Factory import metadata must be an object")
-    allowed = {"status", "title", "description", "category", "prompt", "tags"}
+    allowed = {"status", "title", "description", "category", "tags"}
     if set(metadata) - allowed:
         raise ContractError("Factory import metadata contains unknown fields")
     normalized: Dict[str, Any] = {"status": metadata.get("status", "draft")}
@@ -955,7 +945,7 @@ class FactoryClient:
         _assert_model_only(content)
         normalized = _normalize_import(metadata)
         fields = [("status", "draft")]
-        for name in ("title", "description", "category", "prompt"):
+        for name in ("title", "description", "category"):
             fields.append((name, normalized[name]))
         for tag in normalized["tags"] or ("",):
             fields.append(("tags", tag))
@@ -1228,38 +1218,19 @@ def _assert_sealed_release(root: Path, manifest: ArtifactManifest) -> Path:
     return resolved
 
 
-def _release_page(root: Path) -> Mapping[str, Any]:
-    page = _read_json_file(root / "product.json", "Release product.json")
-    required = {
-        "schema_version",
-        "kind",
-        "status",
-        "title",
-        "summary",
-        "lane",
-        "product_artifact_sha256",
-        "playtest_evidence_artifact_sha256",
-    }
-    if not required <= set(page):
-        raise ContractError("Release product.json is missing Factory facts")
-    if (
-        page.get("schema_version") != 2
-        or page.get("kind") != "workshop.release-package"
-        or page.get("status") != "facts-ready"
-    ):
-        raise ContractError("Release product.json is not a factual handoff")
-    forbidden = FACTORY_OUTPUT_FIELDS & set(page)
-    if forbidden:
-        raise ContractError(
-            "Release product.json contains creator page output: %s" % sorted(forbidden)
-        )
-    if page.get("factory_enrichment") != {
-        "copy_owner": "factory",
-        "media_owner": "factory",
-        "status": "pending",
-    }:
-        raise ContractError("Release must leave Factory enrichment pending")
-    return page
+def _release_page(root: Path) -> Tuple[Mapping[str, Any], bytes]:
+    path = root / "product.json"
+    if path.is_symlink() or not path.is_file():
+        raise ContractError("Release product.json must be a sealed regular file")
+    try:
+        content = path.read_bytes()
+        raw = json.loads(content.decode("utf-8"))
+    except (OSError, UnicodeError, ValueError) as exc:
+        raise ContractError("Release product.json is malformed") from exc
+    page = validate_release_product(raw)
+    if _canonical_json(page) != content:
+        raise ContractError("Release product.json must use canonical JSON encoding")
+    return page, content
 
 
 def _effect_details(intent: EffectIntent, values: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1345,7 +1316,7 @@ class FactoryReleaseWriter:
             "handoff_artifact_sha256",
             "product_facts_sha256",
             "primary_model_sha256",
-            "content_brief_sha256",
+            "product_page_sha256",
             "effect_request_sha256",
         )
         for name in required_hashes:
@@ -1358,10 +1329,14 @@ class FactoryReleaseWriter:
             raise ReceiptError("Factory Receipt belongs to a different handoff tree")
         if details.get("effect_idempotency_key") != intent.idempotency_key:
             raise ReceiptError("Factory Receipt belongs to a different effect")
+        if details.get("product_page_sha256") != intent.request.get(
+            "product_page_sha256"
+        ):
+            raise ReceiptError("Factory Receipt belongs to different product-page bytes")
         _https_url(details.get("page_url"), "Factory page URL")
         _https_url(details.get("cover_url"), "Factory cover URL")
-        if details.get("enrichment_status") != "pending" or details.get("page_ready") is not False:
-            raise ReceiptError("model import cannot claim Factory enrichment completed")
+        if details.get("content_owner") != "workshop-manager":
+            raise ReceiptError("Factory import must preserve Workshop page ownership")
 
     def _readback_private(
         self,
@@ -1455,7 +1430,7 @@ class FactoryReleaseWriter:
         release_sha256 = require_sha256(
             sealed_manifest.artifact_sha256, "sealed Release sha256"
         )
-        page = _release_page(release_root)
+        page, page_content = _release_page(release_root)
         product_artifact_sha256 = require_sha256(
             page.get("product_artifact_sha256"), "Release product artifact sha256"
         )
@@ -1465,8 +1440,8 @@ class FactoryReleaseWriter:
             page.get("playtest_evidence_artifact_sha256"),
             "Release Playtest evidence sha256",
         )
-        if FACTORY_OUTPUT_FIELDS & set(context.made.product):
-            raise ContractError("Made product facts contain creator Factory output")
+        if FACTORY_MADE_FORBIDDEN_PAGE_FIELDS & set(context.made.product):
+            raise ContractError("Made product facts contain Release page fields")
         identity = self.session.login()
         if identity.username.casefold() != self.inventor_id.casefold():
             raise ContractError("authenticated Factory account does not match Inventor")
@@ -1485,18 +1460,20 @@ class FactoryReleaseWriter:
         }
         with tempfile.TemporaryDirectory(prefix="workshop-release-effect-") as temporary:
             pack = Path(temporary) / "model-handoff.zip"
-            handoff = _build_model_handoff(context, pack, product_facts)
+            handoff = _build_model_handoff(
+                context,
+                pack,
+                product_facts,
+                page_content,
+            )
         primary = handoff["primary_model"]
         metadata = _normalize_import(
             {
                 "status": "draft",
                 "title": page.get("title"),
-                "description": attribute_product_description(
-                    page.get("summary"), context.taste.name
-                ),
-                "category": _factory_category(page.get("lane")),
-                "prompt": _factory_story_prompt(context, page),
-                "tags": ["toy", page.get("lane")],
+                "description": page.get("summary"),
+                "category": FACTORY_PRODUCT_CATEGORY,
+                "tags": ["toy"],
             }
         )
         request = {
@@ -1505,6 +1482,7 @@ class FactoryReleaseWriter:
             "path": "/designs/import",
             "filename": "model-handoff.zip",
             "owner_id": identity.owner_id,
+            "product_page_sha256": handoff["product_page_sha256"],
             "metadata": dict(metadata),
         }
         intent = self.ledger.prepare(
@@ -1521,9 +1499,8 @@ class FactoryReleaseWriter:
             "product_facts_sha256": handoff["product_facts_sha256"],
             "primary_model_path": primary["path"],
             "primary_model_sha256": primary["sha256"],
-            "content_brief_sha256": _canonical_sha256(page),
-            "enrichment_status": "pending",
-            "page_ready": False,
+            "product_page_sha256": handoff["product_page_sha256"],
+            "content_owner": "workshop-manager",
         }
         if intent.state == "succeeded":
             if intent.receipt is None:

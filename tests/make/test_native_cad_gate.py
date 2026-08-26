@@ -49,7 +49,6 @@ class NativeCadGateTest(unittest.TestCase):
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
             "components": ["observatory"],
             "instructions": "Explore the craters.",
             "limitations": ["Digital checks only"],

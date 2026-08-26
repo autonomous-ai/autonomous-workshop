@@ -1,15 +1,14 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "id": "ivy",
   "status": "experimental",
-  "capabilities": ["holdable-science"],
   "source": {"kind": "local"},
   "extensions": [
     {
       "kind": "codex-skill",
       "name": "ivy-inventor",
       "path": "skills/ivy-inventor",
-      "artifact_sha256": "e3623366a23034f2fa2a0701b3f0da9b9c9e2ffa5bbb7d5386df5d25dd323f72"
+      "artifact_sha256": "64c5da9c1396a70cbac6f484a0d2db5a42cb92dfd6fe5f559353aad045151f63"
     }
   ]
 }

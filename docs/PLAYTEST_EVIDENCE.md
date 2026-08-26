@@ -9,7 +9,7 @@ that a physical product exists.
 The host writes the current Playtest `STAGE.json` with:
 
 - the complete sealed Made contract and product manifest;
-- the selected lane blueprint;
+- the universal toy blueprint;
 - the current Make–Playtest round;
 - every required check id;
 - the canonical evidence root and contract path;
@@ -18,11 +18,30 @@ The host writes the current Playtest `STAGE.json` with:
 Codex must inspect that exact product tree. Evidence from a prior Make revision
 cannot be carried forward.
 
-## Native work, deterministic envelope
+The universal baseline check ids are `agent-playtest`, `mechanical-check`, and
+`printability-check`, derived by the host from
+`ToyBlueprint.required_playtest_checks()`. The current `STAGE.json` is
+authoritative for the exact required set.
+
+These are Codex-authored digital assessments unless host-replayed evidence or
+an authenticated physical receipt explicitly proves more. They do not prove a
+successful print, physical fit, durability, hands-on use, or human response.
+
+## Native Playtest Goal, deterministic envelope
+
+The root session creates one native Codex Goal for this Playtest attempt. Its
+objective is independent evaluation of the exact sealed Made revision, and its
+stopping condition is a successful Playtest finalizer with reproducible
+evidence and a truthful verdict. A well-supported `improve` or `block` verdict
+satisfies the Playtest Goal; Codex must not reason a failure into a pass.
 
 The native session may use first-time, optimizing, exploratory, and adversarial
-player perspectives; native search; CAD/render inspection; domain skills; and
-seeded simulations. It records substantive evidence as files, not chat claims.
+player perspectives; independent native subagents; native search; CAD/render
+inspection; domain skills; and seeded simulations. While pursuing the Goal,
+Codex observes the baseline, acts by running inspections, evaluates exact
+evidence, and improves missing or weak test coverage. This loop is Codex
+behavior, not a Python program. It records substantive evidence as files, not
+chat claims.
 
 The authored Playtest source contains exactly:
 
@@ -46,8 +65,10 @@ python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
 
 The finalizer hashes the entire evidence tree, validates exact check coverage,
 and writes the canonical Playtested contract and bound `agent-outcome.json`.
-It cannot pass the gate. The host rereads the tree, validates the contract, and
-reruns the trusted CAD verifier on an isolated copy of the Made product.
+It cannot pass the gate or run the improvement loop. After it succeeds, Codex
+completes the Playtest Goal and returns to the host. The host rereads the tree,
+validates the contract, and reruns the trusted CAD verifier on an isolated copy
+of the Made product.
 
 ## Verdicts and feedback
 
@@ -59,12 +80,13 @@ reruns the trusted CAD verifier on an isolated copy of the Made product.
 
 A failed Playtest proposes a return to Make. The host preserves that exact
 Playtested contract as feedback, advances the bounded round, and invalidates
-downstream evidence. Codex repairs the product in a new Make revision; it does
-not edit the previously sealed Made or Playtest files until they appear to
-pass.
+downstream evidence. The host does not interpret or repair the product. Codex
+reads the evidence and runs the build/check/repair work inside the next Make
+Goal; it does not edit previously sealed Made or Playtest files until they
+appear to pass.
 
 Reaching the configured round limit stops truthfully. It never lowers required
-capabilities or converts an incomplete result into Release.
+checks or converts an incomplete result into Release.
 
 ## Claim boundaries
 
@@ -85,8 +107,9 @@ mismatched evidence fails closed.
 Release starts only after Playtest passes for the current Made artifact. Its
 canonical `product.json` repeats the exact product artifact hash and Playtest
 evidence artifact hash, and its claim map is derived exactly from the passing
-checks. Release may write a manual and factual page content, but it cannot turn
-simulation into customer response or CAD verification into manufacture.
+checks. Release may write a manual and complete page-ready product content,
+but it cannot turn simulation into customer response or CAD verification into
+manufacture.
 
 Deliver owns real print, hands-on QA, packing, and carrier evidence. A Factory
 page—even a public one—is not delivery evidence.

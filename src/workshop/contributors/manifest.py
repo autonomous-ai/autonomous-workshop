@@ -1,4 +1,4 @@
-"""Strict schema-v7 Inventor discovery and manifest validation."""
+"""Strict schema-v8 Inventor discovery and manifest validation."""
 
 from __future__ import annotations
 
@@ -15,30 +15,13 @@ from workshop.contributors.extensions import (
     parse_inventor_extensions,
 )
 from workshop.errors import ManifestError
-from workshop.product import PLAYTHING_LANES
 
 
 _ID = re.compile(r"^[a-z][a-z0-9-]{1,62}$")
 _STATUS = frozenset(("active", "experimental", "blocked", "reference", "archived"))
-_FIELDS = frozenset(
-    ("schema_version", "id", "status", "capabilities", "source", "extensions")
-)
+_FIELDS = frozenset(("schema_version", "id", "status", "source", "extensions"))
 _SOURCE_KINDS = frozenset(("local", "upstream-snapshot"))
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
-
-
-def _capabilities(value: Any, path: Path) -> tuple[str, ...]:
-    if (
-        not isinstance(value, list)
-        or len(value) != 1
-        or not isinstance(value[0], str)
-        or value[0] not in PLAYTHING_LANES
-    ):
-        raise ManifestError(
-            "%s: capabilities must contain exactly one Workshop plaything lane from %s"
-            % (path, sorted(PLAYTHING_LANES))
-        )
-    return (value[0],)
 
 
 def _source(value: Any, path: Path) -> dict[str, Any]:
@@ -103,15 +86,14 @@ class InventorManifest:
     schema_version: int
     inventor_id: str
     status: str
-    capabilities: Sequence[str]
     source: Mapping[str, Any]
     extensions: Sequence[InventorExtension]
     path: Path
 
     @classmethod
     def parse(cls, raw: Mapping[str, Any], path: Path) -> "InventorManifest":
-        if type(raw.get("schema_version")) is not int or raw["schema_version"] != 7:
-            raise ManifestError("%s: schema_version must be 7" % path)
+        if type(raw.get("schema_version")) is not int or raw["schema_version"] != 8:
+            raise ManifestError("%s: schema_version must be 8" % path)
         if set(raw) != _FIELDS:
             missing = sorted(_FIELDS - set(raw))
             unknown = sorted(set(raw) - _FIELDS)
@@ -132,16 +114,14 @@ class InventorManifest:
         status = raw.get("status")
         if status not in _STATUS:
             raise ManifestError("%s: status must be one of %s" % (path, sorted(_STATUS)))
-        capabilities = _capabilities(raw.get("capabilities"), path)
         source = _source(raw.get("source"), path)
         extensions = parse_inventor_extensions(
             raw.get("extensions"), inventor_id=inventor_id
         )
         return cls(
-            schema_version=7,
+            schema_version=8,
             inventor_id=inventor_id,
             status=status,
-            capabilities=capabilities,
             source=source,
             extensions=extensions,
             path=Path(path),
@@ -149,10 +129,9 @@ class InventorManifest:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema_version": 7,
+            "schema_version": 8,
             "id": self.inventor_id,
             "status": self.status,
-            "capabilities": list(self.capabilities),
             "source": dict(self.source),
             "extensions": [item.to_dict() for item in self.extensions],
         }

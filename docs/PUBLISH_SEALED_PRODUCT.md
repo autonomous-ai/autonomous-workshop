@@ -4,18 +4,33 @@ Factory publication is a host effect after Release, not product-run agent work.
 
 ## What Release supplies
 
-The native Codex session writes a local factual package at
+The native Codex session writes a complete schema-v3, page-ready package at
 `artifacts/release/package` with at least:
 
 - `MANUAL.md`;
-- canonical `product.json` bound to the exact Made product and passing
-  Playtest evidence;
-- factual page metadata, attribution, limitations, and evidence-derived claims.
+- canonical `product.json` with `kind=workshop.release-package`,
+  `status=page-ready`, and exact Made and passing-Playtest hashes;
+- evidence-derived claims, `title`, `summary`, `hero`, `cinematic`, `use_case`,
+  one or more `story_blocks`, `what_arrives`, and `limitations`. Every page
+  section carries `headline`, `body`, `visual_direction`, and valid
+  `evidence_refs`.
+
+Release is one native Codex Goal whose stopping condition is a successful
+Release finalizer for the current checkpoint. While pursuing it, Codex observes
+the exact Made product and passing Playtest evidence, writes the manual and
+complete product page, evaluates every claim and evidence reference against
+exact hashes, and improves the package.
+
+That fact-check/write/review loop is native Codex behavior, not Python.
 
 The run-local finalizer hashes the package and writes the canonical Release
-contract. The host rereads and seals the whole tree before contacting Factory.
-The package must not contain credentials, remote receipts, generated marketing
-media, or claims that Factory enrichment already happened.
+contract. After it succeeds, Codex completes the Goal and returns to the host.
+The host rereads and seals the whole tree before contacting Factory. Codex owns
+the complete page copy and visual direction; Factory transports the exact
+sealed page and model bytes without creative enrichment. The local package
+must not contain credentials, remote receipts, images, audio, video, or
+unsupported claims of manufacture, physical performance, human response,
+publication, or delivery.
 
 ## Private by default
 
@@ -26,8 +41,8 @@ uv run workshop wish "I wish for ..."
 ```
 
 If Factory authentication is configured, the host can import the validated
-model/facts as a private draft and reconcile authenticated readback. Codex does
-not see credentials or perform the import.
+model and page as a private draft and reconcile authenticated readback. Codex
+does not see credentials or perform the import.
 
 ## Explicit public promotion
 

@@ -1,4 +1,4 @@
-"""Build the installed snapshot of the repository's inventor catalog."""
+"""Build the installed snapshot of the repository's bundled Inventors."""
 
 import json
 from pathlib import Path
@@ -106,8 +106,7 @@ class build_py(_build_py):
             Path(self.build_lib)
             / "workshop"
             / "contributors"
-            / "_catalog"
-            / "inventors"
+            / "_inventors"
         )
         if destination.exists():
             shutil.rmtree(destination)
@@ -125,7 +124,7 @@ class build_py(_build_py):
                 ) from exc
             if observed_root_entries != expected_root_entries:
                 raise ValueError(
-                    "bundled Inventor root differs from the schema-v7 inventory: %s"
+                    "bundled Inventor root differs from the schema-v8 inventory: %s"
                     % source
                 )
             for filename in ("TASTE.md", "inventor.json"):
@@ -139,13 +138,13 @@ class build_py(_build_py):
             manifest = json.loads((source / "inventor.json").read_text("utf-8"))
             if (
                 not isinstance(manifest, dict)
-                or manifest.get("schema_version") != 7
+                or manifest.get("schema_version") != 8
                 or manifest.get("id") != inventor_id
                 or not isinstance(manifest.get("extensions"), list)
                 or not manifest["extensions"]
             ):
                 raise ValueError(
-                    "bundled Inventors must use the native schema-v7 skill contract"
+                    "bundled Inventors must use the native schema-v8 skill contract"
                 )
             declared = set()
             for extension in manifest["extensions"]:

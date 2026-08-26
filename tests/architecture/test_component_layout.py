@@ -134,7 +134,8 @@ class ComponentLayoutTest(unittest.TestCase):
             if not path.is_file():
                 continue
             if any(
-                part in {".git", ".venv", ".runtime", "build", "dist", "toys"}
+                part in {".git", ".runtime", "build", "dist", "toys"}
+                or part.startswith(".venv")
                 for part in path.parts
             ):
                 continue
@@ -174,7 +175,7 @@ class ComponentLayoutTest(unittest.TestCase):
         self.assertEqual(offenders, [])
 
     def test_component_packages_expose_stable_public_contracts(self):
-        from workshop import contributors, match, product, workflow
+        from workshop import contributors, invent, make, match, playtest, product, workflow
 
         expected = {
             contributors: {
@@ -184,14 +185,29 @@ class ComponentLayoutTest(unittest.TestCase):
                 "validate_inventor_collection",
             },
             product: {
-                "PLAYTHING_LANES",
+                "BASELINE_PLAYTEST_CHECKS",
                 "ToyBlueprint",
             },
             match: {
                 "MatchRankingEntry",
                 "NativeMatchAssignment",
-                "PersonaCatalog",
-                "PersonaCatalogEntry",
+                "InventorRoster",
+                "InventorRosterEntry",
+            },
+            invent: {
+                "NativeInvented",
+            },
+            make: {
+                "Made",
+                "NativeMade",
+            },
+            playtest: {
+                "Feedback",
+                "NativePlaytestCheck",
+                "NativePlaytested",
+                "Playtest",
+                "PlaytestResult",
+                "Playtested",
             },
             workflow: {
                 "AgentArtifact",
@@ -207,8 +223,16 @@ class ComponentLayoutTest(unittest.TestCase):
                 self.assertTrue(all(hasattr(package, name) for name in names))
         self.assertEqual(
             set(product.__all__),
-            {"PLAYTHING_LANES", "ToyBlueprint", "attribute_product_description"},
+            {
+                "BASELINE_PLAYTEST_CHECKS",
+                "ToyBlueprint",
+                "attribute_product_description",
+            },
         )
+        self.assertEqual(set(invent.__all__), {"NativeInvented"})
+        self.assertEqual(set(make.__all__), {"Made", "NativeMade"})
+        self.assertNotIn("Feedback", make.__all__)
+        self.assertIn("Feedback", playtest.__all__)
 
 
 if __name__ == "__main__":

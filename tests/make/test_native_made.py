@@ -6,13 +6,13 @@ from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     MatchRankingEntry,
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
+    InventorRoster,
+    InventorRosterEntry,
 )
 from workshop.product import ToyBlueprint
 
@@ -27,33 +27,37 @@ class NativeMadeTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.run_root = Path(self.temporary.name).resolve()
         self.wish_sha256 = "a" * 64
-        self.catalog = PersonaCatalog(
+        self.roster = InventorRoster(
             (
-                PersonaCatalogEntry(
-                    "eve", "little-worlds", "b" * 64, "c" * 64
+                InventorRosterEntry(
+                    "eve",
+                    ".codex/agents/eve.toml",
+                    "b" * 64,
+                    "c" * 64,
+                    "d" * 64,
                 ),
             )
         )
         self.assignment = NativeMatchAssignment(
             wish_sha256=self.wish_sha256,
-            persona_catalog_sha256=self.catalog.catalog_sha256,
+            inventor_roster_sha256=self.roster.roster_sha256,
             selected_inventor_id="eve",
-            selected_lane="little-worlds",
-            selected_manifest_sha256="b" * 64,
-            selected_taste_sha256="c" * 64,
-            blueprint_sha256=ToyBlueprint.for_lane("little-worlds").sha256,
+            selected_agent_path=".codex/agents/eve.toml",
+            selected_agent_sha256="b" * 64,
+            selected_source_manifest_sha256="c" * 64,
+            selected_taste_sha256="d" * 64,
+            blueprint_sha256=ToyBlueprint().sha256,
             ranking=(
                 MatchRankingEntry(
                     "eve", "The Wish is a specific place made into a tiny world."
                 ),
             ),
         )
-        self.invented = InventedV2(
+        self.invented = NativeInvented(
             wish_sha256=self.wish_sha256,
             assignment_sha256=self.assignment.assignment_sha256,
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
-            lane="little-worlds",
             concept={"title": "Moon Nook", "summary": "A tiny lunar observatory."},
             research={"sources": [{"url": "https://example.test/moon", "claim": "scale"}]},
         )
@@ -67,7 +71,6 @@ class NativeMadeTest(unittest.TestCase):
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
-            "lane": "little-worlds",
             "components": ["observatory"],
             "instructions": "Place it on a desk and explore the craters.",
             "limitations": ["Digital checks only"],

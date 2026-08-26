@@ -10,7 +10,8 @@ Welcome to Autonomous Workshop, where human and AI Inventors make toys the world
 
 ## Meet some of the inventors
 
-Here are five, one for each kind of toy. Many more are coming, and you can
+Here are five distinct points of view. They are examples, not categories or
+limits on what people can Wish for. Many more are coming, and you can
 [build your own](#build-your-own-inventor).
 
 ### Alice — reinvent the classics
@@ -25,10 +26,11 @@ so the set is about you. It is judged as an object, not as a game.
 ### Leo — invent games that don't exist yet
 
 Brand new games, invented for one wish: new rules, new pieces, a new reason to
-sit at a table. Leo is the only inventor allowed to invent rules. Before
-Release, his AI players must finish the required seeded games and expose
-broken rules, loops, exploits, and weak strategies. Whether customers want to
-play again is learned later from Reviews, after they receive the game.
+sit at a table. Leo is especially drawn to rules that reward discovery and
+counterplay. Before Release, AI players must finish the required seeded games
+and expose broken rules, loops, exploits, and weak strategies. Whether
+customers want to play again is learned later from Reviews, after they receive
+the game.
 
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
@@ -70,7 +72,7 @@ one works the same whether there are five of them or a thousand.
 
 ## Quick start
 
-Requires Python 3.11 or newer and a signed-in Codex CLI 0.138.0 or newer. Workshop
+Requires Python 3.11 or newer and a signed-in Codex CLI 0.145.0 or newer. Workshop
 uses the developer's existing Codex subscription; it does not require a second
 model API key.
 
@@ -83,7 +85,7 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-Every Wish first creates one persistent Codex project under `toys/`, populates
+Every Wish first creates one persistent toy project under `toys/`, populates
 its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
 native Codex session with that toy project as its working directory. The same
 session Matches an Inventor subagent, researches and Invents the concept,
@@ -94,11 +96,29 @@ package:
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 ```
 
-Release is deliberately broader than “instructions.” It contains `MANUAL.md`,
-canonical product facts, evidence-bound claims, page metadata, and the factual
-input for Factory to create the customer-facing product page. The default is
-private. Add `--publish` only when the verified page should be promoted to a
-public Factory listing:
+For each active Match, Invent, Make, Playtest, or Release attempt, Codex creates
+one native Goal with one objective, proof artifacts, and a verifiable stopping
+condition: the current stage finalizer succeeds. Only one Goal is active at a
+time. While pursuing it, Codex observes the current artifact, acts with its
+native tools and subagents, evaluates exact output, and improves it. This is
+Codex's work loop inside the Goal, not a Python loop. The host checkpoint stays
+the durable authority, and Wish and Deliver remain host boundaries. This uses
+the official Codex patterns for [following a durable
+Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
+evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
+
+The universal digital Playtest baseline is `agent-playtest`,
+`mechanical-check`, and `printability-check`. These are Codex-authored
+assessments unless the host replays deterministic evidence or a physical
+receipt explicitly proves more. AI evidence never proves a successful print,
+physical fit, durability, or human response.
+
+Release is deliberately broader than “instructions.” Codex writes `MANUAL.md`
+and canonical schema-v3 page-ready product data: evidence-bound hero,
+cinematic, use-case, story-block, what-arrives, limitation, and claim content.
+Factory transports those exact sealed page and model bytes; it does not own a
+creative enrichment step. The default is private. Add `--publish` only when
+the verified page should be promoted to a public Factory listing:
 
 ```bash
 uv run workshop wish --publish \
@@ -120,17 +140,25 @@ uv run workshop status <wish-id>
 uv run workshop resume <wish-id>
 ```
 
-If a deterministic gate fails or a capability is missing, the run waits with a
-concrete need. It never starts a replacement session or treats model prose as
-proof.
+If a deterministic gate fails or a required tool or authorization is missing,
+the run waits with a concrete need. It never starts a replacement session or
+treats model prose as proof.
 
 ## How the runtime is divided
 
 The selected coding-agent runtime does nearly all product work: discovery,
 Match judgment, research, concept exploration, design, CAD iteration, artifact
-inspection, AI Playtest, repair, manual writing, and factual product-page
-content. Codex is the only implemented runtime today. Claude Code and Grok
-Build are future adapters to the same project and checkpoint protocol.
+inspection, AI Playtest, repair, manual writing, and complete evidence-bound
+product-page content. Manager runtime support is deliberately pluggable:
+
+| Workshop Manager runtime | Status |
+|---|---|
+| Codex | Implemented |
+| Claude Code | Planned adapter |
+| Grok Build | Planned adapter |
+
+Every adapter must preserve the same toy-project, stage-objective, checkpoint,
+gate, and effect boundaries.
 
 The root coding-agent session plays the **Workshop Manager** role. With today's
 adapter, that is Codex using standard Codex-native subagents for bounded Match
@@ -145,7 +173,7 @@ not a separate “Workshop Manager agent.”
 
 The Python host is intentionally narrow. It preserves identity and exact
 bytes, enforces lifecycle order and round budgets, launches/resumes the native
-session under a workspace-only Codex permission profile, validates contracts
+session under an exact-toy-root Codex permission profile, validates contracts
 and deterministic evidence, isolates credentials,
 and performs authorized external effects idempotently. It does not contain a
 parallel Python agent, profile subprocess, prompt chain, semantic judge, or
@@ -159,12 +187,13 @@ ownership.
 
 An Inventor is a declared specialist bundle materialized as a standard Codex
 project-scoped custom agent under `.codex/agents/`. Every one has `TASTE.md`
-for creative judgment plus a small `inventor.json` for identity, eligibility,
-capabilities, and exact extension inventory. Each Inventor owns one required
-primary skill named `<id>-inventor`; it may declare additional Inventor-prefixed
-skills with scripts, references, assets, or tested deterministic CAD/domain
-tools. The root Manager asks Codex to spawn the selected custom agent from the
-exact host-materialized bundle.
+for creative judgment plus a small schema-v8 `inventor.json` for stable source
+metadata and exact skill-tree hashes. Each Inventor owns one required primary
+skill named `<id>-inventor`; it may declare additional Inventor-prefixed skills
+with scripts, references, assets, or tested deterministic CAD/domain tools.
+For a run, `.codex/agents/*.toml` is the sole Inventor identity, Taste, and
+skill roster. The root Manager asks Codex to spawn the selected custom agent
+from those exact host-materialized bytes.
 
 This follows Codex's official [subagent and project-scoped custom-agent
 convention](https://learn.chatgpt.com/docs/agent-configuration/subagents); the
@@ -177,8 +206,7 @@ custom logic only when the craft is genuinely specialist.
 
 ```bash
 uv run workshop create inventor \
-  --taste ./TASTE.md \
-  --lane moving-machines
+  --taste ./TASTE.md
 ```
 
 A useful `TASTE.md` has a name, a discriminating one-line description, and a
@@ -201,7 +229,7 @@ I love mechanisms whose motion tells the story. I reject decoration without play
 - [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
 - [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
 
-Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the catalog contract.
+Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 
 ## Repository structure
 
@@ -210,15 +238,15 @@ The installed distribution is `autonomous-workshop`. Python code imports the
 `src/cli/` package. The `src/` layout keeps repository-only files from being
 imported accidentally.
 
-- [`toys/`](toys/) contains the persistent product projects and is the working
+- [`toys/`](toys/) contains the persistent toy projects and is the working
   directory for each native runtime session. Every toy project contains its
   product-run `AGENTS.md`, standard custom Inventors under `.codex/agents/`,
-  workflow and craft skills under `.agents/skills/`, its exact Match catalog,
+  workflow and craft skills under `.agents/skills/`, its exact Inventor roster,
   and its Wish-to-Release artifacts.
 - [`.agents/product-run/`](.agents/product-run/) is the complete isolated
   template copied into every new toy project before the runtime starts.
-- [`inventors/`](inventors/) is the reusable Inventor roster: identity, Taste,
-  its required primary skill, and any additional specialist skills or tools.
+- [`inventors/`](inventors/) contains reusable Inventor sources: manifest,
+  Taste, required primary skill, and any additional specialist skills or tools.
 - [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
 - [`src/workshop/`](src/workshop/) is the narrow trusted host, organized by
   Wish, Match, Invent, Make, Playtest, Release, Deliver, workflow, runtime,

@@ -1,10 +1,15 @@
 # ADR 0003: Preserve durable compatibility during source refactoring
 
-- Status: Accepted
+- Status: Superseded by ADR 0012
 - Date: 2026-08-25
 - Owners: Runtime, Artifacts, Integrations, and Repository maintainers
 
 ## Context
+
+ADR 0012 replaced this migration-era policy for product-run and Inventor
+formats with a deliberate native-runtime hard cut. Its durable-effect rule
+remains: authenticated external intents and receipts are never rewritten or
+blindly retried.
 
 The component refactor renames and moves Python code, skills, schemas, and
 tests. The repository also contains durable Workshop databases, manifests,

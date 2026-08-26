@@ -19,11 +19,14 @@ from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.execution import codex_subprocess_environment
+from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 
 
-ALLOWED_WORKSHOP_MODELS = frozenset(("gpt-5.6-terra", "gpt-5.6-luna"))
+ALLOWED_WORKSHOP_MODELS = frozenset(
+    ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna")
+)
 CODEX_PERMISSION_PROFILE = "workshop-product-run"
-MINIMUM_CODEX_PERMISSION_PROFILE_VERSION = (0, 138, 0)
+MINIMUM_CODEX_NATIVE_RUNTIME_VERSION = (0, 145, 0)
 DEFAULT_CODEX_TIMEOUT_SECONDS = 1_200
 MAX_CODEX_EVENT_BYTES = 1 * 1024 * 1024
 MAX_CODEX_PROMPT_BYTES = 1 * 1024 * 1024
@@ -43,21 +46,24 @@ _TRANSIENT_DIAGNOSTIC_MARKERS = (
     "upstream request timeout",
 )
 
-_CODEX_PERMISSION_CONFIG = (
+_IMMUTABLE_PRODUCT_RUN_PATHS = (
+    ".agents",
+    ".codex",
+    PRODUCT_RUN_ROOT_MARKER,
+    "AGENTS.md",
+    "STAGE.json",
+    "WISH.json",
+)
+_CODEX_PERMISSION_CONFIG_TEMPLATE = (
     'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
     'permissions.%s.description="Isolated Autonomous Workshop product run"'
     % CODEX_PERMISSION_PROFILE,
-    'permissions.%s.extends=":workspace"' % CODEX_PERMISSION_PROFILE,
-    # Pass the whole table in one override. Codex's dotted CLI override parser
-    # otherwise treats quotes around special keys such as :root as key bytes.
-    # If the surrounding checkout becomes a workspace root, the glob still
-    # keeps legacy dotenv files unreadable inside that writable tree.
-    'permissions.%s.filesystem={":root"="deny",":minimal"="read",'
-    'glob_scan_max_depth=8,":workspace_roots"={"."="write",'
-    '"**/.env*"="deny"}}'
-    % CODEX_PERMISSION_PROFILE,
+    "filesystem: deny root, read minimal runtime, write <exact-run-root>, "
+    "read immutable product inputs, deny <exact-run-root>/**/.env*",
     'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
+    'project_root_markers=["%s"]' % PRODUCT_RUN_ROOT_MARKER,
 )
+_CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
 
 
 class CodexInvocationError(RuntimeError):
@@ -270,13 +276,17 @@ def _runtime_config_sha256(
             "native_web_search": True,
             "approval_policy": "never",
             "permission_profile": CODEX_PERMISSION_PROFILE,
-            "permission_profile_config": list(_CODEX_PERMISSION_CONFIG),
+            "permission_profile_config_template": list(
+                _CODEX_PERMISSION_CONFIG_TEMPLATE
+            ),
+            "permission_profile_scope": "exact-run-root-v1",
+            "native_features": list(_CODEX_NATIVE_FEATURES),
         }
     )
 
 
-def codex_supports_permission_profiles(version: str) -> bool:
-    """Return whether a Codex CLI version supports enforced profiles."""
+def codex_supports_native_workshop(version: str) -> bool:
+    """Return whether Codex supports Workshop goals, agents, and profiles."""
 
     if not isinstance(version, str):
         return False
@@ -284,15 +294,92 @@ def codex_supports_permission_profiles(version: str) -> bool:
     if match is None:
         return False
     return tuple(int(part) for part in match.groups()) >= (
-        MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+        MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
     )
 
 
-def _permission_config_arguments() -> list[str]:
+def _toml_string(value: str) -> str:
+    """Encode one path/key as a TOML basic string."""
+
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _permission_config_arguments(run_root: Path) -> list[str]:
+    """Build one non-composable, exact-root Codex permission profile.
+
+    Codex derives a runtime workspace from repository context.  A product
+    project may intentionally live below the Workshop source checkout, so a
+    ``:workspace`` grant would also make the surrounding repository writable.
+    Absolute rules keep authority bound to this one already-canonical run root.
+    """
+
+    root = str(run_root)
+    entries = [
+        '":root"="deny"',
+        '":minimal"="read"',
+        "glob_scan_max_depth=8",
+        "%s=\"write\"" % _toml_string(root),
+    ]
+    entries.extend(
+        "%s=\"read\"" % _toml_string(str(run_root / relative))
+        for relative in _IMMUTABLE_PRODUCT_RUN_PATHS
+    )
+    entries.append(
+        "%s=\"deny\"" % _toml_string(str(run_root / "**/.env*"))
+    )
+    values = (
+        'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
+        'permissions.%s.description="Isolated Autonomous Workshop product run"'
+        % CODEX_PERMISSION_PROFILE,
+        "permissions.%s.filesystem={%s}"
+        % (CODEX_PERMISSION_PROFILE, ",".join(entries)),
+        'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
+        'project_root_markers=["%s"]' % PRODUCT_RUN_ROOT_MARKER,
+    )
     arguments: list[str] = []
-    for value in _CODEX_PERMISSION_CONFIG:
+    for value in values:
         arguments.extend(("--config", value))
     return arguments
+
+
+def _private_run_temp(run_root: Path) -> Path:
+    """Return a real 0700 temp directory contained by the exact run root."""
+
+    path = run_root / ".tmp"
+    try:
+        path.mkdir(mode=0o700)
+    except FileExistsError:
+        pass
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Codex product-run temp directory could not be created"
+        ) from exc
+    try:
+        identity = path.lstat()
+        resolved = path.resolve(strict=True)
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Codex product-run temp directory is unavailable"
+        ) from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISDIR(identity.st_mode)
+        or resolved != path
+        or stat.S_IMODE(identity.st_mode) != 0o700
+    ):
+        raise CodexInvocationError(
+            "Codex product-run temp directory must be a real 0700 directory"
+        )
+    return path
+
+
+def _codex_run_environment(run_root: Path) -> Mapping[str, str]:
+    environment = dict(codex_subprocess_environment())
+    private_temp = str(_private_run_temp(run_root))
+    environment.update(
+        {"TMPDIR": private_temp, "TMP": private_temp, "TEMP": private_temp}
+    )
+    return environment
 
 
 @dataclass(frozen=True)
@@ -403,7 +490,7 @@ class CodexNativeSessionLauncher:
     def __init__(
         self,
         *,
-        model: str = "gpt-5.6-terra",
+        model: str = "gpt-5.6-sol",
         reasoning_effort: str = "high",
         binary: Optional[str] = None,
         timeout_seconds: int = DEFAULT_CODEX_TIMEOUT_SECONDS,
@@ -413,7 +500,8 @@ class CodexNativeSessionLauncher:
     ) -> None:
         if model not in ALLOWED_WORKSHOP_MODELS:
             raise ContractError(
-                "Workshop Codex model must be gpt-5.6-terra or gpt-5.6-luna"
+                "Workshop Codex model must be gpt-5.6-sol, gpt-5.6-terra, "
+                "or gpt-5.6-luna"
             )
         if reasoning_effort not in ("low", "medium", "high", "xhigh"):
             raise ValueError("unsupported Codex reasoning effort")
@@ -428,13 +516,13 @@ class CodexNativeSessionLauncher:
         self._popen_factory = popen_factory
         self._version_runner = version_runner
         self.cli_version = cli_version or self._read_cli_version()
-        if self.binary and not codex_supports_permission_profiles(self.cli_version):
+        if self.binary and not codex_supports_native_workshop(self.cli_version):
             minimum = ".".join(
-                str(part) for part in MINIMUM_CODEX_PERMISSION_PROFILE_VERSION
+                str(part) for part in MINIMUM_CODEX_NATIVE_RUNTIME_VERSION
             )
             raise CodexInvocationError(
-                "Workshop requires Codex CLI %s or newer for credential-isolated "
-                "permission profiles" % minimum
+                "Workshop requires Codex CLI %s or newer for native goals, "
+                "subagents, and credential-isolated permission profiles" % minimum
             )
         self.runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version, self.model, self.reasoning_effort
@@ -695,6 +783,10 @@ class CodexNativeSessionLauncher:
         return [
             self.binary,
             "--search",
+            "--enable",
+            "goals",
+            "--enable",
+            "multi_agent",
             "--ask-for-approval",
             "never",
             "exec",
@@ -706,7 +798,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
-            *_permission_config_arguments(),
+            *_permission_config_arguments(run_root),
             "-C",
             str(run_root),
             "--model",
@@ -718,6 +810,10 @@ class CodexNativeSessionLauncher:
         return [
             self.binary,
             "--search",
+            "--enable",
+            "goals",
+            "--enable",
+            "multi_agent",
             "--ask-for-approval",
             "never",
             "-C",
@@ -730,7 +826,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
-            *_permission_config_arguments(),
+            *_permission_config_arguments(run_root),
             "--model",
             self.model,
             thread_id,
@@ -758,7 +854,7 @@ class CodexNativeSessionLauncher:
                 text=True,
                 bufsize=1,
                 cwd=str(run_root),
-                env=codex_subprocess_environment(),
+                env=_codex_run_environment(run_root),
             )
         except (OSError, subprocess.SubprocessError, TypeError, ValueError):
             raise CodexInvocationError(
@@ -984,10 +1080,10 @@ __all__ = [
     "MAX_CODEX_PROMPT_BYTES",
     "MAX_CODEX_SESSION_CHECKPOINT_BYTES",
     "MAX_CODEX_STDERR_BYTES",
-    "MINIMUM_CODEX_PERMISSION_PROFILE_VERSION",
+    "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "CodexInvocationError",
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
-    "codex_supports_permission_profiles",
+    "codex_supports_native_workshop",
 ]

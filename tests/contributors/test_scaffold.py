@@ -15,30 +15,35 @@ from workshop.contributors.manifest import load_manifest
 from workshop.contributors.scaffold import create_inventor, prepare_inventor_collection
 from workshop.contributors.taste import load_taste
 from workshop.errors import ContractError, StateConflict
-from workshop.product import PLAYTHING_LANES
 
 
 class ScaffoldTest(unittest.TestCase):
-    def test_create_emits_a_valid_v7_skill_bundle_for_every_lane(self):
+    def test_create_emits_valid_v8_open_ended_skill_bundles(self):
         with tempfile.TemporaryDirectory() as temporary:
             collection = Path(temporary) / "inventors"
             collection.mkdir()
-            for index, lane in enumerate(PLAYTHING_LANES):
+            descriptions = (
+                "known games made personal",
+                "kinetic desk toys",
+                "cinematic miniature worlds",
+                "physical explanations",
+                "original tabletop games",
+            )
+            for index, description in enumerate(descriptions):
                 inventor_id = "maker-%d" % index
                 destination = create_inventor(
                     collection,
                     inventor_id,
                     "Maker %d" % index,
-                    "Wish-shaped %s playthings; not generic objects." % lane,
-                    lane=lane,
+                    "%s; not generic objects." % description,
                 )
                 manifest = load_manifest(destination / "inventor.json")
                 self.assertEqual(
                     {path.name for path in destination.iterdir()},
                     {"inventor.json", "TASTE.md", "skills"},
                 )
-                self.assertEqual(manifest.schema_version, 7)
-                self.assertEqual(manifest.capabilities, (lane,))
+                self.assertEqual(manifest.schema_version, 8)
+                self.assertFalse(hasattr(manifest, "capabilities"))
                 self.assertEqual(len(manifest.extensions), 1)
                 extension = manifest.extensions[0]
                 self.assertEqual(extension.name, "%s-inventor" % inventor_id)
@@ -60,16 +65,18 @@ class ScaffoldTest(unittest.TestCase):
                 "mira",
                 "Mira",
                 "kinetic desk toys with a precise selection boundary",
-                lane="moving-machines",
             )
             taste = load_taste(destination)
             self.assertEqual(taste.name, "Mira")
             self.assertIn("## The product bar", taste.content)
-            self.assertIn("Make motion the magic", taste.content)
+            self.assertIn("Let the exact Wish and this Taste determine", taste.content)
+            self.assertNotIn("Lane promise", taste.content)
             skill = (destination / "skills/mira-inventor/SKILL.md").read_text(
                 encoding="utf-8"
             )
-            self.assertIn("catalog/inventors/mira/TASTE.md", skill)
+            self.assertIn(".codex/agents/mira.toml", skill)
+            self.assertIn("identity and Taste embedded", skill)
+            self.assertNotIn("catalog/inventors", skill)
             self.assertIn("root Workshop Manager", skill)
             self.assertIn("Do not invoke the stage finalizer", skill)
             document = json.loads((destination / "inventor.json").read_text())
@@ -79,7 +86,6 @@ class ScaffoldTest(unittest.TestCase):
                     "schema_version",
                     "id",
                     "status",
-                    "capabilities",
                     "source",
                     "extensions",
                 },
@@ -102,7 +108,6 @@ class ScaffoldTest(unittest.TestCase):
             destination = create_inventor(
                 collection,
                 "nori",
-                lane="little-worlds",
                 taste_path=taste_path,
             )
             self.assertEqual((destination / "TASTE.md").read_bytes(), exact)
@@ -114,6 +119,7 @@ class ScaffoldTest(unittest.TestCase):
         self.assertNotIn("level", parameters)
         self.assertNotIn("template", parameters)
         self.assertNotIn("run_checks", parameters)
+        self.assertNotIn("lane", parameters)
         with tempfile.TemporaryDirectory() as temporary:
             collection = Path(temporary) / "inventors"
             collection.mkdir()
@@ -123,7 +129,6 @@ class ScaffoldTest(unittest.TestCase):
                     "mira",
                     "Mira",
                     "specific little worlds",
-                    lane="little-worlds",
                     run_checks=False,
                 )
 
@@ -138,18 +143,16 @@ class ScaffoldTest(unittest.TestCase):
                 "ada",
                 "Ada",
                 "hand-cranked creatures; not static models",
-                lane="moving-machines",
             )
             self.assertEqual(destination, collection / "ada")
 
-    def test_rejects_invalid_identity_and_lane(self):
+    def test_rejects_invalid_identity(self):
         with tempfile.TemporaryDirectory() as temporary:
             collection = Path(temporary) / "inventors"
             collection.mkdir()
             cases = (
-                ({"inventor_id": "Bad_ID", "lane": "moving-machines"}, "id must match"),
-                ({"inventor_id": "a" * 55, "lane": "moving-machines"}, "id must match"),
-                ({"inventor_id": "valid", "lane": "unknown"}, "lane must be one of"),
+                ({"inventor_id": "Bad_ID"}, "id must match"),
+                ({"inventor_id": "a" * 55}, "id must match"),
             )
             for overrides, message in cases:
                 arguments = {
@@ -157,7 +160,6 @@ class ScaffoldTest(unittest.TestCase):
                     "inventor_id": "valid",
                     "name": "Valid",
                     "description": "specific playthings; not generic objects",
-                    "lane": "moving-machines",
                 }
                 arguments.update(overrides)
                 with self.subTest(overrides=overrides), self.assertRaisesRegex(
@@ -174,7 +176,6 @@ class ScaffoldTest(unittest.TestCase):
                 "first",
                 "First",
                 "specific playthings; not generic objects",
-                lane="invented-games",
             )
             with self.assertRaises(StateConflict):
                 create_inventor(
@@ -182,7 +183,6 @@ class ScaffoldTest(unittest.TestCase):
                     "first",
                     "First",
                     "specific playthings; not generic objects",
-                    lane="invented-games",
                 )
             (collection / "first" / "profile.py").write_text("raise RuntimeError\n")
             with self.assertRaisesRegex(ContractError, "Inventor folder"):
@@ -191,7 +191,6 @@ class ScaffoldTest(unittest.TestCase):
                     "second",
                     "Second",
                     "specific playthings; not generic objects",
-                    lane="little-worlds",
                 )
             self.assertFalse((collection / "second").exists())
             self.assertFalse(
@@ -223,7 +222,6 @@ class ScaffoldTest(unittest.TestCase):
                 create_inventor(
                     collection,
                     "mira",
-                    lane="moving-machines",
                     taste_path=linked,
                 )
 

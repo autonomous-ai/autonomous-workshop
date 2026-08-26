@@ -26,15 +26,12 @@ except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
 from workshop.errors import (
     ArtifactError,
     ContractError,
-    ManifestError,
     StateConflict,
     TransitionError,
     WorkshopError,
 )
 from workshop.contributors import (
-    fingerprint_extension_skill,
-    load_manifest,
-    load_taste,
+    parse_taste_bytes,
 )
 from workshop.integrations.factory import (
     FactoryReleaseWriter,
@@ -42,19 +39,20 @@ from workshop.integrations.factory import (
     FactoryPublicTransition,
     factory_credentials_from_environment,
 )
-from workshop.invent.native import InventedV2
+from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
     NATIVE_CAD_VERIFIER_PATH,
+    NativeCadGateError,
     verify_native_made_cad,
 )
 from workshop.match.native import (
     NativeMatchAssignment,
-    PersonaCatalog,
-    PersonaCatalogEntry,
+    InventorRoster,
+    InventorRosterEntry,
 )
 from workshop.playtest.native import NativePlaytested
-from workshop.product import PLAYTHING_LANES, ToyBlueprint
+from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
 from workshop.release.native import NativeRelease
 from workshop.runtime import (
@@ -65,7 +63,10 @@ from workshop.runtime import (
     Receipt,
     factory_credential_environment,
 )
-from workshop.runtime.agent_assets import product_run_agent_assets
+from workshop.runtime.agent_assets import (
+    parse_inventor_custom_agent_bytes,
+    product_run_agent_assets,
+)
 from workshop.runtime.package_data import (
     default_workshop_home,
     packaged_inventors_root,
@@ -101,10 +102,14 @@ _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
 _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
+_CAD_GATE_REJECTIONS_DIRECTORY = "cad-gate-rejections"
+_CAD_GATE_REJECTION_KIND = "autonomous-workshop.cad-gate-rejection"
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
 _AUTHORIZATION_KIND = "autonomous-workshop.run-authorization"
 _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
+_MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
+_MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_NATIVE_TURNS = 32
 _FACTORY_CREDENTIALS_NEED = (
     "Factory credentials for the selected Inventor are missing or malformed; "
@@ -260,6 +265,282 @@ def _write_private_json(path: Path, value: Mapping[str, Any], *, mode: int = 0o6
     return _sha256(content)
 
 
+def _cad_gate_rejection_path(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create_parent: bool = False,
+) -> Path:
+    if checkpoint.stage not in ("make", "playtest"):
+        raise TransitionError("CAD gate rejection requires Make or Playtest")
+    parent = run.host_state_root / _CAD_GATE_REJECTIONS_DIRECTORY
+    try:
+        identity = parent.lstat()
+    except FileNotFoundError:
+        if not create_parent:
+            return parent / (checkpoint.checkpoint_sha256 + ".json")
+        try:
+            parent.mkdir(mode=0o700)
+            identity = parent.lstat()
+        except OSError as exc:
+            raise StateConflict("CAD gate rejection directory is unavailable") from exc
+    except OSError as exc:
+        raise StateConflict("CAD gate rejection directory is unavailable") from exc
+    if (
+        parent.is_symlink()
+        or not stat.S_ISDIR(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o700
+    ):
+        raise StateConflict("CAD gate rejection directory must be private")
+    return parent / (checkpoint.checkpoint_sha256 + ".json")
+
+
+def _bounded_json_text_tail(text: str, maximum_bytes: int) -> tuple[str, bool]:
+    """Keep the longest suffix whose standalone JSON encoding is bounded."""
+
+    if len(_canonical_json_bytes(text)) <= maximum_bytes:
+        return text, False
+    lower = 0
+    upper = len(text)
+    while lower < upper:
+        candidate_length = (lower + upper + 1) // 2
+        candidate = text[-candidate_length:]
+        if len(_canonical_json_bytes(candidate)) <= maximum_bytes:
+            lower = candidate_length
+        else:
+            upper = candidate_length - 1
+    return (text[-lower:] if lower else ""), True
+
+
+def _cad_gate_stream_summary(stream: Any) -> dict[str, Any]:
+    value = stream.to_dict()
+    text = value.get("captured_text")
+    if not isinstance(text, str):
+        raise StateConflict("CAD gate diagnostic stream is invalid")
+    tail, clipped = _bounded_json_text_tail(
+        text, _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES
+    )
+    return {
+        "captured_text_tail": tail,
+        "captured_bytes": value.get("captured_bytes"),
+        "total_bytes": value.get("total_bytes"),
+        "sha256": value.get("sha256"),
+        "truncated": bool(value.get("truncated")) or clipped,
+    }
+
+
+def _validate_cad_gate_stream_summary(value: Any, label: str) -> dict[str, Any]:
+    expected = {
+        "captured_text_tail",
+        "captured_bytes",
+        "total_bytes",
+        "sha256",
+        "truncated",
+    }
+    if not isinstance(value, Mapping) or set(value) != expected:
+        raise StateConflict("%s is invalid" % label)
+    text = value["captured_text_tail"]
+    captured = value["captured_bytes"]
+    total = value["total_bytes"]
+    if (
+        not isinstance(text, str)
+        or len(_canonical_json_bytes(text))
+        > _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES
+        or type(captured) is not int
+        or type(total) is not int
+        or captured < 0
+        or total < captured
+        or not isinstance(value["sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", value["sha256"]) is None
+        or type(value["truncated"]) is not bool
+    ):
+        raise StateConflict("%s is invalid" % label)
+    return dict(value)
+
+
+def _assert_persisted_cad_gate_evidence(
+    run: AgentRun, rejection: NativeCadGateError
+) -> None:
+    path = Path(rejection.evidence_path)
+    try:
+        path.relative_to(run.host_state_root)
+        before = path.lstat()
+    except (OSError, ValueError) as exc:
+        raise StateConflict("CAD gate rejection evidence is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= before.st_size <= 3 * 1024 * 1024
+    ):
+        raise StateConflict("CAD gate rejection evidence is not a private file")
+    try:
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("CAD gate rejection evidence is unavailable") from exc
+    expected = _canonical_json_bytes(rejection.evidence.to_dict()) + b"\n"
+    if (
+        content != expected
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("CAD gate rejection evidence changed or is invalid")
+
+
+def _persist_cad_gate_rejection(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    rejection: NativeCadGateError,
+) -> Mapping[str, Any]:
+    if checkpoint.stage not in ("make", "playtest"):
+        raise TransitionError("CAD gate rejection belongs to another stage")
+    evidence = rejection.evidence
+    if evidence.passed or evidence.failure_code != rejection.failure_code:
+        raise StateConflict("CAD gate rejection evidence disagrees with its failure")
+    _assert_persisted_cad_gate_evidence(run, rejection)
+    identity: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": _CAD_GATE_REJECTION_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": checkpoint.stage,
+        "round": checkpoint.round_index,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": proposal.subject_sha256,
+        "rejected_outcome_sha256": proposal.outcome.sha256,
+        "failure_code": rejection.failure_code,
+        "cad_gate_receipt_sha256": evidence.receipt_sha256,
+        "made_sha256": evidence.made_sha256,
+        "product_artifact_sha256": evidence.product_artifact_sha256,
+        "cad_project_path": evidence.cad_project_path,
+        "cad_project_sha256": evidence.cad_project_sha256,
+        "verifier_path": evidence.verifier_path,
+        "verifier_sha256": evidence.verifier_sha256,
+        "verifier_mode": evidence.verifier_mode,
+        "command": list(evidence.command),
+        "returncode": evidence.returncode,
+        "duration_ms": evidence.duration_ms,
+        "timed_out": evidence.timed_out,
+        "source_tree_unchanged": evidence.source_tree_unchanged,
+        "stdout": _cad_gate_stream_summary(evidence.stdout),
+        "stderr": _cad_gate_stream_summary(evidence.stderr),
+    }
+    record = {
+        **identity,
+        "rejection_sha256": _sha256(_canonical_json_bytes(identity)),
+    }
+    encoded = _canonical_json_bytes(record) + b"\n"
+    if len(encoded) > _MAX_CAD_GATE_REJECTION_BYTES:
+        raise StateConflict("CAD gate rejection exceeded its safe size limit")
+    path = _cad_gate_rejection_path(run, checkpoint, create_parent=True)
+    _atomic_private_write(path, encoded)
+    return record
+
+
+def _read_cad_gate_rejection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    if checkpoint.stage not in ("make", "playtest"):
+        return None
+    path = _cad_gate_rejection_path(run, checkpoint)
+    if not path.exists() and not path.is_symlink():
+        return None
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("CAD gate rejection is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= _MAX_CAD_GATE_REJECTION_BYTES
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("CAD gate rejection is not a stable private file")
+    try:
+        record = _strict_json_bytes(content, label="CAD gate rejection")
+    except ContractError as exc:
+        raise StateConflict("CAD gate rejection is invalid") from exc
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "round",
+        "checkpoint_sha256",
+        "subject_sha256",
+        "rejected_outcome_sha256",
+        "failure_code",
+        "cad_gate_receipt_sha256",
+        "made_sha256",
+        "product_artifact_sha256",
+        "cad_project_path",
+        "cad_project_sha256",
+        "verifier_path",
+        "verifier_sha256",
+        "verifier_mode",
+        "command",
+        "returncode",
+        "duration_ms",
+        "timed_out",
+        "source_tree_unchanged",
+        "stdout",
+        "stderr",
+        "rejection_sha256",
+    }
+    digest_fields = (
+        "checkpoint_sha256",
+        "subject_sha256",
+        "rejected_outcome_sha256",
+        "cad_gate_receipt_sha256",
+        "made_sha256",
+        "product_artifact_sha256",
+        "cad_project_sha256",
+        "verifier_sha256",
+        "rejection_sha256",
+    )
+    command = record.get("command")
+    if (
+        set(record) != expected
+        or record.get("schema_version") != 1
+        or record.get("kind") != _CAD_GATE_REJECTION_KIND
+        or record.get("product_id") != checkpoint.product_id
+        or record.get("stage") != checkpoint.stage
+        or record.get("round") != checkpoint.round_index
+        or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or not isinstance(record.get("failure_code"), str)
+        or not 1 <= len(record["failure_code"]) <= 64
+        or not isinstance(record.get("cad_project_path"), str)
+        or not isinstance(record.get("verifier_path"), str)
+        or not isinstance(record.get("verifier_mode"), str)
+        or not isinstance(command, list)
+        or not command
+        or len(command) > 32
+        or any(not isinstance(item, str) or not item or len(item) > 1_024 for item in command)
+        or type(record.get("returncode")) is not int
+        or type(record.get("duration_ms")) is not int
+        or record["duration_ms"] < 0
+        or type(record.get("timed_out")) is not bool
+        or type(record.get("source_tree_unchanged")) is not bool
+        or any(
+            not isinstance(record.get(name), str)
+            or re.fullmatch(r"[0-9a-f]{64}", record[name]) is None
+            for name in digest_fields
+        )
+    ):
+        raise StateConflict("CAD gate rejection is invalid")
+    _validate_cad_gate_stream_summary(record["stdout"], "CAD gate stdout summary")
+    _validate_cad_gate_stream_summary(record["stderr"], "CAD gate stderr summary")
+    identity = {key: record[key] for key in expected - {"rejection_sha256"}}
+    if record["rejection_sha256"] != _sha256(_canonical_json_bytes(identity)):
+        raise StateConflict("CAD gate rejection hash is invalid")
+    return record
+
+
 def _remove_agent_outcome(run_root: Path) -> None:
     path = run_root / _AGENT_OUTCOME_NAME
     if not path.exists() and not path.is_symlink():
@@ -309,6 +590,7 @@ def materialized_agent_instructions_sha256(
         for path, digest in checkpoint.input_sha256s.items()
         if path == "AGENTS.md"
         or path.startswith(".agents/skills/")
+        or path.startswith(".codex/agents/")
     }
     required = {
         "AGENTS.md",
@@ -346,9 +628,12 @@ def native_stage_prompt(stage: str) -> str:
         raise ContractError("native run stage is invalid")
     return (
         "Follow the local AGENTS.md and autonomous-workshop skill. "
-        "Read the host-written STAGE.json, perform the current %s stage only, "
-        "and use the run-local deterministic proposal tool. Write the compact "
-        "result to agent-outcome.json, then return control to the Workshop host gate."
+        "Read the host-written STAGE.json. Create one native Codex goal for the "
+        "current %s stage with successful finalization as its stopping condition; "
+        "keep inspecting, acting, evaluating, and improving until that condition "
+        "is met. Use the run-local deterministic proposal tool, complete the goal "
+        "after it writes agent-outcome.json successfully, then return control to "
+        "the Workshop host gate."
         % stage
     )
 
@@ -428,98 +713,79 @@ def _source_checkout_root() -> Optional[Path]:
     return _existing_real_directory(candidate, label="Workshop repository")
 
 
-def _product_run_catalog_root(assets: Any) -> Path:
+def _product_run_inventor_source_root(assets: Any) -> Path:
     if assets.source == "repository":
         repository = assets.constitution.parents[2]
-        catalog = repository / "inventors"
+        inventors = repository / "inventors"
     else:
-        catalog = packaged_inventors_root()
-        if catalog is None:
-            raise StateConflict("installed Workshop has no inventor personas")
-    return _existing_real_directory(Path(catalog), label="inventor persona catalog")
+        inventors = packaged_inventors_root()
+        if inventors is None:
+            raise StateConflict("installed Workshop has no Inventors")
+    return _existing_real_directory(Path(inventors), label="Inventor source root")
 
 
-def _persona_catalog(
-    run_root: Path, checkpoint: AgentRunCheckpoint
-) -> PersonaCatalog:
-    personas: list[PersonaCatalogEntry] = []
-    prefix = "catalog/inventors/"
-    manifest_paths = sorted(
-        path
-        for path in checkpoint.input_sha256s
-        if path.startswith(prefix) and path.endswith("/inventor.json")
-    )
-    for manifest_relative in manifest_paths:
-        parts = manifest_relative.split("/")
-        if len(parts) != 4:
-            raise StateConflict("materialized inventor path is invalid")
-        inventor_id = parts[2]
-        taste_relative = "%s%s/TASTE.md" % (prefix, inventor_id)
-        taste_sha256 = checkpoint.input_sha256s.get(taste_relative)
-        if not isinstance(taste_sha256, str):
-            raise StateConflict("materialized inventor Taste is missing")
+def _inventor_roster(checkpoint: AgentRunCheckpoint) -> InventorRoster:
+    """Derive Match's public roster from host-verified custom agents only."""
+
+    inventors: list[InventorRosterEntry] = []
+    for item in checkpoint.inventor_roster:
         try:
-            manifest_content = (run_root / manifest_relative).read_bytes()
-        except OSError as exc:
-            raise StateConflict("materialized inventor manifest is unavailable") from exc
-        manifest_document = _strict_json_bytes(
-            manifest_content, label="materialized inventor manifest"
-        )
-        try:
-            manifest = load_manifest(run_root / manifest_relative)
-        except ManifestError as exc:
-            raise StateConflict(
-                "materialized inventor manifest is not a native persona"
-            ) from exc
-        capabilities = tuple(manifest.capabilities)
-        if (
-            manifest_document != manifest.to_dict()
-            or manifest.schema_version != 7
-            or manifest.inventor_id != inventor_id
-            or len(capabilities) != 1
-            or capabilities[0] not in PLAYTHING_LANES
-            or not manifest.extensions
-        ):
-            raise StateConflict("materialized inventor manifest is not a native persona")
-        for extension in manifest.extensions:
-            skill_prefix = ".agents/skills/%s/" % extension.name
-            try:
-                fingerprint = fingerprint_extension_skill(
-                    run_root / ".agents" / "skills" / extension.name,
-                    expected_name=extension.name,
-                )
-            except ManifestError as exc:
-                raise StateConflict(
-                    "materialized inventor skill differs from its manifest"
-                ) from exc
-            expected = {
-                skill_prefix + entry.path: entry.sha256
-                for entry in fingerprint.entries
-            }
-            observed = {
-                path: sha256
-                for path, sha256 in checkpoint.input_sha256s.items()
-                if path.startswith(skill_prefix)
-            }
-            if (
-                fingerprint.artifact_sha256 != extension.artifact_sha256
-                or observed != expected
-            ):
-                raise StateConflict(
-                    "materialized inventor skill differs from its manifest"
-                )
-        personas.append(
-            PersonaCatalogEntry(
-                inventor_id=inventor_id,
-                lane=capabilities[0],
-                manifest_sha256=checkpoint.input_sha256s[manifest_relative],
-                taste_sha256=taste_sha256,
+            entry = InventorRosterEntry(
+                inventor_id=item["inventor_id"],
+                agent_path=item["agent_path"],
+                agent_sha256=item["agent_sha256"],
+                source_manifest_sha256=item["source_manifest_sha256"],
+                taste_sha256=item["taste_sha256"],
             )
-        )
+        except (KeyError, TypeError, ContractError) as exc:
+            raise StateConflict("host Inventor roster is invalid") from exc
+        if checkpoint.input_sha256s.get(entry.agent_path) != entry.agent_sha256:
+            raise StateConflict("Inventor roster differs from immutable run inputs")
+        inventors.append(entry)
     try:
-        return PersonaCatalog(tuple(personas))
+        return InventorRoster(tuple(inventors))
     except ContractError as exc:
-        raise StateConflict("materialized inventor catalog is invalid") from exc
+        raise StateConflict("host Inventor roster is invalid") from exc
+
+
+def _selected_inventor_binding(
+    run_root: Path,
+    checkpoint: AgentRunCheckpoint,
+    assignment: NativeMatchAssignment,
+) -> Any:
+    """Recover exact Taste and skill identity from the selected custom agent."""
+
+    path = run_root / assignment.selected_agent_path
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("selected Inventor custom agent is unavailable") from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+        or _sha256(content) != assignment.selected_agent_sha256
+        or checkpoint.input_sha256s.get(assignment.selected_agent_path)
+        != assignment.selected_agent_sha256
+    ):
+        raise StateConflict("selected Inventor custom agent changed")
+    try:
+        binding = parse_inventor_custom_agent_bytes(content)
+    except ContractError as exc:
+        raise StateConflict("selected Inventor custom agent is invalid") from exc
+    if (
+        binding.inventor_id != assignment.selected_inventor_id
+        or binding.agent_path != assignment.selected_agent_path
+        or binding.agent_sha256 != assignment.selected_agent_sha256
+        or binding.source_manifest_sha256
+        != assignment.selected_source_manifest_sha256
+        or binding.taste_sha256 != assignment.selected_taste_sha256
+    ):
+        raise StateConflict("selected Inventor differs from the Match assignment")
+    return binding
 
 
 def _read_contract(
@@ -646,8 +912,9 @@ def _prepare_stage_input(
     stage = checkpoint.stage
     if stage in ("wish", "deliver"):
         raise TransitionError("%s does not use a native stage packet" % stage)
-    catalog = _persona_catalog(run.run_root, checkpoint)
-    context: dict[str, Any] = {"catalog": catalog}
+    roster = _inventor_roster(checkpoint)
+    context: dict[str, Any] = {"roster": roster}
+    cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
     normal_transition = {
         "match": "invent",
         "invent": "make",
@@ -660,18 +927,17 @@ def _prepare_stage_input(
     )
 
     if stage == "match":
+        blueprint = ToyBlueprint()
         subject = match_gate_subject_sha256(
             wish_sha256=checkpoint.wish_sha256,
-            persona_catalog_sha256=catalog.catalog_sha256,
+            inventor_roster_sha256=roster.roster_sha256,
         )
         inputs: Mapping[str, Any] = {
             "wish_sha256": checkpoint.wish_sha256,
             "wish": {"path": "WISH.json", "sha256": checkpoint.wish_sha256},
-            "persona_catalog": catalog.to_dict(),
-            "blueprint_sha256_by_lane": {
-                lane: ToyBlueprint.for_lane(lane).sha256
-                for lane in PLAYTHING_LANES
-            },
+            "inventor_roster": roster.to_dict(),
+            "blueprint": blueprint.to_dict(),
+            "blueprint_sha256": blueprint.sha256,
             "contract_path": "artifacts/match/assignment.json",
         }
     else:
@@ -683,11 +949,19 @@ def _prepare_stage_input(
             label="native Match assignment",
         )
         assignment.assert_context(
-            wish_sha256=checkpoint.wish_sha256, catalog=catalog
+            wish_sha256=checkpoint.wish_sha256, roster=roster
         )
-        blueprint = ToyBlueprint.for_lane(assignment.selected_lane)
-        taste_path = "catalog/inventors/%s/TASTE.md" % assignment.selected_inventor_id
-        context.update({"assignment": assignment, "blueprint": blueprint})
+        blueprint = ToyBlueprint()
+        inventor_binding = _selected_inventor_binding(
+            run.run_root, checkpoint, assignment
+        )
+        context.update(
+            {
+                "assignment": assignment,
+                "blueprint": blueprint,
+                "inventor_binding": inventor_binding,
+            }
+        )
         common: dict[str, Any] = {
             "wish": {"path": "WISH.json", "sha256": checkpoint.wish_sha256},
             "assignment": assignment.to_dict(),
@@ -695,9 +969,13 @@ def _prepare_stage_input(
                 **_artifact_binding(assignment_artifact),
                 "assignment_sha256": assignment.assignment_sha256,
             },
-            "selected_taste": {
-                "path": taste_path,
-                "sha256": assignment.selected_taste_sha256,
+            "selected_inventor_agent": {
+                "path": assignment.selected_agent_path,
+                "sha256": assignment.selected_agent_sha256,
+                "source_manifest_sha256": (
+                    assignment.selected_source_manifest_sha256
+                ),
+                "taste_sha256": assignment.selected_taste_sha256,
             },
             "blueprint": blueprint.to_dict(),
             "blueprint_sha256": blueprint.sha256,
@@ -713,7 +991,7 @@ def _prepare_stage_input(
             invented = _read_contract(
                 run.run_root,
                 invented_artifact,
-                InventedV2,
+                NativeInvented,
                 label="native Invented contract",
             )
             invented.assert_context(assignment)
@@ -738,6 +1016,11 @@ def _prepare_stage_input(
                     "feedback_sha256": (
                         feedback_artifact.sha256 if feedback_artifact else None
                     ),
+                    "host_cad_gate_rejection_sha256": (
+                        cad_gate_rejection["rejection_sha256"]
+                        if cad_gate_rejection is not None
+                        else None
+                    ),
                 }
                 subject = _stage_subject("make", subject_inputs)
                 inputs = {
@@ -748,14 +1031,15 @@ def _prepare_stage_input(
                         if feedback_artifact is not None
                         else None
                     ),
+                    "host_cad_gate_rejection": cad_gate_rejection,
                     "product_root": "artifacts/make/r%04d/product"
                     % checkpoint.round_index,
                     "contract_path": "artifacts/make/r%04d/made.json"
                     % checkpoint.round_index,
                     "required_root_files": [
                         "product.json",
-                        "project.json",
                         "assembled.step",
+                        "assembled.step.json",
                         "assembled.stl",
                     ],
                 }
@@ -784,13 +1068,19 @@ def _prepare_stage_input(
                         "product_artifact_sha256": made.product_manifest.artifact_sha256,
                         "blueprint_sha256": blueprint.sha256,
                         "round": checkpoint.round_index,
+                        "host_cad_gate_rejection_sha256": (
+                            cad_gate_rejection["rejection_sha256"]
+                            if cad_gate_rejection is not None
+                            else None
+                        ),
                     }
                     subject = _stage_subject("playtest", subject_inputs)
                     inputs = {
                         **common,
                         "round": checkpoint.round_index,
+                        "host_cad_gate_rejection": cad_gate_rejection,
                         "required_check_ids": list(
-                            blueprint.required_capabilities("playtest")
+                            blueprint.required_playtest_checks()
                         ),
                         "evidence_root": "artifacts/playtest/r%04d/evidence"
                         % checkpoint.round_index,
@@ -1131,7 +1421,7 @@ def _evaluate_playtest_stage(
             "playtested_sha256": playtested.playtested_sha256,
             "product_artifact_sha256": made.product_manifest.artifact_sha256,
             "evidence_artifact_sha256": canonical.evidence.evidence_artifact_sha256,
-            "required_capabilities_covered": True,
+            "required_playtest_checks_covered": True,
             "cad_receipt_sha256": cad_evidence.receipt_sha256,
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
@@ -1356,7 +1646,7 @@ def _existing_release_for_promotion(
         for stage in ("match", "invent", "make", "playtest", "release")
     ):
         raise StateConflict("public promotion cannot use invalidated stage evidence")
-    catalog = _persona_catalog(run.run_root, checkpoint)
+    roster = _inventor_roster(checkpoint)
     assignment = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "match"),
@@ -1364,12 +1654,12 @@ def _existing_release_for_promotion(
         label="native Match assignment",
     )
     assignment.assert_context(
-        wish_sha256=checkpoint.wish_sha256, catalog=catalog
+        wish_sha256=checkpoint.wish_sha256, roster=roster
     )
     invented = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "invent"),
-        InventedV2,
+        NativeInvented,
         label="native Invented contract",
     )
     invented.assert_context(assignment)
@@ -1382,7 +1672,7 @@ def _existing_release_for_promotion(
     made.assert_context(
         assignment, invented, expected_round=checkpoint.round_index
     )
-    blueprint = ToyBlueprint.for_lane(assignment.selected_lane)
+    blueprint = ToyBlueprint()
     playtested = _read_contract(
         run.run_root,
         _stage_primary(checkpoint, "playtest"),
@@ -1440,13 +1730,17 @@ def _execute_release_effect(
     assignment = context["assignment"]
     blueprint = context["blueprint"]
     wish = _load_wish(run.run_root)
-    taste_root = (
-        run.run_root
-        / "catalog"
-        / "inventors"
-        / assignment.selected_inventor_id
+    binding = context["inventor_binding"]
+    taste = parse_taste_bytes(
+        binding.taste_bytes,
+        path=(
+            run.run_root
+            / ".codex"
+            / "embedded"
+            / assignment.selected_inventor_id
+            / "TASTE.md"
+        ),
     )
-    taste = load_taste(taste_root)
     release_context = ReleaseContext(
         wish=wish,
         taste=taste,
@@ -1591,7 +1885,7 @@ def _process_agent_outcome(
             run_root=run.run_root,
             expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
             wish_sha256=checkpoint.wish_sha256,
-            catalog=context["catalog"],
+            roster=context["roster"],
         )
     elif checkpoint.stage == "invent":
         decision = evaluate_invent_stage(
@@ -1601,21 +1895,31 @@ def _process_agent_outcome(
             assignment=context["assignment"],
         )
     elif checkpoint.stage == "make":
-        decision, additional = _evaluate_make_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-        )
+        try:
+            decision, additional = _evaluate_make_stage(
+                proposal,
+                run=run,
+                checkpoint=checkpoint,
+                subject_sha256=subject_sha256,
+                context=context,
+            )
+        except NativeCadGateError as rejection:
+            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            _remove_agent_outcome(run.run_root)
+            return checkpoint
     elif checkpoint.stage == "playtest":
-        decision, additional = _evaluate_playtest_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-        )
+        try:
+            decision, additional = _evaluate_playtest_stage(
+                proposal,
+                run=run,
+                checkpoint=checkpoint,
+                subject_sha256=subject_sha256,
+                context=context,
+            )
+        except NativeCadGateError as rejection:
+            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            _remove_agent_outcome(run.run_root)
+            return checkpoint
     elif checkpoint.stage == "release":
         try:
             decision, additional = _evaluate_release_stage(
@@ -1845,7 +2149,7 @@ def start_native_run(
         product_run_constitution_source=assets.constitution,
         skill_root=assets.skill_root,
         domain_skill_roots=product_run_domain_skill_roots(),
-        inventor_catalog_root=_product_run_catalog_root(assets),
+        inventor_source_root=_product_run_inventor_source_root(assets),
         max_rounds=4,
     )
     with _native_run_mutation_lock(paths):

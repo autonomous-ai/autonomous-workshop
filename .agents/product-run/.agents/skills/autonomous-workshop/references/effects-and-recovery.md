@@ -63,6 +63,15 @@ host-only and outside the product workspace. If session memory conflicts with
 sealed files or host-provided receipts, follow the durable evidence and note
 the discrepancy.
 
+If a Match, Invent, Make, Playtest, or Release Goal is active for that exact
+checkpoint, continue it instead of creating a duplicate. Reestablish its
+objective, proof artifacts, and stopping condition from `STAGE.json`, then
+resume the observe -> act -> evaluate -> improve work. Goal state is not
+recovery authority: if it names another checkpoint or contradicts sealed
+bytes, stop and report the mismatch rather than continuing stale work. Never
+create a Deliver Goal or a Goal whose objective is to retry an external
+effect.
+
 For an explicitly classified provider transport interruption that occurred
 before any effect boundary, the host may make at most one bounded reconnect or
 resume attempt. Do not retry authentication failures, policy denials, invalid
@@ -81,6 +90,9 @@ artifact; inspect any partial workspace writes and rerun their gates.
 - Respect the host's exclusive mutation lock and bounded Make–Playtest round
   budget. Concurrent work must stop at a typed need instead of racing the
   checkpoint.
+- Keep research, judging, repair, and feedback iteration inside the active
+  native Codex Goal. Do not create a Python retry, reward, judge, or loop
+  controller during recovery.
 - Keep diagnostics bounded and redacted. Record safe failure categories and
   evidence references, never prompts, credentials, authorization headers, or
   large provider streams.

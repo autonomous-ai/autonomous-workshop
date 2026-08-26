@@ -1,52 +1,72 @@
 # Wish and Match contracts
 
-## Wish
+## Wish is a host boundary
 
-**Input:** The person's words and explicitly supplied constraints/context.
+**Input:** The person's exact words and explicitly supplied constraints or
+context.
 
-**Codex work:** Preserve intent. Ask for information only when the missing
-choice would materially change the product; otherwise make reversible design
-assumptions visible in the workspace. Never place Wish text in a filesystem
-identifier.
+The host creates, validates, and seals the canonical Wish before the first
+native turn. Do not create a native Goal for Wish, rewrite `WISH.json`, or
+propose the Wish gate. Preserve intent. Ask for information only when the
+missing choice would materially change the product; otherwise record
+reversible assumptions without adding authority or weakening a constraint.
+Never place Wish text in a filesystem identifier.
 
-**Artifact and gate:** The host creates and validates the canonical Wish before
-the first native turn. Do not rewrite `WISH.json` or propose the Wish gate. A
-normalized interpretation must not add authority or silently weaken an
-explicit constraint.
+## Match uses the native Inventor roster
 
-## Match
+Read the Match `STAGE.json`. It binds the sealed Wish, universal blueprint
+hash, and exact `inventor_roster` with its `roster_sha256` identity.
+`.codex/agents/*.toml` is the sole identity, Taste, and skill roster: each
+eligible file is hash-bound by the host and names its materialized skills under
+`.agents/skills/`. Do not consult a second identity tree, search for executable
+workers, or infer an Inventor that the host did not materialize.
 
-Read the Match `STAGE.json`. Its inputs bind the sealed Wish plus the immutable
-inventor personas at
-`catalog/inventors/<id>/inventor.json` and `catalog/inventors/<id>/TASTE.md`.
-An entry may also expose host-declared, hash-bound Inventor resources such as
-inventor-owned Codex skill trees with `SKILL.md`, scripts, references, assets,
-or deterministic domain tools. Use only resources declared by that exact
-eligible catalog entry; do not search outside the catalog for an executable
-worker.
+Inventors are not preclassified product categories. Every Wish is open-ended.
+Compare all eligible Inventors on the evidence in their exact custom-agent
+instructions, especially their Taste, method, and distinctive product
+judgment.
 
-**Codex work:** Inspect eligible inventors, compare the Wish with their stated
-taste and capabilities, and write a concise ranking rationale. Use native
-search only if the Match contract calls for current outside facts; record its
-provenance.
+## Match Goal and improvement loop
 
-You are the Workshop Manager. Where useful, use native dynamic subagents for
-bounded candidate-fit analysis. Brief each one from the exact materialized
-candidate bytes and treat its answer as input, not a vote or gate. You must
-synthesize the complete ranking and selected Inventor. Use the materialized
-project-scoped custom-agent roster; do not launch another Codex process or run
-candidate agents through Python.
+Create one native Codex Goal for this Match attempt. Its objective is to rank
+the entire eligible roster and select the best Inventor for the exact Wish.
+Its stopping condition is a successful `match` finalizer for the current
+checkpoint.
+
+While pursuing the Goal:
+
+1. **Observe:** Read the exact Wish and every eligible custom-agent file.
+   Identify the Wish's creative tensions and the concrete Taste evidence that
+   differentiates candidates.
+2. **Act:** Compare the full roster. Use native subagents for bounded candidate
+   fit assessments when useful, briefing each from the exact materialized
+   bytes. Treat their reports as evidence, not votes or gate decisions.
+3. **Evaluate:** Check that every eligible Inventor appears exactly once, the
+   selected Inventor is ranked first, and every rationale distinguishes fit
+   using Wish and Taste evidence. Use an independent native reviewer when the
+   choice is close.
+4. **Improve:** Reinspect weak comparisons, missing counterevidence, or
+   overconfident claims and revise the ranking. Continue until the complete
+   ranking satisfies the proof condition.
+
+Codex owns this comparison and synthesis. No Python scorer, router, prompt
+chain, judge, or retry loop selects the Inventor.
+
+## Artifact and gate
 
 Write one authored JSON source with exactly `selected_inventor_id` and
-`ranking`. Every ranking item must be evidence-based and refer to an eligible
-catalog entry. Then run:
+`ranking`. Every ranking item must be evidence-based and refer to one eligible
+`.codex/agents/*.toml` Inventor. Then run:
 
 ```bash
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . match --source <match-source.json>
 ```
 
-The finalizer writes the canonical `artifacts/match/assignment.json` and
-`agent-outcome.json`. The host checks identities, hashes, eligibility, the
-complete ranking, and one-shot assignment semantics. Match does not begin
-Invent or perform an external effect.
+The deterministic finalizer binds `inventor_roster_sha256`, the selected
+custom-agent path, and its exact hashes; writes
+`artifacts/match/assignment.json`; and writes `agent-outcome.json`. It does not
+reason or choose the Inventor. Complete the Match Goal only after that command
+succeeds, then return to the host. The host verifies identities, hashes, full
+ranking coverage, and one-shot assignment semantics before it can checkpoint
+Invent.

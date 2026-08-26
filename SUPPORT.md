@@ -16,7 +16,8 @@
   from [MAINTAINERS.md](MAINTAINERS.md), the user outcome, and the boundary that
   would change.
 - **Inventor contribution:** follow `docs/BUILD_AN_INVENTOR.md` and include the
-  Taste lane and customization level.
+  Taste point of view, intended matching boundary, and any specialist skill
+  trees or deterministic tools.
 - **Security, leaked secret, unauthorized effect, or private conduct report:**
   use [SECURITY.md](SECURITY.md); do not open a public issue.
 
