@@ -73,6 +73,7 @@ prompt = sys.stdin.read()
 )
 print(json.dumps({"type": "thread.started", "thread_id": "12345678-1234-5678-9234-567812345678"}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture complete"}}))
+print(json.dumps({"type": "turn.completed", "usage": {}}))
 """,
                 encoding="utf-8",
             )

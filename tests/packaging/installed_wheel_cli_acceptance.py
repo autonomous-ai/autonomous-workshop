@@ -486,6 +486,7 @@ for inventor_id in inventor_ids:
 )
 print(json.dumps({"type": "thread.started", "thread_id": %r}))
 print(json.dumps({"type": "item.completed", "item": {"id": "message-1", "type": "agent_message", "text": "fixture waiting"}}))
+print(json.dumps({"type": "turn.completed", "usage": {}}))
 """ % (str(python), INVENTORS, CODEX_THREAD_ID)
     path.write_text(source, encoding="utf-8")
     path.chmod(0o700)
@@ -638,9 +639,23 @@ def _native_wish_smoke(
         or 'project_root_markers=[".workshop-product-run-root"]'
         not in codex_arguments
         or not any(
+            argument.startswith(
+                "permissions.workshop-product-run.workspace_roots="
+            )
+            and json.dumps(str(expected_workspace)) + "=true" in argument
+            for argument in codex_arguments
+        )
+        or not any(
             argument.startswith("permissions.workshop-product-run.filesystem=")
             and '":root"="deny"' in argument
             and '":minimal"="read"' in argument
+            and '":workspace_roots"={' in argument
+            and '"."="write"' in argument
+            and '".agents"="read"' in argument
+            and '".codex"="read"' in argument
+            and '"**/.env*"="deny"' in argument
+            and json.dumps(str(expected_workspace.parent)) + '="deny"'
+            in argument
             and json.dumps(str(expected_workspace)) + '="write"' in argument
             and json.dumps(str(expected_workspace / ".agents")) + '="read"'
             in argument
@@ -648,7 +663,6 @@ def _native_wish_smoke(
             in argument
             and json.dumps(str(expected_workspace / "**/.env*")) + '="deny"'
             in argument
-            and '":workspace_roots"' not in argument
             and "extends=" not in argument
             for argument in codex_arguments
         )

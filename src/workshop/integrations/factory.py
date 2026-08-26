@@ -40,7 +40,13 @@ from workshop.errors import (
     StateConflict,
 )
 from workshop.make.cad.mesh import inspect_stl_path
-from workshop.release.native import validate_release_product
+from workshop.release.native import (
+    FACTORY_CONTENT_BODY_MAX,
+    FACTORY_CONTENT_BODY_MIN,
+    FACTORY_CONTENT_LABEL_MAX,
+    FACTORY_CONTENT_STORY_BLOCKS_MAX,
+    validate_release_product,
+)
 from workshop.runtime import EffectIntent, EffectLedger, Receipt
 
 
@@ -52,10 +58,10 @@ MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 FACTORY_IMPORT_STRING_LIMITS = {
     "title": 300,
     "description": 2_000,
-    "category": 100,
 }
-FACTORY_PRODUCT_CATEGORY = "toys"
 FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
+FACTORY_RELEASE_MANUAL_PATH = "MANUAL.md"
+FACTORY_CONTENT_MAPPING = "workshop-release-v3-to-factory-content-v1"
 # Only these exact metadata files and CAD/project source types may cross the
 # Factory boundary.  This is deliberately an allowlist: a creator-facing file
 # must not become uploadable merely because its directory or suffix was not in
@@ -63,6 +69,7 @@ FACTORY_RELEASE_PAGE_PATH = "workshop-release-page.json"
 FACTORY_MODEL_METADATA_PATHS = frozenset(
     (
         "_inventor-artifact.json",
+        FACTORY_RELEASE_MANUAL_PATH,
         "product.json",
         "project.json",
         FACTORY_RELEASE_PAGE_PATH,
@@ -100,6 +107,12 @@ FACTORY_MADE_FORBIDDEN_PAGE_FIELDS = frozenset(
 PROVEN_NO_EFFECT_STATUSES = frozenset(
     (400, 401, 403, 404, 405, 406, 410, 411, 412, 413, 414, 415,
      416, 417, 421, 422, 426, 428, 431, 451)
+)
+# Factory's import contract additionally guarantees that an infrastructure
+# 500 and its edge timeout 524 create no visible design.  Keep this scoped to
+# import: the same statuses are not proof of no effect for content or publish.
+FACTORY_IMPORT_PROVEN_NO_EFFECT_STATUSES = (
+    PROVEN_NO_EFFECT_STATUSES | frozenset((500, 524))
 )
 _INVENTOR_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _OCCURRENCE_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,127}$")
@@ -447,7 +460,7 @@ def _assert_archive_inventory(content: bytes, project_id: str) -> None:
         raise ContractError("Factory model handoff is not a readable ZIP") from exc
 
 
-def _assert_model_only(content: bytes) -> None:
+def _assert_factory_handoff(content: bytes) -> None:
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             names = archive.namelist()
@@ -496,6 +509,24 @@ def _assert_model_only(content: bytes) -> None:
                 raise ContractError("Factory handoff primary model is missing") from exc
             if hashlib.sha256(primary_content).hexdigest() != primary_sha256:
                 raise ContractError("Factory handoff primary model hash differs")
+            manual = facts.get("manual")
+            if (
+                not isinstance(manual, Mapping)
+                or manual.get("path") != FACTORY_RELEASE_MANUAL_PATH
+            ):
+                raise ContractError("Factory handoff manual binding is malformed")
+            manual_sha256 = require_sha256(
+                manual.get("sha256"), "Factory handoff manual sha256"
+            )
+            try:
+                manual_content = archive.read(FACTORY_RELEASE_MANUAL_PATH)
+            except KeyError as exc:
+                raise ContractError("Factory handoff MANUAL.md is missing") from exc
+            if (
+                not manual_content
+                or hashlib.sha256(manual_content).hexdigest() != manual_sha256
+            ):
+                raise ContractError("Factory handoff MANUAL.md hash differs")
             for name in names:
                 if not _is_factory_model_path(
                     name,
@@ -518,22 +549,18 @@ def _assert_model_only(content: bytes) -> None:
                         "Factory handoff Made product.json contains Release page fields: %s"
                         % sorted(forbidden)
                     )
-            if FACTORY_RELEASE_PAGE_PATH in names:
-                try:
-                    release_page = json.loads(
-                        archive.read(FACTORY_RELEASE_PAGE_PATH).decode("utf-8")
-                    )
-                except (UnicodeError, ValueError) as exc:
-                    raise ContractError(
-                        "Factory handoff Release product page is malformed"
-                    ) from exc
-                canonical_page = _canonical_json(
-                    validate_release_product(release_page)
+            try:
+                release_page_content = archive.read(FACTORY_RELEASE_PAGE_PATH)
+                release_page = json.loads(release_page_content.decode("utf-8"))
+            except (KeyError, UnicodeError, ValueError) as exc:
+                raise ContractError(
+                    "Factory handoff Release product page is malformed"
+                ) from exc
+            canonical_page = _canonical_json(validate_release_product(release_page))
+            if release_page_content != canonical_page:
+                raise ContractError(
+                    "Factory handoff Release product page is not canonical"
                 )
-                if archive.read(FACTORY_RELEASE_PAGE_PATH) != canonical_page:
-                    raise ContractError(
-                        "Factory handoff Release product page is not canonical"
-                    )
     except ContractError:
         raise
     except (OSError, ValueError, zipfile.BadZipFile) as exc:
@@ -545,6 +572,7 @@ def _build_model_handoff(
     destination: Path,
     facts: Mapping[str, Any],
     release_page_content: bytes,
+    manual_content: bytes,
 ) -> Mapping[str, Any]:
     """Create the exact model-and-page ZIP that crosses Factory's boundary."""
 
@@ -630,6 +658,13 @@ def _build_model_handoff(
     if _canonical_json(validate_release_product(release_page)) != release_page_content:
         raise ContractError("Factory handoff Release page bytes are not canonical")
     assert_packable_content(FACTORY_RELEASE_PAGE_PATH, release_page_content)
+    if not isinstance(manual_content, bytes) or not manual_content:
+        raise ContractError("Factory handoff requires sealed MANUAL.md bytes")
+    try:
+        manual_content.decode("utf-8")
+    except UnicodeError as exc:
+        raise ContractError("Factory handoff MANUAL.md must be UTF-8") from exc
+    assert_packable_content(FACTORY_RELEASE_MANUAL_PATH, manual_content)
 
     skip_paths = set()
     if occurrence is not None:
@@ -686,11 +721,13 @@ def _build_model_handoff(
         reserved = (
             "workshop-product-facts.json",
             FACTORY_RELEASE_PAGE_PATH,
+            FACTORY_RELEASE_MANUAL_PATH,
         )
         if any((staging / path).exists() for path in reserved):
             raise ContractError("Made contains a reserved Factory handoff path")
         (staging / "workshop-product-facts.json").write_bytes(facts_payload)
         (staging / FACTORY_RELEASE_PAGE_PATH).write_bytes(release_page_content)
+        (staging / FACTORY_RELEASE_MANUAL_PATH).write_bytes(manual_content)
         result = dict(build_pack(staging, destination))
     content, pack_sha256, handoff_artifact_sha256 = load_artifact_payload(destination)
     if (
@@ -698,7 +735,7 @@ def _build_model_handoff(
         or result.get("artifact_sha256") != handoff_artifact_sha256
     ):
         raise ContractError("Factory handoff Pack changed after construction")
-    _assert_model_only(content)
+    _assert_factory_handoff(content)
     if sealed_primary["kind"] == "mesh":
         _assert_archive_inventory(content, context.wish.product_id)
     result.update(
@@ -709,6 +746,7 @@ def _build_model_handoff(
             "product_page_sha256": hashlib.sha256(
                 release_page_content
             ).hexdigest(),
+            "manual_sha256": hashlib.sha256(manual_content).hexdigest(),
         }
     )
     return result
@@ -866,6 +904,16 @@ def _normalize_import(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
         ):
             raise ContractError("Factory import %s is malformed" % name)
         normalized[name] = value
+    category = metadata.get("category")
+    if category is not None:
+        if (
+            not isinstance(category, str)
+            or not category
+            or category != category.strip()
+            or len(category) > 100
+        ):
+            raise ContractError("Factory import category is malformed")
+        normalized["category"] = category
     tags = metadata.get("tags")
     if (
         not isinstance(tags, list)
@@ -942,11 +990,12 @@ class FactoryClient:
         filename = _safe_filename(filename)
         if not isinstance(content, bytes) or not content:
             raise ContractError("Factory model ZIP must be non-empty bytes")
-        _assert_model_only(content)
+        _assert_factory_handoff(content)
         normalized = _normalize_import(metadata)
         fields = [("status", "draft")]
         for name in ("title", "description", "category"):
-            fields.append((name, normalized[name]))
+            if name in normalized:
+                fields.append((name, normalized[name]))
         for tag in normalized["tags"] or ("",):
             fields.append(("tags", tag))
         content_type = mimetypes.guess_type(filename)[0] or "application/zip"
@@ -966,6 +1015,46 @@ class FactoryClient:
             raise ContractError("Factory design slug is required")
         return self._request(
             "GET", "/designs/%s" % urllib.parse.quote(slug, safe="")
+        )
+
+    def write_use_case(
+        self,
+        slug: str,
+        content: Mapping[str, Any],
+        idempotency_key: str,
+    ) -> HttpResponse:
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        if not isinstance(content, Mapping) or set(content) != {
+            "label",
+            "body",
+            "image",
+        }:
+            raise ContractError("Factory use_case write must be exact")
+        return self._request(
+            "PATCH",
+            "/designs/%s/use-case" % urllib.parse.quote(slug, safe=""),
+            body=_canonical_json(dict(content)),
+            content_type="application/json",
+            idempotency_key=idempotency_key,
+        )
+
+    def write_story_blocks(
+        self,
+        slug: str,
+        blocks: Sequence[Mapping[str, Any]],
+        idempotency_key: str,
+    ) -> HttpResponse:
+        if not isinstance(slug, str) or not slug:
+            raise ContractError("Factory design slug is required")
+        if not isinstance(blocks, (list, tuple)):
+            raise ContractError("Factory story_blocks write must be an array")
+        return self._request(
+            "PUT",
+            "/designs/%s/story-blocks" % urllib.parse.quote(slug, safe=""),
+            body=_canonical_json({"story_blocks": [dict(block) for block in blocks]}),
+            content_type="application/json",
+            idempotency_key=idempotency_key,
         )
 
     def publish(self, slug: str, idempotency_key: str) -> HttpResponse:
@@ -1233,6 +1322,130 @@ def _release_page(root: Path) -> Tuple[Mapping[str, Any], bytes]:
     return page, content
 
 
+def _release_manual(
+    root: Path, manifest: ArtifactManifest
+) -> Tuple[bytes, str]:
+    path = root / FACTORY_RELEASE_MANUAL_PATH
+    entry = _manifest_entry(manifest, FACTORY_RELEASE_MANUAL_PATH)
+    if entry is None or path.is_symlink() or not path.is_file():
+        raise ContractError("Release MANUAL.md must be a sealed regular file")
+    try:
+        content = path.read_bytes()
+        content.decode("utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ContractError("Release MANUAL.md must be readable UTF-8") from exc
+    digest = hashlib.sha256(content).hexdigest()
+    if not content or len(content) != entry.bytes or digest != entry.sha256:
+        raise ContractError("Release MANUAL.md differs from its sealed bytes")
+    return content, digest
+
+
+def _factory_content_text(
+    value: Any,
+    label: str,
+    *,
+    minimum: int,
+    maximum: int,
+) -> str:
+    if (
+        not isinstance(value, str)
+        or value != value.strip()
+        or not minimum <= len(value) <= maximum
+        or "<" in value
+        or ">" in value
+    ):
+        raise ContractError(
+            "Factory rich-content API cannot carry exact %s; required plain-text "
+            "length is %d-%d characters" % (label, minimum, maximum)
+        )
+    return value
+
+
+def _factory_content_copy(page: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Project only fields Factory can represent without rewriting Codex copy."""
+
+    use_case = page.get("use_case")
+    story_blocks = page.get("story_blocks")
+    if not isinstance(use_case, Mapping) or not isinstance(story_blocks, list):
+        raise ContractError("Release page lacks exact use_case/story_blocks content")
+    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
+        raise ContractError(
+            "Factory rich-content API cannot carry exact story_blocks; at most %d "
+            "blocks are supported" % FACTORY_CONTENT_STORY_BLOCKS_MAX
+        )
+    copied_blocks = []
+    for index, block in enumerate(story_blocks):
+        if not isinstance(block, Mapping):
+            raise ContractError("Release story_blocks[%d] is malformed" % index)
+        copied_blocks.append(
+            {
+                "lead": _factory_content_text(
+                    block.get("headline"),
+                    "story_blocks[%d].headline" % index,
+                    minimum=1,
+                    maximum=FACTORY_CONTENT_LABEL_MAX,
+                ),
+                "body": _factory_content_text(
+                    block.get("body"),
+                    "story_blocks[%d].body" % index,
+                    minimum=FACTORY_CONTENT_BODY_MIN,
+                    maximum=FACTORY_CONTENT_BODY_MAX,
+                ),
+            }
+        )
+    return {
+        "use_case": {
+            "label": _factory_content_text(
+                use_case.get("headline"),
+                "use_case.headline",
+                minimum=1,
+                maximum=FACTORY_CONTENT_LABEL_MAX,
+            ),
+            "body": _factory_content_text(
+                use_case.get("body"),
+                "use_case.body",
+                minimum=FACTORY_CONTENT_BODY_MIN,
+                maximum=FACTORY_CONTENT_BODY_MAX,
+            ),
+        },
+        "story_blocks": copied_blocks,
+    }
+
+
+def _factory_content_target(
+    page: Mapping[str, Any], cover_url: str
+) -> Mapping[str, Any]:
+    copied = _factory_content_copy(page)
+    use_case = dict(copied["use_case"])
+    use_case["image"] = _https_url(cover_url, "Factory use_case cover URL")
+    return {
+        "use_case": use_case,
+        "story_blocks": [dict(block) for block in copied["story_blocks"]],
+    }
+
+
+def _factory_content_state(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping) or not {
+        "use_case",
+        "story_blocks",
+    }.issubset(value):
+        raise ReceiptError(
+            "Factory readback does not expose use_case and story_blocks"
+        )
+    use_case = value.get("use_case")
+    blocks = value.get("story_blocks")
+    if use_case is not None and not isinstance(use_case, Mapping):
+        raise ReceiptError("Factory use_case readback is malformed")
+    if not isinstance(blocks, list) or any(
+        not isinstance(block, Mapping) for block in blocks
+    ):
+        raise ReceiptError("Factory story_blocks readback is malformed")
+    return {
+        "use_case": dict(use_case) if use_case is not None else None,
+        "story_blocks": [dict(block) for block in blocks],
+    }
+
+
 def _effect_details(intent: EffectIntent, values: Mapping[str, Any]) -> Mapping[str, Any]:
     return {
         **dict(values),
@@ -1273,7 +1486,7 @@ def _factory_receipt(
 
 
 class FactoryReleaseWriter:
-    """Import one exact model-only handoff as an authenticated private draft."""
+    """Import one exact sealed handoff as an authenticated private draft."""
 
     def __init__(
         self,
@@ -1317,6 +1530,7 @@ class FactoryReleaseWriter:
             "product_facts_sha256",
             "primary_model_sha256",
             "product_page_sha256",
+            "manual_sha256",
             "effect_request_sha256",
         )
         for name in required_hashes:
@@ -1333,6 +1547,8 @@ class FactoryReleaseWriter:
             "product_page_sha256"
         ):
             raise ReceiptError("Factory Receipt belongs to different product-page bytes")
+        if details.get("manual_sha256") != intent.request.get("manual_sha256"):
+            raise ReceiptError("Factory Receipt belongs to different MANUAL.md bytes")
         _https_url(details.get("page_url"), "Factory page URL")
         _https_url(details.get("cover_url"), "Factory cover URL")
         if details.get("content_owner") != "workshop-manager":
@@ -1367,9 +1583,16 @@ class FactoryReleaseWriter:
         if (
             not isinstance(metadata, Mapping)
             or observed_design.get("origin") != "import"
+            or observed_design.get("title") != metadata.get("title")
+            or observed_design.get("description") != metadata.get("description")
             or observed_design.get("tags") != metadata.get("tags")
-            or not isinstance(category, Mapping)
-            or category.get("slug") != metadata.get("category")
+            or (
+                "category" in metadata
+                and (
+                    not isinstance(category, Mapping)
+                    or category.get("slug") != metadata.get("category")
+                )
+            )
             or not isinstance(imported_covers, list)
             or not imported_covers
             or observed_covers != imported_covers
@@ -1417,6 +1640,351 @@ class FactoryReleaseWriter:
         assert resolved.receipt is not None
         return resolved.receipt
 
+    @staticmethod
+    def _assert_content_receipt(
+        receipt: Receipt,
+        intent: EffectIntent,
+        imported: Receipt,
+    ) -> None:
+        receipt.assert_payload(intent.pack_sha256)
+        receipt.assert_artifact(intent.product_artifact_sha256)
+        if not receipt.is_verified_draft or not _same_factory_identity(imported, receipt):
+            raise ReceiptError(
+                "Factory content Receipt does not identify the imported draft"
+            )
+        details = receipt.details
+        for name in (
+            "release_sha256",
+            "playtest_evidence_sha256",
+            "handoff_artifact_sha256",
+            "product_page_sha256",
+            "manual_sha256",
+            "factory_content_sha256",
+            "effect_request_sha256",
+            "factory_content_effect_request_sha256",
+            "import_effect_request_sha256",
+        ):
+            require_sha256(details.get(name), "Factory content Receipt %s" % name)
+        expected = {
+            "product_id": intent.product_id,
+            "release_sha256": intent.release_sha256,
+            "playtest_evidence_sha256": intent.playtest_evidence_sha256,
+            "handoff_artifact_sha256": intent.handoff_artifact_sha256,
+            "product_page_sha256": intent.request.get("product_page_sha256"),
+            "manual_sha256": intent.request.get("manual_sha256"),
+            "factory_content_sha256": intent.request.get("factory_content_sha256"),
+            "factory_content_effect_request_sha256": intent.request_sha256,
+            "import_effect_request_sha256": imported.details.get(
+                "effect_request_sha256"
+            ),
+            "effect_request_sha256": intent.request_sha256,
+            "effect_idempotency_key": intent.idempotency_key,
+            "factory_content_mapping": FACTORY_CONTENT_MAPPING,
+            "content_owner": "workshop-manager",
+        }
+        if any(details.get(name) != value for name, value in expected.items()):
+            raise ReceiptError(
+                "Factory content Receipt is not bound to the exact page handoff"
+            )
+        exact_content = details.get("factory_content")
+        if (
+            not isinstance(exact_content, Mapping)
+            or _canonical_sha256(exact_content)
+            != intent.request.get("factory_content_sha256")
+            or exact_content != intent.request.get("target")
+        ):
+            raise ReceiptError(
+                "Factory content Receipt does not retain its exact rich content"
+            )
+        _https_url(details.get("page_url"), "Factory page URL")
+        _https_url(details.get("cover_url"), "Factory cover URL")
+
+    def _content_receipt(
+        self,
+        design: Mapping[str, Any],
+        intent: EffectIntent,
+        imported: Receipt,
+        proof: Mapping[str, Any],
+        target: Mapping[str, Any],
+    ) -> Receipt:
+        if _factory_content_state(design) != target:
+            raise ReceiptError(
+                "Factory readback does not preserve exact Workshop page content"
+            )
+        observed = _factory_receipt(design, intent, proof)
+        observed.assert_owner(intent.request.get("owner_id"))
+        if not observed.is_verified_draft or not _same_factory_identity(imported, observed):
+            raise ReceiptError(
+                "Factory content readback changed the imported draft identity"
+            )
+        final = Receipt.from_dict(observed.to_dict())
+        self._assert_content_receipt(final, intent, imported)
+        return final
+
+    def _content_design(self, client: FactoryClient, slug: str) -> Mapping[str, Any]:
+        response = client.get_design(slug)
+        if response.status != 200:
+            raise AmbiguousEffectError(
+                "authenticated Factory content readback returned HTTP %s"
+                % response.status
+            )
+        return _json_body(response, "Factory content readback")
+
+    def _ensure_page_content(
+        self,
+        client: FactoryClient,
+        imported: Receipt,
+        page: Mapping[str, Any],
+        *,
+        product_page_sha256: str,
+        manual_sha256: str,
+    ) -> Receipt:
+        cover_url = _https_url(
+            imported.details.get("cover_url"), "Factory imported cover URL"
+        )
+        target = _factory_content_target(page, cover_url)
+        target_sha256 = _canonical_sha256(target)
+        request = {
+            "schema_version": 1,
+            "method": "PATCH+PUT",
+            "api_origin": _api_origin(DEFAULT_FACTORY_API),
+            "paths": [
+                "/designs/%s/use-case"
+                % urllib.parse.quote(imported.slug, safe=""),
+                "/designs/%s/story-blocks"
+                % urllib.parse.quote(imported.slug, safe=""),
+            ],
+            "owner_id": imported.owner_id,
+            "design_id": imported.design_id,
+            "slug": imported.slug,
+            "root_id": imported.root_id,
+            "current_history_id": imported.current_history_id,
+            "product_page_sha256": require_sha256(
+                product_page_sha256, "Factory content product-page sha256"
+            ),
+            "manual_sha256": require_sha256(
+                manual_sha256, "Factory content manual sha256"
+            ),
+            "factory_content_sha256": target_sha256,
+            "target": target,
+        }
+        intent = self.ledger.prepare(
+            kind="factory-content",
+            product_id=imported.details.get("product_id"),
+            request=request,
+            pack_sha256=imported.payload_sha256,
+            handoff_artifact_sha256=imported.details.get(
+                "handoff_artifact_sha256"
+            ),
+            product_artifact_sha256=imported.artifact_sha256,
+            release_sha256=imported.details.get("release_sha256"),
+            playtest_evidence_sha256=imported.details.get(
+                "playtest_evidence_sha256"
+            ),
+        )
+        proof = {
+            **dict(imported.details),
+            "product_page_sha256": product_page_sha256,
+            "manual_sha256": manual_sha256,
+            "factory_content_sha256": target_sha256,
+            "factory_content": target,
+            "factory_content_mapping": FACTORY_CONTENT_MAPPING,
+            "factory_content_effect_request_sha256": intent.request_sha256,
+            "import_effect_request_sha256": imported.details.get(
+                "effect_request_sha256"
+            ),
+            "content_owner": "workshop-manager",
+        }
+        if intent.state == "succeeded":
+            if intent.receipt is None:
+                raise StateConflict("completed Factory content write has no Receipt")
+            self._assert_content_receipt(intent.receipt, intent, imported)
+            return intent.receipt
+        if intent.state == "rejected":
+            raise EffectError("Factory previously rejected this exact page content")
+        if intent.state == "sending":
+            intent = self.ledger.strand_as_unknown(
+                intent.intent_id, "host exited while Factory page content was sending"
+            )
+        if intent.state == "unknown":
+            try:
+                design = self._content_design(client, imported.slug)
+                observed_content = _factory_content_state(design)
+                partial_target = {
+                    "use_case": target["use_case"],
+                    "story_blocks": [],
+                }
+                if observed_content == partial_target and target["story_blocks"]:
+                    # The authenticated readback proves the first mutation
+                    # happened and the second did not.  Continuing only the
+                    # missing story-block mutation is reconciliation of an
+                    # exact partial target, not a blind retry of the combined
+                    # effect.  Keep the durable intent unknown until a final
+                    # authenticated readback proves the whole target.
+                    observed_receipt = _factory_receipt(design, intent, proof)
+                    observed_receipt.assert_owner(imported.owner_id)
+                    if (
+                        not observed_receipt.is_verified_draft
+                        or not _same_factory_identity(imported, observed_receipt)
+                    ):
+                        raise ReceiptError(
+                            "Factory partial content readback changed the imported draft identity"
+                        )
+                    response = client.write_story_blocks(
+                        imported.slug,
+                        target["story_blocks"],
+                        intent.idempotency_key + "-story-blocks",
+                    )
+                    if response.status != 200:
+                        raise AmbiguousEffectError(
+                            "Factory partial page-content reconciliation did not complete"
+                        )
+                    written = _json_body(
+                        response, "Factory reconciled story_blocks response"
+                    )
+                    if _factory_content_state(written) != target:
+                        raise ReceiptError(
+                            "Factory reconciled story_blocks response did not preserve exact content"
+                        )
+                    design = self._content_design(client, imported.slug)
+                elif observed_content != target:
+                    raise StateConflict(
+                        "Factory page-content outcome is neither the exact target nor its safe partial state"
+                    )
+                receipt = self._content_receipt(design, intent, imported, proof, target)
+                completed = self.ledger.resolve_succeeded(
+                    intent.intent_id, receipt, design
+                )
+            except (ContractError, EffectError, ReceiptError, StateConflict) as exc:
+                raise AmbiguousEffectError(
+                    "Factory page-content outcome remains unknown; it will not be retried"
+                ) from exc
+            assert completed.receipt is not None
+            return completed.receipt
+
+        preflight = self._content_design(client, imported.slug)
+        preflight_receipt = _factory_receipt(preflight, intent, proof)
+        preflight_receipt.assert_owner(imported.owner_id)
+        if (
+            not preflight_receipt.is_verified_draft
+            or not _same_factory_identity(imported, preflight_receipt)
+        ):
+            raise ReceiptError(
+                "Factory page-content preflight changed the imported draft identity"
+            )
+        preflight_content = _factory_content_state(preflight)
+        if preflight_content == target:
+            receipt = self._content_receipt(
+                preflight, intent, imported, proof, target
+            )
+            completed = self.ledger.resolve_succeeded(
+                intent.intent_id, receipt, preflight
+            )
+            assert completed.receipt is not None
+            return completed.receipt
+        if preflight_content != {"use_case": None, "story_blocks": []}:
+            raise StateConflict(
+                "Factory draft already contains different page content; refusing to overwrite it"
+            )
+
+        sending = self.ledger.begin(intent.intent_id)
+        assert sending.effect_token is not None
+        first_value: Optional[Mapping[str, Any]] = None
+        second_value: Optional[Mapping[str, Any]] = None
+        try:
+            first = client.write_use_case(
+                imported.slug,
+                target["use_case"],
+                sending.idempotency_key + "-use-case",
+            )
+            if first.status != 200:
+                summary = first.body.decode("utf-8", "replace")[:500]
+                error = "HTTP %s: %s" % (first.status, summary)
+                if first.status in PROVEN_NO_EFFECT_STATUSES:
+                    self.ledger.mark_rejected(
+                        sending.intent_id, sending.effect_token, error
+                    )
+                    raise EffectError(
+                        "Factory rejected exact use_case content with HTTP %s"
+                        % first.status
+                    )
+                self.ledger.mark_unknown(
+                    sending.intent_id, sending.effect_token, error
+                )
+                raise AmbiguousEffectError(
+                    "Factory use_case write returned an ambiguous HTTP status"
+                )
+            first_value = _json_body(first, "Factory use_case write response")
+            if _factory_content_state(first_value) != {
+                "use_case": target["use_case"],
+                "story_blocks": [],
+            }:
+                raise ReceiptError(
+                    "Factory use_case response did not preserve exact content"
+                )
+
+            second = client.write_story_blocks(
+                imported.slug,
+                target["story_blocks"],
+                sending.idempotency_key + "-story-blocks",
+            )
+            if second.status != 200:
+                raise AmbiguousEffectError(
+                    "Factory page content is only partially applied after story_blocks returned HTTP %s"
+                    % second.status
+                )
+            second_value = _json_body(
+                second, "Factory story_blocks write response"
+            )
+            if _factory_content_state(second_value) != target:
+                raise ReceiptError(
+                    "Factory story_blocks response did not preserve exact content"
+                )
+            observed = self._content_design(client, imported.slug)
+            receipt = self._content_receipt(
+                observed, sending, imported, proof, target
+            )
+            completed = self.ledger.mark_succeeded(
+                sending.intent_id,
+                sending.effect_token,
+                receipt,
+                {
+                    "use_case_write": dict(first_value),
+                    "story_blocks_write": dict(second_value),
+                    "readback": dict(observed),
+                },
+            )
+        except (AmbiguousEffectError, EffectError) as exc:
+            current = self.ledger.get(sending.intent_id)
+            if current.state == "sending":
+                self.ledger.mark_unknown(
+                    sending.intent_id,
+                    sending.effect_token,
+                    "%s: %s" % (type(exc).__name__, exc),
+                    response=second_value or first_value,
+                )
+            if first_value is not None and not isinstance(
+                exc, AmbiguousEffectError
+            ):
+                raise AmbiguousEffectError(
+                    "Factory page content is partially applied and requires authenticated reconciliation"
+                ) from exc
+            raise
+        except Exception as exc:
+            current = self.ledger.get(sending.intent_id)
+            if current.state == "sending":
+                self.ledger.mark_unknown(
+                    sending.intent_id,
+                    sending.effect_token,
+                    "Factory page content lacks conclusive exact readback",
+                    response=second_value or first_value,
+                )
+            raise AmbiguousEffectError(
+                "Factory page-content outcome is unknown and will not be blindly retried"
+            ) from exc
+        assert completed.receipt is not None
+        return completed.receipt
+
     def __call__(
         self,
         context: Any,
@@ -1431,6 +1999,12 @@ class FactoryReleaseWriter:
             sealed_manifest.artifact_sha256, "sealed Release sha256"
         )
         page, page_content = _release_page(release_root)
+        # Fail before creating a remote draft when Factory cannot display the
+        # exact Codex-authored use-case/story text without truncation or rewrite.
+        _factory_content_copy(page)
+        manual_content, manual_sha256 = _release_manual(
+            release_root, sealed_manifest
+        )
         product_artifact_sha256 = require_sha256(
             page.get("product_artifact_sha256"), "Release product artifact sha256"
         )
@@ -1457,6 +2031,10 @@ class FactoryReleaseWriter:
             "wish": context.wish.to_dict(),
             "product": dict(context.made.product),
             "release": dict(page),
+            "manual": {
+                "path": FACTORY_RELEASE_MANUAL_PATH,
+                "sha256": manual_sha256,
+            },
         }
         with tempfile.TemporaryDirectory(prefix="workshop-release-effect-") as temporary:
             pack = Path(temporary) / "model-handoff.zip"
@@ -1465,14 +2043,18 @@ class FactoryReleaseWriter:
                 pack,
                 product_facts,
                 page_content,
+                manual_content,
             )
         primary = handoff["primary_model"]
+        # Category is omitted so Factory selects an active category rather than
+        # trusting a stale client-side slug. Prompt is also deliberately omitted:
+        # Workshop will not fabricate or collapse the exact Wish into Factory's
+        # optional prompt field; the sealed facts/page retain that provenance.
         metadata = _normalize_import(
             {
                 "status": "draft",
                 "title": page.get("title"),
                 "description": page.get("summary"),
-                "category": FACTORY_PRODUCT_CATEGORY,
                 "tags": ["toy"],
             }
         )
@@ -1483,6 +2065,7 @@ class FactoryReleaseWriter:
             "filename": "model-handoff.zip",
             "owner_id": identity.owner_id,
             "product_page_sha256": handoff["product_page_sha256"],
+            "manual_sha256": handoff["manual_sha256"],
             "metadata": dict(metadata),
         }
         intent = self.ledger.prepare(
@@ -1500,13 +2083,20 @@ class FactoryReleaseWriter:
             "primary_model_path": primary["path"],
             "primary_model_sha256": primary["sha256"],
             "product_page_sha256": handoff["product_page_sha256"],
+            "manual_sha256": handoff["manual_sha256"],
             "content_owner": "workshop-manager",
         }
         if intent.state == "succeeded":
             if intent.receipt is None:
                 raise StateConflict("completed Factory import has no Receipt")
             self._assert_private_receipt(intent.receipt, intent)
-            return intent.receipt
+            return self._ensure_page_content(
+                client,
+                intent.receipt,
+                page,
+                product_page_sha256=handoff["product_page_sha256"],
+                manual_sha256=handoff["manual_sha256"],
+            )
         if intent.state == "rejected":
             raise EffectError("Factory previously rejected this exact model import")
         if intent.state == "sending":
@@ -1514,7 +2104,14 @@ class FactoryReleaseWriter:
                 intent.intent_id, "host exited while Factory import was sending"
             )
         if intent.state == "unknown":
-            return self._recover_unknown(client, intent, proof)
+            imported = self._recover_unknown(client, intent, proof)
+            return self._ensure_page_content(
+                client,
+                imported,
+                page,
+                product_page_sha256=handoff["product_page_sha256"],
+                manual_sha256=handoff["manual_sha256"],
+            )
 
         context.assert_current()
         _assert_sealed_release(release_root, sealed_manifest)
@@ -1539,7 +2136,7 @@ class FactoryReleaseWriter:
         if response.status != 201:
             summary = response.body.decode("utf-8", "replace")[:500]
             error = "HTTP %s: %s" % (response.status, summary)
-            if response.status in PROVEN_NO_EFFECT_STATUSES:
+            if response.status in FACTORY_IMPORT_PROVEN_NO_EFFECT_STATUSES:
                 self.ledger.mark_rejected(
                     sending.intent_id, sending.effect_token, error
                 )
@@ -1575,7 +2172,13 @@ class FactoryReleaseWriter:
                 "Factory accepted import but exact readback is not proven"
             ) from exc
         assert completed.receipt is not None
-        return completed.receipt
+        return self._ensure_page_content(
+            client,
+            completed.receipt,
+            page,
+            product_page_sha256=handoff["product_page_sha256"],
+            manual_sha256=handoff["manual_sha256"],
+        )
 
 
 class FactoryPublicTransition:
@@ -1596,6 +2199,7 @@ class FactoryPublicTransition:
         intent: EffectIntent,
         owner_id: str,
     ) -> Receipt:
+        FactoryPublicTransition._assert_exact_content(design, draft)
         receipt = _factory_receipt(design, intent, draft.details)
         receipt.assert_owner(owner_id)
         if not _same_factory_identity(draft, receipt):
@@ -1603,6 +2207,27 @@ class FactoryPublicTransition:
         if not receipt.is_verified_public:
             raise ReceiptError("Factory readback does not prove an active public listing")
         return receipt
+
+    @staticmethod
+    def _assert_exact_content(
+        design: Mapping[str, Any], draft: Receipt
+    ) -> None:
+        target = draft.details.get("factory_content")
+        expected_sha256 = require_sha256(
+            draft.details.get("factory_content_sha256"),
+            "Factory draft rich-content sha256",
+        )
+        if (
+            not isinstance(target, Mapping)
+            or _canonical_sha256(target) != expected_sha256
+        ):
+            raise ReceiptError(
+                "Factory draft does not retain its exact rich-content target"
+            )
+        if _factory_content_state(design) != target:
+            raise StateConflict(
+                "Factory page content changed after the exact Workshop handoff"
+            )
 
     @staticmethod
     def _design(client: FactoryClient, slug: str) -> Mapping[str, Any]:
@@ -1631,6 +2256,30 @@ class FactoryPublicTransition:
             draft.details.get("handoff_artifact_sha256"),
             "Factory draft handoff artifact sha256",
         )
+        product_page_sha256 = require_sha256(
+            draft.details.get("product_page_sha256"),
+            "Factory draft product-page sha256",
+        )
+        manual_sha256 = require_sha256(
+            draft.details.get("manual_sha256"),
+            "Factory draft MANUAL.md sha256",
+        )
+        factory_content_sha256 = require_sha256(
+            draft.details.get("factory_content_sha256"),
+            "Factory draft rich-content sha256",
+        )
+        if draft.details.get("factory_content_mapping") != FACTORY_CONTENT_MAPPING:
+            raise ReceiptError(
+                "Factory draft lacks the exact Workshop rich-content mapping"
+            )
+        target = draft.details.get("factory_content")
+        if (
+            not isinstance(target, Mapping)
+            or _canonical_sha256(target) != factory_content_sha256
+        ):
+            raise ReceiptError(
+                "Factory draft lacks its exact Workshop rich-content target"
+            )
         product_id = draft.details.get("product_id")
         if not isinstance(product_id, str) or not product_id:
             raise ReceiptError("Factory draft does not identify its Workshop product")
@@ -1643,6 +2292,9 @@ class FactoryPublicTransition:
             "slug": draft.slug,
             "root_id": draft.root_id,
             "current_history_id": draft.current_history_id,
+            "product_page_sha256": product_page_sha256,
+            "manual_sha256": manual_sha256,
+            "factory_content_sha256": factory_content_sha256,
         }
         intent = self.ledger.prepare(
             kind="factory-publish",
@@ -1672,6 +2324,7 @@ class FactoryPublicTransition:
             before.assert_owner(identity.owner_id)
             if not _same_factory_identity(draft, before):
                 raise ReceiptError("Factory preflight changed the draft identity")
+            self._assert_exact_content(before_design, draft)
         except (ContractError, EffectError, ReceiptError) as exc:
             raise AmbiguousEffectError("Factory publication preflight is unavailable") from exc
         if before.is_verified_public:
@@ -1739,6 +2392,7 @@ class FactoryPublicTransition:
 
 __all__ = [
     "DEFAULT_FACTORY_API",
+    "FACTORY_CONTENT_MAPPING",
     "FactoryAgentCredentials",
     "FactoryAgentIdentity",
     "FactoryAgentSession",

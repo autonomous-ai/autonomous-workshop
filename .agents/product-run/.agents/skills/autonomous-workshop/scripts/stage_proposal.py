@@ -70,6 +70,10 @@ MAX_OUTCOME_BYTES = 128 * 1024
 MAX_CONTRACT_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
+FACTORY_CONTENT_LABEL_MAX = 40
+FACTORY_CONTENT_BODY_MIN = 180
+FACTORY_CONTENT_BODY_MAX = 400
+FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
 MAX_FILE_BYTES = 95 * 1024 * 1024
 MAX_TREE_BYTES = 512 * 1024 * 1024
 MAX_TREE_ENTRIES = 4096
@@ -1343,6 +1347,46 @@ def _release_page_section(
     }
 
 
+def _factory_content_text(
+    value: str, label: str, minimum: int, maximum: int
+) -> None:
+    if (
+        not minimum <= len(value) <= maximum
+        or "<" in value
+        or ">" in value
+    ):
+        raise ProposalError(
+            "%s must fit Factory's exact plain-text display limit of %d-%d "
+            "characters" % (label, minimum, maximum)
+        )
+
+
+def _validate_factory_content(product: Mapping[str, Any]) -> None:
+    story_blocks = product["story_blocks"]
+    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
+        raise ProposalError(
+            "Release story_blocks must fit Factory's exact limit of at most %d"
+            % FACTORY_CONTENT_STORY_BLOCKS_MAX
+        )
+    sections = [("use_case", product["use_case"])] + [
+        ("story_blocks[%d]" % index, block)
+        for index, block in enumerate(story_blocks)
+    ]
+    for label, section in sections:
+        _factory_content_text(
+            section["headline"],
+            "Release %s headline" % label,
+            1,
+            FACTORY_CONTENT_LABEL_MAX,
+        )
+        _factory_content_text(
+            section["body"],
+            "Release %s body" % label,
+            FACTORY_CONTENT_BODY_MIN,
+            FACTORY_CONTENT_BODY_MAX,
+        )
+
+
 def _validate_release_product(value: Any) -> dict[str, Any]:
     product = _fields(value, RELEASE_PRODUCT_FIELDS, "Release product.json")
     if (
@@ -1367,9 +1411,12 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
     story_blocks = _array(
         product["story_blocks"], "Release story_blocks", nonempty=True
     )
-    if len(story_blocks) > 12:
-        raise ProposalError("Release story_blocks has too many entries")
-    return {
+    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
+        raise ProposalError(
+            "Release story_blocks must fit Factory's exact limit of at most %d"
+            % FACTORY_CONTENT_STORY_BLOCKS_MAX
+        )
+    validated = {
         "schema_version": 3,
         "kind": "workshop.release-package",
         "status": "page-ready",
@@ -1414,6 +1461,8 @@ def _validate_release_product(value: Any) -> dict[str, Any]:
         ],
         "claims": dict(claims),
     }
+    _validate_factory_content(validated)
+    return validated
 
 
 def _playtest_contract(

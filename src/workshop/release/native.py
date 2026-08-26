@@ -40,6 +40,10 @@ MAX_NATIVE_RELEASE_CONTRACT_BYTES = 2 * 1024 * 1024
 MAX_NATIVE_RELEASE_MANUAL_BYTES = 2 * 1024 * 1024
 RELEASE_PRODUCT_SCHEMA_VERSION = 3
 RELEASE_PRODUCT_STATUS = "page-ready"
+FACTORY_CONTENT_LABEL_MAX = 40
+FACTORY_CONTENT_BODY_MIN = 180
+FACTORY_CONTENT_BODY_MAX = 400
+FACTORY_CONTENT_STORY_BLOCKS_MAX = 10
 _PAGE_SECTION_FIELDS = frozenset(
     ("headline", "body", "visual_direction", "evidence_refs")
 )
@@ -353,6 +357,44 @@ def _page_section(
     }
 
 
+def _factory_content_text(value: str, label: str, minimum: int, maximum: int) -> None:
+    if (
+        not minimum <= len(value) <= maximum
+        or "<" in value
+        or ">" in value
+    ):
+        raise ContractError(
+            "%s must fit Factory's exact plain-text display limit of %d-%d "
+            "characters" % (label, minimum, maximum)
+        )
+
+
+def _validate_factory_content(product: Mapping[str, Any]) -> None:
+    story_blocks = product["story_blocks"]
+    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
+        raise ContractError(
+            "native Release story_blocks must fit Factory's exact limit of at most %d"
+            % FACTORY_CONTENT_STORY_BLOCKS_MAX
+        )
+    sections = [("use_case", product["use_case"])] + [
+        ("story_blocks[%d]" % index, block)
+        for index, block in enumerate(story_blocks)
+    ]
+    for label, section in sections:
+        _factory_content_text(
+            section["headline"],
+            "native Release %s headline" % label,
+            1,
+            FACTORY_CONTENT_LABEL_MAX,
+        )
+        _factory_content_text(
+            section["body"],
+            "native Release %s body" % label,
+            FACTORY_CONTENT_BODY_MIN,
+            FACTORY_CONTENT_BODY_MAX,
+        )
+
+
 def validate_release_product(value: Any) -> dict[str, Any]:
     """Validate the exact Codex-authored customer-page contract.
 
@@ -387,8 +429,13 @@ def validate_release_product(value: Any) -> dict[str, Any]:
         | {"playtest:%s" % check_id for check_id in claims}
     )
     story_blocks = product.get("story_blocks")
-    if not isinstance(story_blocks, list) or not 1 <= len(story_blocks) <= 12:
+    if not isinstance(story_blocks, list) or not story_blocks:
         raise ContractError("native Release story_blocks must be a non-empty bounded list")
+    if len(story_blocks) > FACTORY_CONTENT_STORY_BLOCKS_MAX:
+        raise ContractError(
+            "native Release story_blocks must fit Factory's exact limit of at most %d"
+            % FACTORY_CONTENT_STORY_BLOCKS_MAX
+        )
     validated = {
         "schema_version": RELEASE_PRODUCT_SCHEMA_VERSION,
         "kind": "workshop.release-package",
@@ -436,6 +483,7 @@ def validate_release_product(value: Any) -> dict[str, Any]:
         ],
         "claims": claims,
     }
+    _validate_factory_content(validated)
     return validated
 
 
@@ -738,6 +786,10 @@ def read_native_release(run_root: Path) -> NativeRelease:
 
 
 __all__ = [
+    "FACTORY_CONTENT_BODY_MAX",
+    "FACTORY_CONTENT_BODY_MIN",
+    "FACTORY_CONTENT_LABEL_MAX",
+    "FACTORY_CONTENT_STORY_BLOCKS_MAX",
     "MAX_NATIVE_RELEASE_CONTRACT_BYTES",
     "MAX_NATIVE_RELEASE_MANUAL_BYTES",
     "NATIVE_RELEASE_KIND",

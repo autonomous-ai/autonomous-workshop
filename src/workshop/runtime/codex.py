@@ -9,6 +9,8 @@ import re
 import shutil
 import stat
 import subprocess
+import sys
+import sysconfig
 import tempfile
 import threading
 import time
@@ -18,7 +20,10 @@ from pathlib import Path
 from typing import Any, Mapping, Optional
 
 from workshop.errors import ContractError
-from workshop.runtime.execution import codex_subprocess_environment
+from workshop.runtime.execution import (
+    CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST,
+    codex_subprocess_environment,
+)
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
 
 
@@ -35,6 +40,7 @@ MAX_CODEX_STDERR_BYTES = 256 * 1024
 MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
+_CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
 _TRANSIENT_DIAGNOSTIC_MARKERS = (
     "stream disconnected before completion",
     "connection reset by peer",
@@ -54,20 +60,65 @@ _IMMUTABLE_PRODUCT_RUN_PATHS = (
     "STAGE.json",
     "WISH.json",
 )
-_CODEX_PERMISSION_CONFIG_TEMPLATE = (
-    'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
-    'permissions.%s.description="Isolated Autonomous Workshop product run"'
-    % CODEX_PERMISSION_PROFILE,
-    "filesystem: deny root, read minimal runtime, write <exact-run-root>, "
-    "read immutable product inputs, deny <exact-run-root>/**/.env*",
-    'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
-    'project_root_markers=["%s"]' % PRODUCT_RUN_ROOT_MARKER,
+_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
+    ("PYTHONHASHSEED", "0"),
+    ("PYTHONDONTWRITEBYTECODE", "1"),
+    ("PYTHONNOUSERSITE", "1"),
 )
 _CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
 
 
 class CodexInvocationError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class _TrustedRuntimePathIdentity:
+    """Stable filesystem identity for one read-only Python trust grant."""
+
+    path: str
+    resolved_path: str
+    device: int
+    inode: int
+    mode: int
+    resolved_device: int
+    resolved_inode: int
+    resolved_mode: int
+
+    def to_dict(self) -> Mapping[str, Any]:
+        return {
+            "path": self.path,
+            "resolved_path": self.resolved_path,
+            "device": self.device,
+            "inode": self.inode,
+            "mode": self.mode,
+            "resolved_device": self.resolved_device,
+            "resolved_inode": self.resolved_inode,
+            "resolved_mode": self.resolved_mode,
+        }
+
+
+@dataclass(frozen=True)
+class _CodexRunPolicy:
+    """Exact non-secret launch policy generated for one resolved run root."""
+
+    permission_config_arguments: tuple[str, ...]
+    trusted_python_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...]
+    environment_allowlist: tuple[str, ...]
+    environment_overrides: tuple[tuple[str, str], ...]
+
+    def environment(
+        self,
+        source: Optional[Mapping[str, str]] = None,
+    ) -> Mapping[str, str]:
+        values = dict(
+            codex_subprocess_environment(
+                source,
+                allowlist=self.environment_allowlist,
+            )
+        )
+        values.update(dict(self.environment_overrides))
+        return values
 
 
 def _canonical_json(value: Mapping[str, Any]) -> bytes:
@@ -262,13 +313,18 @@ def _read_private_checkpoint(path: Path) -> Mapping[str, Any]:
 
 
 def _runtime_config_sha256(
-    cli_version: str, model: str, reasoning_effort: str
+    cli_version: str,
+    model: str,
+    reasoning_effort: str,
+    run_policy: _CodexRunPolicy,
 ) -> str:
+    """Bind a checkpoint to the exact non-secret policy used to launch it."""
+
     return _sha256_json(
         {
             "adapter": "codex-cli-native-session",
             "cli_version": cli_version,
-            "event_protocol": "jsonl-thread-started-v1",
+            "event_protocol": "jsonl-turn-terminal-v2",
             "model": model,
             "reasoning_effort": reasoning_effort,
             "ignore_rules": False,
@@ -276,10 +332,22 @@ def _runtime_config_sha256(
             "native_web_search": True,
             "approval_policy": "never",
             "permission_profile": CODEX_PERMISSION_PROFILE,
-            "permission_profile_config_template": list(
-                _CODEX_PERMISSION_CONFIG_TEMPLATE
+            "permission_config_arguments": list(
+                run_policy.permission_config_arguments
             ),
-            "permission_profile_scope": "exact-run-root-v1",
+            "trusted_python_runtime_paths": [
+                identity.to_dict()
+                for identity in run_policy.trusted_python_runtime_paths
+            ],
+            "subprocess_environment": {
+                # Inherited values can contain API credentials.  Bind their
+                # exact admitted names, never their current secret values.
+                "allowlist": list(run_policy.environment_allowlist),
+                "overrides": [
+                    {"name": name, "value": value}
+                    for name, value in run_policy.environment_overrides
+                ],
+            },
             "native_features": list(_CODEX_NATIVE_FEATURES),
         }
     )
@@ -304,7 +372,105 @@ def _toml_string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _permission_config_arguments(run_root: Path) -> list[str]:
+def _trusted_runtime_path_identity(path: Path) -> _TrustedRuntimePathIdentity:
+    try:
+        source = path.lstat()
+        resolved = path.resolve(strict=True)
+        target = resolved.stat()
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Workshop Python runtime changed while its sandbox was prepared"
+        ) from exc
+    if not (
+        stat.S_ISREG(source.st_mode)
+        or stat.S_ISDIR(source.st_mode)
+        or stat.S_ISLNK(source.st_mode)
+    ) or not (stat.S_ISREG(target.st_mode) or stat.S_ISDIR(target.st_mode)):
+        raise CodexInvocationError(
+            "Workshop Python runtime contains an unsafe filesystem object"
+        )
+    return _TrustedRuntimePathIdentity(
+        path=str(path),
+        resolved_path=str(resolved),
+        device=source.st_dev,
+        inode=source.st_ino,
+        mode=source.st_mode,
+        resolved_device=target.st_dev,
+        resolved_inode=target.st_ino,
+        resolved_mode=target.st_mode,
+    )
+
+
+def _python_runtime_permission_identities(
+) -> tuple[_TrustedRuntimePathIdentity, ...]:
+    """Return exact identities for the read-only Python runtime trust boundary.
+
+    ``:minimal`` covers platform tools, but it cannot know about the Python
+    interpreter that installed Workshop (for example a uv, conda, or pyenv
+    runtime).  Product agents need that interpreter for the standard-library
+    stage finalizer and for hash-bound CAD tools.  Grant the interpreter,
+    virtual-environment marker, and standard library read-only.
+
+    ``purelib`` and ``platlib`` are deliberately included as a trusted,
+    read-only installed-dependency boundary because run-local deterministic
+    CAD tools import their packaged Python dependencies.  Code installed in
+    those trees is therefore trusted runtime code even though the surrounding
+    Workshop checkout remains denied.
+    """
+
+    executable = Path(sys.executable)
+    try:
+        resolved = executable.resolve(strict=True)
+    except OSError as exc:
+        raise CodexInvocationError(
+            "Workshop Python runtime is unavailable to the Codex sandbox"
+        ) from exc
+    candidates = {executable, resolved}
+    for name in (
+        "python",
+        "python3",
+        "python%d.%d" % (sys.version_info.major, sys.version_info.minor),
+    ):
+        candidate = executable.parent / name
+        try:
+            if candidate.resolve(strict=True) == resolved:
+                candidates.add(candidate)
+        except OSError:
+            continue
+    marker = executable.parent.parent / "pyvenv.cfg"
+    if marker.is_file() and not marker.is_symlink():
+        candidates.add(marker)
+    for key in ("stdlib", "platstdlib", "purelib", "platlib"):
+        value = sysconfig.get_path(key)
+        if not isinstance(value, str) or not value:
+            continue
+        path = Path(value)
+        try:
+            resolved_path = path.resolve(strict=True)
+        except OSError:
+            continue
+        if resolved_path.is_dir():
+            candidates.add(resolved_path)
+    return tuple(
+        _trusted_runtime_path_identity(path)
+        for path in sorted(candidates, key=lambda candidate: str(candidate))
+    )
+
+
+def _source_checkout_boundary(run_root: Path) -> Optional[Path]:
+    """Find a containing checkout that must stay denied to the product run."""
+
+    for candidate in run_root.parents:
+        marker = candidate / ".git"
+        if marker.exists() or marker.is_symlink():
+            return candidate
+    return None
+
+
+def _permission_config_arguments(
+    run_root: Path,
+    trusted_python_runtime_paths: tuple[_TrustedRuntimePathIdentity, ...],
+) -> tuple[str, ...]:
     """Build one non-composable, exact-root Codex permission profile.
 
     Codex derives a runtime workspace from repository context.  A product
@@ -314,12 +480,29 @@ def _permission_config_arguments(run_root: Path) -> list[str]:
     """
 
     root = str(run_root)
+    workspace_rules = [
+        '"."="write"',
+        *(
+            "%s=\"read\"" % _toml_string(relative)
+            for relative in _IMMUTABLE_PRODUCT_RUN_PATHS
+        ),
+        "%s=\"deny\"" % _toml_string("**/.env*"),
+    ]
     entries = [
         '":root"="deny"',
         '":minimal"="read"',
         "glob_scan_max_depth=8",
+        '":workspace_roots"={%s}' % ",".join(workspace_rules),
+        "%s=\"deny\"" % _toml_string(str(run_root.parent)),
         "%s=\"write\"" % _toml_string(root),
     ]
+    checkout = _source_checkout_boundary(run_root)
+    if checkout is not None:
+        entries.append("%s=\"deny\"" % _toml_string(str(checkout)))
+    entries.extend(
+        "%s=\"read\"" % _toml_string(identity.path)
+        for identity in trusted_python_runtime_paths
+    )
     entries.extend(
         "%s=\"read\"" % _toml_string(str(run_root / relative))
         for relative in _IMMUTABLE_PRODUCT_RUN_PATHS
@@ -331,6 +514,8 @@ def _permission_config_arguments(run_root: Path) -> list[str]:
         'default_permissions="%s"' % CODEX_PERMISSION_PROFILE,
         'permissions.%s.description="Isolated Autonomous Workshop product run"'
         % CODEX_PERMISSION_PROFILE,
+        "permissions.%s.workspace_roots={%s=true}"
+        % (CODEX_PERMISSION_PROFILE, _toml_string(root)),
         "permissions.%s.filesystem={%s}"
         % (CODEX_PERMISSION_PROFILE, ",".join(entries)),
         'permissions.%s.network.enabled=false' % CODEX_PERMISSION_PROFILE,
@@ -339,7 +524,29 @@ def _permission_config_arguments(run_root: Path) -> list[str]:
     arguments: list[str] = []
     for value in values:
         arguments.extend(("--config", value))
-    return arguments
+    return tuple(arguments)
+
+
+def _codex_run_policy(run_root: Path) -> _CodexRunPolicy:
+    """Generate once the exact sandbox/environment policy used by a turn."""
+
+    trusted_paths = _python_runtime_permission_identities()
+    private_temp = str(run_root / ".tmp")
+    overrides = (
+        ("TMPDIR", private_temp),
+        ("TMP", private_temp),
+        ("TEMP", private_temp),
+        *_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES,
+    )
+    return _CodexRunPolicy(
+        permission_config_arguments=_permission_config_arguments(
+            run_root,
+            trusted_paths,
+        ),
+        trusted_python_runtime_paths=trusted_paths,
+        environment_allowlist=tuple(CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST),
+        environment_overrides=overrides,
+    )
 
 
 def _private_run_temp(run_root: Path) -> Path:
@@ -373,13 +580,20 @@ def _private_run_temp(run_root: Path) -> Path:
     return path
 
 
-def _codex_run_environment(run_root: Path) -> Mapping[str, str]:
-    environment = dict(codex_subprocess_environment())
+def _codex_run_environment(
+    run_root: Path,
+    run_policy: _CodexRunPolicy,
+) -> Mapping[str, str]:
     private_temp = str(_private_run_temp(run_root))
-    environment.update(
-        {"TMPDIR": private_temp, "TMP": private_temp, "TEMP": private_temp}
-    )
-    return environment
+    overrides = dict(run_policy.environment_overrides)
+    if any(
+        overrides.get(name) != private_temp
+        for name in ("TMPDIR", "TMP", "TEMP")
+    ):
+        raise CodexInvocationError(
+            "Codex product-run environment does not match its bound policy"
+        )
+    return run_policy.environment()
 
 
 @dataclass(frozen=True)
@@ -524,10 +738,6 @@ class CodexNativeSessionLauncher:
                 "Workshop requires Codex CLI %s or newer for native goals, "
                 "subagents, and credential-isolated permission profiles" % minimum
             )
-        self.runtime_config_sha256 = _runtime_config_sha256(
-            self.cli_version, self.model, self.reasoning_effort
-        )
-
     def _read_cli_version(self) -> str:
         if not self.binary:
             return "0.0.0"
@@ -568,6 +778,13 @@ class CodexNativeSessionLauncher:
                 "Codex native session checkpoint already exists; resume it explicitly"
             )
         prompt = _validated_prompt(prompt)
+        run_policy = _codex_run_policy(root)
+        runtime_config_sha256 = _runtime_config_sha256(
+            self.cli_version,
+            self.model,
+            self.reasoning_effort,
+            run_policy,
+        )
         persisted_sha256: Optional[str] = None
 
         def bind_thread(thread_id: str) -> None:
@@ -583,6 +800,7 @@ class CodexNativeSessionLauncher:
                 run_root=root,
                 host_state_root=state_root,
                 thread_id=thread_id,
+                runtime_config_sha256=runtime_config_sha256,
             )
             persisted_sha256 = _sha256_json(identity)
             _write_private_checkpoint(
@@ -591,9 +809,10 @@ class CodexNativeSessionLauncher:
             )
 
         used_web_search, observed_thread_id = self._stream(
-            command=self._start_command(root),
+            command=self._start_command(root, run_policy),
             prompt=prompt,
             run_root=root,
+            run_policy=run_policy,
             expected_thread_id=None,
             bind_thread=bind_thread,
         )
@@ -608,6 +827,7 @@ class CodexNativeSessionLauncher:
                 constitution_sha256=constitution_sha256,
                 run_root=root,
                 host_state_root=state_root,
+                runtime_config_sha256=runtime_config_sha256,
                 checkpoint_sha256=persisted_sha256,
             ),
             used_web_search,
@@ -631,6 +851,13 @@ class CodexNativeSessionLauncher:
             host_state_root=host_state_root,
         )
         prompt = _validated_prompt(prompt)
+        run_policy = _codex_run_policy(root)
+        runtime_config_sha256 = _runtime_config_sha256(
+            self.cli_version,
+            self.model,
+            self.reasoning_effort,
+            run_policy,
+        )
         thread_id, checkpoint_sha256 = self._load_checkpoint(
             path=path,
             product_id=product_id,
@@ -638,11 +865,13 @@ class CodexNativeSessionLauncher:
             constitution_sha256=constitution_sha256,
             run_root=root,
             host_state_root=state_root,
+            runtime_config_sha256=runtime_config_sha256,
         )
         used_web_search, unused_observed_thread_id = self._stream(
-            command=self._resume_command(thread_id, root),
+            command=self._resume_command(thread_id, root, run_policy),
             prompt=prompt,
             run_root=root,
+            run_policy=run_policy,
             expected_thread_id=thread_id,
             bind_thread=None,
         )
@@ -653,6 +882,7 @@ class CodexNativeSessionLauncher:
                 constitution_sha256=constitution_sha256,
                 run_root=root,
                 host_state_root=state_root,
+                runtime_config_sha256=runtime_config_sha256,
                 checkpoint_sha256=checkpoint_sha256,
             ),
             used_web_search,
@@ -685,6 +915,7 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         thread_id: str,
+        runtime_config_sha256: str,
     ) -> Mapping[str, Any]:
         return {
             "schema_version": 1,
@@ -694,7 +925,10 @@ class CodexNativeSessionLauncher:
             "constitution_sha256": constitution_sha256,
             "run_root_sha256": _path_sha256(run_root),
             "host_state_root_sha256": _path_sha256(host_state_root),
-            "runtime_config_sha256": self.runtime_config_sha256,
+            "runtime_config_sha256": _require_sha256(
+                runtime_config_sha256,
+                "Codex native session runtime-config sha256",
+            ),
             "cli_version": self.cli_version,
             "permission_profile": CODEX_PERMISSION_PROFILE,
             "native_web_search": True,
@@ -710,6 +944,7 @@ class CodexNativeSessionLauncher:
         constitution_sha256: str,
         run_root: Path,
         host_state_root: Path,
+        runtime_config_sha256: str,
     ) -> tuple[str, str]:
         payload = _read_private_checkpoint(path)
         expected_fields = {
@@ -749,6 +984,7 @@ class CodexNativeSessionLauncher:
             run_root=run_root,
             host_state_root=host_state_root,
             thread_id=thread_id,
+            runtime_config_sha256=runtime_config_sha256,
         )
         if (
             identity != expected
@@ -767,6 +1003,7 @@ class CodexNativeSessionLauncher:
         constitution_sha256: str,
         run_root: Path,
         host_state_root: Path,
+        runtime_config_sha256: str,
         checkpoint_sha256: str,
     ) -> CodexNativeSessionBinding:
         return CodexNativeSessionBinding(
@@ -775,11 +1012,15 @@ class CodexNativeSessionLauncher:
             constitution_sha256=constitution_sha256,
             run_root_sha256=_path_sha256(run_root),
             host_state_root_sha256=_path_sha256(host_state_root),
-            runtime_config_sha256=self.runtime_config_sha256,
+            runtime_config_sha256=runtime_config_sha256,
             checkpoint_sha256=checkpoint_sha256,
         )
 
-    def _start_command(self, run_root: Path) -> list[str]:
+    def _start_command(
+        self,
+        run_root: Path,
+        run_policy: _CodexRunPolicy,
+    ) -> list[str]:
         return [
             self.binary,
             "--search",
@@ -798,7 +1039,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
-            *_permission_config_arguments(run_root),
+            *run_policy.permission_config_arguments,
             "-C",
             str(run_root),
             "--model",
@@ -806,7 +1047,12 @@ class CodexNativeSessionLauncher:
             "-",
         ]
 
-    def _resume_command(self, thread_id: str, run_root: Path) -> list[str]:
+    def _resume_command(
+        self,
+        thread_id: str,
+        run_root: Path,
+        run_policy: _CodexRunPolicy,
+    ) -> list[str]:
         return [
             self.binary,
             "--search",
@@ -826,7 +1072,7 @@ class CodexNativeSessionLauncher:
             "--json",
             "--config",
             'model_reasoning_effort="%s"' % self.reasoning_effort,
-            *_permission_config_arguments(run_root),
+            *run_policy.permission_config_arguments,
             "--model",
             self.model,
             thread_id,
@@ -839,6 +1085,7 @@ class CodexNativeSessionLauncher:
         command: list[str],
         prompt: str,
         run_root: Path,
+        run_policy: _CodexRunPolicy,
         expected_thread_id: Optional[str],
         bind_thread: Any,
     ) -> tuple[bool, Optional[str]]:
@@ -854,7 +1101,7 @@ class CodexNativeSessionLauncher:
                 text=True,
                 bufsize=1,
                 cwd=str(run_root),
-                env=_codex_run_environment(run_root),
+                env=_codex_run_environment(run_root, run_policy),
             )
         except (OSError, subprocess.SubprocessError, TypeError, ValueError):
             raise CodexInvocationError(
@@ -907,6 +1154,7 @@ class CodexNativeSessionLauncher:
         stdout_tail = ""
         used_web_search = False
         observed_thread_id: Optional[str] = None
+        turn_completed = False
         stream_failure: Optional[BaseException] = None
         try:
             try:
@@ -930,6 +1178,10 @@ class CodexNativeSessionLauncher:
                     )
                 event = _decode_native_event(text)
                 event_type = event.get("type")
+                if event_type in ("turn.failed", "error"):
+                    raise CodexInvocationError(
+                        "Codex native session reported a failed turn"
+                    )
                 if event_type == "thread.started":
                     if observed_thread_id is not None:
                         raise CodexInvocationError(
@@ -966,6 +1218,9 @@ class CodexNativeSessionLauncher:
                     and item.get("type") == "agent_message"
                 ):
                     _validate_agent_message(item.get("text"))
+                if event_type == "turn.completed":
+                    turn_completed = True
+                    break
         except Exception as exc:
             stream_failure = exc
             _terminate_safely(process)
@@ -973,12 +1228,36 @@ class CodexNativeSessionLauncher:
             timer.cancel()
 
         remaining = deadline - time.monotonic()
-        try:
-            returncode = process.wait(timeout=max(0.001, remaining))
-        except (subprocess.TimeoutExpired, OSError, ValueError):
-            timed_out.set()
-            _terminate_safely(process)
-            returncode = getattr(process, "returncode", None)
+        intentionally_terminated = False
+        if turn_completed and stream_failure is None and not timed_out.is_set():
+            try:
+                returncode = process.wait(
+                    timeout=max(
+                        0.001,
+                        min(_CODEX_TERMINAL_EXIT_GRACE_SECONDS, remaining),
+                    )
+                )
+            except subprocess.TimeoutExpired:
+                # ``turn.completed`` is the documented JSONL success boundary.
+                # Some Codex clients can retain background goal resources after
+                # emitting it, so give the process a brief chance to exit and
+                # then reap it without waiting for stdout EOF indefinitely.
+                intentionally_terminated = True
+                _terminate_safely(process)
+                returncode = getattr(process, "returncode", None)
+            except (OSError, ValueError):
+                _terminate_safely(process)
+                returncode = getattr(process, "returncode", None)
+                stream_failure = CodexInvocationError(
+                    "Codex native session could not be reaped"
+                )
+        else:
+            try:
+                returncode = process.wait(timeout=max(0.001, remaining))
+            except (subprocess.TimeoutExpired, OSError, ValueError):
+                timed_out.set()
+                _terminate_safely(process)
+                returncode = getattr(process, "returncode", None)
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
 
         if timed_out.is_set():
@@ -994,7 +1273,13 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session event stream was invalid"
             ) from None
-        if returncode != 0:
+        if intentionally_terminated and returncode is None:
+            raise CodexInvocationError(
+                "Codex native session could not be terminated safely"
+            )
+        if not turn_completed or (
+            returncode != 0 and not intentionally_terminated
+        ):
             # Diagnostics are intentionally used only for a safe category and
             # are never attached to the public exception.
             if _is_explicit_transient_failure(stdout_tail, stderr_tail):

@@ -221,8 +221,14 @@ at least:
 Local Release data may describe the product but cannot contain credentials,
 remote receipts, images, audio, video, or unsupported claims of manufacture,
 physical performance, human response, publication, or delivery. The host
-validates and seals the package before importing it. Factory transports the
-exact sealed page and model bytes; it does not creatively enrich them.
+validates and seals the package before importing it. Factory receives the
+exact sealed page, `MANUAL.md`, and model bytes; it does not creatively enrich
+them. After private import, the host projects the exact compatible use-case and
+story-block text into Factory's bounded rich-content fields, persists a
+separate hash-bound effect intent, and requires authenticated exact readback
+before publication. Copy outside Factory's documented limits is rejected, not
+silently truncated. Page sections without a semantically exact Factory field
+remain authoritative in the sealed project archive.
 
 The CLI default is private. `--publish` records explicit prospective authority
 for the host to promote the exact verified Factory page after private import

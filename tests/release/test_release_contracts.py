@@ -42,14 +42,26 @@ class ProductReleaseContractTest(unittest.TestCase):
                     },
                     "use_case": {
                         "headline": "Made for tabletop play",
-                        "body": "Follow the sealed manual to begin.",
+                        "body": (
+                            "Follow the sealed manual to identify every included part, "
+                            "place the toy on a stable tabletop, and begin the first "
+                            "activity exactly as documented. Reset the parts between "
+                            "turns and keep the manual nearby when choosing the next "
+                            "supported play pattern."
+                        ),
                         "visual_direction": "Show the model beside its manual.",
                         "evidence_refs": ["made:product.json"],
                     },
                     "story_blocks": [
                         {
                             "headline": "Evidence attached",
-                            "body": "The required mechanical check passed.",
+                            "body": (
+                                "The required mechanical check ran against the sealed "
+                                "product revision and recorded its exact evidence. This "
+                                "page reports only that bounded digital result; it does "
+                                "not turn the automated observation into a claim about "
+                                "printing, durability, or human play."
+                            ),
                             "visual_direction": "Use a simple verified-check motif.",
                             "evidence_refs": ["playtest:mechanical-check"],
                         }

@@ -49,6 +49,16 @@ package. Codex owns the complete page copy and visual direction; Factory later
 transports the exact sealed page and model bytes rather than creatively
 enriching them.
 
+For the exact `use_case` and `story_blocks` copy to render on the current
+Factory site, keep each `headline` to 1–40 plain-text characters, each `body`
+to 180–400 plain-text characters, use no `<` or `>` characters in those
+fields, and provide at most 10 story blocks. These are Factory display limits,
+not prompts for Python rewriting: the host copies compatible text exactly and
+fails the handoff rather than truncating or paraphrasing it. The imported
+design cover fills Factory's required use-case image slot. The complete
+schema-v3 page, including visual direction and evidence references, and the
+exact `MANUAL.md` remain authoritative sealed files in the uploaded project.
+
 Run:
 
 ```bash

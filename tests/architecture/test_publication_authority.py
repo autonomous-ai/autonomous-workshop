@@ -13,13 +13,23 @@ def production_python():
 
 
 class PublicationAuthorityTest(unittest.TestCase):
-    """Keep Factory's copy/media ownership from regressing silently."""
+    """Keep Codex copy ownership and the host-only Factory boundary explicit."""
 
-    def test_no_production_code_contains_remote_page_mutation_endpoints(self):
-        forbidden = ("/uploads", "/use-case", "/story-blocks", 'name="thumbnails"')
+    def test_rich_content_endpoints_exist_only_in_factory_integration(self):
+        factory = ROOT / "src/workshop/integrations/factory.py"
+        exclusive = ("/use-case", "/story-blocks")
         for path in production_python():
             source = path.read_text(encoding="utf-8")
-            for marker in forbidden:
+            for marker in exclusive:
+                with self.subTest(path=path.relative_to(ROOT), marker=marker):
+                    if path != factory:
+                        self.assertNotIn(marker, source)
+        source = factory.read_text(encoding="utf-8")
+        for marker in exclusive:
+            self.assertIn(marker, source)
+        for path in production_python():
+            source = path.read_text(encoding="utf-8")
+            for marker in ("/uploads", 'name="thumbnails"'):
                 with self.subTest(path=path.relative_to(ROOT), marker=marker):
                     self.assertNotIn(marker, source)
 

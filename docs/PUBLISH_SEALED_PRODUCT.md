@@ -27,7 +27,17 @@ The run-local finalizer hashes the package and writes the canonical Release
 contract. After it succeeds, Codex completes the Goal and returns to the host.
 The host rereads and seals the whole tree before contacting Factory. Codex owns
 the complete page copy and visual direction; Factory transports the exact
-sealed page and model bytes without creative enrichment. The local package
+sealed page, `MANUAL.md`, and model bytes without creative enrichment. After
+private import, the host copies the exact compatible `use_case` and
+`story_blocks` text through Factory's curated-content endpoints and requires
+authenticated exact readback before optional publication. Factory currently
+accepts 1–40 plain-text characters for each heading, 180–400 for each body,
+and at most 10 story blocks; the handoff fails instead of truncating or
+paraphrasing content outside those limits. The imported cover supplies the
+required use-case image. Hero, cinematic, visual-direction, evidence-reference,
+what-arrives, limitation, and manual presentation have no equivalent rich-page
+fields today; their authoritative exact bytes remain in the downloadable
+sealed project until Factory's page contract grows. The local package
 must not contain credentials, remote receipts, images, audio, video, or
 unsupported claims of manufacture, physical performance, human response,
 publication, or delivery.
@@ -41,8 +51,9 @@ uv run workshop wish "I wish for ..."
 ```
 
 If Factory authentication is configured, the host can import the validated
-model and page as a private draft and reconcile authenticated readback. Codex
-does not see credentials or perform the import.
+model, manual, and page as a private draft, write the exact compatible rich
+content, and reconcile authenticated readback. Codex does not see credentials
+or perform the import.
 
 ## Explicit public promotion
 

@@ -178,6 +178,32 @@ class EffectLedgerTest(unittest.TestCase):
                 {"id": "design-one"},
             )
 
+    def test_schema_one_ledger_migrates_and_accepts_page_content_intent(self):
+        imported = self.prepare()
+        connection = sqlite3.connect(self.path)
+        connection.execute("UPDATE effect_ledger_meta SET schema_version=1")
+        connection.commit()
+        connection.close()
+
+        migrated = EffectLedger(self.path)
+
+        self.assertEqual(migrated.get(imported.intent_id), imported)
+        content = migrated.prepare(
+            kind="factory-content",
+            product_id="orbit-dog",
+            request={
+                "method": "PATCH+PUT",
+                "path": "/designs/orbit-dog/content",
+            },
+            pack_sha256=SHA,
+            handoff_artifact_sha256=HANDOFF,
+            product_artifact_sha256=PRODUCT,
+            release_sha256=RELEASE,
+            playtest_evidence_sha256=PLAYTEST,
+        )
+        self.assertEqual(content.kind, "factory-content")
+        self.assertEqual(content.state, "planned")
+
     def test_non_native_database_is_refused_without_migration(self):
         other = Path(self.temporary.name) / "old.sqlite3"
         connection = sqlite3.connect(other)

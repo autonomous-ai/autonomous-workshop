@@ -29,8 +29,8 @@ from workshop.errors import (
 from workshop.runtime.contracts import Receipt
 
 
-_SCHEMA_VERSION = 1
-_KINDS = frozenset(("factory-import", "factory-publish"))
+_SCHEMA_VERSION = 2
+_KINDS = frozenset(("factory-import", "factory-content", "factory-publish"))
 _STATES = frozenset(("planned", "sending", "succeeded", "rejected", "unknown"))
 
 
@@ -136,7 +136,7 @@ class EffectIntent:
 
 
 class EffectLedger:
-    """Private SQLite outbox for the two Factory effects in one Wish run."""
+    """Private SQLite outbox for the three Factory effects in one Wish run."""
 
     def __init__(self, path: Path) -> None:
         self.path = Path(path)
@@ -206,11 +206,11 @@ class EffectLedger:
                     CREATE TABLE effect_ledger_meta (
                         schema_version INTEGER NOT NULL
                     );
-                    INSERT INTO effect_ledger_meta(schema_version) VALUES (1);
+                    INSERT INTO effect_ledger_meta(schema_version) VALUES (2);
                     CREATE TABLE effect_intents (
                         id TEXT PRIMARY KEY,
                         idempotency_key TEXT NOT NULL UNIQUE,
-                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-publish')),
+                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-content','factory-publish')),
                         product_id TEXT NOT NULL,
                         request_sha256 TEXT NOT NULL,
                         pack_sha256 TEXT NOT NULL,
@@ -234,6 +234,43 @@ class EffectLedger:
             version = connection.execute(
                 "SELECT schema_version FROM effect_ledger_meta"
             ).fetchone()
+            if version is not None and version[0] == 1:
+                connection.executescript(
+                    """
+                    BEGIN IMMEDIATE;
+                    CREATE TABLE effect_intents_v2 (
+                        id TEXT PRIMARY KEY,
+                        idempotency_key TEXT NOT NULL UNIQUE,
+                        kind TEXT NOT NULL CHECK(kind IN ('factory-import','factory-content','factory-publish')),
+                        product_id TEXT NOT NULL,
+                        request_sha256 TEXT NOT NULL,
+                        pack_sha256 TEXT NOT NULL,
+                        handoff_artifact_sha256 TEXT NOT NULL,
+                        product_artifact_sha256 TEXT NOT NULL,
+                        release_sha256 TEXT NOT NULL,
+                        playtest_evidence_sha256 TEXT NOT NULL,
+                        state TEXT NOT NULL CHECK(state IN ('planned','sending','succeeded','rejected','unknown')),
+                        request_json TEXT NOT NULL,
+                        response_json TEXT,
+                        receipt_json TEXT,
+                        error TEXT,
+                        effect_token TEXT,
+                        created_at TEXT NOT NULL,
+                        updated_at TEXT NOT NULL
+                    );
+                    INSERT INTO effect_intents_v2
+                        SELECT * FROM effect_intents;
+                    DROP TABLE effect_intents;
+                    ALTER TABLE effect_intents_v2 RENAME TO effect_intents;
+                    CREATE INDEX effect_product_kind
+                        ON effect_intents(product_id, kind, created_at);
+                    UPDATE effect_ledger_meta SET schema_version=2;
+                    COMMIT;
+                    """
+                )
+                version = connection.execute(
+                    "SELECT schema_version FROM effect_ledger_meta"
+                ).fetchone()
             if version is None or version[0] != _SCHEMA_VERSION:
                 raise ContractError("effect ledger schema version is unsupported")
 

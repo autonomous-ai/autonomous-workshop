@@ -15,7 +15,7 @@ from workshop.workflow.native_run import (
     resume_native_run,
     start_native_run,
 )
-from workshop.errors import ArtifactError
+from workshop.errors import ArtifactError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
@@ -439,15 +439,27 @@ class _OneSessionProductAgent:
                     "evidence_refs": ["made:product.json"],
                 },
                 "use_case": {
-                    "headline": "Open it and play the rules you already know",
-                    "body": "Set out the board and pieces, then play standard English draughts.",
+                    "headline": "Open it and play familiar rules",
+                    "body": (
+                        "Set out the exact sealed board and both complete piece families "
+                        "on a stable tabletop, then play standard English draughts using "
+                        "the familiar rules. Return every component to the documented "
+                        "starting arrangement before a new game and use no unverified "
+                        "accessories."
+                    ),
                     "visual_direction": "Show the complete setup without adding unverified accessories.",
                     "evidence_refs": ["made:product.json"],
                 },
                 "story_blocks": [
                     {
                         "headline": "Checked against the sealed revision",
-                        "body": "The exact digital product revision passed every required Workshop check.",
+                        "body": (
+                            "The exact sealed digital product revision passed every "
+                            "required Workshop check. Its page preserves the specific "
+                            "evidence references and disclosed limits so readers can "
+                            "distinguish automated verification from any unperformed "
+                            "physical, durability, or human-play evaluation."
+                        ),
                         "visual_direction": "Pair the exact CAD assembly with a restrained verification motif.",
                         "evidence_refs": [
                             "playtest:%s" % next(iter(claims))
@@ -535,6 +547,11 @@ class _FactoryEffects:
                 for entry in manifest.entries
                 if entry.path == "product.json"
             )
+            manual_sha256 = next(
+                entry.sha256
+                for entry in manifest.entries
+                if entry.path == "MANUAL.md"
+            )
             return Receipt(
                 payload_sha256=_sha256(b"fixture-model-handoff"),
                 artifact_sha256=context.made.artifact_sha256,
@@ -545,6 +562,11 @@ class _FactoryEffects:
                 details={
                     "release_sha256": manifest.artifact_sha256,
                     "product_page_sha256": product_page_sha256,
+                    "manual_sha256": manual_sha256,
+                    "factory_content_sha256": "f" * 64,
+                    "factory_content_mapping": (
+                        "workshop-release-v3-to-factory-content-v1"
+                    ),
                     "page_url": _PAGE_URL,
                     "cover_url": _COVER_URL,
                 },
@@ -661,6 +683,16 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 first_release_packet = launcher.stage_packets[-1]
                 self.assertEqual(first_release_packet["stage"], "release")
+                self.assertEqual(
+                    first_release_packet["inputs"]["factory_content_constraints"],
+                    {
+                        "plain_text": True,
+                        "forbidden_characters": ["<", ">"],
+                        "headline_characters": {"minimum": 1, "maximum": 40},
+                        "body_characters": {"minimum": 180, "maximum": 400},
+                        "story_blocks_maximum": 10,
+                    },
+                )
                 first_call_count = len(launcher.starts) + len(launcher.resumes)
 
                 os.environ["FACTORY_PASSWORD"] = effects.secret
@@ -994,6 +1026,25 @@ class NativeFullRunTest(unittest.TestCase):
                 native_calls_before_promotion = len(launcher.starts) + len(
                     launcher.resumes
                 )
+                effect_path = paths.host_state / "release-effect.json"
+                current_effect = effect_path.read_bytes()
+                legacy_effect = _read_json(effect_path)
+                legacy_effect["schema_version"] = 1
+                for field in (
+                    "product_page_sha256",
+                    "manual_sha256",
+                    "factory_content_sha256",
+                    "factory_content_mapping",
+                ):
+                    legacy_effect.pop(field)
+                effect_path.write_bytes(_canonical_json(legacy_effect))
+                with self.assertRaisesRegex(
+                    StateConflict, "belongs to different bytes"
+                ):
+                    resume_native_run(
+                        wish.product_id, publish_requested=True
+                    )
+                effect_path.write_bytes(current_effect)
                 receipt = resume_native_run(
                     wish.product_id, publish_requested=True
                 )
@@ -1087,7 +1138,19 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(stat.S_IMODE(effect_path.stat().st_mode), 0o600)
             effect = _read_json(effect_path)
             publication = Receipt.from_dict(effect["receipt"])
+            self.assertEqual(effect["schema_version"], 2)
             self.assertEqual(effect["publication_status"], "public")
+            self.assertEqual(
+                effect["product_page_sha256"],
+                publication.details["product_page_sha256"],
+            )
+            self.assertEqual(
+                effect["manual_sha256"], publication.details["manual_sha256"]
+            )
+            self.assertEqual(
+                effect["factory_content_sha256"],
+                publication.details["factory_content_sha256"],
+            )
             self.assertTrue(publication.is_verified_public)
             self.assertEqual(publication.details["page_url"], _PAGE_URL)
 

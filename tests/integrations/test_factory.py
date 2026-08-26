@@ -9,7 +9,12 @@ from email.policy import default as email_policy
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import AmbiguousEffectError, ContractError, EffectError
+from workshop.errors import (
+    AmbiguousEffectError,
+    ContractError,
+    EffectError,
+    StateConflict,
+)
 from workshop.integrations.factory import (
     DEFAULT_FACTORY_API,
     FACTORY_USER_AGENT,
@@ -193,6 +198,10 @@ class FactoryTransport:
         self.public = False
         self.calls = []
         self.imports = 0
+        self.use_case = None
+        self.story_blocks = []
+        self.use_case_writes = 0
+        self.story_block_writes = 0
 
     def design(self):
         return {
@@ -205,10 +214,14 @@ class FactoryTransport:
             "status": "public" if self.public else "draft",
             "project_url": "https://cdn.autonomous.ai/projects/history-1/",
             "origin": "import",
+            "title": "Verified Toy",
+            "description": "An exact toy page authored before Factory import.",
             "tags": ["toy"],
             "category": {"slug": "toys"},
             "author": {"id": "owner-alice"},
             "thumbnail_urls": ["https://cdn.example/cover.png"],
+            "use_case": self.use_case,
+            "story_blocks": self.story_blocks,
             "listing": (
                 {
                     "active": True,
@@ -236,6 +249,32 @@ class FactoryTransport:
             if self.fail_get:
                 raise RuntimeError("readback unavailable")
             return HttpResponse(200, {}, json.dumps(self.design()).encode())
+        if method == "PATCH" and url.endswith("/use-case"):
+            self.use_case_writes += 1
+            self.use_case = json.loads(body.decode("utf-8"))
+            return HttpResponse(
+                200,
+                {},
+                canonical_json(
+                    {
+                        "use_case": self.use_case,
+                        "story_blocks": self.story_blocks,
+                    }
+                ),
+            )
+        if method == "PUT" and url.endswith("/story-blocks"):
+            self.story_block_writes += 1
+            self.story_blocks = json.loads(body.decode("utf-8"))["story_blocks"]
+            return HttpResponse(
+                200,
+                {},
+                canonical_json(
+                    {
+                        "use_case": self.use_case,
+                        "story_blocks": self.story_blocks,
+                    }
+                ),
+            )
         if method == "POST" and url.endswith("/publish"):
             self.public = True
             return HttpResponse(200, {}, b"{}")
@@ -312,14 +351,24 @@ class FactoryReleaseTest(unittest.TestCase):
             },
             "use_case": {
                 "headline": "A quick tabletop challenge",
-                "body": "Set down the puzzle and align the star.",
+                "body": (
+                    "Set down the exact sealed puzzle, follow the included rule card, "
+                    "and rotate one piece at a time until the star aligns. The compact "
+                    "tabletop format supports a focused solo challenge without adding "
+                    "any unverified physical claim."
+                ),
                 "visual_direction": "Show one puzzle and one rule card only.",
                 "evidence_refs": ["made:product.json"],
             },
             "story_blocks": [
                 {
                     "headline": "Digitally checked",
-                    "body": "The sealed design passed the required mechanical check.",
+                    "body": (
+                        "The sealed digital design passed the required mechanical check "
+                        "recorded by Workshop. This page reports that bounded digital "
+                        "evidence exactly and does not claim a successful physical print, "
+                        "durability result, or human playtest."
+                    ),
                     "visual_direction": "Pair the exact model with a restrained check mark.",
                     "evidence_refs": ["playtest:mechanical-check"],
                 }
@@ -354,11 +403,17 @@ class FactoryReleaseTest(unittest.TestCase):
         self.assertEqual(receipt.details["page_url"], "https://www.autonomous.ai/factory/product/verified-toy")
         self.assertEqual(receipt.details["primary_model_path"], "assembled.stl")
         self.assertRegex(receipt.details["effect_request_sha256"], r"^[0-9a-f]{64}$")
+        self.assertRegex(receipt.details["factory_content_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(
+            receipt.details["manual_sha256"],
+            hashlib.sha256((self.release / "MANUAL.md").read_bytes()).hexdigest(),
+        )
         import_call = next(call for call in transport.calls if call[1].endswith("/designs/import"))
         self.assertEqual(import_call[2]["User-Agent"], FACTORY_USER_AGENT)
         self.assertRegex(import_call[2]["Idempotency-Key"], r"^autonomous-workshop-[0-9a-f]{64}$")
         parts = multipart_parts(import_call[2], import_call[3])
         self.assertNotIn("prompt", parts)
+        self.assertNotIn("category", parts)
         self.assertEqual(parts["title"], [b"Verified Toy"])
         self.assertEqual(
             parts["description"],
@@ -369,6 +424,7 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("assembled.stl", names)
             self.assertIn("workshop-release-page.json", names)
             self.assertIn("workshop-product-facts.json", names)
+            self.assertIn("MANUAL.md", names)
             self.assertNotIn("main.py", names)
             self.assertNotIn("page.json", names)
             self.assertNotIn("review.json", names)
@@ -380,14 +436,37 @@ class FactoryReleaseTest(unittest.TestCase):
                 archive.read("workshop-release-page.json"),
                 canonical_json(self.page),
             )
+            self.assertEqual(
+                archive.read("MANUAL.md"),
+                (self.release / "MANUAL.md").read_bytes(),
+            )
         self.assertEqual(
             receipt.details["product_page_sha256"],
             hashlib.sha256(canonical_json(self.page)).hexdigest(),
         )
         self.assertEqual(receipt.details["content_owner"], "workshop-manager")
+        self.assertEqual(
+            transport.use_case,
+            {
+                "label": self.page["use_case"]["headline"],
+                "body": self.page["use_case"]["body"],
+                "image": "https://cdn.example/cover.png",
+            },
+        )
+        self.assertEqual(
+            transport.story_blocks,
+            [
+                {
+                    "lead": self.page["story_blocks"][0]["headline"],
+                    "body": self.page["story_blocks"][0]["body"],
+                }
+            ],
+        )
         replay = self.writer(transport)(self.context, self.release, self.manifest)
         self.assertEqual(replay, receipt)
         self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.use_case_writes, 1)
+        self.assertEqual(transport.story_block_writes, 1)
 
     def test_generator_primary_is_included_but_creator_outputs_are_not(self):
         product = self.made.artifact_root
@@ -431,8 +510,13 @@ class FactoryReleaseTest(unittest.TestCase):
     def test_client_rejects_unrecognized_creator_output_in_model_archive(self):
         primary = b"solid exact\nendsolid exact\n"
         buffer = io.BytesIO()
+        manual = b"# Exact Manual\n"
         with zipfile.ZipFile(buffer, "w") as archive:
             archive.writestr("assembled.stl", primary)
+            archive.writestr("MANUAL.md", manual)
+            archive.writestr(
+                "workshop-release-page.json", canonical_json(self.page)
+            )
             archive.writestr(
                 "workshop-product-facts.json",
                 json.dumps(
@@ -441,7 +525,11 @@ class FactoryReleaseTest(unittest.TestCase):
                             "kind": "mesh",
                             "path": "assembled.stl",
                             "sha256": hashlib.sha256(primary).hexdigest(),
-                        }
+                        },
+                        "manual": {
+                            "path": "MANUAL.md",
+                            "sha256": hashlib.sha256(manual).hexdigest(),
+                        },
                     }
                 ),
             )
@@ -505,6 +593,101 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
             self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
 
+    def test_unrepresentable_factory_copy_fails_before_remote_import(self):
+        page = json.loads((self.release / "product.json").read_text(encoding="utf-8"))
+        page["use_case"]["body"] = "Too short for the Factory page contract."
+        (self.release / "product.json").write_bytes(canonical_json(page))
+        manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+        transport = FactoryTransport()
+
+        with self.assertRaisesRegex(
+            ContractError, "use_case body.*180-400"
+        ):
+            self.writer(transport)(self.context, self.release, manifest)
+
+        self.assertEqual(transport.calls, [])
+        self.assertIsNone(self.ledger.latest("verified-toy", "factory-import"))
+
+    def test_unknown_content_write_recovers_exact_readback_without_resending(self):
+        class LostStoryResponse(FactoryTransport):
+            def __init__(self):
+                super().__init__()
+                self.lost = False
+
+            def __call__(self, method, url, headers, body, timeout):
+                response = super().__call__(method, url, headers, body, timeout)
+                if method == "PUT" and url.endswith("/story-blocks") and not self.lost:
+                    self.lost = True
+                    raise RuntimeError("response lost after exact write")
+                return response
+
+        transport = LostStoryResponse()
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-content")
+        self.assertIsNotNone(intent)
+        self.assertEqual(intent.state, "unknown")
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.use_case_writes, 1)
+        self.assertEqual(transport.story_block_writes, 1)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
+
+    def test_partial_content_write_resumes_only_the_missing_story_blocks(self):
+        class RejectStoryBlocksOnce(FactoryTransport):
+            def __init__(self):
+                super().__init__()
+                self.rejected_story_blocks = False
+
+            def __call__(self, method, url, headers, body, timeout):
+                if (
+                    method == "PUT"
+                    and url.endswith("/story-blocks")
+                    and not self.rejected_story_blocks
+                ):
+                    self.rejected_story_blocks = True
+                    self.calls.append((method, url, dict(headers), body, timeout))
+                    self.story_block_writes += 1
+                    return HttpResponse(422, {}, b'{"error":"rejected"}')
+                return super().__call__(method, url, headers, body, timeout)
+
+        transport = RejectStoryBlocksOnce()
+        with self.assertRaises(AmbiguousEffectError):
+            self.writer(transport)(self.context, self.release, self.manifest)
+        intent = self.ledger.latest("verified-toy", "factory-content")
+        self.assertIsNotNone(intent)
+        self.assertEqual(intent.state, "unknown")
+        self.assertIsNotNone(transport.use_case)
+        self.assertEqual(transport.story_blocks, [])
+
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.use_case_writes, 1)
+        self.assertEqual(transport.story_block_writes, 2)
+        self.assertEqual(self.ledger.get(intent.intent_id).state, "succeeded")
+
+    def test_existing_different_factory_content_is_never_overwritten(self):
+        transport = FactoryTransport()
+        transport.use_case = {
+            "label": "Existing page",
+            "body": "Existing independently authored Factory content remains in place. " * 4,
+            "image": "https://cdn.example/existing.png",
+        }
+
+        with self.assertRaisesRegex(StateConflict, "refusing to overwrite"):
+            self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertEqual(transport.imports, 1)
+        self.assertEqual(transport.use_case_writes, 0)
+        self.assertEqual(transport.story_block_writes, 0)
+
     def test_unknown_import_recovers_by_get_without_resending(self):
         failed = FactoryTransport(fail_get=True)
         with self.assertRaises(AmbiguousEffectError):
@@ -536,8 +719,59 @@ class FactoryReleaseTest(unittest.TestCase):
             "succeeded",
         )
 
+    def test_import_infrastructure_failures_are_safe_to_retry(self):
+        for status in (500, 524):
+            with self.subTest(status=status):
+                ledger = EffectLedger(
+                    self.root / ("state-%s" % status) / "factory-effects.sqlite3"
+                )
+                writer = FactoryReleaseWriter(
+                    ledger,
+                    "alice",
+                    FactoryAgentCredentials("alice", "test-secret"),
+                    transport=FactoryTransport(import_status=status),
+                )
+                with self.assertRaisesRegex(
+                    EffectError, "rejected model import"
+                ):
+                    writer(self.context, self.release, self.manifest)
+                intent = ledger.latest("verified-toy", "factory-import")
+                self.assertIsNotNone(intent)
+                self.assertEqual(intent.state, "rejected")
+
+                corrected = FactoryReleaseWriter(
+                    ledger,
+                    "alice",
+                    FactoryAgentCredentials("alice", "test-secret"),
+                    transport=FactoryTransport(),
+                )
+                receipt = corrected(self.context, self.release, self.manifest)
+
+                self.assertTrue(receipt.is_verified_draft)
+                self.assertEqual(
+                    ledger.get(intent.intent_id).state,
+                    "succeeded",
+                )
+
+
+def draft_factory_content():
+    return {
+        "use_case": {
+            "label": "A quick tabletop challenge",
+            "body": "x" * 180,
+            "image": "https://cdn.example/cover.png",
+        },
+        "story_blocks": [
+            {
+                "lead": "Digitally checked",
+                "body": "y" * 180,
+            }
+        ],
+    }
+
 
 def draft_receipt():
+    content = draft_factory_content()
     return Receipt(
         payload_sha256="f" * 64,
         artifact_sha256="a" * 64,
@@ -550,6 +784,13 @@ def draft_receipt():
             "release_sha256": "b" * 64,
             "playtest_evidence_sha256": "c" * 64,
             "handoff_artifact_sha256": "d" * 64,
+            "product_page_sha256": "e" * 64,
+            "manual_sha256": "1" * 64,
+            "factory_content_sha256": hashlib.sha256(
+                canonical_json(content)
+            ).hexdigest(),
+            "factory_content": content,
+            "factory_content_mapping": "workshop-release-v3-to-factory-content-v1",
             "page_url": "https://www.autonomous.ai/factory/product/verified-toy",
         },
         design_id="design-1",
@@ -566,6 +807,9 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
             transport = FactoryTransport()
+            content = draft_factory_content()
+            transport.use_case = content["use_case"]
+            transport.story_blocks = content["story_blocks"]
             session = FactoryAgentSession(
                 FactoryAgentCredentials("alice", "test-secret"), transport=transport
             )
@@ -587,6 +831,9 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
             transport = UnknownPublish()
+            content = draft_factory_content()
+            transport.use_case = content["use_case"]
+            transport.story_blocks = content["story_blocks"]
             session = FactoryAgentSession(
                 FactoryAgentCredentials("alice", "test-secret"), transport=transport
             )
@@ -598,6 +845,26 @@ class FactoryPublicTransitionTest(unittest.TestCase):
         self.assertEqual(
             len([call for call in transport.calls if call[1].endswith("/publish")]),
             1,
+        )
+
+    def test_changed_page_content_is_not_published(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            ledger = EffectLedger(Path(temporary) / "effects.sqlite3")
+            transport = FactoryTransport()
+            transport.use_case = {
+                **draft_factory_content()["use_case"],
+                "label": "Changed elsewhere",
+            }
+            transport.story_blocks = draft_factory_content()["story_blocks"]
+            session = FactoryAgentSession(
+                FactoryAgentCredentials("alice", "test-secret"), transport=transport
+            )
+
+            with self.assertRaisesRegex(StateConflict, "content changed"):
+                FactoryPublicTransition(ledger, session).publish(draft_receipt())
+
+        self.assertFalse(
+            any(call[1].endswith("/publish") for call in transport.calls)
         )
 
 

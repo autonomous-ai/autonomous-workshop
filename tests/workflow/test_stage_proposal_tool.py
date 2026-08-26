@@ -492,7 +492,12 @@ class StageProposalToolTest(unittest.TestCase):
         )
         page_section = {
             "headline": "A tiny observatory with a tested physical heart",
-            "body": "Moon Nook turns the accepted concept into the exact tested revision.",
+            "body": (
+                "Moon Nook turns the accepted concept into the exact tested revision. "
+                "Place its included parts on a stable tabletop, follow the sealed manual, "
+                "and explore the documented motion without adding accessories or claiming "
+                "physical behavior beyond the recorded digital evidence."
+            ),
             "visual_direction": "Show the assembled Moon Nook and its moving feature honestly.",
             "evidence_refs": [
                 "made:product.json",
@@ -517,7 +522,7 @@ class StageProposalToolTest(unittest.TestCase):
             "story_blocks": [
                 {
                     **page_section,
-                    "headline": "Designed and tested as one exact revision",
+                    "headline": "One exact tested revision",
                 }
             ],
             "what_arrives": ["One tested Moon Nook product revision", "One manual"],
@@ -556,6 +561,45 @@ class StageProposalToolTest(unittest.TestCase):
             release_bytes,
             "deliver",
         )
+
+        invalid_copy_cases = (
+            (
+                {"use_case": {**product["use_case"], "body": "x" * 179}},
+                "use_case body",
+            ),
+            (
+                {
+                    "story_blocks": [
+                        {**product["story_blocks"][0], "body": "x" * 401}
+                    ]
+                },
+                "story_blocks[0] body",
+            ),
+            (
+                {"use_case": {**product["use_case"], "headline": "x" * 41}},
+                "use_case headline",
+            ),
+            (
+                {
+                    "story_blocks": [
+                        dict(product["story_blocks"][0]) for _ in range(11)
+                    ]
+                },
+                "at most 10",
+            ),
+        )
+        for changes, message in invalid_copy_cases:
+            invalid_product = {**product, **changes}
+            (package_root / "product.json").write_bytes(
+                canonical_json(invalid_product)
+            )
+            result = self.run_tool(
+                "release",
+                "--package-root",
+                "artifacts/release/package",
+                expected=2,
+            )
+            self.assertIn(message, result.stderr)
 
         (package_root / "product.json").write_bytes(
             json.dumps(product, indent=2).encode("utf-8")

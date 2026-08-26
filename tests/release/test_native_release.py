@@ -206,14 +206,24 @@ class NativeReleaseTest(unittest.TestCase):
             },
             "use_case": {
                 "headline": "Set the scene, then explore",
-                "body": "Place the rover around the observatory and invent a new expedition.",
+                "body": (
+                    "Place the rover beside the observatory, trace a route across the "
+                    "tabletop, and invent a new expedition using only the two included "
+                    "components. Reset their positions and begin again whenever the crew "
+                    "needs a different lunar mission."
+                ),
                 "visual_direction": "Show both included components without adding accessories.",
                 "evidence_refs": ["made:product.json"],
             },
             "story_blocks": [
                 {
                     "headline": "Checked before Release",
-                    "body": "The sealed digital design passed every required automated check.",
+                    "body": (
+                        "This sealed digital revision completed every required automated "
+                        "Workshop check. The evidence records the tested files, methods, "
+                        "and limits so the page describes only what those exact checks "
+                        "support and makes no claim of physical validation."
+                    ),
                     "visual_direction": "Pair the exact CAD model with a restrained check motif.",
                     "evidence_refs": [
                         "playtest:%s" % next(iter(self._claims()))
@@ -360,6 +370,42 @@ class NativeReleaseTest(unittest.TestCase):
                     }
                 }
             )
+
+    def test_rejects_copy_that_factory_cannot_display_exactly(self):
+        use_case = {
+            "headline": "Set the scene, then explore",
+            "body": "x" * 180,
+            "visual_direction": "Show only the exact included components.",
+            "evidence_refs": ["made:product.json"],
+        }
+        story_block = {
+            "headline": "Checked before Release",
+            "body": "x" * 180,
+            "visual_direction": "Show the exact verified revision.",
+            "evidence_refs": ["made:product.json"],
+        }
+        cases = (
+            (
+                {"use_case": {**use_case, "body": "x" * 179}},
+                "use_case body.*180-400",
+            ),
+            (
+                {"story_blocks": [{**story_block, "body": "x" * 401}]},
+                r"story_blocks\[0\] body.*180-400",
+            ),
+            (
+                {"use_case": {**use_case, "headline": "x" * 41}},
+                "use_case headline.*1-40",
+            ),
+            (
+                {"story_blocks": [dict(story_block) for _ in range(11)]},
+                "at most 10",
+            ),
+        )
+        for product_overrides, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ContractError, message):
+                    self._release(product_overrides=product_overrides)
 
     def test_rejects_noncanonical_invalid_json_and_changed_bytes(self):
         release = self._release(

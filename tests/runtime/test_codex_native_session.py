@@ -2,13 +2,17 @@ import json
 import os
 import stat
 import subprocess
+import sys
+import sysconfig
 import tempfile
 import threading
 import tomllib
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
+import workshop.runtime.codex as codex_runtime
 from workshop.errors import ContractError
 from workshop.runtime.codex import (
     CODEX_PERMISSION_PROFILE,
@@ -23,6 +27,7 @@ from workshop.runtime.codex import (
 
 
 THREAD_ID = "12345678-1234-5678-9234-567812345678"
+OTHER_THREAD_ID = "87654321-4321-6789-8234-567812345678"
 WISH_SHA256 = "a" * 64
 CONSTITUTION_SHA256 = "b" * 64
 ROOT_MARKER = ".workshop-product-run-root"
@@ -37,12 +42,46 @@ def permission_arguments(root):
         "STAGE.json",
         "WISH.json",
     )
+    workspace_entries = [
+        '"."="write"',
+        *("%s=\"read\"" % json.dumps(relative) for relative in immutable),
+        "%s=\"deny\"" % json.dumps("**/.env*"),
+    ]
+    executable = Path(sys.executable)
+    resolved = executable.resolve(strict=True)
+    runtime_paths = {executable, resolved}
+    for name in (
+        "python",
+        "python3",
+        "python%d.%d" % (sys.version_info.major, sys.version_info.minor),
+    ):
+        candidate = executable.parent / name
+        try:
+            if candidate.resolve(strict=True) == resolved:
+                runtime_paths.add(candidate)
+        except OSError:
+            pass
+    marker = executable.parent.parent / "pyvenv.cfg"
+    if marker.is_file() and not marker.is_symlink():
+        runtime_paths.add(marker)
+    for key in ("stdlib", "platstdlib", "purelib", "platlib"):
+        value = sysconfig.get_path(key)
+        if value:
+            candidate = Path(value).resolve(strict=True)
+            if candidate.is_dir():
+                runtime_paths.add(candidate)
     entries = [
         '":root"="deny"',
         '":minimal"="read"',
         "glob_scan_max_depth=8",
+        '":workspace_roots"={%s}' % ",".join(workspace_entries),
+        "%s=\"deny\"" % json.dumps(str(root.parent)),
         "%s=\"write\"" % json.dumps(str(root)),
     ]
+    entries.extend(
+        "%s=\"read\"" % json.dumps(str(path))
+        for path in sorted(runtime_paths, key=lambda path: str(path))
+    )
     entries.extend(
         "%s=\"read\"" % json.dumps(str(root / relative))
         for relative in immutable
@@ -55,6 +94,9 @@ def permission_arguments(root):
         'default_permissions="workshop-product-run"',
         "--config",
         'permissions.workshop-product-run.description="Isolated Autonomous Workshop product run"',
+        "--config",
+        "permissions.workshop-product-run.workspace_roots={%s=true}"
+        % json.dumps(str(root)),
         "--config",
         "permissions.workshop-product-run.filesystem={%s}" % ",".join(entries),
         "--config",
@@ -115,12 +157,19 @@ class FakeProcess:
         self.returncode = None
         self.terminated = False
         self.killed = False
+        self.wait_timeouts = []
 
     def poll(self):
         return self.returncode
 
     def wait(self, timeout=None):
-        del timeout
+        self.wait_timeouts.append(timeout)
+        if (
+            self.script.get("hang_until_terminated")
+            and not self._stopped.is_set()
+            and self.returncode is None
+        ):
+            raise subprocess.TimeoutExpired("/fixture/codex", timeout)
         if self.returncode is None:
             self.returncode = self.script.get("returncode", 0)
         return self.returncode
@@ -177,7 +226,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         )
 
     @staticmethod
-    def start_events(*, message="complete", search=True):
+    def start_events(*, message="complete", search=True, terminal=True):
         values = [event({"type": "thread.started", "thread_id": THREAD_ID})]
         if search:
             values.append(
@@ -196,6 +245,8 @@ class CodexNativeSessionTest(unittest.TestCase):
                 }
             )
         )
+        if terminal:
+            values.append(event({"type": "turn.completed", "usage": {}}))
         return values
 
     @staticmethod
@@ -317,6 +368,9 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["TMPDIR"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TMP"], str(root / ".tmp"))
             self.assertEqual(call["env"]["TEMP"], str(root / ".tmp"))
+            self.assertEqual(call["env"]["PYTHONHASHSEED"], "0")
+            self.assertEqual(call["env"]["PYTHONDONTWRITEBYTECODE"], "1")
+            self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
@@ -333,12 +387,33 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "workshop-product-run"
             ]["filesystem"]
             self.assertEqual(filesystem[str(root)], "write")
+            self.assertEqual(filesystem[str(root.parent)], "deny")
             self.assertEqual(filesystem[str(root / ".agents")], "read")
             self.assertEqual(filesystem[str(root / ".codex")], "read")
             self.assertEqual(filesystem[":root"], "deny")
             self.assertEqual(filesystem[":minimal"], "read")
-            self.assertNotIn(str(root.parent), filesystem)
-            self.assertNotIn(":workspace_roots", filesystem)
+            self.assertEqual(filesystem[":workspace_roots"]["."], "write")
+            self.assertEqual(
+                filesystem[":workspace_roots"][".agents"], "read"
+            )
+            self.assertEqual(
+                filesystem[":workspace_roots"]["**/.env*"], "deny"
+            )
+            workspace_override = next(
+                value
+                for value in command
+                if value.startswith(
+                    "permissions.workshop-product-run.workspace_roots="
+                )
+            )
+            workspace_roots = tomllib.loads(workspace_override)["permissions"][
+                "workshop-product-run"
+            ]["workspace_roots"]
+            self.assertEqual(workspace_roots, {str(root): True})
+            self.assertEqual(filesystem[str(Path(sys.executable))], "read")
+            self.assertEqual(
+                filesystem[str(Path(sys.executable).resolve(strict=True))], "read"
+            )
             self.assertTrue(outcome.used_web_search)
             public = json.dumps(outcome.to_dict(), sort_keys=True)
             self.assertNotIn(THREAD_ID, public)
@@ -378,6 +453,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                                     },
                                 }
                             ),
+                            event({"type": "turn.completed", "usage": {}}),
                         ]
                     },
                 ]
@@ -417,10 +493,13 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertNotIn("--ephemeral", command)
             self.assertNotIn("--sandbox", command)
             serialized_command = "\n".join(command)
-            self.assertNotIn(":workspace_roots", serialized_command)
+            self.assertIn(":workspace_roots", serialized_command)
             self.assertNotIn("extends=", serialized_command)
             self.assertIn(
                 json.dumps(str(root)) + '=\"write\"', serialized_command
+            )
+            self.assertIn(
+                json.dumps(str(root.parent)) + '=\"deny\"', serialized_command
             )
             self.assertIn(
                 'project_root_markers=[".workshop-product-run-root"]',
@@ -569,10 +648,290 @@ class CodexNativeSessionTest(unittest.TestCase):
                 self.resume(changed, root)
             self.assertEqual(changed_factory.calls, [])
 
+    def test_runtime_identity_is_bound_to_the_exact_resolved_run_root(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            container = Path(temporary).resolve()
+            first_root = container / "first"
+            second_root = container / "second"
+            first_root.mkdir()
+            second_root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events()},
+                ]
+            )
+
+            first = self.start(launcher, first_root)
+            second = self.start(launcher, second_root)
+
+            self.assertNotEqual(
+                first.binding.runtime_config_sha256,
+                second.binding.runtime_config_sha256,
+            )
+
+    def test_resume_rejects_changed_permission_environment_or_runtime_policy(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}]
+            )
+            self.start(launcher, root)
+            call_count = len(factory.calls)
+
+            original_permissions = codex_runtime._permission_config_arguments
+
+            def changed_permissions(run_root, trusted_paths):
+                return (
+                    *original_permissions(run_root, trusted_paths),
+                    "--config",
+                    'permissions.workshop-product-run.network.enabled=true',
+                )
+
+            identities = codex_runtime._python_runtime_permission_identities()
+            changed_identity = replace(
+                identities[0],
+                inode=identities[0].inode + 1,
+            )
+            policy_changes = (
+                mock.patch.object(
+                    codex_runtime,
+                    "_permission_config_arguments",
+                    side_effect=changed_permissions,
+                ),
+                mock.patch.object(
+                    codex_runtime,
+                    "CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST",
+                    codex_runtime.CODEX_SUBPROCESS_ENVIRONMENT_ALLOWLIST[:-1],
+                ),
+                mock.patch.object(
+                    codex_runtime,
+                    "_CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES",
+                    (
+                        ("PYTHONHASHSEED", "1"),
+                        ("PYTHONDONTWRITEBYTECODE", "1"),
+                        ("PYTHONNOUSERSITE", "1"),
+                    ),
+                ),
+                mock.patch.object(
+                    codex_runtime,
+                    "_python_runtime_permission_identities",
+                    return_value=(changed_identity, *identities[1:]),
+                ),
+            )
+            for index, policy_change in enumerate(policy_changes):
+                with self.subTest(policy_change=index), policy_change:
+                    with self.assertRaisesRegex(
+                        ContractError, "binding is invalid"
+                    ):
+                        self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), call_count)
+
+    def test_rotated_inherited_secret_does_not_change_runtime_policy_hash(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            common_environment = {
+                "PATH": "/fixture/bin",
+                "HOME": "/fixture/home",
+                "CODEX_HOME": "/fixture/codex-home",
+            }
+            with mock.patch.dict(
+                os.environ,
+                {**common_environment, "OPENAI_API_KEY": "rotated-secret-one"},
+                clear=True,
+            ):
+                started = self.start(launcher, root)
+            with mock.patch.dict(
+                os.environ,
+                {**common_environment, "OPENAI_API_KEY": "rotated-secret-two"},
+                clear=True,
+            ):
+                resumed = self.resume(launcher, root)
+
+            self.assertEqual(
+                started.binding.runtime_config_sha256,
+                resumed.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                factory.calls[0][1]["env"]["OPENAI_API_KEY"],
+                "rotated-secret-one",
+            )
+            self.assertEqual(
+                factory.calls[1][1]["env"]["OPENAI_API_KEY"],
+                "rotated-secret-two",
+            )
+            checkpoint = self.host_state(root) / "codex-session.json"
+            checkpoint_text = checkpoint.read_text(encoding="utf-8")
+            self.assertNotIn("rotated-secret-one", checkpoint_text)
+            self.assertNotIn("rotated-secret-two", checkpoint_text)
+
     def test_native_runtime_version_requires_goals_and_subagents(self):
         self.assertEqual(MINIMUM_CODEX_NATIVE_RUNTIME_VERSION, (0, 145, 0))
         self.assertFalse(codex_supports_native_workshop("0.144.9"))
         self.assertTrue(codex_supports_native_workshop("0.145.0"))
+
+    def test_completed_turn_is_reaped_after_a_short_natural_exit_grace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(),
+                        "hang_until_terminated": True,
+                    }
+                ]
+            )
+
+            outcome = self.start(launcher, root)
+
+            process = factory.processes[0]
+            self.assertEqual(outcome.status, "completed")
+            self.assertTrue(process.terminated)
+            self.assertFalse(process.killed)
+            self.assertLessEqual(process.wait_timeouts[0], 0.25)
+
+    def test_agent_message_does_not_infer_turn_completion(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "hang_until_terminated": True,
+                    }
+                ]
+            )
+
+            with self.assertRaisesRegex(CodexInvocationError, "timed out"):
+                self.start(launcher, root)
+
+            self.assertTrue(factory.processes[0].terminated)
+
+    def test_clean_process_exit_without_turn_completed_fails_closed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "returncode": 0,
+                    }
+                ]
+            )
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "did not complete"
+            ):
+                self.start(launcher, root)
+
+    def test_missing_terminal_preserves_explicit_transient_category(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stderr": ["provider stream disconnected"],
+                        "returncode": 0,
+                    }
+                ]
+            )
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "provider transport was interrupted"
+            ):
+                self.start(launcher, root)
+
+    def test_completed_turn_does_not_weaken_resume_thread_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": OTHER_THREAD_ID,
+                                }
+                            ),
+                            event({"type": "turn.completed", "usage": {}}),
+                        ],
+                        "hang_until_terminated": True,
+                    },
+                ]
+            )
+            self.start(launcher, root)
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "resumed a different native session"
+            ):
+                self.resume(launcher, root)
+
+            self.assertTrue(factory.processes[1].terminated)
+
+    def test_terminal_failure_events_fail_closed(self):
+        for event_type in ("turn.failed", "error"):
+            with self.subTest(
+                event_type=event_type
+            ), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve() / "run"
+                root.mkdir()
+                launcher, factory = self.launcher(
+                    [
+                        {
+                            "stdout": [
+                                event(
+                                    {
+                                        "type": "thread.started",
+                                        "thread_id": THREAD_ID,
+                                    }
+                                ),
+                                event({"type": event_type}),
+                            ]
+                        }
+                    ]
+                )
+
+                with self.assertRaisesRegex(
+                    CodexInvocationError, "reported a failed turn"
+                ):
+                    self.start(launcher, root)
+
+                self.assertTrue(factory.processes[0].terminated)
+
+    def test_natural_nonzero_exit_after_completed_turn_still_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(),
+                        "returncode": 1,
+                    }
+                ]
+            )
+
+            with self.assertRaisesRegex(
+                CodexInvocationError, "did not complete"
+            ):
+                self.start(launcher, root)
 
     def test_rejects_codex_versions_without_native_workshop_primitives(self):
         with self.assertRaisesRegex(

@@ -34,6 +34,7 @@ from workshop.contributors import (
     parse_taste_bytes,
 )
 from workshop.integrations.factory import (
+    FACTORY_CONTENT_MAPPING,
     FactoryReleaseWriter,
     FactoryAgentSession,
     FactoryPublicTransition,
@@ -54,7 +55,13 @@ from workshop.match.native import (
 from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
-from workshop.release.native import NativeRelease
+from workshop.release.native import (
+    FACTORY_CONTENT_BODY_MAX,
+    FACTORY_CONTENT_BODY_MIN,
+    FACTORY_CONTENT_LABEL_MAX,
+    FACTORY_CONTENT_STORY_BLOCKS_MAX,
+    NativeRelease,
+)
 from workshop.runtime import (
     CodexInvocationError,
     CodexNativeSessionLauncher,
@@ -1126,6 +1133,21 @@ def _prepare_stage_input(
                         "package_root": "artifacts/release/package",
                         "contract_path": "artifacts/release/release.json",
                         "required_package_files": ["MANUAL.md", "product.json"],
+                        "factory_content_constraints": {
+                            "plain_text": True,
+                            "forbidden_characters": ["<", ">"],
+                            "headline_characters": {
+                                "minimum": 1,
+                                "maximum": FACTORY_CONTENT_LABEL_MAX,
+                            },
+                            "body_characters": {
+                                "minimum": FACTORY_CONTENT_BODY_MIN,
+                                "maximum": FACTORY_CONTENT_BODY_MAX,
+                            },
+                            "story_blocks_maximum": (
+                                FACTORY_CONTENT_STORY_BLOCKS_MAX
+                            ),
+                        },
                     }
 
     packet = {
@@ -1582,18 +1604,33 @@ def _read_release_effect(run: AgentRun, release: NativeRelease) -> Optional[Rece
         "native_release_sha256",
         "product_artifact_sha256",
         "package_artifact_sha256",
+        "product_page_sha256",
+        "manual_sha256",
+        "factory_content_sha256",
+        "factory_content_mapping",
         "publication_status",
         "receipt",
     }
+    package_entries = {
+        entry.path: entry for entry in release.package_manifest.entries
+    }
+    manual_entry = package_entries.get(release.manual_path)
     if (
         set(value) != expected
-        or value["schema_version"] != 1
+        or value["schema_version"] != 2
         or value["kind"] != "autonomous-workshop.release-effect"
         or value["product_id"] != run.snapshot().product_id
         or value["native_release_sha256"] != release.release_sha256
         or value["product_artifact_sha256"] != release.product_artifact_sha256
         or value["package_artifact_sha256"]
         != release.package_manifest.artifact_sha256
+        or value["product_page_sha256"] != release.product_json_sha256
+        or manual_entry is None
+        or value["manual_sha256"] != manual_entry.sha256
+        or not isinstance(value["factory_content_sha256"], str)
+        or re.fullmatch(r"[0-9a-f]{64}", value["factory_content_sha256"])
+        is None
+        or value["factory_content_mapping"] != FACTORY_CONTENT_MAPPING
         or value["publication_status"] not in ("draft", "public")
     ):
         raise StateConflict("Release effect checkpoint belongs to different bytes")
@@ -1604,6 +1641,19 @@ def _read_release_effect(run: AgentRun, release: NativeRelease) -> Optional[Rece
     receipt.assert_artifact(release.product_artifact_sha256)
     if receipt.details.get("release_sha256") != release.package_manifest.artifact_sha256:
         raise StateConflict("Release effect receipt belongs to a different package")
+    expected_content = {
+        "product_page_sha256": value["product_page_sha256"],
+        "manual_sha256": value["manual_sha256"],
+        "factory_content_sha256": value["factory_content_sha256"],
+        "factory_content_mapping": value["factory_content_mapping"],
+    }
+    if any(
+        receipt.details.get(name) != expected_value
+        for name, expected_value in expected_content.items()
+    ):
+        raise StateConflict(
+            "Release effect receipt lacks the exact page and manual bindings"
+        )
     if value["publication_status"] == "public" and not receipt.is_verified_public:
         raise StateConflict("Release effect public status is not verified")
     if value["publication_status"] == "draft" and not receipt.is_verified_draft:
@@ -1615,15 +1665,34 @@ def _write_release_effect(
     run: AgentRun, release: NativeRelease, receipt: Receipt
 ) -> None:
     status = "public" if receipt.is_verified_public else "draft"
+    entries = {entry.path: entry for entry in release.package_manifest.entries}
+    manual_entry = entries.get(release.manual_path)
+    details = receipt.details
+    factory_content_sha256 = details.get("factory_content_sha256")
+    if (
+        manual_entry is None
+        or details.get("product_page_sha256") != release.product_json_sha256
+        or details.get("manual_sha256") != manual_entry.sha256
+        or not isinstance(factory_content_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", factory_content_sha256) is None
+        or details.get("factory_content_mapping") != FACTORY_CONTENT_MAPPING
+    ):
+        raise StateConflict(
+            "Factory Receipt lacks the exact Release page and manual bindings"
+        )
     _write_private_json(
         _release_effect_path(run),
         {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "autonomous-workshop.release-effect",
             "product_id": run.snapshot().product_id,
             "native_release_sha256": release.release_sha256,
             "product_artifact_sha256": release.product_artifact_sha256,
             "package_artifact_sha256": release.package_manifest.artifact_sha256,
+            "product_page_sha256": release.product_json_sha256,
+            "manual_sha256": manual_entry.sha256,
+            "factory_content_sha256": factory_content_sha256,
+            "factory_content_mapping": FACTORY_CONTENT_MAPPING,
             "publication_status": status,
             "receipt": receipt.to_dict(),
         },
