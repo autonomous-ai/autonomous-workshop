@@ -1,9 +1,14 @@
 {
-  "schema_version": 5,
+  "schema_version": 8,
   "id": "bob",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "moving-machines", "kinetic-mechanisms", "custom-make", "default-playtest", "product-instructions"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
-  "source": {"kind": "local"}
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "bob-inventor",
+      "path": "skills/bob-inventor",
+      "artifact_sha256": "2a9225c04ec536a0f4e96bad7a39eb42ebad67b3fa438a9693a0b995c1f2e0c3"
+    }
+  ]
 }

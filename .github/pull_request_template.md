@@ -1,99 +1,126 @@
+# Pull request
+
 ## Outcome
 
-<!-- What inventor or Workshop capability does this PR add or improve? -->
+<!-- What user, inventor, maintainer, or operator outcome does this change improve? -->
 
-## Change type
+## Ownership
 
-- [ ] New inventor
-- [ ] Existing inventor
-- [ ] Workshop Make, skills, or artifacts
-- [ ] Workshop Inspect or evidence
-- [ ] Workshop runtime or integration
-- [ ] Documentation or repository tooling
+- Owning component:
+- Primary DRI:
+- Backup or second reviewer:
+- Risk: standard / high / critical
 
-## Inventor contract
+<!-- Use .github/components.toml. Name every affected component for a contract change. -->
 
-<!-- Complete this section for inventor changes. -->
+## Change class
 
-- Inventor ID:
-- Display name:
-- Niche/customer:
-- One-sentence taste summary:
-- Signature product moment:
-- Explicit rejects:
-- [ ] Root `TASTE.md` is canonical and workflow-bound.
-- [ ] `inventor.json` claims only exercised capabilities.
+- [ ] Component implementation
+- [ ] Cross-component contract
+- [ ] CLI
+- [ ] Inventor specialist bundle or custom tool
+- [ ] Product-run constitution or workflow skill
+- [ ] Skill or locked dependency
+- [ ] Schema, canonical bytes, or artifact identity
+- [ ] Durable state, event, migration, receipt, or external effect
+- [ ] Documentation, governance, CI, packaging, or release
+- [ ] Security-sensitive change
 
-## Workshop reuse
+## Current and resulting behavior
 
-<!-- Explain which shared subsystems are composed and any inventor-local code. -->
-
-- Make:
-- Inspect:
-- Shared artifacts/runtime/integrations:
-
-- [ ] Shared infrastructure was reused instead of copied into the inventor.
-- [ ] The dependency remains one-way: inventor imports Workshop; Workshop
-      does not import the inventor.
-- [ ] New public code and prose teach only Wish, Taste, Make, and Inspect;
-      internal names are literal artifact, runtime, adapter, and receipt terms.
-
-## Current versus target behavior
-
-<!-- State what works in this PR. List future contract work separately. -->
-
-Implemented now:
+Before:
 
 -
 
-Still target or held:
+After:
 
 -
 
-## Offline demonstration
+Explicitly out of scope:
 
-<!-- Paste commands and summarize results. Never paste credentials or secrets. -->
+-
 
-```text
+## Boundaries and contracts
 
-```
+- Public contract added or changed:
+- Components consuming it:
+- Dependency direction:
+- External ports or effects:
+- Durable formats read or written:
 
-- [ ] The offline path needs no network, credentials, paid provider, CAD
-      service, printer, or live outside effect.
-- [ ] Fakes and fixtures are clearly distinguished from live readiness.
-- [ ] Failure, ambiguity, repair exhaustion, and “no viable product” outcomes
-      fail closed where applicable.
+- [ ] The change stays in its owning source and mirrored test directories.
+- [ ] Components import public contracts, not sibling private implementations.
+- [ ] Workflow remains the only stage sequencer.
+- [ ] Product work remains one persistent native session per Wish and one
+      active Codex Goal per cognitive stage attempt; Python does not own the
+      improvement loop.
+- [ ] CLI and inventor code depend on Workshop; Workshop does not import them.
+- [ ] No new `core`, `foundation`, `common`, or `utils` dumping ground was added.
+
+## Conditional review
+
+### Inventor
+
+- Inventor ID and Taste boundary:
+- Declared Codex skill trees:
+- [ ] Root `TASTE.md` remains canonical and workflow-bound.
+- [ ] The schema-v8 manifest and exact skill-tree hashes match the submitted bytes.
+- [ ] The run materializes identity, Taste, and skill bindings only through `.codex/agents/`.
+- [ ] Inventor scripts are deterministic specialist tools, not agent or lifecycle orchestration.
+- [ ] Shared Workshop machinery is reused instead of copied.
+
+### Skill or dependency
+
+- Owner component:
+- Source URL and exact revision:
+- License and provenance record:
+- Lock or fingerprint change:
+- [ ] Executable modes and installed bytes were verified.
+- [ ] A lock change represents an intentional byte change, not only a move.
+
+### Schema, artifact, or durable state
+
+- Format and old/new versions:
+- Reader/writer compatibility:
+- Canonicalization or hash impact:
+- Rollback or reconciliation path:
+- [ ] Existing state and evidence remain readable through tested readers.
+- [ ] Historical records, receipts, hashes, and artifact bytes were not rewritten.
+- [ ] Malformed, unknown, partial, retry, and ambiguous outcomes fail truthfully.
+
+### Outside or physical effect
+
+- Effect and authorization boundary:
+- Idempotency key and receipt binding:
+- Ambiguous-outcome behavior:
+- [ ] Intent is durable before execution and retries cannot duplicate the effect.
+- [ ] Offline tests use explicit fakes and do not claim live readiness.
 
 ## Verification
 
-- [ ] New/changed inventor tests
-- [ ] `PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v`
-- [ ] `workshop skills list`
-- [ ] `workshop schemas list`
-- [ ] `workshop inventors --root inventors --check-entrypoints`
-- [ ] `workshop check inventors/your-inventor --run`
-- [ ] `python tools/verify_skill_locks.py`
-- [ ] `python tools/verify_snapshot_locks.py`
-- [ ] `python tools/scan_secrets.py`
-- [ ] `git diff --check`
-
-Additional commands and results:
+<!-- Paste exact commands and summarize results. Do not paste credentials. -->
 
 ```text
 
 ```
 
-## Safety, provenance, and migration safety
+- [ ] Narrow component or CLI tests
+- [ ] Contract/integration tests for every affected boundary
+- [ ] Full repository test suite
+- [ ] Architecture dependency checks
+- [ ] Installed wheel and resource smoke tests when packaging/resources changed
+- [ ] Skill/schema/runtime-asset identities when applicable
+- [ ] Secret and provenance checks
+- [ ] `git diff --check`
 
-- [ ] No credentials, runtime databases, transcripts, private keys, or source
-      backups are included.
-- [ ] Third-party source/skills record URL, exact commit, import date,
-      exclusions, patches, and license status.
-- [ ] Existing durable state, artifact identity, receipts, and snapshot locks
-      remain readable or have a tested versioned migration.
-- [ ] Every external effect is planned before execution, fenced, and bound to
-      a verified receipt; catalog publication begins as a private draft.
+## Compatibility and release note
 
-## Reviewer notes
+- [ ] Added `changes/<id>.<kind>.md`
+- [ ] No changelog required; reason:
+- Breaking Python API:
+- Durable compatibility impact:
+- Migration or deprecation window:
 
-<!-- Point reviewers to the most important files, tradeoffs, and known limits. -->
+## Reviewer guide
+
+<!-- Point reviewers to the highest-risk files, invariants, evidence, and tradeoffs. -->

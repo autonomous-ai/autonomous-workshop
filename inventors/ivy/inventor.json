@@ -1,9 +1,14 @@
 {
-  "schema_version": 5,
+  "schema_version": 8,
   "id": "ivy",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "holdable-science", "scientific-models", "taste-only", "default-make", "default-playtest"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
-  "source": {"kind": "local"}
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "ivy-inventor",
+      "path": "skills/ivy-inventor",
+      "artifact_sha256": "64c5da9c1396a70cbac6f484a0d2db5a42cb92dfd6fe5f559353aad045151f63"
+    }
+  ]
 }

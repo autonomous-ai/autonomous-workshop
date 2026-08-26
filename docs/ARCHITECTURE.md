@@ -1,569 +1,315 @@
-# Toy Workshop architecture
+# Autonomous Workshop architecture
 
-Autonomous Workshop is a Santa-style workshop for **playthings for grown-ups
-(14+)**. People make a Wish, wait, and receive a box. Inside the Workshop,
-inventors each bring a distinct Taste while sharing the same
-reliable machinery.
+Autonomous Workshop turns one person's Wish into one evidence-backed physical
+product design. It is a thin workflow harness over a pluggable coding-agent
+runtime, not a Python agent framework. Codex is implemented first; Claude Code
+and Grok Build are future adapters to the same boundary.
 
-The first version is intentionally narrow. It makes joy, surprise, and play—not
-plain utility. It is also request-driven: one Wish starts one assignment. An
-inventor does not need to poll a queue or run continuously.
+## Product scope
 
-## What the Workshop makes
+The first version makes open-ended playthings for grown-ups (14+). Users state
+what they want in their own words; they do not choose a product class before
+the Workshop can begin. A universal toy blueprint supplies the shared contract
+and baseline Playtest checks: `agent-playtest`, `mechanical-check`, and
+`printability-check`. The host derives that exact tuple from
+`ToyBlueprint.required_playtest_checks()`. These checks are Codex-authored
+digital assessments unless host-replayed evidence or a physical receipt
+explicitly proves more; they never establish a successful print or physical
+fit by themselves. The Wish, selected Inventor, and evolving artifact determine
+any additional specialist method or evidence.
 
-Every product belongs to one of five categories:
+Every result must be materially shaped by its Wish, feel designed rather than
+decorated, and be represented no more strongly than its evidence permits.
 
-- **Classics made yours** (`classics-made-yours`) — known games and puzzles
-  remade as exceptional, personal physical editions. The rules are already
-  known; the product is judged as an object and a custom edition, not as a new
-  game design.
-- **Games that don't exist yet** (`invented-games`) — new rules, mysteries,
-  strategy, competition, and tactile problems to solve. AI players exercise
-  the complete rules, strategies, endings, and exploits before Instructions;
-  customer response arrives later as Reviews after delivery.
-- **Machines that move** (`moving-machines`) — mechanisms, kinetic desk toys,
-  tiny machines, and objects with a satisfying motion.
-- **Science you can hold** (`holdable-science`) — tangible phenomena, geometry,
-  nature, space, waves, forces, and experiments made graspable through play.
-- **Little worlds** (`little-worlds`) — personalized miniature places,
-  characters, stories, memories, and relationships shaped around one person.
-
-Every category faces the same bar:
-
-1. **It could not have been bought before the Wish.** The person's words,
-   context, or relationships must materially change the rules, geometry, or
-   experience. Adding a nameplate to a generic model does not qualify.
-2. **Cool beats cute or twee.** The result should feel clever, striking,
-   surprising, or deeply satisfying. Cuteness may support the idea; it cannot
-   be the whole idea.
-3. **Personalization and design intelligence beat generic prints.** Make must
-   interpret the Wish and solve a design problem, not retrieve a familiar STL
-   and decorate it.
-
-Kits and numbered series may become later ways to extend a successful product.
-They are not Workshop jobs and are not V1 promises.
-
-## The six jobs
-
-The complete Workshop vocabulary is:
+## Lifecycle
 
 ```text
-creation:       Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
-                          ^                    |
-                          +--------------------+
-                                 feedback
-after delivery: customer Reviews -> a future revision of this toy
-                                  -> future Wishes and Makes
-```
-
-- **Wish** preserves what the person asked for and the relevant constraints.
-- **Concept** decides what the plaything actually looks like before anything is
-  built, in one order: research, then brief, then images. It first researches
-  the Wish into a breakdown of what the named object actually is and how big its
-  parts really are, where every stated fact is attributable — either to a source
-  the research recorded, or to a decision recorded with its reason. From that
-  breakdown it locks the design's physical facts — envelope, wall thickness, fit
-  target, features, print orientation, and the component breakdown — and then
-  draws one mutually consistent set of images from them: `front`, `top`,
-  `bottom`, an `exploded` view, and one view per component. Every image request
-  carries the locked numbers, and each image after the first is anchored on the
-  ones already drawn, so the set depicts one object rather than several
-  interpretations of the same words. The research is sealed inside the concept
-  root, so `concept_sha256` covers the findings as well as the pixels, and the
-  researched constraints are written back as a *derived* Wish that later jobs
-  build to — the routed Wish keeps its exact bytes, because routing was decided
-  from them. Concept runs at the top of every round, and a refining round reuses
-  the standing research rather than researching again, so a Playtest rejection
-  can be answered in the design instead of worked around in geometry. With no
-  researcher, image provider, or exploded-view check configured it raises a
-  truthful `Need` for each and the run parks; it never describes a design it did
-  not draw, and never substitutes default physical facts for research that did
-  not happen.
-- **Make** invents the plaything, writes any rules, and creates its exact
-  printable product files. When a concept is present it is the primary
-  reference for form, proportion, construction, and the part breakdown; the
-  brief's millimetres remain the binding constraints, and where an image and a
-  number disagree, the number governs.
-- **Playtest** has AI agents simulate using or playing that exact Make from
-  every relevant angle. A failed check returns actionable feedback to Make,
-  producing a new immutable round. Playtest never means a human
-  print-and-play session.
-- **Instructions** creates the paper that belongs in the box and a factual,
-  evidence-bound content brief. It preserves the terminal `By <Inventor>.`
-  attribution, sends a model-only private draft to Factory, and authenticates
-  that handoff. Factory owns later marketing images and page copy; the handoff
-  remains explicitly pending and not page-ready until a separate content
-  pipeline confirms enrichment. Instructions does not make the page public or
-  require an active listing.
-- **Deliver** produces, checks, packs, and hands the exact approved product to
-  USPS, UPS, or FedEx.
-
-`Taste` guides the jobs; it is not a job of its own. Research, rules writing,
-rendering, slicing, simulation, repair, printing, and carrier integration are
-tasks inside the six jobs, not extra lifecycle concepts. After Deliver,
-customer **Reviews** may improve a future revision of the same toy and inform
-future Wishes and Makes. Reviews is a public, post-delivery feedback stream,
-not a sixth inventor job, custom inventor hook, or release gate for the order
-already shipped.
-
-The owner-facing transition from private draft to public page is deliberately
-outside those six jobs. An owner reviews the finished draft and decides when
-to make it public; that decision does not delay Instructions or Deliver and
-does not introduce another job.
-
-## The Workshop Manager
-
-Customers do not have to know which inventor to choose. The Workshop Manager
-discovers an open catalog that may contain thousands of inventors and assigns
-one Wish to the best fit once.
-
-```text
-                            one Wish
-                               |
-                               v
-             TASTE.md names + short descriptions
-                               |
-                               v
-                    +----------------------+
-                    |   WORKSHOP MANAGER   |
-                    | semantic shortlist   |
-                    | full finalist Tastes |
-                    | chooses + explains   |
-                    +----------+-----------+
-                               |
-                         one assignment
-                               |
-                               v
-                         chosen inventor
-                               |
-                               v
-   creation: Wish -> Concept -> Make <-> Playtest -> Instructions -> Deliver
-                       ^                    |
-                       +--------------------+
+Wish -> Match -> Invent -> Make -> Playtest -> Release -> Deliver
+                            ^          |
+                            +----------+
                               feedback
-   later:    customer Reviews -> future Makes
 ```
 
-This checkout begins with five showcase inventors:
+- **Wish** preserves the person's exact words and explicit constraints.
+- **Match** selects and binds one Inventor for that Wish.
+- **Invent** explores and records one bounded product concept with research
+  provenance where needed.
+- **Make** creates the actual product tree, CAD project, assemblies, and
+  deterministic CAD verification.
+- **Playtest** inspects and simulates that exact Made revision. Evidence-linked
+  failures return to Make within a bounded round budget.
+- **Release** creates `MANUAL.md` and the complete schema-v3, `page-ready`
+  product page: evidence-bound facts and claims, hero and cinematic sections,
+  use case, story blocks, what arrives, limitations, and visual direction.
+- **Deliver** is currently a truthful wait boundary. The host does not perform
+  or claim manufacture, hands-on QA, packing, carrier handoff, or delivery.
+  Those future effects require separate authorization and reconciled physical
+  receipts bound to the exact approved bytes.
 
-| Inventor | Taste lane |
-|---|---|
-| Alice | classics made yours (`classics-made-yours`) |
-| Leo | games that do not exist yet (`invented-games`) |
-| Bob | machines that move (`moving-machines`) |
-| Ivy | science you can hold (`holdable-science`) |
-| Eve | little worlds (`little-worlds`) |
+Release replaces the old instruction-only name because the output is broader
+than a manual. Codex owns the complete page copy and visual direction while the
+host keeps authenticated Factory transport and publication outside the agent.
 
-The catalog is open: other people may add many inventors in the same category
-or introduce narrower niches. Like a skill, each `TASTE.md` exposes only its
-name and a short, discriminating description during discovery. A semantic
-retriever compares those descriptions with the complete Wish and records a
-bounded shortlist. Only then does the Manager load each finalist's complete
-`TASTE.md` body. `inventor.json` is operational: it tells Workshop how to run
-the inventor, not when to choose it.
+Customer Reviews happen after delivery and may inform a later Wish or revision.
+They do not mutate a completed run.
 
-Routing is semantic, not a keyword switch. A judge assesses every shortlisted
-Taste under one rubric, records acceptance, score, explanation, and hard
-tensions, then applies a deterministic ordering. If that bounded comparison is
-not enough, the Manager returns a truthful need; the caller may widen retrieval
-and submit a new, separately recorded shortlist. The Manager never invents
-certainty or silently changes the candidate set. The assignment binds the
-untouched Wish, catalog snapshot, retrieval and judge provenance, finalist
-Taste hashes, complete ranking, selected entry point, and trusted
-Playtest-round allowance. Relevant catalog or Taste changes make that
-assignment stale.
+## One Manager session per Wish
 
-If retrieval or full-Taste judgment is unavailable, the Manager waits
-truthfully. If no finalist genuinely fits, it waits for clarification, a wider
-shortlist, or a new inventor instead of forcing the Wish into the least-wrong
-category.
+`workshop wish` first creates and populates one persistent toy project under
+`toys/`, then starts one coding-agent session with that directory as its working
+directory before Match. The same session handles discovery, research, concept
+work, CAD, inspection, repair, Playtest judgment, manual writing, and
+product-page facts. `workshop resume` continues the exact recorded session id.
 
-The Manager is typed Workshop engine code, not a skill, a sixth Workshop job,
-or a creative supervisor once work begins. Making it a skill would leave the
-host to select the selector and would hide routing behind prompt behavior. Its
-assignment enters the same six-job contract as every other Wish. A future
-continuous service may repeatedly call this one-Wish interface, but scheduling,
-polling, and 24/7 operation stay outside an inventor profile and outside the V1
-Workshop promise.
+That root session plays the Workshop Manager role. In the current adapter it is
+Codex, and it may dynamically delegate bounded matching, specialist creation,
+or independent inspection through standard Codex-native subagents. Those
+children are part of the Manager's native agent tree; they are not separately
+launched OS-level Codex processes, Python workers, or lifecycle sessions. The
+root Manager receives each host stage packet, synthesizes child work, and
+submits the one proposal the host verifies.
 
-## Alice on the shared Workshop
+Stage names are host checkpoints, not Python workers or model roles. During
+Match, the Manager may ask native children for bounded candidate-fit analysis,
+then makes one evidence-based selection. The host materializes every eligible
+Inventor through Codex's documented project-scoped custom-agent convention;
+Codex owns native spawning, routing, waiting, and synthesis.
 
-Alice is the concrete example. Her folder stays thin at the Workshop boundary;
-the machinery beneath her is shared by every inventor.
+“Inventor” is the Workshop's friendly domain name for a standard native
+subagent role. For Codex, every eligible bundle is materialized as an official
+project-scoped custom agent under `.codex/agents/`.
+
+That directory is the sole run roster. The reusable source bundle behind each
+generated custom agent contains:
+
+- `TASTE.md` defines creative judgment, preferences, and rejection boundaries;
+- schema-v8 `inventor.json` defines stable source metadata and exact skill-tree
+  hashes;
+- the required `<id>-inventor` Codex skill tree contains `SKILL.md` for the
+  specialist's primary workflow and tool routing;
+- additional Inventor-prefixed skill trees are optional;
+- their optional scripts, references, assets, CAD generators, evaluators, and
+  other tested deterministic tools provide specialist craft.
+
+The selected native Inventor subagent reasons and invokes those declared
+resources. Custom code never becomes a prompt loop, agent scheduler, lifecycle
+engine, semantic gate, or credential-bearing effect path. Child output remains
+a proposal: the root Manager reviews it, and the host still verifies exact
+bytes and advances the gate.
+
+The durable toy project is the Manager's working record. Trusted host state is
+kept outside that writable directory. Session memory never overrides exact
+files, manifests, gate receipts, or effect receipts.
+
+## One native Goal per active stage attempt
+
+For each host-authorized Match, Invent, Make, Playtest, or Release attempt, the
+root Codex session creates one native Goal. Only one Goal is active at a time.
+It names one objective, the exact inputs to inspect, proof artifacts and checks,
+and a verifiable stopping condition: the current stage finalizer succeeds and
+writes the bound proposal.
+
+While pursuing the Goal, Codex works as observe -> act -> evaluate -> improve:
+it inspects the current artifact, makes focused changes with native tools and
+subagents, runs deterministic checks and independent native review, inspects
+the actual output, and repeats. This is agent behavior inside the Goal, not a
+separate loop primitive or Python program. The Goal completes only after the
+finalizer succeeds; Codex then returns to the host instead of starting the next
+stage.
+
+Wish is sealed by the host before Match, and Deliver is a host effect boundary,
+so neither is an agent Goal. A failed Playtest Goal still completes after it
+finalizes truthful evidence. The host applies the round budget, invalidates
+downstream evidence, and checkpoints the return to Make. Codex interprets the
+feedback and repairs the product inside the next Make Goal.
+
+## Trust boundary
+
+### Native Codex owns
+
+- root-session Workshop management, native subagent delegation, and synthesis;
+- one active native Goal per cognitive stage attempt and the
+  observe -> act -> evaluate -> improve work inside it;
+- understanding the Wish and Match reasoning;
+- native search and source provenance;
+- concept exploration and design decisions;
+- use of CAD, product-to-CAD, STEP-parts, rendering, and other materialized
+  skills;
+- creation and repair of product files;
+- AI Playtest perspectives and evidence-linked feedback;
+- `MANUAL.md`, evidence-bound claims, and complete page-ready Release content;
+- a compact proposal for the next host transition.
+
+### The Python host owns
+
+- Wish/run identity, private roots, immutable inputs, and durable checkpoints;
+- validation, hashing, and resource limits for every materialized Inventor
+  bundle and declared skill tree;
+- legal transition order, one exclusive host mutation lock per run, round
+  budgets, and invalidation;
+- Codex session start/resume and environment scrubbing;
+- public contracts, exact-byte manifests, deterministic CAD/evidence gates,
+  and artifact sealing;
+- authorization, credential isolation, idempotency, external adapters,
+  reconciliation, and receipts.
+
+Python never performs creative candidate generation, semantic judging, prompt
+chaining, specialist simulation, repair reasoning, or a score/reward/feedback
+loop. Codex does not advance its own gate or perform credential-bearing
+effects.
+
+## Workspace protocol
+
+The host materializes the product-run constitution, workflow skill, Make domain
+skills, Wish, generated `.codex/agents/` roster, and its hash-bound Inventor
+skill trees into the persistent toy project. The workflow skill is the
+Manager's playbook, not a separate Manager agent. Before each native turn the
+host writes read-only `STAGE.json` with:
 
 ```text
-+-------------------------- ALICE --------------------------+
-|  TASTE.md: recognizable judgment                         |
-|  category: classics-made-yours                           |
-|  no custom Make or Playtest code                         |
-+----------------------------+------------------------------+
-                             | configures typed hooks
-                             v
-+-------------------- SHARED WORKSHOP ----------------------+
-|                                                            |
-|  [Wish] -> [Make] -> [Playtest] --pass--> [Instructions]          |
-|              ^            |                    |            |
-|              +--feedback--+                    v            |
-|                                             [Deliver]       |
-|                                                            |
-|  CAD | AI players | evidence | runtime | rendering         |
-|  product pages | production | USPS / UPS / FedEx           |
-+----------------------------+-------------------------------+
-                             |
-                             v
-                    PERSON RECEIVES THE BOX
-                             |
-                             v
-                    REVIEWS -> FUTURE MAKES
+schema_version, kind, product_id, stage, checkpoint_sha256,
+subject_sha256, next_transition, round, max_rounds, inputs
 ```
 
-Dependency remains one-way: Alice imports Workshop; Workshop never imports
-Alice. She demonstrates the Taste-only level: shared Workshop owns Make,
-Playtest, the improvement loop, Instructions, Deliver, and runtime.
-
-Alice is the bundled `classics-made-yours` example. Her earlier Blindcap work
-remains provenance that taught Workshop how to make and Playtest games; Leo is
-the bundled `invented-games` example. Neither profile owns a category: future
-inventors may enter either lane with a different Taste.
-
-Inventor identities are backstage. Customers Wish through the Manager and
-receive the Workshop's box; they do not need to select or understand an inventor.
-
-## Three customization levels
-
-The same boundary supports three levels of authorship:
-
-| Level | Inventor supplies | Workshop supplies |
-|---|---|---|
-| **Taste only** | `TASTE.md` | Concept, Make, Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Make** | `TASTE.md` and `MakeContext -> Made` | Concept, Playtest, the improvement loop, Instructions, Deliver, and runtime |
-| **Custom Playtest** | `TASTE.md`, custom Make, and `PlaytestContext -> Playtested` | Concept, the improvement loop, Instructions, Deliver, and runtime |
-
-Concept is a shared job with its own seam: `WorkshopTools.concept`, or a
-`ConceptContext -> ConceptImages` hook an inventor supplies directly. It does
-not change an inventor's customization level, because the level names who owns
-the *product* contract and the *evidence* contract.
-
-A custom Playtest requires a custom Make. This keeps the maximum level honest:
-an inventor that changes how evidence is interpreted must also own the product
-contract being tested. Instructions and Deliver remain shared so every inventor gets
-the same truth and exact-artifact guarantees.
-
-The shared defaults are capabilities configured for the Workshop as a whole,
-not magic built into a profile. If a model, CAD worker, AI simulator, wish
-researcher, image renderer, printer, or carrier connection is unavailable, its
-owning job returns a typed `WaitingFor` result. The capabilities a run can wait
-for at Concept are `wish-research`, `concept-images`, and `exploded-view-check`.
-Missing capability is never converted into success.
-
-### The agent door: one contract for a role that needs an acting agent
-
-`doors.ModelDoor.run(role, request, budget_micros)` runs "one bounded model
-**or agent** role" — it is not tied to a single HTTP call. Concept's three
-capabilities above are also the role vocabulary this contract uses: a role
-name is exactly one of `wish-research`, `concept-images`,
-`exploded-view-check`, the same strings the `Need`s above already carry. No
-second naming scheme exists for wiring the same capability.
-
-`AgentSessionDoor` (`agent_session.py`) is a real, vendor-agnostic
-implementation of `ModelDoor`, backed by an actual tool-using coding-agent
-process rather than a single API call. It runs one named role at a time, in a
-workspace created fresh for that call, under a wall-clock bound and a dollar
-budget, and reads back the one structured JSON result file the process is
-told to write before it exits — never a guess assembled from partial or
-unparseable output. Per-role configuration owns the launched process's entire
-permission boundary (which tools it gets, which paths it may touch, what is
-pre-populated into its workspace) and the door builds that boundary itself;
-it is never inferred from the role's request or from anything the process's
-own output claims about itself (see CONTRIBUTING.md's tool-access rule for
-agent-backed capabilities).
-
-Concept's three capabilities each settle on exactly one implementation.
-`concept-images` and `exploded-view-check` are satisfied by the existing
-single-shot HTTP adapters (`concept_artist_openrouter.py`,
-`concept_explode_inspector.py`). `wish-research` is satisfied by
-`AgentWishResearcher` (`concept_agent_adapters.py`), a thin adapter
-dispatching through one shared `AgentSessionDoor` under that capability's own
-role name — the tool-using agent process fits `wish-research` specifically,
-since it needs genuine grounded search rather than trusting a single
-provider's built-in web plugin. `AgentWishResearcher` carries the same task
-instructions and attribution rules (`RESEARCH_INSTRUCTIONS`) the deleted HTTP
-wish researcher used to send, so the launched process is told what to decide
-and how to attribute it, not expected to know the contract by role name
-alone. `concept_agent_session_door_from_env()` builds the shared door
-configured for the `wish-research` role only — it reads and requires no
-`concept-images` or `exploded-view-check` configuration, since no adapter
-calls the door under those roles.
-
-`concept_capabilities.py`'s `concept_capabilities_from_env()` is the one
-committed entry point that assembles this exact mix — HTTP for
-`concept-images` and `exploded-view-check`, the agent door for
-`wish-research` — into one ready-to-use `DefaultConcept`, failing closed and
-naming whichever capability's configuration is missing before any of the
-three is exercised. Nothing wires it into an inventor's run automatically;
-that remains a caller's own explicit choice.
-
-`Make` and `Playtest` still default to their `_missing_make` /
-`_missing_playtest` stubs — a `Workshop` wired only with Concept still parks
-at `make` once Concept completes. A real `ModelDoor`-backed implementation
-for Make and Playtest, reusing this same role contract with `toys.py`'s
-`ToyTask.task_id` strings, is a separate, later proposal.
-
-## Job contracts
-
-The jobs exchange small, exact records:
+The packet binds exact upstream contracts and canonical output paths for only
+the current stage. Codex authors substantive files and then invokes the
+run-local, standard-library finalizer:
 
 ```text
-Wish + Taste + ToyBlueprint
-              |
-              v
-      WishResearchRequest  ->  WishResearch
-              |                  | attributed breakdown + its sources
-              v                  v
-      ConceptContext  ->  ConceptImages
-                            | locked brief + sealed image set + sealed research
-                            | + the derived Wish carrying the researched constraints
-                            v
-         MakeContext  ->  Made
-                            | exact product manifest
-                            v
-      PlaytestContext  ->  Playtested
-                            | evidence + Feedback
-                            v
-          InstructionsContext  ->  ProductInstructions
-                            | exact facts/paper manifest + authenticated private draft
-                            v
-       DeliverContext  ->  Delivered
-                            | production + carrier receipts
-                            v
-                       WorkshopRun
+.agents/skills/autonomous-workshop/scripts/stage_proposal.py
 ```
 
-`ConceptImages` binds a locked `ConceptBrief`, the `WishResearch` that brief was
-derived from, the derived Wish written back from it, and every image role to a
-sealed concept root, giving a `concept_sha256` the run records and re-checks
-whenever the concept is used. The run records `wish_sha256` and
-`derived_wish_sha256` beside it, so the person's own words and the constraints
-research added to them stay separable. `Made` binds product metadata to an immutable artifact
-tree. `Playtested` binds every result and evidence file to that artifact hash.
-`ProductInstructions` binds the factual Factory handoff and in-box paper to both
-its own manifest and the product hash. Factory alone creates customer-facing page
-copy, images, and video. `Delivered` binds production and carrier receipts to the
-exact product and Instructions hashes.
+The finalizer validates authored input, hashes exact bytes, writes the
+canonical stage contract, and atomically writes `agent-outcome.json`. It does
+not call a model or pass a gate. The host verifies the proposal binding, rereads
+the whole artifact tree, reruns trusted checks, seals accepted bytes, and alone
+advances the durable checkpoint.
 
-Three things are checked at the Concept/Make boundary rather than trusted:
-the concept's bytes are re-checked when Make returns, the product's declared
-components must match the brief's, and no file in the product may carry the
-bytes of a concept image.
+If a Playtest verdict is `improve` or `block`, the proposal returns to Make and
+preserves feedback evidence. A changed Make revision invalidates old Playtest,
+Release, and Deliver evidence.
 
-After delivery, customer Reviews may be collected with the delivered product
-identity and offered as input to a future Make. They do not mutate the
-completed run, re-grade its Playtest, or add another inventor hook.
+## Evidence boundaries
 
-Changing product bytes after Make, evidence after Playtest, or page bytes after
-Instructions invalidates the next boundary. No later job is allowed to bless stale
-work.
-
-## The Playtest improvement loop
-
-Playtest is AI-agent simulation and feedback, broader than checking rules. It
-asks whether the digital plaything is good enough to continue:
-
-- Does the idea feel playful and aligned with Taste rather than merely useful?
-- Are rules executable, terminating, understandable, and resistant to obvious
-  exploits?
-- Do AI-player traces reveal balance, pacing, dominant strategies, dead states,
-  or discontinuities?
-- Do AI agents and deterministic tools find problems in CAD bodies, fits,
-  motion, assembly, and part interfaces?
-- Do every expected part and exact slicer profile pass digital geometry and
-  manufacturing checks?
-
-A failed result includes structured `Feedback`: the area, observed finding,
-evidence references, severity, and a concrete change for the next Make. The
-Workshop creates a new round and retains the old one; it never edits history to
-make a later version look like the version originally tested.
-
-The loop is bounded. Reaching the round limit stops truthfully instead of
-lowering the bar.
-
-Category policy stays explicit. A classic is simulated as an exact custom
-edition: rules fidelity, object legibility, setup, handling proxies,
-printability, and the Wish-specific design. For an invented game, executable AI
-players must complete at least 1,000 seeded games and probe rules, endings,
-balance, strategies, and exploits. Customer desire for another play is not a
-Playtest claim; it arrives later through Reviews and can improve a future
-revision of the same toy as well as future Wishes and Makes.
-
-The allowance is selected per Wish, not baked into an inventor:
-
-```python
-workshop.run(wish, playtest_rounds=2)   # a small service tier
-workshop.run(wish, playtest_rounds=10)  # a deeper service tier
-```
-
-A trusted checkout or quote maps payment to the allowance; text inside a Wish
-cannot authorize spend. `playtest_rounds` is the maximum number of
-Make–Playtest improvement rounds. A Playtest implementation may also run many
-seeded AI games, model reviewers, or digital trials inside one round. More budget
-buys more opportunities to find and repair problems—it never lowers the same
-acceptance policy.
-
-## Evidence boundaries and honest claims
-
-Different boundary records prove different things. Each travels with its
-source, hash, evaluator, exact version, configuration, and observation time.
-
-| Boundary evidence | May support | Does not prove |
+| Evidence | May support | Does not prove |
 |---|---|---|
-| **AI simulation** | executable rules, termination, traces, measured balance or pacing proxies | that people understand it or find it fun |
-| **Independent model review** | a reproducible prediction about clarity, novelty, or Taste alignment | human preference or physical behavior |
-| **CAD/kernel measurement** | topology, dimensions, clearances, interference, or motion computed from exact geometry | that a real print assembled or survived use |
-| **Slicer analysis** | that exact meshes sliced under a pinned printer, material, and profile; predicted time/material/supports | successful printing or acceptable surface quality |
-| **Deliver receipt** | the exact print, QA, packing, handoff, or delivery event an authenticated provider observed | any later event or customer experience |
-| **Customer Review** | what a verified customer reported after delivery | that the earlier Playtest predicted it, or that every customer agrees |
-
-The first four rows belong to Playtest. Deliver owns the exact physical print,
-hands-on QA, packing, and carrier receipts. Reviews begins only after delivery
-and feeds future Makes; it never changes the completed Playtest result.
-
-Examples of truthful boundaries:
-
-- “128 seeded simulations terminated” is an AI-simulation claim; “players had
-  fun” is not.
-- “Sliced with profile X” is slicer evidence; “prints perfectly” requires a
-  print and QA receipt from Deliver.
-- A label is not carrier handoff. “Delivered” requires the corresponding
-  carrier observation.
+| Native research with cited sources | factual design assumptions | that a source is current if it was not checked |
+| AI simulation | executable rules, termination, measured strategy or pacing proxies | human enjoyment or comprehension |
+| Independent model inspection | a recorded prediction about clarity, novelty, or Taste fit | human preference or physical behavior |
+| CAD/kernel verification | topology, dimensions, required files, and exact computed geometry properties | successful physical printing or durability |
+| Slicer analysis | predicted printability under an exact machine/material/profile | a successful print or surface quality |
+| Host Factory receipt | reconciled remote draft/publication state for exact hashes | manufacture, shipment, or delivery |
+| Future Deliver receipts | the exact production, QA, packing, or carrier event observed | a later event or customer experience |
+| Customer Review | what one verified recipient reported | universal preference or an earlier Playtest fact |
 
 Unknown, missing, stale, malformed, mismatched, or timed-out evidence cannot
-pass. An inventor's own confidence is not independent evidence.
+pass. A model's confidence is never independent evidence.
 
-## Instructions is part of the proof chain
+## Release and Factory
 
-Instructions begins only after Playtest passes for the exact Make. The shared
-default creates the in-box instructions plus a structured content brief and
-claim-to-evidence map. It derives a model-only handoff from the exact Make and
-imports it into Factory as a private draft. Local CAD previews, inspection
-renders, `use_case`, and `story_blocks` are never sent as marketing content.
-Project-marker handoffs must expose a Playtested root `assembled.stl` or
-`<slug>.stl`, so Factory cannot mistake a nested component for the complete
-toy. Generator handoffs may instead provide a top-level `gen_step`.
-Authenticated owner readback proves the exact approved model history and
-sealed fact identities. It also records `enrichment_status=pending` and
-`page_ready=false`; model import alone does not prove that final images, copy,
-or video exist.
+The local Release package is rooted at `artifacts/release/package` and contains
+at least:
 
-Factory receives both the full canonical facts file and a bounded factual
-story prompt made from the Wish, title, summary, description, components,
-design facts/specifications, rules/instructions, optional structured story and
-art direction, limitations, and exact inventor credit. The prompt is input to Factory enrichment, not
-creator-authored page output.
+- substantive UTF-8 `MANUAL.md`;
+- canonical schema-v3 `product.json` with `kind=workshop.release-package`,
+  `status=page-ready`, exact Made/Playtest identities, `title`, `summary`,
+  `hero`, `cinematic`, `use_case`, one or more `story_blocks`,
+  `what_arrives`, `limitations`, and claims copied from exact Playtest evidence.
+  Every page section carries `headline`, `body`, `visual_direction`, and valid
+  `evidence_refs`.
 
-Instructions stops there and advances to Deliver. It neither makes the page
-public nor requires an active listing. An owner may review the draft and make
-it public later through a separate, explicit action outside the six-job
-pipeline.
+Local Release data may describe the product but cannot contain credentials,
+remote receipts, images, audio, video, or unsupported claims of manufacture,
+physical performance, human response, publication, or delivery. The host
+validates and seals the package before importing it. Factory receives the
+exact sealed page, `MANUAL.md`, and model bytes; it does not creatively enrich
+them. After private import, the host projects the exact compatible use-case and
+story-block text into Factory's bounded rich-content fields, persists a
+separate hash-bound effect intent, and requires authenticated exact readback
+before publication. Copy outside Factory's documented limits is rejected, not
+silently truncated. Page sections without a semantically exact Factory field
+remain authoritative in the sealed project archive.
 
-This is a fail-closed boundary across every shared Shop entry point, including
-the low-level compatibility APIs: a caller cannot attach an import thumbnail,
-upload page media, patch `use_case` or `story_blocks`, or add creator
-attachments while publishing. Those calls fail before HTTP. Authenticated
-readback may observe copy, images, attachments, and video that Factory generated
-after the model handoff; Workshop accepts that server-owned enrichment without
-requiring it to equal the original factual brief.
-
-Concept art guides Make and never stands in as product proof. Now that concept
-art is a first-class record this is enforced rather than merely stated. Because a
-faithful build makes the substitution tempting — the closer Make comes to
-building what the concept shows, the more reasonable it looks to reuse the
-drawing — the concept's *bytes* are barred from the build: the Workshop refuses a
-`Made` containing any file whose sha256 matches a concept image. An instruction is
-not evidence. The concept says what should be built; the product says what was
-built, and the model handoff exists precisely to reveal any divergence between the
-two. Nothing from the concept root reaches Factory: only the sealed Make model and
-its factual brief are handed over, and page media is Factory's to generate.
-
-Before any site effect, Workshop seals both the approved Make/Playtest
-checkpoint and the complete Instructions tree. If credentials disappear or a
-site response is ambiguous, `workshop.resume_instructions(wish)` reuses those
-exact bytes and retries only the idempotent model-handoff writer. It never
-reruns Make, Playtest, or the sealed content brief. Factory enrichment is a
-separate handoff, not a silently retried Workshop side effect.
-
-Images must depict the product actually approved. Concept art can guide Make,
-but it cannot masquerade as a render or photograph of printable geometry. Copy
-must preserve evidence qualifiers: simulation remains simulation; a digital
-prototype remains a digital prototype; Reviews from earlier deliveries must
-not be presented as proof that the current toy passed Playtest.
-
-## Deliver is an exact-product boundary
-
-Deliver does not mean “a label was created.” It requires evidence for printing,
-QA, packing, and carrier handoff, bound to the approved product and Instructions hashes.
-The supported first-version carriers are USPS, UPS, and FedEx.
-
-External effects use durable intent, stable idempotency, scoped credentials,
-and authenticated receipts. A timeout or ambiguous response is held for
-reconciliation. It is not blindly retried and it never becomes a fabricated
-receipt.
-
-## Reviews improve the next Make
-
-Reviews begins after the customer receives the box. It records customer
-feedback against the delivered toy and may inform a new Wish or future Make.
-It does not delay the original delivery, mutate that run's evidence, or become
-another Workshop job. Inventors customize Taste, Make, and optionally
-Playtest—not Reviews.
+The CLI default is private. `--publish` records explicit prospective authority
+for the host to promote the exact verified Factory page after private import
+and authenticated readback. Factory credentials are stored outside the run in
+the private Workshop home, loaded only between native turns, and never copied
+into the run workspace or Codex process. A public page is not a Deliver receipt.
 
 ## Shared implementation
 
 ```text
+toys/<toy-id>/              persistent toy project and coding-agent CWD
+  .workshop-product-run-root exact Codex project/instruction boundary
+  AGENTS.md                 product-run constitution
+  .codex/agents/            sole run roster of project-scoped Inventor agents
+  .agents/skills/           materialized workflow, Make, and Inventor skills
+  artifacts/                product work and evidence
+
 inventors/<id>/
-  TASTE.md              selection header + human-owned creative constitution
-  inventor.json         operational id, status, entry point, and checks
-  README.md             niche, operation, evidence, and known limits
-  profile.py or src/    thin Workshop connection and optional hooks
-  tests/                inventor-specific checks
+  TASTE.md                 immutable creative point of view
+  inventor.json            schema-v8 source metadata and skill-tree hashes
+  skills/<id>-inventor/    required primary Codex skill tree
+    SKILL.md               specialist workflow and tool routing
+  skills/<id>-<specialty>/ optional additional Codex skill tree
+    scripts/               optional deterministic specialist tools
+    references/            optional specialist reference material
+    assets/                optional immutable templates and references
 
-src/inventor_workshop/
-  manager.py            one-Wish, Taste-bound inventor assignment
-  toys.py               five categories and their shared task blueprint
-  workshop.py           six-job orchestration and improvement loop
-  jobs.py               typed inputs, results, feedback, and waiting
-  concept.py            wish research, locked design brief, image anchoring, and the artist seam
-  concept_agent_adapters.py  the agent-door wish researcher, RESEARCH_INSTRUCTIONS, and its shared door
-  concept_capabilities.py    concept_capabilities_from_env(), the one committed Concept wiring entry point
-  make.py               Wish and shared making boundary
-  gameplay.py           reproducible AI-player games and leagues
-  playtest.py           exact artifact-bound evidence
-  instructions.py       truthful product-page and box-paper contract
-  deliver.py            production and carrier contract
-  artifacts.py          immutable product and evidence identity
-  runtime.py            state, leases, budgets, and durable effects
-  taste.py              exact human-owned creative constitution
+.agents/
+  product-run/             complete run-only toy-project template
+    AGENTS.md              product-run constitution
+    .agents/skills/autonomous-workshop/
+                           run workflow and proposal finalizer
 
-skills/                 versioned shared making knowledge
-schemas/                portable persisted contracts
-tests/                  shared Workshop invariant tests
+src/
+  cli/                     parsing, presentation, and exit codes only
+  workshop/
+    product/               universal blueprint and baseline checks
+    wish/                  exact customer-intent contract
+    match/                 Inventor roster and assignment contract/gate
+    invent/                concept contract/gate
+    make/                  Made/CAD contracts and deterministic gates
+      skills/              canonical reusable Make domain skills
+    playtest/              evidence, feedback, and Playtested contract/gate
+    release/               local package and Release contract/gate
+    deliver/               truthful wait boundary; future physical effects
+    workflow/              lifecycle/checkpoint protocol and trusted run host
+    artifacts/             immutable artifact identity
+    runtime/               native session and trusted state/effect boundaries
+    integrations/          host-only external adapters
+    contributors/          Taste and Inventor source-manifest tooling
+
+tests/<component>/         tests mirror component ownership
+
+$WORKSHOP_HOME/state/<toy-id>/
+                           trusted checkpoints and effects, outside agent CWD
 ```
 
-Provider adapters may vary, but provider database models never become local
-state authority. Credentials remain outside Taste, prompts, artifacts, events,
-and source.
+The installed distribution is `autonomous-workshop`; application imports begin
+with `workshop`. The `workshop` command lives in the sibling `src/cli/` package.
+Keeping both under `src/` prevents repository tools, fixtures, and tests from
+being imported accidentally.
 
-## Extension rule
+Dependencies follow the product flow. Stage components own narrow contracts
+and deterministic gates. `workflow` alone owns sequencing, and
+`workflow/native_run.py` is the trusted composition root for one whole native
+run. `runtime` owns session/state boundaries. `integrations` owns
+credential-bearing adapters. The CLI calls Workflow's public host service and
+contains no lifecycle, session, gate, effect, or product reasoning.
 
-Put a behavior in Workshop when multiple inventors need the same invariant and
-it can remain independent of Taste. Keep it in the inventor when it expresses
-recognizable judgment, niche-specific generation, or stricter niche Playtest
-logic.
+## Engine portability
 
-Older persisted runs and imports remain readable through compatibility aliases.
-Those aliases are migration details, not alternate jobs or concepts for new
-inventors.
+Manager runtime support is intentionally pluggable:
 
-A scheduler belongs in a future application adapter only when an operator
-actually needs continuous intake. It may create repeated one-shot assignments;
-it must not become a sixth job, hide inside `TASTE.md`, or make every inventor
-carry queue and daemon infrastructure.
+| Manager runtime | Status |
+|---|---|
+| Codex | Implemented |
+| Claude Code | Planned adapter |
+| Grok Build | Planned adapter |
+
+The adapter seam is session start/resume, native specialist delegation, and the
+toy-project protocol—not the content of Codex prompts or one vendor's custom
+agent format. Every future adapter must preserve the root Manager role, exact
+Inventor binding, stage objective and proof condition, `STAGE.json`, exact-byte
+gates, authorization, and effect isolation.

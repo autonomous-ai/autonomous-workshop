@@ -5,16 +5,58 @@ from __future__ import annotations
 
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 WORKSHOP_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(WORKSHOP_ROOT / "src"))
 
-from inventor_workshop.skills import discover_skills  # noqa: E402
+from workshop.make.skill_registry import discover_skills  # noqa: E402
+
+
+def _verify_cadgen_pin(skills_root: Path) -> None:
+    vendored = tomllib.loads(
+        (
+            skills_root
+            / "cad"
+            / "scripts"
+            / "packages"
+            / "cadgen"
+            / "pyproject.toml"
+        ).read_text(encoding="utf-8")
+    )
+    project = vendored.get("project")
+    if not isinstance(project, dict) or project.get("name") != "cadgen":
+        raise ValueError("vendored cadgen metadata is invalid")
+    version = project.get("version")
+    if not isinstance(version, str) or not version:
+        raise ValueError("vendored cadgen version is invalid")
+    expected = "cadgen==%s" % version
+
+    root_document = tomllib.loads(
+        (WORKSHOP_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    root_project = root_document.get("project")
+    dependencies = (
+        root_project.get("dependencies") if isinstance(root_project, dict) else None
+    )
+    if not isinstance(dependencies, list) or expected not in dependencies:
+        raise ValueError("Workshop dependency must pin %s" % expected)
+
+    requirements = [
+        line.strip()
+        for line in (skills_root / "cad" / "requirements.txt")
+        .read_text(encoding="utf-8")
+        .splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if requirements != [expected]:
+        raise ValueError("CAD skill requirements must contain only %s" % expected)
 
 
 def main() -> int:
-    lock_path = WORKSHOP_ROOT / "skills" / "LOCK.json"
+    skills_root = WORKSHOP_ROOT / "src" / "workshop" / "make" / "skills"
+    lock_path = skills_root / "LOCK.json"
     try:
         lock = json.loads(lock_path.read_text(encoding="utf-8"))
         if (
@@ -27,7 +69,7 @@ def main() -> int:
         expected = lock["skills"]
         observed = {
             skill.name: skill.sha256
-            for skill in discover_skills(WORKSHOP_ROOT / "skills")
+            for skill in discover_skills(skills_root)
         }
         if set(expected) != set(observed):
             raise ValueError(
@@ -46,6 +88,7 @@ def main() -> int:
                 file=sys.stderr,
             )
             return 1
+        _verify_cadgen_pin(skills_root)
         print("skill-lock: %d reviewed skill trees match" % len(observed))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as exc:

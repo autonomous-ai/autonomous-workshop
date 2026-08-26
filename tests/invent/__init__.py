@@ -1,0 +1,1 @@
+"""Invent component tests."""

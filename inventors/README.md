@@ -1,79 +1,75 @@
-# Inventors
+# Inventor specialists
 
-Each immediate subfolder is one active inventor. It contains `inventor.json`,
-`TASTE.md`, a `profile.py` entrypoint, operating guidance, tests, and any
-niche-specific implementation the inventor truly owns. `TASTE.md` is the
-human-owned creative constitution: agents read it, outcomes may motivate a
-proposed revision, and self-improvement code cannot rewrite it. Inventors may
-depend on the shared [Workshop root](../README.md); Workshop never imports an
-inventor. Every toy the inventor makes lives under
-`inventors/<id>/toys/<toy-name>/`.
+Each immediate subfolder is one reusable source bundle for a standard native
+subagent. “Inventor” is the Workshop's friendly role name, not a competing
+agent abstraction or product category.
 
-| Inventor | Makes | `TASTE.md` | Custom Make | Custom Playtest |
-|---|---|:---:|:---:|:---:|
-| [Alice](alice/) | classics made yours | ✅ | ⬜ | ⬜ |
-| [Leo](leo/) | games that don't exist yet, built for one table | ✅ | ✅ | ✅ |
-| [ABO](abo/) | abstract strategy games | ✅ | ✅ | ✅ |
-| [Bob](bob/) | machines that move | ✅ | ✅ | ⬜ |
-| [Ivy](ivy/) | science you can hold | ✅ | ⬜ | ⬜ |
-| [Eve](eve/) | little worlds | ✅ | ⬜ | ⬜ |
+```text
+inventors/<id>/
+  inventor.json             schema-v8 source metadata and exact skill hashes
+  TASTE.md                  human-owned creative judgment and Match boundary
+  skills/<id>-inventor/     required primary Codex skill
+    SKILL.md                specialist method and tool routing
+    scripts/                optional tested deterministic tools
+    references/             optional specialist reference material
+    assets/                 optional templates and static inputs
+  skills/<id>-<specialty>/  optional additional Codex skill
+```
 
-Every inventor owns a `TASTE.md`. Leo and ABO also own their own Make and
-Playtest, because inventing rules and measuring a table are theirs alone; Bob
-owns his Make, because a machine that moves is designed differently from
-anything else. Leo's and Bob's Make seams are typed and waiting — a run stops
-and says so rather than faking a result.
+`inventor.json` contains only the stable id, status, source, and sorted
+content-bound skill records. It does not decide what a person may Wish for or
+which kinds of product the Inventor is allowed to make. Match compares the
+exact Wish with the full Taste and method of every eligible Inventor.
 
-Leo and ABO share the `invented-games` lane and are separated by Taste, not by
-category. Leo builds a game around the people who will play it: their
-obsessions, memories and private jokes become mechanism. ABO refuses exactly
-that Wish and invents abstract structure instead — few piece types, depth from
-combinatorial complexity, every distinction carried by shape. ABO is also the
-repository's first `source.kind=upstream-snapshot` inventor: its simulation and
-manufacturing harness was imported from a pinned external commit and is locked
-byte-for-byte, with the provenance recorded in [`abo/UPSTREAM.md`](abo/UPSTREAM.md).
+For each product run, the host validates these source bundles and
+deterministically projects them into official project-scoped
+`.codex/agents/<id>.toml` custom agents. `.codex/agents/*.toml` is the sole
+Inventor identity, Taste, and skill roster inside that toy project; there is no
+second run-local identity tree. One persistent native Codex session acts as
+Workshop Manager and uses Codex's own subagent controls to spawn the selected
+Inventor.
 
-## Five Workshop toys
+Each Match, Invent, Make, Playtest, or Release attempt has one active native
+Codex Goal. The Manager and its native children observe, act, evaluate, and
+improve while pursuing that Goal. Inventor scripts do not implement this loop.
+They may provide bounded deterministic specialist operations such as CAD
+generation, simulation, parsing, or evaluation, but they must not launch
+agents, schedule prompts, choose lifecycle transitions, waive gates, access
+credentials, or perform external effects.
 
-All five inventors used the shared Workshop Make and Playtest contracts to
-create these checked-in digital prototypes. *Playtest rounds* is how many times
-that wish paid for Playtest to test the toy and send it back to Make:
+The bundled Inventors currently use one concise instructions-only primary
+skill each. Shared CAD, simulation, and evidence tooling stays in Workshop.
 
-| Inventor | Toy | Playtest allowance | Current state |
-|---|---|---:|---|
-| Alice | [Five-Job Checkers](alice/toys/five-job-checkers/) | 2 rounds | Instructions: site access needed |
-| Leo | [Counterorbit](leo/toys/counterorbit/) | 10 rounds | Instructions: site access needed |
-| Bob | [Comet Geneva](bob/toys/comet-geneva/) | 4 rounds | Instructions: site access needed |
-| Ivy | [Montauk Tide Orrery](ivy/toys/montauk-tide-orrery/) | 3 rounds | Instructions: site access needed |
-| Eve | [Rackhaven: Night Shift](eve/toys/rackhaven-night-shift/) | 3 rounds | Instructions: site access needed |
+| Inventor | Native skill |
+|---|---|
+| Alice | `alice-inventor` |
+| Bob | `bob-inventor` |
+| Eve | `eve-inventor` |
+| Ivy | `ivy-inventor` |
+| Leo | `leo-inventor` |
 
-Open a toy to see its exact render, STEP/STL files, complete AI Playtest
-evidence, sealed page bundle, content-addressed manifests, and Workshop
-receipt. All five pass Playtest and wait in Instructions only because the build
-environment has no Workshop site credential. Printing, hands-on QA, packing,
-and shipment belong to Deliver; customer feedback begins afterward as Reviews
-and may inform a future revision of the same toy and future Wishes without
-changing shipped bytes.
+`TASTE.md` begins with the bounded `name` and `description` used for Match.
+Verified run evidence may motivate a proposed Taste or skill revision, but only
+a human changes the reusable source bytes.
 
-Every creation belongs under `inventors/<id>/toys/<toy-name>/`, whether it is
-a tabletop game, a moving machine, holdable science, or a little world. Do not
-split an inventor's work into sibling `games/` or `products/` collections.
-
-Create the next inventor from the repository root:
+Create a base specialist from the repository root using an existing Taste:
 
 ```bash
-python3 -m pip install -e .
-workshop create inventor pocket-orreries \
-  --name Ada \
-  --description "Choose Ada for personalized printable orbit models; not kinetic spectacle, tabletop rules, or decorative miniatures." \
-  --lane holdable-science \
-  --level taste-only \
+uv run workshop create inventor \
+  --taste ./TASTE.md \
   --root .
 ```
 
-The command writes `inventors/pocket-orreries/`. Give the inventor a Wish
-boundary, its own Taste, and only the niche-specific Make or Playtest work it
-truly needs. Reuse the Workshop's artifact handling, durable runtime, and
-adapters instead of creating
-new branded stages for those implementation details. Keep prompts, generators,
-evaluators, and the reward hypothesis in the inventor folder.
+Or generate the initial Taste and skill from explicit identity text:
+
+```bash
+uv run workshop create inventor pocket-orreries \
+  --name Ada \
+  --description "Choose Ada for personalized orbit models with legible motion; not generic decor." \
+  --root .
+```
+
+Reusable Workshop-wide deterministic tools belong to the stage that owns them
+under `src/workshop/`; genuinely Inventor-specific tools may remain in the
+source bundle. Product artifacts belong to the private toy project and are not
+stored under `inventors/`.

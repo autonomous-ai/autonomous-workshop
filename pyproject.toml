@@ -1,18 +1,45 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "inventor-workshop"
-version = "0.5.0"
+name = "autonomous-workshop"
+version = "0.6.0"
 description = "A request-driven toy workshop that routes each Wish to the right inventor"
-requires-python = ">=3.9"
-dependencies = []
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+dependencies = ["cadgen==0.4.19", "pillow>=10.0"]
+
+[project.urls]
+Homepage = "https://github.com/autonomous-ai/autonomous-workshop"
+Repository = "https://github.com/autonomous-ai/autonomous-workshop"
+Documentation = "https://github.com/autonomous-ai/autonomous-workshop/tree/main/docs"
 
 [project.scripts]
-workshop = "inventor_workshop.cli:main"
-inventor-workshop = "inventor_workshop.cli:main"
-inventor-foundation = "inventor_workshop.cli:main"
+workshop = "cli.main:main"
+
+[tool.setuptools]
+include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["workshop*", "cli*"]
+
+[tool.setuptools.package-data]
+workshop = [
+  "artifacts/schemas/*.json",
+  "contributors/schemas/*.json",
+  "runtime/schemas/*.json",
+  "make/schemas/*.json",
+  "make/skills/*",
+  "make/skills/**/*",
+]
+
+[tool.setuptools.exclude-package-data]
+workshop = [
+  "make/skills/**/__pycache__/*",
+  "make/skills/**/*.pyc",
+  "make/skills/**/*.pyo",
+]

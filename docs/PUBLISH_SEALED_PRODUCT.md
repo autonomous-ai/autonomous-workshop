@@ -1,92 +1,113 @@
-# Create one sealed product draft
+# Publish a sealed product
 
-`tools/publish_sealed_product.py` is the generic Workshop path from completed
-Instructions to a private Factory **model draft**. It does not run Make or
-Playtest, and it has no operation that makes a draft public.
+Factory publication is a host effect after Release, not product-run agent work.
 
-The checked-in descriptor is a small locator, not a second product record. Its
-hashes bind the inventor's exact `TASTE.md`, the final Make tree, the final
-Playtest evidence tree and index, and the Instructions tree. The Wish,
-structured product facts, inventor attribution, and Playtest claims are
-reconstructed from those sealed roots and cross-checked before the first
-network request.
+## What Release supplies
 
-```json
-{
-  "schema_version": 1,
-  "kind": "workshop.sealed-private-draft",
-  "inventor_id": "alice",
-  "taste_sha256": "<sha256 of inventors/alice/TASTE.md>",
-  "make": {
-    "root": "inventors/alice/toys/example/project",
-    "manifest": "inventors/alice/toys/example/playtest/round-03/make-manifest.json",
-    "artifact_sha256": "<Make artifact sha256>"
-  },
-  "playtest": {
-    "root": "inventors/alice/toys/example/playtest/round-03",
-    "evidence_artifact_sha256": "<Playtest evidence artifact sha256>",
-    "index_sha256": "<sha256 of evidence-index.json>"
-  },
-  "instructions": {
-    "root": "inventors/alice/toys/example/instructions",
-    "manifest": "inventors/alice/toys/example/instructions-manifest.json",
-    "artifact_sha256": "<Instructions artifact sha256>"
-  }
-}
-```
+The native Codex session writes a complete schema-v3, page-ready package at
+`artifacts/release/package` with at least:
 
-The final Make root must contain root `wish.json`, `product.json`, and
-`project.json`. A project-marker artifact must also seal its primary model at
-root as `assembled.stl` (Factory's preferred name) or `<product-id>.stl`; a
-top-level Python generator defining `gen_step` is the alternative. A nested
-`cad/product.stl` alone is rejected because Factory may select a small part
-instead. The selected round must seal exactly the lane's required AI
-Playtest capabilities, with every result passing and no `improve` or `block`
-feedback. Instructions must contain `INSTRUCTIONS.md` and an exact
-`product.json` content brief. Local renders may remain in the sealed source as
-design/inspection evidence, but they are not Factory marketing media.
+- `MANUAL.md`;
+- canonical `product.json` with `kind=workshop.release-package`,
+  `status=page-ready`, and exact Made and passing-Playtest hashes;
+- evidence-derived claims, `title`, `summary`, `hero`, `cinematic`, `use_case`,
+  one or more `story_blocks`, `what_arrives`, and `limitations`. Every page
+  section carries `headline`, `body`, `visual_direction`, and valid
+  `evidence_refs`.
 
-The command derives a dedicated model handoff Pack from the sealed Make. It
-keeps printable/model files and writes `workshop-product-facts.json`, while
-omitting `review`, `*_review`, `renders`, `product-media`, and other local
-inspection/media trees. It sends no multipart thumbnail, makes no `/uploads`
-calls, and never writes `use_case` or `story_blocks`. This lets Factory own the
-later images and copy instead of allowing a local CAD preview to override them.
-The multipart `prompt` is a bounded factual story input assembled from the
-verified Wish, product description, components, rules/instructions, optional
-design facts/specifications, structured story and art direction, limitations,
-and exact inventor credit.
-It is not final page copy; Factory authors that output.
+Release is one native Codex Goal whose stopping condition is a successful
+Release finalizer for the current checkpoint. While pursuing it, Codex observes
+the exact Made product and passing Playtest evidence, writes the manual and
+complete product page, evaluates every claim and evidence reference against
+exact hashes, and improves the package.
 
-Provide credentials only through the process environment:
+That fact-check/write/review loop is native Codex behavior, not Python.
+
+The run-local finalizer hashes the package and writes the canonical Release
+contract. After it succeeds, Codex completes the Goal and returns to the host.
+The host rereads and seals the whole tree before contacting Factory. Codex owns
+the complete page copy and visual direction; Factory transports the exact
+sealed page, `MANUAL.md`, and model bytes without creative enrichment. After
+private import, the host copies the exact compatible `use_case` and
+`story_blocks` text through Factory's curated-content endpoints and requires
+authenticated exact readback before optional publication. Factory currently
+accepts 1–40 plain-text characters for each heading, 180–400 for each body,
+and at most 10 story blocks; the handoff fails instead of truncating or
+paraphrasing content outside those limits. The imported cover supplies the
+required use-case image. Hero, cinematic, visual-direction, evidence-reference,
+what-arrives, limitation, and manual presentation have no equivalent rich-page
+fields today; their authoritative exact bytes remain in the downloadable
+sealed project until Factory's page contract grows. The local package
+must not contain credentials, remote receipts, images, audio, video, or
+unsupported claims of manufacture, physical performance, human response,
+publication, or delivery.
+
+## Private by default
+
+Start a normal private run with:
 
 ```bash
-export WORKSHOP_SHOP_TOKEN='...'
-export WORKSHOP_SHOP_OWNER_ID='...'
-python3 tools/publish_sealed_product.py \
-  inventors/alice/toys/example/private-draft.json --verify-draft
+uv run workshop wish "I wish for ..."
 ```
 
-The token is never a command-line argument and is never written to the durable
-ledger or command output. The ignored retry ledger lives at
-`.runtime/sealed-product-publication/<product-id>/workshop.sqlite3`. The first
-attempt requires the canonical slug to be unused; a successful retry replays
-the exact recorded draft instead of importing again.
+If Factory authentication is configured, the host can import the validated
+model, manual, and page as a private draft, write the exact compatible rich
+content, and reconcile authenticated readback. Codex does not see credentials
+or perform the import.
 
-A successful result deliberately reports:
+## Explicit public promotion
 
-```json
-{"enrichment_status":"pending","page_ready":false}
+Use `--publish` only when a public Factory page is intended:
+
+```bash
+uv run workshop wish --publish "I wish for ..."
 ```
 
-That is a handoff, not a claim that Factory has produced final marketing
-images, story copy, or video. A separate, authenticated content pipeline must
-confirm whatever enrichment it actually supports before anything may call the
-product page ready. The currently deployed media worker must not be assumed to
-produce video.
+or record that prospective authority while resuming the same run:
 
-This command is only for the first draft. It refuses an existing canonical
-slug. Redoing an existing product must use the separate, durable same-design
-version workflow (`unpublish`, then `POST /designs/{slug}/import`, then
-authenticated readback); never work around the refusal with another
-`POST /designs/import`, which would duplicate the design.
+```bash
+uv run workshop resume --publish <wish-id>
+```
+
+The host still validates the exact Release package, performs/reconciles the
+private import, and then promotes the verified remote product. The publication
+receipt is stored in host-only state and bound to exact artifact hashes. It is
+not written by Codex and is not accepted from `agent-outcome.json`.
+
+## Credentials
+
+Supply Factory credentials through the private
+`$WORKSHOP_HOME/credentials/factory.env` file (preferred) or a supported
+ephemeral host environment or secret manager. The trusted host loads the
+private file only when no native agent turn is running. Never put credentials
+in a Wish, prompt, `TASTE.md`, product-run
+workspace, Release package, source file, or commit. The Codex subprocess gets a
+scrubbed environment.
+
+## Recovery
+
+After a timeout, disconnect, or malformed Factory response, do not blindly
+repeat the effect. `workshop resume <wish-id>` loads the stored intent and exact
+Release identity, authenticates in the host, and reconciles remote state before
+any bounded retry. If readback cannot prove completion or absence, the run
+stops unknown/needs-human.
+
+A private or public Factory page proves only that remote page state. It does
+not prove printing, QA, packing, shipment, delivery, or customer response.
+
+## Showcase products
+
+Showcases use this same native Wish pipeline; there is no separate Python
+showcase builder or publisher. Start a representative Wish and keep its Wish
+id:
+
+```bash
+uv run workshop wish --publish "<showcase Wish>"
+```
+
+The native session must complete Match, Invent, Make, Playtest, and Release
+from that Wish, and the host must verify the exact CAD, evidence, and package
+bytes before performing Factory effects. Never publish a checked-in fixture,
+old outbox, hand-authored receipt, or legacy paper bundle as if it were the
+output of a current run. Documentation images and links are examples, not gate
+evidence for a new product.

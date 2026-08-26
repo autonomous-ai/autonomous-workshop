@@ -1,9 +1,14 @@
 {
-  "schema_version": 5,
+  "schema_version": 8,
   "id": "eve",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "little-worlds", "personalization", "taste-only", "default-make", "default-playtest"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
-  "source": {"kind": "local"}
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "eve-inventor",
+      "path": "skills/eve-inventor",
+      "artifact_sha256": "71b5d9ec9e3767444465e585f8d8664997713a9495d3a259b69aa3a339d305d3"
+    }
+  ]
 }

@@ -1,15 +1,17 @@
 # Autonomous Workshop
 
-You wish for a toy that doesn't exist. A few days later, it arrives at your
-door. Not from a shelf. From your imagination. Welcome to Autonomous Workshop,
-where human and AI Inventors come together to make toys the world has never
-seen.
+You wish for a toy that doesn't exist. A few days later, it arrives at your door. 
 
-[![A peek inside the Autonomous Workshop: how a Wish becomes a toy, from Match and Invent through Make, Playtest, Instructions, Deliver, and Reviews](docs/images/workshop-floorplan.svg)](docs/images/workshop-floorplan.svg)
+Not from a shelf. From your imagination.
+
+Welcome to Autonomous Workshop, where human and AI Inventors make toys the world has never seen.
+
+[![A peek inside the Autonomous Workshop: a pluggable coding-agent runtime manages a Wish through Match, Invent, Make, Playtest, Release, Deliver, and Reviews](docs/images/workshop-floorplan.svg?version=agentic-runtime-toys-v2)](docs/images/workshop-floorplan.svg)
 
 ## Meet some of the inventors
 
-Here are five, one for each kind of toy. Many more are coming, and you can
+Here are five distinct points of view. They are examples, not categories or
+limits on what people can Wish for. Many more are coming, and you can
 [build your own](#build-your-own-inventor).
 
 ### Alice — reinvent the classics
@@ -23,300 +25,284 @@ so the set is about you. It is judged as an object, not as a game.
 
 ### Leo — invent games that don't exist yet
 
+Brand new games, invented for one wish: new rules, new pieces, a new reason to
+sit at a table. Leo is especially drawn to rules that reward discovery and
+counterplay. Before Release, AI players must finish the required seeded games
+and expose broken rules, loops, exploits, and weak strategies. Whether
+customers want to play again is learned later from Reviews, after they receive
+the game.
+
 https://github.com/user-attachments/assets/36ffa63e-6e36-4422-8db7-bb1545b3bdb7
 
 *[Blindcap: Duel](https://www.autonomous.ai/factory/product/blindcap-duel)
 — a two-player hidden-information strategy game of mushrooms, probes, and crowns*
 
-Brand new games, invented for one wish: new rules, new pieces, a new reason to
-sit at a table. Leo is the only inventor allowed to invent rules. Before
-Instructions, his AI players must finish the required seeded games and expose
-broken rules, loops, exploits, and weak strategies. Whether customers want to
-play again is learned later from Reviews, after they receive the game.
-
 ### Bob — invent machines that move
-
-https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
-
-*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
-— a palm-size, rubber-band-powered quadruped*
 
 Things that do one delightful thing when you wind them up, let them go, or drop
 something in. No motors, no batteries, no electronics — the movement has to come
 out of the shape itself. That makes this the hardest kind to get right and the
 best to watch when it works.
 
-### Ivy — invent science toys you can hold
+https://github.com/user-attachments/assets/ba57de75-37e2-45e8-a71f-2a339b0de49a
 
-![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
-*A solar system with its orbits engraved — $59.99*
+*[Trotter](https://www.autonomous.ai/factory/product/spot-quadruped-robot-wind-up-walker)
+— a palm-size, rubber-band-powered quadruped*
+
+### Ivy — invent science toys you can hold
 
 The planets, a swinging pendulum, a shape that looks impossible — real science,
 small enough to pick up. Ivy says where her numbers came from and what she left
 out, because here being wrong is worse than being boring.
 
-### Eve — invent little worlds
+![A solar system with its orbits engraved](docs/images/ivy-solar-system.jpg)
+*A solar system with its orbits engraved — $59.99*
 
-![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
-*A 1:16 Formula 1 car*
+### Eve — invent little worlds
 
 Your dog, your bike, your desk, your homelab — turned into a small world you can
 put on a shelf. Anyone can buy a generic model of anything. Eve's only counts if
 it could not have existed before your wish.
 
+![A 1:16 Formula 1 car](docs/images/eve-f1-car.jpg)
+*A 1:16 Formula 1 car*
+
 Several inventors can make the same kind of toy in their own way, and picking
 one works the same whether there are five of them or a thousand.
 
-## Build your own inventor
+## Quick start
 
-Choose how much the Inventor owns, set the Playtest allowance, then create and
-run it.
-
-### 1. Choose an extension level
-
-Start with the least you need.
-
-| Inventor brings | Workshop supplies |
-|---|---|
-| **`TASTE.md`** | Concept, Make, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **`TASTE.md` + Custom Make** | Concept, Playtest and its feedback loop, Instructions, Deliver, storage, files, and connections |
-| **`TASTE.md` + Custom Make + Custom Playtest** | Concept, the improvement loop around Make and Playtest, Instructions, Deliver, storage, files, and connections |
-
-The CLI calls these levels `taste-only`, `custom-make`, and `custom-playtest`.
-
-Custom Playtest requires Custom Make. Instructions and Deliver are always
-shared. Instructions creates the in-box guide and factual content brief,
-preserves the terminal `By <Inventor>.` attribution, puts a model-only handoff
-in Factory as a private draft, and records authenticated draft readback before
-Deliver can begin. It uploads no local marketing images and writes no final
-page copy. The receipt remains `enrichment_status=pending` and
-`page_ready=false` until a separate Factory content pipeline proves otherwise.
-It does not make the page public or require an active listing. An owner reviews
-the finished draft and may make it public later, outside the six-job pipeline.
-
-#### Custom Make
-
-A custom Make is one function. `workshop create inventor … --level custom-make`
-writes it for you, already wired up and waiting:
-
-```python
-from inventor_workshop import Made, MakeContext, Need, WaitingFor
-
-
-def make(context: MakeContext) -> Made:
-    # context.wish   — the person's words, unchanged
-    # context.taste  — this inventor's TASTE.md
-    # context.feedback — what Playtest said last round, empty on round 1
-    # context.workspace — an empty folder to write parts into
-    raise WaitingFor(Need("make", "inventor-make", "not connected yet",
-                          "Return a Made record bound to exact artifact bytes."))
-```
-
-Replace the wait: design the thing, write the files into `context.workspace`,
-and return a `Made`. Until you do, a run stops and says what it is waiting for
-instead of inventing a result.
-
-#### Custom Playtest
-
-A custom Playtest is the same shape. `--level custom-playtest` writes this one
-too:
-
-```python
-from inventor_workshop import Playtested, PlaytestContext, Need, WaitingFor
-
-
-def playtest(context: PlaytestContext) -> Playtested:
-    # context.made — the exact revision to test, bytes and all
-    # everything else is the same as Make
-    raise WaitingFor(Need("playtest", "inventor-playtest", "not connected yet",
-                          "Return Playtested evidence for the exact Make."))
-```
-
-Test the thing and return `Playtested`: the evidence, tied to the exact bytes
-you were handed, plus a list of `Feedback` — a code, an area, a severity
-(`note`, `improve`, or `block`), what you found, and what to change. Anything
-worse than a note sends the toy back to Make with your notes in
-`context.feedback`, and round 2 begins. That loop is the whole job: Make and
-Playtest talking until the evidence passes or the rounds run out.
-
-### 2. Choose the Playtest allowance
-
-Checkout decides how many times an inventor may improve a toy before it has to
-pass or stop:
-
-```python
-quick = workshop.run(wish, playtest_rounds=2)
-deep = workshop.run(wish, playtest_rounds=10)
-```
-
-The words of a wish can never buy money or compute — only checkout can. Passing
-early ends it early. Running out of rounds stops the toy before it is written up
-or shipped. More rounds buy more tries, never an easier bar.
-
-### 3. Create and run it
-
-You need Python 3.9 or newer. Creating one checks the layout and runs its own
-smoke tests before the inventor can receive a wish.
+Requires Python 3.11 or newer and a signed-in Codex CLI 0.145.0 or newer. Workshop
+uses the developer's existing Codex subscription; it does not require a second
+model API key.
 
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -e .
 
-workshop create inventor ada \
-  --name Ada \
-  --description "Choose Ada for Wish-shaped hand-cranked creatures; not static models, tabletop rules, or science explainers." \
-  --lane moving-machines \
-  --level custom-make \
-  --root .
+uv run workshop doctor
+uv run workshop wish \
+  "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-The other kinds are `classics-made-yours`, `invented-games`,
-`holdable-science`, and `little-worlds`. Write a `TASTE.md` nobody could mistake
-for another inventor's, then add only the custom parts it really needs.
+Every Wish first creates one persistent toy project under `toys/`, populates
+its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
+native Codex session with that toy project as its working directory. The same
+session Matches an Inventor subagent, researches and Invents the concept,
+builds and repairs the CAD, Playtests the exact product, then writes the Release
+package:
+
+```text
+Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
+```
+
+For each active Match, Invent, Make, Playtest, or Release attempt, Codex creates
+one native Goal with one objective, proof artifacts, and a verifiable stopping
+condition: the current stage finalizer succeeds. Only one Goal is active at a
+time. While pursuing it, Codex observes the current artifact, acts with its
+native tools and subagents, evaluates exact output, and improves it. This is
+Codex's work loop inside the Goal, not a Python loop. The host checkpoint stays
+the durable authority, and Wish and Deliver remain host boundaries. This uses
+the official Codex patterns for [following a durable
+Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
+evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
+
+The universal digital Playtest baseline is `agent-playtest`,
+`mechanical-check`, and `printability-check`. These are Codex-authored
+assessments unless the host replays deterministic evidence or a physical
+receipt explicitly proves more. AI evidence never proves a successful print,
+physical fit, durability, or human response.
+
+Release is deliberately broader than “instructions.” Codex writes `MANUAL.md`
+and canonical schema-v3 page-ready product data: evidence-bound hero,
+cinematic, use-case, story-block, what-arrives, limitation, and claim content.
+Factory transports those exact sealed page and model bytes; it does not own a
+creative enrichment step. The default is private. Add `--publish` only when
+the verified page should be promoted to a public Factory listing:
 
 ```bash
-python -m pip install -e inventors/ada
-ada run --playtest-rounds 4 first-wish \
-  "I wish my bicycle became a hand-cranked climbing creature"
+uv run workshop wish --publish \
+  "I wish for a pocket-size moon-phase machine I can turn by hand"
 ```
 
-With no wish researcher, image provider, model, CAD worker, printer, or carrier
-connected, a run says exactly what it is waiting for. It never passes off a
-placeholder as a finished toy. Concept alone can wait for three things —
-`wish-research`, `concept-images`, and `exploded-view-check` — and it waits
-rather than substituting default physical facts for research that did not
-happen.
+Factory credentials live in the host-only
+`$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
+or in a compatible host environment for ephemeral deployments. They are loaded
+only outside a native agent turn and are never passed into Codex. Publication
+does not claim that a physical toy was printed, packed, or delivered. Deliver
+waits until separately authorized production and shipment receipts exist.
 
-### Connecting the shared Concept capabilities
+The command prints a Wish ID. Use that ID to inspect or continue the same
+session after a process interruption:
 
-Concept's three capabilities each settle on exactly one implementation:
-`concept-images` and `exploded-view-check` are satisfied by an HTTP adapter,
-and `wish-research` by a shared, tool-using coding-agent process — the
-agent-backed path fits `wish-research` better because that capability needs
-genuine grounded search, not a single provider's built-in web plugin. Each
-adapter is configured entirely by its caller: no vendor is assumed, and every
-value is read through `load_dotenv` so a real environment variable always
-wins over one in `.env`.
+```bash
+uv run workshop status <wish-id>
+uv run workshop resume <wish-id>
+```
 
-| Capability | Adapter | Environment |
-|---|---|---|
-| `concept-images` | `OpenRouterConceptArtist.from_env()` | `OPENROUTER_API_KEY`, and optionally `OPENROUTER_IMAGE_MODEL` / `OPENROUTER_API_BASE` |
-| `exploded-view-check` | `OpenAICompatibleExplodeInspector.from_env()` | `CONCEPT_EXPLODE_INSPECTOR_BASE_URL`, `CONCEPT_EXPLODE_INSPECTOR_API_KEY`, `CONCEPT_EXPLODE_INSPECTOR_MODEL` |
-| `wish-research` | `AgentWishResearcher`, built on `concept_agent_session_door_from_env()` | `AGENT_DOOR_LAUNCH_COMMAND` plus the `wish-research` role's own tool/path/wall-clock configuration (below), and `CONCEPT_WISH_RESEARCH_BUDGET_MICROS` |
+If a deterministic gate fails or a required tool or authorization is missing,
+the run waits with a concrete need. It never starts a replacement session or
+treats model prose as proof.
 
-None of them is wired into an inventor by the module that defines it. A Workshop
-that has not been given one keeps waiting truthfully for that capability.
+## How the runtime is divided
 
-#### The shared agent door
+The selected coding-agent runtime does nearly all product work: discovery,
+Match judgment, research, concept exploration, design, CAD iteration, artifact
+inspection, AI Playtest, repair, manual writing, and complete evidence-bound
+product-page content. Manager runtime support is deliberately pluggable:
 
-`AgentSessionDoor` (`agent_session.py`) is the real `ModelDoor` that runs the
-wish-research capability's launched process. `AgentWishResearcher`
-(`concept_agent_adapters.py`) dispatches through it under the `wish-research`
-role name. `concept_agent_session_door_from_env()` builds that shared door
-the same way the HTTP adapters above build themselves — no vendor or binary
-is assumed, and a real environment variable always wins over one in `.env`:
-
-| Variable | Meaning |
+| Workshop Manager runtime | Status |
 |---|---|
-| `AGENT_DOOR_LAUNCH_COMMAND` | The caller's own headless agent CLI invocation, e.g. `"agent-cli --headless --output-format json"`, split the way a shell would |
-| `AGENT_DOOR_WISH_RESEARCH_TOOLS` | Comma-separated tool names the launched process gets for the `wish-research` role |
-| `AGENT_DOOR_WISH_RESEARCH_ALLOWED_PATHS` | Comma-separated paths/globs the launched process may touch for the `wish-research` role |
-| `AGENT_DOOR_WISH_RESEARCH_WALL_CLOCK_SECONDS` | The hard wall-clock bound for the `wish-research` role's process |
-| `AGENT_DOOR_WISH_RESEARCH_MAX_BUDGET_MICROS` | Optional ceiling on the dollar budget any call to the `wish-research` role may be given |
+| Codex | Implemented |
+| Claude Code | Planned adapter |
+| Grok Build | Planned adapter |
 
-`_TOOLS`, `_ALLOWED_PATHS`, and `_WALL_CLOCK_SECONDS` are all required. The
-door builds the launched process's actual tool and file access from this
-configuration — never from anything the role's own request or output claims
-about itself; see [Contributing](CONTRIBUTING.md).
+Every adapter must preserve the same toy-project, stage-objective, checkpoint,
+gate, and effect boundaries.
 
-`AGENT_DOOR_WISH_RESEARCH_TOOLS` must name a tool that gives the launched
-process real web-search access for the agent-backed path to add anything
-over an HTTP one — the wish-research task instructions ask the process to
-search the web, but nothing in this codebase can verify that the tool named
-here actually performs a real search; that is an operator responsibility, not
-a checked contract.
+The root coding-agent session plays the **Workshop Manager** role. With today's
+adapter, that is Codex using standard Codex-native subagents for bounded Match
+analysis, the selected Inventor specialist, and independent inspection. An
+Inventor is our friendly product-language name for one of those normal native
+subagent roles, not a second agent framework. The root remains the one session
+the host starts and resumes; Workshop does not schedule agents in Python.
 
-#### `concept_capabilities_from_env()`
+The materialized `autonomous-workshop` skill is the Manager's workflow
+playbook—stage order, artifact protocol, gates, and authority boundaries. It is
+not a separate “Workshop Manager agent.”
 
-`concept_capabilities_from_env()` (`concept_capabilities.py`) is the one
-committed entry point that wires all three capabilities at once, in this
-exact, settled configuration. Construction fails closed: if any capability's
-configuration is missing, it fails before any of the three is exercised,
-naming whichever capability (`concept-images`, `exploded-view-check`, or
-`wish-research`) is unconfigured.
+The Python host is intentionally narrow. It preserves identity and exact
+bytes, enforces lifecycle order and round budgets, launches/resumes the native
+session under an exact-toy-root Codex permission profile, validates contracts
+and deterministic evidence, isolates credentials,
+and performs authorized external effects idempotently. It does not contain a
+parallel Python agent, profile subprocess, prompt chain, semantic judge, or
+reward loop.
 
-```python
-from inventor_workshop.concept_capabilities import concept_capabilities_from_env
+See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) for the full
+boundary and [Workshop architecture](docs/ARCHITECTURE.md) for component
+ownership.
 
-concept = concept_capabilities_from_env()
+## Build your own Inventor
+
+An Inventor is a declared specialist bundle materialized as a standard Codex
+project-scoped custom agent under `.codex/agents/`. Every one has `TASTE.md`
+for creative judgment plus a small schema-v8 `inventor.json` for stable source
+metadata and exact skill-tree hashes. Each Inventor owns one required primary
+skill named `<id>-inventor`; it may declare additional Inventor-prefixed skills
+with scripts, references, assets, or tested deterministic CAD/domain tools.
+For a run, `.codex/agents/*.toml` is the sole Inventor identity, Taste, and
+skill roster. The root Manager asks Codex to spawn the selected custom agent
+from those exact host-materialized bytes.
+
+This follows Codex's official [subagent and project-scoped custom-agent
+convention](https://learn.chatgpt.com/docs/agent-configuration/subagents); the
+Workshop adds the Inventor name, Taste, product craft, and lifecycle boundary.
+
+Inventor code supplies specialist operations, not orchestration: it cannot
+launch agents, choose Workshop stages, pass gates, or perform authenticated
+effects. Bundled Inventors use concise Codex skills; add scripts or other
+custom logic only when the craft is genuinely specialist.
+
+```bash
+uv run workshop create inventor \
+  --taste ./TASTE.md
 ```
 
-Nothing wires this entry point into any inventor's run automatically — that
-remains a caller's own explicit choice, consistent with every adapter above
-being opt-in.
+A useful `TASTE.md` has a name, a discriminating one-line description, and a
+recognizable point of view:
 
-See [Build an inventor](docs/BUILD_AN_INVENTOR.md) and
-[Workshop architecture](docs/ARCHITECTURE.md).
+```markdown
+---
+name: Ada
+description: Choose Ada for hand-cranked creatures; not static models or games.
+---
 
-## What is in here
+# Ada's taste
 
-Shared code lives at the root. Only an inventor's taste and its own hooks live
-under `inventors/`.
+I love mechanisms whose motion tells the story. I reject decoration without play.
+```
 
-- `inventors/` — the first five, any you add, and each inventor's
-  `toys/<toy-name>/` creations
-- `src/inventor_workshop/` — picking an inventor, the six jobs, the shared runner
-- `skills/` — locked CAD and STEP knowledge for making parts
-- `schemas/` — the shapes files and proof have to take
-- `docs/` — how it is built and how to add an inventor
-- `tests/` — the rules the Workshop must never break
-- `tools/` — checks for locks, provenance, and secrets
+- [Alice](inventors/alice/TASTE.md) — personal heirloom editions of known games
+- [Leo](inventors/leo/TASTE.md) — original games whose personalization changes play
+- [Bob](inventors/bob/TASTE.md) — kinetic machines where the mechanism is the spectacle
+- [Ivy](inventors/ivy/TASTE.md) — science and mathematics made physically legible
+- [Eve](inventors/eve/TASTE.md) — real people, spaces, and objects made into little epics
 
-## What the Workshop will not fake
+Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 
-- Proof that is missing, old, broken, timed out, or of the wrong kind is not a
-  pass.
-- Proof follows the exact bytes of the thing it tested, through every repair.
-- Change the rules or the parts and the proof that depended on them is void.
-- A generated picture counts as proof only when it shows the exact thing that
-  passed. Concept art stays labelled as concept art.
-- When a step outside the Workshop ends unclear — a print, an upload, a handover
-  — it waits and checks instead of trying again blindly.
-- "Good enough" means the pinned rules passed inside the time, tries, and money
-  allowed. An inventor may kill its own idea. It may never lower the bar to save
-  one.
+## Repository structure
 
-## Later
+The installed distribution is `autonomous-workshop`. Python code imports the
+`workshop` package, and the `workshop` command is implemented by the sibling
+`src/cli/` package. The `src/` layout keeps repository-only files from being
+imported accidentally.
 
-Something could feed wishes in around the clock. Toys could arrive as kits you
-build, or as numbered sets people collect. Those are options, not new jobs, and
-none of them is needed for the first Workshop.
+- [`toys/`](toys/) contains the persistent toy projects and is the working
+  directory for each native runtime session. Every toy project contains its
+  product-run `AGENTS.md`, standard custom Inventors under `.codex/agents/`,
+  workflow and craft skills under `.agents/skills/`, its exact Inventor roster,
+  and its Wish-to-Release artifacts.
+- [`.agents/product-run/`](.agents/product-run/) is the complete isolated
+  template copied into every new toy project before the runtime starts.
+- [`inventors/`](inventors/) contains reusable Inventor sources: manifest,
+  Taste, required primary skill, and any additional specialist skills or tools.
+- [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
+- [`src/workshop/`](src/workshop/) is the narrow trusted host, organized by
+  Wish, Match, Invent, Make, Playtest, Release, Deliver, workflow, runtime,
+  contracts, gates, and integrations.
+- [`src/workshop/make/skills/`](src/workshop/make/skills/) holds the canonical
+  shared CAD and making skills.
+- [`tests/`](tests/) mirrors the component ownership and contains the full
+  deterministic and installed-package acceptance suite.
+- [`docs/`](docs/) contains the architecture, runtime protocol, evidence, and
+  contributor guides.
+
+Trusted checkpoints, receipts, credentials, and effect state live outside the
+coding-agent working directory under `$WORKSHOP_HOME/state/<toy-id>/`. A toy
+project remains useful and inspectable without exposing host authority. New
+runtime-created toy projects are ignored by Git by default; only explicitly
+reviewed showcase or historical projects should be allowlisted for a commit.
+
+Shared code is organized by architecture component under `src/workshop/`:
+`product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
+`deliver`, `workflow`, `artifacts`, `runtime`, `integrations`, and
+`contributors`. Make owns the single installed copy of its locked skills at
+`src/workshop/make/skills/`; portable schemas live with the component that owns
+their contract. Shared tests mirror those component names under `tests/`.
+The trusted whole-run host is `src/workshop/workflow/native_run.py`; the
+`src/cli/` package only parses commands, presents results, and chooses exit
+codes.
+
+Runtime also owns the complete non-Python product-run template in
+`.agents/product-run/`, including its nested workflow skill. Packaging copies
+those exact bytes into the installed distribution. Nesting the skill inside the
+template keeps it invisible to coding agents building this repository; it is
+discovered only after the template is materialized as a toy-project root.
+
+See [Workshop architecture](docs/ARCHITECTURE.md#shared-implementation) for the
+ownership and dependency rules.
 
 ## Check it works
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py' -v
-workshop skills list
-workshop schemas list
-workshop inventors --root . --check-entrypoints
-workshop check inventors --run
+uv run workshop doctor
+PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
+uv run workshop inventors --root inventors
+uv run workshop check inventors
+python .agents/product-run/.agents/skills/autonomous-workshop/scripts/stage_proposal.py --help
 python tools/verify_skill_locks.py
-python tools/verify_snapshot_locks.py
 python tools/scan_secrets.py
 git diff --check
 ```
 
 Read next:
 
+- [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md)
 - [Workshop architecture](docs/ARCHITECTURE.md)
 - [Build an inventor](docs/BUILD_AN_INVENTOR.md)
 - [Playtest evidence](docs/PLAYTEST_EVIDENCE.md)
-- [Publish the sealed showcase toys](docs/PUBLISH_SHOWCASES.md)
-- [Current adoption](docs/ADOPTION.md)
-- [Migration guide](docs/MIGRATION.md)
+- [Publication boundary](docs/PUBLISH_SEALED_PRODUCT.md)
 - [Contributing](CONTRIBUTING.md)
 
 Never commit credentials, runtime databases, private keys, generated backups, or

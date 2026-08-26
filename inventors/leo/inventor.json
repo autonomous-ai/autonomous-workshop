@@ -1,9 +1,14 @@
 {
-  "schema_version": 5,
+  "schema_version": 8,
   "id": "leo",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "invented-games", "personalization", "custom-make", "custom-playtest", "ai-game-simulation", "cad", "product-instructions", "learning"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
-  "source": {"kind": "local"}
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "leo-inventor",
+      "path": "skills/leo-inventor",
+      "artifact_sha256": "40b2c012f35ce8ec3d64ee0eb3c7c0f0c3b516a445c75b164c3ce72e1dd713a6"
+    }
+  ]
 }

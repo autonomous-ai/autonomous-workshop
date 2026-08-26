@@ -1,33 +1,34 @@
 # Third-party notices and provenance
 
-The `src` implementation and `product-to-cad` skill were authored for this
-repository from observed contracts and general engineering ideas; they do not
-copy the unlicensed `text-to-3d/skills/image-to-cad` source.
+Autonomous Workshop is licensed under Apache-2.0. The following bundled or
+required materials retain their own licenses.
 
-`skills/cad` and `skills/step-parts` were moved without modification
-from Bob's existing vendored copies. They match `peterat617/text-to-3d` commit
-`f18aebe4698d92ffccf07d94e2d624b08d30e667` byte-for-byte (excluding generated
-caches). Their included `LICENSE` files identify MIT material copyright 2026
-Thompson Labs LLC; the embedded cadgen package has its own included MIT license.
-Peter's current tree includes substantial subsequent modifications and concepts
-with additional history, so preserve the full pin and source ledger rather than
-attributing the current tree only to its initial upstream.
+## Peter's product-to-CAD tools
 
-Three inventor snapshots were imported during earlier research (`text2cad`,
-`text2game`, and `vibe-ideas`). All three came from Autonomous team members' own
-repositories, not from outside parties, and all three were internal working code
-rather than published libraries. `text2cad` and `text2game` were removed from
-this repository instead of shipped; no code from either is here.
+The `cad`, `design-reference`, `image-to-cad`, and `step-parts` skills under
+`src/workshop/make/skills/` derive from
+[`autonomous-ai/autonomous-product-to-cad`](https://github.com/autonomous-ai/autonomous-product-to-cad).
+Their exact reviewed revisions and local adaptations are recorded in
+`src/workshop/make/skills/PROVENANCE.md` and their installed byte identities in
+`src/workshop/make/skills/LOCK.json`.
 
-`reinSPQR/vibe-ideas` is the exception. Its `board-game/` tooling is now
-imported under `inventors/abo/` as the Abstract Boardgame Oracle's harness,
-pinned at commit `a557cacb3d98e5936194e4ba11721809370195f8` and locked
-byte-for-byte in [`snapshots.lock.json`](snapshots.lock.json). There is no
-repository-level licence file at that commit; this is an internal transfer of
-the same owner's own work rather than use of a third party's published library.
-The only `LICENSE` files in the upstream tree cover its own vendored copies of
-`skills/cad` and `skills/step-parts`, and neither was imported — this repository
-carries its own pin of those skills, recorded above. The complete file-by-file
-inventory, the list of what was deliberately left behind, and the one edit made
-to a vendored file are in
-[`inventors/abo/UPSTREAM.md`](inventors/abo/UPSTREAM.md).
+The `cad` and `step-parts` skills include their MIT licenses, copyright 2026
+Thompson Labs LLC. The complete vendored `cadgen` 0.4.19 source inside the CAD
+skill, and the pinned `cadgen==0.4.19` distribution dependency, carry the same
+included MIT notice.
+
+The pinned upstream `design-reference` and `image-to-cad` trees do not contain
+standalone license files. Their inclusion does not imply that the MIT license
+above applies to them. `design-reference` can explicitly download a separately
+licensed dataset restricted to non-commercial research; fetched references
+retain their own license and provenance records.
+
+## Repository-authored work
+
+The `product-to-cad` skill and the Workshop Python host were authored for this
+repository. `product-to-cad` remains a distinct workflow for broader
+product-design briefs.
+
+Earlier research examined internal Inventor projects including `text2cad`,
+`text2game`, and `vibe-ideas`. Their legacy Python workers and source snapshots
+are not shipped in this repository.

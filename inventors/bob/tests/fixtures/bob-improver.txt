@@ -1,4 +1,0 @@
-[
-  {"path": "knowledge/lessons.md", "content": "# lessons — the fast learning layer\n\n- [sequencing · pipeline · 2026-08-22 · $0 · OPEN] Fixture lesson: evidence pack showed zero gate failures this week; keep the gate order unchanged.\n"},
-  {"path": "loops/invent.py", "content": "# code-tier fixture proposal — must be diverted to PROPOSALS.md, never applied\n"}
-]

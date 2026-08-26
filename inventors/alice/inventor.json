@@ -1,9 +1,14 @@
 {
-  "schema_version": 5,
+  "schema_version": 8,
   "id": "alice",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["wish", "classics-made-yours", "personalization", "known-rules", "taste-only", "default-make", "default-playtest"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
-  "source": {"kind": "local"}
+  "source": {"kind": "local"},
+  "extensions": [
+    {
+      "kind": "codex-skill",
+      "name": "alice-inventor",
+      "path": "skills/alice-inventor",
+      "artifact_sha256": "e933853e9957b8bd8ebaa1a95bc4d1ede47eefd1dd7233606af9fbc5dc303cb1"
+    }
+  ]
 }
