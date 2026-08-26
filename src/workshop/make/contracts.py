@@ -9,10 +9,11 @@ from typing import Any, Mapping, Sequence
 from workshop._validation import bounded_text, copy_json_mapping
 from workshop.artifacts.core import ArtifactManifest, build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
-from workshop.product import PLAYTHING_LANES, WORKSHOP_JOBS
+from workshop.product import PLAYTHING_LANES
 
 
 _SEVERITIES = frozenset(("note", "improve", "block"))
+_FEEDBACK_INVALIDATION_STAGES = frozenset(("playtest", "release", "deliver"))
 
 
 def _fresh_manifest(root: Path, manifest: ArtifactManifest) -> ArtifactManifest:
@@ -45,8 +46,8 @@ class Feedback:
         invalidates = tuple(self.invalidates)
         if any(not isinstance(item, str) or not item for item in refs):
             raise ContractError("feedback evidence_refs must be non-empty strings")
-        if any(item not in WORKSHOP_JOBS for item in invalidates):
-            raise ContractError("feedback invalidates an unknown Workshop job")
+        if any(item not in _FEEDBACK_INVALIDATION_STAGES for item in invalidates):
+            raise ContractError("feedback invalidates a non-downstream Make stage")
         object.__setattr__(self, "evidence_refs", refs)
         object.__setattr__(self, "invalidates", invalidates)
 

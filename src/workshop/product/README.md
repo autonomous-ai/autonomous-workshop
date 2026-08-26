@@ -1,6 +1,8 @@
 # Product
 
-Owns plaything lanes, blueprints, and shared product policy. It describes what
-the Workshop may make; it does not run a lifecycle stage.
+Owns the five canonical plaything-lane identities and their immutable Playtest
+check bindings. The Codex product-run skill and selected Inventor own creative
+recipes and lifecycle guidance; this package does not duplicate either in
+Python.
 
 Public API: `workshop.product`.

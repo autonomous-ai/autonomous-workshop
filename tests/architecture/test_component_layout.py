@@ -205,6 +205,10 @@ class ComponentLayoutTest(unittest.TestCase):
             with self.subTest(package=package.__name__):
                 self.assertTrue(names <= set(package.__all__))
                 self.assertTrue(all(hasattr(package, name) for name in names))
+        self.assertEqual(
+            set(product.__all__),
+            {"PLAYTHING_LANES", "ToyBlueprint", "attribute_product_description"},
+        )
 
 
 if __name__ == "__main__":
