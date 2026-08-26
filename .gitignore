@@ -46,3 +46,5 @@ __cadgen__/
 # receipt, not by committing a customer's run workspace.
 /toys/*
 !/toys/README.md
+!/toys/leo-false-lantern/
+!/toys/leo-false-lantern/**

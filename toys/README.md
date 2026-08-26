@@ -1,4 +1,4 @@
-# Persistent toy projects
+# Toy projects and public snapshots
 
 `workshop wish` creates one private, persistent Codex project here for each
 Wish. Its host-assigned id is stable because the Inventor and product title do
@@ -20,3 +20,18 @@ write into the Workshop source checkout or a sibling toy.
 Runtime projects are intentionally ignored by Git. They can contain private
 customer Wishes and large generated artifacts. Publishing happens through the
 host's verified Factory adapter; it does not require committing the project.
+
+After Factory publication and public readback succeed, a deliberately small,
+sanitized snapshot may be allowlisted here under `<inventor>-<product-slug>/`.
+A public snapshot contains only:
+
+- `README.md`, `MANUAL.md`, and the exact public `product.json`;
+- `PUBLICATION.json`, with public URLs and content hashes but no private IDs,
+  credentials, effect keys, or raw receipts;
+- exact printable component STLs under `print/`;
+- an optional calibration STL under `calibration/` when the manual requires it.
+
+Snapshots never contain the private Wish, Codex transcript, host checkpoint,
+Factory receipt, generated G-code, internal evidence tree, or product-run agent
+configuration. Add each public directory to the root `.gitignore` allowlist
+only after its publication receipt and public page have been verified.

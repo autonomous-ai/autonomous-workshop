@@ -1,0 +1,79 @@
+{
+  "browser_verification": {
+    "assembled_and_part_models": 7,
+    "observed_at": "2026-08-26T12:33:08Z",
+    "status": "passed"
+  },
+  "calibration_files": [
+    {
+      "bytes": 10084,
+      "path": "calibration/clearance-coupon.stl",
+      "sha256": "1454fa41d3894016c5468a314444782bf7272340ef1e4bab4c26bb4e11e9be7b"
+    }
+  ],
+  "identities": {
+    "factory_content_sha256": "a1e32ed42991f01219541d9f09b7ecb297582b3df9a7487d09920f7c7dae67ef",
+    "handoff_artifact_sha256": "ef70dfb8f82458f988b3b287feef20ef12d6b84a07403547785e3cdff24f69e8",
+    "manual_sha256": "5924e1d23b1df08d6b1af6c4a8a81738ff2af864292e8d7586dec45e43229325",
+    "native_release_sha256": "bc3a770437a57de4bcfc8e5a423861746b41d7dc4ffed57a5c66fe931159dbd3",
+    "package_artifact_sha256": "d09ebcff39a0805a3d9788b6d5dfceee748a9f9068190d7b01e48d9b8368671b",
+    "playtest_evidence_sha256": "af7d4a1a460c57a52a7b75958425c3dd5e7366d734ef2b0f81c9b6976e93f470",
+    "primary_model_sha256": "10e50530a6106b0f8e40a942704c04b119206ae174eb15711ab0d67471cc570f",
+    "product_artifact_sha256": "5cbcdfde2f3821a84968f30556916c8d057d0a3ca61ccdd3d5ea2c9663f016f2",
+    "product_page_sha256": "588a4a879b3a1a08cdb8679664f01b4437515916cf65e1119a7b18df8f7bb5e5"
+  },
+  "inventor": {
+    "id": "leo",
+    "name": "Leo"
+  },
+  "kind": "autonomous-workshop.public-toy-snapshot",
+  "primary_model_path": "assembled.stl",
+  "print_files": [
+    {
+      "bytes": 413284,
+      "path": "print/part_leaf_crescent.stl",
+      "quantity": 1,
+      "sha256": "3c5643bfff656b6745d299a0d579e4a8990938c891ae317bbce61d6a6aba1365"
+    },
+    {
+      "bytes": 426584,
+      "path": "print/part_leaf_notch.stl",
+      "quantity": 1,
+      "sha256": "023a6a4e8d67f098febbaecbed2615b62ffb3d940d33fdf20a27322131c1a79a"
+    },
+    {
+      "bytes": 241084,
+      "path": "print/part_lid.stl",
+      "quantity": 1,
+      "sha256": "ec97001c937959f0c902ae9c0b9274bcd4918afb59f6cea2b5db6e52aca5ed91"
+    },
+    {
+      "bytes": 61484,
+      "path": "print/part_selector_crescent.stl",
+      "quantity": 1,
+      "sha256": "8db11104d22b7773f78db1a0fb5eda1d50038d4b7dc6ad9c117bd7b03a735337"
+    },
+    {
+      "bytes": 55484,
+      "path": "print/part_selector_notch.stl",
+      "quantity": 1,
+      "sha256": "6f27404e511613eca4340a530321c8b92bf17e482d9a8356290d2c832c4bdbee"
+    },
+    {
+      "bytes": 1693084,
+      "path": "print/part_tray.stl",
+      "quantity": 1,
+      "sha256": "cc4eee91a97d05208b4b633c6fa428744b6e87625e6110e6409e09d62f07c069"
+    }
+  ],
+  "publication": {
+    "adapter": "factory",
+    "cover_url": "https://cdn.autonomous.ai/panda-social/thumbnails/6a8edbf2957b32e6bab525b9/cover.png",
+    "observed_at": "2026-08-26T12:28:47.743202+00:00",
+    "page_url": "https://www.autonomous.ai/factory/product/false-lantern",
+    "slug": "false-lantern",
+    "status": "public"
+  },
+  "schema_version": 1,
+  "title": "False Lantern"
+}
