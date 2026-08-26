@@ -49,6 +49,14 @@ package. Codex owns the complete page copy and visual direction; Factory later
 transports the exact sealed page and model bytes rather than creatively
 enriching them.
 
+Do not create or edit `artifacts/release/VERIFICATION.json`. It is an optional
+host-owned, public-safe projection written only after the host independently
+accepts the exact Release package. Your Playtest evidence and Release prose
+cannot assign or raise its level. The current host can emit only **Digitally
+Verified**; **Physically Verified** requires a future trusted host receipt that
+proves the exact released bytes were built and checked. If the projection is
+unavailable, Release still succeeds and no badge is recorded.
+
 For the exact `use_case` and `story_blocks` copy to render on the current
 Factory site, keep each `headline` to 1–40 plain-text characters, each `body`
 to 180–400 plain-text characters, use no `<` or `>` characters in those

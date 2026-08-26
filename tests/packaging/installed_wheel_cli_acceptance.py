@@ -571,7 +571,7 @@ def _native_wish_smoke(
 
     product_id = receipt["product_id"]
     workshop_home = Path(environment["WORKSHOP_HOME"])
-    expected_workspace = workshop_home / "toys" / product_id
+    expected_workspace = workshop_home / "runs" / product_id / "workspace"
     expected_state = workshop_home / "state" / product_id
     probes = tuple(workshop_home.rglob("native-packaging-probe.json"))
     if probes != (expected_workspace / "native-packaging-probe.json",):

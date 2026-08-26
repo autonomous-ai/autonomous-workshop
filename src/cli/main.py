@@ -158,6 +158,25 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
     stage = str(receipt.get("stage", "unknown")).title()
     print("Wish: %s" % product_id)
     print("%s: %s at %s" % (verb, status, stage))
+    progress = receipt.get("progress")
+    if isinstance(progress, Mapping) and progress.get("status") == "available":
+        stage_attempt = progress.get("stage_attempt")
+        if isinstance(stage_attempt, Mapping):
+            attempt_stage = str(stage_attempt.get("stage", "unknown")).title()
+            attempt_number = stage_attempt.get("number", "?")
+            activity = progress.get("activity", "unknown")
+            elapsed = progress.get("elapsed_seconds", 0)
+            last_activity = progress.get("last_activity_at", "unknown")
+            print(
+                "Progress: %s attempt %s — %s (%ss; last activity %s)"
+                % (
+                    attempt_stage,
+                    attempt_number,
+                    activity,
+                    elapsed,
+                    last_activity,
+                )
+            )
     publication = receipt.get("publication")
     if isinstance(publication, Mapping):
         page_url = publication.get("page_url")

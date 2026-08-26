@@ -276,6 +276,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         *,
         host_state_root=None,
         prompt="run this exact Wish",
+        activity_observer=None,
     ):
         return launcher.start(
             product_id="wish-001",
@@ -284,6 +285,7 @@ class CodexNativeSessionTest(unittest.TestCase):
             run_root=root,
             host_state_root=host_state_root or self.host_state(root),
             prompt=prompt,
+            activity_observer=activity_observer,
         )
 
     def resume(self, launcher, root, **overrides):
@@ -440,6 +442,154 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(
                 private["constitution_sha256"], CONSTITUTION_SHA256
             )
+
+    def test_activity_observer_receives_only_coarse_host_classes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            private_sentinel = "FACTORY_PASSWORD=secret /private/run thread-identity"
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event({"type": "turn.started"}),
+                            event(
+                                {
+                                    "type": "item.updated",
+                                    "item": {
+                                        "id": private_sentinel,
+                                        "type": "reasoning",
+                                        "text": private_sentinel,
+                                    },
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "item.started",
+                                    "item": {
+                                        "id": "tool-secret",
+                                        "type": "command_execution",
+                                        "command": private_sentinel,
+                                    },
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "item.started",
+                                    "item": {
+                                        "id": "agent-secret",
+                                        "type": "collaboration_tool_call",
+                                        "arguments": private_sentinel,
+                                    },
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "item.completed",
+                                    "item": {
+                                        "id": "message-secret",
+                                        "type": "agent_message",
+                                        "text": private_sentinel,
+                                    },
+                                }
+                            ),
+                            event({"type": "turn.completed", "usage": {}}),
+                        ]
+                    }
+                ]
+            )
+            observed = []
+
+            self.start(launcher, root, activity_observer=observed.append)
+
+            self.assertEqual(
+                observed,
+                [
+                    "starting",
+                    "starting",
+                    "reasoning",
+                    "reasoning",
+                    "tool",
+                    "subagent",
+                    "finalizing",
+                    "completed",
+                ],
+            )
+            rendered = json.dumps(observed)
+            self.assertNotIn(private_sentinel, rendered)
+            self.assertNotIn(THREAD_ID, rendered)
+
+    def test_activity_observer_failure_never_changes_turn_validation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [{"stdout": self.start_events()}]
+            )
+
+            def broken_observer(unused_activity):
+                raise OSError("private progress disk is unavailable")
+
+            outcome = self.start(
+                launcher,
+                root,
+                activity_observer=broken_observer,
+            )
+
+            self.assertEqual(outcome.status, "completed")
+
+    def test_malformed_item_type_cannot_make_progress_interrupt_a_turn(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout": [
+                            event(
+                                {
+                                    "type": "thread.started",
+                                    "thread_id": THREAD_ID,
+                                }
+                            ),
+                            event(
+                                {
+                                    "type": "item.started",
+                                    "item": {"type": []},
+                                }
+                            ),
+                            event({"type": "turn.completed", "usage": {}}),
+                        ]
+                    }
+                ]
+            )
+            observed = []
+
+            outcome = self.start(
+                launcher,
+                root,
+                activity_observer=observed.append,
+            )
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertEqual(observed, ["starting", "starting", "completed"])
+
+    def test_activity_observer_rejects_non_callable_values_before_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher([])
+
+            with self.assertRaisesRegex(ContractError, "observer must be callable"):
+                self.start(launcher, root, activity_observer="not-callable")
+
+            self.assertEqual(factory.calls, [])
 
     def test_resume_uses_the_exact_private_thread_and_redacts_it_publicly(self):
         with tempfile.TemporaryDirectory() as temporary:

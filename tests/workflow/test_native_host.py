@@ -19,12 +19,17 @@ from workshop.match.native import (
 from workshop.product import ToyBlueprint
 from workshop.workflow.native_run import (
     NativeRunPaths,
+    _NativeProgressTracker,
     _native_run_mutation_lock,
     canonical_wish_bytes,
+    native_run_exists,
     native_run_paths,
+    native_run_status,
+    resume_native_run,
     start_native_run,
 )
 from workshop.runtime import CodexInvocationError
+from workshop.runtime.progress import NativeRunProgress
 from workshop.wish import Wish
 from workshop.workflow.agent_run import AgentArtifact, AgentOutcome
 from workshop.workflow.proposals import AgentOutcomeProposal
@@ -201,7 +206,7 @@ class NativeHostTest(unittest.TestCase):
                 0o600,
             )
 
-    def test_source_checkout_places_toy_project_at_repository_root(self):
+    def test_source_checkout_still_places_new_run_in_private_workshop_home(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             repository = root / "repository"
@@ -215,12 +220,178 @@ class NativeHostTest(unittest.TestCase):
             ):
                 paths = native_run_paths("stable-toy-id", create=True)
 
-            self.assertEqual(paths.workspace, repository / "toys/stable-toy-id")
+            self.assertEqual(
+                paths.workspace,
+                home / "runs/stable-toy-id/workspace",
+            )
             self.assertEqual(paths.host_state, home / "state/stable-toy-id")
             self.assertFalse(paths.workspace.exists())
             self.assertFalse(paths.host_state.exists())
-            self.assertTrue((repository / "toys").is_dir())
+            self.assertFalse((repository / "toys").exists())
+            self.assertEqual(
+                stat.S_IMODE((home / "runs/stable-toy-id").stat().st_mode),
+                0o700,
+            )
             self.assertTrue((home / "state").is_dir())
+
+    def test_failed_run_materialization_releases_only_its_empty_reservation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "retryable-materialization-wish"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), mock.patch(
+                "workshop.workflow.native_run.AgentRun.create",
+                side_effect=ContractError("fixture input validation failed"),
+            ), self.assertRaisesRegex(ContractError, "fixture input validation"):
+                start_native_run(
+                    Wish.create(product_id, "a retryable clockwork bird")
+                )
+
+            self.assertFalse((home / "runs" / product_id).exists())
+            self.assertFalse((home / "state" / product_id).exists())
+
+    def test_create_rejects_a_legacy_source_checkout_collision(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            legacy = repository / "toys/colliding-wish"
+            legacy.mkdir(mode=0o700, parents=True)
+            home = root / "workshop-home"
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=repository,
+            ), self.assertRaisesRegex(
+                StateConflict, "workspace already exists"
+            ):
+                native_run_paths("colliding-wish", create=True)
+
+            self.assertFalse((home / "runs/colliding-wish").exists())
+
+    def test_old_workshop_home_toy_layout_resolves_without_moving(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            workspace = home / "toys/old-home-wish"
+            host_state = home / "state/old-home-wish"
+            workspace.mkdir(mode=0o700, parents=True)
+            host_state.mkdir(mode=0o700, parents=True)
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ):
+                paths = native_run_paths("old-home-wish")
+
+            self.assertEqual(paths.workspace, workspace)
+            self.assertEqual(paths.host_state, host_state)
+            self.assertFalse((home / "runs/old-home-wish").exists())
+
+    def test_open_rejects_symlinked_new_run_container(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            home = root / "workshop-home"
+            runs = home / "runs"
+            runs.mkdir(mode=0o700, parents=True)
+            outside = root / "outside"
+            (outside / "workspace").mkdir(mode=0o700, parents=True)
+            (runs / "linked-wish").symlink_to(outside, target_is_directory=True)
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ), self.assertRaisesRegex(
+                StateConflict, "native run container must be a real directory"
+            ):
+                native_run_paths("linked-wish")
+
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=None,
+            ):
+                self.assertTrue(native_run_exists("linked-wish"))
+
+    def test_open_rejects_ambiguous_new_and_legacy_workspaces(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            (repository / "toys/ambiguous-wish").mkdir(
+                mode=0o700, parents=True
+            )
+            home = root / "workshop-home"
+            (home / "runs/ambiguous-wish/workspace").mkdir(
+                mode=0o700, parents=True
+            )
+            os.chmod(home / "runs", 0o700)
+            os.chmod(home / "runs/ambiguous-wish", 0o700)
+            with mock.patch.dict(
+                os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=repository,
+            ), self.assertRaisesRegex(
+                StateConflict, "ambiguous across multiple layouts"
+            ):
+                native_run_paths("ambiguous-wish")
+
+    def test_live_source_checkout_legacy_run_stays_status_and_resume_compatible(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            (repository / "toys").mkdir(mode=0o700, parents=True)
+            home = root / "workshop-home"
+            (home / "state").mkdir(mode=0o700, parents=True)
+            product_id = "wish-legacy-live"
+            legacy_paths = NativeRunPaths(
+                workspace=repository / "toys" / product_id,
+                host_state=home / "state" / product_id,
+            )
+            environment = {"WORKSHOP_HOME": str(home)}
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run.native_run_paths",
+                return_value=legacy_paths,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=launcher,
+            ):
+                start_native_run(
+                    Wish.create(product_id, "a legacy path-bound clockwork toy")
+                )
+
+            resumed_launcher = _FakeLauncher()
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch(
+                "workshop.workflow.native_run._source_checkout_root",
+                return_value=repository,
+            ), mock.patch(
+                "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                return_value=resumed_launcher,
+            ):
+                self.assertTrue(native_run_exists(product_id))
+                status = native_run_status(product_id)
+                resumed = resume_native_run(product_id)
+
+            self.assertEqual(status["product_id"], product_id)
+            self.assertEqual(status["session_status"], "checkpointed")
+            self.assertEqual(resumed["action"], "resumed")
+            self.assertEqual(len(resumed_launcher.resumes), 1)
+            self.assertEqual(
+                resumed_launcher.resumes[0]["run_root"],
+                legacy_paths.workspace,
+            )
+            self.assertFalse((home / "runs" / product_id).exists())
 
     def test_wish_starts_native_session_before_any_effect_path(self):
         launcher = _FakeLauncher()
@@ -259,7 +430,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(result, 0)
             receipt = json.loads(stdout.getvalue())
             product_id = receipt["product_id"]
-            workspace = home / "toys" / product_id
+            workspace = home / "runs" / product_id / "workspace"
             host_state = home / "state" / product_id
             self.assertEqual(len(launcher.starts), 1)
             arguments = launcher.starts[0]
@@ -412,7 +583,7 @@ class NativeHostTest(unittest.TestCase):
             ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
                 self.assertEqual(main(("wish", "a tiny orbit", "--json")), 2)
 
-            product_ids = [path.name for path in (home / "toys").iterdir()]
+            product_ids = [path.name for path in (home / "runs").iterdir()]
             self.assertEqual(len(product_ids), 1)
             product_id = product_ids[0]
             self.assertFalse(
@@ -457,7 +628,7 @@ class NativeHostTest(unittest.TestCase):
             self.assertEqual(receipt["native_turns"], 2)
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(len(launcher.resumes), 1)
-            workspace = home / "toys" / product_id
+            workspace = home / "runs" / product_id / "workspace"
             host_state = home / "state" / product_id
             self.assertFalse((workspace / "agent-outcome.json").exists())
             self.assertTrue(
@@ -522,6 +693,133 @@ class NativeHostTest(unittest.TestCase):
             )
             self.assertEqual(len(launcher.starts), 1)
             self.assertEqual(launcher.resumes, [])
+
+    def test_status_reports_durable_safe_progress_and_attempted_turn_count(self):
+        launcher = _FakeLauncher()
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary).resolve() / "workshop-home"
+            product_id = "durable-progress-wish"
+            environment = {"WORKSHOP_HOME": str(home)}
+            patches = (
+                mock.patch.dict(os.environ, environment, clear=True),
+                mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=None,
+                ),
+                mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    return_value=launcher,
+                ),
+            )
+            with patches[0], patches[1], patches[2]:
+                started = start_native_run(
+                    Wish.create(product_id, "a toy that makes its work visible")
+                )
+                inspected = native_run_status(product_id)
+                resumed = resume_native_run(product_id)
+                inspected_again = native_run_status(product_id)
+
+            self.assertEqual(started["native_turns"], 1)
+            self.assertEqual(inspected["native_turns"], 1)
+            self.assertEqual(inspected["progress"]["status"], "available")
+            self.assertEqual(
+                inspected["progress"]["stage_attempt"],
+                {"stage": "match", "number": 1},
+            )
+            self.assertEqual(inspected["progress"]["activity"], "completed")
+            self.assertIsInstance(inspected["progress"]["elapsed_seconds"], int)
+            self.assertRegex(
+                inspected["progress"]["last_activity_at"],
+                r"Z$",
+            )
+            self.assertEqual(resumed["native_turns"], 2)
+            self.assertEqual(inspected_again["native_turns"], 2)
+            self.assertEqual(
+                inspected_again["progress"]["stage_attempt"],
+                {"stage": "match", "number": 2},
+            )
+            progress_path = home / "state" / product_id / "native-progress.json"
+            self.assertEqual(stat.S_IMODE(progress_path.stat().st_mode), 0o600)
+            private = progress_path.read_text(encoding="utf-8")
+            for forbidden in (
+                "fixture stops after one native turn",
+                "agent-outcome.json",
+                "thread_id",
+                "prompt",
+                "arguments",
+                "message",
+            ):
+                self.assertNotIn(forbidden, private)
+
+    def test_progress_throttles_active_event_churn_but_forces_terminal_classes(self):
+        progress = NativeRunProgress(
+            product_id="progress-throttle-wish",
+            wish_sha256="a" * 64,
+            checkpoint_sha256="b" * 64,
+            checkpoint_stage="make",
+            attempt_stage="make",
+            stage_attempt=1,
+            native_turns=1,
+            activity="starting",
+            attempt_started_at_ms=1,
+            last_activity_at_ms=1,
+        )
+        with mock.patch(
+            "workshop.workflow.native_run.time.monotonic",
+            side_effect=(100.0, 100.1, 100.2, 100.3, 100.4),
+        ), mock.patch(
+            "workshop.workflow.native_run.write_native_progress"
+        ) as write_progress:
+            tracker = _NativeProgressTracker(Path("/unused"), progress)
+            tracker.observe("reasoning")
+            tracker.observe("tool")
+            tracker.observe("finalizing")
+            tracker.observe("completed")
+
+        self.assertEqual(write_progress.call_count, 2)
+        self.assertEqual(tracker.progress.activity, "completed")
+
+    def test_untrusted_progress_is_hidden_without_blocking_valid_status(self):
+        for case in ("tampered", "symlink"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temporary:
+                home = Path(temporary).resolve() / "workshop-home"
+                product_id = "untrusted-progress-" + case
+                environment = {"WORKSHOP_HOME": str(home)}
+                launcher = _FakeLauncher()
+                with mock.patch.dict(
+                    os.environ, environment, clear=True
+                ), mock.patch(
+                    "workshop.workflow.native_run._source_checkout_root",
+                    return_value=None,
+                ), mock.patch(
+                    "workshop.workflow.native_run.CodexNativeSessionLauncher",
+                    return_value=launcher,
+                ):
+                    start_native_run(
+                        Wish.create(product_id, "a valid run with optional telemetry")
+                    )
+                    path = home / "state" / product_id / "native-progress.json"
+                    if case == "tampered":
+                        value = json.loads(path.read_text(encoding="utf-8"))
+                        value["activity"] = "completed"
+                        value["native_turns"] = 999
+                        path.write_text(json.dumps(value), encoding="utf-8")
+                        os.chmod(path, 0o600)
+                    else:
+                        target = path.with_name("untrusted-target.json")
+                        path.rename(target)
+                        path.symlink_to(target)
+
+                    receipt = native_run_status(product_id)
+                    recovered = resume_native_run(product_id)
+
+                self.assertEqual(receipt["status"], "waiting")
+                self.assertEqual(receipt["stage"], "match")
+                self.assertEqual(receipt["native_turns"], 0)
+                self.assertEqual(receipt["progress"], {"status": "unavailable"})
+                self.assertEqual(recovered["status"], "waiting")
+                self.assertEqual(recovered["native_turns"], 1)
+                self.assertEqual(recovered["progress"]["status"], "available")
 
     def test_native_commands_default_to_private_draft(self):
         command = parser()

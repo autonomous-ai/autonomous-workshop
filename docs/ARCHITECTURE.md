@@ -52,9 +52,10 @@ They do not mutate a completed run.
 
 ## One Manager session per Wish
 
-`workshop wish` first creates and populates one persistent toy project under
-`toys/`, then starts one coding-agent session with that directory as its working
-directory before Match. The same session handles discovery, research, concept
+`workshop wish` first creates and populates one private persistent project at
+`$WORKSHOP_HOME/runs/<wish-id>/workspace`, then starts one coding-agent session
+with that directory as its working directory before Match. The same session
+handles discovery, research, concept
 work, CAD, inspection, repair, Playtest judgment, manual writing, and
 product-page facts. `workshop resume` continues the exact recorded session id.
 
@@ -236,7 +237,8 @@ into the run workspace or Codex process. A public page is not a Deliver receipt.
 ## Shared implementation
 
 ```text
-toys/<toy-id>/              persistent toy project and coding-agent CWD
+$WORKSHOP_HOME/runs/<wish-id>/workspace/
+                            private persistent project and coding-agent CWD
   .workshop-product-run-root exact Codex project/instruction boundary
   AGENTS.md                 product-run constitution
   .codex/agents/            sole run roster of project-scoped Inventor agents
@@ -279,8 +281,10 @@ src/
 
 tests/<component>/         tests mirror component ownership
 
-$WORKSHOP_HOME/state/<toy-id>/
+$WORKSHOP_HOME/state/<wish-id>/
                            trusted checkpoints and effects, outside agent CWD
+
+toys/<inventor>-<slug>/    optional sanitized public examples only
 ```
 
 The installed distribution is `autonomous-workshop`; application imports begin

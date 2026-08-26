@@ -41,10 +41,12 @@ __cadgen__/
 .DS_Store
 .venv-cad/
 
-# Runtime-created toy projects are private and ignored by default. Keep only
-# this explanation in Git; a product is published through a verified Factory
-# receipt, not by committing a customer's run workspace.
-/toys/*
-!/toys/README.md
-!/toys/leo-false-lantern/
-!/toys/leo-false-lantern/**
+# Private runtime workspaces never belong in Git.  The source-checkout
+# `toys/<inventor>-<slug>/` namespace is reserved for sanitized public examples,
+# so those snapshots are visible without a per-product allowlist.  Old
+# path-bound Wish workspaces remain ignored and resumable in place.
+/runs/
+/state/
+/credentials/
+/toys/wish-*/
+/toys/.public-example-*/

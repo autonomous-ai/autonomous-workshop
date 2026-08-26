@@ -19,8 +19,9 @@ exact-byte gates, durable state, security, and external effects.
 ## Decision
 
 One Wish uses one persistent native Codex session. `workshop wish` creates and
-populates a persistent product project under `toys/`, then launches the session
-with that directory as its working directory before Match. `workshop resume`
+populates a private product project at
+`$WORKSHOP_HOME/runs/<wish-id>/workspace`, then launches the session with that
+directory as its working directory before Match. `workshop resume`
 continues the recorded session id through:
 
 ```text

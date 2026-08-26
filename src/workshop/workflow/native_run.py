@@ -13,6 +13,7 @@ import os
 import re
 import stat
 import tempfile
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,6 +63,10 @@ from workshop.release.native import (
     FACTORY_CONTENT_STORY_BLOCKS_MAX,
     NativeRelease,
 )
+from workshop.release.verification import try_materialize_digital_verification
+from workshop.release.public_example import (
+    materialize_public_example_if_source_checkout,
+)
 from workshop.runtime import (
     CodexInvocationError,
     CodexNativeSessionLauncher,
@@ -78,6 +83,13 @@ from workshop.runtime.package_data import (
     default_workshop_home,
     packaged_inventors_root,
     product_run_domain_skill_roots,
+)
+from workshop.runtime.progress import (
+    NATIVE_PROGRESS_FILENAME,
+    NativeRunProgress,
+    begin_native_progress,
+    trusted_native_progress,
+    write_native_progress,
 )
 from workshop.wish import Wish
 from workshop.workflow.agent_run import (
@@ -109,6 +121,7 @@ _STAGE_INPUT_NAME = "STAGE.json"
 _AGENT_OUTCOME_NAME = "agent-outcome.json"
 _AUTHORIZATION_NAME = "authorization.json"
 _RELEASE_EFFECT_WAIT_NAME = "release-effect-wait.json"
+_PUBLIC_EXAMPLE_STATUS_NAME = "public-example.json"
 _CAD_GATE_REJECTIONS_DIRECTORY = "cad-gate-rejections"
 _CAD_GATE_REJECTION_KIND = "autonomous-workshop.cad-gate-rejection"
 _STAGE_INPUT_KIND = "autonomous-workshop.stage-input"
@@ -138,6 +151,111 @@ class NativeRunPaths:
 
     workspace: Path
     host_state: Path
+
+
+class _NativeProgressTracker:
+    """Best-effort writer for bounded host-selected progress classes."""
+
+    def __init__(
+        self,
+        path: Path,
+        progress: Optional[NativeRunProgress],
+    ) -> None:
+        self.path = path
+        self.progress = progress
+        self._last_write = time.monotonic()
+
+    @classmethod
+    def begin(
+        cls,
+        paths: NativeRunPaths,
+        checkpoint: AgentRunCheckpoint,
+    ) -> "_NativeProgressTracker":
+        path = paths.host_state / NATIVE_PROGRESS_FILENAME
+        previous = trusted_native_progress(
+            path,
+            product_id=checkpoint.product_id,
+            wish_sha256=checkpoint.wish_sha256,
+            checkpoint_sha256=checkpoint.checkpoint_sha256,
+            checkpoint_stage=checkpoint.stage,
+        )
+        try:
+            progress = begin_native_progress(
+                previous,
+                product_id=checkpoint.product_id,
+                wish_sha256=checkpoint.wish_sha256,
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                checkpoint_stage=checkpoint.stage,
+            )
+            write_native_progress(path, progress)
+        except (OSError, WorkshopError):
+            progress = None
+        return cls(path, progress)
+
+    @classmethod
+    def existing(
+        cls,
+        paths: NativeRunPaths,
+        checkpoint: AgentRunCheckpoint,
+    ) -> "_NativeProgressTracker":
+        path = paths.host_state / NATIVE_PROGRESS_FILENAME
+        return cls(
+            path,
+            trusted_native_progress(
+                path,
+                product_id=checkpoint.product_id,
+                wish_sha256=checkpoint.wish_sha256,
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                checkpoint_stage=checkpoint.stage,
+            ),
+        )
+
+    def observe(self, activity: str) -> None:
+        progress = self.progress
+        if progress is None:
+            return
+        now = time.monotonic()
+        if (
+            activity not in ("finalizing", "completed", "failed")
+            and now - self._last_write < 1.0
+        ):
+            return
+        try:
+            progress = progress.observe(activity)
+            write_native_progress(self.path, progress)
+        except (OSError, WorkshopError):
+            self.progress = None
+            return
+        self.progress = progress
+        self._last_write = now
+
+    def rebind(
+        self,
+        checkpoint: AgentRunCheckpoint,
+        *,
+        activity: Optional[str] = None,
+    ) -> None:
+        progress = self.progress
+        if progress is None:
+            return
+        if (
+            progress.product_id != checkpoint.product_id
+            or progress.wish_sha256 != checkpoint.wish_sha256
+        ):
+            self.progress = None
+            return
+        try:
+            progress = progress.rebind(
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                checkpoint_stage=checkpoint.stage,
+                activity=activity,
+            )
+            write_native_progress(self.path, progress)
+        except (OSError, WorkshopError):
+            self.progress = None
+            return
+        self.progress = progress
+        self._last_write = time.monotonic()
 
 
 @contextmanager
@@ -720,6 +838,177 @@ def _source_checkout_root() -> Optional[Path]:
     return _existing_real_directory(candidate, label="Workshop repository")
 
 
+def _public_example_repository_for_run(run_root: Path) -> Optional[Path]:
+    """Return the checkout only for a run created in the new private layout.
+
+    Legacy runs are exact-path compatible but are never retroactively projected
+    into a different public-example convention during status or resume.
+    """
+
+    expected_runs = _workshop_home() / "runs"
+    if (
+        run_root.name != "workspace"
+        or run_root.parent.parent != expected_runs
+    ):
+        return None
+    return _source_checkout_root()
+
+
+def _public_example_status_path(run: AgentRun) -> Path:
+    return run.host_state_root / _PUBLIC_EXAMPLE_STATUS_NAME
+
+
+def _record_public_example_projection(
+    run: AgentRun,
+    *,
+    release: NativeRelease,
+    made: NativeMade,
+    inventor_id: str,
+    receipt: Receipt,
+) -> Mapping[str, Any]:
+    """Attempt the optional Git projection without affecting Release success."""
+
+    try:
+        repository = _public_example_repository_for_run(run.run_root)
+    except Exception:
+        repository = None
+        repository_error = True
+    else:
+        repository_error = False
+    if repository is None:
+        public = {
+            "status": "error" if repository_error else "unavailable",
+            "reason": (
+                "Public Git projection is available only for new private runs "
+                "started from a Workshop source checkout."
+            ),
+        }
+    else:
+        try:
+            target = materialize_public_example_if_source_checkout(
+                repository,
+                run.run_root,
+                release=release,
+                made=made,
+                inventor_id=inventor_id,
+                receipt=receipt,
+            )
+            target_relative = (
+                target.relative_to(repository).as_posix()
+                if target is not None
+                else None
+            )
+        except Exception:
+            public = {
+                "status": "error",
+                "reason": (
+                    "Public Git projection failed closed; Factory publication "
+                    "is still verified and the projection can be retried later."
+                ),
+            }
+        else:
+            if target is None:  # pragma: no cover - repository is non-null above
+                public = {"status": "unavailable"}
+            else:
+                public = {
+                    "status": "materialized",
+                    "path": target_relative,
+                }
+    document = {
+        "schema_version": 1,
+        "kind": "autonomous-workshop.public-example-projection",
+        "product_id": run.snapshot().product_id,
+        "native_release_sha256": release.release_sha256,
+        "package_artifact_sha256": release.package_manifest.artifact_sha256,
+        "publication_slug": receipt.slug,
+        "projection": public,
+    }
+    try:
+        _write_private_json(_public_example_status_path(run), document)
+    except Exception:
+        # This projection and its convenience status are not lifecycle or
+        # Factory evidence.  A host-state write problem here must not turn a
+        # verified remote publication into a failed Release gate.
+        pass
+    return public
+
+
+def _try_record_public_example_projection(
+    run: AgentRun,
+    *,
+    release: NativeRelease,
+    made: NativeMade,
+    inventor_id: str,
+    receipt: Receipt,
+) -> Mapping[str, Any]:
+    """Keep even an unexpected projection regression outside the lifecycle."""
+
+    try:
+        return _record_public_example_projection(
+            run,
+            release=release,
+            made=made,
+            inventor_id=inventor_id,
+            receipt=receipt,
+        )
+    except Exception:
+        return {
+            "status": "error",
+            "reason": (
+                "Public Git projection failed outside the lifecycle; Factory "
+                "publication remains authoritative and projection is retryable."
+            ),
+        }
+
+
+def _read_public_example_projection(
+    run: AgentRun, release: NativeRelease
+) -> Mapping[str, Any]:
+    path = _public_example_status_path(run)
+    if not path.exists() and not path.is_symlink():
+        return {"status": "not-attempted"}
+    try:
+        identity = path.lstat()
+        content = path.read_bytes()
+    except OSError:
+        return {"status": "unavailable"}
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(identity.st_mode)
+        or stat.S_IMODE(identity.st_mode) != 0o600
+    ):
+        return {"status": "unavailable"}
+    try:
+        value = _strict_json_bytes(content, label="public example projection")
+    except WorkshopError:
+        return {"status": "unavailable"}
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "native_release_sha256",
+        "package_artifact_sha256",
+        "publication_slug",
+        "projection",
+    }
+    projection = value.get("projection")
+    if (
+        set(value) != expected
+        or value.get("schema_version") != 1
+        or value.get("kind")
+        != "autonomous-workshop.public-example-projection"
+        or value.get("product_id") != run.snapshot().product_id
+        or value.get("native_release_sha256") != release.release_sha256
+        or value.get("package_artifact_sha256")
+        != release.package_manifest.artifact_sha256
+        or not isinstance(projection, Mapping)
+        or projection.get("status")
+        not in ("materialized", "error", "unavailable")
+    ):
+        return {"status": "unavailable"}
+    return dict(projection)
+
+
 def _product_run_inventor_source_root(assets: Any) -> Path:
     if assets.source == "repository":
         repository = assets.constitution.parents[2]
@@ -833,42 +1122,100 @@ def native_run_paths(
     *,
     create: bool = False,
 ) -> NativeRunPaths:
-    """Resolve one persistent Codex toy project and sibling host state."""
+    """Resolve one private Codex workspace and its sibling host state.
+
+    New runs always live below ``$WORKSHOP_HOME/runs``.  Read paths retain
+    compatibility with exact path-bound runs created by older Workshop
+    versions in a source checkout's ``toys`` directory or in
+    ``$WORKSHOP_HOME/toys``.  More than one extant layout is ambiguous and
+    fails closed; an active run is never moved between roots.
+    """
 
     product_id = _validated_product_id(product_id)
     home = _workshop_home()
     repository = _source_checkout_root()
-    toys = (repository / "toys") if repository is not None else (home / "toys")
+    runs = home / "runs"
+    run_container = runs / product_id
+    new_workspace = run_container / "workspace"
+    legacy_workspaces = []
+    if repository is not None:
+        legacy_workspaces.append(repository / "toys" / product_id)
+    legacy_workspaces.append(home / "toys" / product_id)
+    # WORKSHOP_HOME may itself be the source checkout.  One exact path is one
+    # candidate, not an ambiguity between two names for the same directory.
+    workspace_candidates = tuple(
+        dict.fromkeys((new_workspace, *legacy_workspaces))
+    )
     states = home / "state"
     if create:
-        if repository is not None:
-            try:
-                toys.mkdir(mode=0o700)
-            except FileExistsError:
-                pass
-            except OSError as exc:
-                raise StateConflict("toy projects directory could not be created") from exc
-            toys = _existing_real_directory(toys, label="toy projects directory")
-        else:
-            toys = _ensure_private_directory(toys, label="toy projects directory")
+        existing = [
+            path
+            for path in workspace_candidates
+            if path.exists() or path.is_symlink()
+        ]
+        if run_container.exists() or run_container.is_symlink():
+            if new_workspace not in existing:
+                existing.insert(0, new_workspace)
+        if existing:
+            raise StateConflict("native run workspace already exists")
+        if (states / product_id).exists() or (states / product_id).is_symlink():
+            raise StateConflict("native run host state already exists")
+        runs = _ensure_private_directory(runs, label="private runs directory")
         states = _ensure_private_directory(states, label="toy state directory")
-        workspace = toys / product_id
+        try:
+            run_container.mkdir(mode=0o700)
+        except OSError as exc:
+            raise StateConflict(
+                "native run container could not be created exclusively"
+            ) from exc
+        run_container = _existing_real_directory(
+            run_container, label="native run container"
+        )
+        if stat.S_IMODE(run_container.stat().st_mode) != 0o700:
+            raise StateConflict("native run container permissions must be 0700")
+        workspace = run_container / "workspace"
         host_state = states / product_id
-        if workspace.exists() or workspace.is_symlink():
-            raise StateConflict("toy project already exists")
-        if host_state.exists() or host_state.is_symlink():
-            raise StateConflict("toy host state already exists")
     else:
-        toys = _existing_real_directory(toys, label="toy projects directory")
+        present = []
+        if run_container.exists() or run_container.is_symlink():
+            present.append(new_workspace)
+        for candidate in legacy_workspaces:
+            if (
+                candidate.exists() or candidate.is_symlink()
+            ) and candidate not in present:
+                present.append(candidate)
+        if not present:
+            raise StateConflict("native run workspace is unavailable")
+        if len(present) != 1:
+            raise StateConflict(
+                "native run workspace is ambiguous across multiple layouts"
+            )
+        workspace = present[0]
+        if workspace == new_workspace:
+            runs = _existing_real_directory(runs, label="private runs directory")
+            run_container = _existing_real_directory(
+                run_container, label="native run container"
+            )
+            for path, label in (
+                (runs, "private runs directory"),
+                (run_container, "native run container"),
+            ):
+                if stat.S_IMODE(path.stat().st_mode) != 0o700:
+                    raise StateConflict("%s permissions must be 0700" % label)
+        else:
+            legacy_parent = _existing_real_directory(
+                workspace.parent, label="legacy toy projects directory"
+            )
+            del legacy_parent
         states = _existing_real_directory(states, label="toy state directory")
         workspace = _existing_real_directory(
-            toys / product_id, label="toy project directory"
+            workspace, label="native run workspace"
         )
         host_state = _existing_real_directory(
             states / product_id, label="toy host-state directory"
         )
         for path, label in (
-            (workspace, "toy project directory"),
+            (workspace, "native run workspace"),
             (host_state, "toy host-state directory"),
         ):
             if stat.S_IMODE(path.stat().st_mode) != 0o700:
@@ -887,13 +1234,18 @@ def native_run_exists(product_id: str) -> bool:
     if not home.is_absolute():
         raise ContractError("Workshop home must be absolute")
     repository = _source_checkout_root()
-    workspace = (
-        repository / "toys" / product_id
-        if repository is not None
-        else home / "toys" / product_id
-    )
+    candidates = [
+        home / "runs" / product_id,
+        home / "toys" / product_id,
+    ]
+    if repository is not None:
+        candidates.append(repository / "toys" / product_id)
     host_state = home / "state" / product_id
-    return any(path.exists() or path.is_symlink() for path in (workspace, host_state))
+    candidates.append(host_state)
+    return any(
+        path.exists() or path.is_symlink()
+        for path in dict.fromkeys(candidates)
+    )
 
 
 def _open_native_run(product_id: str) -> tuple[AgentRun, AgentRunCheckpoint]:
@@ -1180,6 +1532,7 @@ def _launcher_call(
     *,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
+    activity_observer: Optional[Any] = None,
 ) -> CodexNativeSessionOutcome:
     arguments = {
         "product_id": checkpoint.product_id,
@@ -1188,6 +1541,7 @@ def _launcher_call(
         "run_root": paths.workspace,
         "host_state_root": paths.host_state,
         "prompt": native_stage_prompt(checkpoint.stage),
+        "activity_observer": activity_observer,
     }
     try:
         return getattr(launcher, method)(**arguments)
@@ -1702,7 +2056,7 @@ def _write_release_effect(
 
 def _existing_release_for_promotion(
     run: AgentRun, checkpoint: AgentRunCheckpoint
-) -> tuple[NativeRelease, str]:
+) -> tuple[NativeRelease, NativeMade, str]:
     """Revalidate a sealed Release after the lifecycle has reached Deliver."""
 
     if checkpoint.stage != "deliver" or checkpoint.status not in (
@@ -1758,7 +2112,7 @@ def _existing_release_for_promotion(
     )
     release.assert_context(made, playtested)
     release.validate_package_tree(run.run_root, made, playtested)
-    return release, assignment.selected_inventor_id
+    return release, made, assignment.selected_inventor_id
 
 
 def _promote_existing_release(
@@ -1766,11 +2120,18 @@ def _promote_existing_release(
 ) -> bool:
     """Promote an exact verified draft without another native-agent turn."""
 
-    release, inventor_id = _existing_release_for_promotion(run, checkpoint)
+    release, made, inventor_id = _existing_release_for_promotion(run, checkpoint)
     receipt = _read_release_effect(run, release)
     if receipt is None:
         raise StateConflict("verified Release has no Factory effect checkpoint")
     if receipt.is_verified_public:
+        _try_record_public_example_projection(
+            run,
+            release=release,
+            made=made,
+            inventor_id=inventor_id,
+            receipt=receipt,
+        )
         return False
     try:
         credentials = _factory_credentials(inventor_id)
@@ -1782,6 +2143,13 @@ def _promote_existing_release(
         FactoryAgentSession(credentials),
     ).publish(receipt)
     _write_release_effect(run, release, promoted)
+    _try_record_public_example_projection(
+        run,
+        release=release,
+        made=made,
+        inventor_id=inventor_id,
+        receipt=promoted,
+    )
     return True
 
 
@@ -1842,6 +2210,14 @@ def _execute_release_effect(
             FactoryAgentSession(credentials),
         ).publish(receipt)
         _write_release_effect(run, release, receipt)
+    if receipt.is_verified_public:
+        _try_record_public_example_projection(
+            run,
+            release=release,
+            made=made,
+            inventor_id=assignment.selected_inventor_id,
+            receipt=receipt,
+        )
     product_release = ProductRelease.from_root(
         package.root,
         release.product_artifact_sha256,
@@ -1877,9 +2253,33 @@ def _evaluate_release_stage(
         context=context,
         publish_requested=publish_requested,
     )
+    try:
+        verification = try_materialize_digital_verification(
+            run.run_root,
+            release,
+            context["made"],
+            context["playtested"],
+        )
+    except Exception:
+        # Public verification is optional enrichment. It must never become a
+        # second Release, Factory, or Deliver gate, including if the helper
+        # itself regresses rather than returning its documented ``None``.
+        verification = None
     additional = _manifest_agent_artifacts(
         release.package_root, release.package_manifest
     )
+    verification_checks: dict[str, Any] = {
+        "product_verification_status": (
+            "recorded" if verification is not None else "not-recorded"
+        )
+    }
+    if verification is not None:
+        verification_checks.update(
+            {
+                "product_verification_level": verification.level,
+                "product_verification_sha256": verification.sha256,
+            }
+        )
     evidence = StageGateEvidence(
         stage="release",
         gate_id="release.product-v1",
@@ -1900,6 +2300,7 @@ def _evaluate_release_stage(
             ),
             "package_tree_rehashed": True,
             "factory_readback_verified": True,
+            **verification_checks,
         },
     )
     return StageGateDecision(evidence=evidence, transition="deliver"), additional
@@ -2044,6 +2445,17 @@ def _wait_at_deliver(run: AgentRun) -> AgentRunCheckpoint:
     )
 
 
+def _rebind_existing_progress(
+    paths: NativeRunPaths,
+    previous: AgentRunCheckpoint,
+    updated: AgentRunCheckpoint,
+    *,
+    activity: Optional[str] = None,
+) -> None:
+    tracker = _NativeProgressTracker.existing(paths, previous)
+    tracker.rebind(updated, activity=activity)
+
+
 def _run_native_session(
     run: AgentRun,
     paths: NativeRunPaths,
@@ -2062,11 +2474,17 @@ def _run_native_session(
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
         if checkpoint.stage == "deliver":
-            return _wait_at_deliver(run), last_session, turns, action
+            updated = _wait_at_deliver(run)
+            _rebind_existing_progress(
+                paths, checkpoint, updated, activity="completed"
+            )
+            return updated, last_session, turns, action
         subject, unused_packet, context = _prepare_stage_input(run, checkpoint)
         del unused_packet
 
         if _agent_outcome_exists(run.run_root):
+            recovered_progress = _NativeProgressTracker.existing(paths, checkpoint)
+            recovered_progress.observe("finalizing")
             try:
                 updated = _process_agent_outcome(
                     run,
@@ -2076,18 +2494,30 @@ def _run_native_session(
                     publish_requested=publish_requested,
                 )
             except StateConflict:
+                recovered_progress.observe("failed")
                 _remove_agent_outcome(run.run_root)
+            except WorkshopError:
+                recovered_progress.observe("failed")
+                raise
             else:
+                _rebind_existing_progress(
+                    paths, checkpoint, updated, activity="completed"
+                )
                 if updated.status in ("waiting", "failed", "complete"):
                     return updated, last_session, turns, action
                 continue
 
         _remove_agent_outcome(run.run_root)
         method = "resume" if _session_status(paths) == "checkpointed" else "start"
+        progress = _NativeProgressTracker.begin(paths, checkpoint)
         launcher_failure: Optional[WorkshopError] = None
         try:
             last_session = _launcher_call(
-                launcher, method, checkpoint=checkpoint, paths=paths
+                launcher,
+                method,
+                checkpoint=checkpoint,
+                paths=paths,
+                activity_observer=progress.observe,
             )
         except WorkshopError as exc:
             # The finalizer is an exact filesystem protocol, independent of the
@@ -2098,20 +2528,29 @@ def _run_native_session(
             # whether its exact bytes can advance.  No message or launcher
             # status is treated as gate evidence.
             launcher_failure = exc
+            progress.observe("failed")
+        else:
+            progress.observe("finalizing")
         turns += 1
         if not _agent_outcome_exists(run.run_root):
+            progress.observe("failed")
             if launcher_failure is not None:
                 raise launcher_failure
             raise WorkshopError(
                 "native Codex session returned without agent-outcome.json"
             )
-        updated = _process_agent_outcome(
-            run,
-            checkpoint,
-            subject_sha256=subject,
-            context=context,
-            publish_requested=publish_requested,
-        )
+        try:
+            updated = _process_agent_outcome(
+                run,
+                checkpoint,
+                subject_sha256=subject,
+                context=context,
+                publish_requested=publish_requested,
+            )
+        except WorkshopError:
+            progress.observe("failed")
+            raise
+        progress.rebind(updated, activity="completed")
         if updated.status in ("waiting", "failed", "complete"):
             return updated, last_session, turns, action
     raise WorkshopError("native product run exhausted its bounded Codex turn budget")
@@ -2134,6 +2573,31 @@ def _session_status(paths: NativeRunPaths) -> str:
     return "checkpointed"
 
 
+def _native_progress_receipt(
+    paths: Optional[NativeRunPaths],
+    checkpoint: AgentRunCheckpoint,
+    *,
+    fallback_turns: int,
+) -> tuple[Mapping[str, Any], int]:
+    """Return only exact-bound metadata; invalid telemetry is simply hidden."""
+
+    if paths is None:
+        return {"status": "unavailable"}, fallback_turns
+    progress = trusted_native_progress(
+        paths.host_state / NATIVE_PROGRESS_FILENAME,
+        product_id=checkpoint.product_id,
+        wish_sha256=checkpoint.wish_sha256,
+        checkpoint_sha256=checkpoint.checkpoint_sha256,
+        checkpoint_stage=checkpoint.stage,
+    )
+    if progress is None:
+        return {"status": "unavailable"}, fallback_turns
+    try:
+        return progress.public_view(), progress.native_turns
+    except WorkshopError:
+        return {"status": "unavailable"}, fallback_turns
+
+
 def _native_receipt(
     checkpoint: AgentRunCheckpoint,
     *,
@@ -2144,6 +2608,9 @@ def _native_receipt(
     turns: int = 0,
     need: Optional[str] = None,
 ) -> dict[str, Any]:
+    progress, durable_turns = _native_progress_receipt(
+        paths, checkpoint, fallback_turns=turns
+    )
     publication: dict[str, Any] = {
         "status": "not-created",
         "requested": bool(publish_requested),
@@ -2171,10 +2638,10 @@ def _native_receipt(
             observed_checkpoint = effect_run.snapshot()
             if observed_checkpoint.checkpoint_sha256 != checkpoint.checkpoint_sha256:
                 raise StateConflict("Release status raced a checkpoint update")
-            release, unused_inventor_id = _existing_release_for_promotion(
+            release, unused_made, unused_inventor_id = _existing_release_for_promotion(
                 effect_run, observed_checkpoint
             )
-            del unused_inventor_id
+            del unused_made, unused_inventor_id
             receipt = _read_release_effect(effect_run, release)
             if receipt is None:  # pragma: no cover - effect path exists above
                 raise StateConflict("Release effect checkpoint is unavailable")
@@ -2187,6 +2654,10 @@ def _native_receipt(
                 "cover_url": receipt.details.get("cover_url"),
                 "verified": True,
             }
+            if receipt.is_verified_public:
+                publication["public_example"] = dict(
+                    _read_public_example_projection(effect_run, release)
+                )
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
@@ -2203,7 +2674,8 @@ def _native_receipt(
         ),
         "invalidated_stages": list(checkpoint.invalidated_stages),
         "action": action,
-        "native_turns": turns,
+        "native_turns": durable_turns,
+        "progress": progress,
         "publication": publication,
     }
     if needs:
@@ -2220,19 +2692,34 @@ def start_native_run(
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session."""
 
-    paths = native_run_paths(wish.product_id, create=True)
     assets = product_run_agent_assets()
-    run = AgentRun.create(
-        paths.workspace,
-        paths.host_state,
-        product_id=wish.product_id,
-        wish_bytes=canonical_wish_bytes(wish),
-        product_run_constitution_source=assets.constitution,
-        skill_root=assets.skill_root,
-        domain_skill_roots=product_run_domain_skill_roots(),
-        inventor_source_root=_product_run_inventor_source_root(assets),
-        max_rounds=4,
-    )
+    wish_bytes = canonical_wish_bytes(wish)
+    domain_skill_roots = product_run_domain_skill_roots()
+    inventor_source_root = _product_run_inventor_source_root(assets)
+    paths = native_run_paths(wish.product_id, create=True)
+    try:
+        run = AgentRun.create(
+            paths.workspace,
+            paths.host_state,
+            product_id=wish.product_id,
+            wish_bytes=wish_bytes,
+            product_run_constitution_source=assets.constitution,
+            skill_root=assets.skill_root,
+            domain_skill_roots=domain_skill_roots,
+            inventor_source_root=inventor_source_root,
+            max_rounds=4,
+        )
+    except Exception:
+        # Asset validation normally happens before reserving the run container.
+        # AgentRun also validates all materialized inputs before creating its
+        # workspace.  If either boundary still fails early, release only this
+        # exact empty reservation so the same Wish id can be retried.  A
+        # partial workspace or host state is deliberately preserved.
+        try:
+            paths.workspace.parent.rmdir()
+        except OSError:
+            pass
+        raise
     with _native_run_mutation_lock(paths):
         _record_authorization(
             paths,
@@ -2306,6 +2793,7 @@ def _resume_native_run_locked(
                 publish_requested=True,
             )
     if checkpoint.status == "waiting":
+        waiting_checkpoint = checkpoint
         effect_wait = _read_release_effect_wait(run, checkpoint)
         if effect_wait is not None:
             try:
@@ -2319,6 +2807,7 @@ def _resume_native_run_locked(
                 )
             _remove_release_effect_wait(run)
         checkpoint = run.resume()
+        _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
     elif checkpoint.status in ("failed", "complete"):
         return _native_receipt(
             checkpoint,

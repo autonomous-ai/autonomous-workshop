@@ -17,7 +17,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Callable, Mapping, Optional
 
 from workshop.errors import ContractError
 from workshop.runtime.execution import (
@@ -25,6 +25,7 @@ from workshop.runtime.execution import (
     codex_subprocess_environment,
 )
 from workshop.runtime.project_boundary import PRODUCT_RUN_ROOT_MARKER
+from workshop.runtime.progress import SAFE_NATIVE_ACTIVITY_CLASSES
 
 
 ALLOWED_WORKSHOP_MODELS = frozenset(
@@ -66,6 +67,26 @@ _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONNOUSERSITE", "1"),
 )
 _CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
+_CODEX_REASONING_ITEM_TYPES = frozenset(("reasoning",))
+_CODEX_TOOL_ITEM_TYPES = frozenset(
+    (
+        "command_execution",
+        "dynamic_tool_call",
+        "file_change",
+        "image_generation",
+        "mcp_tool_call",
+        "todo_list",
+        "web_search",
+    )
+)
+_CODEX_SUBAGENT_ITEM_TYPES = frozenset(
+    (
+        "agent_tool_call",
+        "collab_tool_call",
+        "collaboration_tool_call",
+        "subagent_tool_call",
+    )
+)
 
 
 class CodexInvocationError(RuntimeError):
@@ -722,6 +743,63 @@ def _validated_prompt(value: Any) -> str:
     return value
 
 
+def _validated_activity_observer(
+    value: Optional[Callable[[str], None]],
+) -> Optional[Callable[[str], None]]:
+    if value is not None and not callable(value):
+        raise ContractError("Codex native activity observer must be callable")
+    return value
+
+
+def _observe_safe_activity(
+    observer: Optional[Callable[[str], None]], activity: str
+) -> None:
+    """Send one host-selected class; observer failures never alter a turn."""
+
+    if activity not in SAFE_NATIVE_ACTIVITY_CLASSES:
+        raise AssertionError("unsafe native activity class")
+    if observer is None:
+        return
+    try:
+        observer(activity)
+    except Exception:
+        # Progress is non-authoritative telemetry. A full disk, concurrent
+        # status race, or broken callback cannot waive or block the event
+        # stream's existing security and terminal requirements.
+        return
+
+
+def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
+    """Classify a decoded event without forwarding any event-owned bytes."""
+
+    event_type = event.get("type")
+    if event_type in ("turn.failed", "error"):
+        return "failed"
+    if event_type == "turn.completed":
+        return "completed"
+    if event_type == "thread.started":
+        return "starting"
+    if event_type == "turn.started":
+        return "reasoning"
+    if event_type not in ("item.started", "item.updated", "item.completed"):
+        return None
+    item = event.get("item")
+    if not isinstance(item, Mapping):
+        return None
+    item_type = item.get("type")
+    if not isinstance(item_type, str):
+        return None
+    if item_type in _CODEX_SUBAGENT_ITEM_TYPES:
+        return "subagent"
+    if item_type in _CODEX_REASONING_ITEM_TYPES:
+        return "reasoning"
+    if item_type in _CODEX_TOOL_ITEM_TYPES:
+        return "tool"
+    if item_type == "agent_message" and event_type == "item.completed":
+        return "finalizing"
+    return None
+
+
 class CodexNativeSessionLauncher:
     """Launch or resume the one native Codex session for an entire Wish."""
 
@@ -789,6 +867,7 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        activity_observer: Optional[Callable[[str], None]] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -802,6 +881,7 @@ class CodexNativeSessionLauncher:
                 "Codex native session checkpoint already exists; resume it explicitly"
             )
         prompt = _validated_prompt(prompt)
+        activity_observer = _validated_activity_observer(activity_observer)
         run_policy = _codex_run_policy(root)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
@@ -839,6 +919,7 @@ class CodexNativeSessionLauncher:
             run_policy=run_policy,
             expected_thread_id=None,
             bind_thread=bind_thread,
+            activity_observer=activity_observer,
         )
         if observed_thread_id is None or persisted_sha256 is None:
             raise CodexInvocationError(
@@ -866,6 +947,7 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         prompt: str,
+        activity_observer: Optional[Callable[[str], None]] = None,
     ) -> CodexNativeSessionOutcome:
         root, state_root, path = self._binding_paths(
             product_id=product_id,
@@ -875,6 +957,7 @@ class CodexNativeSessionLauncher:
             host_state_root=host_state_root,
         )
         prompt = _validated_prompt(prompt)
+        activity_observer = _validated_activity_observer(activity_observer)
         run_policy = _codex_run_policy(root)
         runtime_config_sha256 = _runtime_config_sha256(
             self.cli_version,
@@ -898,6 +981,7 @@ class CodexNativeSessionLauncher:
             run_policy=run_policy,
             expected_thread_id=thread_id,
             bind_thread=None,
+            activity_observer=activity_observer,
         )
         return CodexNativeSessionOutcome(
             self._public_binding(
@@ -1112,6 +1196,7 @@ class CodexNativeSessionLauncher:
         run_policy: _CodexRunPolicy,
         expected_thread_id: Optional[str],
         bind_thread: Any,
+        activity_observer: Optional[Callable[[str], None]],
     ) -> tuple[bool, Optional[str]]:
         if not self.binary:
             raise CodexInvocationError("Codex CLI is not installed or on PATH")
@@ -1136,6 +1221,7 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session streams are unavailable"
             )
+        _observe_safe_activity(activity_observer, "starting")
 
         stderr_size = 0
         stderr_tail = ""
@@ -1202,6 +1288,9 @@ class CodexNativeSessionLauncher:
                     )
                 event = _decode_native_event(text)
                 event_type = event.get("type")
+                activity = _safe_activity_for_event(event)
+                if activity is not None:
+                    _observe_safe_activity(activity_observer, activity)
                 if event_type in ("turn.failed", "error"):
                     raise CodexInvocationError(
                         "Codex native session reported a failed turn"
@@ -1247,6 +1336,7 @@ class CodexNativeSessionLauncher:
                     break
         except Exception as exc:
             stream_failure = exc
+            _observe_safe_activity(activity_observer, "failed")
             _terminate_safely(process)
         finally:
             timer.cancel()
@@ -1285,9 +1375,11 @@ class CodexNativeSessionLauncher:
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
 
         if timed_out.is_set():
+            _observe_safe_activity(activity_observer, "failed")
             raise CodexInvocationError("Codex native session timed out")
         if stderr_thread.is_alive() or stderr_overflow.is_set():
             _terminate_safely(process)
+            _observe_safe_activity(activity_observer, "failed")
             raise CodexInvocationError(
                 "Codex native diagnostic stream exceeded its safe limit"
             )
@@ -1298,6 +1390,7 @@ class CodexNativeSessionLauncher:
                 "Codex native session event stream was invalid"
             ) from None
         if intentionally_terminated and returncode is None:
+            _observe_safe_activity(activity_observer, "failed")
             raise CodexInvocationError(
                 "Codex native session could not be terminated safely"
             )
@@ -1307,11 +1400,14 @@ class CodexNativeSessionLauncher:
             # Diagnostics are intentionally used only for a safe category and
             # are never attached to the public exception.
             if _is_explicit_transient_failure(stdout_tail, stderr_tail):
+                _observe_safe_activity(activity_observer, "failed")
                 raise CodexInvocationError(
                     "Codex native provider transport was interrupted"
                 )
+            _observe_safe_activity(activity_observer, "failed")
             raise CodexInvocationError("Codex native session did not complete")
         if expected_thread_id is None and observed_thread_id is None:
+            _observe_safe_activity(activity_observer, "failed")
             raise CodexInvocationError(
                 "Codex native session returned no valid session identity"
             )

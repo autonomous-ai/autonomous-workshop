@@ -72,7 +72,8 @@ advance a gate.
 workshop wish
     |
     v
-host persists the canonical Wish and creates toys/<toy-id>/
+host persists the canonical Wish and creates
+$WORKSHOP_HOME/runs/<wish-id>/workspace/
     |
     +-- .workshop-product-run-root    immutable Codex project-root marker
     +-- AGENTS.md                     product-run constitution
@@ -95,6 +96,26 @@ host independently validates exact bytes, seals artifacts, and advances
 project. Session memory is useful continuity, but the durable checkpoint,
 sealed manifests, and reconciled receipts remain authoritative. If memory and
 files disagree, the files win.
+
+### Privacy-safe progress status
+
+`workshop status <wish-id>` is read-only and never opens or resumes Codex. While
+a native turn runs, the host reduces Codex JSONL events to one of seven coarse
+classes: `starting`, `reasoning`, `tool`, `subagent`, `finalizing`, `completed`,
+or `failed`. It atomically stores only the current checkpoint binding, attempted
+stage and attempt number, cumulative attempted-turn count, start time, and last
+safe activity time in a private `0600` host-state record. Status reports those
+fields plus elapsed seconds; it never stores or displays prompts, messages,
+reasoning, tool arguments or output, paths, agent identities, thread ids, or
+credentials.
+
+Progress is diagnostic metadata, not gate evidence. A missing, stale,
+malformed, tampered, wrong-mode, or symlinked progress record is shown only as
+`unavailable`; Workshop neither trusts its fields nor lets it invalidate an
+otherwise valid lifecycle checkpoint. The next host-owned native attempt may
+replace unusable telemetry safely. `native_turns` is the durable cumulative
+attempt count when trusted progress is available, including from read-only
+status calls, rather than the number of turns launched by the status command.
 
 ## Native subagents and Inventors
 
@@ -311,7 +332,9 @@ second hand-edited copy.
 ## Repository ownership
 
 ```text
-toys/<toy-id>/                              persistent toy projects / Codex CWD
+$WORKSHOP_HOME/runs/<wish-id>/workspace/    private product run / Codex CWD
+$WORKSHOP_HOME/state/<wish-id>/             trusted checkpoints and effects
+toys/<inventor>-<slug>/                     sanitized public examples only
 .agents/product-run/                        complete toy-project template source
   AGENTS.md                                 product-run constitution
   .agents/skills/autonomous-workshop/       native workflow instructions

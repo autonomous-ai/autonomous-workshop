@@ -105,7 +105,7 @@ print(json.dumps({"type": "turn.completed", "usage": {}}))
             self.assertEqual(receipt["stage"], "match")
             self.assertEqual(receipt["publication"]["status"], "not-created")
 
-            workspace = home / "toys" / receipt["product_id"]
+            workspace = home / "runs" / receipt["product_id"] / "workspace"
             self.assertTrue((home / "state" / receipt["product_id"]).is_dir())
             observed = json.loads(
                 (workspace / "native-probe.json").read_text(encoding="utf-8")

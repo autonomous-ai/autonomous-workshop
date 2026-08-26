@@ -26,6 +26,8 @@ authoritative for the exact required set.
 These are Codex-authored digital assessments unless host-replayed evidence or
 an authenticated physical receipt explicitly proves more. They do not prove a
 successful print, physical fit, durability, hands-on use, or human response.
+The normative public levels and optional manifest contract are defined in
+[Product verification](PRODUCT_VERIFICATION.md).
 
 ## Native Playtest Goal, deterministic envelope
 
@@ -110,6 +112,15 @@ evidence artifact hash, and its claim map is derived exactly from the passing
 checks. Release may write a manual and complete page-ready product content,
 but it cannot turn simulation into customer response or CAD verification into
 manufacture.
+
+After Release succeeds, the host may derive
+`artifacts/release/VERIFICATION.json` as a best-effort public projection. The
+current schema can emit only **Digitally Verified**. It publishes bounded check
+identities and hashes while keeping raw evidence private. Failure to create
+this optional projection does not weaken or block the underlying Release; it
+means no public verification badge was recorded. A future **Physically
+Verified** level requires a trusted host receipt proving that the exact
+released bytes were built and checked. Model-authored evidence cannot raise it.
 
 Deliver owns real print, hands-on QA, packing, and carrier evidence. A Factory
 page—even a public one—is not delivery evidence.

@@ -42,6 +42,22 @@ must not contain credentials, remote receipts, images, audio, video, or
 unsupported claims of manufacture, physical performance, human response,
 publication, or delivery.
 
+## Public verification
+
+After the Release and any Factory effect succeed, the host may derive
+`artifacts/release/VERIFICATION.json` as separate, best-effort public
+enrichment. Codex does not author that file and it is not part of the
+agent-authored package manifest. Schema v1 truthfully emits only **Digitally
+Verified** and binds the exact product, Playtest evidence, Release,
+`product.json`, check-configuration, and check-evidence hashes.
+
+The full evidence tree and authenticated receipts remain private. A sanitized
+public toy snapshot may copy the exact manifest as `VERIFICATION.json`, and the
+website should render its badge and limitations directly from that source. If
+generation fails or the file is missing or invalid, publication still succeeds
+and the website shows “Verification not recorded.” See
+[Product verification](PRODUCT_VERIFICATION.md) for the two-level contract.
+
 ## Private by default
 
 Start a normal private run with:
@@ -94,6 +110,8 @@ stops unknown/needs-human.
 
 A private or public Factory page proves only that remote page state. It does
 not prove printing, QA, packing, shipment, delivery, or customer response.
+Likewise, shipment or delivery is a separate fulfillment status: it does not
+by itself raise Digitally Verified to Physically Verified.
 
 ## Showcase products
 

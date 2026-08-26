@@ -28,6 +28,10 @@ from workshop.make.native_gate import (
 from workshop.match.native import NativeMatchAssignment
 from workshop.playtest.native import NativePlaytested
 from workshop.release.native import NativeRelease
+from workshop.release.verification import (
+    PRODUCT_VERIFICATION_PATH,
+    read_product_verification,
+)
 from workshop.runtime import Receipt
 from workshop.wish import Wish
 from workshop.workflow import AgentRun
@@ -678,7 +682,7 @@ class NativeFullRunTest(unittest.TestCase):
                 os.environ, {"WORKSHOP_HOME": str(home)}, clear=True
             ), mock.patch(
                 "workshop.workflow.native_run._source_checkout_root",
-                return_value=None,
+                return_value=Path(temporary).resolve() / "repository",
             ), mock.patch(
                 "workshop.workflow.native_run.CodexNativeSessionLauncher",
                 return_value=launcher,
@@ -694,6 +698,12 @@ class NativeFullRunTest(unittest.TestCase):
             ), mock.patch(
                 "workshop.workflow.native_run.FactoryPublicTransition",
                 side_effect=effects.transition,
+            ), mock.patch(
+                "workshop.workflow.native_run.try_materialize_digital_verification",
+                side_effect=OSError("optional verification storage unavailable"),
+            ), mock.patch(
+                "workshop.workflow.native_run.materialize_public_example_if_source_checkout",
+                side_effect=RuntimeError("unexpected public example regression"),
             ):
                 waiting = start_native_run(wish, publish_requested=True)
                 paths = native_run_paths(wish.product_id)
@@ -740,7 +750,7 @@ class NativeFullRunTest(unittest.TestCase):
                 )
                 self.assertEqual(still_waiting["status"], "waiting")
                 self.assertEqual(still_waiting["stage"], "release")
-                self.assertEqual(still_waiting["native_turns"], 0)
+                self.assertEqual(still_waiting["native_turns"], 5)
                 self.assertEqual(
                     still_waiting["action"], "waiting-for-factory-credentials"
                 )
@@ -762,9 +772,21 @@ class NativeFullRunTest(unittest.TestCase):
 
             self.assertEqual(completed_release["status"], "waiting")
             self.assertEqual(completed_release["stage"], "deliver")
-            self.assertEqual(completed_release["native_turns"], 1)
+            self.assertEqual(completed_release["native_turns"], 6)
             self.assertEqual(completed_release["publication"]["status"], "public")
             self.assertTrue(completed_release["publication"]["verified"])
+            self.assertEqual(
+                completed_release["publication"]["public_example"]["status"],
+                "error",
+            )
+            release_gate_path = sorted(
+                (paths.host_state / "gates").glob("*-release.json")
+            )[-1]
+            release_gate = _read_json(release_gate_path)
+            self.assertEqual(
+                release_gate["evidence"]["checks"]["product_verification_status"],
+                "not-recorded",
+            )
             self.assertEqual(final_checkpoint.stage, "deliver")
             self.assertEqual(final_checkpoint.status, "waiting")
             self.assertEqual(len(launcher.starts), 1)
@@ -1312,7 +1334,7 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(draft_receipt["publication"]["status"], "draft")
             self.assertEqual(receipt["status"], "waiting")
             self.assertEqual(receipt["stage"], "deliver")
-            self.assertEqual(receipt["native_turns"], 0)
+            self.assertEqual(receipt["native_turns"], 5)
             self.assertEqual(receipt["action"], "published-existing-release")
             self.assertEqual(receipt["publication"]["status"], "public")
             self.assertTrue(receipt["publication"]["verified"])
@@ -1459,6 +1481,10 @@ class NativeFullRunTest(unittest.TestCase):
             invented.assert_context(assignment)
             made.assert_context(assignment, invented, expected_round=1)
             release.validate_package_tree(paths.workspace, made, playtested)
+            verification = read_product_verification(
+                paths.workspace / PRODUCT_VERIFICATION_PATH
+            )
+            verification.assert_context(release, made, playtested)
 
             tamper_targets = (
                 (
@@ -1512,6 +1538,14 @@ class NativeFullRunTest(unittest.TestCase):
             self.assertEqual(
                 release_gate["evidence"]["checks"]["publication_status"],
                 "draft",
+            )
+            self.assertEqual(
+                release_gate["evidence"]["checks"]["product_verification_status"],
+                "recorded",
+            )
+            self.assertEqual(
+                release_gate["evidence"]["checks"]["product_verification_sha256"],
+                verification.sha256,
             )
 
 

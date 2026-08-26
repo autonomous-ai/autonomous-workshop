@@ -15,8 +15,8 @@ from cli.main import main, parser
 cli_main = importlib.import_module("cli.main")
 
 
-def native_receipt(*, status="waiting", stage="match", published=False):
-    return {
+def native_receipt(*, status="waiting", stage="match", published=False, progress=None):
+    receipt = {
         "schema_version": 1,
         "kind": "native-agent-run",
         "product_id": "wish-one",
@@ -27,6 +27,9 @@ def native_receipt(*, status="waiting", stage="match", published=False):
             "requested": published,
         },
     }
+    if progress is not None:
+        receipt["progress"] = progress
+    return receipt
 
 
 class NativeCommandTest(unittest.TestCase):
@@ -144,6 +147,30 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         status.assert_called_once_with("wish-one")
         self.assertEqual(json.loads(stdout.getvalue())["product_id"], "wish-one")
+
+    def test_status_text_shows_only_safe_progress_metadata(self):
+        stdout = StringIO()
+        progress = {
+            "status": "available",
+            "stage_attempt": {"stage": "make", "number": 2},
+            "activity": "tool",
+            "elapsed_seconds": 73,
+            "last_activity_at": "2026-08-26T15:00:00.000Z",
+        }
+        with mock.patch(
+            "cli.main.native_run_status",
+            return_value=native_receipt(
+                status="active", stage="make", progress=progress
+            ),
+        ), redirect_stdout(stdout):
+            result = main(("status", "wish-one"))
+
+        self.assertEqual(result, 0)
+        self.assertIn(
+            "Progress: Make attempt 2 — tool (73s; last activity "
+            "2026-08-26T15:00:00.000Z)",
+            stdout.getvalue(),
+        )
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
         stdout = StringIO()

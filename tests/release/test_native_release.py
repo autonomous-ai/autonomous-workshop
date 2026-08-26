@@ -1,12 +1,14 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
+from unittest import mock
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import ArtifactError, ContractError
+from workshop.errors import ArtifactError, ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.match.native import (
@@ -25,6 +27,17 @@ from workshop.release.native import (
     NativeRelease,
     read_native_release,
 )
+from workshop.release.public_example import materialize_public_example
+from workshop.release.verification import (
+    DIGITALLY_VERIFIED,
+    PHYSICALLY_VERIFIED,
+    PRODUCT_VERIFICATION_PATH,
+    ProductVerification,
+    materialize_digital_verification,
+    read_product_verification,
+    try_materialize_digital_verification,
+)
+from workshop.runtime import Receipt
 
 
 def _canonical(value):
@@ -90,21 +103,42 @@ class NativeReleaseTest(unittest.TestCase):
         root = self.run_root / "artifacts/make/r0001/product"
         (root / "cad/project").mkdir(parents=True)
         (root / "validation").mkdir()
+        assembled = b"solid assembled\nendsolid assembled\n"
+        printable = b"solid moon-body\nendsolid moon-body\n"
         product = {
             "title": "Moon Nook",
             "summary": "A tiny lunar observatory.",
             "components": ["observatory shell", "moon rover"],
             "instructions": "Arrange the rover and explore the observatory.",
             "limitations": ["AI-simulated playtest only"],
+            "cad": {
+                "assembled_stl": {
+                    "path": "assembled.stl",
+                    "bytes": len(assembled),
+                    "sha256": _sha(assembled),
+                }
+            },
+            "inventory": {
+                "parts": [
+                    {
+                        "id": "moon-body",
+                        "quantity": 2,
+                        "stl": {
+                            "path": "cad/project/moon-body.stl",
+                            "bytes": len(printable),
+                            "sha256": _sha(printable),
+                        },
+                    }
+                ]
+            },
         }
         product_bytes = _canonical(product)
         receipt = _canonical({"ok": True, "validator": "cad-final"})
         (root / "product.json").write_bytes(product_bytes)
         (root / "cad/project/moon.step.py").write_text("pass\n", encoding="utf-8")
         (root / "cad/project/moon.step").write_bytes(b"ISO-10303-21;\n")
-        (root / "cad/project/moon.stl").write_bytes(
-            b"solid moon\nendsolid moon\n"
-        )
+        (root / "assembled.stl").write_bytes(assembled)
+        (root / "cad/project/moon-body.stl").write_bytes(printable)
         (root / "validation/cad-build.json").write_bytes(receipt)
         return NativeMade(
             round=1,
@@ -304,6 +338,92 @@ class NativeReleaseTest(unittest.TestCase):
         for forbidden in ("credentials", "factory_receipt", "site_receipt"):
             self.assertNotIn(forbidden, serialized)
 
+    def test_host_materializes_strict_public_digital_verification(self):
+        release = self._release()
+
+        verification = materialize_digital_verification(
+            self.run_root, release, self.made, self.playtested
+        )
+        path = self.run_root / PRODUCT_VERIFICATION_PATH
+        observed = read_product_verification(path)
+
+        self.assertEqual(observed, verification)
+        self.assertEqual(observed.level, DIGITALLY_VERIFIED)
+        self.assertIsNone(observed.physical_verification)
+        self.assertEqual(
+            observed.product_artifact_sha256,
+            self.made.product_manifest.artifact_sha256,
+        )
+        self.assertEqual(
+            observed.playtest_evidence_artifact_sha256,
+            self.playtested.evidence_manifest.artifact_sha256,
+        )
+        self.assertEqual(
+            [check.check_id for check in observed.checks],
+            sorted(self.blueprint.required_playtest_checks()),
+        )
+        self.assertNotIn(
+            "VERIFICATION.json",
+            {entry.path for entry in release.package_manifest.entries},
+        )
+        serialized = path.read_text(encoding="utf-8")
+        for private in (
+            "evidence_ref",
+            "observed_at",
+            "factory_receipt",
+            "site_receipt",
+            "transcript",
+        ):
+            self.assertNotIn(private, serialized)
+
+    def test_host_replaces_stale_verification_after_exact_release_validation(self):
+        release = self._release()
+        verification_path = self.run_root / PRODUCT_VERIFICATION_PATH
+        verification_path.write_text("stale bytes", encoding="utf-8")
+
+        first = materialize_digital_verification(
+            self.run_root, release, self.made, self.playtested
+        )
+        second = materialize_digital_verification(
+            self.run_root, release, self.made, self.playtested
+        )
+
+        self.assertEqual(first, second)
+        self.assertEqual(read_product_verification(verification_path), first)
+
+    def test_schema_v1_cannot_self_declare_physical_verification(self):
+        release = self._release()
+        verification = materialize_digital_verification(
+            self.run_root, release, self.made, self.playtested
+        ).to_dict()
+        verification.update(
+            {
+                "level": PHYSICALLY_VERIFIED,
+                "label": "Physically Verified",
+                "physical_verification": {"receipt_sha256": "f" * 64},
+            }
+        )
+
+        with self.assertRaisesRegex(ContractError, "cannot claim Physically Verified"):
+            ProductVerification.from_mapping(verification)
+
+    def test_optional_verification_failure_does_not_become_a_release_failure(self):
+        release = self._release()
+        path = self.run_root / PRODUCT_VERIFICATION_PATH
+        outside = self.run_root / "outside-verification.json"
+        outside.write_text("outside", encoding="utf-8")
+        path.symlink_to(outside)
+
+        observed = try_materialize_digital_verification(
+            self.run_root, release, self.made, self.playtested
+        )
+
+        self.assertIsNone(observed)
+        package = release.validate_package_tree(
+            self.run_root, self.made, self.playtested
+        )
+        self.assertTrue(package.playtested.passed)
+
     def test_rejects_media_symlinks_and_path_escape(self):
         release = self._release()
         with self.assertRaisesRegex(ContractError, "package_root is not canonical"):
@@ -436,6 +556,137 @@ class NativeReleaseTest(unittest.TestCase):
         manual.write_text("# changed after sealing\n", encoding="utf-8")
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             release.validate_package_tree(self.run_root, self.made, self.playtested)
+
+    def test_public_example_uses_sealed_inventory_and_never_overwrites(self):
+        release = self._release()
+        entries = {
+            entry.path: entry for entry in release.package_manifest.entries
+        }
+        receipt = Receipt(
+            payload_sha256="1" * 64,
+            artifact_sha256=release.product_artifact_sha256,
+            adapter="factory",
+            status="public",
+            observed_at="2026-08-26T00:00:00Z",
+            reference="design-moon-nook",
+            details={
+                "release_sha256": release.package_manifest.artifact_sha256,
+                "product_page_sha256": release.product_json_sha256,
+                "manual_sha256": entries[release.manual_path].sha256,
+                "factory_content_sha256": "f" * 64,
+                "primary_model_path": "assembled.stl",
+                "primary_model_sha256": self.made.product["cad"][
+                    "assembled_stl"
+                ]["sha256"],
+                "page_url": "https://www.autonomous.ai/factory/product/moon-nook",
+                "cover_url": "https://cdn.autonomous.ai/moon-nook.png",
+            },
+            design_id="design-moon-nook",
+            slug="moon-nook",
+            owner_id="owner-eve",
+            root_id="design-moon-nook",
+            current_history_id="history-1",
+            published_history_id="history-1",
+            project_url="https://cdn.autonomous.ai/projects/moon-nook/",
+            listing_active=True,
+            listing_price_cents=2400,
+            listing_currency="USD",
+            listing_sku="MOON-NOOK-1",
+        )
+        repository = self.run_root / "repository"
+        (repository / "toys").mkdir(parents=True)
+
+        real_mkdir = os.mkdir
+
+        def create_empty_target_before_exclusive_install(
+            path, mode=0o777, *, dir_fd=None
+        ):
+            if path == "eve-moon-nook" and dir_fd is not None:
+                real_mkdir(repository / "toys/eve-moon-nook", 0o755)
+            return real_mkdir(path, mode, dir_fd=dir_fd)
+
+        with mock.patch(
+            "workshop.release.public_example.os.mkdir",
+            side_effect=create_empty_target_before_exclusive_install,
+        ), self.assertRaisesRegex(StateConflict, "without overwrite"):
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                receipt=receipt,
+            )
+        raced_target = repository / "toys/eve-moon-nook"
+        self.assertEqual(list(raced_target.iterdir()), [])
+        raced_target.rmdir()
+
+        signed_cover = replace(
+            receipt,
+            details={
+                **receipt.details,
+                "cover_url": (
+                    "https://cdn.autonomous.ai/moon-nook.png?token=private"
+                ),
+            },
+        )
+        with self.assertRaisesRegex(StateConflict, "public cover URL"):
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                receipt=signed_cover,
+            )
+        self.assertFalse((repository / "toys/eve-moon-nook").exists())
+
+        target = materialize_public_example(
+            repository,
+            self.run_root,
+            release=release,
+            made=self.made,
+            inventor_id="eve",
+            receipt=receipt,
+        )
+        self.assertEqual(target, repository / "toys/eve-moon-nook")
+        self.assertEqual(
+            (target / "product.json").read_bytes(),
+            (self.run_root / release.package_root / "product.json").read_bytes(),
+        )
+        publication = json.loads(
+            (target / "PUBLICATION.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(publication["print_files"][0]["quantity"], 2)
+        self.assertEqual(
+            publication["print_files"][0]["path"],
+            "print/component-001.stl",
+        )
+        self.assertTrue((target / "print/component-001.stl").is_file())
+        self.assertFalse((target / "WISH.json").exists())
+        self.assertFalse((target / "AGENTS.md").exists())
+
+        self.assertEqual(
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                receipt=receipt,
+            ),
+            target,
+        )
+        (target / "README.md").write_text("collision\n", encoding="utf-8")
+        with self.assertRaisesRegex(StateConflict, "different or partial bytes"):
+            materialize_public_example(
+                repository,
+                self.run_root,
+                release=release,
+                made=self.made,
+                inventor_id="eve",
+                receipt=receipt,
+            )
 
 
 if __name__ == "__main__":

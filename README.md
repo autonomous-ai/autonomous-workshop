@@ -85,9 +85,10 @@ uv run workshop wish \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
-Every Wish first creates one persistent toy project under `toys/`, populates
-its product-run `AGENTS.md`, skills, and Inventor roster, and then starts one
-native Codex session with that toy project as its working directory. The same
+Every Wish first creates one private persistent project under
+`$WORKSHOP_HOME/runs/<wish-id>/workspace`, populates its product-run `AGENTS.md`,
+skills, and Inventor roster, and then starts one native Codex session with that
+project as its working directory. The same
 session Matches an Inventor subagent, researches, explores, and selects the
 exact product concept during Invent, builds and repairs the CAD from that
 sealed Invent result, Playtests the exact product, then writes the Release
@@ -240,11 +241,11 @@ The installed distribution is `autonomous-workshop`. Python code imports the
 `src/cli/` package. The `src/` layout keeps repository-only files from being
 imported accidentally.
 
-- [`toys/`](toys/) contains the persistent toy projects and is the working
-  directory for each native runtime session. Every toy project contains its
-  product-run `AGENTS.md`, standard custom Inventors under `.codex/agents/`,
-  workflow and craft skills under `.agents/skills/`, its exact Inventor roster,
-  and its Wish-to-Release artifacts.
+- [`toys/`](toys/) contains only sanitized released examples under
+  `<inventor>-<product-slug>/`. Private runtime projects are outside Git at
+  `$WORKSHOP_HOME/runs/<wish-id>/workspace` and contain the product-run
+  `AGENTS.md`, custom Inventors, skills, exact roster, and Wish-to-Release
+  artifacts.
 - [`.agents/product-run/`](.agents/product-run/) is the complete isolated
   template copied into every new toy project before the runtime starts.
 - [`inventors/`](inventors/) contains reusable Inventor sources: manifest,
@@ -258,13 +259,14 @@ imported accidentally.
 - [`tests/`](tests/) mirrors the component ownership and contains the full
   deterministic and installed-package acceptance suite.
 - [`docs/`](docs/) contains the architecture, runtime protocol, evidence, and
-  contributor guides.
+  contributor guides, including the [product verification
+  levels](docs/PRODUCT_VERIFICATION.md).
 
 Trusted checkpoints, receipts, credentials, and effect state live outside the
-coding-agent working directory under `$WORKSHOP_HOME/state/<toy-id>/`. A toy
-project remains useful and inspectable without exposing host authority. New
-runtime-created toy projects are ignored by Git by default; only explicitly
-reviewed showcase or historical projects should be allowlisted for a commit.
+coding-agent working directory under `$WORKSHOP_HOME/state/<wish-id>/`. The
+private project remains useful and inspectable without exposing host authority.
+Only the host's optional sanitized post-publication projection belongs in the
+repository `toys/` directory.
 
 Shared code is organized by architecture component under `src/workshop/`:
 `product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`, `deliver`,
