@@ -74,6 +74,7 @@ jobs:
       - name: installed Workshop carries skills, schemas, and native persona scaffolds
         if: matrix.python-version == '3.14'
         run: |
+          python -m pip install "setuptools>=77"
           python -m pip install .
           cd "$RUNNER_TEMP"
           workshop skills list
