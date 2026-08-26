@@ -1,21 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://autonomous.ai/schemas/inventor/v5.json",
-  "title": "Autonomous inventor manifest",
+  "$id": "https://autonomous.ai/schemas/inventor/v6.json",
+  "title": "Autonomous Workshop inventor persona manifest",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "id",
     "status",
-    "entrypoint",
     "capabilities",
     "source"
   ],
   "oneOf": [
     {
       "properties": {"schema_version": {"const": 1}},
-      "required": ["name", "niche", "summary", "autonomy", "core_features"],
+      "required": [
+        "name", "niche", "summary", "autonomy", "entrypoint", "core_features"
+      ],
       "not": {
         "anyOf": [
           {"required": ["workshop_features"]},
@@ -27,7 +28,8 @@
     {
       "properties": {"schema_version": {"const": 2}},
       "required": [
-        "name", "niche", "summary", "autonomy", "foundation_features", "checks"
+        "name", "niche", "summary", "autonomy", "entrypoint",
+        "foundation_features", "checks"
       ],
       "not": {
         "anyOf": [
@@ -59,7 +61,8 @@
         }
       },
       "required": [
-        "name", "niche", "summary", "autonomy", "workshop_features", "checks"
+        "name", "niche", "summary", "autonomy", "entrypoint",
+        "workshop_features", "checks"
       ],
       "not": {
         "anyOf": [
@@ -70,7 +73,7 @@
     },
     {
       "properties": {"schema_version": {"const": 4}},
-      "required": ["name", "niche", "summary", "autonomy", "checks"],
+      "required": ["name", "niche", "summary", "autonomy", "entrypoint", "checks"],
       "not": {
         "anyOf": [
           {"required": ["core_features"]},
@@ -81,7 +84,7 @@
     },
     {
       "properties": {"schema_version": {"const": 5}},
-      "required": ["checks"],
+      "required": ["entrypoint", "checks"],
       "not": {
         "anyOf": [
           {"required": ["name"]},
@@ -93,10 +96,41 @@
           {"required": ["workshop_features"]}
         ]
       }
+    },
+    {
+      "properties": {
+        "schema_version": {"const": 6},
+        "capabilities": {
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "enum": [
+              "classics-made-yours",
+              "invented-games",
+              "moving-machines",
+              "holdable-science",
+              "little-worlds"
+            ]
+          }
+        }
+      },
+      "not": {
+        "anyOf": [
+          {"required": ["name"]},
+          {"required": ["niche"]},
+          {"required": ["summary"]},
+          {"required": ["autonomy"]},
+          {"required": ["entrypoint"]},
+          {"required": ["checks"]},
+          {"required": ["core_features"]},
+          {"required": ["foundation_features"]},
+          {"required": ["workshop_features"]}
+        ]
+      }
     }
   ],
   "properties": {
-    "schema_version": {"enum": [1, 2, 3, 4, 5]},
+    "schema_version": {"enum": [1, 2, 3, 4, 5, 6]},
     "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,62}$"},
     "name": {
       "type": "string", "minLength": 1, "maxLength": 200,

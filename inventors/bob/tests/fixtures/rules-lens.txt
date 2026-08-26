@@ -1,1 +1,0 @@
-VERDICT: PASS — turn loop closed, end condition reachable, no undefined terms. Two ambiguities noted: tiebreak on simultaneous depletion; setup order for 2p.

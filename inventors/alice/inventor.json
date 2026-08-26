@@ -1,9 +1,7 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "id": "alice",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["classics-made-yours", "taste-only"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
+  "capabilities": ["classics-made-yours"],
   "source": {"kind": "local"}
 }

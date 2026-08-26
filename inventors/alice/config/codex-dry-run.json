@@ -1,8 +1,0 @@
-{
-  "runtime": {
-    "effect_mode": "dry-run"
-  },
-  "agents": {
-    "provider": "codex"
-  }
-}

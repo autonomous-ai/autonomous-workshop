@@ -1,15 +1,18 @@
-"""Static and executable checks for inventor pull requests."""
+"""Static checks for native inventor-persona contributions."""
 
 from __future__ import annotations
 
 import os
-import subprocess
-import sys
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
 from workshop.errors import ManifestError
-from workshop.contributors.manifest import InventorManifest, discover_inventors, load_manifest, validate_entrypoints
+from workshop.contributors.manifest import (
+    InventorManifest,
+    discover_inventors,
+    load_manifest,
+    validate_entrypoints,
+)
 from workshop.contributors.taste import load_taste_header
 from workshop.contributors.contracts import ROUTABLE_INVENTOR_STATUSES
 
@@ -19,28 +22,23 @@ def _regular_file(path: Path) -> bool:
 
 
 def validate_contribution(manifest: InventorManifest) -> List[str]:
-    """Return actionable repository-contract problems for one inventor.
-
-    This check intentionally does not import or execute inventor code. Use
-    :func:`run_declared_checks` only when executing code from the contribution
-    is appropriate (for example, locally or in an isolated CI job).
-    """
+    """Return actionable, entirely static problems for one persona folder."""
 
     problems = list(validate_entrypoints((manifest,)))
     root = manifest.path.parent
-    if manifest.source.get("kind") != "local":
-        return problems
-    if manifest.schema_version != 5:
+    if manifest.source.get("kind") == "local" and manifest.schema_version != 6:
         problems.append(
-            "%s: local inventors must use operational manifest schema_version 5"
+            "%s: local inventors must use native persona schema_version 6"
             % manifest.inventor_id
         )
-    for filename in ("README.md", "TASTE.md"):
-        if not _regular_file(root / filename):
-            problems.append(
-                "%s: local inventor requires a regular %s"
-                % (manifest.inventor_id, filename)
-            )
+        return problems
+    if not manifest.native_persona:
+        return problems
+    if not _regular_file(root / "TASTE.md"):
+        problems.append(
+            "%s: local inventor requires a regular TASTE.md"
+            % manifest.inventor_id
+        )
     if _regular_file(root / "TASTE.md"):
         try:
             load_taste_header(root)
@@ -49,80 +47,52 @@ def validate_contribution(manifest: InventorManifest) -> List[str]:
                 manifest.inventor_id,
                 exc,
             ))
-    tests = root / "tests"
-    if tests.is_symlink() or not tests.is_dir():
+    allowed = {"inventor.json", "TASTE.md", "README.md"}
+    try:
+        children = tuple(root.iterdir())
+    except OSError as exc:
         problems.append(
-            "%s: local inventor requires a tests/ directory"
-            % manifest.inventor_id
+            "%s: cannot inspect native persona folder: %s"
+            % (manifest.inventor_id, exc)
         )
-    else:
-        test_files = [
-            path
-            for path in tests.glob("test_*.py")
-            if _regular_file(path)
-        ]
-        if not test_files:
+        return problems
+    extras = sorted(child.name for child in children if child.name not in allowed)
+    if extras:
+        problems.append(
+            "%s: native persona folder may contain only inventor.json, TASTE.md, "
+            "and optional README.md; remove %s"
+            % (manifest.inventor_id, extras)
+        )
+    readme = root / "README.md"
+    if readme.exists() or readme.is_symlink():
+        if not _regular_file(readme):
             problems.append(
-                "%s: tests/ must contain a regular test_*.py file"
+                "%s: optional README.md must be a regular file"
                 % manifest.inventor_id
             )
-    if not manifest.checks:
-        problems.append(
-            "%s: local inventor must declare at least one check command"
-            % manifest.inventor_id
-        )
-    for command in manifest.checks:
-        if command[0] not in ("python", "python3"):
-            problems.append(
-                "%s: check command must use python or python3 without a shell"
-                % manifest.inventor_id
-            )
+        else:
+            try:
+                readme_size = readme.stat().st_size
+            except OSError:
+                readme_size = -1
+            if not 1 <= readme_size <= 32 * 1024:
+                problems.append(
+                    "%s: optional README.md must contain 1 to 32768 bytes"
+                    % manifest.inventor_id
+                )
     return problems
 
 
 def run_declared_checks(manifest: InventorManifest) -> List[str]:
-    """Run one inventor's declared checks without shell interpolation."""
+    """Compatibility alias for static validation; native personas run no code."""
 
-    problems = validate_contribution(manifest)
-    if problems or manifest.source.get("kind") != "local":
-        return problems
-    root = manifest.path.parent
-    workshop_src = Path(__file__).resolve().parents[2]
-    paths = [str(workshop_src)]
-    if (root / "src").is_dir():
-        paths.append(str(root / "src"))
-    paths.append(str(root))
-    existing = os.environ.get("PYTHONPATH")
-    if existing:
-        paths.append(existing)
-    environment = dict(os.environ)
-    environment["PYTHONPATH"] = os.pathsep.join(paths)
-    environment["PYTHONDONTWRITEBYTECODE"] = "1"
-    for command in manifest.checks:
-        executable = [sys.executable, *command[1:]]
-        completed = subprocess.run(
-            executable,
-            cwd=str(root),
-            env=environment,
-            check=False,
-        )
-        if completed.returncode:
-            problems.append(
-                "%s: check failed (%s): %s"
-                % (
-                    manifest.inventor_id,
-                    completed.returncode,
-                    " ".join(command),
-                )
-            )
-            break
-    return problems
+    return validate_contribution(manifest)
 
 
 def manifests_for_target(target: Path) -> Sequence[InventorManifest]:
     """Resolve an inventor folder, manifest, repository, or collection."""
 
-    # Keep paths absolute before loading manifests or starting subprocesses.
+    # Keep paths absolute before loading manifests.
     # A relative ``.`` otherwise leaves the manifest parent named ``.`` and
     # breaks the invariant that an inventor id matches its folder name.
     target = Path(os.path.abspath(os.fspath(target)))
@@ -152,9 +122,9 @@ def validate_inventor_collection(
 ) -> Tuple[InventorManifest, ...]:
     """Validate contributor-owned catalog structure without importing Match.
 
-    Match owns routing cards and semantic selection. Contributors owns whether
-    a collection contains complete, runnable inventor identities, which is the
-    only fact atomic scaffolding needs before publication.
+    Match owns semantic selection. Contributors owns whether a collection
+    contains complete native personas, which is the only fact atomic
+    scaffolding needs before publication.
     """
 
     requested = Path(root)
@@ -193,9 +163,13 @@ def validate_inventor_collection(
             raise ManifestError("inventor folder is missing %s" % missing)
 
     manifests = tuple(discover_inventors(collection))
-    entrypoint_problems = validate_entrypoints(manifests)
-    if entrypoint_problems:
-        raise ManifestError("; ".join(entrypoint_problems))
+    contribution_problems = [
+        problem
+        for manifest in manifests
+        for problem in validate_contribution(manifest)
+    ]
+    if contribution_problems:
+        raise ManifestError("; ".join(contribution_problems))
     for manifest in manifests:
         load_taste_header(manifest.path.parent)
     if required_routable_id is not None:

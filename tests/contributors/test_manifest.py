@@ -5,39 +5,38 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from workshop.errors import ManifestError
+from workshop.contributors.contribution import validate_contribution
 from workshop.contributors.manifest import (
     discover_inventors,
     load_manifest,
     validate_entrypoints,
 )
+from workshop.errors import ManifestError
+from workshop.product import PLAYTHING_LANES
+
+
+def _taste(name: str = "Sample") -> str:
+    return (
+        "---\n"
+        "name: %s\n"
+        "description: Makes a distinct kind of Wish-shaped plaything.\n"
+        "---\n"
+        "# Taste\nA recognizable point of view.\n" % name
+    )
+
+
+def _native_manifest(inventor_id: str = "sample", lane: str = "invented-games"):
+    return {
+        "schema_version": 6,
+        "id": inventor_id,
+        "status": "experimental",
+        "capabilities": [lane],
+        "source": {"kind": "local"},
+    }
 
 
 class RegistryTest(unittest.TestCase):
-    def test_manifest_rejects_boolean_schema_versions(self):
-        document = {
-            "schema_version": True,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "reference",
-            "status": "reference",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "core_features": [],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            (folder / "TASTE.md").write_text("# Taste\n", encoding="utf-8")
-            path = folder / "inventor.json"
-            path.write_text(json.dumps(document), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "schema_version"):
-                load_manifest(path)
-
-    def test_bundled_showcase_inventors_are_valid(self):
+    def test_bundled_personas_are_lean_native_manifests(self):
         root = Path(__file__).resolve().parents[2]
         manifests = discover_inventors(root)
         self.assertEqual(
@@ -45,334 +44,34 @@ class RegistryTest(unittest.TestCase):
             ["alice", "bob", "eve", "ivy", "leo"],
         )
         self.assertEqual(validate_entrypoints(manifests), [])
-        self.assertEqual(
-            [item.inventor_id for item in discover_inventors(root / "inventors")],
-            [item.inventor_id for item in manifests],
-        )
-        self.assertTrue(all(item.schema_version == 5 for item in manifests))
-
-    def test_registry_accepts_an_open_collection_with_more_inventors(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            collection = Path(temporary) / "inventors"
-            collection.mkdir()
-            for index in range(8):
-                inventor_id = "inventor-%d" % index
-                folder = collection / inventor_id
-                folder.mkdir()
-                (folder / "TASTE.md").write_text(
-                    "---\nname: Inventor %d\n"
-                    "description: Makes a distinct kind of Wish-shaped plaything.\n"
-                    "---\n# Taste\nA recognizable point of view.\n" % index,
-                    encoding="utf-8",
+        self.assertTrue(all(item.native_persona for item in manifests))
+        for manifest in manifests:
+            with self.subTest(inventor_id=manifest.inventor_id):
+                self.assertEqual(manifest.entrypoint, ())
+                self.assertEqual(manifest.checks, ())
+                self.assertEqual(validate_contribution(manifest), [])
+                self.assertEqual(
+                    {path.name for path in manifest.path.parent.iterdir()},
+                    {"TASTE.md", "inventor.json"},
                 )
-                (folder / "profile.py").write_text("# profile\n", encoding="utf-8")
-                (folder / "inventor.json").write_text(
-                    json.dumps(
-                        {
-                            "schema_version": 5,
-                            "id": inventor_id,
-                            "status": "experimental",
-                            "entrypoint": ["python3", "profile.py"],
-                            "capabilities": ["wish", "taste-only"],
-                            "checks": [],
-                            "source": {"kind": "local"},
-                        }
-                    ),
-                    encoding="utf-8",
-                )
-            manifests = discover_inventors(collection)
-            self.assertEqual(len(manifests), 8)
-            self.assertEqual(validate_entrypoints(manifests), [])
 
-    def test_registry_fails_closed_for_an_empty_collection(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            collection = Path(temporary) / "inventors"
-            collection.mkdir()
-            with self.assertRaises(ManifestError):
-                discover_inventors(collection)
-
-    def test_registry_requires_a_bounded_regular_taste_contract(self):
-        manifest = {
-            "schema_version": 1,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "reference",
-            "status": "reference",
-            "entrypoint": ["python3", "run.py"],
-            "capabilities": ["testing"],
-            "core_features": [],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            (folder / "inventor.json").write_text(
-                json.dumps(manifest), encoding="utf-8"
-            )
-            with self.assertRaises(ManifestError):
-                discover_inventors(Path(temporary))
-            (folder / "TASTE.md").write_text("  \n", encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                discover_inventors(Path(temporary))
-            (folder / "TASTE.md").write_text("# Sample taste\n", encoding="utf-8")
-            self.assertEqual(discover_inventors(Path(temporary))[0].inventor_id, "sample")
-
-    def test_manifest_rejects_unknown_fields_and_unpinned_upstream(self):
-        base = {
-            "schema_version": 1,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "reference",
-            "status": "reference",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "core_features": [],
-            "source": {"kind": "local"},
-        }
+    def test_native_manifest_round_trips_without_operational_fields(self):
         with tempfile.TemporaryDirectory() as temporary:
             folder = Path(temporary) / "sample"
             folder.mkdir()
             path = folder / "inventor.json"
-            path.write_text(json.dumps(dict(base, surprise=True)), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-            injected = dict(base)
-            injected["summary"] = "safe\nforged registry row"
-            path.write_text(json.dumps(injected), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-            for unsafe_url in (
-                "https://user:secret@example.test/repo",
-                "https://example.test/repo?token=secret",
-                "https://example.test/repo#mutable-ref",
-                "https:///repo",
-            ):
-                with self.subTest(url=unsafe_url):
-                    bad_url = dict(base)
-                    bad_url["source"] = {
-                        "kind": "upstream-snapshot",
-                        "url": unsafe_url,
-                        "commit": "a" * 40,
-                        "imported_at": "2026-08-23",
-                    }
-                    path.write_text(json.dumps(bad_url), encoding="utf-8")
-                    with self.assertRaises(ManifestError):
-                        load_manifest(path)
-
-            missing_source = dict(base)
-            del missing_source["source"]
-            path.write_text(json.dumps(missing_source), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-            missing_core_features = dict(base)
-            del missing_core_features["core_features"]
-            path.write_text(json.dumps(missing_core_features), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-            blank_name = dict(base)
-            blank_name["name"] = "   "
-            path.write_text(json.dumps(blank_name), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-            bad = dict(base)
-            bad["source"] = {
-                "kind": "upstream-snapshot",
-                "url": "http://example.test/repo",
-                "commit": "short",
-                "imported_at": "today",
-            }
-            path.write_text(json.dumps(bad), encoding="utf-8")
-            with self.assertRaises(ManifestError):
-                load_manifest(path)
-
-    def test_manifest_schema_tracks_required_and_bounded_runtime_fields(self):
-        schema_path = (
-            Path(__file__).resolve().parents[2]
-            / "src"
-            / "workshop"
-            / "contributors"
-            / "schemas"
-            / "inventor.schema.json"
-        )
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        self.assertEqual(
-            set(schema["required"]),
-            {
-                "schema_version",
-                "id",
-                "status",
-                "entrypoint",
-                "capabilities",
-                "source",
-            },
-        )
-        versions = {
-            branch["properties"]["schema_version"]["const"]: set(
-                branch["required"]
-            )
-            for branch in schema["oneOf"]
-        }
-        legacy = {"name", "niche", "summary", "autonomy"}
-        self.assertEqual(versions[1], legacy | {"core_features"})
-        self.assertEqual(versions[2], legacy | {"foundation_features", "checks"})
-        self.assertEqual(versions[3], legacy | {"workshop_features", "checks"})
-        self.assertEqual(versions[4], legacy | {"checks"})
-        self.assertEqual(versions[5], {"checks"})
-        for field in ("name", "niche", "summary"):
-            pattern = schema["properties"][field]["pattern"]
-            self.assertFalse(re.fullmatch(pattern, "   "))
-            self.assertTrue(re.fullmatch(pattern, "A bounded value"))
-        imported_at = schema["properties"]["source"]["properties"]["imported_at"]
-        self.assertEqual(imported_at["format"], "date")
-
-    def test_schema_v3_uses_workshop_vocabulary_and_declared_checks(self):
-        document = {
-            "schema_version": 3,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "autonomous",
-            "status": "experimental",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "workshop_features": ["make.workbench"],
-            "checks": [["python3", "-m", "unittest", "discover", "-s", "tests"]],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
-            path.write_text(json.dumps(document), encoding="utf-8")
-            manifest = load_manifest(path)
-            self.assertEqual(manifest.workshop_features, ("make.workbench",))
-            self.assertEqual(manifest.to_dict(), document)
-            legacy = dict(document, core_features=[])
-            path.write_text(json.dumps(legacy), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "not.*core_features"):
-                load_manifest(path)
-
-    def test_schema_v2_foundation_manifest_is_read_only_compatibility(self):
-        document = {
-            "schema_version": 2,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "reference",
-            "status": "reference",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "foundation_features": ["legacy.feature"],
-            "checks": [],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
-            path.write_text(json.dumps(document), encoding="utf-8")
-            manifest = load_manifest(path)
-            self.assertEqual(manifest.workshop_features, ("legacy.feature",))
-            self.assertEqual(manifest.to_dict(), document)
-
-    def test_schema_v3_rejects_unreviewed_feature_names(self):
-        document = {
-            "schema_version": 3,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "reference",
-            "status": "reference",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "workshop_features": ["spark.magic"],
-            "checks": [],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
-            path.write_text(json.dumps(document), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "unknown workshop_features"):
-                load_manifest(path)
-
-    def test_schema_v4_needs_checks_and_has_no_feature_inventory(self):
-        document = {
-            "schema_version": 4,
-            "id": "sample",
-            "name": "Sample",
-            "niche": "test products",
-            "summary": "A test inventor.",
-            "autonomy": "autonomous",
-            "status": "experimental",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "checks": [["python3", "-m", "unittest"]],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
-            path.write_text(json.dumps(document), encoding="utf-8")
-            manifest = load_manifest(path)
-            self.assertEqual(manifest.workshop_features, ())
-            self.assertEqual(manifest.to_dict(), document)
-
-            legacy_inventory = dict(document, workshop_features=[])
-            path.write_text(json.dumps(legacy_inventory), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "no feature inventory"):
-                load_manifest(path)
-
-            no_checks = dict(document)
-            del no_checks["checks"]
-            path.write_text(json.dumps(no_checks), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "checks is required"):
-                load_manifest(path)
-
-    def test_schema_v5_is_operational_only(self):
-        document = {
-            "schema_version": 5,
-            "id": "sample",
-            "status": "experimental",
-            "entrypoint": ["python3", "sample.py"],
-            "capabilities": ["testing"],
-            "checks": [["python3", "-m", "unittest"]],
-            "source": {"kind": "local"},
-        }
-        with tempfile.TemporaryDirectory() as temporary:
-            folder = Path(temporary) / "sample"
-            folder.mkdir()
-            path = folder / "inventor.json"
+            document = _native_manifest()
             path.write_text(json.dumps(document), encoding="utf-8")
             manifest = load_manifest(path)
             self.assertEqual(manifest.to_dict(), document)
-            self.assertIsNone(manifest.name)
-            self.assertIsNone(manifest.niche)
-            self.assertIsNone(manifest.summary)
-            self.assertIsNone(manifest.autonomy)
-            self.assertEqual(manifest.workshop_features, ())
+            self.assertEqual(manifest.entrypoint, ())
+            self.assertEqual(manifest.checks, ())
+            self.assertTrue(manifest.native_persona)
 
             for forbidden, value in (
+                ("entrypoint", ["python3", "profile.py"]),
+                ("checks", [["python3", "-m", "unittest"]]),
                 ("name", "Sample"),
-                ("niche", "test products"),
-                ("summary", "A test inventor."),
-                ("autonomy", "autonomous"),
-                ("core_features", []),
-                ("foundation_features", []),
                 ("workshop_features", []),
             ):
                 with self.subTest(forbidden=forbidden):
@@ -380,47 +79,138 @@ class RegistryTest(unittest.TestCase):
                         json.dumps(dict(document, **{forbidden: value})),
                         encoding="utf-8",
                     )
-                    with self.assertRaisesRegex(ManifestError, "schema_version 5"):
+                    with self.assertRaisesRegex(ManifestError, "schema_version 6"):
                         load_manifest(path)
 
-            no_checks = dict(document)
-            del no_checks["checks"]
-            path.write_text(json.dumps(no_checks), encoding="utf-8")
-            with self.assertRaisesRegex(ManifestError, "checks is required"):
-                load_manifest(path)
-
-    @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
-    def test_entrypoint_symlink_cannot_escape_inventor_folder(self):
+    def test_native_manifest_requires_exactly_one_known_lane(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            outside = root / "outside.py"
-            outside.write_text("raise SystemExit(0)\n", encoding="utf-8")
-            folder = root / "sample"
+            folder = Path(temporary) / "sample"
             folder.mkdir()
-            os.symlink(outside, folder / "run.py")
-            raw = {
-                "schema_version": 1,
+            path = folder / "inventor.json"
+            for capabilities in ([], ["taste-only"], list(PLAYTHING_LANES[:2])):
+                with self.subTest(capabilities=capabilities):
+                    path.write_text(
+                        json.dumps(dict(_native_manifest(), capabilities=capabilities)),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaises(ManifestError):
+                        load_manifest(path)
+
+    def test_registry_accepts_an_open_native_persona_collection(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            lanes = tuple(PLAYTHING_LANES)
+            for index in range(8):
+                inventor_id = "inventor-%d" % index
+                folder = collection / inventor_id
+                folder.mkdir()
+                (folder / "TASTE.md").write_text(
+                    _taste("Inventor %d" % index), encoding="utf-8"
+                )
+                (folder / "inventor.json").write_text(
+                    json.dumps(_native_manifest(inventor_id, lanes[index % len(lanes)])),
+                    encoding="utf-8",
+                )
+            manifests = discover_inventors(collection)
+            self.assertEqual(len(manifests), 8)
+            self.assertEqual(validate_entrypoints(manifests), [])
+
+    def test_registry_fails_closed_for_missing_or_invalid_taste(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            collection = Path(temporary) / "inventors"
+            collection.mkdir()
+            with self.assertRaises(ManifestError):
+                discover_inventors(collection)
+            folder = collection / "sample"
+            folder.mkdir()
+            (folder / "inventor.json").write_text(
+                json.dumps(_native_manifest()), encoding="utf-8"
+            )
+            with self.assertRaises(ManifestError):
+                discover_inventors(collection)
+            (folder / "TASTE.md").write_text("  \n", encoding="utf-8")
+            with self.assertRaises(ManifestError):
+                discover_inventors(collection)
+            (folder / "TASTE.md").write_text(_taste(), encoding="utf-8")
+            self.assertEqual(discover_inventors(collection)[0].inventor_id, "sample")
+
+    def test_manifest_rejects_boolean_versions_unknown_fields_and_unpinned_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / "sample"
+            folder.mkdir()
+            path = folder / "inventor.json"
+            for document in (
+                dict(_native_manifest(), schema_version=True),
+                dict(_native_manifest(), surprise=True),
+                dict(
+                    _native_manifest(),
+                    source={
+                        "kind": "upstream-snapshot",
+                        "url": "https://user:secret@example.test/repo",
+                        "commit": "short",
+                        "imported_at": "today",
+                    },
+                ),
+            ):
+                with self.subTest(document=document):
+                    path.write_text(json.dumps(document), encoding="utf-8")
+                    with self.assertRaises(ManifestError):
+                        load_manifest(path)
+
+    def test_schema_describes_native_personas_and_legacy_read_compatibility(self):
+        schema_path = (
+            Path(__file__).resolve().parents[2]
+            / "src/workshop/contributors/schemas/inventor.schema.json"
+        )
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertEqual(schema["$id"].rsplit("/", 1)[-1], "v6.json")
+        self.assertEqual(
+            set(schema["required"]),
+            {"schema_version", "id", "status", "capabilities", "source"},
+        )
+        versions = {
+            branch["properties"]["schema_version"]["const"]: branch
+            for branch in schema["oneOf"]
+        }
+        self.assertEqual(set(versions), {1, 2, 3, 4, 5, 6})
+        forbidden_v6 = {
+            condition["required"][0]
+            for condition in versions[6]["not"]["anyOf"]
+        }
+        self.assertTrue({"entrypoint", "checks"}.issubset(forbidden_v6))
+        lane_enum = versions[6]["properties"]["capabilities"]["items"]["enum"]
+        self.assertEqual(set(lane_enum), set(PLAYTHING_LANES))
+        for field in ("name", "niche", "summary"):
+            pattern = schema["properties"][field]["pattern"]
+            self.assertFalse(re.fullmatch(pattern, "   "))
+
+    def test_schema_v5_remains_read_only_compatibility(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / "sample"
+            folder.mkdir()
+            (folder / "profile.py").write_text("# legacy\n", encoding="utf-8")
+            path = folder / "inventor.json"
+            document = {
+                "schema_version": 5,
                 "id": "sample",
-                "name": "Sample",
-                "niche": "test products",
-                "summary": "A test inventor.",
-                "autonomy": "reference",
-                "status": "reference",
-                "entrypoint": ["python3", "run.py"],
+                "status": "archived",
+                "entrypoint": ["python3", "profile.py"],
                 "capabilities": ["testing"],
-                "core_features": [],
+                "checks": [],
                 "source": {"kind": "local"},
             }
-            manifest_path = folder / "inventor.json"
-            manifest_path.write_text(json.dumps(raw), encoding="utf-8")
-            problems = validate_entrypoints([load_manifest(manifest_path)])
-            self.assertEqual(
-                problems,
-                ["sample: entrypoint target run.py is missing"],
+            path.write_text(json.dumps(document), encoding="utf-8")
+            manifest = load_manifest(path)
+            self.assertEqual(manifest.to_dict(), document)
+            self.assertFalse(manifest.native_persona)
+            self.assertEqual(validate_entrypoints((manifest,)), [])
+            self.assertTrue(
+                any("schema_version 6" in item for item in validate_contribution(manifest))
             )
 
     @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
-    def test_registry_does_not_follow_an_external_inventor_folder(self):
+    def test_registry_does_not_follow_external_folders_or_collections(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "registry"
             root.mkdir()
@@ -431,16 +221,11 @@ class RegistryTest(unittest.TestCase):
             with self.assertRaises(ManifestError):
                 discover_inventors(root)
 
-    @unittest.skipIf(not hasattr(os, "symlink"), "symlink unavailable")
-    def test_registry_does_not_follow_an_external_inventors_collection(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "repository"
-            root.mkdir()
-            outside = Path(temporary) / "outside"
-            outside.mkdir()
-            os.symlink(outside, root / "inventors")
+            repository = Path(temporary) / "repository"
+            repository.mkdir()
+            os.symlink(root, repository / "inventors")
             with self.assertRaises(ManifestError):
-                discover_inventors(root)
+                discover_inventors(repository)
 
 
 if __name__ == "__main__":

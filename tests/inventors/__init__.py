@@ -1,1 +1,1 @@
-"""Inventor profile tests."""
+"""Bundled native inventor-persona tests."""

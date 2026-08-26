@@ -1,9 +1,7 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "id": "ivy",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["holdable-science", "taste-only"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"]],
+  "capabilities": ["holdable-science"],
   "source": {"kind": "local"}
 }

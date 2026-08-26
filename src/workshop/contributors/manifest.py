@@ -25,9 +25,9 @@ _FIELDS = frozenset(
 _SOURCE_KINDS = frozenset(("local", "upstream-snapshot"))
 _COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
-# Schema-v3 compatibility inventory. Schemas v4 and v5 treat every inventor as
-# part of the Workshop and no longer make internal implementation pieces part
-# of an inventor's identity.
+# Schema-v3 compatibility inventory. Schemas v4 through v6 treat every inventor
+# as part of the Workshop and no longer make internal implementation pieces
+# part of an inventor's identity.
 WORKSHOP_FEATURES = frozenset(
     (
         "clockwork.state",
@@ -88,9 +88,8 @@ class InventorManifest:
     schema_version: int
     inventor_id: str
     # Schema versions 1-4 kept routing prose and autonomy policy in the
-    # operational manifest. Schema v5 moves discovery name/description into
-    # TASTE.md frontmatter and is request-scoped, so these are compatibility
-    # values only.
+    # operational manifest. Schemas v5 and v6 move discovery name/description
+    # into TASTE.md frontmatter, so these are compatibility values only.
     name: Optional[str]
     niche: Optional[str]
     summary: Optional[str]
@@ -104,12 +103,18 @@ class InventorManifest:
     path: Path
 
     @property
+    def native_persona(self) -> bool:
+        """Whether this manifest is data for the shared native agent."""
+
+        return self.schema_version == 6
+
+    @property
     def core_features(self) -> Sequence[str]:
         """Compatibility view for schema-v1 callers.
 
-        Schemas v4 and v5 return an empty sequence because they have no feature
-        inventory. Keeping this alias lets older integrations read all five
-        schema generations while they migrate.
+        Schemas v4 through v6 return an empty sequence because they have no
+        feature inventory. Keeping this alias lets older integrations read all
+        six schema generations while they migrate.
         """
 
         return self.workshop_features
@@ -126,8 +131,10 @@ class InventorManifest:
         if unknown:
             raise ManifestError("%s: unknown fields %s" % (path, sorted(unknown)))
         schema_version = raw.get("schema_version")
-        if type(schema_version) is not int or schema_version not in (1, 2, 3, 4, 5):
-            raise ManifestError("%s: schema_version must be 1, 2, 3, 4, or 5" % path)
+        if type(schema_version) is not int or schema_version not in (1, 2, 3, 4, 5, 6):
+            raise ManifestError(
+                "%s: schema_version must be 1, 2, 3, 4, 5, or 6" % path
+            )
         inventor_id = raw.get("id")
         if not isinstance(inventor_id, str) or not _ID.fullmatch(inventor_id):
             raise ManifestError("%s: id must match %s" % (path, _ID.pattern))
@@ -143,12 +150,12 @@ class InventorManifest:
         }
         autonomy: Optional[str] = None
         legacy_identity_fields = {"name", "niche", "summary", "autonomy"}
-        if schema_version == 5:
+        if schema_version in (5, 6):
             conflicts = sorted(legacy_identity_fields.intersection(raw))
             if conflicts:
                 raise ManifestError(
-                    "%s: schema_version 5 keeps identity and routing prose in "
-                    "TASTE.md; remove %s" % (path, conflicts)
+                    "%s: schema_version %s keeps identity and routing prose in "
+                    "TASTE.md; remove %s" % (path, schema_version, conflicts)
                 )
         else:
             limits = {"name": 200, "niche": 500, "summary": 2_000}
@@ -181,7 +188,7 @@ class InventorManifest:
             "foundation_features",
             "workshop_features",
         }
-        if schema_version in (4, 5):
+        if schema_version in (4, 5, 6):
             conflicts = sorted(feature_fields.intersection(raw))
             if conflicts:
                 raise ManifestError(
@@ -213,6 +220,13 @@ class InventorManifest:
             raise ManifestError(
                 "%s: checks requires schema_version 2, 3, 4, or 5" % path
             )
+        if schema_version == 6:
+            operational = sorted({"entrypoint", "checks"}.intersection(raw))
+            if operational:
+                raise ManifestError(
+                    "%s: schema_version 6 is a native persona and cannot declare %s"
+                    % (path, operational)
+                )
         if "source" not in raw:
             raise ManifestError("%s: source is required" % path)
         source = raw.get("source")
@@ -275,6 +289,16 @@ class InventorManifest:
                     "%s: unknown workshop_features %s; choose from %s"
                     % (path, unknown_features, sorted(WORKSHOP_FEATURES))
                 )
+        capabilities = _strings(raw.get("capabilities"), "capabilities")
+        if schema_version == 6:
+            from workshop.product import PLAYTHING_LANES
+
+            if len(capabilities) != 1 or capabilities[0] not in PLAYTHING_LANES:
+                raise ManifestError(
+                    "%s: schema_version 6 capabilities must contain exactly one "
+                    "Workshop plaything lane from %s"
+                    % (path, sorted(PLAYTHING_LANES))
+                )
         return cls(
             schema_version=schema_version,
             inventor_id=inventor_id,
@@ -283,10 +307,18 @@ class InventorManifest:
             summary=values["summary"],
             autonomy=autonomy,
             status=status,
-            entrypoint=_strings(raw.get("entrypoint"), "entrypoint"),
-            capabilities=_strings(raw.get("capabilities"), "capabilities"),
+            entrypoint=(
+                ()
+                if schema_version == 6
+                else _strings(raw.get("entrypoint"), "entrypoint")
+            ),
+            capabilities=capabilities,
             workshop_features=features,
-            checks=_commands(raw.get("checks", []), "checks", True),
+            checks=(
+                ()
+                if schema_version == 6
+                else _commands(raw.get("checks", []), "checks", True)
+            ),
             source=dict(source),
             path=path,
         )
@@ -296,10 +328,11 @@ class InventorManifest:
             "schema_version": self.schema_version,
             "id": self.inventor_id,
             "status": self.status,
-            "entrypoint": list(self.entrypoint),
             "capabilities": list(self.capabilities),
             "source": dict(self.source),
         }
+        if self.schema_version <= 5:
+            document["entrypoint"] = list(self.entrypoint)
         if self.schema_version <= 4:
             document.update(
                 {
@@ -386,7 +419,10 @@ def discover_inventors(root: Path) -> List[InventorManifest]:
 
 
 def validate_entrypoints(manifests: Iterable[InventorManifest]) -> List[str]:
-    """Return actionable filesystem errors without executing inventor code."""
+    """Validate legacy profile commands without executing inventor code.
+
+    Native persona manifests deliberately have no command to validate.
+    """
     def is_contained_file(base: Path, candidate: Path) -> bool:
         try:
             resolved_base = base.resolve(strict=True)
@@ -398,6 +434,8 @@ def validate_entrypoints(manifests: Iterable[InventorManifest]) -> List[str]:
 
     problems = []
     for manifest in manifests:
+        if manifest.native_persona:
+            continue
         command = manifest.entrypoint
         if not command or command[0] not in ("python", "python3", "bash", "sh"):
             problems.append(

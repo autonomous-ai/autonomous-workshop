@@ -1,9 +1,7 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "id": "bob",
   "status": "experimental",
-  "entrypoint": ["python3", "profile.py"],
-  "capabilities": ["moving-machines", "taste-only"],
-  "checks": [["python3", "-m", "unittest", "discover", "-s", "tests", "-v"]],
+  "capabilities": ["moving-machines"],
   "source": {"kind": "local"}
 }
