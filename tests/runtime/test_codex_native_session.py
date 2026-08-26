@@ -321,6 +321,11 @@ class CodexNativeSessionTest(unittest.TestCase):
                 command,
                 (
                     "/fixture/codex",
+                    "--search",
+                    "--sandbox",
+                    "workspace-write",
+                    "-C",
+                    str(root),
                     "exec",
                     "resume",
                     "--ignore-user-config",
@@ -334,8 +339,6 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "-",
                 ),
             )
-            self.assertNotIn("--search", command)
-            self.assertNotIn("--sandbox", command)
             self.assertNotIn("--ephemeral", command)
             self.assertEqual(resumed.status, "completed")
             self.assertEqual(

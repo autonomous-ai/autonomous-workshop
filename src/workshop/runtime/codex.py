@@ -682,7 +682,7 @@ class CodexNativeSessionLauncher:
             host_state_root=state_root,
         )
         used_web_search, unused_observed_thread_id = self._stream(
-            command=self._resume_command(thread_id),
+            command=self._resume_command(thread_id, root),
             prompt=prompt,
             run_root=root,
             expected_thread_id=thread_id,
@@ -842,9 +842,14 @@ class CodexNativeSessionLauncher:
             "-",
         ]
 
-    def _resume_command(self, thread_id: str) -> list[str]:
+    def _resume_command(self, thread_id: str, run_root: Path) -> list[str]:
         return [
             self.binary,
+            "--search",
+            "--sandbox",
+            "workspace-write",
+            "-C",
+            str(run_root),
             "exec",
             "resume",
             "--ignore-user-config",
