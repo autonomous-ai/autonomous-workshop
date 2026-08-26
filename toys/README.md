@@ -19,21 +19,17 @@ roster is identity and routing context, not another manager. Shared Make skills
 are copied into the project so its CAD work remains available from the project
 root.
 
-The fourteen projects currently tracked here are migrations of historical
+The eight projects currently tracked here are migrations of historical
 products from commit `db92e2b8f75262c9184455f794548909ce149748`. Their
-product bytes and paths are preserved at project root. The only exclusions are
-270 generated cadgen coordination records under
-`parts/__cadgen__/models/`: `.*.(generation|generator).lock` and
-`.*.(generation|generator).progress.json`. Those files contained ephemeral
-run, process, host, or timing state rather than product craft. Every exact
-excluded path and source blob is recorded in `legacy-migration.json`.
+product bytes and paths are preserved at project root. None of these retained
+projects needed a product-file exclusion; their exact source inventories are
+recorded in `legacy-migration.json`.
 
-The audit retained all 142 product-specific Python files: CAD generators,
+The audit retained all 59 product-specific Python files: CAD generators,
 geometry/fit and slicer checks, render helpers, and playtest simulations. None
 imports a model-agent SDK or launches Codex/Claude orchestration. The recovered
 trees contained no symlinks, environment/credential files, backups, runtime
-databases, or secret-shaped values; the one tracked publication ZIP was also
-inspected after extraction.
+databases, publication archives, or secret-shaped values.
 
 These products predate the native Codex host, so their `TOY.json` files
 explicitly contain no native session id or checkpoint. Existing product
@@ -49,6 +45,10 @@ Durable lifecycle checkpoints, exclusive mutation locks, credentials, effect int
 authenticated receipts remain in host-controlled private state outside this
 project. A project never stores Factory passwords, Codex authentication, or
 other credentials.
+
+The tracked-project allowlist is closed. The verifier rejects any unexpected
+non-runtime toy directory and revalidates this complete architecture for every
+retained project; a project is not kept merely because it existed historically.
 
 Run `python tools/verify_toy_projects.py` from the source repository to verify
 project enumeration, product inventories, copied bytes, executable modes,

@@ -48,12 +48,6 @@ PROJECTS = (
     ("alice", "five-job-checkers"),
     ("alice", "manhattan-nocturne"),
     ("bob", "comet-geneva"),
-    ("bob", "g0001"),
-    ("bob", "g0002"),
-    ("bob", "g0003"),
-    ("bob", "g0004"),
-    ("bob", "g0005"),
-    ("bob", "g0006"),
     ("eve", "rackhaven-night-shift"),
     ("ivy", "montauk-tide-orrery"),
     ("leo", "counterorbit"),
@@ -734,7 +728,7 @@ def main() -> int:
     if problems:
         print("toy-projects: %d problem(s)" % len(problems), file=sys.stderr)
         return 1
-    print("toy-projects: 14 projects verified")
+    print("toy-projects: %d projects verified" % len(PROJECTS))
     return 0
 
 

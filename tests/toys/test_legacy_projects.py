@@ -13,20 +13,11 @@ EXPECTED_INVENTORY_SHA256 = {
     "alice-five-job-checkers": "aee38a5dc205e1e3fe14e7a387c31205dbf5e50f476b9baef57467c7b1d9117e",
     "alice-manhattan-nocturne": "1cc22468c46d8d3adae19614f61b606c704514af7821d6946829d628399fcdf1",
     "bob-comet-geneva": "7fa082d1da81c668ea7ea02a9a84bd92479e3a7a237667dddbda144c9704b9c9",
-    "bob-g0001": "8b03a9ec3cff7b5998f29d0c9e1c2f8967ec7058717c1550fcc9e87e9de79db7",
-    "bob-g0002": "57593109577ab369f1c009028d05f72ec16cfe9012b9a490a85dccdcd0d0361e",
-    "bob-g0003": "29a3e6b0c50da224446846323acfec8f1459ef443700abd0d343f4d0c12a5650",
-    "bob-g0004": "83aa0b78964f66f016a92b79e9ed8f6ea93bcd7c9fe8ed40cd643c5bf9ac6c6b",
-    "bob-g0005": "3ac1673c4373e8171f085e3c78bf294883a97d66bcc259c319a8499910a860f0",
-    "bob-g0006": "d9caf6166567aa3df300667e8af342fae3262ee3d50d18f9c328b16e454d7c4a",
     "eve-rackhaven-night-shift": "9b2ff16c5c454bfa298c90ccb1329ec42a3f1b9d4f2fdbdb44d44272f279d9f5",
     "ivy-montauk-tide-orrery": "15c7b340d5b158ddfc2179ba644a9a97d21d7357d65cd3c75978a842f3c6c4ba",
     "leo-counterorbit": "5396202038e628a50fec4efdc8c5dc3e55dbc96fe406ce0006029fc7e182e5c3",
 }
-EXPECTED_EXCLUSION_SHA256 = {
-    "bob-g0002": "d18ce659f0842041216428ce9e9813ea06931237c7b1f1bbf8b1f6141cd4a636",
-    "bob-g0003": "119200b1ed964f973eff3d9a55f6d50f5e4d7432787bf8fb874afce1dd39d96b",
-}
+EXPECTED_EXCLUSION_SHA256 = {}
 
 
 def _load_verifier():
@@ -52,19 +43,23 @@ class LegacyToyProjectTest(unittest.TestCase):
             )
         )
 
-        self.assertEqual(len(document["projects"]), 14)
+        self.assertEqual(len(document["projects"]), 8)
         self.assertEqual(
             sum(item["migrated_product"]["file_count"] for item in document["projects"]),
-            1093,
+            544,
         )
         self.assertEqual(
             sum(len(item["exclusions"]) for item in document["projects"]),
-            270,
+            0,
         )
-        self.assertEqual(1093 + 270, 1363)
+        self.assertEqual(
+            sum(item["migrated_product"]["file_count"] for item in document["projects"])
+            + sum(len(item["exclusions"]) for item in document["projects"]),
+            544,
+        )
         self.assertEqual(
             sum(item["migrated_product"]["bytes"] for item in document["projects"]),
-            234402484,
+            55838488,
         )
 
     def test_source_derived_product_and_exclusion_hashes_are_independently_pinned(self):
