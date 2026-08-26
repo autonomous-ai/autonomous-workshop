@@ -28,6 +28,7 @@ NATIVE_PROGRESS_FILENAME = "native-progress.json"
 MAX_NATIVE_PROGRESS_BYTES = 4 * 1024
 SAFE_NATIVE_ACTIVITY_CLASSES = (
     "starting",
+    "running",
     "reasoning",
     "tool",
     "subagent",
@@ -36,7 +37,7 @@ SAFE_NATIVE_ACTIVITY_CLASSES = (
     "failed",
 )
 _ACTIVE_ACTIVITY_CLASSES = frozenset(
-    ("starting", "reasoning", "tool", "subagent", "finalizing")
+    ("starting", "running", "reasoning", "tool", "subagent", "finalizing")
 )
 _STAGES = frozenset(
     ("wish", "match", "invent", "make", "playtest", "release", "deliver")

@@ -140,12 +140,21 @@ class RecordingInput:
 
 
 class ScriptedStream:
-    def __init__(self, values, callbacks=None, stop_event=None):
+    def __init__(
+        self,
+        values,
+        callbacks=None,
+        stop_event=None,
+        start_event=None,
+    ):
         self.values = list(values)
         self.callbacks = dict(callbacks or {})
         self.stop_event = stop_event
+        self.start_event = start_event
 
     def __iter__(self):
+        if self.start_event is not None:
+            self.start_event.wait(timeout=2)
         if self.stop_event is not None:
             self.stop_event.wait(timeout=2)
             return
@@ -165,6 +174,7 @@ class FakeProcess:
             self.script.get("stdout", ()),
             callbacks=self.script.get("stdout_callbacks"),
             stop_event=self._stopped if self.script.get("block_stdout") else None,
+            start_event=self.script.get("stdout_start_event"),
         )
         self.stderr = ScriptedStream(self.script.get("stderr", ()))
         self.returncode = None
@@ -524,6 +534,152 @@ class CodexNativeSessionTest(unittest.TestCase):
             rendered = json.dumps(observed)
             self.assertNotIn(private_sentinel, rendered)
             self.assertNotIn(THREAD_ID, rendered)
+
+    def test_live_silent_process_emits_content_free_running_heartbeat(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            stdout_start = threading.Event()
+            private_sentinel = (
+                "FACTORY_PASSWORD=secret /private/run thread-identity"
+            )
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout_start_event": stdout_start,
+                        "stdout": self.start_events(
+                            message=private_sentinel,
+                            search=False,
+                        ),
+                    }
+                ]
+            )
+            observed = []
+
+            def observe(activity):
+                observed.append(activity)
+                if activity == "running":
+                    stdout_start.set()
+
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_ACTIVITY_HEARTBEAT_SECONDS",
+                0.01,
+            ):
+                outcome = self.start(
+                    launcher,
+                    root,
+                    activity_observer=observe,
+                )
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertEqual(observed[0:2], ["starting", "running"])
+            self.assertEqual(observed[-1], "completed")
+            self.assertTrue(
+                set(observed).issubset(
+                    {"starting", "running", "finalizing", "completed"}
+                )
+            )
+            rendered = json.dumps(observed)
+            self.assertNotIn(private_sentinel, rendered)
+            self.assertNotIn(THREAD_ID, rendered)
+
+    def test_stuck_heartbeat_cannot_delay_or_overwrite_completion(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            heartbeat_entered = threading.Event()
+            release_heartbeat = threading.Event()
+            heartbeat_returned = threading.Event()
+            terminal_replayed = threading.Event()
+            observed = []
+            observed_lock = threading.Lock()
+            callback_lock = threading.Lock()
+            launcher, unused_factory = self.launcher(
+                [
+                    {
+                        "stdout_start_event": heartbeat_entered,
+                        "stdout": self.start_events(search=False),
+                    }
+                ]
+            )
+
+            def observe(activity):
+                # A real sink may serialize its own filesystem updates. Hold
+                # that lock while the heartbeat is deliberately stuck: a
+                # concurrent terminal callback would wedge behind it.
+                with callback_lock:
+                    if activity == "running":
+                        heartbeat_entered.set()
+                        release_heartbeat.wait(timeout=2)
+                        with observed_lock:
+                            observed.append(activity)
+                        heartbeat_returned.set()
+                        return
+                    with observed_lock:
+                        observed.append(activity)
+                        completed = observed.count("completed")
+                    if completed >= 1:
+                        terminal_replayed.set()
+
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_ACTIVITY_HEARTBEAT_SECONDS",
+                0.01,
+            ):
+                outcome = self.start(
+                    launcher,
+                    root,
+                    activity_observer=observe,
+                )
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertFalse(heartbeat_returned.is_set())
+
+            release_heartbeat.set()
+            self.assertTrue(heartbeat_returned.wait(timeout=1))
+            self.assertTrue(terminal_replayed.wait(timeout=1))
+            with observed_lock:
+                self.assertEqual(observed[-1], "completed")
+
+    def test_stuck_terminal_callback_cannot_delay_launcher_completion(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            terminal_entered = threading.Event()
+            release_terminal = threading.Event()
+            terminal_returned = threading.Event()
+            observed = []
+            observed_lock = threading.Lock()
+            launcher, unused_factory = self.launcher(
+                [{"stdout": self.start_events(search=False)}]
+            )
+
+            def observe(activity):
+                if activity == "completed":
+                    terminal_entered.set()
+                    release_terminal.wait(timeout=2)
+                    with observed_lock:
+                        observed.append(activity)
+                    terminal_returned.set()
+                    return
+                with observed_lock:
+                    observed.append(activity)
+
+            outcome = self.start(
+                launcher,
+                root,
+                activity_observer=observe,
+            )
+
+            self.assertEqual(outcome.status, "completed")
+            self.assertTrue(terminal_entered.is_set())
+            self.assertFalse(terminal_returned.is_set())
+
+            release_terminal.set()
+            self.assertTrue(terminal_returned.wait(timeout=1))
+            with observed_lock:
+                self.assertEqual(observed[-1], "completed")
 
     def test_activity_observer_failure_never_changes_turn_validation(self):
         with tempfile.TemporaryDirectory() as temporary:

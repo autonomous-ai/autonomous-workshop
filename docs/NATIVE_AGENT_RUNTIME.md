@@ -100,14 +100,25 @@ files disagree, the files win.
 ### Privacy-safe progress status
 
 `workshop status <wish-id>` is read-only and never opens or resumes Codex. While
-a native turn runs, the host reduces Codex JSONL events to one of seven coarse
-classes: `starting`, `reasoning`, `tool`, `subagent`, `finalizing`, `completed`,
-or `failed`. It atomically stores only the current checkpoint binding, attempted
-stage and attempt number, cumulative attempted-turn count, start time, and last
-safe activity time in a private `0600` host-state record. Status reports those
-fields plus elapsed seconds; it never stores or displays prompts, messages,
-reasoning, tool arguments or output, paths, agent identities, thread ids, or
-credentials.
+a native turn runs, the host reduces Codex JSONL events to one of eight coarse
+classes: `starting`, `running`, `reasoning`, `tool`, `subagent`, `finalizing`,
+`completed`, or `failed`. `running` is a five-second host heartbeat that means
+only that the launched Codex process is still alive; it does not infer what the
+model is doing. The host atomically stores only the current checkpoint binding,
+attempted stage and attempt number, cumulative attempted-turn count, start time,
+and last safe activity time in a private `0600` host-state record. Status
+reports those fields plus elapsed seconds; it never stores or displays prompts,
+messages, reasoning, tool arguments or output, paths, agent identities, thread
+ids, or credentials.
+
+All progress delivery is serialized on a bounded daemon queue; observer-owned
+code never runs on the launcher thread. Terminal delivery waits only briefly
+for a healthy local sink so ordinary status is deterministic. A permanently
+stalled sink is then abandoned without delaying completion or failure of the
+native turn. The queue is size-bounded, coalesces excess active updates, rejects
+new active updates after terminal activity, and always orders the latest
+terminal class last. Telemetry failure remains non-authoritative and cannot
+change a lifecycle result.
 
 Progress is diagnostic metadata, not gate evidence. A missing, stale,
 malformed, tampered, wrong-mode, or symlinked progress record is shown only as

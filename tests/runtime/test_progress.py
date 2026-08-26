@@ -107,6 +107,25 @@ class NativeProgressTest(unittest.TestCase):
             self.assertEqual((third.native_turns, third.stage_attempt), (3, 1))
             self.assertEqual(first.native_turns, 1)
 
+    def test_running_heartbeat_remains_active_and_advances_safe_time(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary).resolve() / NATIVE_PROGRESS_FILENAME
+            running = self.progress(path).observe(
+                "running",
+                observed_at_ms=3_500,
+            )
+
+            self.assertEqual(
+                running.public_view(observed_at_ms=5_100),
+                {
+                    "status": "available",
+                    "stage_attempt": {"stage": "make", "number": 1},
+                    "activity": "running",
+                    "elapsed_seconds": 4,
+                    "last_activity_at": "1970-01-01T00:00:03.500Z",
+                },
+            )
+
     def test_malformed_tampered_wrong_mode_and_symlink_records_are_unavailable(self):
         cases = ("malformed", "tampered", "wrong-mode", "symlink")
         for case in cases:

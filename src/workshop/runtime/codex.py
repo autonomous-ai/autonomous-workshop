@@ -42,6 +42,9 @@ MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
 _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
+_CODEX_ACTIVITY_HEARTBEAT_SECONDS = 5.0
+_CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS = 0.25
+_MAX_PENDING_ACTIVITY_CLASSES = 64
 _TRANSIENT_DIAGNOSTIC_MARKERS = (
     "stream disconnected before completion",
     "connection reset by peer",
@@ -769,6 +772,151 @@ def _observe_safe_activity(
         return
 
 
+class _NativeActivityReporter:
+    """Deliver bounded coarse activity without blocking the native launcher."""
+
+    def __init__(
+        self,
+        observer: Optional[Callable[[str], None]],
+        process: Any,
+    ) -> None:
+        self._observer = observer
+        self._process = process
+        self._stop = threading.Event()
+        self._condition = threading.Condition()
+        self._terminal_activity: Optional[str] = None
+        self._pending: list[tuple[int, str]] = []
+        self._next_generation = 0
+        self._delivered_generation = 0
+        self._delivery_available = False
+        self._closed = False
+        self._delivery_thread: Optional[threading.Thread] = None
+        self._heartbeat_thread: Optional[threading.Thread] = None
+
+    def start(self) -> None:
+        if self._observer is None:
+            return
+        delivery_thread = threading.Thread(
+            target=self._deliver,
+            name="workshop-codex-activity-delivery",
+            daemon=True,
+        )
+        with self._condition:
+            self._delivery_available = True
+        try:
+            delivery_thread.start()
+        except (OSError, RuntimeError):
+            with self._condition:
+                self._delivery_available = False
+                self._condition.notify_all()
+            return
+        self._delivery_thread = delivery_thread
+
+        heartbeat_thread = threading.Thread(
+            target=self._heartbeat,
+            name="workshop-codex-activity-heartbeat",
+            daemon=True,
+        )
+        try:
+            heartbeat_thread.start()
+        except (OSError, RuntimeError):
+            # Telemetry must not affect the native turn if this host cannot
+            # create the optional heartbeat thread.
+            return
+        self._heartbeat_thread = heartbeat_thread
+
+    def observe(self, activity: str) -> None:
+        if activity not in SAFE_NATIVE_ACTIVITY_CLASSES:
+            raise AssertionError("unsafe native activity class")
+        terminal = activity in ("completed", "failed")
+        with self._condition:
+            if not self._delivery_available:
+                return
+            if terminal:
+                self._terminal_activity = activity
+                self._stop.set()
+            elif self._terminal_activity is not None:
+                return
+            self._next_generation += 1
+            generation = self._next_generation
+            if len(self._pending) >= _MAX_PENDING_ACTIVITY_CLASSES:
+                if terminal:
+                    # Terminal state has precedence over queued active noise.
+                    self._pending.clear()
+                else:
+                    # Coalesce an overloaded active stream to its latest safe
+                    # class without allowing unbounded telemetry memory.
+                    self._pending[-1] = (generation, activity)
+                    self._condition.notify()
+                    return
+            self._pending.append((generation, activity))
+            self._condition.notify()
+            if not terminal:
+                return
+
+            # Healthy local sinks normally complete before this returns, which
+            # preserves deterministic status/tests. A stuck sink is abandoned
+            # after a fixed bound and can never delay the native turn.
+            deadline = (
+                time.monotonic() + _CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS
+            )
+            while (
+                self._delivery_available
+                and self._delivered_generation < generation
+            ):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return
+                self._condition.wait(timeout=remaining)
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def close(self) -> None:
+        """Stop new delivery without waiting for observer-owned code."""
+
+        self._stop.set()
+        with self._condition:
+            self._closed = True
+            self._condition.notify_all()
+
+    def _heartbeat(self) -> None:
+        interval = max(0.001, _CODEX_ACTIVITY_HEARTBEAT_SECONDS)
+        while not self._stop.wait(interval):
+            try:
+                running = self._process.poll() is None
+            except Exception:
+                # If liveness cannot be confirmed, emit nothing. This is
+                # optional telemetry and cannot become lifecycle authority.
+                continue
+            if not running:
+                return
+            self.observe("running")
+
+    def _deliver(self) -> None:
+        """Serialize observer callbacks entirely on a disposable daemon."""
+
+        while True:
+            with self._condition:
+                while not self._pending:
+                    if self._closed:
+                        self._delivery_available = False
+                        self._condition.notify_all()
+                        return
+                    self._condition.wait()
+                generation, activity = self._pending.pop(0)
+            # No observer-owned code runs on the launcher thread or while the
+            # reporter condition is held. A permanently stalled sink strands
+            # only this daemon; queued terminal state remains final by order.
+            _observe_safe_activity(self._observer, activity)
+            with self._condition:
+                self._delivered_generation = max(
+                    self._delivered_generation,
+                    generation,
+                )
+                self._condition.notify_all()
+
+
 def _safe_activity_for_event(event: Mapping[str, Any]) -> Optional[str]:
     """Classify a decoded event without forwarding any event-owned bytes."""
 
@@ -1221,7 +1369,12 @@ class CodexNativeSessionLauncher:
             raise CodexInvocationError(
                 "Codex native session streams are unavailable"
             )
-        _observe_safe_activity(activity_observer, "starting")
+        activity_reporter = _NativeActivityReporter(
+            activity_observer,
+            process,
+        )
+        activity_reporter.start()
+        activity_reporter.observe("starting")
 
         stderr_size = 0
         stderr_tail = ""
@@ -1290,7 +1443,7 @@ class CodexNativeSessionLauncher:
                 event_type = event.get("type")
                 activity = _safe_activity_for_event(event)
                 if activity is not None:
-                    _observe_safe_activity(activity_observer, activity)
+                    activity_reporter.observe(activity)
                 if event_type in ("turn.failed", "error"):
                     raise CodexInvocationError(
                         "Codex native session reported a failed turn"
@@ -1336,7 +1489,7 @@ class CodexNativeSessionLauncher:
                     break
         except Exception as exc:
             stream_failure = exc
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
             _terminate_safely(process)
         finally:
             timer.cancel()
@@ -1373,24 +1526,29 @@ class CodexNativeSessionLauncher:
                 _terminate_safely(process)
                 returncode = getattr(process, "returncode", None)
         stderr_thread.join(timeout=max(0.0, min(1.0, deadline - time.monotonic())))
+        activity_reporter.stop()
 
         if timed_out.is_set():
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
+            activity_reporter.close()
             raise CodexInvocationError("Codex native session timed out")
         if stderr_thread.is_alive() or stderr_overflow.is_set():
             _terminate_safely(process)
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
+            activity_reporter.close()
             raise CodexInvocationError(
                 "Codex native diagnostic stream exceeded its safe limit"
             )
         if stream_failure is not None:
+            activity_reporter.close()
             if isinstance(stream_failure, (CodexInvocationError, ContractError)):
                 raise stream_failure from None
             raise CodexInvocationError(
                 "Codex native session event stream was invalid"
             ) from None
         if intentionally_terminated and returncode is None:
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
+            activity_reporter.close()
             raise CodexInvocationError(
                 "Codex native session could not be terminated safely"
             )
@@ -1400,17 +1558,21 @@ class CodexNativeSessionLauncher:
             # Diagnostics are intentionally used only for a safe category and
             # are never attached to the public exception.
             if _is_explicit_transient_failure(stdout_tail, stderr_tail):
-                _observe_safe_activity(activity_observer, "failed")
+                activity_reporter.observe("failed")
+                activity_reporter.close()
                 raise CodexInvocationError(
                     "Codex native provider transport was interrupted"
                 )
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
+            activity_reporter.close()
             raise CodexInvocationError("Codex native session did not complete")
         if expected_thread_id is None and observed_thread_id is None:
-            _observe_safe_activity(activity_observer, "failed")
+            activity_reporter.observe("failed")
+            activity_reporter.close()
             raise CodexInvocationError(
                 "Codex native session returned no valid session identity"
             )
+        activity_reporter.close()
         return used_web_search, observed_thread_id
 
 
