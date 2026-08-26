@@ -39,6 +39,17 @@ _EXACT_BLOCK = re.compile(
     rb"bytes=([0-9]{1,9}) sha256=([0-9a-f]{64})>>>\n"
 )
 _EXACT_END = b"<<<END_AUTONOMOUS_WORKSHOP_EXACT_%s>>>"
+_GROK_INVENTOR_TOOLS = (
+    "run_terminal_command",
+    "read_file",
+    "search_replace",
+    "list_dir",
+    "grep",
+    "todo_write",
+    "get_command_or_subagent_output",
+    "wait_commands_or_subagents",
+    "kill_command_or_subagent",
+)
 
 
 @dataclass(frozen=True)
@@ -449,6 +460,28 @@ def _render_inventor_custom_agent(
             + instructions
             + "\n"
         ).encode("utf-8")
+    elif manager_id == "grok":
+        encoded = (
+            "---\n"
+            "name: %s\n" % inventor_id
+            + "description: %s\n" % json.dumps(description, ensure_ascii=False)
+            + "promptMode: extend\n"
+            + "tools:\n"
+            + "".join("  - %s\n" % tool for tool in _GROK_INVENTOR_TOOLS)
+            + "permissionMode: dontAsk\n"
+            + "skills:\n"
+            + "".join("  - %s\n" % item.name for item in skills)
+            + "agentsMd: true\n"
+            + "mcpInheritance: none\n"
+            + "discoverSkills: false\n"
+            + "inheritSkills: false\n"
+            + "injectDefaultTools: false\n"
+            + "model: inherit\n"
+            + "isolation: none\n"
+            + "---\n"
+            + instructions
+            + "\n"
+        ).encode("utf-8")
     else:  # manager_spec above closes the registry
         raise ContractError("unsupported Inventor agent projection")
     if len(encoded) > MAX_INVENTOR_CUSTOM_AGENT_BYTES:
@@ -656,6 +689,107 @@ def _parse_claude_inventor_agent_bytes(content: bytes) -> InventorCustomAgentBin
     )
 
 
+def _parse_grok_inventor_agent_bytes(content: bytes) -> InventorCustomAgentBinding:
+    """Recover one canonical Grok Build Markdown subagent projection."""
+
+    if (
+        not isinstance(content, bytes)
+        or not 1 <= len(content) <= MAX_INVENTOR_CUSTOM_AGENT_BYTES
+    ):
+        raise ContractError(
+            "custom Inventor agent Markdown must be non-empty and bounded"
+        )
+    try:
+        decoded = content.decode("utf-8")
+    except UnicodeError as exc:
+        raise ContractError(
+            "custom Inventor agent must contain valid UTF-8 Markdown"
+        ) from exc
+    if not decoded.startswith("---\n") or not decoded.endswith("\n"):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    header, separator, body = decoded[4:].partition("\n---\n")
+    if not separator or not body:
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    lines = header.splitlines()
+    if len(lines) < 22 or not lines[0].startswith("name: "):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    inventor_id = lines[0][len("name: ") :]
+    if _INVENTOR_ID.fullmatch(inventor_id) is None:
+        raise ContractError("custom Inventor agent name is invalid")
+    if not lines[1].startswith("description: "):
+        raise ContractError("custom Inventor agent description is invalid")
+    try:
+        description = json.loads(lines[1][len("description: ") :])
+    except ValueError as exc:
+        raise ContractError("custom Inventor agent description is invalid") from exc
+    tool_start = 4
+    tool_end = tool_start + len(_GROK_INVENTOR_TOOLS)
+    expected_tool_lines = tuple("  - %s" % tool for tool in _GROK_INVENTOR_TOOLS)
+    if (
+        not isinstance(description, str)
+        or not description
+        or len(description) > 1024
+        or lines[2] != "promptMode: extend"
+        or lines[3] != "tools:"
+        or tuple(lines[tool_start:tool_end]) != expected_tool_lines
+        or len(lines) <= tool_end + 8
+        or lines[tool_end] != "permissionMode: dontAsk"
+        or lines[tool_end + 1] != "skills:"
+    ):
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    cursor = tool_end + 2
+    header_skill_names: list[str] = []
+    while cursor < len(lines) and lines[cursor].startswith("  - "):
+        header_skill_names.append(lines[cursor][len("  - ") :])
+        cursor += 1
+    if lines[cursor:] != [
+        "agentsMd: true",
+        "mcpInheritance: none",
+        "discoverSkills: false",
+        "inheritSkills: false",
+        "injectDefaultTools: false",
+        "model: inherit",
+        "isolation: none",
+    ]:
+        raise ContractError("custom Inventor agent frontmatter is invalid")
+    instruction_bytes = body[:-1].encode("utf-8")
+    if not 1 <= len(instruction_bytes) <= MAX_INVENTOR_AGENT_INSTRUCTIONS_BYTES:
+        raise ContractError("custom Inventor agent instructions are not bounded")
+    manifest_bytes, taste_bytes, skill_bytes = _extract_exact_blocks(
+        instruction_bytes
+    )
+    skill_value = _strict_json_bytes(
+        skill_bytes,
+        label="Inventor skill binding",
+        maximum=MAX_INVENTOR_AGENT_MANIFEST_BYTES,
+    )
+    if not isinstance(skill_value, list):
+        raise ContractError("Inventor skill bindings must be an array")
+    skills = _validated_skills(
+        inventor_id,
+        tuple(InventorSkillBinding.from_mapping(item) for item in skill_value),
+    )
+    if tuple(header_skill_names) != tuple(item.name for item in skills):
+        raise ContractError("custom Inventor agent skills differ from its binding")
+    _validated_manifest(inventor_id, manifest_bytes, skills)
+    name, taste_description = _taste_discovery_fields(taste_bytes)
+    if description != "%s: %s" % (name, taste_description):
+        raise ContractError("custom Inventor agent description differs from Taste")
+    canonical = _render_inventor_custom_agent(
+        inventor_id, manifest_bytes, taste_bytes, skills, manager_id="grok"
+    )
+    if content != canonical:
+        raise ContractError("custom Inventor agent Markdown is not canonical")
+    return InventorCustomAgentBinding(
+        inventor_id=inventor_id,
+        manifest_bytes=manifest_bytes,
+        taste_bytes=taste_bytes,
+        skills=skills,
+        agent_sha256=hashlib.sha256(content).hexdigest(),
+        manager_id="grok",
+    )
+
+
 def parse_inventor_agent_bytes(
     manager_id: str, content: bytes
 ) -> InventorCustomAgentBinding:
@@ -666,6 +800,8 @@ def parse_inventor_agent_bytes(
         return _parse_codex_inventor_agent_bytes(content)
     if manager_id == "claude":
         return _parse_claude_inventor_agent_bytes(content)
+    if manager_id == "grok":
+        return _parse_grok_inventor_agent_bytes(content)
     raise ContractError("unsupported Inventor agent projection")
 
 

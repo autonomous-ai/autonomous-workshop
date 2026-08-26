@@ -51,7 +51,14 @@ class ArtifactTest(unittest.TestCase):
         self.assertNotIn("inventor-workshop.sqlite3-wal", [entry.path for entry in second.entries])
 
     def test_default_file_and_directory_exclusions_are_case_insensitive(self):
-        for dirname in (".GIT", ".CLAUDE", "__PYCACHE__", "__MacOSX", "INPUTS"):
+        for dirname in (
+            ".GIT",
+            ".CLAUDE",
+            ".GROK",
+            "__PYCACHE__",
+            "__MacOSX",
+            "INPUTS",
+        ):
             directory = self.root / dirname
             directory.mkdir()
             (directory / "private.txt").write_text("private\n", encoding="utf-8")
@@ -61,7 +68,7 @@ class ArtifactTest(unittest.TestCase):
         self.assertNotIn(".DS_STORE", paths)
         self.assertFalse(
             any(path.split("/", 1)[0].casefold() in {
-                ".git", ".claude", "__pycache__", "__macosx", "inputs"
+                ".git", ".claude", ".grok", "__pycache__", "__macosx", "inputs"
             } for path in paths)
         )
 
@@ -260,6 +267,14 @@ class ArtifactTest(unittest.TestCase):
         )
         with self.assertRaises(ArtifactError):
             build_pack(self.root, Path(self.temp.name) / "secret.zip")
+
+    def test_pack_rejects_xai_key_content_under_an_innocent_name(self):
+        (self.root / "research-notes.txt").write_text(
+            "provider credential: " + "xai-" + ("A" * 24),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ArtifactError, "xai-key"):
+            build_pack(self.root, Path(self.temp.name) / "xai-secret.zip")
 
     @unittest.skipIf(os.name == "nt", "backslash is a separator on Windows")
     def test_pack_rejects_backslash_member_names(self):

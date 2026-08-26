@@ -10,7 +10,10 @@ from pathlib import Path
 
 from workshop.contributors.extensions import fingerprint_extension_skill
 from workshop.errors import ArtifactError, ContractError, StateConflict, TransitionError
-from workshop.runtime.agent_assets import parse_inventor_custom_agent_bytes
+from workshop.runtime.agent_assets import (
+    parse_inventor_agent_bytes,
+    parse_inventor_custom_agent_bytes,
+)
 from workshop.runtime.managers import manager_spec, manager_support_files
 from workshop.workflow import (
     AgentArtifact,
@@ -319,6 +322,110 @@ class AgentRunTest(unittest.TestCase):
             )
         )
         self.assertEqual(manifest["name"], "autonomous-workshop")
+        reopened = AgentRun.open(
+            run.run_root,
+            host_state_root=run.host_state_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+        )
+        self.assertEqual(reopened.snapshot(), checkpoint)
+
+    def test_grok_manager_materializes_exact_projection_modes_and_binding(self):
+        cad = self.root / "grok-cad-skill"
+        (cad / "scripts").mkdir(parents=True)
+        (cad / "SKILL.md").write_bytes(b"# CAD skill\n")
+        checker = cad / "scripts" / "check_mesh"
+        checker.write_bytes(b"#!/bin/sh\nexit 0\n")
+        checker.chmod(0o755)
+
+        inventor_source = self.root / "grok-inventors"
+        alice = inventor_source / "alice"
+        inventor_skill = alice / "skills" / "alice-inventor"
+        (inventor_skill / "scripts").mkdir(parents=True)
+        (inventor_skill / "SKILL.md").write_text(
+            "---\n"
+            "name: alice-inventor\n"
+            "description: Alice's exact native specialist workflow.\n"
+            "---\n"
+            "# Alice\nApply Alice's Taste to bounded delegated work.\n",
+            encoding="utf-8",
+        )
+        custom_tool = inventor_skill / "scripts" / "custom_tool"
+        custom_tool.write_bytes(b"#!/bin/sh\nexit 0\n")
+        custom_tool.chmod(0o755)
+        fingerprint = fingerprint_extension_skill(
+            inventor_skill.resolve(), expected_name="alice-inventor"
+        )
+        (alice / "inventor.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 8,
+                    "id": "alice",
+                    "status": "experimental",
+                    "source": {"kind": "local"},
+                    "extensions": [
+                        {
+                            "kind": "codex-skill",
+                            "name": "alice-inventor",
+                            "path": "skills/alice-inventor",
+                            "artifact_sha256": fingerprint.artifact_sha256,
+                        }
+                    ],
+                },
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        (alice / "TASTE.md").write_text(
+            "---\nname: Alice\ndescription: Exact classics.\n---\n",
+            encoding="utf-8",
+        )
+
+        run = self.create(
+            manager_id="grok",
+            domain_skill_roots={"cad": cad},
+            inventor_source_root=inventor_source,
+        )
+        checkpoint = run.snapshot()
+
+        self.assertEqual(checkpoint.manager_id, "grok")
+        manager_bytes = manager_spec("grok").project_bytes()
+        self.assertEqual((run.run_root / "MANAGER.json").read_bytes(), manager_bytes)
+        self.assertEqual(
+            checkpoint.input_sha256s["MANAGER.json"],
+            hashlib.sha256(manager_bytes).hexdigest(),
+        )
+        expected_modes = {
+            "AGENTS.md": 0o400,
+            "MANAGER.json": 0o400,
+            ".grok/agents/alice.md": 0o400,
+            ".grok/skills/autonomous-workshop/SKILL.md": 0o400,
+            ".grok/skills/cad/SKILL.md": 0o400,
+            ".grok/skills/cad/scripts/check_mesh": 0o500,
+            ".grok/skills/alice-inventor/SKILL.md": 0o400,
+            ".grok/skills/alice-inventor/scripts/custom_tool": 0o500,
+        }
+        for relative, mode in expected_modes.items():
+            with self.subTest(relative=relative):
+                path = run.run_root / relative
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), mode)
+                self.assertIn(relative, checkpoint.input_sha256s)
+        for relative in (".grok", ".grok/agents", ".grok/skills"):
+            self.assertEqual(
+                stat.S_IMODE((run.run_root / relative).stat().st_mode), 0o500
+            )
+        self.assertFalse((run.run_root / ".agents").exists())
+        self.assertFalse((run.run_root / ".claude").exists())
+        self.assertFalse((run.run_root / ".codex").exists())
+
+        binding = parse_inventor_agent_bytes(
+            "grok", (run.run_root / ".grok/agents/alice.md").read_bytes()
+        )
+        self.assertEqual(binding.manager_id, "grok")
+        self.assertEqual(binding.inventor_id, "alice")
+        self.assertEqual(binding.skills[0].artifact_sha256, fingerprint.artifact_sha256)
+        self.assertEqual(dict(checkpoint.inventor_roster[0]), binding.to_host_dict())
+
         reopened = AgentRun.open(
             run.run_root,
             host_state_root=run.host_state_root,

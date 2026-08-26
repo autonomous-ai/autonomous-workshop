@@ -666,10 +666,10 @@ def native_stage_prompt(
             stage,
         )
     )
-    if runtime.manager_id == "claude":
-        # Claude Code slash commands are user-input commands.  Merely telling
-        # Claude to create a Goal does not activate its native continuation
-        # loop, so the non-interactive prompt must invoke /goal directly.
+    if runtime.goal_prompt_style == "slash-command":
+        # Some native runtimes require the actual user-input command to enter
+        # their continuation loop.  The selected Manager spec owns that vendor
+        # convention; lifecycle orchestration remains manager-neutral.
         return "/goal " + condition
     return "Create one native goal. " + condition
 

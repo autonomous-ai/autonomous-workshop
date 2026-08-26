@@ -1,6 +1,6 @@
 # ADR 0013: Portable Workshop Manager runtimes
 
-- Status: Accepted; adapter implementation complete, live Claude acceptance pending
+- Status: Accepted; Claude and Grok adapters implemented, live acceptance pending
 - Date: 2026-08-26
 - Owners: Runtime, Workflow, and CLI maintainers
 - Amends: ADR 0012
@@ -11,8 +11,8 @@ ADR 0012 established the durable native-session architecture using Codex. Its
 trusted boundary is vendor-independent: one native coding-agent Manager owns
 reasoning and tool use, while the Workshop host owns lifecycle state, exact-byte
 gates, isolation, authorization, and effects. Inventor sources are also
-vendor-independent even though Codex and Claude Code use different project
-formats for agents and skills.
+vendor-independent even though Codex, Claude Code, and Grok Build use different
+project formats for agents and skills.
 
 Workshop needs multiple native runtimes without introducing a Python agent
 framework, duplicating Inventor identity, or letting a resume silently change
@@ -21,10 +21,10 @@ the agent that owns an existing session.
 ## Decision
 
 Workshop has one closed Manager registry and a narrow native-session launcher
-port. Codex and Claude Code are registered implementations. New Wishes accept
-`--manager`; omission selects Codex. The selected Manager is persisted in the
-host checkpoint before the first native launch, reported in receipts/status,
-and used for every resume. Resume is not a runtime selector.
+port. Codex, Claude Code, and Grok Build are registered implementations. New
+Wishes accept `--manager`; omission selects Codex. The selected Manager is
+persisted in the host checkpoint before the first native launch, reported in
+receipts/status, and used for every resume. Resume is not a runtime selector.
 
 The Claude adapter, CLI selection, projection, isolated API-key profile
 policy, terminal attestation, and same-session resume binding have deterministic
@@ -32,11 +32,20 @@ test coverage. A real private Claude Wish has not yet completed the live
 acceptance bar, so this decision does not claim production validation from
 mocked execution.
 
+The Grok Build adapter, CLI selection, `.grok` projection, isolated API-key
+profile policy, inspected ambient-state exclusions, streaming-event
+attestation, and same-session Goal binding also have deterministic test
+coverage. The adapter accepts only Grok Build `1.0.5 (5115b46bc909)` and
+requires `XAI_API_KEY`. A real private Grok Wish has not yet completed its Goal,
+sandbox, projected-Inventor, and child-shell credential-isolation acceptance
+bar, so deterministic implementation is not a production-validation claim.
+
 One Wish has one active root Manager and one runtime-native session identity.
-Codex and Claude Code may both work on projects produced from the same canonical
-Workshop and Inventor sources, but they do not concurrently mutate one Wish and
-cannot silently resume each other's sessions. A future cross-runtime handoff
-must be an explicit, host-checkpointed session epoch with invalidation rules.
+Codex, Claude Code, and Grok Build may work on projects produced from the same
+canonical Workshop and Inventor sources, but they do not concurrently mutate
+one Wish and cannot silently resume each other's sessions. A future
+cross-runtime handoff must be an explicit, host-checkpointed session epoch with
+invalidation rules.
 
 ### Canonical sources and projections
 
@@ -54,6 +63,7 @@ one selected-runtime projection:
 ```text
 Codex:       .codex/agents/*.toml + .agents/skills/**
 Claude Code: .claude/agents/*.md  + .claude/skills/**
+Grok Build:  .grok/agents/*.md    + .grok/skills/**
 ```
 
 `MANAGER.json` records the selected runtime, instruction entrypoint, agent
@@ -106,6 +116,34 @@ host checkpoint, condition hash, attempt, and
 prepared/active/returned/completed state. The native terminal result moves the
 sidecar to returned; only host validation of the exact stage proposal records
 completed.
+
+Grok Build runs from private `HOME` and `GROK_HOME` trees with automatic
+updates, memory, telemetry, compatibility imports, managed MCP, and other
+ambient integrations disabled. A host-generated root profile disables default
+tool injection and admits only the explicit Manager tools and projected
+Inventor types. Before launch, `grok inspect --json` must report the exact toy
+root, run-local instructions, agents, and skills and no unexpected hooks,
+plugins, marketplaces, MCP, LSP, configuration sources, or compatibility
+surface. The adapter independently hashes the exact projection and policy
+bytes, then attests every event in the pinned `streaming-json` protocol,
+including the exact session id, tool roster, `/goal` availability, fatal event
+absence, and terminal event.
+
+Every new Grok cognitive-stage attempt receives the exact prompt
+`/goal <condition>`. An interrupted active attempt receives `/goal resume` in
+the recorded session. After the working turn ends, the adapter sends
+`/goal status` to that same session and requires the pinned status text
+`Status: Complete | Phase:` before moving `grok-goal.json` from active to
+returned. Immutable `grok-session.json` binds the runtime, project, session,
+and policy; only host validation of the exact proposal records completed.
+
+The Grok parent environment contains the provider key but the configured child
+shell environment does not. The toy project is initialized as its own nested
+Git root so Grok's project and `AGENTS.md` discovery cannot silently climb into
+the builder checkout. These policies still require live macOS/Linux sandbox,
+network, `/proc`, and child-shell credential probes before the adapter is
+production-validated. Workshop does not infer security from configuration or
+mocked streams alone.
 
 ### Shared authority boundary
 
@@ -167,16 +205,23 @@ session resume, ambient-state exclusion, plugin discovery,
 permissions, sandboxing, event completion, and process termination must each
 fail closed for the concrete runtime.
 
+Grok Build adds another native coding environment for procedural 3D work: the
+Manager can author Blender, CadQuery, or OpenSCAD code, invoke shared Workshop
+skills, inspect renders, and iterate against measured output. It does not turn
+model output into a trustworthy solid or mesh. Host-owned CAD/kernel, manifold,
+clearance, and printability checks remain authoritative, and physical success
+still requires authenticated physical evidence.
+
 ## Verification
 
 The following deterministic implementation checks pass:
 
-- CLI tests prove Codex is the default and Claude can be selected only at Wish
-  creation.
+- CLI tests prove Codex is the default and Claude or Grok can be selected only
+  at Wish creation.
 - Checkpoint tests prove the Manager is persisted and schema-v3 runs remain
   implicit Codex without rewrite.
 - Projection tests round-trip exact Inventor identity/Taste/skill bindings for
-  both runtime formats.
+  all registered runtime formats.
 - Native-host tests prove resume selects the persisted Manager and its private
   session checkpoint.
 - Claude adapter tests prove isolated API-key authentication, new-attempt `/goal`
@@ -185,6 +230,11 @@ The following deterministic implementation checks pass:
   unexpected namespaced entries, bounded unnamespaced CLI entries, exact
   projected agent and normalized tool rosters, empty MCP, model,
   session, sandbox, environment, and terminal-result attestation.
+- Grok adapter tests prove the exact version/build pin, isolated API-key
+  profile, nested project root, inspected ambient-state exclusions, explicit
+  agent/tool policy, new-attempt `/goal`, interrupted `/goal resume`, exact
+  `/goal status` completion, same-session binding, stream failure paths, and
+  host acknowledgement.
 
 Live acceptance remains pending: one Claude Code 2.1.246-or-newer private Wish
 with a real host-provided `ANTHROPIC_API_KEY` must demonstrate the exact
@@ -195,3 +245,12 @@ public effects. That acceptance must also prove sandboxed Bash cannot read the
 API key, Linux `/proc` environment, network, paths outside the run root, or any
 Workshop-controlled Factory/effect credential, while Agent, Skill, Write, and
 the stage finalizer still work.
+
+Grok live acceptance remains separately pending: one private Wish with the
+exact `1.0.5 (5115b46bc909)` build and a real host-provided `XAI_API_KEY` must
+demonstrate the complete Goal loop, same-session resume and status, actual use
+of one projected Inventor and skill, and the stage finalizer without public
+effects. It must also prove child shell commands cannot read the API key,
+Linux `/proc` environment, network, paths outside the exact toy root, or any
+Workshop-controlled Factory/effect credential while the explicit Manager
+tools continue to work.

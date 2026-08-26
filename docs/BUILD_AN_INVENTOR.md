@@ -24,11 +24,12 @@ Workshop supplies the root Manager, lifecycle, contracts, gates, shared skills,
 and effect boundaries. At run creation the host validates reusable Inventor
 sources and projects each eligible one into exactly one selected runtime layout:
 `.codex/agents/<id>.toml` plus `.agents/skills/**` for Codex, or the explicit
-Claude Code plugin's `.claude/agents/<id>.md` plus `.claude/skills/**`.
-`MANAGER.json` names the authoritative projection. That projected directory is
-the sole Inventor identity, Taste, and skill roster in the toy project. The
-Manager delegates through its own native controls; it does not launch another
-OS-level Manager process or a Python worker.
+Claude Code plugin's `.claude/agents/<id>.md` plus `.claude/skills/**`, or
+`.grok/agents/<id>.md` plus `.grok/skills/**` for Grok Build. `MANAGER.json`
+names the authoritative projection. That projected directory is the sole
+Inventor identity, Taste, and skill roster in the toy project. The Manager
+delegates through its own native controls; it does not launch another OS-level
+Manager process or a Python worker.
 
 ## 1. Write `TASTE.md`
 
@@ -101,7 +102,7 @@ bindings:
 
 `codex-skill` is the historical schema-v8 wire discriminator retained by the
 current contributor contract. The declared `SKILL.md` tree itself is portable
-and is compiled into either supported Manager's native skill directory; the
+and is compiled into any registered Manager's native skill directory; the
 field does not authorize Codex-only behavior. A future schema rename must be an
 explicit compatibility migration rather than an in-place reinterpretation.
 
@@ -129,6 +130,13 @@ It may accept files and produce files or measurements. It must not:
 - choose a lifecycle transition or report its own gate passed;
 - read credentials or call credential-bearing effects;
 - hide reusable Workshop-wide behavior inside one Inventor.
+
+That boundary matters for 3D generation. Codex, Claude Code, or Grok Build may
+author Blender, CadQuery, or OpenSCAD code and iterate after inspecting renders
+or measurements, while an Inventor skill provides genuine specialist craft.
+Neither the selected runtime nor a plausible render proves a trustworthy solid
+or mesh. Keep CAD/kernel, manifold, clearance, and printability checks in their
+host-owned components, and require physical receipts for physical claims.
 
 Each active Match, Invent, Make, Playtest, or Release attempt has one native
 Goal owned by the selected root Manager. The selected Inventor may contribute
@@ -163,6 +171,11 @@ uv run workshop wish \
 
 # Claude requires ANTHROPIC_API_KEY; keep this run private while live acceptance is pending:
 uv run workshop wish --manager claude \
+  "I wish for a hand-cranked creature that climbs the edge of my bookshelf"
+
+# Grok requires exact 1.0.5 (5115b46bc909) and XAI_API_KEY. Its live
+# private-Wish Goal, sandbox, and credential-isolation acceptance is pending:
+uv run workshop wish --manager grok \
   "I wish for a hand-cranked creature that climbs the edge of my bookshelf"
 ```
 

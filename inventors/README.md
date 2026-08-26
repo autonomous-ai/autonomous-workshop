@@ -29,6 +29,14 @@ inside the toy project. There is no second run-local identity tree. One
 persistent native coding-agent session acts as Workshop Manager and uses its
 own subagent controls to spawn the selected Inventor.
 
+The same canonical bundle becomes `.codex/agents/*.toml` plus
+`.agents/skills/**` for Codex, `.claude/agents/*.md` plus `.claude/skills/**`
+for Claude Code, or `.grok/agents/*.md` plus `.grok/skills/**` for Grok Build.
+The formats differ, but identity, full Taste, and declared skill-tree bytes do
+not. One Wish materializes exactly one of those projections and remains bound
+to that Manager; runtimes do not concurrently mutate a Wish or resume one
+another's native sessions.
+
 Each Match, Invent, Make, Playtest, or Release attempt has one active native
 Goal. The Manager and its native children observe, act, evaluate, and
 improve while pursuing that Goal. Inventor scripts do not implement this loop.
@@ -36,6 +44,12 @@ They may provide bounded deterministic specialist operations such as CAD
 generation, simulation, parsing, or evaluation, but they must not launch
 agents, schedule prompts, choose lifecycle transitions, waive gates, access
 credentials, or perform external effects.
+
+For procedural 3D craft, any selected Manager—including Grok Build—may invoke
+the same declared Blender, CadQuery, OpenSCAD, rendering, and measurement
+resources. A plausible render or model-authored assessment is not a trustworthy
+solid, mesh, print, or physical fit; Workshop's deterministic gates and
+authenticated physical evidence remain authoritative.
 
 The bundled Inventors currently use one concise instructions-only primary
 skill each. Shared CAD, simulation, and evidence tooling stays in Workshop.

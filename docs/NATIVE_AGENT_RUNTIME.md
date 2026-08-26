@@ -24,9 +24,10 @@ source-repository work.
 
 Every `workshop wish` first creates and populates one persistent toy project,
 then launches one native session in the selected Manager runtime before Match.
-Codex is the CLI default; `--manager claude` selects Claude Code. That same
-runtime-native session performs all cognitive and tool-using work through
-Release:
+Codex is the CLI default; `--manager claude` selects Claude Code and
+`--manager grok` selects the exact pinned Grok Build release
+`1.0.5 (5115b46bc909)`. That same runtime-native session performs all
+cognitive and tool-using work through Release:
 
 ```text
 Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
@@ -37,6 +38,13 @@ profile, sandbox policy, stream attestation, and same-session
 resume binding are implemented and covered by deterministic tests. A real
 private Claude Wish has not yet completed the live acceptance bar below; the
 implementation is therefore not yet described as production-validated.
+
+The Grok Build adapter, CLI selection, deterministic `.grok` projection,
+private API-key profile, streaming-event attestation, and same-session Goal
+binding are likewise implemented and covered by deterministic tests. A real
+private Grok Wish has not yet completed live Goal, sandbox, projected-Inventor,
+or child-shell credential-isolation acceptance, so its implementation is also
+pre-live-validation rather than production-validated.
 
 The selected Manager owns understanding, native search, concept exploration,
 design, CAD and artifact creation, render inspection, repair, AI Playtest
@@ -73,6 +81,14 @@ Claude restores the active Goal and another `/goal` would replace it. A private
 stage/checkpoint-bound Goal sidecar records `prepared`, `active`, `returned`,
 and host-acknowledged `completed`; Python does not emulate the Goal loop.
 
+Grok Build receives `/goal <condition>` as the complete prompt for a new
+attempt and `/goal resume` when continuing an interrupted active attempt. A
+second turn on that exact session sends `/goal status`; the pinned streaming
+protocol must report `Status: Complete | Phase:` before the adapter records a
+native return. Immutable `grok-session.json` and mutable `grok-goal.json`
+preserve the same stage/checkpoint binding, and host acknowledgement remains
+separate from native completion.
+
 Python is the trusted host substrate only. It owns:
 
 - Wish/run identity and exact input bytes;
@@ -96,15 +112,18 @@ advance a gate.
 The diagnostic command checks installation, the minimum version, and the
 selected Manager's authentication prerequisite without starting a paid model
 turn. Codex checks its existing CLI login; Claude checks that
-`ANTHROPIC_API_KEY` is available for the isolated Claude profile:
+`ANTHROPIC_API_KEY` is available for the isolated Claude profile; Grok checks
+the exact `1.0.5 (5115b46bc909)` build and `XAI_API_KEY` for its isolated
+profile:
 
 ```bash
 workshop doctor                    # Codex, the default
 workshop doctor --manager claude   # Claude Code
+workshop doctor --manager grok     # pinned Grok Build
 ```
 
 ```text
-workshop wish [--manager codex|claude]
+workshop wish [--manager codex|claude|grok]
     |
     v
 host persists the canonical Wish and creates toys/<toy-id>/
@@ -119,9 +138,12 @@ host persists the canonical Wish and creates toys/<toy-id>/
     |     +-- .codex/agents/*.toml
     |     `-- .agents/skills/**
     |
-    `-- Claude Code projection
-          +-- CLAUDE.md               imports the canonical AGENTS.md
-          `-- .claude/                generated plugin, agents, and skills
+    +-- Claude Code projection
+    |     +-- CLAUDE.md               imports the canonical AGENTS.md
+    |     `-- .claude/                generated plugin, agents, and skills
+    |
+    `-- Grok Build projection
+          `-- .grok/                  project agents and skills
     |
     v
 host starts one selected Manager CLI session and records its private session id
@@ -137,10 +159,11 @@ The alternatives in the diagram are mutually exclusive for one run.
 `MANAGER.json` and the schema-v4 host checkpoint persist the selection before
 the first native turn. Codex stores its private session binding in
 `codex-session.json`; Claude Code uses immutable `claude-session.json` plus a
-mutable `claude-goal.json` attempt sidecar. The sidecar remains `active` across
-an interrupted transport and becomes `completed` only after the host validates
-the exact checkpoint-bound proposal. All live under the host-only state root,
-not in the agent-visible toy project.
+mutable `claude-goal.json` attempt sidecar; Grok Build uses immutable
+`grok-session.json` plus mutable `grok-goal.json`. An attempt sidecar remains
+`active` across an interrupted transport and becomes `completed` only after the
+host validates the exact checkpoint-bound proposal. All live under the
+host-only state root, not in the agent-visible toy project.
 
 `workshop resume <wish-id>` has no Manager selector. It loads the persisted
 Manager and resumes that runtime's recorded session id in the same toy project.
@@ -171,10 +194,11 @@ The host projects every eligible Inventor into the selected runtime's native
 agent format. Codex receives `.codex/agents/<id>.toml` and the corresponding
 `.agents/skills/**` trees. Claude Code receives a host-generated plugin rooted
 at `.claude/`, with `.claude/agents/<id>.md`, `.claude/skills/**`, and the
-namespace declared by `MANAGER.json`. Each projected agent binds the exact
-host-materialized identity, Taste, and declared skill paths. That selected
-directory is the sole Inventor roster in the toy project. The Manager owns
-spawning, routing, waiting, and synthesis. Workshop does not spawn another
+namespace declared by `MANAGER.json`. Grok Build receives
+`.grok/agents/<id>.md` and `.grok/skills/**`. Each projected agent binds the
+exact host-materialized identity, Taste, and declared skill paths. That
+selected directory is the sole Inventor roster in the toy project. The Manager
+owns spawning, routing, waiting, and synthesis. Workshop does not spawn another
 OS-level coding-agent process: the host starts and resumes only the root
 product-run session.
 
@@ -193,6 +217,15 @@ projected namespaced skill in both reported skill/command sets, no unexpected
 namespaced entries, empty MCP, API-key source, model, session, all reported load
 errors, and terminal result. The plugin tree is validated and hash-bound before
 launch.
+
+The Grok adapter does not infer equivalence from similar command names. It
+uses an exact host-generated root profile with default tool injection disabled,
+an explicit project agent/skill roster, and the pinned `streaming-json`
+protocol. It rejects malformed or unknown events, unexpected tools, missing
+`/goal`, wrong session identity, nonterminal streams, and any inspected hook,
+plugin, MCP, LSP, compatibility import, or other ambient project surface. The
+`.grok` tree and private policy bytes are validated and hash-bound before every
+accepted turn.
 
 The source `inventors/<id>/` bundle contains:
 
@@ -253,6 +286,7 @@ The selected projection contains one exact copy of the proposal tool:
 |---|---|
 | Codex | `.agents/skills/autonomous-workshop/scripts/stage_proposal.py` |
 | Claude Code | `.claude/skills/autonomous-workshop/scripts/stage_proposal.py` |
+| Grok Build | `.grok/skills/autonomous-workshop/scripts/stage_proposal.py` |
 
 After the Manager has authored the current stage's source files or artifact
 tree, it runs that standard-library tool for exactly one stage. In the examples
@@ -369,11 +403,28 @@ administrator policy.
 Claude's session and subagent transcripts remain plaintext beneath the private
 configuration directory; `cleanupPeriodDays: 36500` prevents routine cleanup
 from stranding the bound `--resume` session, so `0700` host-state permissions
-are the at-rest boundary. Workshop does not add Factory credentials to either
+are the at-rest boundary. Workshop does not add Factory credentials to any
 Manager environment, prompt, sandbox-readable filesystem, run artifacts, or
 status output; trusted managed hooks and host administrators are outside that
 guarantee. Public publication is not evidence of physical manufacture or
 delivery.
+
+Grok Build `1.0.5 (5115b46bc909)` runs with separate private `HOME` and
+`GROK_HOME` trees, a bounded parent environment containing `XAI_API_KEY`,
+disabled ambient memory, telemetry, compatibility imports, managed MCP, and
+automatic updates, and an explicit root agent/tool profile. Its child shell
+environment excludes the provider key. The adapter also initializes the toy
+project as its own nested Git root so Grok discovers the run-local `AGENTS.md`
+instead of the surrounding builder repository. These controls have
+deterministic coverage, but their real macOS/Linux sandbox behavior,
+child-shell credential exclusion, native Goal completion, and projected-agent
+execution still require the private live acceptance described below. Workshop
+does not claim those boundaries from configuration bytes or mocked streams
+alone.
+
+The first pinned Grok profile disables direct web search and fetch. That is an
+intentional pre-live allowlist boundary. Enabling those provider tools requires
+its own exact stream, sandbox, and egress acceptance update.
 
 ## Materialized instructions and skills
 
@@ -389,17 +440,18 @@ inventors/<id>/{inventor.json,TASTE.md,skills/**}
 At project creation the host also generates one deterministic
 `MANAGER.json` and exactly one runtime-native projection:
 
-| Materialized concern | Codex | Claude Code |
-|---|---|---|
-| Instruction entrypoint | `AGENTS.md` | `CLAUDE.md` importing `AGENTS.md` |
-| Inventor agents | `.codex/agents/<id>.toml` | `.claude/agents/<id>.md` |
-| Workflow/domain/Inventor skills | `.agents/skills/**` | `.claude/skills/**` |
-| Adapter support | strict policy passed by the CLI | isolated non-bare profile plus generated `.claude/.claude-plugin/plugin.json` and explicit host policy |
+| Materialized concern | Codex | Claude Code | Grok Build |
+|---|---|---|---|
+| Instruction entrypoint | `AGENTS.md` | `CLAUDE.md` importing `AGENTS.md` | `AGENTS.md` |
+| Inventor agents | `.codex/agents/<id>.toml` | `.claude/agents/<id>.md` | `.grok/agents/<id>.md` |
+| Workflow/domain/Inventor skills | `.agents/skills/**` | `.claude/skills/**` | `.grok/skills/**` |
+| Adapter support | strict policy passed by the CLI | isolated non-bare profile plus generated `.claude/.claude-plugin/plugin.json` and explicit host policy | exact pinned CLI, private root profile/configuration, inspected ambient-state exclusions, and attested streaming protocol |
 
 The host passes the Claude projection as the one explicit plugin directory;
-Codex uses its project-scoped agent convention. Both projections are derived
-from the same exact canonical source bytes. They are not second hand-written
-identity or skill systems, and generated files must not be edited independently.
+Codex and Grok Build use their project-scoped agent conventions. All three
+projections are derived from the same exact canonical source bytes. They are
+not second hand-written identity or skill systems, and generated files must
+not be edited independently.
 
 Every Inventor declares one primary `<id>-inventor` skill tree. Additional
 Inventor-prefixed trees and their scripts/resources are optional. Only exact
@@ -474,7 +526,7 @@ toys/<toy-id>/                              persistent toy projects / Manager CW
 inventors/<id>/                              reusable Taste, source manifest, and skills
 src/cli/                                     parsing, presentation, and exit codes
 src/workshop/runtime/managers.py             Manager registry and shared adapter port
-src/workshop/runtime/{codex,claude}.py        concrete native session adapters
+src/workshop/runtime/{codex,claude,grok}.py   concrete native session adapters
 src/workshop/runtime/                        session and trusted effect boundaries
 src/workshop/workflow/native_run.py          trusted whole-run host composition
 src/workshop/workflow/                       lifecycle and checkpoint protocol
@@ -489,24 +541,25 @@ installed sibling under `src/`; tests remain under top-level `tests/`.
 
 ## Acceptance bar
 
-Deterministic Claude adapter, projection, CLI, checkpoint, and failure-path
-tests pass. Live private-Wish acceptance is still pending because it requires
-Claude Code at or above the documented version floor plus a real
-`ANTHROPIC_API_KEY` in the host environment. The native-runtime cutover is
-production-validated only when deterministic tests and a real private Wish
-demonstrate that:
+Deterministic Claude and Grok adapter, projection, CLI, checkpoint, and
+failure-path tests pass. Live private-Wish acceptance remains runtime-specific:
+Claude requires the documented version floor and a real `ANTHROPIC_API_KEY`;
+Grok requires the exact `1.0.5 (5115b46bc909)` build and a real `XAI_API_KEY`.
+Each runtime is production-validated only when deterministic tests and a real
+private Wish demonstrate that:
 
 1. one selected-Manager session id spans every native stage;
-2. one host-projected Inventor agent and at least one host-projected namespaced
-   skill are each actually invoked, rather than merely reported in init;
+2. one host-projected Inventor agent and at least one host-projected skill
+   (namespaced for Claude) are each actually invoked, rather than merely
+   reported in discovery or init;
 3. stale checkpoint or subject hashes are rejected;
 4. changed artifact bytes fail their next gate;
 5. failed Playtest evidence returns to a new Make round and invalidates
    downstream work;
 6. Release claims exactly match passing evidence;
-7. sandboxed Bash cannot read the API key, Linux `/proc` environment, network,
-   paths outside the run root, or any Factory/host-effect credential that
-   Workshop controls;
+7. the runtime child shell (Bash for Claude) cannot read the API key, Linux
+   `/proc` environment, network, paths outside the run root, or any
+   Factory/host-effect credential that Workshop controls;
 8. `--publish` is required for public promotion and the remote receipt binds
    the exact Release package; and
 9. the run does not claim Deliver without physical receipts.
@@ -517,7 +570,7 @@ demonstrate that:
 |---|---|
 | Codex | Implemented |
 | Claude Code | Adapter, CLI, and projection implemented; live private-Wish acceptance pending |
-| Grok Build | Planned adapter |
+| Grok Build `1.0.5 (5115b46bc909)` | Adapter, CLI, and projection implemented; live private-Wish Goal/sandbox/credential-isolation acceptance pending |
 
 The stable seam is the persistent toy project, stage objective and proof
 condition, `STAGE.json`, compact outcome protocol, start/resume adapter, and
@@ -525,3 +578,10 @@ bounded native-specialist delegation—not prompt syntax or one vendor's
 custom-agent/plugin file format. Every future adapter must preserve the root
 Manager role, exact Inventor binding, host-owned gates, fail-closed sandbox,
 checkpoint, same-manager resume, and effect authority.
+
+For 3D product work, Grok Build is another native environment for writing and
+iterating procedural Blender, CadQuery, or OpenSCAD code and inspecting
+rendered or measured output through Workshop's shared skills. Its model output
+is not a trusted mesh or solid merely because it looks plausible. Exact
+CAD/kernel, manifold, clearance, and printability checks remain host-owned, and
+physical success still requires authenticated physical evidence.

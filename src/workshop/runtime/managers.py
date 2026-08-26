@@ -8,6 +8,7 @@ remain manager-neutral.
 
 from __future__ import annotations
 
+import importlib
 import json
 import re
 from dataclasses import dataclass
@@ -64,6 +65,7 @@ class ManagerRuntimeSpec:
     instruction_entrypoint: str
     session_checkpoint_name: str
     native_work_control: str = "goal"
+    goal_prompt_style: str = "instruction"
     agent_namespace: str | None = None
 
     def __post_init__(self) -> None:
@@ -101,6 +103,8 @@ class ManagerRuntimeSpec:
             raise ContractError("Workshop Manager agent suffix is invalid")
         if self.native_work_control != "goal":
             raise ContractError("Workshop Manager work-control convention is invalid")
+        if self.goal_prompt_style not in ("instruction", "slash-command"):
+            raise ContractError("Workshop Manager Goal prompt style is invalid")
         if self.agent_namespace is not None and (
             not isinstance(self.agent_namespace, str)
             or _MANAGER_ID.fullmatch(self.agent_namespace) is None
@@ -185,10 +189,26 @@ _MANAGER_SPECS = {
         skill_directory=".claude/skills",
         instruction_entrypoint="CLAUDE.md",
         session_checkpoint_name="claude-session.json",
+        goal_prompt_style="slash-command",
         agent_namespace="autonomous-workshop",
+    ),
+    "grok": ManagerRuntimeSpec(
+        manager_id="grok",
+        display_name="Grok Build",
+        agent_directory=".grok/agents",
+        agent_suffix=".md",
+        skill_directory=".grok/skills",
+        instruction_entrypoint="AGENTS.md",
+        session_checkpoint_name="grok-session.json",
+        goal_prompt_style="slash-command",
     ),
 }
 SUPPORTED_MANAGER_IDS = tuple(_MANAGER_SPECS)
+_MANAGER_LAUNCHERS = {
+    "codex": ("workshop.runtime.codex", "CodexNativeSessionLauncher"),
+    "claude": ("workshop.runtime.claude", "ClaudeNativeSessionLauncher"),
+    "grok": ("workshop.runtime.grok", "GrokNativeSessionLauncher"),
+}
 
 
 def manager_spec(manager_id: str = DEFAULT_MANAGER_ID) -> ManagerRuntimeSpec:
@@ -252,16 +272,12 @@ def manager_launcher(manager_id: str) -> NativeSessionLauncher:
     """Construct the selected concrete launcher through one lazy registry seam."""
 
     spec = manager_spec(manager_id)
-    if spec.manager_id == "codex":
-        from workshop.runtime.codex import CodexNativeSessionLauncher
-
-        launcher: Any = CodexNativeSessionLauncher()
-    elif spec.manager_id == "claude":
-        from workshop.runtime.claude import ClaudeNativeSessionLauncher
-
-        launcher = ClaudeNativeSessionLauncher()
-    else:  # pragma: no cover - the closed registry is validated above
+    try:
+        module_name, class_name = _MANAGER_LAUNCHERS[spec.manager_id]
+        factory: Any = getattr(importlib.import_module(module_name), class_name)
+    except (AttributeError, ImportError, KeyError):
         raise ContractError("Workshop Manager registry is incomplete")
+    launcher: Any = factory()
     if (
         not isinstance(launcher, NativeSessionLauncher)
         or launcher.manager_id != spec.manager_id

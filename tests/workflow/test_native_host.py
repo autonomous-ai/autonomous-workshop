@@ -134,6 +134,22 @@ class NativeHostTest(unittest.TestCase):
         self.assertNotIn("MANAGER.json", prompt)
         self.assertTrue(prompt.startswith("Create one native goal. "))
 
+    def test_registered_goal_prompt_style_selects_literal_slash_commands(self):
+        codex = native_stage_prompt("match", "codex")
+        self.assertTrue(codex.startswith("Create one native goal. "))
+
+        for manager_id, skill_path in (
+            ("claude", ".claude/skills/autonomous-workshop/SKILL.md"),
+            ("grok", ".grok/skills/autonomous-workshop/SKILL.md"),
+        ):
+            with self.subTest(manager_id=manager_id):
+                prompt = native_stage_prompt("match", manager_id)
+                self.assertTrue(prompt.startswith("/goal "))
+                self.assertEqual(prompt.count("/goal "), 1)
+                self.assertIn("MANAGER.json", prompt)
+                self.assertIn(skill_path, prompt)
+                self.assertIn("successful finalization", prompt)
+
     def test_unknown_manager_fails_before_any_run_directory_is_created(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary).resolve() / "workshop-home"

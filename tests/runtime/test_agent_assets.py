@@ -264,6 +264,54 @@ class ProductRunAgentAssetsTest(unittest.TestCase):
                 ),
             )
 
+    def test_grok_inventor_projection_is_canonical_project_markdown(self):
+        manifest = manifest_bytes()
+        encoded = inventor_agent_bytes(
+            "grok",
+            "alice",
+            manifest,
+            ALICE_TASTE,
+            skills=ALICE_SKILLS,
+        )
+
+        decoded = encoded.decode("utf-8")
+        self.assertTrue(decoded.startswith("---\nname: alice\n"))
+        self.assertIn("promptMode: extend\n", decoded)
+        self.assertIn("permissionMode: dontAsk\n", decoded)
+        self.assertIn("  - alice-inventor\n", decoded)
+        self.assertIn("  - alice-miniatures\n", decoded)
+        self.assertIn("agentsMd: true\n", decoded)
+        self.assertIn("mcpInheritance: none\n", decoded)
+        self.assertIn("discoverSkills: false\n", decoded)
+        self.assertIn("inheritSkills: false\n", decoded)
+        self.assertIn("injectDefaultTools: false\n", decoded)
+        self.assertIn(".grok/skills/alice-inventor/SKILL.md", decoded)
+        self.assertIn("standard native Grok Build subagent", decoded)
+        self.assertNotIn("  - spawn_subagent\n", decoded)
+
+        binding = parse_inventor_agent_bytes("grok", encoded)
+        self.assertEqual(binding.manager_id, "grok")
+        self.assertEqual(binding.agent_path, ".grok/agents/alice.md")
+        self.assertEqual(binding.manifest_bytes, manifest)
+        self.assertEqual(binding.taste_bytes, ALICE_TASTE)
+        self.assertEqual(binding.skills, ALICE_SKILLS)
+        self.assertEqual(
+            binding.to_host_dict()["skills"][0]["materialized_path"],
+            ".grok/skills/alice-inventor/SKILL.md",
+        )
+
+        for original, replacement in (
+            (b"  - alice-inventor\n", b"  - undeclared-skill\n"),
+            (b"injectDefaultTools: false\n", b"injectDefaultTools: true\n"),
+        ):
+            with self.subTest(replacement=replacement):
+                with self.assertRaisesRegex(
+                    ContractError, "canonical|frontmatter|skills"
+                ):
+                    parse_inventor_agent_bytes(
+                        "grok", encoded.replace(original, replacement, 1)
+                    )
+
     def test_custom_agent_toml_round_trips_backslashes_from_taste(self):
         taste = (
             b"---\n"

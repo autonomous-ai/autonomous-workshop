@@ -49,6 +49,11 @@ from workshop.runtime.codex import (
     MINIMUM_CODEX_NATIVE_RUNTIME_VERSION,
     codex_supports_native_workshop,
 )
+from workshop.runtime.grok import (
+    PINNED_GROK_NATIVE_RUNTIME_VERSION,
+    grok_subprocess_environment,
+    grok_supports_native_workshop,
+)
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     SUPPORTED_MANAGER_IDS,
@@ -396,10 +401,92 @@ def _doctor_claude() -> dict[str, str]:
     )
 
 
+def _doctor_grok() -> dict[str, str]:
+    binary = os.environ.get("WORKSHOP_GROK_BIN") or shutil.which("grok")
+    if not binary:
+        return _check_record(
+            "grok",
+            "needs-attention",
+            "Grok Build is not installed or on PATH.",
+            next_step=(
+                "Install the pinned Grok Build CLI and set XAI_API_KEY for "
+                "Workshop's isolated API-key profile."
+            ),
+        )
+    environment = grok_subprocess_environment(os.environ)
+    probe_environment = {
+        key: value
+        for key, value in environment.items()
+        if key != "XAI_API_KEY"
+    }
+    probe_environment.update(
+        {
+            "GROK_DISABLE_AUTOUPDATER": "1",
+            "GROK_TELEMETRY_ENABLED": "false",
+            "GROK_TELEMETRY_TRACE_UPLOAD": "false",
+        }
+    )
+    try:
+        version = subprocess.run(
+            [binary, "version", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+            env=probe_environment,
+        )
+    except (OSError, subprocess.SubprocessError):
+        version = None
+    if version is None or version.returncode != 0:
+        return _check_record(
+            "grok",
+            "needs-attention",
+            "The configured Grok Build command could not run.",
+            next_step="Check WORKSHOP_GROK_BIN and the Grok Build installation.",
+        )
+    output = version.stdout if isinstance(version.stdout, str) else ""
+    try:
+        payload = (
+            json.loads(output)
+            if len(output.encode("utf-8", errors="replace")) <= 4 * 1024
+            else None
+        )
+    except ValueError:
+        payload = None
+    cli_version = (
+        payload.get("currentVersion") if isinstance(payload, Mapping) else None
+    )
+    if not grok_supports_native_workshop(cli_version):
+        return _check_record(
+            "grok",
+            "needs-attention",
+            "Grok Build differs from Workshop's audited CLI build.",
+            next_step=(
+                "Install exact Grok Build %s."
+                % PINNED_GROK_NATIVE_RUNTIME_VERSION
+            ),
+        )
+    if not environment.get("XAI_API_KEY"):
+        return _check_record(
+            "grok",
+            "needs-attention",
+            "Grok Build is installed but Workshop's isolated profile has no "
+            "API credential.",
+            next_step="Set XAI_API_KEY in the host environment.",
+        )
+    return _check_record(
+        "grok",
+        "ready",
+        "Pinned Grok Build and API authentication are available for the "
+        "isolated profile.",
+    )
+
+
 def _doctor_manager(manager_id: str) -> dict[str, str]:
     checks = {
         "codex": _doctor_codex,
         "claude": _doctor_claude,
+        "grok": _doctor_grok,
     }
     try:
         check = checks[manager_id]

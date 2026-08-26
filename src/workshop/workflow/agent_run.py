@@ -41,6 +41,7 @@ from workshop.runtime.agent_assets import (
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     MANAGER_PROJECT_PATH,
+    SUPPORTED_MANAGER_IDS,
     manager_support_files,
     manager_spec,
     parse_manager_project_bytes,
@@ -190,8 +191,19 @@ def _canonical_wish_bytes(value: bytes, product_id: str) -> bytes:
 
 def _reject_private_agent_bytes(path: str, content: bytes) -> None:
     packable_path = path
-    if path == ".claude" or path.startswith(".claude/"):
-        packable_path = "manager-projection/" + path.removeprefix(".claude/")
+    projection_roots = {
+        PurePosixPath(manager_spec(manager_id).agent_directory).parts[0]
+        for manager_id in SUPPORTED_MANAGER_IDS
+    } | {
+        PurePosixPath(manager_spec(manager_id).skill_directory).parts[0]
+        for manager_id in SUPPORTED_MANAGER_IDS
+    }
+    first = PurePosixPath(path).parts[0] if PurePosixPath(path).parts else ""
+    if first in projection_roots:
+        relative = path.removeprefix(first).removeprefix("/")
+        packable_path = "manager-projection"
+        if relative:
+            packable_path += "/" + relative
     try:
         assert_packable_content(packable_path, content)
     except ArtifactError:

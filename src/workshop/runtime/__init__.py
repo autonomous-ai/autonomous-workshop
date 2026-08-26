@@ -23,6 +23,16 @@ from workshop.runtime.codex import (
     codex_supports_native_workshop,
 )
 from workshop.runtime.effects import EffectIntent, EffectLedger
+from workshop.runtime.grok import (
+    MINIMUM_GROK_NATIVE_RUNTIME_VERSION,
+    PINNED_GROK_NATIVE_RUNTIME_VERSION,
+    GrokInvocationError,
+    GrokNativeSessionBinding,
+    GrokNativeSessionLauncher,
+    GrokNativeSessionOutcome,
+    grok_subprocess_environment,
+    grok_supports_native_workshop,
+)
 from workshop.runtime.managers import (
     DEFAULT_MANAGER_ID,
     SUPPORTED_MANAGER_IDS,
@@ -39,9 +49,12 @@ from workshop.runtime.credentials import (
 __all__ = [
     "CodexInvocationError",
     "ClaudeInvocationError",
+    "GrokInvocationError",
     "CODEX_PERMISSION_PROFILE",
     "MINIMUM_CODEX_NATIVE_RUNTIME_VERSION",
     "MINIMUM_CLAUDE_NATIVE_RUNTIME_VERSION",
+    "MINIMUM_GROK_NATIVE_RUNTIME_VERSION",
+    "PINNED_GROK_NATIVE_RUNTIME_VERSION",
     "DEFAULT_MANAGER_ID",
     "SUPPORTED_MANAGER_IDS",
     "NativeManagerInvocationError",
@@ -49,6 +62,9 @@ __all__ = [
     "ClaudeNativeSessionBinding",
     "ClaudeNativeSessionLauncher",
     "ClaudeNativeSessionOutcome",
+    "GrokNativeSessionBinding",
+    "GrokNativeSessionLauncher",
+    "GrokNativeSessionOutcome",
     "CodexNativeSessionBinding",
     "CodexNativeSessionLauncher",
     "CodexNativeSessionOutcome",
@@ -57,6 +73,8 @@ __all__ = [
     "Receipt",
     "codex_supports_native_workshop",
     "claude_supports_native_workshop",
+    "grok_subprocess_environment",
+    "grok_supports_native_workshop",
     "factory_credential_environment",
     "factory_credential_file",
     "inventor_agent_bytes",

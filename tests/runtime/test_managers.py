@@ -16,7 +16,7 @@ from workshop.runtime.managers import (
 class ManagerRegistryTest(unittest.TestCase):
     def test_registry_has_stable_default_and_runtime_native_layouts(self):
         self.assertEqual(DEFAULT_MANAGER_ID, "codex")
-        self.assertEqual(SUPPORTED_MANAGER_IDS, ("codex", "claude"))
+        self.assertEqual(SUPPORTED_MANAGER_IDS, ("codex", "claude", "grok"))
 
         codex = manager_spec()
         self.assertEqual(codex.agent_path("alice"), ".codex/agents/alice.toml")
@@ -35,6 +35,19 @@ class ManagerRegistryTest(unittest.TestCase):
         self.assertEqual(claude.instruction_entrypoint, "CLAUDE.md")
         self.assertEqual(claude.agent_namespace, "autonomous-workshop")
         self.assertEqual(claude.session_checkpoint_name, "claude-session.json")
+        self.assertEqual(claude.goal_prompt_style, "slash-command")
+
+        grok = manager_spec("grok")
+        self.assertEqual(grok.display_name, "Grok Build")
+        self.assertEqual(grok.agent_path("alice"), ".grok/agents/alice.md")
+        self.assertEqual(
+            grok.skill_path("alice-inventor"),
+            ".grok/skills/alice-inventor/SKILL.md",
+        )
+        self.assertEqual(grok.instruction_entrypoint, "AGENTS.md")
+        self.assertIsNone(grok.agent_namespace)
+        self.assertEqual(grok.session_checkpoint_name, "grok-session.json")
+        self.assertEqual(grok.goal_prompt_style, "slash-command")
 
     def test_manager_project_binding_is_canonical_and_closed(self):
         for manager_id in SUPPORTED_MANAGER_IDS:
@@ -49,10 +62,11 @@ class ManagerRegistryTest(unittest.TestCase):
                 parse_manager_project_bytes(tampered)
 
         with self.assertRaisesRegex(ContractError, "unsupported"):
-            manager_spec("grok")
+            manager_spec("unregistered")
 
     def test_claude_support_tree_is_one_strict_namespaced_plugin(self):
         self.assertEqual(manager_support_files("codex"), ())
+        self.assertEqual(manager_support_files("grok"), ())
         support = dict(manager_support_files("claude"))
         self.assertEqual(set(support), {CLAUDE_PLUGIN_MANIFEST_PATH})
         manifest = json.loads(support[CLAUDE_PLUGIN_MANIFEST_PATH])

@@ -146,6 +146,22 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(wish.context, {"source": "workshop-cli"})
         self.assertEqual(start.call_args.kwargs["manager_id"], "claude")
 
+    def test_wish_selects_grok_without_changing_the_wish_contract(self):
+        stdout = StringIO()
+        stderr = StringIO()
+        with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
+            "cli.main.start_native_run",
+            return_value=native_receipt(manager="grok"),
+        ) as start, redirect_stdout(stdout), redirect_stderr(stderr):
+            result = main(("wish", "a moon", "--manager", "grok", "--json"))
+
+        self.assertEqual(result, 0)
+        self.assertEqual(json.loads(stdout.getvalue())["manager"], "grok")
+        self.assertIn("Starting the Grok Build Workshop Manager", stderr.getvalue())
+        wish = start.call_args.args[0]
+        self.assertEqual(wish.context, {"source": "workshop-cli"})
+        self.assertEqual(start.call_args.kwargs["manager_id"], "grok")
+
     def test_wish_publish_is_explicit_and_strict_wait_exits_one(self):
         stdout = StringIO()
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
@@ -221,6 +237,10 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(
             command.parse_args(("wish", "a moon", "--manager", "claude")).manager,
             "claude",
+        )
+        self.assertEqual(
+            command.parse_args(("wish", "a moon", "--manager", "grok")).manager,
+            "grok",
         )
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             command.parse_args(("wish", "a moon", "--manager", "unknown"))
@@ -358,6 +378,87 @@ class DoctorTest(unittest.TestCase):
         self.assertEqual(check["status"], "needs-attention")
         self.assertNotIn(secret, json.dumps(check))
 
+    def test_grok_probe_requires_exact_build_and_scrubs_environment(self):
+        calls = []
+
+        def run(command, **kwargs):
+            calls.append((command, kwargs))
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=json.dumps(
+                    {
+                        "currentVersion": cli_main.PINNED_GROK_NATIVE_RUNTIME_VERSION,
+                        "channel": "unknown",
+                    }
+                ),
+                stderr="",
+            )
+
+        environment = {
+            "WORKSHOP_GROK_BIN": "/opt/grok",
+            "HOME": "/tmp/user-home",
+            "PATH": "/usr/bin",
+            "XAI_API_KEY": "grok-api-key",
+            "FACTORY_PASSWORD": "factory-secret",
+            "AWS_SECRET_ACCESS_KEY": "cloud-secret",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True), mock.patch(
+            "cli.main.subprocess.run", side_effect=run
+        ):
+            check = cli_main._doctor_grok()
+
+        self.assertEqual(check["status"], "ready")
+        self.assertEqual([call[0] for call in calls], [["/opt/grok", "version", "--json"]])
+        probe_environment = calls[0][1]["env"]
+        self.assertEqual(probe_environment["PATH"], "/usr/bin")
+        self.assertNotIn("HOME", probe_environment)
+        self.assertNotIn("XAI_API_KEY", probe_environment)
+        self.assertNotIn("FACTORY_PASSWORD", probe_environment)
+        self.assertNotIn("AWS_SECRET_ACCESS_KEY", probe_environment)
+
+    def test_wrong_or_missing_isolated_api_auth_grok_cannot_pass_doctor(self):
+        def version_output(current_version):
+            def run(command, **unused_kwargs):
+                return subprocess.CompletedProcess(
+                    command,
+                    0,
+                    stdout=json.dumps({"currentVersion": current_version}),
+                    stderr="",
+                )
+
+            return run
+
+        with mock.patch.dict(
+            os.environ,
+            {
+                "WORKSHOP_GROK_BIN": "/opt/grok",
+                "PATH": "/usr/bin",
+                "XAI_API_KEY": "api-key",
+            },
+            clear=True,
+        ), mock.patch(
+            "cli.main.subprocess.run",
+            side_effect=version_output("1.0.5 (different-build)"),
+        ):
+            check = cli_main._doctor_grok()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("audited CLI build", check["detail"])
+        self.assertIn(cli_main.PINNED_GROK_NATIVE_RUNTIME_VERSION, check["next"])
+
+        with mock.patch.dict(
+            os.environ,
+            {"WORKSHOP_GROK_BIN": "/opt/grok", "PATH": "/usr/bin"},
+            clear=True,
+        ), mock.patch(
+            "cli.main.subprocess.run",
+            side_effect=version_output(cli_main.PINNED_GROK_NATIVE_RUNTIME_VERSION),
+        ):
+            check = cli_main._doctor_grok()
+        self.assertEqual(check["status"], "needs-attention")
+        self.assertIn("isolated profile", check["detail"])
+        self.assertIn("XAI_API_KEY", check["next"])
+
     def test_doctor_dispatches_only_the_selected_manager_probe(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
@@ -370,6 +471,8 @@ class DoctorTest(unittest.TestCase):
         ) as claude, mock.patch(
             "cli.main._doctor_codex", return_value=ready("codex")
         ) as codex, mock.patch(
+            "cli.main._doctor_grok", return_value=ready("grok")
+        ) as grok, mock.patch(
             "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
         ), mock.patch(
             "cli.main._doctor_factory", return_value=ready("factory-credentials")
@@ -378,6 +481,32 @@ class DoctorTest(unittest.TestCase):
         receipt = json.loads(stdout.getvalue())
         self.assertEqual(receipt["manager"], "claude")
         claude.assert_called_once_with()
+        codex.assert_not_called()
+        grok.assert_not_called()
+
+    def test_doctor_dispatches_the_grok_probe_for_grok_only(self):
+        ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
+        stdout = StringIO()
+        with mock.patch(
+            "cli.main._inventor_source_root", return_value=Path("/inventors")
+        ), mock.patch(
+            "cli.main._doctor_catalog", return_value=ready("inventor-catalog")
+        ), mock.patch(
+            "cli.main._doctor_grok", return_value=ready("grok")
+        ) as grok, mock.patch(
+            "cli.main._doctor_claude", return_value=ready("claude")
+        ) as claude, mock.patch(
+            "cli.main._doctor_codex", return_value=ready("codex")
+        ) as codex, mock.patch(
+            "cli.main._doctor_agent_assets", return_value=ready("agent-assets")
+        ), mock.patch(
+            "cli.main._doctor_factory", return_value=ready("factory-credentials")
+        ), redirect_stdout(stdout):
+            self.assertEqual(main(("doctor", "--manager", "grok", "--json")), 0)
+        receipt = json.loads(stdout.getvalue())
+        self.assertEqual(receipt["manager"], "grok")
+        grok.assert_called_once_with()
+        claude.assert_not_called()
         codex.assert_not_called()
 
     def test_missing_factory_credentials_report_release_wait(self):

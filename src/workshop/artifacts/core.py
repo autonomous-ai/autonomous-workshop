@@ -21,6 +21,7 @@ DEFAULT_EXCLUDED_DIRS = frozenset(
     (
         ".git",
         ".claude",
+        ".grok",
         ".idea",
         ".vscode",
         "__macosx",
@@ -87,6 +88,7 @@ SECRET_PATTERNS = {
     "github-token": re.compile(rb"gh[pousr]_[A-Za-z0-9]{20,}"),
     "anthropic-key": re.compile(rb"sk-ant-[A-Za-z0-9_-]{20,}"),
     "openai-key": re.compile(rb"sk-(?:proj-)?[A-Za-z0-9_-]{32,}"),
+    "xai-key": re.compile(rb"xai-[A-Za-z0-9_-]{20,}"),
     "google-api-key": re.compile(rb"AIza[0-9A-Za-z_-]{30,}"),
     "telegram-token": re.compile(rb"(?<![A-Za-z0-9])[0-9]{7,12}:[A-Za-z0-9_-]{30,}"),
     "credentialed-mongodb-uri": re.compile(rb"mongodb(?:\+srv)?://[^\s:/]+:[^\s/@]+@"),

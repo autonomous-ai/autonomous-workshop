@@ -76,7 +76,9 @@ Requires Python 3.11 or newer and one supported Manager runtime:
 
 - a signed-in Codex CLI 0.145.0 or newer; or
 - Claude Code 2.1.246 or newer with `ANTHROPIC_API_KEY` available in the host
-  environment.
+  environment; or
+- the exact Grok Build release `1.0.5 (5115b46bc909)` with `XAI_API_KEY`
+  available in the host environment.
 
 Codex can use the developer's existing Codex subscription. Claude runs in an
 isolated non-bare profile with empty filesystem setting sources and private
@@ -105,6 +107,17 @@ compromised host administrator. Claude session transcripts are plaintext and
 retained in the private Workshop state directory long enough to preserve
 `--resume`; its `0700` filesystem permissions are the at-rest boundary.
 
+The Grok Build adapter, CLI selector, `.grok` projection, private profile,
+stream attestation, and same-session Goal binding are also implemented and
+covered by deterministic tests. Workshop pins the complete Grok Build version
+and build identity above rather than accepting a semantically similar CLI.
+Live acceptance is still pending for a private Wish using a real
+`XAI_API_KEY`, including the Goal, sandbox, child-shell credential isolation,
+and projected-Inventor boundaries. Until that bar passes, treat Grok support as
+pre-live-validation and do not use it for a public run. The initial audited
+profile also disables Grok's direct web-search/fetch tools; expanding that
+allowlist requires a separate pinned-runtime acceptance update.
+
 ```bash
 git clone https://github.com/autonomous-ai/autonomous-workshop.git
 cd autonomous-workshop
@@ -120,6 +133,14 @@ explicitly for both its prerequisite check and a new Wish:
 ```bash
 uv run workshop doctor --manager claude
 uv run workshop wish --manager claude \
+  "I wish for a wind-up version of my dog that walks across my desk"
+```
+
+Or set `XAI_API_KEY` and select Grok Build explicitly:
+
+```bash
+uv run workshop doctor --manager grok
+uv run workshop wish --manager grok \
   "I wish for a wind-up version of my dog that walks across my desk"
 ```
 
@@ -151,6 +172,13 @@ active Goal instead of replacing it with another `/goal`. A private Goal
 sidecar records `prepared`, `active`, `returned`, and `completed`, binds that
 choice to the stage and host checkpoint, and marks completion only after the
 host validates the proposal.
+
+Grok Build also receives exact native Goal commands: `/goal <condition>` for a
+new attempt and `/goal resume` after an interrupted turn. After the working
+turn returns, the adapter resumes the same Grok session with `/goal status` and
+accepts native completion only when the pinned streaming protocol reports
+`Status: Complete | Phase:`. Host validation and acknowledgement remain the
+durable completion authority.
 
 The universal digital Playtest baseline is `agent-playtest`,
 `mechanical-check`, and `printability-check`. These are Manager-authored
@@ -189,8 +217,8 @@ uv run workshop resume <wish-id>
 
 The Manager is selected once, persisted in the run checkpoint, and reported by
 `status`. `resume` deliberately has no Manager selector: it resumes the exact
-Codex or Claude Code session that created the run and fails closed if its
-hash-bound runtime policy or materialized instructions changed.
+Codex, Claude Code, or Grok Build session that created the run and fails closed
+if its hash-bound runtime policy or materialized instructions changed.
 
 If a deterministic gate fails or a required tool or authorization is missing,
 the run waits with a concrete need. It never starts a replacement session or
@@ -207,21 +235,22 @@ product-page content. Manager runtime support is deliberately pluggable:
 |---|---|
 | Codex | Implemented |
 | Claude Code | Adapter, CLI, and projection implemented; live private-Wish acceptance pending |
-| Grok Build | Planned adapter |
+| Grok Build `1.0.5 (5115b46bc909)` | Adapter, CLI, and projection implemented; live private-Wish Goal/sandbox/credential-isolation acceptance pending |
 
 Every adapter must preserve the same toy-project, stage-objective, checkpoint,
 gate, and effect boundaries.
 
 The root coding-agent session plays the **Workshop Manager** role. Codex uses
-project-scoped custom agents and Claude Code receives agents and skills from its
-host-generated project plugin. Both adapters expose bounded Match analysis, the
-selected Inventor specialist, and independent inspection through their native
-agent controls. A real Claude turn invoking a projected Inventor agent and a
-projected namespaced skill is still part of the pending live acceptance bar; a
-successful init event alone is not that proof. An Inventor is our friendly
-product-language name for one of those normal native specialist roles, not a
-second agent framework. The root remains the one session the host starts and
-resumes; Workshop does not schedule agents in Python.
+project-scoped custom agents, Claude Code receives agents and skills from its
+host-generated project plugin, and Grok Build receives project-scoped Markdown
+agents and skills under `.grok/`. All three adapters expose bounded Match
+analysis, the selected Inventor specialist, and independent inspection through
+their native agent controls. A real Claude turn invoking a projected Inventor
+agent and a projected namespaced skill is still part of the pending live
+acceptance bar; a successful init event alone is not that proof. An Inventor is
+our friendly product-language name for one of those normal native specialist
+roles, not a second agent framework. The root remains the one session the host
+starts and resumes; Workshop does not schedule agents in Python.
 
 The materialized `autonomous-workshop` skill is the Manager's workflow
 playbook—stage order, artifact protocol, gates, and authority boundaries. It is
@@ -234,6 +263,14 @@ runtime adapter, validates contracts and deterministic evidence, isolates
 credentials, and performs authorized external effects idempotently. It does
 not contain a parallel Python agent, profile subprocess, prompt chain,
 semantic judge, or reward loop.
+
+Grok Build is especially useful as another native coding environment for
+procedural product generation: it can author and revise Blender, CadQuery, or
+OpenSCAD code, invoke the shared CAD skills, inspect renders, and iterate on
+measured output. That is not trustworthy direct 3D generation by itself. The
+host still requires exact CAD/kernel, manifold, clearance, and printability
+evidence, and model-authored assessment does not prove that a part prints,
+fits, or survives physical use.
 
 See [Native coding-agent runtime](docs/NATIVE_AGENT_RUNTIME.md) for the full
 boundary and [Workshop architecture](docs/ARCHITECTURE.md) for component
@@ -251,7 +288,9 @@ deterministic CAD/domain tools.
 At Wish creation the host deterministically projects that same source into the
 selected runtime's native convention: `.codex/agents/<id>.toml` with skills
 under `.agents/skills/` for Codex, or the generated Claude Code plugin's
-`.claude/agents/<id>.md` with skills under `.claude/skills/`. `MANAGER.json`
+`.claude/agents/<id>.md` with skills under `.claude/skills/`, or
+`.grok/agents/<id>.md` with skills under `.grok/skills/` for Grok Build.
+`MANAGER.json`
 identifies the one projection that is authoritative for the run. The root
 Manager spawns the selected native agent from those exact, hash-bound bytes.
 For Codex, this follows the official [subagent and project-scoped custom-agent
@@ -293,10 +332,11 @@ Read [Build an Inventor](docs/BUILD_AN_INVENTOR.md) for the specialist contract.
 
 Today, the canonical source of truth is the root Inventor bundle—its
 `inventor.json`, `TASTE.md`, and declared `skills/**`—together with the
-canonical product-run and Make skill sources. The `.codex/**` or `.claude/**`
-trees and `MANAGER.json` inside a toy project are generated projection files,
-not independent copies to edit. A new Wish uses the latest validated canonical
-bytes available from the current checkout or installed Workshop package.
+canonical product-run and Make skill sources. The `.codex/**`, `.claude/**`,
+or `.grok/**` trees and `MANAGER.json` inside a toy project are generated
+projection files, not independent copies to edit. A new Wish uses the latest
+validated canonical bytes available from the current checkout or installed
+Workshop package.
 
 An active run behaves differently by design today: all of its instructions,
 Taste, skills, native-agent definitions, and Manager selection are hash-pinned
@@ -333,8 +373,8 @@ imported accidentally.
 - [`toys/`](toys/) contains the persistent toy projects and is the working
   directory for each native runtime session. Every toy project contains its
   product-run `AGENTS.md`, immutable `MANAGER.json`, the selected Codex or
-  Claude Code projection, its exact Inventor roster, and its Wish-to-Release
-  artifacts.
+  Claude Code or Grok Build projection, its exact Inventor roster, and its
+  Wish-to-Release artifacts.
 - [`.agents/product-run/`](.agents/product-run/) is the canonical
   Manager-neutral product-run source bundle. The host copies its constitution
   to the toy root and projects its workflow skill into the selected runtime's
@@ -383,6 +423,7 @@ ownership and dependency rules.
 ```bash
 uv run workshop doctor
 uv run workshop doctor --manager claude  # when using Claude Code
+uv run workshop doctor --manager grok    # when using pinned Grok Build
 PYTHONPATH=src python -m unittest discover -s tests -t . -p 'test_*.py'
 uv run workshop inventors --root inventors
 uv run workshop check inventors
