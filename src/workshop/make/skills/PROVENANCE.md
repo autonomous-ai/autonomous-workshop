@@ -42,6 +42,6 @@ Do not use their exit status alone as a Workshop release receipt.
 ## Removed trees
 
 The repository-authored `product-to-cad` skill was removed on 2026-08-26. The
-Concept stage now owns the build spec, the frozen visual target, and the
-researched physical facts it used to restate, and Make reaches CAD through the
-`cad`, `image-to-cad`, `design-reference`, and `step-parts` skills directly.
+Invent now owns the build spec, selected visual direction, and researched
+physical facts it used to restate, and Make reaches CAD through the `cad`,
+`image-to-cad`, `design-reference`, and `step-parts` skills directly.

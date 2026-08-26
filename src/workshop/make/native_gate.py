@@ -24,8 +24,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Mapping, Optional, Sequence
 
 from workshop._validation import require_sha256
-from workshop.artifacts import ArtifactEntry, ArtifactManifest
-from workshop.concept.native import ConceptTree
+from workshop.artifacts import ArtifactEntry
 from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.runtime.execution import minimal_tool_environment
@@ -806,67 +805,6 @@ def verify_native_made_cad(
     return evidence
 
 
-def assert_concept_component_correspondence(
-    concept_tree: ConceptTree, product: Mapping[str, Any]
-) -> None:
-    """Refuse a product whose declared components are not exactly the brief's.
-
-    This is the only remaining automated guarantee that the built part set is
-    the designed part set, now that no vision model inspects the exploded
-    view (design decision D4) — so it settles the question in bytes alone.
-    """
-
-    brief_keys = {item["key"] for item in concept_tree.brief["components"]}
-    declared = product.get("components")
-    if not isinstance(declared, list) or not all(
-        isinstance(item, str) for item in declared
-    ):
-        raise ContractError(
-            "native Made product.json components must be a list of concept "
-            "component keys"
-        )
-    declared_keys = set(declared)
-    if len(declared) != len(declared_keys):
-        raise ContractError("native Made product.json components must not repeat a key")
-    missing = brief_keys - declared_keys
-    if missing:
-        raise ContractError(
-            "native Made product is missing components the concept brief named: %s"
-            % sorted(missing)
-        )
-    extra = declared_keys - brief_keys
-    if extra:
-        raise ContractError(
-            "native Made product declares components the concept brief did not "
-            "name: %s" % sorted(extra)
-        )
-
-
-def assert_no_concept_pixels_in_product(
-    concept_tree: ConceptTree, product_manifest: ArtifactManifest
-) -> None:
-    """Refuse a product tree carrying any concept image's exact bytes.
-
-    Make follows the concept as direction; it must not ship the drawing in
-    place of a picture of what was actually built.
-    """
-
-    concept_image_hashes = {
-        entry.sha256
-        for entry in concept_tree.manifest.entries
-        if entry.path.startswith("images/")
-    }
-    colliding = sorted(
-        entry.path
-        for entry in product_manifest.entries
-        if entry.sha256 in concept_image_hashes
-    )
-    if colliding:
-        raise ContractError(
-            "native Made product tree carries concept image bytes: %s" % colliding
-        )
-
-
 __all__ = [
     "CapturedVerifierStream",
     "DEFAULT_NATIVE_CAD_OUTPUT_BYTES",
@@ -877,8 +815,6 @@ __all__ = [
     "NativeCadGateError",
     "NativeCadGateEvidence",
     "VerifierProcessResult",
-    "assert_concept_component_correspondence",
-    "assert_no_concept_pixels_in_product",
     "run_bounded_verifier",
     "verify_native_made_cad",
 ]

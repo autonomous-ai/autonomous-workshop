@@ -24,7 +24,7 @@ with that directory as its working directory before Match. `workshop resume`
 continues the recorded session id through:
 
 ```text
-Wish -> Match -> Invent -> Concept -> Make <-> Playtest -> Release -> Deliver
+Wish -> Match -> Invent -> Make <-> Playtest -> Release -> Deliver
 ```
 
 The trusted host implementation is `workshop.workflow.native_run`. The CLI is
@@ -45,10 +45,10 @@ processes or schedule a parallel agent system in Python.
 
 Codex uses native inspection, editing, shell, search, rendering, applicable
 skills, and specialist delegation to perform Match reasoning, research,
-Concept decisions, design, CAD, Playtest, repair, manual writing, and factual
+concept selection, design, CAD, Playtest, repair, manual writing, and factual
 product-page work. Substantive output stays in the run workspace.
 
-For each Match, Invent, Concept, Make, Playtest, or Release attempt, Codex
+For each Match, Invent, Make, Playtest, or Release attempt, Codex
 creates one native Goal whose stopping condition is successful stage
 finalization. Only one Goal is active at a time. Codex performs the observe,
 act, evaluate, and improve cycle inside that Goal; Python does not emulate the
@@ -174,8 +174,8 @@ tools remain at their owning component boundaries.
   credentials.
 - Resume uses the exact workspace and rejects changed materialized instructions.
 - Stale checkpoint/subject bindings and changed artifact bytes fail closed.
-- Failed Playtest evidence returns to Make and invalidates downstream stages;
-  feedback that invalidates the design routes through a fresh Concept first.
+- Failed Playtest evidence returns directly to Make and invalidates downstream
+  stages while preserving the exact sealed Invent result.
 - Make and Playtest rerun host-owned CAD verification on exact bytes.
 - Release claims exactly match the passing Playtest evidence.
 - The native subprocess never receives effect credentials.

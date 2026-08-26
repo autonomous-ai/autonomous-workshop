@@ -9,9 +9,10 @@ classification.
 ## Invent Goal and improvement loop
 
 Create one native Codex Goal for this Invent attempt. Its objective is to
-research, explore, judge, and specify the strongest feasible concept for the
-Wish through the selected Inventor's exact Taste and method. Its stopping
-condition is a successful `invent` finalizer for the current checkpoint.
+research, explore, judge, select, and fully specify the strongest feasible
+concept for the Wish through the selected Inventor's exact Taste and method.
+Its stopping condition is a successful `invent` finalizer for the current
+checkpoint.
 
 Use the selected project-scoped custom agent for specialist work. The root
 Workshop Manager reviews and synthesizes its output and remains responsible
@@ -26,6 +27,9 @@ While pursuing the Goal:
    subagents to research supported facts and explore materially different
    concepts. Save source provenance beside the claims it supports. Use the
    Inventor's declared skills and deterministic craft tools when relevant.
+   Before selecting, specify each viable direction deeply enough to compare
+   form, envelope, component breakdown, construction, interaction,
+   feasibility, assumptions, and risks.
 3. **Evaluate:** Compare concepts against the Wish, full Taste, novelty,
    coherent play, mechanical feasibility, printability, and inspectability.
    Ask independent native subagents to judge bounded questions when subjective
@@ -45,16 +49,23 @@ Make and Playtest can verify them.
 
 ## Artifact and gate
 
-Write one authored JSON source with exactly `concept` and `research`, then run:
+Write one authored JSON source with exactly `concept` and `research`. The
+selected `concept` is Make's sealed design authority, so it must contain the
+physical decisions needed to build without a separate design stage: object and
+category, envelope and wall thickness, print stance, distinctive features,
+each component's form, dimensions, placement, and interfaces, intended
+interaction, assumptions, and unresolved risks. Bind researched claims to the
+supporting entries in `research`; label deliberate design decisions as such.
+Then run:
 
 ```bash
 python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 ```
 
-The deterministic finalizer binds the chosen concept to the exact assignment
-and writes `artifacts/invent/invented.json` plus `agent-outcome.json`. It does
-not research, judge, assign a quality score, or run the improvement loop.
-Complete the Invent Goal only after the command succeeds, then return to the
-host. The host validates the exact contract and hashes before checkpointing
-Make.
+The deterministic finalizer binds the chosen concept and research to the exact
+assignment and writes `artifacts/invent/invented.json` plus
+`agent-outcome.json`. It does not research, judge, assign a quality score, or
+run the improvement loop. Complete the Invent Goal only after the command
+succeeds, then return to the host. The host validates and seals the exact
+Invent contract before checkpointing Make.

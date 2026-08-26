@@ -26,18 +26,18 @@ advance a gate, or perform an external effect.
 - **Invent:** Explore materially different compositions grounded in consented
   reference facts. Choose one transformation and record which visible details
   support recognition, which are assumptions, and which must remain private.
-- **Concept:** Decide the piece's envelope, wall thickness, and recognizable
-  details as researched or deliberately decided facts, never a private
-  reference fact itself. Concept art directs the build; it never stands in
-  for evidence that recognition was actually achieved.
+  Decide the selected piece's envelope, wall thickness, and recognizable
+  details as researched or deliberately recorded facts, never exposing a
+  private reference fact itself. Design studies direct the build; they never
+  stand in for evidence that recognition was actually achieved.
 - **Make:** Translate the composition into hierarchy, silhouette, scale,
   modular interfaces, print-safe details, views, and assembly constraints. Use
   the shared `cad`, `image-to-cad`, and `step-parts` Workshop skills for
   geometry and CAD work.
 - **Playtest:** Inspect the exact Made revision for uncued recognition,
   specificity, composition from multiple views, reference fidelity,
-  print-scale survival, handling, and privacy leakage. Never treat concept art
-  or a beauty render as physical or recognition proof.
+  print-scale survival, handling, and privacy leakage. Never treat a design
+  study or a beauty render as physical or recognition proof.
 - **Release:** Check that the manual and page facts reveal no unnecessary
   private material, distinguish supported identifiers from interpretation, and
   make only evidence-bound claims. Do not claim consent, publication,

@@ -23,11 +23,11 @@ gate, or perform an external effect.
   Report fit and hard tensions with evidence; do not select yourself.
 - **Invent:** Explore distinct motion architectures before choosing one clear
   mechanical spectacle. Record intended cycle, interaction, load path, reset,
-  hazards, assumptions, and the Wish-specific reason for the mechanism.
-- **Concept:** Decide the mechanism's envelope, wall thickness, and every
-  moving and structural component's form, dimensions, placement, and
-  interfaces as researched, attributed facts. The exploded view must separate
-  every part of the architecture so its assembly reads at a glance.
+  hazards, assumptions, and the Wish-specific reason for the mechanism. For
+  the selected architecture, decide the mechanism's envelope, wall thickness,
+  and every moving and structural component's form, dimensions, placement,
+  and interfaces as researched, attributed facts. Record the complete part
+  and assembly breakdown so Make has no hidden component to guess.
 - **Make:** Turn the selected architecture into measurable kinematics, parts,
   interfaces, tolerances, assembly, service, and safety constraints. Use the
   shared `cad`, `image-to-cad`, and `step-parts` Workshop skills for geometry,

@@ -49,7 +49,6 @@ AGENT_RUN_STAGES = (
     "wish",
     "match",
     "invent",
-    "concept",
     "make",
     "playtest",
     "release",
@@ -75,8 +74,7 @@ AGENT_RUN_CHECKPOINT_KIND = "autonomous-workshop-agent-run"
 _FORWARD_TRANSITIONS = {
     "wish": "match",
     "match": "invent",
-    "invent": "concept",
-    "concept": "make",
+    "invent": "make",
     "make": "playtest",
     "playtest": "release",
     "release": "deliver",
@@ -85,14 +83,12 @@ _FORWARD_TRANSITIONS = {
 _UPSTREAM_STAGE = {
     "match": "wish",
     "invent": "match",
-    "concept": "invent",
-    "make": "concept",
+    "make": "invent",
     "playtest": "make",
     "release": "playtest",
     "deliver": "release",
 }
 _DOWNSTREAM_OF_MAKE = ("playtest", "release", "deliver")
-_DOWNSTREAM_OF_CONCEPT = ("make",) + _DOWNSTREAM_OF_MAKE
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -1369,11 +1365,8 @@ class AgentRun:
         if outcome.status == "ready":
             allowed = _FORWARD_TRANSITIONS[outcome.stage]
             if outcome.stage == "playtest":
-                if outcome.proposed_transition not in (allowed, "make", "concept"):
-                    raise TransitionError(
-                        "Playtest may advance, return feedback to Make, or return "
-                        "design-invalidating feedback to Concept"
-                    )
+                if outcome.proposed_transition not in (allowed, "make"):
+                    raise TransitionError("Playtest may advance or return feedback to Make")
             elif outcome.proposed_transition != allowed:
                 raise TransitionError("agent proposed an illegal lifecycle transition")
 
@@ -1470,10 +1463,7 @@ class AgentRun:
             or gate.subject_sha256 != subject
         ):
             raise TransitionError("deterministic gate is not bound to this exact outcome")
-        if outcome.stage == "playtest" and outcome.proposed_transition in (
-            "make",
-            "concept",
-        ):
+        if outcome.stage == "playtest" and outcome.proposed_transition == "make":
             if gate.passed:
                 raise TransitionError("passing Playtest must advance to Release")
             if payload["round_index"] >= payload["max_rounds"]:
@@ -1509,19 +1499,13 @@ class AgentRun:
         round_index = payload["round_index"]
         status = "active"
         next_stage = transition
-        if outcome.stage == "invent" and transition == "concept":
+        if outcome.stage == "invent" and transition == "make":
             round_index = 1
         elif outcome.stage == "playtest" and transition == "make":
             round_index += 1
             for stage in _DOWNSTREAM_OF_MAKE:
                 invalidated.add(stage)
             next_stage = "make"
-        elif outcome.stage == "playtest" and transition == "concept":
-            round_index += 1
-            for stage in _DOWNSTREAM_OF_CONCEPT:
-                invalidated.add(stage)
-            invalidated.add("concept")
-            next_stage = "concept"
         elif transition == "complete":
             next_stage = "deliver"
             status = "complete"

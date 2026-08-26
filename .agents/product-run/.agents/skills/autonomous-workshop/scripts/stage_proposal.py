@@ -35,18 +35,15 @@ OUTCOME_KIND = "autonomous-workshop.agent-outcome-proposal"
 INVENTOR_ROSTER_KIND = "autonomous-workshop.inventor-roster"
 MATCH_KIND = "autonomous-workshop.match-assignment"
 INVENTED_KIND = "autonomous-workshop.invented"
-CONCEPT_KIND = "autonomous-workshop.concept"
-DERIVED_WISH_KIND = "autonomous-workshop.concept-derived-wish"
 MADE_KIND = "autonomous-workshop.made"
 PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
-STAGES = ("match", "invent", "concept", "make", "playtest", "release")
-JOBS = ("wish", "invent", "concept", "make", "playtest", "release", "deliver")
+STAGES = ("match", "invent", "make", "playtest", "release")
+JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
 FORWARD = {
     "match": "invent",
-    "invent": "concept",
-    "concept": "make",
+    "invent": "make",
     "make": "playtest",
     "playtest": "release",
     "release": "deliver",
@@ -889,7 +886,6 @@ def _validate_made(value: Any) -> dict[str, Any]:
         "taste_sha256",
         "blueprint_sha256",
         "invented_sha256",
-        "concept_sha256",
         "product_root",
         "cad_project_path",
         "product_manifest",
@@ -911,7 +907,6 @@ def _validate_made(value: Any) -> dict[str, Any]:
         "taste_sha256",
         "blueprint_sha256",
         "invented_sha256",
-        "concept_sha256",
         "product_json_sha256",
         "cad_verification_sha256",
     ):
@@ -1001,192 +996,6 @@ def _invent_contract(stage: Mapping[str, Any], source: Mapping[str, Any]) -> dic
     return result
 
 
-_CONCEPT_TREE_FILES = (
-    ("brief_path", "brief.json"),
-    ("research_path", "research.json"),
-    ("drawing_instructions_path", "prompts.json"),
-    ("descriptor_path", "descriptor.json"),
-    ("derived_wish_path", "derived_wish.json"),
-)
-_CONCEPT_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp")
-
-
-def _walk_descriptor_entries(node: Any, label: str) -> list[dict[str, Any]]:
-    if isinstance(node, dict) and "path" in node and "sha256" in node:
-        return [dict(node)]
-    if isinstance(node, dict):
-        entries: list[dict[str, Any]] = []
-        for value in node.values():
-            entries.extend(_walk_descriptor_entries(value, label))
-        return entries
-    raise ProposalError("%s is not a valid descriptor tree" % label)
-
-
-def _validate_derived_wish(value: Any) -> dict[str, Any]:
-    expected = {
-        "schema_version",
-        "kind",
-        "wish_sha256",
-        "product_id",
-        "objective",
-        "context",
-        "constraints",
-        "derived_wish_sha256",
-    }
-    derived = _fields(value, expected, "Concept derived Wish")
-    if (
-        type(derived["schema_version"]) is not int
-        or derived["schema_version"] != 1
-    ):
-        raise ProposalError("Concept derived Wish schema_version must be 1")
-    if derived["kind"] != DERIVED_WISH_KIND:
-        raise ProposalError("Concept derived Wish kind is invalid")
-    _sha256(derived["wish_sha256"], "Concept derived Wish routed Wish sha256")
-    _bounded_text(derived["product_id"], "Concept derived Wish product_id", 256)
-    _bounded_text(derived["objective"], "Concept derived Wish objective", 50_000)
-    _mapping(derived["context"], "Concept derived Wish context")
-    _mapping(derived["constraints"], "Concept derived Wish constraints", nonempty=True)
-    identity = {key: derived[key] for key in expected - {"derived_wish_sha256"}}
-    if derived["derived_wish_sha256"] != json_sha256(identity):
-        raise ProposalError("Concept derived Wish sha256 is invalid")
-    return dict(derived)
-
-
-def _concept_contract(
-    run_root: Path,
-    stage: Mapping[str, Any],
-    *,
-    concept_root_value: str,
-) -> dict[str, Any]:
-    inputs = _required_fields(
-        stage["inputs"], {"assignment", "invented"}, "Concept STAGE inputs"
-    )
-    assignment = _validate_assignment(inputs["assignment"])
-    invented = _validate_invented(inputs["invented"], assignment)
-    round_index = stage["round"]
-    expected_root = "artifacts/concept/r%04d/concept" % round_index
-    if concept_root_value != expected_root:
-        raise ProposalError("Concept concept root must be %s" % expected_root)
-    manifest = _tree_manifest(run_root, concept_root_value, "Concept tree")
-    manifest_paths = {entry["path"] for entry in manifest["entries"]}
-
-    documents: dict[str, Any] = {}
-    hashes: dict[str, str] = {}
-    for field, filename in _CONCEPT_TREE_FILES:
-        if filename not in manifest_paths:
-            raise ProposalError("Concept tree lacks its %s" % filename)
-        document, content, _ = _read_json(
-            run_root,
-            "%s/%s" % (concept_root_value, filename),
-            "Concept %s" % filename,
-        )
-        _mapping(document, "Concept %s" % filename, nonempty=True)
-        documents[field] = document
-        hashes[field] = hashlib.sha256(content).hexdigest()
-
-    derived_wish = _validate_derived_wish(documents["derived_wish_path"])
-    if derived_wish["wish_sha256"] != assignment["wish_sha256"]:
-        raise ProposalError("Concept derived Wish belongs to another Wish")
-
-    descriptor = documents["descriptor_path"]
-    seen_paths: set[str] = set()
-    for entry in _walk_descriptor_entries(descriptor, "Concept descriptor"):
-        if set(entry) != {"path", "sha256"}:
-            raise ProposalError("Concept descriptor entry fields are invalid")
-        entry_path = _safe_relative(entry["path"], "Concept descriptor image path")
-        if entry_path.suffix.casefold() not in _CONCEPT_IMAGE_SUFFIXES:
-            raise ProposalError("Concept descriptor image path has a forbidden suffix")
-        _sha256(entry["sha256"], "Concept descriptor image sha256")
-        if entry_path.as_posix() not in manifest_paths:
-            raise ProposalError("Concept descriptor names an image outside its manifest")
-        if entry_path.as_posix() in seen_paths:
-            raise ProposalError("Concept descriptor images must be distinct files")
-        seen_paths.add(entry_path.as_posix())
-
-    identity = {
-        "schema_version": 1,
-        "kind": CONCEPT_KIND,
-        "round": round_index,
-        "wish_sha256": assignment["wish_sha256"],
-        "assignment_sha256": assignment["assignment_sha256"],
-        "taste_sha256": assignment["selected_taste_sha256"],
-        "blueprint_sha256": assignment["blueprint_sha256"],
-        "invented_sha256": invented["invented_sha256"],
-        "concept_root": concept_root_value,
-        "concept_manifest": manifest,
-        "brief_path": "brief.json",
-        "brief": documents["brief_path"],
-        "brief_sha256": hashes["brief_path"],
-        "research_path": "research.json",
-        "research": documents["research_path"],
-        "research_sha256": hashes["research_path"],
-        "drawing_instructions_path": "prompts.json",
-        "drawing_instructions": documents["drawing_instructions_path"],
-        "drawing_instructions_sha256": hashes["drawing_instructions_path"],
-        "descriptor_path": "descriptor.json",
-        "descriptor": descriptor,
-        "descriptor_sha256": hashes["descriptor_path"],
-        "derived_wish_path": "derived_wish.json",
-        "derived_wish": derived_wish,
-        "derived_wish_sha256_field": hashes["derived_wish_path"],
-    }
-    result = {**identity, "concept_sha256": json_sha256(identity)}
-    if len(canonical_json(result)) > MAX_CONTRACT_BYTES:
-        raise ProposalError("Concept exceeds its byte limit")
-    return result
-
-
-def _validate_concept(
-    value: Any, assignment: Mapping[str, Any], invented: Mapping[str, Any]
-) -> dict[str, Any]:
-    expected = {
-        "schema_version",
-        "kind",
-        "round",
-        "wish_sha256",
-        "assignment_sha256",
-        "taste_sha256",
-        "blueprint_sha256",
-        "invented_sha256",
-        "concept_root",
-        "concept_manifest",
-        "brief_path",
-        "brief",
-        "brief_sha256",
-        "research_path",
-        "research",
-        "research_sha256",
-        "drawing_instructions_path",
-        "drawing_instructions",
-        "drawing_instructions_sha256",
-        "descriptor_path",
-        "descriptor",
-        "descriptor_sha256",
-        "derived_wish_path",
-        "derived_wish",
-        "derived_wish_sha256_field",
-        "concept_sha256",
-    }
-    concept = _fields(value, expected, "Concept")
-    if type(concept["schema_version"]) is not int or concept["schema_version"] != 1:
-        raise ProposalError("Concept schema_version must be 1")
-    if concept["kind"] != CONCEPT_KIND:
-        raise ProposalError("Concept kind is invalid")
-    bindings = {
-        "wish_sha256": assignment["wish_sha256"],
-        "assignment_sha256": assignment["assignment_sha256"],
-        "taste_sha256": assignment["selected_taste_sha256"],
-        "blueprint_sha256": assignment["blueprint_sha256"],
-        "invented_sha256": invented["invented_sha256"],
-    }
-    if any(concept[key] != expected_value for key, expected_value in bindings.items()):
-        raise ProposalError("Concept belongs to another Match or Invent result")
-    identity = {key: concept[key] for key in expected - {"concept_sha256"}}
-    if concept["concept_sha256"] != json_sha256(identity):
-        raise ProposalError("Concept sha256 is invalid")
-    return dict(concept)
-
-
 def _make_contract(
     run_root: Path,
     stage: Mapping[str, Any],
@@ -1196,11 +1005,10 @@ def _make_contract(
     cad_verification_path: str,
 ) -> dict[str, Any]:
     inputs = _required_fields(
-        stage["inputs"], {"assignment", "invented", "concept"}, "Make STAGE inputs"
+        stage["inputs"], {"assignment", "invented"}, "Make STAGE inputs"
     )
     assignment = _validate_assignment(inputs["assignment"])
     invented = _validate_invented(inputs["invented"], assignment)
-    concept = _validate_concept(inputs["concept"], assignment, invented)
     round_index = stage["round"]
     expected_root = "artifacts/make/r%04d/product" % round_index
     if product_root_value != expected_root:
@@ -1230,19 +1038,6 @@ def _make_contract(
         "Make product.json",
     )
     _mapping(product_document, "Make product.json", nonempty=True)
-    declared_components = product_document.get("components")
-    if not isinstance(declared_components, list) or not all(
-        isinstance(item, str) for item in declared_components
-    ):
-        raise ProposalError(
-            "Make product.json components must be a list of concept component keys"
-        )
-    brief_component_keys = {item["key"] for item in concept["brief"]["components"]}
-    if set(declared_components) != brief_component_keys:
-        raise ProposalError(
-            "Make product.json components must correspond one-to-one with the "
-            "concept brief's components"
-        )
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -1258,19 +1053,6 @@ def _make_contract(
         raise ProposalError("Make product manifest lacks a STEP artifact")
     if not any(path.endswith(".stl") for path in paths):
         raise ProposalError("Make product manifest lacks a printable STL")
-    concept_image_hashes = {
-        entry["sha256"]
-        for entry in concept["concept_manifest"]["entries"]
-        if entry["path"].startswith("images/")
-    }
-    colliding = sorted(
-        entry["path"] for entry in manifest["entries"]
-        if entry["sha256"] in concept_image_hashes
-    )
-    if colliding:
-        raise ProposalError(
-            "Make product tree carries concept image bytes: %s" % colliding
-        )
     identity = {
         "schema_version": 1,
         "kind": MADE_KIND,
@@ -1280,7 +1062,6 @@ def _make_contract(
         "taste_sha256": assignment["selected_taste_sha256"],
         "blueprint_sha256": assignment["blueprint_sha256"],
         "invented_sha256": invented["invented_sha256"],
-        "concept_sha256": concept["concept_sha256"],
         "product_root": product_root_value,
         "cad_project_path": project_relative.as_posix(),
         "product_manifest": manifest,
@@ -1917,8 +1698,6 @@ def _contract_path(stage: str, round_index: Any) -> str:
         return MATCH_PATH
     if stage == "invent":
         return INVENT_PATH
-    if stage == "concept":
-        return "artifacts/concept/r%04d/concept.json" % round_index
     if stage == "make":
         return "artifacts/make/r%04d/made.json" % round_index
     if stage == "playtest":
@@ -1961,7 +1740,6 @@ def _seal(
     identity_field = {
         "match": "assignment_sha256",
         "invent": "invented_sha256",
-        "concept": "concept_sha256",
         "make": "made_sha256",
         "playtest": "playtested_sha256",
         "release": "release_sha256",
@@ -1990,13 +1768,6 @@ def _parser() -> argparse.ArgumentParser:
 
     invent = subparsers.add_parser("invent", help="Seal concept and research JSON.")
     invent.add_argument("--source", required=True, help="Run-local Invent authored JSON.")
-
-    concept = subparsers.add_parser(
-        "concept", help="Seal one exact concept tree: brief, research, and images."
-    )
-    concept.add_argument(
-        "--concept-root", required=True, help="Run-local concept tree."
-    )
 
     make = subparsers.add_parser("make", help="Seal one exact product tree.")
     make.add_argument("--product-root", required=True, help="Run-local product tree.")
@@ -2039,13 +1810,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         source, _, _ = _read_json(run_root, args.source, "Invent authored source")
         contract = _invent_contract(stage, source)
         transition = stage["next_transition"]
-    elif args.command == "concept":
-        contract = _concept_contract(
-            run_root,
-            stage,
-            concept_root_value=args.concept_root,
-        )
-        transition = stage["next_transition"]
     elif args.command == "make":
         contract = _make_contract(
             run_root,
@@ -2066,10 +1830,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         if contract["verdict"] == "pass":
             transition = "release"
         else:
-            invalidates_concept = any(
-                "concept" in item["invalidates"] for item in contract["feedback"]
-            )
-            transition = "concept" if invalidates_concept else "make"
+            transition = "make"
     elif args.command == "release":
         contract = _release_contract(
             run_root,

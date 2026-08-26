@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.concept.native import NativeConcept
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.match.native import (
@@ -36,8 +35,7 @@ TOOL = (
 )
 FORWARD = {
     "match": "invent",
-    "invent": "concept",
-    "concept": "make",
+    "invent": "make",
     "make": "playtest",
     "playtest": "release",
     "release": "deliver",
@@ -192,80 +190,6 @@ class StageProposalToolTest(unittest.TestCase):
             "blueprint_sha256": self.blueprint.sha256,
         }
 
-    def create_concept(self):
-        concept_root = self.run_root / "artifacts/concept/r0001/concept"
-        (concept_root / "images/components").mkdir(parents=True)
-        (concept_root / "images/front.png").write_bytes(b"concept-front-pixels")
-        (concept_root / "images/components/observatory.png").write_bytes(
-            b"concept-observatory-pixels"
-        )
-        brief = {
-            "components": [{"key": "observatory", "name": "Observatory"}],
-        }
-        research = {"sources": []}
-        drawing_instructions = {"front": "Draw the observatory."}
-        descriptor = {
-            "front": {
-                "path": "images/front.png",
-                "sha256": sha256((concept_root / "images/front.png").read_bytes()),
-            },
-            "components": {
-                "observatory": {
-                    "path": "images/components/observatory.png",
-                    "sha256": sha256(
-                        (concept_root / "images/components/observatory.png").read_bytes()
-                    ),
-                }
-            },
-        }
-        derived_wish = {
-            "schema_version": 1,
-            "kind": "autonomous-workshop.concept-derived-wish",
-            "wish_sha256": self.assignment.wish_sha256,
-            "product_id": "run-local-toy",
-            "objective": "A tiny lunar observatory.",
-            "context": {},
-            "constraints": {"scale": "tiny"},
-        }
-        derived_wish["derived_wish_sha256"] = sha256(canonical_json(dict(derived_wish)))
-
-        (concept_root / "brief.json").write_bytes(canonical_json(brief))
-        (concept_root / "research.json").write_bytes(canonical_json(research))
-        (concept_root / "prompts.json").write_bytes(canonical_json(drawing_instructions))
-        (concept_root / "descriptor.json").write_bytes(canonical_json(descriptor))
-        (concept_root / "derived_wish.json").write_bytes(canonical_json(derived_wish))
-
-        manifest = build_artifact_manifest(concept_root, created_at="content-addressed")
-        return NativeConcept(
-            round=1,
-            wish_sha256=self.assignment.wish_sha256,
-            assignment_sha256=self.assignment.assignment_sha256,
-            taste_sha256=self.assignment.selected_taste_sha256,
-            blueprint_sha256=self.assignment.blueprint_sha256,
-            invented_sha256=self.invented.invented_sha256,
-            concept_root="artifacts/concept/r0001/concept",
-            concept_manifest=manifest,
-            brief=brief,
-            brief_path="brief.json",
-            brief_sha256=sha256((concept_root / "brief.json").read_bytes()),
-            research=research,
-            research_path="research.json",
-            research_sha256=sha256((concept_root / "research.json").read_bytes()),
-            drawing_instructions=drawing_instructions,
-            drawing_instructions_path="prompts.json",
-            drawing_instructions_sha256=sha256(
-                (concept_root / "prompts.json").read_bytes()
-            ),
-            descriptor=descriptor,
-            descriptor_path="descriptor.json",
-            descriptor_sha256=sha256((concept_root / "descriptor.json").read_bytes()),
-            derived_wish=derived_wish,
-            derived_wish_path="derived_wish.json",
-            derived_wish_sha256_field=sha256(
-                (concept_root / "derived_wish.json").read_bytes()
-            ),
-        )
-
     def create_product(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
         (product_root / "cad/project").mkdir(parents=True)
@@ -294,7 +218,6 @@ class StageProposalToolTest(unittest.TestCase):
 
     def create_made(self):
         product_root, product, product_bytes, verification = self.create_product()
-        concept = self.create_concept()
         return NativeMade(
             round=1,
             wish_sha256=self.assignment.wish_sha256,
@@ -302,7 +225,6 @@ class StageProposalToolTest(unittest.TestCase):
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
             invented_sha256=self.invented.invented_sha256,
-            concept_sha256=concept.concept_sha256,
             product_root="artifacts/make/r0001/product",
             cad_project_path="cad/project",
             product_manifest=build_artifact_manifest(
@@ -363,18 +285,16 @@ class StageProposalToolTest(unittest.TestCase):
             "invent",
             "artifacts/invent/invented.json",
             invented_bytes,
-            "concept",
+            "make",
         )
 
     def test_make_hashes_exact_product_tree_and_matches_native_made(self):
         product_root, _, _, _ = self.create_product()
-        concept = self.create_concept()
         self.write_stage(
             "make",
             {
                 "assignment": self.assignment.to_dict(),
                 "invented": self.invented.to_dict(),
-                "concept": concept.to_dict(),
                 "feedback": [],
             },
             round_index=1,
@@ -392,7 +312,7 @@ class StageProposalToolTest(unittest.TestCase):
             "artifacts/make/r0001/made.json"
         )
         made = NativeMade.from_mapping(made_document)
-        made.assert_context(self.assignment, self.invented, concept, expected_round=1)
+        made.assert_context(self.assignment, self.invented, expected_round=1)
         made.validate_product_tree(self.run_root)
         self.assertEqual(
             made.product_manifest.to_dict(),
@@ -750,13 +670,11 @@ class StageProposalToolTest(unittest.TestCase):
         self.assertIn("safe relative", result.stderr)
 
         self.create_product()
-        concept = self.create_concept()
         self.write_stage(
             "make",
             {
                 "assignment": self.assignment.to_dict(),
                 "invented": self.invented.to_dict(),
-                "concept": concept.to_dict(),
             },
             round_index=1,
         )
@@ -790,7 +708,7 @@ class StageProposalToolTest(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("match,invent,concept,make,playtest,release", completed.stdout)
+        self.assertIn("match,invent,make,playtest,release", completed.stdout)
 
 
 if __name__ == "__main__":

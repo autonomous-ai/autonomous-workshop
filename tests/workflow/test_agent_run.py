@@ -110,8 +110,7 @@ class AgentRunTest(unittest.TestCase):
         for stage, transition in (
             ("wish", "match"),
             ("match", "invent"),
-            ("invent", "concept"),
-            ("concept", "make"),
+            ("invent", "make"),
             ("make", "playtest"),
         ):
             self.advance(run, stage, transition)
@@ -483,8 +482,7 @@ class AgentRunTest(unittest.TestCase):
         for stage, transition in (
             ("wish", "match"),
             ("match", "invent"),
-            ("invent", "concept"),
-            ("concept", "make"),
+            ("invent", "make"),
             ("make", "playtest"),
             ("playtest", "release"),
             ("release", "deliver"),
@@ -496,7 +494,7 @@ class AgentRunTest(unittest.TestCase):
         self.assertEqual(checkpoint.stage, "deliver")
         self.assertEqual(checkpoint.round_index, 1)
         self.assertEqual(set(checkpoint.stage_artifacts), set(
-            ("wish", "match", "invent", "concept", "make", "playtest", "release", "deliver")
+            ("wish", "match", "invent", "make", "playtest", "release", "deliver")
         ))
         with self.assertRaises(TransitionError):
             run.apply_outcome(
@@ -537,55 +535,33 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaises(TransitionError):
             failed_run.apply_outcome(self.outcome(failed_run, "wish", "match"))
 
-    def test_concept_only_advances_to_make_and_upstream_is_invent(self):
+    def test_invent_only_advances_to_make_and_upstream_is_match(self):
         run = self.create()
         for stage, transition in (
             ("wish", "match"),
             ("match", "invent"),
-            ("invent", "concept"),
         ):
             self.advance(run, stage, transition)
-        self.assertEqual(run.snapshot().stage, "concept")
-        outcome = self.outcome(run, "concept", "playtest")
+        self.assertEqual(run.snapshot().stage, "invent")
+        outcome = self.outcome(run, "invent", "playtest")
         with self.assertRaisesRegex(TransitionError, "illegal lifecycle transition"):
             run.apply_outcome(outcome, gate=self.gate(run, outcome))
-        self.assertEqual(run.snapshot().stage, "concept")
-        checkpoint = self.advance(run, "concept", "make")
+        self.assertEqual(run.snapshot().stage, "invent")
+        checkpoint = self.advance(run, "invent", "make")
         self.assertEqual(checkpoint.stage, "make")
 
-    def test_concept_waiting_outcome_does_not_consume_a_gate(self):
+    def test_invent_proposal_bound_to_a_stale_checkpoint_or_subject_is_refused(self):
         run = self.create()
         for stage, transition in (
             ("wish", "match"),
             ("match", "invent"),
-            ("invent", "concept"),
         ):
             self.advance(run, stage, transition)
-        waiting = AgentOutcome(
-            stage="concept",
-            status="waiting",
-            needs=("concept-image-provider-credentials-required",),
-        )
-        checkpoint = run.apply_outcome(waiting)
-        self.assertEqual((checkpoint.stage, checkpoint.status), ("concept", "waiting"))
-        self.assertNotIn("concept", checkpoint.stage_artifacts)
-        resumed = run.resume()
-        self.assertEqual((resumed.stage, resumed.status), ("concept", "active"))
-        self.advance(run, "concept", "make")
-
-    def test_concept_proposal_bound_to_a_stale_checkpoint_or_subject_is_refused(self):
-        run = self.create()
-        for stage, transition in (
-            ("wish", "match"),
-            ("match", "invent"),
-            ("invent", "concept"),
-        ):
-            self.advance(run, stage, transition)
-        outcome = self.outcome(run, "concept", "make")
+        outcome = self.outcome(run, "invent", "make")
         wrong_subject = self.gate(run, outcome, subject="a" * 64)
         with self.assertRaisesRegex(TransitionError, "not bound"):
             run.apply_outcome(outcome, gate=wrong_subject)
-        self.assertEqual(run.snapshot().stage, "concept")
+        self.assertEqual(run.snapshot().stage, "invent")
 
     def test_failed_playtest_returns_to_new_make_and_consumes_round(self):
         run = self.create(max_rounds=2)
@@ -687,8 +663,7 @@ class AgentRunTest(unittest.TestCase):
             for stage, transition in (
                 ("wish", "match"),
                 ("match", "invent"),
-                ("invent", "concept"),
-                ("concept", "make"),
+                ("invent", "make"),
             ):
                 self.advance(run, stage, transition)
 

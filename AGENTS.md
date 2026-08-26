@@ -38,7 +38,7 @@ All implementation and product-run work must preserve these boundaries:
   `ToyBlueprint.required_playtest_checks()`. Codex-authored assessment is not
   evidence of successful printing, physical fit, durability, or human response
   unless a host-replayed check or authenticated physical receipt proves it.
-- Every active Match, Invent, Concept, Make, Playtest, or Release attempt uses
+- Every active Match, Invent, Make, Playtest, or Release attempt uses
   one native Codex Goal with one objective, proof artifacts, and a verifiable
   stopping condition: the current stage finalizer succeeds. Only one Goal is
   active at a time. Codex works toward it by observing, acting, evaluating exact output,

@@ -7,7 +7,6 @@ recursive-include src/workshop/artifacts/schemas *.json
 recursive-include src/workshop/contributors/schemas *.json
 recursive-include src/workshop/runtime/schemas *.json
 recursive-include src/workshop/make/schemas *.json
-recursive-include src/workshop/concept/schemas *.json
 recursive-include src/workshop/make/skills *
 recursive-include inventors *
 global-exclude __pycache__ *.pyc *.pyo .DS_Store

@@ -1,4 +1,4 @@
-"""Host-owned deterministic gates for native Match, Invent, and Concept proposals."""
+"""Host-owned deterministic gates for native Match and Invent proposals."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional
 
 from workshop._validation import (
     copy_json_mapping,
@@ -15,12 +15,9 @@ from workshop._validation import (
     require_safe_evidence_path,
     require_sha256,
 )
-from workshop.concept.native import ConceptTree, NativeConcept
-from workshop.concept.native_gate import evaluate_concept_brief
 from workshop.errors import ContractError, StateConflict
 from workshop.invent.native import NativeInvented
 from workshop.match.native import NativeMatchAssignment, InventorRoster
-from workshop.wish import Wish
 from workshop.workflow.agent_run import (
     AGENT_RUN_STAGES,
     AgentArtifact,
@@ -37,7 +34,6 @@ STAGE_GATE_EVIDENCE_KIND = "autonomous-workshop.stage-gate-evidence"
 STAGE_GATE_DECISION_KIND = "autonomous-workshop.stage-gate-decision"
 MATCH_GATE_ID = "match.assignment-v3"
 INVENT_GATE_ID = "invent.concept-v3"
-CONCEPT_GATE_ID = "concept.sealed-v1"
 MATCH_ASSIGNMENT_PATH = "artifacts/match/assignment.json"
 INVENTED_PATH = "artifacts/invent/invented.json"
 VALIDATOR_VERSION = "2.0.0"
@@ -45,8 +41,7 @@ STAGE_SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _GATE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _FORWARD = {
     "match": "invent",
-    "invent": "concept",
-    "concept": "make",
+    "invent": "make",
     "make": "playtest",
     "playtest": "release",
     "release": "deliver",
@@ -245,10 +240,9 @@ class StageGateDecision:
             raise ContractError("stage gate decision requires host evidence")
         expected = _FORWARD.get(self.evidence.stage)
         if self.evidence.stage == "playtest" and not self.evidence.passed:
-            if self.transition not in ("make", "concept"):
+            if self.transition != "make":
                 raise ContractError(
-                    "failed Playtest gate must return actionable feedback to Make "
-                    "or, for design-invalidating feedback, to Concept"
+                    "failed Playtest gate must return actionable feedback to Make"
                 )
         elif self.evidence.passed:
             if expected is None or self.transition != expected:
@@ -403,7 +397,7 @@ def evaluate_invent_stage(
     artifact = _ready_artifact(
         proposal,
         stage="invent",
-        transition="concept",
+        transition="make",
         canonical_path=INVENTED_PATH,
     )
     invented = NativeInvented.from_mapping(
@@ -429,126 +423,10 @@ def evaluate_invent_stage(
             "wish_bound": True,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="concept")
-
-
-def concept_gate_subject_sha256(
-    assignment: NativeMatchAssignment,
-    invented: NativeInvented,
-    *,
-    round: int,
-    standing_concept_sha256: Optional[str],
-    feedback_sha256: Optional[str],
-) -> str:
-    """Derive Concept's subject from its upstream bindings and revision state."""
-
-    if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
-        invented, NativeInvented
-    ):
-        raise ContractError("Concept subject requires Match and Invent")
-    if type(round) is not int or not 1 <= round <= 100:
-        raise ContractError("Concept subject round must be from 1 through 100")
-    if standing_concept_sha256 is not None:
-        require_sha256(standing_concept_sha256, "Concept subject standing concept sha256")
-    if feedback_sha256 is not None:
-        require_sha256(feedback_sha256, "Concept subject feedback sha256")
-    return _stage_subject(
-        "concept",
-        {
-            "wish_sha256": assignment.wish_sha256,
-            "assignment_sha256": assignment.assignment_sha256,
-            "taste_sha256": assignment.selected_taste_sha256,
-            "blueprint_sha256": assignment.blueprint_sha256,
-            "invented_sha256": invented.invented_sha256,
-            "round": round,
-            "standing_concept_sha256": standing_concept_sha256,
-            "feedback_sha256": feedback_sha256,
-        },
-    )
-
-
-def _manifest_agent_artifacts(prefix: str, manifest: Any) -> tuple[AgentArtifact, ...]:
-    return tuple(
-        AgentArtifact("%s/%s" % (prefix, entry.path), entry.sha256)
-        for entry in manifest.entries
-    )
-
-
-def evaluate_concept_stage(
-    proposal: AgentOutcomeProposal,
-    *,
-    run_root: Any,
-    expected_checkpoint_sha256: str,
-    assignment: NativeMatchAssignment,
-    invented: NativeInvented,
-    wish: Wish,
-    round: int,
-    standing_concept_sha256: Optional[str],
-    feedback_sha256: Optional[str],
-    execute_image_effect: Callable[[ConceptTree, NativeConcept], Mapping[str, Any]],
-) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
-    """Validate a Concept brief, draw its images, and seal the whole tree.
-
-    Structural checks run before ``execute_image_effect`` so a brief that
-    decided nothing is refused before a single image is drawn — see design
-    decision D2.  ``execute_image_effect`` is injected rather than imported so
-    this module never depends on ``workshop.integrations``.
-    """
-
-    if not isinstance(assignment, NativeMatchAssignment) or not isinstance(
-        invented, NativeInvented
-    ):
-        raise ContractError("Concept gate requires Match and Invent")
-    require_sha256(expected_checkpoint_sha256, "expected Concept checkpoint sha256")
-    if proposal.checkpoint_sha256 != expected_checkpoint_sha256:
-        raise StateConflict("Concept proposal belongs to another checkpoint")
-    expected_subject_sha256 = concept_gate_subject_sha256(
-        assignment,
-        invented,
-        round=round,
-        standing_concept_sha256=standing_concept_sha256,
-        feedback_sha256=feedback_sha256,
-    )
-    if proposal.subject_sha256 != expected_subject_sha256:
-        raise StateConflict(
-            "Concept proposal subject is not the full Concept input vector"
-        )
-    artifact = _ready_artifact(
-        proposal,
-        stage="concept",
-        transition="make",
-        canonical_path="artifacts/concept/r%04d/concept.json" % round,
-    )
-    concept = NativeConcept.from_mapping(
-        _artifact_document(run_root, artifact, label="native Concept contract")
-    )
-    concept.assert_context(assignment, invented, wish)
-    tree = concept.validate_concept_tree(run_root)
-    checks = evaluate_concept_brief(tree, wish=wish)
-    effect_checks = execute_image_effect(tree, concept)
-    additional = _manifest_agent_artifacts(concept.concept_root, concept.concept_manifest)
-    evidence = StageGateEvidence(
-        stage="concept",
-        gate_id=CONCEPT_GATE_ID,
-        validator_version=VALIDATOR_VERSION,
-        passed=True,
-        checkpoint_sha256=proposal.checkpoint_sha256,
-        subject_sha256=proposal.subject_sha256,
-        outcome_sha256=proposal.outcome.sha256,
-        artifact_path=artifact.path,
-        artifact_sha256=artifact.sha256,
-        checks={
-            **checks,
-            **effect_checks,
-            "concept_sha256": concept.concept_sha256,
-            "wish_bound": True,
-        },
-    )
-    return StageGateDecision(evidence=evidence, transition="make"), additional
+    return StageGateDecision(evidence=evidence, transition="make")
 
 
 __all__ = [
-    "CONCEPT_GATE_ID",
     "INVENTED_PATH",
     "INVENT_GATE_ID",
     "MATCH_ASSIGNMENT_PATH",
@@ -559,8 +437,6 @@ __all__ = [
     "StageGateDecision",
     "StageGateEvidence",
     "VALIDATOR_VERSION",
-    "concept_gate_subject_sha256",
-    "evaluate_concept_stage",
     "evaluate_invent_stage",
     "evaluate_match_stage",
     "invent_gate_subject_sha256",

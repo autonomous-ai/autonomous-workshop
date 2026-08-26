@@ -25,13 +25,13 @@ finalizer, advance a gate, or perform an external effect.
   classic as sufficient fit.
 - **Invent:** Explore materially different ways the Wish can transform the
   physical edition while preserving the known rules. Record rule provenance,
-  rights assumptions, and why the chosen direction is more than a reskin.
-- **Concept:** Decide the edition's envelope, wall thickness, piece families,
-  board, and storage as researched, attributed facts, not defaults borrowed
-  from the classic. Specify every piece and storage component in its own
-  right, and keep the design recognizable without asserting new rights.
-- **Make:** Translate the concept into exact piece families, hierarchy, board,
-  storage, handling, and recognition constraints. Use the shared `cad`,
+  rights assumptions, and why the chosen direction is more than a reskin. For
+  the selected direction, decide the edition's envelope, wall thickness, piece
+  families, board, and storage as researched, attributed facts, not defaults
+  borrowed from the classic. Specify every piece and storage component in its
+  own right, and keep the design recognizable without asserting new rights.
+- **Make:** Translate the selected design into exact piece families, hierarchy,
+  board, storage, handling, and recognition constraints. Use the shared `cad`,
   `image-to-cad`, and `step-parts` Workshop skills for geometry and CAD work.
 - **Playtest:** Inspect the exact Made revision for recognizability,
   legibility, setup, handling, complete inventory, and storage. Do not claim

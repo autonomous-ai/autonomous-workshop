@@ -36,8 +36,8 @@ came from and what was deliberately left behind.
   piece set, and the one or two actions that give them depth — before
   choosing one. Favor a rich board over a rich piece set. Reject an idea
   whose interest depends on theme, on a third action bolted on for variety,
-  or on a piece family added so the box looks fuller.
-- **Concept:** Decide the board and piece envelope, wall thickness, and
+  or on a piece family added so the box looks fuller. For the selected
+  structure, decide the board and piece envelope, wall thickness, and
   every piece type's form, dimensions, placement, and interfaces as
   researched, attributed facts drawn from the chosen structure — never a
   restyled default. Every rank, role, or state a piece can hold must be

@@ -5,7 +5,6 @@ import unittest
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.concept.native import NativeConcept
 from workshop.errors import ArtifactError, ContractError
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
@@ -66,83 +65,6 @@ class NativeMadeTest(unittest.TestCase):
             concept={"title": "Moon Nook", "summary": "A tiny lunar observatory."},
             research={"sources": [{"url": "https://example.test/moon", "claim": "scale"}]},
         )
-        self.concept = self._build_concept()
-
-    def _build_concept(self, *, round_index=1):
-        concept_root = self.run_root / ("artifacts/concept/r%04d/concept" % round_index)
-        (concept_root / "images/components").mkdir(parents=True)
-        (concept_root / "images/front.png").write_bytes(b"front-pixels")
-        (concept_root / "images/components/observatory.png").write_bytes(
-            b"observatory-pixels"
-        )
-
-        brief = {
-            "components": [{"key": "observatory", "name": "Observatory"}],
-        }
-        research = {"sources": []}
-        drawing_instructions = {"front": "Draw the observatory."}
-        descriptor = {
-            "front": {
-                "path": "images/front.png",
-                "sha256": _sha((concept_root / "images/front.png").read_bytes()),
-            },
-            "components": {
-                "observatory": {
-                    "path": "images/components/observatory.png",
-                    "sha256": _sha(
-                        (concept_root / "images/components/observatory.png").read_bytes()
-                    ),
-                }
-            },
-        }
-        derived_wish = {
-            "schema_version": 1,
-            "kind": "autonomous-workshop.concept-derived-wish",
-            "wish_sha256": self.wish_sha256,
-            "product_id": "moon-nook",
-            "objective": "A tiny lunar observatory.",
-            "context": {},
-            "constraints": {"scale": "tiny"},
-        }
-        derived_wish_identity = dict(derived_wish)
-        derived_wish["derived_wish_sha256"] = _sha(_canonical(derived_wish_identity))
-
-        (concept_root / "brief.json").write_bytes(_canonical(brief))
-        (concept_root / "research.json").write_bytes(_canonical(research))
-        (concept_root / "prompts.json").write_bytes(_canonical(drawing_instructions))
-        (concept_root / "descriptor.json").write_bytes(_canonical(descriptor))
-        (concept_root / "derived_wish.json").write_bytes(_canonical(derived_wish))
-
-        manifest = build_artifact_manifest(concept_root, created_at="content-addressed")
-        return NativeConcept(
-            round=round_index,
-            wish_sha256=self.wish_sha256,
-            assignment_sha256=self.assignment.assignment_sha256,
-            taste_sha256=self.assignment.selected_taste_sha256,
-            blueprint_sha256=self.assignment.blueprint_sha256,
-            invented_sha256=self.invented.invented_sha256,
-            concept_root="artifacts/concept/r%04d/concept" % round_index,
-            concept_manifest=manifest,
-            brief=brief,
-            brief_path="brief.json",
-            brief_sha256=_sha((concept_root / "brief.json").read_bytes()),
-            research=research,
-            research_path="research.json",
-            research_sha256=_sha((concept_root / "research.json").read_bytes()),
-            drawing_instructions=drawing_instructions,
-            drawing_instructions_path="prompts.json",
-            drawing_instructions_sha256=_sha(
-                (concept_root / "prompts.json").read_bytes()
-            ),
-            descriptor=descriptor,
-            descriptor_path="descriptor.json",
-            descriptor_sha256=_sha((concept_root / "descriptor.json").read_bytes()),
-            derived_wish=derived_wish,
-            derived_wish_path="derived_wish.json",
-            derived_wish_sha256_field=_sha(
-                (concept_root / "derived_wish.json").read_bytes()
-            ),
-        )
 
     def _made(self):
         product_root = self.run_root / "artifacts/make/r0001/product"
@@ -176,7 +98,6 @@ class NativeMadeTest(unittest.TestCase):
             taste_sha256=self.assignment.selected_taste_sha256,
             blueprint_sha256=self.assignment.blueprint_sha256,
             invented_sha256=self.invented.invented_sha256,
-            concept_sha256=self.concept.concept_sha256,
             product_root="artifacts/make/r0001/product",
             cad_project_path="cad/project",
             product_manifest=manifest,
@@ -191,9 +112,7 @@ class NativeMadeTest(unittest.TestCase):
         made, product_root = self._made()
 
         rebuilt = NativeMade.from_mapping(made.to_dict())
-        rebuilt.assert_context(
-            self.assignment, self.invented, self.concept, expected_round=1
-        )
+        rebuilt.assert_context(self.assignment, self.invented, expected_round=1)
         canonical = rebuilt.validate_product_tree(self.run_root)
 
         self.assertEqual(canonical.artifact_root, product_root)
@@ -206,18 +125,25 @@ class NativeMadeTest(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactError, "differs from its manifest"):
             made.validate_product_tree(self.run_root)
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
-            made.assert_context(
-                self.assignment, self.invented, self.concept, expected_round=2
-            )
+            made.assert_context(self.assignment, self.invented, expected_round=2)
 
-    def test_swapped_concept_is_refused(self):
+    def test_swapped_invent_result_is_refused(self):
         made, _ = self._made()
-        other_concept = self._build_concept(round_index=2)
-        self.assertNotEqual(other_concept.concept_sha256, self.concept.concept_sha256)
+        other_invented = NativeInvented(
+            wish_sha256=self.wish_sha256,
+            assignment_sha256=self.assignment.assignment_sha256,
+            taste_sha256=self.assignment.selected_taste_sha256,
+            blueprint_sha256=self.assignment.blueprint_sha256,
+            concept={"title": "Sun Nook", "summary": "A tiny solar observatory."},
+            research={
+                "sources": [{"url": "https://example.test/sun", "claim": "scale"}]
+            },
+        )
+        self.assertNotEqual(
+            other_invented.invented_sha256, self.invented.invented_sha256
+        )
         with self.assertRaisesRegex(ContractError, "different Workshop inputs"):
-            made.assert_context(
-                self.assignment, self.invented, other_concept, expected_round=1
-            )
+            made.assert_context(self.assignment, other_invented, expected_round=1)
 
 
 if __name__ == "__main__":

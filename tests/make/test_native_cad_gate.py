@@ -71,7 +71,6 @@ class NativeCadGateTest(unittest.TestCase):
                 taste_sha256="c" * 64,
                 blueprint_sha256="d" * 64,
                 invented_sha256="e" * 64,
-                concept_sha256="f" * 64,
                 product_root="artifacts/make/r0001/product",
                 cad_project_path="cad/project",
                 product_manifest=manifest,

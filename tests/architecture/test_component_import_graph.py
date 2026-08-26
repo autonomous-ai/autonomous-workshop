@@ -12,7 +12,6 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 WORKSHOP = REPOSITORY / "src" / "workshop"
 COMPONENTS = {
     "artifacts",
-    "concept",
     "contributors",
     "deliver",
     "release",

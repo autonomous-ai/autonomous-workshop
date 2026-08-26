@@ -21,10 +21,6 @@ MAX_FACTORY_CREDENTIAL_FILE_BYTES = 32 * 1024
 _FACTORY_CREDENTIAL_NAME = re.compile(
     r"^FACTORY_(?:PASSWORD|USERNAME|[A-Z][A-Z0-9_]{0,63}_USERNAME)$"
 )
-MAX_CONCEPT_IMAGES_CREDENTIAL_FILE_BYTES = 32 * 1024
-_CONCEPT_IMAGES_CREDENTIAL_NAME = re.compile(
-    r"^CONCEPT_IMAGES_(?:API_KEY|ENDPOINT|MODEL)$"
-)
 
 
 def factory_credential_file(
@@ -170,52 +166,8 @@ def factory_credential_environment(
     return loaded
 
 
-def concept_images_credential_file(
-    environment: Optional[Mapping[str, str]] = None,
-) -> Path:
-    """Return the supported host-only concept-image-provider credential file."""
-
-    return default_workshop_home(environment) / "credentials" / "concept-images.env"
-
-
-def concept_images_credential_environment(
-    environment: Optional[Mapping[str, str]] = None,
-) -> Mapping[str, str]:
-    """Load bounded concept-image-provider values, on the same terms as Factory."""
-
-    values = os.environ if environment is None else environment
-    path = concept_images_credential_file(values)
-    loaded: dict[str, str] = {}
-    if path.exists() or path.is_symlink():
-        loaded.update(
-            _parse_credential_file(
-                _read_private_credential_file(
-                    path,
-                    label="concept-image",
-                    max_bytes=MAX_CONCEPT_IMAGES_CREDENTIAL_FILE_BYTES,
-                ),
-                _CONCEPT_IMAGES_CREDENTIAL_NAME,
-                label="concept-image",
-            )
-        )
-    loaded.update(
-        {
-            name: value
-            for name, value in values.items()
-            if isinstance(name, str)
-            and _CONCEPT_IMAGES_CREDENTIAL_NAME.fullmatch(name) is not None
-            and isinstance(value, str)
-            and value
-        }
-    )
-    return loaded
-
-
 __all__ = [
-    "MAX_CONCEPT_IMAGES_CREDENTIAL_FILE_BYTES",
     "MAX_FACTORY_CREDENTIAL_FILE_BYTES",
-    "concept_images_credential_environment",
-    "concept_images_credential_file",
     "factory_credential_environment",
     "factory_credential_file",
 ]

@@ -25,9 +25,9 @@ advance a gate, or perform an external effect.
 - **Invent:** Explore distinct physical explanations or experiments. Choose one
   auditable relationship and record sources, units, coordinate systems,
   assumptions, scale choices, and whether the object is a demonstration,
-  analogy, model, or instrument.
-- **Concept:** Decide the instrument's envelope, wall thickness, and every
-  reference-mark and measurement component as researched, attributed facts —
+  analogy, model, or instrument. Decide the selected instrument's envelope,
+  wall thickness, and every reference-mark and measurement component as
+  researched, attributed facts —
   units and coordinate systems are physical facts here, not styling.
 - **Make:** Translate the relationship into parametric geometry, reference
   marks, interaction, reset, measurement, accessibility, and safety
