@@ -24,7 +24,8 @@ def native_receipt(*, status="waiting", stage="match", published=False, progress
         "stage": stage,
         "publication": {
             "status": "public" if published else "not-created",
-            "requested": published,
+            "requested": True,
+            "required": True,
         },
     }
     if progress is not None:
@@ -88,6 +89,8 @@ class NativeCommandTest(unittest.TestCase):
             ),
             ("check", ".", "--run"),
             ("wish", "a moon", "--draft"),
+            ("wish", "a moon", "--publish"),
+            ("resume", "wish-one", "--publish"),
         ):
             with self.subTest(arguments=arguments), redirect_stderr(StringIO()), self.assertRaises(SystemExit):
                 command.parse_args(arguments)
@@ -108,9 +111,8 @@ class NativeCommandTest(unittest.TestCase):
     def test_wish_calls_only_native_start_and_keeps_json_stdout_clean(self):
         observed = {}
 
-        def start(wish, *, publish_requested, activity_observer):
+        def start(wish, *, activity_observer):
             observed["wish"] = wish
-            observed["publish_requested"] = publish_requested
             for activity in (
                 "starting",
                 "reasoning",
@@ -136,7 +138,6 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "match")
         self.assertIn("Starting one native Codex session", stderr.getvalue())
-        self.assertIn("not published by default", stderr.getvalue())
         self.assertIn("reasoning about the current stage", stderr.getvalue())
         self.assertIn("process is still running", stderr.getvalue())
         self.assertIn("using a tool for the current stage", stderr.getvalue())
@@ -145,18 +146,16 @@ class NativeCommandTest(unittest.TestCase):
         self.assertEqual(stderr.getvalue().count("using a tool"), 1)
         self.assertEqual(observed["wish"].objective, "a moon that waddles")
         self.assertEqual(observed["wish"].context, {"source": "workshop-cli"})
-        self.assertFalse(observed["publish_requested"])
         native_start.assert_called_once()
 
-    def test_wish_publish_is_explicit_and_strict_wait_exits_one(self):
+    def test_wish_strict_wait_exits_one_without_a_publication_flag(self):
         stdout = StringIO()
         with mock.patch("cli.main.generate_wish_id", return_value="wish-one"), mock.patch(
             "cli.main.start_native_run", return_value=native_receipt()
         ) as start, redirect_stdout(stdout), redirect_stderr(StringIO()):
-            result = main(("wish", "a moon", "--publish", "--strict", "--json"))
+            result = main(("wish", "a moon", "--strict", "--json"))
         self.assertEqual(result, 1)
         start.assert_called_once()
-        self.assertTrue(start.call_args.kwargs["publish_requested"])
 
     def test_live_native_activity_repeats_only_throttled_running_updates(self):
         output = StringIO()
@@ -221,7 +220,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
-        receipt = native_receipt(status="waiting", stage="deliver")
+        receipt = native_receipt(status="waiting", stage="release")
         reason = (
             "Factory credentials are missing; configure them, then resume this run."
         )
@@ -244,7 +243,7 @@ class NativeCommandTest(unittest.TestCase):
 
     def test_status_text_surfaces_hash_verified_manual_url(self):
         stdout = StringIO()
-        receipt = native_receipt(status="complete", stage="deliver")
+        receipt = native_receipt(status="complete", stage="release")
         receipt["publication"] = {
             "status": "public",
             "requested": True,
@@ -268,7 +267,7 @@ class NativeCommandTest(unittest.TestCase):
         )
 
     def test_resume_calls_only_native_resume_and_has_strict_wait_policy(self):
-        def resume_run(product_id, *, publish_requested, activity_observer):
+        def resume_run(product_id, *, activity_observer):
             activity_observer("tool")
             return native_receipt(stage="make")
 
@@ -277,13 +276,10 @@ class NativeCommandTest(unittest.TestCase):
         with mock.patch(
             "cli.main.resume_native_run", side_effect=resume_run
         ) as resume, redirect_stdout(stdout), redirect_stderr(stderr):
-            result = main(
-                ("resume", "wish-one", "--publish", "--strict", "--json")
-            )
+            result = main(("resume", "wish-one", "--strict", "--json"))
         self.assertEqual(result, 1)
         resume.assert_called_once()
         self.assertEqual(resume.call_args.args, ("wish-one",))
-        self.assertTrue(resume.call_args.kwargs["publish_requested"])
         self.assertTrue(callable(resume.call_args.kwargs["activity_observer"]))
         self.assertEqual(json.loads(stdout.getvalue())["stage"], "make")
         self.assertIn("exact native Codex session", stderr.getvalue())
@@ -296,11 +292,12 @@ class NativeCommandTest(unittest.TestCase):
         ), redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             self.assertEqual(main(("wish", "a moon")), 1)
 
-    def test_draft_is_the_parser_default(self):
+    def test_publication_flags_are_not_part_of_the_core_cli(self):
         command = parser()
-        self.assertFalse(command.parse_args(("wish", "a moon")).publish)
-        self.assertFalse(command.parse_args(("resume", "wish-one")).publish)
-        self.assertTrue(command.parse_args(("wish", "a moon", "--publish")).publish)
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("wish", "a moon", "--publish"))
+        with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+            command.parse_args(("resume", "wish-one", "--publish"))
 
 
 class DoctorTest(unittest.TestCase):
@@ -349,7 +346,7 @@ class DoctorTest(unittest.TestCase):
         self.assertIn("goals, subagents, and isolation", check["detail"])
         self.assertIn("0.145.0", check["next"])
 
-    def test_missing_factory_credentials_are_optional_for_local_release(self):
+    def test_missing_factory_credentials_block_terminal_release(self):
         ready = lambda name: {"name": name, "status": "ready", "detail": "ok"}
         stdout = StringIO()
         with mock.patch.dict(os.environ, {}, clear=True), mock.patch(
@@ -363,12 +360,11 @@ class DoctorTest(unittest.TestCase):
         ), redirect_stdout(stdout):
             result = main(("doctor", "--json"))
         receipt = json.loads(stdout.getvalue())
-        self.assertEqual(result, 0)
-        self.assertEqual(receipt["status"], "ready")
+        self.assertEqual(result, 1)
+        self.assertEqual(receipt["status"], "needs-attention")
         factory = next(item for item in receipt["checks"] if item["name"] == "factory-credentials")
-        self.assertEqual(factory["status"], "ready")
-        self.assertIn("local Release remains available", factory["detail"])
-        self.assertIn("requested publication", factory["detail"])
+        self.assertEqual(factory["status"], "needs-attention")
+        self.assertIn("Release requires public Factory publication", factory["detail"])
 
     def test_partial_factory_credentials_fail_without_printing_values(self):
         secret = "do-not-print-this-value"

@@ -112,7 +112,7 @@ verifiable stopping condition: the current stage finalizer succeeds. Only one
 Goal is active at a time. While pursuing it, Codex observes the current artifact, acts with its
 native tools and subagents, evaluates exact output, and improves it. This is
 Codex's work loop inside the Goal, not a Python loop. The host checkpoint stays
-the durable authority, and Wish and Deliver remain host boundaries. This uses
+the durable authority, and Wish remains a host boundary. This uses
 the official Codex patterns for [following a durable
 Goal](https://learn.chatgpt.com/use-cases/follow-goals) and [iterating with
 evals](https://learn.chatgpt.com/use-cases/iterate-on-difficult-problems).
@@ -126,23 +126,19 @@ physical fit, durability, or human response.
 Release centers the moment the owner opens the box. Codex designs a
 self-contained printable `MANUAL.pdf`, renders and inspects every page, and
 seals it with exact product facts and passing evidence. The manual must teach
-the product without a website, video, QR code, or phone. Factory import is an
-optional host effect against that already accepted Release; missing credentials
-or an unavailable site never blocks the local manual or the transition to
-Deliver. Add `--publish` only when a Factory listing is also intended:
-
-```bash
-uv run workshop wish --publish \
-  "I wish for a pocket-size moon-phase machine I can turn by hand"
-```
+the product without a website, video, QR code, or phone. The host then
+revalidates full-tier, thickness-checked, print-ready CAD and publishes the
+exact CAD package and manual through Factory. Public hash readback is part of
+Release success; missing credentials or an unavailable site leaves the same
+Release waiting for `workshop resume`.
 
 Factory credentials live in the host-only
 `$WORKSHOP_HOME/credentials/factory.env` file (0600 inside a 0700 directory),
 or in a compatible host environment for ephemeral deployments. They are loaded
 only outside a native agent turn and are never passed into Codex. Publication
 does not claim that a physical toy or its manual was printed, packed, or
-delivered. Deliver waits until separately authorized production and shipment
-receipts exist.
+delivered. Printing, delivery, and review belong to the Operations workflow
+after Workshop Release.
 
 The command prints a Wish ID. Use that ID to inspect or continue the same
 session after a process interruption:
@@ -278,7 +274,7 @@ imported accidentally.
   Taste, required primary skill, and any additional specialist skills or tools.
 - [`src/cli/`](src/cli/) owns command parsing, presentation, and exit codes.
 - [`src/workshop/`](src/workshop/) is the narrow trusted host, organized by
-  Wish, Match, Invent, Make, Playtest, Release, Deliver, workflow,
+  Wish, Match, Invent, Make, Playtest, Release, workflow,
   runtime, contracts, gates, and integrations.
 - [`src/workshop/make/skills/`](src/workshop/make/skills/) holds the canonical
   shared CAD and making skills.
@@ -297,7 +293,7 @@ Only the host's optional sanitized post-publication projection belongs in the
 repository `toys/` directory.
 
 Shared code is organized by architecture component under `src/workshop/`:
-`product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`, `deliver`,
+`product`, `wish`, `match`, `invent`, `make`, `playtest`, `release`,
 `workflow`, `artifacts`, `runtime`, `integrations`, and
 `contributors`. Make owns the single installed copy of its locked skills at
 `src/workshop/make/skills/`; portable schemas live with the component that owns

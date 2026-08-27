@@ -25,6 +25,7 @@ except ImportError:  # pragma: no cover - Codex CLI hosts are currently POSIX
     fcntl = None  # type: ignore[assignment]
 
 from workshop.errors import (
+    AmbiguousEffectError,
     ArtifactError,
     ContractError,
     StateConflict,
@@ -38,12 +39,15 @@ from workshop.integrations.factory import (
     FACTORY_CONTENT_MAPPING,
     FactoryReleaseWriter,
     FactoryAgentSession,
+    FactoryAuthenticationError,
+    FactoryCredentialRejected,
     FactoryPublicTransition,
     factory_credentials_from_environment,
 )
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    NATIVE_CAD_FULL_TIER,
     NATIVE_CAD_GATE_KIND,
     NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
@@ -144,29 +148,46 @@ _FACTORY_CREDENTIALS_NEED = (
     "Factory credentials for the selected Inventor are missing or malformed; "
     "configure a complete matching username/password pair, then resume this run."
 )
+_FACTORY_PUBLICATION_NEED = (
+    "Factory publication could not be verified; restore server connectivity, "
+    "then resume this run. Workshop will perform authenticated reconciliation "
+    "of the existing effect before any retry."
+)
+_LEGACY_RELEASE_UPGRADE_NEED = (
+    "This historical run has an obsolete Release contract. It remains readable, "
+    "but it cannot complete today's Workshop until it has a validated MANUAL.pdf "
+    "and full-tier, thickness-checked, print-ready CAD evidence."
+)
 _PRODUCT_RUN_FINALIZER_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/stage_proposal.py"
 )
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
 )
+_PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
+)
 
 
 class _FactoryCredentialsUnavailable(Exception):
-    """Signal that optional publication is unavailable before any Factory effect."""
+    """Signal that required publication cannot begin without host credentials."""
 
     def __init__(self, inventor_id: str) -> None:
         self.inventor_id = inventor_id
         super().__init__(_FACTORY_CREDENTIALS_NEED)
 
 
-class _OptionalPublicationUnavailable(Exception):
-    """A publication attempt failed without changing local Release validity."""
+class _RequiredPublicationUnavailable(Exception):
+    """Required publication is unverified and must remain resumable at Release."""
+
+
+class _LegacyReleaseUpgradeRequired(Exception):
+    """A frozen historical proposal cannot satisfy today's terminal Release."""
 
 
 @dataclass(frozen=True)
 class _VerifiedRelease:
-    """Exact local Release bytes plus the context needed by an optional effect."""
+    """Exact local Release bytes plus the context needed by its public effect."""
 
     release: NativeRelease
     package: NativeReleasePackage
@@ -443,8 +464,8 @@ def _cad_gate_rejection_path(
     *,
     create_parent: bool = False,
 ) -> Path:
-    if checkpoint.stage not in ("make", "playtest"):
-        raise TransitionError("CAD gate rejection requires Make or Playtest")
+    if checkpoint.stage not in ("make", "playtest", "release"):
+        raise TransitionError("CAD gate rejection requires Make, Playtest, or Release")
     parent = run.host_state_root / _CAD_GATE_REJECTIONS_DIRECTORY
     try:
         identity = parent.lstat()
@@ -566,7 +587,7 @@ def _persist_cad_gate_rejection(
     proposal: AgentOutcomeProposal,
     rejection: NativeCadGateError,
 ) -> Mapping[str, Any]:
-    if checkpoint.stage not in ("make", "playtest"):
+    if checkpoint.stage not in ("make", "playtest", "release"):
         raise TransitionError("CAD gate rejection belongs to another stage")
     evidence = rejection.evidence
     if evidence.passed or evidence.failure_code != rejection.failure_code:
@@ -613,7 +634,7 @@ def _persist_cad_gate_rejection(
 def _read_cad_gate_rejection(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> Optional[Mapping[str, Any]]:
-    if checkpoint.stage not in ("make", "playtest"):
+    if checkpoint.stage not in ("make", "playtest", "release"):
         return None
     path = _cad_gate_rejection_path(run, checkpoint)
     if not path.exists() and not path.is_symlink():
@@ -817,6 +838,22 @@ def _materialized_release_contract(
     }
 
 
+def _materialized_release_terminal_transition(
+    checkpoint: AgentRunCheckpoint,
+) -> str:
+    """Preserve the forward value understood by the frozen finalizer."""
+
+    if not isinstance(checkpoint, AgentRunCheckpoint):
+        raise ContractError("Release transition requires an AgentRun checkpoint")
+    if _PRODUCT_RUN_FINALIZER_INPUT not in checkpoint.input_sha256s:
+        raise StateConflict("native run lacks its materialized stage finalizer")
+    return (
+        "complete"
+        if _PRODUCT_RUN_TERMINAL_RELEASE_INPUT in checkpoint.input_sha256s
+        else "deliver"
+    )
+
+
 def native_stage_prompt(stage: str) -> str:
     """Give the native session a compact pointer, never Wish or host secrets."""
 
@@ -827,7 +864,6 @@ def native_stage_prompt(stage: str) -> str:
         "make",
         "playtest",
         "release",
-        "deliver",
     ):
         raise ContractError("native run stage is invalid")
     return (
@@ -1386,7 +1422,7 @@ def _prepare_stage_input(
     """
 
     stage = checkpoint.stage
-    if stage in ("wish", "deliver"):
+    if stage == "wish":
         raise TransitionError("%s does not use a native stage packet" % stage)
     roster = _inventor_roster(checkpoint)
     context: dict[str, Any] = {"roster": roster}
@@ -1396,7 +1432,7 @@ def _prepare_stage_input(
         "invent": "make",
         "make": "playtest",
         "playtest": "release",
-        "release": "deliver",
+        "release": "complete",
     }[stage]
     round_value: Optional[int] = (
         checkpoint.round_index
@@ -1676,6 +1712,11 @@ def _prepare_stage_input(
                         context["playtested"] = playtested
                         release_contract = _materialized_release_contract(checkpoint)
                         context["release_contract"] = release_contract
+                        terminal_transition = _materialized_release_terminal_transition(
+                            checkpoint
+                        )
+                        context["terminal_transition"] = terminal_transition
+                        normal_transition = terminal_transition
                         subject_inputs = {
                             "wish_sha256": checkpoint.wish_sha256,
                             "taste_sha256": assignment.selected_taste_sha256,
@@ -1688,11 +1729,17 @@ def _prepare_stage_input(
                             ),
                             "round": checkpoint.round_index,
                             "release_contract": release_contract,
+                            "host_cad_gate_rejection_sha256": (
+                                cad_gate_rejection["rejection_sha256"]
+                                if cad_gate_rejection is not None
+                                else None
+                            ),
                         }
                         subject = _stage_subject("release", subject_inputs)
                         inputs = {
                             **common,
                             "round": checkpoint.round_index,
+                            "host_cad_gate_rejection": cad_gate_rejection,
                             "playtested": playtested.to_dict(),
                             "playtested_artifact": {
                                 **_artifact_binding(playtested_artifact),
@@ -2193,6 +2240,7 @@ def _evaluate_playtest_stage(
             expected_verifier_sha256=verifier_sha256,
         ),
         evidence_stage="playtest",
+        require_print_ready=playtested.verdict == "pass",
     )
     passed = playtested.verdict == "pass"
     transition = playtested.proposed_transition
@@ -2257,7 +2305,7 @@ def _release_effect_wait_path(run: AgentRun) -> Path:
 def _read_release_effect_wait(
     run: AgentRun, checkpoint: AgentRunCheckpoint
 ) -> Optional[Mapping[str, Any]]:
-    """Read a credential-only Release wait bound to the current checkpoint."""
+    """Read one required-publication wait bound to the current checkpoint."""
 
     path = _release_effect_wait_path(run)
     if not path.exists() and not path.is_symlink():
@@ -2277,7 +2325,7 @@ def _read_release_effect_wait(
         value = _strict_json_bytes(content, label="Release effect wait")
     except ContractError as exc:
         raise StateConflict("Release effect wait is invalid") from exc
-    expected = {
+    legacy_expected = {
         "schema_version",
         "kind",
         "product_id",
@@ -2289,6 +2337,7 @@ def _read_release_effect_wait(
         "inventor_id",
         "need",
     }
+    current_expected = legacy_expected | {"outcome"}
     hash_fields = (
         "waiting_checkpoint_sha256",
         "proposal_checkpoint_sha256",
@@ -2296,8 +2345,10 @@ def _read_release_effect_wait(
         "proposal_outcome_sha256",
     )
     if (
-        set(value) != expected
-        or value["schema_version"] != 1
+        set(value) not in (legacy_expected, current_expected)
+        or value["schema_version"] not in (1, 2)
+        or (value["schema_version"] == 1 and set(value) != legacy_expected)
+        or (value["schema_version"] == 2 and set(value) != current_expected)
         or value["kind"] != "autonomous-workshop.release-effect-wait"
         or value["product_id"] != checkpoint.product_id
         or value["stage"] != "release"
@@ -2307,7 +2358,10 @@ def _read_release_effect_wait(
         or not isinstance(value["inventor_id"], str)
         or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", value["inventor_id"])
         is None
-        or value["need"] != _FACTORY_CREDENTIALS_NEED
+        or value["need"] not in (
+            _FACTORY_CREDENTIALS_NEED,
+            _FACTORY_PUBLICATION_NEED,
+        )
         or any(
             not isinstance(value[name], str)
             or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None
@@ -2315,7 +2369,52 @@ def _read_release_effect_wait(
         )
     ):
         raise StateConflict("Release effect wait belongs to different state")
+    if value["schema_version"] == 2:
+        try:
+            pending = AgentOutcome.from_mapping(value["outcome"])
+        except ContractError as exc:
+            raise StateConflict("Release effect wait outcome is invalid") from exc
+        if (
+            pending.stage != "release"
+            or pending.status != "ready"
+            or pending.sha256 != value["proposal_outcome_sha256"]
+        ):
+            raise StateConflict("Release effect wait outcome is not exact")
     return value
+
+
+def _write_release_effect_wait(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    proposal: AgentOutcomeProposal,
+    inventor_id: str,
+    need: str,
+) -> None:
+    """Bind a resumable Release wait to the exact unaccepted proposal."""
+
+    if (
+        checkpoint.stage != "release"
+        or checkpoint.status != "waiting"
+        or need not in (_FACTORY_CREDENTIALS_NEED, _FACTORY_PUBLICATION_NEED)
+    ):
+        raise TransitionError("Release effect wait requires a waiting Release")
+    _write_private_json(
+        _release_effect_wait_path(run),
+        {
+            "schema_version": 2,
+            "kind": "autonomous-workshop.release-effect-wait",
+            "product_id": checkpoint.product_id,
+            "stage": "release",
+            "waiting_checkpoint_sha256": checkpoint.checkpoint_sha256,
+            "proposal_checkpoint_sha256": proposal.checkpoint_sha256,
+            "proposal_subject_sha256": proposal.subject_sha256,
+            "proposal_outcome_sha256": proposal.outcome.sha256,
+            "outcome": proposal.outcome.to_dict(),
+            "inventor_id": inventor_id,
+            "need": need,
+        },
+    )
 
 
 def _remove_release_effect_wait(run: AgentRun) -> None:
@@ -2480,6 +2579,37 @@ def _write_release_effect(
     _write_private_json(_release_effect_path(run), effect)
 
 
+def _assert_required_public_readback(
+    release: NativeRelease, receipt: Receipt
+) -> None:
+    """Require the public receipt needed to complete this Release protocol."""
+
+    if not receipt.is_verified_public:
+        raise StateConflict("Release lacks authenticated public Factory readback")
+    if release.schema_version != 2:
+        return
+    manual_entry = next(
+        (
+            entry
+            for entry in release.package_manifest.entries
+            if entry.path == release.manual_path
+        ),
+        None,
+    )
+    manual_url = receipt.details.get("manual_url")
+    if (
+        manual_entry is None
+        or not isinstance(manual_url, str)
+        or not manual_url.startswith("https://")
+        or receipt.details.get("manual_path") != release.manual_path
+        or receipt.details.get("manual_sha256") != manual_entry.sha256
+        or receipt.details.get("manual_readback_sha256") != manual_entry.sha256
+    ):
+        raise StateConflict(
+            "Release lacks exact public MANUAL.pdf hash readback"
+        )
+
+
 def _verified_release(
     run: AgentRun,
     release: NativeRelease,
@@ -2514,7 +2644,7 @@ def _verified_release(
 def _publication_release_context(
     run: AgentRun, verified: _VerifiedRelease
 ) -> ReleaseContext:
-    """Build Factory-only context after publication has been authorized."""
+    """Build Factory-only context after the native credential-free turn."""
 
     taste = parse_taste_bytes(
         verified.inventor_binding.taste_bytes,
@@ -2541,12 +2671,12 @@ def _existing_release_for_promotion(
 ) -> _VerifiedRelease:
     """Revalidate a sealed local Release after lifecycle acceptance."""
 
-    if checkpoint.stage != "deliver" or checkpoint.status not in (
+    if checkpoint.stage not in ("release", "deliver") or checkpoint.status not in (
         "active",
         "waiting",
         "complete",
     ):
-        raise TransitionError("public promotion requires a verified Release")
+        raise TransitionError("public publication requires a verified Release")
     if any(
         stage in checkpoint.invalidated_stages
         for stage in ("match", "invent", "make", "playtest", "release")
@@ -2611,17 +2741,18 @@ def _attempt_release_publication(
     run: AgentRun,
     verified: _VerifiedRelease,
 ) -> tuple[Receipt, bool]:
-    """Create/promote optional Factory state through its durable effect ledger.
+    """Create and publish exact Factory state through its durable effect ledger.
 
-    Local validation happens before this helper.  Any failure here is
-    publication-specific and cannot retroactively invalidate the sealed local
-    Release.  The Factory adapters retain ambiguous outcomes in their ledger
-    and reconcile them before any later send.
+    Local bytes are validated before this helper, but the Release gate remains
+    open until authenticated public readback succeeds. The Factory adapters
+    retain ambiguous outcomes in their ledger and reconcile them before any
+    later send.
     """
 
     try:
         receipt = _read_release_effect(run, verified.release)
         if receipt is not None and receipt.is_verified_public:
+            _assert_required_public_readback(verified.release, receipt)
             _try_record_public_example_projection(
                 run,
                 release=verified.release,
@@ -2655,8 +2786,9 @@ def _attempt_release_publication(
             _write_release_effect(run, verified.release, receipt)
         if not receipt.is_verified_public:
             raise StateConflict(
-                "optional Factory publication lacks verified public readback"
+                "Factory publication lacks verified public readback"
             )
+        _assert_required_public_readback(verified.release, receipt)
         _try_record_public_example_projection(
             run,
             release=verified.release,
@@ -2667,19 +2799,10 @@ def _attempt_release_publication(
         return receipt, True
     except _FactoryCredentialsUnavailable:
         raise
-    except Exception as exc:
-        raise _OptionalPublicationUnavailable() from exc
-
-
-def _promote_existing_release(
-    run: AgentRun, checkpoint: AgentRunCheckpoint
-) -> bool:
-    """Publish one exact local Release without another native-agent turn."""
-
-    verified = _existing_release_for_promotion(run, checkpoint)
-    unused_receipt, changed = _attempt_release_publication(run, verified)
-    del unused_receipt
-    return changed
+    except FactoryCredentialRejected:
+        raise _FactoryCredentialsUnavailable(verified.inventor_id) from None
+    except (AmbiguousEffectError, FactoryAuthenticationError) as exc:
+        raise _RequiredPublicationUnavailable() from exc
 
 
 def _accept_local_release(
@@ -2688,7 +2811,7 @@ def _accept_local_release(
     *,
     context: Mapping[str, Any],
 ) -> _VerifiedRelease:
-    """Validate and seal Release bytes without requiring publication."""
+    """Validate the credential-free bytes before required publication."""
 
     return _verified_release(
         run,
@@ -2701,6 +2824,37 @@ def _accept_local_release(
     )
 
 
+def _verify_release_print_ready_cad(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    made: NativeMade,
+) -> Any:
+    """Re-run the current full CAD gate before any public Release claim."""
+
+    verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
+    if not isinstance(verifier_sha256, str):
+        raise StateConflict("native run lacks its trusted CAD verifier binding")
+    evidence = verify_native_made_cad(
+        made,
+        run_root=run.run_root,
+        host_state_root=run.host_state_root,
+        expected_verifier_sha256=verifier_sha256,
+        evidence_stage="release",
+        require_print_ready=True,
+    )
+    if (
+        not evidence.passed
+        or evidence.verification_tier != NATIVE_CAD_FULL_TIER
+        or not evidence.thickness_gate_required
+        or not evidence.print_ready_eligible
+    ):
+        raise StateConflict(
+            "Release requires full-tier CAD evidence eligible for a "
+            "ready-to-print handoff"
+        )
+    return evidence
+
+
 def _evaluate_release_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -2709,10 +2863,13 @@ def _evaluate_release_stage(
     subject_sha256: str,
     context: Mapping[str, Any],
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
+    terminal_transition = context.get("terminal_transition")
+    if terminal_transition not in ("complete", "deliver"):
+        raise StateConflict("native run lacks its frozen Release transition")
     artifact = _ready_contract_artifact(
         proposal,
         stage="release",
-        transitions=("deliver",),
+        transitions=(terminal_transition,),
         path="artifacts/release/release.json",
     )
     release = _read_contract(
@@ -2731,6 +2888,18 @@ def _evaluate_release_stage(
         )
     release.assert_context(context["made"], context["playtested"])
     verified = _accept_local_release(run, release, context=context)
+    if (
+        release.schema_version != 2
+        or release.manual_path != NATIVE_RELEASE_MANUAL_PATH
+    ):
+        raise _LegacyReleaseUpgradeRequired(_LEGACY_RELEASE_UPGRADE_NEED)
+    cad_evidence = _verify_release_print_ready_cad(
+        run, checkpoint, context["made"]
+    )
+    publication, unused_changed = _attempt_release_publication(run, verified)
+    del unused_changed
+    if not publication.is_verified_public:
+        raise StateConflict("Release requires authenticated public readback")
     try:
         verification = try_materialize_digital_verification(
             run.run_root,
@@ -2760,8 +2929,8 @@ def _evaluate_release_stage(
         )
     evidence = StageGateEvidence(
         stage="release",
-        gate_id="release.local-package-v2",
-        validator_version="2.0.0",
+        gate_id="release.public-print-package-v3",
+        validator_version="3.0.0",
         passed=True,
         checkpoint_sha256=checkpoint.checkpoint_sha256,
         subject_sha256=subject_sha256,
@@ -2777,11 +2946,26 @@ def _evaluate_release_stage(
             "manual_path": release.manual_path,
             "native_release_schema_version": release.schema_version,
             "package_tree_rehashed": True,
-            "local_release_sealed": True,
+            "cad_receipt_sha256": cad_evidence.receipt_sha256,
+            "cad_verifier_sha256": cad_evidence.verifier_sha256,
+            "cad_verifier_mode": cad_evidence.verifier_mode,
+            "cad_verification_tier": cad_evidence.verification_tier,
+            "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
+            "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+            "publication_status": "public",
+            "factory_readback_verified": True,
+            "page_url": publication.details.get("page_url"),
+            "manual_url": publication.details.get("manual_url"),
+            "manual_readback_sha256": publication.details.get(
+                "manual_readback_sha256"
+            ),
             **verification_checks,
         },
     )
-    return StageGateDecision(evidence=evidence, transition="deliver"), additional
+    return (
+        StageGateDecision(evidence=evidence, transition=terminal_transition),
+        additional,
+    )
 
 
 def _persist_gate_decision(
@@ -2812,13 +2996,21 @@ def _process_agent_outcome(
     *,
     subject_sha256: str,
     context: Mapping[str, Any],
-    publish_requested: bool,
+    pending_proposal: Optional[AgentOutcomeProposal] = None,
 ) -> AgentRunCheckpoint:
-    proposal = read_agent_outcome_proposal(
-        run.run_root,
-        expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
-        expected_subject_sha256=subject_sha256,
-    )
+    if pending_proposal is None:
+        proposal = read_agent_outcome_proposal(
+            run.run_root,
+            expected_checkpoint_sha256=checkpoint.checkpoint_sha256,
+            expected_subject_sha256=subject_sha256,
+        )
+    else:
+        proposal = pending_proposal
+        if (
+            proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
+            or proposal.subject_sha256 != subject_sha256
+        ):
+            raise StateConflict("pending Release proposal belongs to different state")
     run.validate_outcome(proposal.outcome)
     if proposal.outcome.status != "ready":
         updated = run.apply_outcome(proposal.outcome)
@@ -2870,13 +3062,85 @@ def _process_agent_outcome(
             _remove_agent_outcome(run.run_root)
             return checkpoint
     elif checkpoint.stage == "release":
-        decision, additional = _evaluate_release_stage(
-            proposal,
-            run=run,
-            checkpoint=checkpoint,
-            subject_sha256=subject_sha256,
-            context=context,
-        )
+        try:
+            decision, additional = _evaluate_release_stage(
+                proposal,
+                run=run,
+                checkpoint=checkpoint,
+                subject_sha256=subject_sha256,
+                context=context,
+            )
+        except _LegacyReleaseUpgradeRequired:
+            failed = AgentOutcome(
+                stage="release",
+                status="failed",
+                artifacts=proposal.outcome.artifacts,
+                needs=(_LEGACY_RELEASE_UPGRADE_NEED,),
+            )
+            updated = run.apply_outcome(failed)
+            _remove_agent_outcome(run.run_root)
+            return updated
+        except NativeCadGateError as rejection:
+            # Playtest normally prevents a non-print-ready revision from ever
+            # entering Release. A fresh Release replay can still uncover a
+            # transient timeout. Persist every exact rejection and discard the
+            # finalized proposal. Only a timeout may retry unchanged Release
+            # bytes; deterministic failures cannot be repaired in Release and
+            # therefore fail closed instead of consuming the native turn
+            # budget in a replay loop.
+            _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
+            _remove_agent_outcome(run.run_root)
+            if rejection.failure_code != "verifier-timeout":
+                return run.apply_outcome(
+                    AgentOutcome(
+                        stage="release",
+                        status="failed",
+                        artifacts=proposal.outcome.artifacts,
+                        needs=(
+                            "Release's final CAD guard rejected the sealed Make "
+                            "revision (%s); start a repaired Make revision in a "
+                            "new run rather than weakening or editing Release."
+                            % rejection.failure_code,
+                        ),
+                    )
+                )
+            return checkpoint
+        except _FactoryCredentialsUnavailable as unavailable:
+            need = _FACTORY_CREDENTIALS_NEED
+            waiting = AgentOutcome(
+                stage="release",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(need,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_release_effect_wait(
+                run,
+                updated,
+                proposal=proposal,
+                inventor_id=unavailable.inventor_id,
+                need=need,
+            )
+            return updated
+        except _RequiredPublicationUnavailable:
+            need = _FACTORY_PUBLICATION_NEED
+            waiting = AgentOutcome(
+                stage="release",
+                status="waiting",
+                artifacts=proposal.outcome.artifacts,
+                needs=(need,),
+            )
+            updated = run.apply_outcome(waiting)
+            _remove_agent_outcome(run.run_root)
+            _write_release_effect_wait(
+                run,
+                updated,
+                proposal=proposal,
+                inventor_id=context["assignment"].selected_inventor_id,
+                need=need,
+            )
+            return updated
     else:  # pragma: no cover - guarded by packet preparation
         raise TransitionError("native stage cannot consume an agent proposal")
 
@@ -2888,32 +3152,12 @@ def _process_agent_outcome(
         additional_artifacts=additional,
     )
     _remove_agent_outcome(run.run_root)
-    if checkpoint.stage == "release" and publish_requested:
-        # Release is already durably accepted and bound to Deliver before any
-        # optional credential-bearing call begins. A missing credential or an
-        # unavailable/ambiguous publication can change only publication
-        # status; the Factory adapter's ledger owns safe reconciliation.
-        try:
-            _promote_existing_release(run, updated)
-        except (_FactoryCredentialsUnavailable, _OptionalPublicationUnavailable):
-            pass
+    if checkpoint.stage == "release" and updated.stage == "deliver":
+        # A frozen historical finalizer proposed ``deliver``. Publication has
+        # already passed the new Release gate, so migrate without creating or
+        # claiming a physical effect.
+        updated = run.complete_legacy_release()
     return updated
-
-
-def _wait_at_deliver(run: AgentRun) -> AgentRunCheckpoint:
-    checkpoint = run.snapshot()
-    if checkpoint.stage != "deliver" or checkpoint.status != "active":
-        raise TransitionError("Deliver wait requires an active Deliver checkpoint")
-    return run.apply_outcome(
-        AgentOutcome(
-            stage="deliver",
-            status="waiting",
-            needs=(
-                "Manufacturing and shipping were not authorized; the verified "
-                "product and Release remain ready for a later Deliver effect.",
-            ),
-        )
-    )
 
 
 def _rebind_existing_progress(
@@ -2932,7 +3176,6 @@ def _run_native_session(
     paths: NativeRunPaths,
     *,
     launcher: CodexNativeSessionLauncher,
-    publish_requested: bool,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> tuple[AgentRunCheckpoint, Optional[CodexNativeSessionOutcome], int, str]:
     """Advance through native stages until complete, wait, or failure."""
@@ -2946,11 +3189,9 @@ def _run_native_session(
         if checkpoint.status in ("waiting", "failed", "complete"):
             return checkpoint, last_session, turns, action
         if checkpoint.stage == "deliver":
-            updated = _wait_at_deliver(run)
-            _rebind_existing_progress(
-                paths, checkpoint, updated, activity="completed"
+            raise TransitionError(
+                "legacy Deliver checkpoint must be reconciled before native work"
             )
-            return updated, last_session, turns, action
         subject, unused_packet, context = _prepare_stage_input(run, checkpoint)
         del unused_packet
 
@@ -2963,7 +3204,6 @@ def _run_native_session(
                     checkpoint,
                     subject_sha256=subject,
                     context=context,
-                    publish_requested=publish_requested,
                 )
             except StateConflict:
                 recovered_progress.observe("failed")
@@ -3037,7 +3277,6 @@ def _run_native_session(
                 checkpoint,
                 subject_sha256=subject,
                 context=context,
-                publish_requested=publish_requested,
             )
         except WorkshopError:
             progress.observe("failed")
@@ -3133,7 +3372,6 @@ def _native_receipt(
     paths: Optional[NativeRunPaths] = None,
     session: Optional[CodexNativeSessionOutcome] = None,
     action: str,
-    publish_requested: bool = False,
     turns: int = 0,
 ) -> dict[str, Any]:
     progress, durable_turns = _native_progress_receipt(
@@ -3141,10 +3379,11 @@ def _native_receipt(
     )
     publication: dict[str, Any] = {
         "status": "not-created",
-        "requested": bool(publish_requested),
+        "requested": True,
+        "required": True,
         "reason": (
-            "Factory credentials and authenticated effects remain outside the "
-            "native product-run session."
+            "Release is incomplete until Factory publication has authenticated "
+            "public readback. Credentials remain outside the native session."
         ),
     }
     needs: list[str] = []
@@ -3159,7 +3398,21 @@ def _native_receipt(
                     needs.append(effect_wait["need"])
                 publication["reason"] = effect_wait["need"]
         effect = paths.host_state / "release-effect.json"
-        if effect.exists() or effect.is_symlink():
+        if (
+            (effect.exists() or effect.is_symlink())
+            and checkpoint.stage == "release"
+            and checkpoint.status == "waiting"
+        ):
+            # The locally valid proposal has not passed its Release gate yet,
+            # so its release artifact is intentionally not an accepted stage
+            # binding. The durable Factory ledger will reconcile on resume.
+            publication.update(
+                {
+                    "status": "unknown",
+                    "verified": False,
+                }
+            )
+        elif effect.exists() or effect.is_symlink():
             effect_run = AgentRun.open(
                 paths.workspace, host_state_root=paths.host_state
             )
@@ -3174,11 +3427,12 @@ def _native_receipt(
             except WorkshopError:
                 publication = {
                     "status": "unavailable",
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "verified": False,
                     "reason": (
-                        "Optional Factory state could not be verified; the "
-                        "sealed local Release remains valid."
+                        "Required Factory publication state could not be verified; "
+                        "Release remains incomplete."
                     ),
                 }
             else:
@@ -3188,7 +3442,8 @@ def _native_receipt(
                     "status": (
                         "public" if receipt.is_verified_public else "draft"
                     ),
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "page_url": receipt.details.get("page_url"),
                     "manual_url": receipt.details.get("manual_url"),
                     "cover_url": receipt.details.get("cover_url"),
@@ -3208,19 +3463,20 @@ def _native_receipt(
                     except WorkshopError:
                         publication = {
                             "status": "unavailable",
-                            "requested": bool(publish_requested),
+                            "requested": True,
+                            "required": True,
                             "verified": False,
                             "reason": (
-                                "Optional Factory publication state could not "
-                                "be verified; the sealed local Release remains "
-                                "valid."
+                                "Required Factory publication state could not "
+                                "be verified; Release remains incomplete."
                             ),
                         }
                     else:
                         if publish_state in ("sending", "unknown"):
                             publication = {
                                 "status": "unknown",
-                                "requested": bool(publish_requested),
+                                "requested": True,
+                                "required": True,
                                 "verified": False,
                                 "reason": (
                                     "Factory publication requires authenticated "
@@ -3237,7 +3493,8 @@ def _native_receipt(
                 # "not-created" or imply that a retry is safe.
                 publication = {
                     "status": "unknown",
-                    "requested": bool(publish_requested),
+                    "requested": True,
+                    "required": True,
                     "verified": False,
                     "reason": (
                         "Factory effect state requires authenticated "
@@ -3245,8 +3502,7 @@ def _native_receipt(
                     ),
                 }
             elif (
-                publish_requested
-                and checkpoint.stage == "deliver"
+                checkpoint.stage == "deliver"
                 and checkpoint.status in ("active", "waiting", "complete")
             ):
                 # Credential discovery is a local, read-only host operation.
@@ -3265,16 +3521,25 @@ def _native_receipt(
                         needs.append(_FACTORY_CREDENTIALS_NEED)
                 else:
                     publication["reason"] = (
-                        "Publication was requested but no verified Factory "
-                        "receipt exists; resume this run to reconcile or retry "
-                        "the optional publication effect."
+                        "No verified public Factory receipt exists; resume this "
+                        "run to reconcile or retry required publication."
                     )
+    visible_stage = "release" if checkpoint.stage == "deliver" else checkpoint.stage
+    visible_status = checkpoint.status
+    if checkpoint.stage == "deliver":
+        # Historical Deliver checkpoints stay readable, but neither a public
+        # page nor an old fulfillment status proves today's PDF + print-ready
+        # terminal Release contract. An eligible run is migrated explicitly
+        # during resume; until then it is never reported as complete.
+        visible_status = "waiting"
+        if _LEGACY_RELEASE_UPGRADE_NEED not in needs:
+            needs.append(_LEGACY_RELEASE_UPGRADE_NEED)
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
         "product_id": checkpoint.product_id,
-        "status": checkpoint.status,
-        "stage": checkpoint.stage,
+        "status": visible_status,
+        "stage": visible_stage,
         "revision": checkpoint.revision,
         "round": checkpoint.round_index,
         "max_rounds": checkpoint.max_rounds,
@@ -3299,14 +3564,22 @@ def _native_receipt(
 def start_native_run(
     wish: Wish,
     *,
-    publish_requested: bool = False,
+    publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
     """Persist one Wish and immediately start its whole-run native session.
 
+    ``publish_requested`` is a source-compatibility shim for callers of the
+    former optional-publication API. Release publication is now mandatory, so
+    either legacy boolean has the same terminal behavior and the CLI no longer
+    exposes the choice.
+
     ``activity_observer`` receives only content-free native activity classes.
     It is optional presentation telemetry and cannot change the run result.
     """
+
+    if publish_requested is not None and type(publish_requested) is not bool:
+        raise ContractError("legacy publication option must be boolean")
 
     activity_observer = _validated_activity_observer(activity_observer)
     assets = product_run_agent_assets()
@@ -3341,7 +3614,7 @@ def start_native_run(
         _record_authorization(
             paths,
             product_id=wish.product_id,
-            publish_requested=publish_requested,
+            publish_requested=True,
             create=True,
         )
         checkpoint = _advance_validated_wish(run)
@@ -3350,7 +3623,6 @@ def start_native_run(
             run,
             paths,
             launcher=launcher,
-            publish_requested=publish_requested,
             activity_observer=activity_observer,
         )
         return {
@@ -3359,7 +3631,6 @@ def start_native_run(
                 paths=paths,
                 session=session,
                 action=action,
-                publish_requested=publish_requested,
                 turns=turns,
             ),
             "wish": wish.to_dict(),
@@ -3372,28 +3643,45 @@ def _resume_native_run_locked(
     run: AgentRun,
     checkpoint: AgentRunCheckpoint,
     paths: NativeRunPaths,
-    publish_requested: bool = False,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
     """Mutate one native run while its process lock is held."""
 
-    authorization = _record_authorization(
+    _record_authorization(
         paths,
         product_id=product_id,
-        publish_requested=publish_requested,
+        publish_requested=True,
         create=False,
     )
     promotion_action: Optional[str] = None
     if (
-        authorization["publish_requested"]
-        and checkpoint.stage == "deliver"
+        checkpoint.stage == "deliver"
         and checkpoint.status in ("active", "waiting", "complete")
     ):
+        verified = _existing_release_for_promotion(run, checkpoint)
+        if (
+            verified.release.schema_version != 2
+            or verified.release.manual_path != NATIVE_RELEASE_MANUAL_PATH
+        ):
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action="legacy-release-needs-upgrade",
+            )
         try:
-            promoted = _promote_existing_release(run, checkpoint)
+            _verify_release_print_ready_cad(run, checkpoint, verified.made)
+        except NativeCadGateError:
+            return _native_receipt(
+                checkpoint,
+                paths=paths,
+                action="legacy-release-cad-rejected",
+            )
+        try:
+            unused_receipt, promoted = _attempt_release_publication(run, verified)
+            del unused_receipt
         except _FactoryCredentialsUnavailable:
             promotion_action = "publication-not-created"
-        except _OptionalPublicationUnavailable:
+        except _RequiredPublicationUnavailable:
             promotion_action = "publication-unverified"
         else:
             promotion_action = (
@@ -3401,20 +3689,63 @@ def _resume_native_run_locked(
                 if promoted
                 else "publication-already-public"
             )
-        if checkpoint.status in ("waiting", "complete"):
+            checkpoint = run.complete_legacy_release()
+        if checkpoint.stage == "release" or promotion_action is not None:
             return _native_receipt(
                 checkpoint,
                 paths=paths,
                 action=promotion_action,
-                publish_requested=True,
             )
     if checkpoint.status == "waiting":
         waiting_checkpoint = checkpoint
         effect_wait = _read_release_effect_wait(run, checkpoint)
+        if effect_wait is not None and effect_wait["schema_version"] == 2:
+            pending_outcome = AgentOutcome.from_mapping(effect_wait["outcome"])
+            checkpoint = run.resume()
+            _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
+            subject, unused_packet, context = _prepare_stage_input(run, checkpoint)
+            del unused_packet
+            if subject != effect_wait["proposal_subject_sha256"]:
+                raise StateConflict(
+                    "pending Release proposal subject changed while waiting"
+                )
+            proposal = AgentOutcomeProposal(
+                checkpoint_sha256=checkpoint.checkpoint_sha256,
+                subject_sha256=subject,
+                outcome=pending_outcome,
+            )
+            _remove_release_effect_wait(run)
+            updated = _process_agent_outcome(
+                run,
+                checkpoint,
+                subject_sha256=subject,
+                context=context,
+                pending_proposal=proposal,
+            )
+            _rebind_existing_progress(
+                paths, checkpoint, updated, activity="completed"
+            )
+            if updated.status == "waiting":
+                renewed_wait = _read_release_effect_wait(run, updated)
+                action = (
+                    "publication-not-created"
+                    if renewed_wait is not None
+                    and renewed_wait["need"] == _FACTORY_CREDENTIALS_NEED
+                    else "publication-unverified"
+                )
+            elif updated.status == "complete":
+                action = "published-release"
+            else:
+                action = "release-cad-rejected"
+            return _native_receipt(
+                updated,
+                paths=paths,
+                action=action,
+            )
         if effect_wait is not None:
-            # Compatibility for legacy runs that waited at Release solely for
-            # credentials. Resume the local stage once; the new gate accepts
-            # its exact package independently of any optional publication.
+            # A schema-v1 wait did not retain the exact ready outcome. Resume
+            # it through one native turn for backward compatibility; all new
+            # waits replay host-side without depending on agent availability.
             _remove_release_effect_wait(run)
         checkpoint = run.resume()
         _rebind_existing_progress(paths, waiting_checkpoint, checkpoint)
@@ -3423,14 +3754,12 @@ def _resume_native_run_locked(
             checkpoint,
             paths=paths,
             action="inspected-terminal",
-            publish_requested=authorization["publish_requested"],
         )
     launcher = CodexNativeSessionLauncher()
     checkpoint, session, turns, action = _run_native_session(
         run,
         paths,
         launcher=launcher,
-        publish_requested=authorization["publish_requested"],
         activity_observer=activity_observer,
     )
     if action == "started":
@@ -3442,7 +3771,6 @@ def _resume_native_run_locked(
         paths=paths,
         session=session,
         action=action,
-        publish_requested=authorization["publish_requested"],
         turns=turns,
     )
 
@@ -3450,14 +3778,20 @@ def _resume_native_run_locked(
 def resume_native_run(
     product_id: str,
     *,
-    publish_requested: bool = False,
+    publish_requested: Optional[bool] = None,
     activity_observer: Optional[Callable[[str], None]] = None,
 ) -> Mapping[str, Any]:
     """Resume one exact native session under an exclusive host mutation lock.
 
+    The ignored keyword preserves source compatibility with the former
+    optional-publication API; every resumed Release now requires publication.
+
     ``activity_observer`` receives only content-free native activity classes.
     It is optional presentation telemetry and cannot change the run result.
     """
+
+    if publish_requested is not None and type(publish_requested) is not bool:
+        raise ContractError("legacy publication option must be boolean")
 
     activity_observer = _validated_activity_observer(activity_observer)
     paths = native_run_paths(product_id)
@@ -3469,7 +3803,6 @@ def resume_native_run(
             run=run,
             checkpoint=checkpoint,
             paths=paths,
-            publish_requested=publish_requested,
             activity_observer=activity_observer,
         )
 
@@ -3480,7 +3813,7 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
     run, checkpoint = _open_native_run(product_id)
     del run
     paths = native_run_paths(product_id)
-    authorization = _record_authorization(
+    _record_authorization(
         paths,
         product_id=product_id,
         publish_requested=False,
@@ -3491,7 +3824,6 @@ def native_run_status(product_id: str) -> Mapping[str, Any]:
             checkpoint,
             paths=paths,
             action="inspected",
-            publish_requested=authorization["publish_requested"],
         ),
         "session_status": _session_status(paths),
     }

@@ -43,7 +43,9 @@ All implementation and product-run work must preserve these boundaries:
   stopping condition: the current stage finalizer succeeds. Only one Goal is
   active at a time. Codex works toward it by observing, acting, evaluating exact output,
   and improving. That loop is native-agent behavior, not a Python program.
-  Wish and Deliver remain host boundaries rather than agent Goals.
+  Wish is a host boundary rather than an agent Goal. Authenticated publication
+  is the host-owned effect portion of Release; physical Operations begin only
+  after Workshop completes.
 - An Inventor is a declared specialist bundle. `TASTE.md` governs creative
   judgment; `inventor.json` identifies the specialist and binds its exact
   extension trees; the required `<id>-inventor` skill defines its

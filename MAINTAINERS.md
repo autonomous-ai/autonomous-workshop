@@ -21,7 +21,6 @@ second reviewer is required for critical changes whenever one is available.
 | Make | `src/workshop/make`, `tests/make` | `@deehw` | Vacant | High |
 | Playtest | `src/workshop/playtest`, `tests/playtest` | `@deehw` | Vacant | High |
 | Release | `src/workshop/release`, `tests/release` | `@deehw` | Vacant | High |
-| Deliver | `src/workshop/deliver`, `tests/deliver` | `@deehw` | Vacant | High |
 | Workflow | `src/workshop/workflow`, `tests/workflow`, end-to-end tests | `@deehw` | Vacant | Critical |
 | Product | `src/workshop/product`, `tests/product` | `@deehw` | Vacant | Standard |
 | Artifacts | `src/workshop/artifacts`, `tests/artifacts` | `@deehw` | Vacant | Critical |

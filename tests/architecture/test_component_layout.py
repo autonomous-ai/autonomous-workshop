@@ -10,7 +10,6 @@ WORKSHOP = SOURCE / "workshop"
 EXPECTED_COMPONENTS = {
     "artifacts",
     "contributors",
-    "deliver",
     "release",
     "integrations",
     "invent",

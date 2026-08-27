@@ -48,8 +48,9 @@ the current `STAGE.json`, proof artifacts and checks, and the verifiable
 stopping condition that the stage finalizer succeeds. Codex observes, acts,
 evaluates the actual artifact, and improves while pursuing that Goal. This is
 native-agent behavior inside the Goal, not a Python loop. The Goal completes
-only after the finalizer succeeds, then Codex returns to the host. Wish and
-Deliver are host boundaries and do not receive agent Goals.
+only after the finalizer succeeds, then Codex returns to the host. Wish is a
+host boundary and does not receive an agent Goal. Factory publication is the
+host-owned effect portion of Release.
 
 This follows Codex's official guidance for [durable
 Goals](https://learn.chatgpt.com/use-cases/follow-goals) and [eval-driven
@@ -274,9 +275,9 @@ authenticated physical receipt explicitly proves more. They cannot establish
 successful printing, physical fit, durability, or human response by
 themselves.
 
-The Wish gate is host-validated before the first native Match turn. Deliver is
-also host/effect work; native stage packets currently cover Match, Invent,
-Make, Playtest, and Release.
+The Wish gate is host-validated before the first native Match turn. Native
+stage packets cover Match, Invent, Make, Playtest, and Release; the host alone
+performs Release's authenticated publication effect.
 
 ## Run-local proposal finalizer
 
@@ -382,7 +383,7 @@ thickness, in isolation. That compatibility receipt remains ineligible for a
 print-ready claim: stronger geometric replay does not erase the legacy
 product's explicit uncertainty about slicing, physical printing, or fit.
 
-## Manual-first Release and optional publication
+## Terminal published Release
 
 Codex prepares `artifacts/release/package` with at least:
 
@@ -408,10 +409,11 @@ The PDF worker supports Linux and macOS. Linux requires `RLIMIT_AS`; macOS
 skips only fully unbounded memory limits that Darwin cannot lower. Both retain
 CPU, file, timeout, parser, and render bounds; other platforms fail closed.
 
-Local Release advances to Deliver without Factory. The default CLI creates no
-publication. `--publish` records explicit authority for an optional host effect
-against the already released bytes. Missing credentials or a remote outage
-does not invalidate Release. Local credentials belong in the private
+Release completes only after the host replays full-tier,
+thickness-checked, print-ready CAD, validates the exact `MANUAL.pdf`, imports
+the exact CAD/manual handoff, publishes it, and verifies public page and manual
+readback hashes. Missing credentials or a remote outage leaves Release waiting
+and resumable; the durable effect ledger reconciles before retry. Local credentials belong in the private
 `$WORKSHOP_HOME/credentials/factory.env` file and are loaded lazily only after
 the native turn exits. Codex 0.145.0 or newer runs with Workshop's strict
 permission profile: all filesystem reads are denied by default, the exact
@@ -512,10 +514,10 @@ private Wish demonstrate that:
 6. Release claims exactly match passing evidence and its exact `MANUAL.pdf`
    passes bounded structural validation;
 7. no credential reaches the native subprocess or its readable filesystem;
-8. local Release reaches Deliver without Factory, while `--publish` is
-   required for optional public promotion and any remote receipt binds the
-   exact Release package; and
-9. the run does not claim Deliver without physical receipts.
+8. terminal Release requires exact full-tier print-ready CAD, validated
+   `MANUAL.pdf`, and authenticated public readback bound to those hashes; and
+9. the executable Workshop run ends at Release and makes no claim of physical
+   printing, delivery, or review.
 
 ## Engine portability
 

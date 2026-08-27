@@ -591,6 +591,14 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertIn("MANUAL.pdf", archive.namelist())
             self.assertNotIn("MANUAL.md", archive.namelist())
             self.assertEqual(archive.read("MANUAL.pdf"), manual)
+            self.assertEqual(
+                archive.read("assembled.step"),
+                (self.made.artifact_root / "assembled.step").read_bytes(),
+            )
+            self.assertEqual(
+                archive.read("assembled.stl"),
+                (self.made.artifact_root / "assembled.stl").read_bytes(),
+            )
             facts = json.loads(archive.read("workshop-product-facts.json"))
             self.assertEqual(
                 facts["manual"],

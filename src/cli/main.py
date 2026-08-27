@@ -279,15 +279,8 @@ def _wish(args: argparse.Namespace) -> int:
     progress = sys.stderr if args.json else sys.stdout
     print("Wish: %s" % wish.product_id, file=progress, flush=True)
     print("Starting one native Codex session before Match...", file=progress, flush=True)
-    if not args.publish:
-        print(
-            "Publication: not published by default; use --publish for explicit public authority.",
-            file=progress,
-            flush=True,
-        )
     receipt = start_native_run(
         wish,
-        publish_requested=args.publish,
         activity_observer=_LiveNativeActivity(progress),
     )
     if args.json:
@@ -315,7 +308,6 @@ def _resume(args: argparse.Namespace) -> int:
     )
     receipt = resume_native_run(
         args.product_id,
-        publish_requested=args.publish,
         activity_observer=_LiveNativeActivity(progress),
     )
     if args.json:
@@ -485,10 +477,14 @@ def _doctor_factory() -> dict[str, str]:
     if not username and not password:
         return _check_record(
             "factory-credentials",
-            "ready",
+            "needs-attention",
             (
-                "Factory credentials are not configured; local Release remains "
-                "available and only an explicitly requested publication needs them."
+                "Factory credentials are not configured; Release requires public "
+                "Factory publication."
+            ),
+            next_step=(
+                "Configure a Factory username and FACTORY_PASSWORD in the private "
+                "$WORKSHOP_HOME/credentials/factory.env file."
             ),
         )
     return _check_record(
@@ -700,16 +696,6 @@ def _schemas(args: argparse.Namespace) -> int:
     return 0
 
 
-def _add_publication_options(command: argparse.ArgumentParser) -> None:
-    command.add_argument(
-        "--publish",
-        dest="publish",
-        action="store_true",
-        help="authorize optional Factory publication of the verified Release",
-    )
-    command.set_defaults(publish=False)
-
-
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
         prog="workshop",
@@ -734,7 +720,6 @@ def parser() -> argparse.ArgumentParser:
     wish.add_argument("objective", nargs="+", metavar="WISH")
     wish.add_argument("--json", action="store_true", help="emit one JSON receipt")
     wish.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
-    _add_publication_options(wish)
     wish.set_defaults(handler=_wish)
 
     status = subcommands.add_parser(
@@ -750,7 +735,6 @@ def parser() -> argparse.ArgumentParser:
     resume.add_argument("product_id", help="saved Wish id")
     resume.add_argument("--json", action="store_true", help="emit one JSON receipt")
     resume.add_argument("--strict", action="store_true", help="exit 1 when the run waits")
-    _add_publication_options(resume)
     resume.set_defaults(handler=_resume)
 
     doctor = subcommands.add_parser(

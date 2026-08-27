@@ -39,7 +39,7 @@ FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -856,7 +856,7 @@ class StageProposalToolTest(unittest.TestCase):
             "release",
             "artifacts/release/release.json",
             release_bytes,
-            "deliver",
+            "complete",
         )
 
         invalid_product_cases = (

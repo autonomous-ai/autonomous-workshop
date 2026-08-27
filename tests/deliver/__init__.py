@@ -1,1 +1,0 @@
-"""Deliver component tests."""

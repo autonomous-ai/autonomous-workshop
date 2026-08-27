@@ -86,6 +86,11 @@ class NativePublicationReconciliationTest(unittest.TestCase):
                         "product_page_sha256": entries["product.json"].sha256,
                         "manual_path": "MANUAL.pdf",
                         "manual_sha256": entries["MANUAL.pdf"].sha256,
+                        "manual_url": (
+                            "https://cdn.autonomous.ai/projects/history-1/"
+                            "MANUAL.pdf"
+                        ),
+                        "manual_readback_sha256": entries["MANUAL.pdf"].sha256,
                         "page_url": (
                             "https://www.autonomous.ai/factory/product/"
                             + product_id
@@ -136,9 +141,9 @@ class NativePublicationReconciliationTest(unittest.TestCase):
                     value, transport=transport
                 ),
             ):
-                started = start_native_run(wish, publish_requested=True)
+                started = start_native_run(wish)
                 inspected = native_run_status(product_id)
-                retried = resume_native_run(product_id, publish_requested=True)
+                retried = resume_native_run(product_id)
                 paths = native_run_paths(product_id)
                 effect = Receipt.from_dict(
                     json.loads(

@@ -41,7 +41,7 @@ PLAYTESTED_KIND = "autonomous-workshop.playtested"
 RELEASE_KIND = "autonomous-workshop.release"
 
 STAGES = ("match", "invent", "make", "playtest", "release")
-JOBS = ("wish", "invent", "make", "playtest", "release", "deliver")
+JOBS = ("wish", "invent", "make", "playtest", "release")
 PLAYTEST_MAKE_INVALIDATES = ("playtest", "release")
 PLAYTEST_INVENT_INVALIDATES = (
     "invent",
@@ -55,7 +55,7 @@ FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 STAGE_FIELDS = {
     "schema_version",

@@ -17,8 +17,6 @@
 /tests/playtest/ @deehw
 /src/workshop/release/ @deehw
 /tests/release/ @deehw
-/src/workshop/deliver/ @deehw
-/tests/deliver/ @deehw
 
 # Orchestration and platform
 /src/workshop/workflow/ @deehw

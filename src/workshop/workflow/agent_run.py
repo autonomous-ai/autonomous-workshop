@@ -52,8 +52,11 @@ AGENT_RUN_STAGES = (
     "make",
     "playtest",
     "release",
-    "deliver",
 )
+# ``deliver`` existed as a host-only wait checkpoint before Release became the
+# terminal Workshop stage.  It remains readable solely so an installed host can
+# migrate an existing run after verifying its exact public Release.
+_READABLE_AGENT_RUN_STAGES = (*AGENT_RUN_STAGES, "deliver")
 AGENT_OUTCOME_STATUSES = ("ready", "waiting", "failed")
 MAX_AGENT_OUTCOME_BYTES = 64 * 1024
 MAX_AGENT_CHECKPOINT_BYTES = 256 * 1024
@@ -77,8 +80,7 @@ _FORWARD_TRANSITIONS = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
-    "deliver": "complete",
+    "release": "complete",
 }
 _UPSTREAM_STAGE = {
     "match": "wish",
@@ -86,10 +88,15 @@ _UPSTREAM_STAGE = {
     "make": "invent",
     "playtest": "make",
     "release": "playtest",
+    # Read-only compatibility for checkpoints written by the former
+    # Release -> Deliver lifecycle.
     "deliver": "release",
 }
 _DOWNSTREAM_OF_INVENT = ("make", "playtest", "release")
 _DOWNSTREAM_OF_MAKE = ("playtest", "release")
+_TERMINAL_RELEASE_MARKER = (
+    ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
+)
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
 _AGENT_SKILL_NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 _KEYED_SECRET = re.compile(
@@ -446,6 +453,10 @@ class AgentOutcome:
         if self.proposed_transition is not None and self.proposed_transition not in (
             *AGENT_RUN_STAGES,
             "complete",
+            # A frozen pre-terminal-Release finalizer proposes this value.  It
+            # is accepted only for a Release outcome and immediately migrated
+            # by the native host; no new Deliver work is created.
+            "deliver",
         ):
             raise ContractError("agent proposed transition is invalid")
         if self.status == "ready":
@@ -1081,7 +1092,7 @@ class AgentRun:
             type(payload["schema_version"]) is not int
             or payload["schema_version"] != 3
             or payload["kind"] != AGENT_RUN_CHECKPOINT_KIND
-            or payload["stage"] not in AGENT_RUN_STAGES
+            or payload["stage"] not in _READABLE_AGENT_RUN_STAGES
             or payload["status"] not in ("active", "waiting", "failed", "complete")
             or type(payload["revision"]) is not int
             or payload["revision"] < 0
@@ -1277,7 +1288,11 @@ class AgentRun:
         if not isinstance(stage_artifacts, Mapping):
             raise StateConflict("agent run stage artifact bindings are invalid")
         for stage, paths in stage_artifacts.items():
-            if stage not in AGENT_RUN_STAGES or not isinstance(paths, list) or not paths:
+            if (
+                stage not in _READABLE_AGENT_RUN_STAGES
+                or not isinstance(paths, list)
+                or not paths
+            ):
                 raise StateConflict("agent run stage artifact bindings are invalid")
             if any(path not in by_path for path in paths) or len(paths) != len(set(paths)):
                 raise StateConflict("agent run stage artifact binding is unsealed")
@@ -1370,10 +1385,23 @@ class AgentRun:
             gate_checkpoint_sha256, "predecessor gate checkpoint sha256"
         )
         payload = self._load()
-        expected_stage = _FORWARD_TRANSITIONS.get(receipt.stage)
+        expected_stages = (
+            ("release", "deliver")
+            if receipt.stage == "release"
+            else (_FORWARD_TRANSITIONS.get(receipt.stage),)
+        )
         history = payload["history"]
-        if expected_stage != payload["stage"] or not history:
+        if payload["stage"] not in expected_stages or not history:
             raise StateConflict("gate is not the accepted predecessor of current state")
+        expected_transition = (
+            "complete"
+            if receipt.stage == "release" and payload["stage"] == "release"
+            else (
+                "deliver"
+                if receipt.stage == "release"
+                else _FORWARD_TRANSITIONS.get(receipt.stage)
+            )
+        )
         record = history[-1]
         expected_fields = {
             "stage",
@@ -1392,7 +1420,7 @@ class AgentRun:
             or set(record) != expected_fields
             or record["stage"] != receipt.stage
             or record["status"] != "ready"
-            or record["transition"] != expected_stage
+            or record["transition"] != expected_transition
             or record["outcome_sha256"] != receipt.outcome_sha256
             or record["gate_sha256"] != receipt.sha256
             or record["gate_id"] != receipt.gate_id
@@ -1426,6 +1454,15 @@ class AgentRun:
                     raise TransitionError(
                         "Playtest may advance or return explicit feedback to Make or Invent"
                     )
+            elif outcome.stage == "release":
+                frozen_inputs = {
+                    item["path"] for item in payload["inputs"]
+                }
+                legacy_allowed = _TERMINAL_RELEASE_MARKER not in frozen_inputs
+                if outcome.proposed_transition != allowed and not (
+                    legacy_allowed and outcome.proposed_transition == "deliver"
+                ):
+                    raise TransitionError("Release may complete the Workshop run")
             elif outcome.proposed_transition != allowed:
                 raise TransitionError("agent proposed an illegal lifecycle transition")
 
@@ -1579,7 +1616,7 @@ class AgentRun:
                 invalidated.add(stage)
             next_stage = transition
         elif transition == "complete":
-            next_stage = "deliver"
+            next_stage = outcome.stage
             status = "complete"
 
         updated["stage"] = next_stage
@@ -1601,6 +1638,47 @@ class AgentRun:
                 "gate_passed": gate.passed,
                 "gate_evidence_sha256": gate.evidence_sha256,
                 "transition": transition,
+            }
+        ]
+        self._write_next(payload, updated)
+        return self.snapshot()
+
+    def complete_legacy_release(self) -> AgentRunCheckpoint:
+        """Migrate one historical Deliver checkpoint to terminal Release.
+
+        The native host calls this only after revalidating the sealed Release
+        and obtaining an exact, authenticated public Factory receipt.  No
+        physical Deliver effect is inferred or performed.
+        """
+
+        payload = self._load()
+        if (
+            payload["stage"] != "deliver"
+            or payload["status"] not in ("active", "waiting", "complete")
+            or not payload["stage_artifacts"].get("release")
+            or "release" in payload["invalidated_stages"]
+            or _TERMINAL_RELEASE_MARKER
+            in {item["path"] for item in payload["inputs"]}
+        ):
+            raise TransitionError(
+                "legacy Deliver migration requires one current sealed Release"
+            )
+        updated = dict(payload)
+        updated["stage"] = "release"
+        updated["status"] = "complete"
+        updated["invalidated_stages"] = [
+            stage
+            for stage in AGENT_RUN_STAGES
+            if stage in payload["invalidated_stages"]
+        ]
+        updated["history"] = payload["history"] + [
+            {
+                "stage": "release",
+                "status": "legacy-terminal-migration",
+                "outcome_sha256": payload["last_outcome_sha256"],
+                "artifact_paths": list(payload["stage_artifacts"]["release"]),
+                "gate_sha256": None,
+                "transition": "complete",
             }
         ]
         self._write_next(payload, updated)

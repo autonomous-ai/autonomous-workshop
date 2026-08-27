@@ -44,7 +44,7 @@ _FORWARD = {
     "invent": "make",
     "make": "playtest",
     "playtest": "release",
-    "release": "deliver",
+    "release": "complete",
 }
 
 
@@ -245,6 +245,14 @@ class StageGateDecision:
                     "failed Playtest gate must return explicit feedback to Make or Invent"
                 )
         elif self.evidence.passed:
+            if self.evidence.stage == "release" and self.transition in (
+                "complete",
+                "deliver",
+            ):
+                # ``deliver`` is accepted only to read and finish a run whose
+                # immutable pre-terminal-Release finalizer still proposes that
+                # historical transition. New runs complete at Release.
+                return
             if expected is None or self.transition != expected:
                 raise ContractError("passed stage gate has an invalid transition")
         elif self.transition is not None:
