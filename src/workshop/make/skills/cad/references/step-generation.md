@@ -16,6 +16,12 @@ python "$CAD_SKILL_ROOT/scripts/verify_project" project ... # sequential quick/f
 
 Building a generator writes its hidden render package (GLB/topology artifacts) beside the source; it writes no `.step` file by default. Write the `.step` file in the same generation run with `scripts/gen <name>.step.py --write` — bare `--write` writes each target's sibling `<name>.step`; an explicit path requires exactly one target and resolves from the command cwd. This is the only way to write a `.step` file; `scripts/export` writes mesh formats only. Do not put output paths in the `gen_step()` return value; the CLI flags own output paths.
 
+Generated STEP files use the fixed ISO-8601 `FILE_NAME` timestamp
+`1970-01-01T00:00:00`. This is deliberate canonical artifact metadata: two
+fresh generations of the same geometry with the same toolchain produce the
+same bytes and hash. Record the actual build time in the Workshop run evidence
+or verification report, never by rewriting the generated STEP header.
+
 ## Quick iteration versus final generation
 
 Do not pay the full project pipeline after every cosmetic or proportion edit.

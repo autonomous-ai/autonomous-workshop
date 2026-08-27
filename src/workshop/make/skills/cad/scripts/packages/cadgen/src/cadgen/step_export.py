@@ -9,6 +9,9 @@ from cadgen._internal.step_scene import LoadedStepScene, load_step_scene_from_xc
 from cadgen._internal.step_metadata import TEXT_TO_CAD_GENERATOR, inject_text_to_cad_step_metadata
 
 
+CANONICAL_STEP_TIMESTAMP = "1970-01-01T00:00:00"
+
+
 def _collect_assembly_mates(shape: Any) -> list[dict[str, Any]]:
     mates: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -326,13 +329,6 @@ def write_xcaf_doc_step_file(
     writer.SetLayerMode(True)
     writer.SetNameMode(True)
 
-    header = APIHeaderSection_MakeHeader(writer.Writer().Model())
-    if label:
-        header.SetName(TCollection_HAsciiString(label))
-    header.SetOriginatingSystem(
-        TCollection_HAsciiString(TEXT_TO_CAD_GENERATOR if text_to_cad_entry_kind else originating_system)
-    )
-
     STEPCAFControl_Controller.Init_s()
     STEPControl_Controller.Init_s()
     IGESControl_Controller.Init_s()
@@ -340,6 +336,21 @@ def write_xcaf_doc_step_file(
     Interface_Static.SetIVal_s("write.precision.mode", PrecisionMode.AVERAGE.value)
     with (logger.timed(f"transfer XCAF to STEP model {output_path.name}") if logger is not None else nullcontext()):
         writer.Transfer(doc, STEPControl_StepModelType.STEPControl_AsIs)
+
+    # Transfer creates the model header. Configure and apply a fresh header
+    # afterwards: setters on a pre-transfer APIHeaderSection_MakeHeader are
+    # discarded when Open CASCADE replaces that header during Transfer().
+    # A canonical timestamp keeps equivalent fresh exports byte-for-byte
+    # reproducible instead of encoding wall-clock time in FILE_NAME.
+    model = writer.Writer().Model()
+    header = APIHeaderSection_MakeHeader(model)
+    if label:
+        header.SetName(TCollection_HAsciiString(label))
+    header.SetOriginatingSystem(
+        TCollection_HAsciiString(TEXT_TO_CAD_GENERATOR if text_to_cad_entry_kind else originating_system)
+    )
+    header.SetTimeStamp(TCollection_HAsciiString(CANONICAL_STEP_TIMESTAMP))
+    header.Apply(model)
 
     with (logger.timed(f"write STEP file {output_path.name}") if logger is not None else nullcontext()):
         if writer.Write(os.fspath(output_path)) != IFSelect_ReturnStatus.IFSelect_RetDone:

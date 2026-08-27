@@ -23,6 +23,12 @@
   `catalog-schema.md` are normalized for repository whitespace checks.
   Geometry, measurement, catalog, inspection, validation, export, and `cadgen`
   algorithms are otherwise the reviewed upstream bytes.
+- Adapted locally on 2026-08-27 in the canonical `cadgen` STEP writer to apply
+  the STEP header only after Open CASCADE transfer and to set its `FILE_NAME`
+  timestamp to the fixed ISO-8601 value `1970-01-01T00:00:00`. This preserves
+  the intended model name and originating-system metadata while making fresh,
+  equivalent exports byte-identical. A real build123d solid round-trip test
+  covers both reproducibility and valid geometry.
 - `cad` and `step-parts` include MIT licenses, copyright 2026 Thompson Labs
   LLC. The embedded cadgen source also includes its MIT license.
 - `design-reference` and `image-to-cad` do not contain standalone license files

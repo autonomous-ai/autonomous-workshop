@@ -37,6 +37,7 @@ DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
 DEFAULT_NATIVE_CAD_OUTPUT_BYTES = 64 * 1024
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
 MAX_NATIVE_CAD_VERIFIER_BYTES = 4 * 1024 * 1024
+MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES = 2 * 1024 * 1024
 
 
 def _canonical_json(value: Any) -> bytes:
@@ -280,11 +281,45 @@ def _copy_declared_project(
         raise ArtifactError("isolated CAD project differs from its declared inventory")
 
 
+def _is_verifier_authored_volatile_report(path: str) -> bool:
+    """Return whether ``verify_project`` owns this non-reproducible report.
+
+    The fresh verifier records wall-clock timing and the isolated project path
+    in its pipeline report, and ``check_thickness`` records its invocation path
+    in one report per printable part.  Those records are useful during an
+    interactive Make pass, but they are not reproducible CAD deliverables.  Do
+    not broaden this allowlist: source, geometry, JSON evidence, and every
+    other report remain byte-sealed.
+    """
+
+    if path == "measure/verification-pipeline.md":
+        return True
+    prefix = "measure/thickness-"
+    suffix = ".md"
+    if not path.startswith(prefix) or not path.endswith(suffix):
+        return False
+    role = path[len(prefix) : -len(suffix)]
+    return bool(role) and "/" not in role
+
+
 def _assert_copied_inputs_unchanged(
     project_root: Path, entries: Sequence[ArtifactEntry]
 ) -> None:
     for entry in entries:
         relative = _safe_relative(entry.path, "native CAD project entry")
+        if _is_verifier_authored_volatile_report(entry.path):
+            # The verifier may rewrite the bytes, but the declared node must
+            # remain one bounded regular file inside the isolated project.
+            _, identity = _read_regular(
+                project_root.joinpath(*relative.parts),
+                "isolated CAD volatile report %s" % entry.path,
+                MAX_NATIVE_CAD_VOLATILE_REPORT_BYTES,
+            )
+            if bool(identity.st_mode & stat.S_IXUSR) != entry.executable:
+                raise ArtifactError(
+                    "CAD verifier changed a declared report mode: %s" % entry.path
+                )
+            continue
         content, identity = _read_regular(
             project_root.joinpath(*relative.parts),
             "isolated CAD project entry %s" % entry.path,

@@ -45,6 +45,7 @@ class NativeCadGateTest(unittest.TestCase):
         project = product_root / "cad/project"
         validation = product_root / "validation"
         project.mkdir(parents=True)
+        (project / "measure").mkdir()
         validation.mkdir()
         product = {
             "title": "Moon Nook",
@@ -60,6 +61,10 @@ class NativeCadGateTest(unittest.TestCase):
         (project / "moon.step.py").write_text("def build():\n    return None\n")
         (project / "moon.step").write_bytes(b"ISO-10303-21;\n")
         (project / "moon.stl").write_bytes(b"solid moon\nendsolid moon\n")
+        (project / "measure/thickness-moon.md").write_text("old thickness\n")
+        (project / "measure/verification-pipeline.md").write_text("old timing\n")
+        (project / "measure/design-review.md").write_text("stable review\n")
+        (project / "measure/fit-report.json").write_text('{"ok":true}\n')
         verification = b'{"ok":true,"validator":"cad-final"}\n'
         (validation / "cad-build.json").write_bytes(verification)
         manifest = build_artifact_manifest(product_root, created_at="content-addressed")
@@ -116,7 +121,15 @@ class NativeCadGateTest(unittest.TestCase):
                     for path in copied.rglob("*")
                     if path.is_file()
                 ),
-                ["moon.step", "moon.step.py", "moon.stl"],
+                [
+                    "measure/design-review.md",
+                    "measure/fit-report.json",
+                    "measure/thickness-moon.md",
+                    "measure/verification-pipeline.md",
+                    "moon.step",
+                    "moon.step.py",
+                    "moon.stl",
+                ],
             )
             (copied / "__cadgen__").mkdir()
             (copied / "__cadgen__/cache").write_bytes(b"temporary")
@@ -208,6 +221,82 @@ class NativeCadGateTest(unittest.TestCase):
             (self.product_root / "cad/project/moon.step").read_bytes(),
             b"ISO-10303-21;\n",
         )
+
+    def test_frozen_verifier_may_refresh_only_known_volatile_reports(self):
+        observed = {}
+
+        def runner(command, **arguments):
+            observed["command"] = tuple(command)
+            copied = Path(command[2])
+            (copied / "measure/thickness-moon.md").write_text(
+                "project/moon.stl was checked\n"
+            )
+            (copied / "measure/verification-pipeline.md").write_text(
+                "different path and wall-clock timing\n"
+            )
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+
+        self.assertTrue(evidence.passed)
+        self.assertEqual(
+            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
+        )
+        self.assertEqual(
+            (self.product_root / "cad/project/measure/thickness-moon.md").read_text(),
+            "old thickness\n",
+        )
+        self.assertEqual(
+            (
+                self.product_root
+                / "cad/project/measure/verification-pipeline.md"
+            ).read_text(),
+            "old timing\n",
+        )
+
+    def test_arbitrary_report_change_still_fails_closed(self):
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "measure/design-review.md").write_text("rewritten\n")
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
+
+    def test_volatile_report_exemption_does_not_allow_mode_changes(self):
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "measure/thickness-moon.md").chmod(0o700)
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
+
+    def test_json_evidence_change_still_fails_closed(self):
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "measure/fit-report.json").write_text('{"ok":false}\n')
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
+
+    def test_declared_source_change_in_isolated_copy_still_fails_closed(self):
+        def runner(command, **arguments):
+            del arguments
+            Path(command[2], "moon.step.py").write_text("raise RuntimeError\n")
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaises(NativeCadGateError) as caught:
+            self._verify(runner)
+
+        self.assertEqual(caught.exception.failure_code, "declared-cad-output-changed")
 
     def test_symlinks_missing_or_untrusted_verifier_fail_before_invocation(self):
         called = False
