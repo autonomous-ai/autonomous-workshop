@@ -91,6 +91,12 @@ repeat the effect. The host loads the stored intent and exact Release identity,
 authenticates, and reconciles remote state before any bounded retry. If
 readback cannot prove completion or absence, the remote effect remains fenced
 for human reconciliation; the already sealed local Release remains valid.
+An `unknown` or crash-left `sending` publication intent takes precedence over
+an older verified-draft receipt in `workshop status`; status inspects the
+private ledger without authenticating or mutating it. A later `resume` uses the
+same idempotency identity and authenticated readback. It records proven public
+completion, but a remaining draft does not prove that the ambiguous send never
+happened and therefore cannot trigger a second publish call.
 
 A private or public Factory page proves only remote page state. It does not
 prove printing, manual insertion, QA, packing, shipment, delivery, or customer

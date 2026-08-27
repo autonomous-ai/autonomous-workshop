@@ -13,6 +13,7 @@ import json
 import os
 import secrets
 import sqlite3
+import stat
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -320,6 +321,64 @@ class EffectLedger:
                 (product_id, kind),
             ).fetchone()
         return self._intent(row) if row is not None else None
+
+    @classmethod
+    def inspect_latest(
+        cls, path: Path, product_id: str, kind: str
+    ) -> Optional[EffectIntent]:
+        """Read one existing ledger without creating, migrating, or chmodding it."""
+
+        product_id = _text(product_id, "effect product id")
+        if kind not in _KINDS:
+            raise ContractError("effect kind is unsupported")
+        path = Path(path)
+        try:
+            identity = path.lstat()
+        except OSError as exc:
+            raise StateConflict("effect ledger is unavailable") from exc
+        if (
+            stat.S_ISLNK(identity.st_mode)
+            or not stat.S_ISREG(identity.st_mode)
+            or stat.S_IMODE(identity.st_mode) != 0o600
+        ):
+            raise StateConflict("effect ledger must be a private regular file")
+        connection: Optional[sqlite3.Connection] = None
+        try:
+            connection = sqlite3.connect(
+                path.absolute().as_uri() + "?mode=ro",
+                timeout=30.0,
+                isolation_level=None,
+                uri=True,
+            )
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA query_only = ON")
+            connection.execute("PRAGMA busy_timeout = 30000")
+            tables = {
+                row[0]
+                for row in connection.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+                if not str(row[0]).startswith("sqlite_")
+            }
+            if tables != {"effect_ledger_meta", "effect_intents"}:
+                raise StateConflict("effect ledger schema is unavailable")
+            versions = connection.execute(
+                "SELECT schema_version FROM effect_ledger_meta"
+            ).fetchall()
+            if len(versions) != 1 or versions[0][0] != _SCHEMA_VERSION:
+                raise StateConflict("effect ledger schema version is unavailable")
+            row = connection.execute(
+                """SELECT * FROM effect_intents
+                   WHERE product_id=? AND kind=?
+                   ORDER BY created_at DESC, id DESC LIMIT 1""",
+                (product_id, kind),
+            ).fetchone()
+        except sqlite3.Error as exc:
+            raise StateConflict("effect ledger could not be inspected") from exc
+        finally:
+            if connection is not None:
+                connection.close()
+        return cls._intent(row) if row is not None else None
 
     def prepare(
         self,

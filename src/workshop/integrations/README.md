@@ -17,6 +17,13 @@ uncertain import, content, or publication outcomes remain fenced until an
 authenticated readback can reconcile them. That fence protects the remote
 effect without invalidating the already sealed local Release.
 
+Multipart occurrence transport is optional. The adapter includes component
+STLs and a STEP sidecar only when the complete Factory sidecar, or the exact
+hash-bound native CAD descriptor and product inventory from which it is
+derived, validates. Product-owned, stale, or malformed `*.step.json` files do
+not cross the effect boundary; the handoff safely narrows to the sealed root
+`assembled.stl` instead.
+
 Public API: `workshop.integrations` exports the canonical Factory credentials,
 session, client, Release writer, and public transition. The adapter depends on
 runtime-owned `Receipt` and `EffectLedger` contracts; runtime never imports an

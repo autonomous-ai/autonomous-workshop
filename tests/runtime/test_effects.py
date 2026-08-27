@@ -132,6 +132,23 @@ class EffectLedgerTest(unittest.TestCase):
         with self.assertRaises(AmbiguousEffectError):
             self.prepare(pack_sha256="f" * 64)
 
+    def test_existing_ledger_can_be_inspected_without_mutation(self):
+        sending = self.ledger.begin(self.prepare(kind="factory-publish").intent_id)
+        unknown = self.ledger.mark_unknown(
+            sending.intent_id,
+            sending.effect_token,
+            "readback unavailable",
+        )
+        before = self.path.read_bytes()
+
+        observed = EffectLedger.inspect_latest(
+            self.path, "orbit-dog", "factory-publish"
+        )
+
+        self.assertEqual(observed, unknown)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o600)
+
     def test_authenticated_reconciliation_can_resolve_unknown_success(self):
         sending = self.ledger.begin(self.prepare().intent_id)
         unknown = self.ledger.mark_unknown(

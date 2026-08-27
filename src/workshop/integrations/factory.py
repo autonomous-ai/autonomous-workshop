@@ -339,19 +339,19 @@ def _occurrence_transport(
     if len(sidecars) > 1:
         raise ContractError("Factory handoff requires one occurrence sidecar")
     source_sidecar = sidecars[0] if sidecars else None
-    source_step = source_sidecar[:-5] if source_sidecar else "assembled.step"
+    if source_sidecar is None:
+        return None
+    source_step = source_sidecar[:-5]
     step_entry = _manifest_entry(manifest, source_step)
     if step_entry is None:
         raise ContractError("Factory occurrence sidecar requires its sealed STEP")
 
-    sidecar: Any = None
-    if source_sidecar is not None:
-        try:
-            sidecar = json.loads(
-                _read_bound_file(root, manifest, source_sidecar).decode("utf-8")
-            )
-        except (UnicodeError, ValueError) as exc:
-            raise ContractError("Factory occurrence sidecar is malformed") from exc
+    try:
+        sidecar: Any = json.loads(
+            _read_bound_file(root, manifest, source_sidecar).decode("utf-8")
+        )
+    except (UnicodeError, ValueError) as exc:
+        raise ContractError("Factory occurrence sidecar is malformed") from exc
 
     has_factory_sidecar = (
         isinstance(sidecar, Mapping)
@@ -362,14 +362,20 @@ def _occurrence_transport(
         and bool(sidecar["parts"])
     )
     if not has_factory_sidecar:
-        if source_sidecar is None:
-            return None
         if not isinstance(sidecar, Mapping):
             raise ContractError("Factory occurrence sidecar is malformed")
         if {"schemaVersion", "entryKind", "primaryPose", "parts"} & set(sidecar):
             # A document that claims any part of Factory's schema must satisfy
             # all of it. Never silently repair a malformed transport contract.
             raise ContractError("Factory occurrence sidecar is malformed")
+        if (
+            sidecar.get("schema_version") != 1
+            or sidecar.get("kind") != "native-cad.assembly-descriptor"
+        ):
+            # Make stages may own other required JSON documents at this
+            # conventional path. They are product artifacts, not an implicit
+            # request to expose a multipart transport to Factory.
+            return None
 
         # Native Make may place a richer CAD assembly descriptor beside its
         # STEP. Translate only the exact, fully bound descriptor+inventory
@@ -559,6 +565,30 @@ def _occurrence_transport(
         "parts_directory": parts_directory,
         "occurrences": tuple(occurrences),
     }
+
+
+def _validated_occurrence_transport(
+    root: Path,
+    manifest: ArtifactManifest,
+    primary_source: str,
+    transport_stem: str,
+) -> Optional[Mapping[str, Any]]:
+    """Return only a complete, safe occurrence family.
+
+    The sidecar is optional metadata. A malformed, stale, product-specific, or
+    otherwise unbound document must not make the sealed root assembly
+    unpublishable, nor may any paths from it enter the Factory handoff.
+    """
+
+    try:
+        return _occurrence_transport(
+            root,
+            manifest,
+            primary_source,
+            transport_stem,
+        )
+    except ContractError:
+        return None
 
 
 def _assert_archive_inventory(content: bytes, project_id: str) -> None:
@@ -772,32 +802,19 @@ def _build_model_handoff(
     if primary_entry is None or primary_entry.sha256 != primary_sha256:
         raise ContractError("Factory primary model is not sealed")
 
-    primary_aliases = {primary_source}
-    for alias in ("assembled.stl", context.wish.product_id + ".stl"):
-        entry = _manifest_entry(manifest, alias)
-        if entry is not None and entry.sha256 == primary_sha256:
-            primary_aliases.add(alias)
-    included_stls = [
-        entry
-        for entry in manifest.entries
-        if PurePosixPath(entry.path).suffix.casefold() == ".stl"
-        and entry.path not in primary_aliases
-    ]
     # Keep assembled.stl at the root when Make provides it. Factory's importer
     # ranks that conventional name above all part meshes for the product viewer.
     transport_primary = primary_source
     occurrence = (
-        _occurrence_transport(
+        _validated_occurrence_transport(
             root,
             manifest,
             primary_source,
             PurePosixPath(transport_primary).stem,
         )
-        if sealed_primary["kind"] == "mesh" and included_stls
+        if sealed_primary["kind"] == "mesh"
         else None
     )
-    if included_stls and occurrence is None:
-        raise ContractError("multipart Factory handoff requires a sealed occurrence sidecar")
 
     primary_model = {
         "kind": sealed_primary["kind"],
@@ -856,7 +873,14 @@ def _build_model_handoff(
             raise ContractError("Factory handoff MANUAL.md must be UTF-8") from exc
     assert_packable_content(manual_path, manual_content)
 
-    skip_paths = set()
+    # STEP JSON is executable transport metadata from Factory's perspective.
+    # Never copy an unvalidated document merely because Make emitted it beside
+    # CAD. A validated occurrence family is rewritten below from safe paths.
+    skip_paths = {
+        entry.path
+        for entry in manifest.entries
+        if entry.path.casefold().endswith(".step.json")
+    }
     if occurrence is not None:
         skip_paths.update(
             path for path in (
@@ -867,6 +891,9 @@ def _build_model_handoff(
             )
             if path is not None
         )
+    if sealed_primary["kind"] == "mesh":
+        # Valid occurrence parts are rewritten below under their validated
+        # names. Without one, this deliberately leaves only the root assembly.
         skip_paths.update(
             entry.path
             for entry in manifest.entries

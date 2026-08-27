@@ -6,7 +6,7 @@ import unittest
 import zipfile
 from email.parser import BytesParser
 from email.policy import default as email_policy
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import (
@@ -423,6 +423,23 @@ class FactoryReleaseTest(unittest.TestCase):
         )
         return manual
 
+    def _reseal_product(self, made_product=None):
+        product = self.made.artifact_root
+        if made_product is None:
+            made_product = json.loads(
+                (product / "product.json").read_text(encoding="utf-8")
+            )
+        self.made = Made.from_root(product, made_product)
+        self.context = ReleaseContext(self.made)
+        release_page_path = self.release / "product.json"
+        release_page = json.loads(release_page_path.read_text(encoding="utf-8"))
+        release_page["product_artifact_sha256"] = self.made.artifact_sha256
+        release_page_path.write_bytes(canonical_json(release_page))
+        self.page = release_page
+        self.manifest = build_artifact_manifest(
+            self.release, created_at="content-addressed"
+        )
+
     def test_private_import_is_model_only_hash_bound_and_idempotent(self):
         transport = FactoryTransport()
         receipt = self.writer(transport)(self.context, self.release, self.manifest)
@@ -784,6 +801,89 @@ class FactoryReleaseTest(unittest.TestCase):
             self.assertEqual(sidecar["parts"][0]["name"], "stone_rook_a1")
             self.assertEqual(sidecar["parts"][0]["stlPath"], occurrence_path)
 
+    def test_product_specific_assembly_json_falls_back_to_sealed_primary_stl(self):
+        product = self.made.artifact_root
+        (product / "cad").mkdir()
+        (product / "cad" / "star-arm.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step.json").write_bytes(
+            canonical_json(
+                {
+                    "schema_version": 1,
+                    "kind": "starfall.mechanism-assembly",
+                    "occurrence_count": 1,
+                    "occurrences": [
+                        {
+                            "id": "star-arm",
+                            "part_stl": "cad/star-arm.stl",
+                            "pose": {"rotation_degrees": 0},
+                        }
+                    ],
+                }
+            )
+            + b"\n"
+        )
+        self._reseal_product()
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            stls = sorted(
+                name for name in names if PurePosixPath(name).suffix == ".stl"
+            )
+            self.assertEqual(stls, ["assembled.stl"])
+            self.assertNotIn("assembled.step.json", names)
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertNotIn("factory_assembly", facts)
+
+    def test_malformed_occurrence_paths_cannot_enter_primary_stl_fallback(self):
+        product = self.made.artifact_root
+        (product / "component.stl").write_bytes(TETRA_STL)
+        (product / "assembled.step.json").write_bytes(
+            canonical_json(
+                {
+                    "schemaVersion": 1,
+                    "entryKind": "assembly",
+                    "primaryPose": "assembled",
+                    "parts": [
+                        {"name": "escape", "stlPath": "../../outside.stl"}
+                    ],
+                }
+            )
+            + b"\n"
+        )
+        self._reseal_product()
+
+        transport = FactoryTransport()
+        receipt = self.writer(transport)(self.context, self.release, self.manifest)
+
+        self.assertTrue(receipt.is_verified_draft)
+        import_call = next(
+            call for call in transport.calls if call[1].endswith("/designs/import")
+        )
+        parts = multipart_parts(import_call[2], import_call[3])
+        with zipfile.ZipFile(io.BytesIO(parts["file"][0])) as archive:
+            names = set(archive.namelist())
+            self.assertTrue(
+                all(".." not in PurePosixPath(name).parts for name in names)
+            )
+            self.assertNotIn("assembled.step.json", names)
+            self.assertNotIn("component.stl", names)
+            self.assertEqual(
+                sorted(
+                    name
+                    for name in names
+                    if PurePosixPath(name).suffix == ".stl"
+                ),
+                ["assembled.stl"],
+            )
+
     def test_multipart_import_derives_sidecar_from_sealed_product_inventory(self):
         product = self.made.artifact_root
         (product / "assembled.stl").write_bytes(TETRA_STL)
@@ -870,6 +970,15 @@ class FactoryReleaseTest(unittest.TestCase):
                         {"name": "lantern", "stlPath": occurrence_path}
                     ],
                 },
+            )
+            facts = json.loads(archive.read("workshop-product-facts.json"))
+            self.assertEqual(
+                facts["factory_assembly"]["occurrence_count"],
+                1,
+            )
+            self.assertEqual(
+                facts["factory_assembly"]["production_stls"][0]["path"],
+                occurrence_path,
             )
 
     def test_unrepresentable_factory_copy_fails_before_remote_import(self):
