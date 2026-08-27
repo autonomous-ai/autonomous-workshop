@@ -385,6 +385,39 @@ def _runtime_config_sha256(
     )
 
 
+def _run_policy_before_workshop_python(
+    run_policy: _CodexRunPolicy,
+) -> _CodexRunPolicy:
+    """Return the one supported predecessor to the current runtime policy.
+
+    The Workshop Python path was added after native sessions were already in
+    use.  A checkpoint created immediately before that hardening must remain
+    resumable, but no general policy downgrade is safe.  Build that exact
+    predecessor from the current policy by removing one expected override and
+    leaving every other permission, runtime identity, and environment entry
+    unchanged.
+    """
+
+    workshop_python = (
+        "WORKSHOP_PYTHON",
+        str(Path(sys.executable).absolute()),
+    )
+    if run_policy.environment_overrides.count(workshop_python) != 1:
+        raise CodexInvocationError(
+            "Codex runtime policy has no unique Workshop Python binding"
+        )
+    return _CodexRunPolicy(
+        permission_config_arguments=run_policy.permission_config_arguments,
+        trusted_python_runtime_paths=run_policy.trusted_python_runtime_paths,
+        environment_allowlist=run_policy.environment_allowlist,
+        environment_overrides=tuple(
+            entry
+            for entry in run_policy.environment_overrides
+            if entry != workshop_python
+        ),
+    )
+
+
 def codex_supports_native_workshop(version: str) -> bool:
     """Return whether Codex supports Workshop goals, agents, and profiles."""
 
@@ -1124,6 +1157,12 @@ class CodexNativeSessionLauncher:
             self.reasoning_effort,
             run_policy,
         )
+        predecessor_runtime_config_sha256 = _runtime_config_sha256(
+            self.cli_version,
+            self.model,
+            self.reasoning_effort,
+            _run_policy_before_workshop_python(run_policy),
+        )
         thread_id, checkpoint_sha256 = self._load_checkpoint(
             path=path,
             product_id=product_id,
@@ -1132,6 +1171,9 @@ class CodexNativeSessionLauncher:
             run_root=root,
             host_state_root=state_root,
             runtime_config_sha256=runtime_config_sha256,
+            predecessor_runtime_config_sha256=(
+                predecessor_runtime_config_sha256
+            ),
         )
         used_web_search, unused_observed_thread_id = self._stream(
             command=self._resume_command(thread_id, root, run_policy),
@@ -1212,6 +1254,7 @@ class CodexNativeSessionLauncher:
         run_root: Path,
         host_state_root: Path,
         runtime_config_sha256: str,
+        predecessor_runtime_config_sha256: str,
     ) -> tuple[str, str]:
         payload = _read_private_checkpoint(path)
         expected_fields = {
@@ -1244,6 +1287,10 @@ class CodexNativeSessionLauncher:
         identity = {
             key: payload[key] for key in expected_fields - {"checkpoint_sha256"}
         }
+        if checkpoint_sha256 != _sha256_json(identity):
+            raise ContractError(
+                "Codex native session checkpoint binding is invalid"
+            )
         expected = self._checkpoint_identity(
             product_id=product_id,
             wish_sha256=wish_sha256,
@@ -1253,10 +1300,14 @@ class CodexNativeSessionLauncher:
             thread_id=thread_id,
             runtime_config_sha256=runtime_config_sha256,
         )
-        if (
-            identity != expected
-            or checkpoint_sha256 != _sha256_json(identity)
-        ):
+        predecessor = {
+            **expected,
+            "runtime_config_sha256": _require_sha256(
+                predecessor_runtime_config_sha256,
+                "Codex predecessor runtime-config sha256",
+            ),
+        }
+        if identity != expected and identity != predecessor:
             raise ContractError(
                 "Codex native session checkpoint binding is invalid"
             )

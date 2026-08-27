@@ -849,6 +849,106 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertNotIn(THREAD_ID, json.dumps(resumed.to_dict()))
 
+    def test_resume_accepts_only_the_exact_workshop_python_policy_predecessor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [
+                    {"stdout": self.start_events()},
+                    {"stdout": self.start_events(message="resumed")},
+                ]
+            )
+            started = self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(root)
+            predecessor_policy = (
+                codex_runtime._run_policy_before_workshop_python(current_policy)
+            )
+            predecessor_runtime_sha256 = codex_runtime._runtime_config_sha256(
+                launcher.cli_version,
+                launcher.model,
+                launcher.reasoning_effort,
+                predecessor_policy,
+            )
+            payload["runtime_config_sha256"] = predecessor_runtime_sha256
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            resumed = self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 2)
+            self.assertEqual(factory.calls[1][0][-2], THREAD_ID)
+            self.assertEqual(
+                factory.calls[1][1]["env"]["WORKSHOP_PYTHON"],
+                str(Path(sys.executable).absolute()),
+            )
+            self.assertEqual(
+                resumed.binding.runtime_config_sha256,
+                started.binding.runtime_config_sha256,
+            )
+            self.assertEqual(
+                resumed.binding.checkpoint_sha256,
+                payload["checkpoint_sha256"],
+            )
+
+    def test_resume_rejects_a_broader_predecessor_policy_downgrade(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            launcher, factory = self.launcher(
+                [{"stdout": self.start_events()}]
+            )
+            self.start(launcher, root)
+            checkpoint = self.host_state(root) / "codex-session.json"
+            payload = json.loads(checkpoint.read_text(encoding="utf-8"))
+            current_policy = codex_runtime._codex_run_policy(root)
+            predecessor_policy = (
+                codex_runtime._run_policy_before_workshop_python(current_policy)
+            )
+            broader_downgrade = replace(
+                predecessor_policy,
+                environment_overrides=tuple(
+                    entry
+                    for entry in predecessor_policy.environment_overrides
+                    if entry[0] != "PYTHONHASHSEED"
+                ),
+            )
+            payload["runtime_config_sha256"] = (
+                codex_runtime._runtime_config_sha256(
+                    launcher.cli_version,
+                    launcher.model,
+                    launcher.reasoning_effort,
+                    broader_downgrade,
+                )
+            )
+            identity = {
+                key: value
+                for key, value in payload.items()
+                if key != "checkpoint_sha256"
+            }
+            payload["checkpoint_sha256"] = codex_runtime._sha256_json(identity)
+            checkpoint.write_text(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+                encoding="utf-8",
+            )
+            os.chmod(checkpoint, 0o600)
+
+            with self.assertRaisesRegex(ContractError, "binding is invalid"):
+                self.resume(launcher, root)
+
+            self.assertEqual(len(factory.calls), 1)
+
     def test_rejects_product_temp_symlink_before_launch(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
