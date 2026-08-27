@@ -56,14 +56,18 @@ exact version, cites a config file and evidence file inside the Playtest
 evidence tree, records an explicit UTC observation time, and includes non-empty
 observations. `self-report` and `trust-me` are not evaluators.
 
-Temporary replay work belongs under `work/playtest/rNNNN/`, outside the sealed
-evidence tree. That includes wrappers, redundant source copies, caches, and
-transient renders. Prefer replaying sealed Made source directly; if an isolated
-copy is necessary, keep it only in that work area. A canonical config records
-the Made path and hash, exact command, seed, and tool version. The evidence tree
-contains only canonical configs and final static outputs cited by checks—not
-copied source trees, caches, transcripts, or JSONL streams. The authored
-three-field proposal stays under `drafts/`.
+Temporary replay work belongs under `work/playtest/rNNNN/`, outside both the
+sealed Made tree and the sealed evidence tree. Treat Made as strictly read-only
+and default to copying only the exact inputs needed into the work area before
+executing or importing them. Read a sealed file in place only with a tool known
+not to write beside its input. Python and CAD commands must use
+`PYTHONDONTWRITEBYTECODE=1` and redirect `XDG_CACHE_HOME`, `TMPDIR`, `TMP`, and
+`TEMP` into the work area so `__pycache__`, `__cadgen__`, locks, progress files,
+and scene caches cannot alter Made. A canonical config records the sealed Made
+path and hash, copied-input hash, exact command, seed, and tool version. The
+evidence tree contains only canonical configs and final static outputs cited by
+checks—not copied source trees, caches, transcripts, or JSONL streams. The
+authored three-field proposal stays under `drafts/`.
 
 The session then runs:
 

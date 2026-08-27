@@ -117,14 +117,19 @@ While pursuing the Goal:
    sharpen feedback. Do not modify the sealed Made product during Playtest or
    reason a failed check into a pass.
 
-Keep replay work separate from evidence. Run temporary wrappers, redundant
-source copies, caches, and transient renders under `work/playtest/rNNNN/`, where
-`NNNN` is the current zero-padded round. Prefer replaying the already sealed
-Made source directly; if isolation is necessary, copy it only into that work
-area. Record the Made path and hash, exact command, seed, and tool version in a
-canonical config file. Put only those configs and the final static outputs
-cited by checks under the exact `evidence_root`; do not duplicate Made source,
-working trees, cache directories, transcripts, or JSONL streams there. Keep the
+Keep replay work separate from evidence and treat the sealed Made tree as
+strictly read-only. Run temporary wrappers, copied inputs, caches, and transient
+renders under `work/playtest/rNNNN/`, where `NNNN` is the current zero-padded
+round. Default to copying only the exact inputs needed into that work area
+before executing or importing them. A tool may read sealed bytes in place only
+when it is known not to write beside its input. For Python or CAD tooling, set
+`PYTHONDONTWRITEBYTECODE=1` and redirect `XDG_CACHE_HOME`, `TMPDIR`, `TMP`, and
+`TEMP` into the work area; never leave `__pycache__`, `__cadgen__`, lock,
+progress, or scene-cache files in the Made tree. Record the sealed Made path and
+hash, copied-input hash, exact command, seed, and tool version in a canonical
+config file. Put only those configs and the final static outputs cited by
+checks under the exact `evidence_root`; do not duplicate Made source, working
+trees, cache directories, transcripts, or JSONL streams there. Keep the
 three-field authored proposal under `drafts/`.
 
 Leave the exact evidence tree requested by `STAGE.json` and one authored JSON
