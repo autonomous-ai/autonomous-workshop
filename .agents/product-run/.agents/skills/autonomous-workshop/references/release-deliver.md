@@ -19,8 +19,9 @@ While pursuing the Goal:
    customer fact. Separate supported product guidance from claims about future
    publication, manufacture, delivery, or physical performance.
 2. **Act:** Assemble `artifacts/release/package` with canonical `MANUAL.pdf`,
-   `product.json`, the effort-required Playtest omission file when listed by
-   `required_package_files`, and optional editable manual source. The PDF
+   `product.json`, canonical `MANUAL-DESIGN.json` when listed by
+   `required_package_files`, the effort-required Playtest omission file when
+   listed there, and optional editable manual source. The PDF
    is the customer artifact: cover inventory, setup, guided first use, complete
    operation or rules, scoring where relevant, troubleshooting, pack-away,
    care, and safety. Keep slicer settings, calibration, provenance, internal
@@ -29,9 +30,11 @@ While pursuing the Goal:
    hashes. Render
    every PDF page, inspect it at intended print size and in grayscale, confirm
    that all essential meaning survives without color, and check that a new
-   owner can begin without a phone or website. Use an independent native
-   fact-checker or visual editor subagent where useful. Run deterministic
-   package validation after meaningful changes.
+   owner can begin without a phone or website. For current runs, use an
+   independent native visual-editor subagent on the first complete render,
+   resolve at least one concrete finding, and bind the review in
+   `MANUAL-DESIGN.json`. Run deterministic package validation after meaningful
+   changes.
 4. **Improve:** Remove unsupported language, resolve contradictions, repair
    hierarchy or cramped layout, clarify missing actions, rerender, and continue
    until both the manual and bounded metadata are internally consistent.

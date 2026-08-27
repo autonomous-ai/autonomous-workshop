@@ -1090,6 +1090,39 @@ class StageProposalToolTest(unittest.TestCase):
             "complete",
         )
 
+        self.write_stage(
+            "release",
+            {
+                "made": made.to_dict(),
+                "playtested": playtested.to_dict(),
+                "release_contract": {
+                    "native_release_schema_version": 2,
+                    "manual_path": "MANUAL.pdf",
+                    "product_schema_version": 4,
+                    "product_status": "manual-ready",
+                    "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                    "manual_design_evidence_schema_version": 1,
+                },
+            },
+            round_index=1,
+        )
+        missing_design_evidence = self.run_tool(
+            "release",
+            "--package-root",
+            "artifacts/release/package",
+            expected=2,
+        )
+        self.assertIn(
+            "manifest lacks MANUAL-DESIGN.json",
+            missing_design_evidence.stderr,
+        )
+
+        self.write_stage(
+            "release",
+            {"made": made.to_dict(), "playtested": playtested.to_dict()},
+            round_index=1,
+        )
+
         invalid_product_cases = (
             (
                 {"hero": {"headline": "Website copy is not a Release gate."}},

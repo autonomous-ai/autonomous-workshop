@@ -62,6 +62,10 @@ from workshop.match.native import (
 from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
 from workshop.release.contracts import ProductRelease, ReleaseContext
+from workshop.release.manual_design import (
+    MANUAL_DESIGN_EVIDENCE_PATH,
+    validate_bound_manual_design_evidence,
+)
 from workshop.release.native import (
     DIRECT_RELEASE_PLAYTEST_STATUS,
     DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -182,6 +186,9 @@ _PRODUCT_RUN_FINALIZER_INPUT = (
 )
 _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
     ".agents/skills/autonomous-workshop/scripts/pdf_validator.py"
+)
+_PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT = (
+    ".agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md"
 )
 _PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
     ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
@@ -1347,8 +1354,9 @@ def _materialized_release_contract(
     if _PRODUCT_RUN_FINALIZER_INPUT not in inputs:
         raise StateConflict("native run lacks its materialized stage finalizer")
     direct_release = _checkpoint_uses_direct_release(checkpoint)
+    manual_design_evidence = _PRODUCT_RUN_MANUAL_DESIGN_EVIDENCE_INPUT in inputs
     if direct_release:
-        return {
+        contract = {
             "native_release_schema_version": 3,
             "manual_path": NATIVE_RELEASE_MANUAL_PATH,
             "product_schema_version": DIRECT_RELEASE_PRODUCT_SCHEMA_VERSION,
@@ -1356,14 +1364,22 @@ def _materialized_release_contract(
             "playtest_status": DIRECT_RELEASE_PLAYTEST_STATUS,
             "playtest_omission_path": NATIVE_RELEASE_PLAYTEST_OMISSION_PATH,
         }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     manual_first = _PRODUCT_RUN_PDF_VALIDATOR_INPUT in inputs
     if manual_first:
-        return {
+        contract = {
             "native_release_schema_version": 2,
             "manual_path": NATIVE_RELEASE_MANUAL_PATH,
             "product_schema_version": 4,
             "product_status": "manual-ready",
         }
+        if manual_design_evidence:
+            contract["manual_design_evidence_path"] = MANUAL_DESIGN_EVIDENCE_PATH
+            contract["manual_design_evidence_schema_version"] = 1
+        return contract
     return {
         "native_release_schema_version": 1,
         "manual_path": NATIVE_RELEASE_LEGACY_MANUAL_PATH,
@@ -2455,6 +2471,10 @@ def _prepare_effort_stage_input(
                     "product.json",
                 ],
             }
+            if release_contract.get("manual_design_evidence_path") is not None:
+                inputs["required_package_files"].append(
+                    release_contract["manual_design_evidence_path"]
+                )
             if effort.includes("playtest"):
                 playtested_artifact = _stage_primary(checkpoint, "playtest")
                 playtested = _read_contract(
@@ -2866,6 +2886,13 @@ def _prepare_stage_input(
                                 "product.json",
                             ],
                         }
+                        if (
+                            release_contract.get("manual_design_evidence_path")
+                            is not None
+                        ):
+                            inputs["required_package_files"].append(
+                                release_contract["manual_design_evidence_path"]
+                            )
                         if direct_release:
                             context["playtested"] = None
                             subject_inputs["playtest_status"] = (
@@ -3824,6 +3851,14 @@ def _verified_release(
     """Seal the exact local package without consulting an external service."""
 
     package = release.validate_package_tree(run.run_root, made, playtested)
+    release_contract = _materialized_release_contract(run.snapshot())
+    if release_contract.get("manual_design_evidence_path") is not None:
+        validate_bound_manual_design_evidence(
+            package.root,
+            package_manifest=release.package_manifest,
+            manual_path=release.manual_path,
+            made=made,
+        )
     product_release = ProductRelease.from_root(
         package.root,
         release.product_artifact_sha256,

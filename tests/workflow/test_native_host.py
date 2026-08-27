@@ -295,7 +295,9 @@ class NativeHostTest(unittest.TestCase):
         )
 
     @staticmethod
-    def _release_protocol_checkpoint(*, manual_first, direct_release=False):
+    def _release_protocol_checkpoint(
+        *, manual_first, direct_release=False, manual_design=False
+    ):
         inputs = {
             ".agents/skills/autonomous-workshop/scripts/stage_proposal.py": "a" * 64,
         }
@@ -307,6 +309,10 @@ class NativeHostTest(unittest.TestCase):
             inputs[
                 ".agents/skills/autonomous-workshop/references/direct-release-v1.md"
             ] = "c" * 64
+        if manual_design:
+            inputs[
+                ".agents/skills/autonomous-workshop/references/manual-design-evidence-v1.md"
+            ] = "d" * 64
         return AgentRunCheckpoint(
             product_id="release-protocol-fixture",
             stage="release",
@@ -337,6 +343,19 @@ class NativeHostTest(unittest.TestCase):
                 direct_release=True,
             )
         )
+        reviewed = _materialized_release_contract(
+            self._release_protocol_checkpoint(
+                manual_first=True,
+                manual_design=True,
+            )
+        )
+        reviewed_direct = _materialized_release_contract(
+            self._release_protocol_checkpoint(
+                manual_first=True,
+                direct_release=True,
+                manual_design=True,
+            )
+        )
 
         self.assertEqual(
             legacy,
@@ -365,6 +384,30 @@ class NativeHostTest(unittest.TestCase):
                 "product_status": "manual-ready",
                 "playtest_status": "not-run",
                 "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+            },
+        )
+        self.assertEqual(
+            reviewed,
+            {
+                "native_release_schema_version": 2,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 4,
+                "product_status": "manual-ready",
+                "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                "manual_design_evidence_schema_version": 1,
+            },
+        )
+        self.assertEqual(
+            reviewed_direct,
+            {
+                "native_release_schema_version": 3,
+                "manual_path": "MANUAL.pdf",
+                "product_schema_version": 5,
+                "product_status": "manual-ready",
+                "playtest_status": "not-run",
+                "playtest_omission_path": "PLAYTEST-NOT-RUN.json",
+                "manual_design_evidence_path": "MANUAL-DESIGN.json",
+                "manual_design_evidence_schema_version": 1,
             },
         )
 
