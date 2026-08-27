@@ -160,6 +160,19 @@ Fix:
 - apply the smallest source correction from the list in `positioning.md` (Source-level positioning corrections)
 - regenerate the assembly from the Python source and rerun the failed check
 
+### Where the gate and the repair agree about a mesh
+
+`scripts/check_mesh` and `scripts/repair_mesh` share `scripts/meshlib.py`, and
+they share it on purpose: a gate and its repair that each carried their own
+idea of what a vertex is would disagree exactly where it matters — a weld
+tolerance that closes a hole for one and leaves it open for the other reads as
+a flaky check rather than as two definitions. Change the tolerance or the
+umbrella walk there, never in one caller.
+
+```bash
+.venv/bin/python "$CAD_SKILL_ROOT/scripts/meshlib.py"       # self-check
+```
+
 ### Mesh defects the generator produced
 
 `check_mesh` fails on three things that no source-level check sees, because they

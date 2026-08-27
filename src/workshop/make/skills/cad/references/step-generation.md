@@ -34,8 +34,11 @@ Do not pay the full project pipeline after every cosmetic or proportion edit.
   tolerance, then run the complete validation/export workflow.
 
 The combined entry is sufficient for visual iteration because it builds every
-placed part. The separate part entries remain mandatory final outputs and are
-the source for print-orientation checks.
+placed part. The separate part entries remain mandatory review/edit outputs.
+Legacy part entries are also print targets unless they declare
+`PRINTABLE = False`; a split one-piece model instead declares
+`PRINTABLE = True` on its combined entry. The final runner sends only those
+actual print targets through fit, STL, mesh and thickness checks.
 
 ```bash
 # Fast visual loop
@@ -66,14 +69,19 @@ CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fr
 
 # Image-derived final: add every usable reference viewpoint
 CADGEN_WARM=1 python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports \
-  --image-derived \
+  --image-derived --unpowered \
   --likeness-ref hero=ref/hero.png \
   --likeness-ref side=ref/side.png
 ```
 
-`verify_project` runs `check_layout`, one final multi-target generation,
+Replace `--unpowered` with `--powered` in the image-derived command when the
+product has a functional electrical load. For a non-image final command, add
+`--powered` when applicable.
+
+`verify_project` runs `check_layout`, verifies fetched design-reference
+provenance, performs one final multi-target generation,
 `check_fit`, the local `measure/check_{fit,spec,landmarks}.py` hooks that exist,
-`check_mount` and `check_motion` when their manifests exist, then one batched
+`check_mount`, `check_power` and `check_motion` when their manifests exist, then one batched
 refs/validate/interfere pass. With `--exports`, it exports each printable STL,
 runs `check_mesh` first, then `check_thickness`, and writes each thickness
 report under `measure/`.
@@ -89,7 +97,10 @@ fresh STEP, and runs the 0.90 likeness gate. Read
 Every non-quick run persists the command, result, and elapsed time for each
 phase to `measure/verification-pipeline.md`, including failed runs. Use
 `--report` to choose another path inside the project or `--no-report` only when
-the caller already captures an equivalent record.
+the caller already captures an equivalent record. Pure CLI/flag validation
+does not touch project evidence. A project-state preflight refusal records the
+failure and preserves the previous pipeline record below it, so a cheap refusal
+cannot erase an earlier delivery run.
 
 It stops at the first failed phase and verifies that inspect emitted exactly
 one successful response per request. It is the generic project baseline, not a

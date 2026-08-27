@@ -621,6 +621,7 @@ class NativeHostTest(unittest.TestCase):
             for skill_name in (
                 "cad",
                 "design-reference",
+                "electromechanical-integration",
                 "image-to-cad",
                 "manual-design",
                 "step-parts",

@@ -134,6 +134,7 @@ checked exactly as closely as a derived one.
 
 | field | meaning |
 |---|---|
+| `id` | unique stable mount id used by powered-component and handoff manifests. |
 | `component` | STEP path, **relative to the project**. Outside it is a failure. |
 | `at` | pose in assembly coordinates: `[x,y,z]`, or `{position, rotation}` in degrees. Omitted means the origin. |
 | `sha256` | the file the seat was derived from. Absent is a note; wrong is a note that names both digests. |
@@ -148,6 +149,17 @@ Failures are `component-source`, `seat-clash`, `seat-clearance` and
 `no-bolt-pattern` and `seat-clearance-loose` — a component with 3 mm of gap all
 round is not located by its seat, which is a design in a foam cradle and a
 defect everywhere else, and only a human reading the README can tell.
+
+The integrated final runner is stricter about provenance than standalone
+`check_mount`: every bought/foreign STEP must live under `ref/`, must be named
+by at least one mount row, and every such row must carry the file's current
+`sha256`. Generated STEP artifacts are distinguished by their sibling
+`.step.py` entries. Putting a supplier STEP under `catalog/` and mounting a
+derived or authored envelope under `ref/` is a failure, not an alternate
+layout: it hides the source file from the preflight and lets a reduced envelope
+stand in for the very geometry the seat is meant to prove. This keeps the
+standalone gate useful while authoring a mount, but prevents a final PASS when
+a catalog file changed beneath an already-derived seat.
 
 `bolt-access` tries each hole **both ways** along its axis and passes if either
 is clear, because a screw only ever needs one open side. A bracket with a back

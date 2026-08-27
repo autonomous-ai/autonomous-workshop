@@ -10,23 +10,36 @@ queue.
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --fresh --exports
     python "$CAD_SKILL_ROOT/scripts/verify_project" <project-dir> --dry-run
 
-Final mode (the default) runs layout, multi-target generation with STEP writes,
-print fit, local audits, bought-part mounts and motion when declared, then refs
-+ validate for every entry and assembly interference.  --exports additionally
-writes the assembly GLB and per-part STLs from the fresh STEP files, then checks
-each mesh and its printable wall thickness.
+Final mode (the default) runs layout, design-reference provenance, multi-target
+generation with STEP writes, print fit, local audits, bought-part mounts,
+powered-system integration and motion when declared (or required by a
+documented assembly procedure), then refs + validate for every entry and assembly
+interference.  --exports additionally writes the assembly GLB and one STL per
+declared printable entry from the fresh STEP files, then checks each mesh and
+its printable wall thickness.
 
 Image-derived mode adds the gates geometry-only CAD cannot answer: spec/source
 reconciliation, landmark coverage, orthogonal and reference-pose renders,
 source-vs-STEP drift, and silhouette likeness.  It deliberately requires local
 measure/check_spec.py and measure/check_landmarks.py audits because those claims
-are project-specific and cannot be inferred generically.
+are project-specific and cannot be inferred generically, and a measure/mounts.json
+whenever the project carries a component STEP under ref/ -- a fetched part with no
+matching declared mount is a seat no gate has ever measured. This mount preflight
+applies to every final workflow, not only image-derived work.
+
+Conditional gates that do not run are still written to the report as `skipped`
+rows.  A gate missing from the record is indistinguishable from one that passed.
+Image-derived final verification requires an explicit power classification:
+pass `--powered` for any functional electrical load, which requires
+`measure/power.json`, or `--unpowered` when there is none.
 """
 
 from __future__ import annotations
 
 import argparse
+import ast
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 import re
@@ -41,14 +54,30 @@ from typing import Sequence
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 IMAGE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "image-to-cad" / "scripts"
+POWER_SCRIPTS_DIR = (
+    SCRIPTS_DIR.parents[1] / "electromechanical-integration" / "scripts"
+)
+DESIGN_REFERENCE_SCRIPTS_DIR = SCRIPTS_DIR.parents[1] / "design-reference" / "scripts"
 ENTRY_SUFFIX = ".step.py"
 PART_PREFIX = "part_"
 DEFAULT_PREVIEW_TOLERANCE = 0.1
+# Keep these in step with check_likeness.DEFAULT_MIN and STALL_STREAK. Final
+# acceptance never lowers the numeric floor: it preserves the raw failure and
+# records the user's decision separately.
+LIKENESS_FLOOR = 0.90
+LIKENESS_STALL_STREAK = 3
 DEFAULT_BED = (220.0, 220.0, 220.0)
 BED_DECLARATION = re.compile(
     r"--bed\s+(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)\s*[x\u00d7]\s*(\d+(?:\.\d+)?)"
 )
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+ASSEMBLY_HEADING = re.compile(r"^#{1,6}\s+.*\bassembly\b", re.IGNORECASE)
+ASSEMBLY_ORDER = re.compile(r"\bassembly\s+(?:order|procedure|steps?|sequence)\b", re.IGNORECASE)
+MATING_ACTION = re.compile(
+    r"\b(?:insert|install|seat|fit|press|slide|slot|screw|bolt|snap|thread|"
+    r"attach|fasten|lock|bond|glue|feed|mate)\w*\b",
+    re.IGNORECASE,
+)
 
 
 def _path_arg(path: Path, cwd: Path) -> str:
@@ -96,6 +125,44 @@ def _discover_entries(project: Path, assembly_arg: str | None, cwd: Path) -> tup
     return assembly, part_entries
 
 
+def _declared_printable(entry: Path) -> bool | None:
+    """Read ``PRINTABLE = bool`` statically so selection never builds geometry."""
+    tree = ast.parse(entry.read_text(encoding="utf-8"), filename=str(entry))
+    for node in tree.body:
+        value = None
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "PRINTABLE"
+            for target in node.targets
+        ):
+            value = node.value
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "PRINTABLE"
+        ):
+            value = node.value
+        if value is not None:
+            if isinstance(value, ast.Constant) and isinstance(value.value, bool):
+                return value.value
+            raise ValueError(f"{entry}: PRINTABLE must be the literal True or False")
+    return None
+
+
+def _printable_entries(assembly: Path, parts: list[Path]) -> list[Path]:
+    """Select actual print targets while preserving legacy project defaults.
+
+    Legacy ``part_*`` entries are printable.  A Tier 1 combined entry is also
+    printable.  In a split project the combined entry is view-only unless it
+    explicitly declares ``PRINTABLE = True``; logical review parts opt out with
+    ``PRINTABLE = False``.
+    """
+    selected = [part for part in parts if _declared_printable(part) is not False]
+    assembly_flag = _declared_printable(assembly)
+    if assembly_flag is True or (not parts and assembly_flag is not False):
+        selected.insert(0, assembly)
+    return selected
+
+
 def _parse_bed(raw: str) -> tuple[float, float, float]:
     parts = [item.strip() for item in re.split(r"[x×]", raw.lower())]
     if len(parts) != 3:
@@ -125,6 +192,270 @@ def _parse_likeness_ref(raw: str) -> tuple[str, str]:
     if not path:
         raise argparse.ArgumentTypeError("likeness reference path is empty")
     return label, path
+
+
+def _documented_assembly_claims(project: Path) -> list[str]:
+    """Assembly-path claims that make a missing motion manifest observable.
+
+    Part count alone is too broad: a print plate or independent variants can
+    have many printable entries and no assembly. Prose is the stronger signal.
+    Inspect only the project's README/spec, and require both an assembly scope
+    and a mating action so ordinary mentions of an assembly do not trigger it.
+    """
+    claims: list[str] = []
+    for path in (project / "README.md", *sorted(project.glob("*_spec.md"))):
+        if not path.is_file():
+            continue
+        in_assembly_section = False
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            if line.startswith("#"):
+                in_assembly_section = bool(ASSEMBLY_HEADING.match(line))
+            scoped = in_assembly_section or bool(ASSEMBLY_ORDER.search(line))
+            if scoped and MATING_ACTION.search(line):
+                claims.append(f"{path.name}:{line_number}: {line.strip()}")
+    return claims
+
+
+def _read_likeness_history(project: Path) -> list[dict]:
+    """Read the append-only likeness rows with the gate's tolerant semantics."""
+    path = project / "measure" / "likeness-history.jsonl"
+    if not path.is_file():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
+def _history_reference_matches(
+    row: dict,
+    reference: Path,
+    *,
+    project: Path,
+    cwd: Path,
+) -> bool:
+    """Match the producer's canonical identity, then legacy path spellings."""
+    resolved = row.get("reference_resolved")
+    if isinstance(resolved, str) and resolved:
+        try:
+            return Path(resolved).resolve() == reference.resolve()
+        except OSError:
+            return False
+    raw = row.get("reference")
+    if raw is None:  # rows written before references were stored: label-only compatibility
+        return True
+    if not isinstance(raw, str) or not raw:
+        return False
+    path = Path(raw)
+    candidates = [path.resolve()] if path.is_absolute() else [
+        (cwd / path).resolve(),
+        (project / path).resolve(),
+    ]
+    return reference.resolve() in candidates
+
+
+def _likeness_rows_for(
+    history: list[dict],
+    label: str,
+    reference: Path,
+    *,
+    project: Path,
+    cwd: Path,
+) -> list[dict]:
+    return [
+        row for row in history
+        if row.get("label") == label
+        and _history_reference_matches(
+            row, reference, project=project, cwd=cwd
+        )
+    ]
+
+
+def _mismatch_acceptance_labels(
+    project: Path,
+    cwd: Path,
+    likeness_refs: list[tuple[str, Path]],
+) -> tuple[set[str], list[str]]:
+    """Views whose latest failing loop has reached the stopping condition."""
+    history = _read_likeness_history(project)
+    eligible: set[str] = set()
+    blockers: list[str] = []
+    for label, reference in likeness_refs:
+        rows = _likeness_rows_for(
+            history, label, reference, project=project, cwd=cwd
+        )
+        if not rows:
+            blockers.append(f"{label}: no scored history for this reference")
+            continue
+        latest = rows[-1]
+        if latest.get("ok") is True:
+            continue
+        streak = latest.get("stall_streak")
+        if not isinstance(streak, int):
+            blockers.append(
+                f"{label}: rerun check_likeness to record the stalled-out state"
+            )
+            continue
+        if streak < LIKENESS_STALL_STREAK:
+            blockers.append(
+                f"{label}: {streak}/{LIKENESS_STALL_STREAK} consecutive "
+                "stalled/regressing rounds"
+            )
+            continue
+        eligible.add(label)
+    return eligible, blockers
+
+
+def _accepted_likeness_summary(
+    project: Path,
+    cwd: Path,
+    likeness_refs: list[tuple[str, Path]],
+    eligible_labels: set[str],
+    prior_row_counts: dict[str, int],
+) -> tuple[str | None, list[str]]:
+    """Look up the fresh gate decision; do not reproduce its pass/fail rules."""
+    history = _read_likeness_history(project)
+    accepted: list[str] = []
+    blockers: list[str] = []
+    for label, reference in likeness_refs:
+        rows = _likeness_rows_for(
+            history, label, reference, project=project, cwd=cwd
+        )
+        if len(rows) <= prior_row_counts.get(label, 0):
+            blockers.append(f"{label}: final likeness run wrote no history row")
+            continue
+        row = rows[-1]
+        if row.get("ok") is True:
+            continue
+        failed_because = row.get("failed_because")
+        if failed_because != "floor":
+            blockers.append(
+                f"{label}: final likeness failure is {failed_because or 'unclassified'}, "
+                "not an accepted floor mismatch"
+            )
+            continue
+        if label not in eligible_labels:
+            blockers.append(f"{label}: this view was not stalled out before final")
+            continue
+        if row.get("trend") == "improving":
+            blockers.append(
+                f"{label}: likeness moved again in the final run; run another round "
+                "before deciding whether to accept it"
+            )
+            continue
+        streak = row.get("stall_streak")
+        if not isinstance(streak, int) or streak < LIKENESS_STALL_STREAK:
+            blockers.append(f"{label}: final likeness row is no longer stalled out")
+            continue
+        iou = row.get("iou")
+        if not isinstance(iou, (int, float)):
+            blockers.append(f"{label}: final likeness row has no numeric score")
+            continue
+        accepted.append(f"{label}={float(iou):.3f}<{LIKENESS_FLOOR:.2f}")
+    return (", ".join(accepted) if accepted else None), blockers
+
+
+def _component_steps(project: Path) -> tuple[list[Path], list[Path]]:
+    """Component STEP files, split into canonical and misplaced paths.
+
+    Generated STEP artifacts have a sibling ``.step.py`` entry and are not
+    components. ``ref/external/`` belongs to design-reference. Every remaining
+    STEP is bought/foreign geometry and must live under ``ref/`` so the final
+    mount preflight cannot be bypassed by putting the supplier file in a
+    sibling ``catalog/`` directory and checking a hand-authored envelope.
+    """
+    reference_dir = project / "ref"
+    external = reference_dir / "external"
+    canonical: list[Path] = []
+    misplaced: list[Path] = []
+    for path in sorted(project.rglob("*")):
+        if not path.is_file() or path.suffix.lower() not in {".step", ".stp"}:
+            continue
+        if "__cadgen__" in path.relative_to(project).parts:
+            continue
+        if external in path.parents:
+            continue
+        # ``part_body.step`` -> ``part_body.step.py``. A sibling source marks
+        # a generated deliverable, not a fetched component.
+        if Path(str(path) + ".py").is_file():
+            continue
+        if reference_dir in path.parents:
+            canonical.append(path)
+        else:
+            misplaced.append(path)
+    return canonical, misplaced
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _declared_mount_steps(project: Path, manifest: Path) -> dict[Path, list[str | None]]:
+    """Return component STEP paths and checksums named by ``mounts.json``."""
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"cannot read {manifest}: {error}") from error
+    mounts = data.get("mounts") if isinstance(data, dict) else None
+    if not isinstance(mounts, list) or not mounts:
+        raise ValueError(f"{manifest} must contain a non-empty mounts list")
+    declared: dict[Path, list[str | None]] = {}
+    mount_ids: set[str] = set()
+    for index, mount in enumerate(mounts):
+        if not isinstance(mount, dict):
+            raise ValueError(f"{manifest}: mounts[{index}] must be an object")
+        mount_id = mount.get("id")
+        if not isinstance(mount_id, str) or not mount_id.strip():
+            raise ValueError(f"{manifest}: mounts[{index}].id is required")
+        if mount_id in mount_ids:
+            raise ValueError(f"{manifest}: duplicate mount id {mount_id!r}")
+        mount_ids.add(mount_id)
+        raw = mount.get("component")
+        if not isinstance(raw, str) or not raw.strip():
+            continue  # check_mount will report the exact malformed declaration
+        candidate = (project / raw).resolve()
+        try:
+            candidate.relative_to(project)
+        except ValueError:
+            continue  # check_mount owns the project-local-path diagnostic
+        checksum = mount.get("sha256")
+        declared.setdefault(candidate, []).append(
+            checksum if isinstance(checksum, str) else None
+        )
+    return declared
+
+
+def _power_manifest_notes(path: Path) -> list[str]:
+    """Surface valid-but-unresolved physical-fit claims in the final report."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    notes = []
+    interfaces = data.get("mating_interfaces", []) if isinstance(data, dict) else []
+    if not isinstance(interfaces, list):
+        return notes
+    for interface in interfaces:
+        if not isinstance(interface, dict):
+            continue
+        coupon = interface.get("fit_coupon")
+        if isinstance(coupon, dict) and coupon.get("status") == "planned":
+            notes.append(
+                f"mating interface {interface.get('id', '?')}: fit coupon is planned; "
+                "physical fit remains unverified"
+            )
+    return notes
 
 
 def _declared_bed(project: Path) -> tuple[float, float, float] | None:
@@ -181,6 +512,24 @@ class Runner:
             flush=True,
         )
         return return_code
+
+    def skipped(self, label: str, reason: str) -> None:
+        """Record a gate that did not run.
+
+        A gate that is absent from the report is indistinguishable from a gate
+        that passed.  Every conditional check writes a row either way.
+        """
+        print(f"[verify_project] skip {label}: {reason}", flush=True)
+        self.records.append(
+            {"command": f"{label}  # NOT RUN: {reason}", "status": "skipped", "seconds": 0.0}
+        )
+
+    def note(self, label: str, detail: str) -> None:
+        """Persist a non-failing limitation that changes the handoff claim."""
+        print(f"[verify_project] note {label}: {detail}", flush=True)
+        self.records.append(
+            {"command": f"{label}  # NOTE: {detail}", "status": "note", "seconds": 0.0}
+        )
 
     def inspect_batch(self, requests: list[dict[str, object]]) -> int:
         argv = [sys.executable, str(SCRIPTS_DIR / "inspect"), "batch"]
@@ -277,13 +626,24 @@ def _write_report(
     result: int,
     elapsed: float,
     bed: tuple[float, float, float],
+    preserve_existing: bool = False,
 ) -> None:
+    previous = None
+    if preserve_existing and path.is_file():
+        previous = path.read_text(encoding="utf-8")
+    accepted_failures = sum(
+        1 for record in runner.records if record.get("status") == "accepted-fail"
+    )
+    result_text = "PASS" if result == 0 else "FAIL"
+    if result == 0 and accepted_failures:
+        noun = "gate" if accepted_failures == 1 else "gates"
+        result_text += f" ({accepted_failures} accepted failing {noun})"
     lines = [
         "# Verification pipeline record",
         "",
         f"- Recorded: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
         f"- Mode: `{mode}`",
-        f"- Result: **{'PASS' if result == 0 else 'FAIL'}** (exit {result})",
+        f"- Result: **{result_text}** (exit {result})",
         f"- Elapsed: {elapsed:.2f} s",
         f"- Bed: {bed[0]:g} x {bed[1]:g} x {bed[2]:g} mm",
         "",
@@ -297,6 +657,15 @@ def _write_report(
             f"{float(record['seconds']):.2f} |"
         )
     lines.append("")
+    if previous:
+        lines.extend([
+            "---",
+            "",
+            "## Previous pipeline record (preserved)",
+            "",
+            previous.rstrip(),
+            "",
+        ])
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -329,6 +698,7 @@ def _final(
     project: Path,
     assembly: Path,
     parts: list[Path],
+    printables: list[Path],
     *,
     motion_manifest: Path | None,
     exports: bool,
@@ -340,10 +710,39 @@ def _final(
     image_derived: bool,
     likeness_refs: list[tuple[str, Path]],
     likeness_min: float,
+    likeness_accept_mismatch: str | None,
+    likeness_mismatch_labels: set[str],
+    likeness_accept_regression: str | None,
     search_fov: str,
 ) -> int:
     entries = [assembly, *parts]
     entry_args = [_path_arg(path, runner.cwd) for path in entries]
+
+    external_refs = project / "ref" / "external"
+    if external_refs.is_dir():
+        design_ref_gate = DESIGN_REFERENCE_SCRIPTS_DIR / "design_refs.py"
+        if not design_ref_gate.is_file():
+            print(
+                f"verify_project: design-reference gate not found: {design_ref_gate}",
+                file=sys.stderr,
+            )
+            return 2
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                design_ref_gate,
+                "verify",
+                _path_arg(project, runner.cwd),
+            ],
+        ):
+            return 1
+    else:
+        runner.skipped(
+            "design_refs verify",
+            "no ref/external directory; no fetched design reference is declared",
+        )
+
     if not _run_or_stop(
         runner,
         [sys.executable, SCRIPTS_DIR / "gen", *entry_args, "--write", "--json"],
@@ -351,7 +750,7 @@ def _final(
     ):
         return 1
 
-    if parts:
+    if printables:
         fit_args: list[str | Path] = [
             sys.executable,
             SCRIPTS_DIR / "check_fit",
@@ -360,10 +759,17 @@ def _final(
             str(bed[0]),
             str(bed[1]),
         ]
+        for printable in printables:
+            fit_args.extend(["--entry", _path_arg(printable, runner.cwd)])
         if strict_fit:
             fit_args.append("--strict")
         if not _run_or_stop(runner, fit_args):
             return 1
+    else:
+        runner.skipped(
+            "check_fit",
+            "no printable entry is declared; geometry-only final workflow",
+        )
 
     for audit_name in ("check_fit.py", "check_spec.py", "check_landmarks.py"):
         local_audit = project / "measure" / audit_name
@@ -389,6 +795,39 @@ def _final(
             mount_args,
         ):
             return 1
+    else:
+        runner.skipped(
+            "check_mount",
+            f"no {mount_manifest.relative_to(project)}; no bought part is declared seated",
+        )
+
+    power_manifest = project / "measure" / "power.json"
+    if power_manifest.is_file():
+        power_gate = POWER_SCRIPTS_DIR / "check_power"
+        if not power_gate.is_file():
+            print(
+                f"verify_project: powered-system gate not found: {power_gate}",
+                file=sys.stderr,
+            )
+            return 2
+        if not _run_or_stop(
+            runner,
+            [
+                sys.executable,
+                power_gate,
+                _path_arg(project, runner.cwd),
+                "--manifest",
+                _path_arg(power_manifest, runner.cwd),
+            ],
+        ):
+            return 1
+        for note in _power_manifest_notes(power_manifest):
+            runner.note("check_power", note)
+    else:
+        runner.skipped(
+            "check_power",
+            "no measure/power.json; no functional powered system is declared",
+        )
 
     if motion_manifest is not None:
         if not motion_manifest.is_file():
@@ -405,6 +844,11 @@ def _final(
             ],
         ):
             return 1
+    else:
+        runner.skipped(
+            "check_motion",
+            "no documented mating/assembly action and no moving joint is declared",
+        )
 
     if image_derived:
         snap_dir = project / "snap"
@@ -454,8 +898,45 @@ def _final(
                 "--report", _path_arg(project / "measure" / "likeness.md", runner.cwd),
             ]
         )
-        if not _run_or_stop(runner, likeness_args):
-            return 1
+        if likeness_accept_regression:
+            likeness_args.extend(["--accept-regression", likeness_accept_regression])
+        history_before = _read_likeness_history(project)
+        prior_row_counts = {
+            label: len(_likeness_rows_for(
+                history_before, label, reference, project=project, cwd=runner.cwd
+            ))
+            for label, reference in likeness_refs
+        }
+        likeness_rc = runner.command(likeness_args)
+        if likeness_rc != 0:
+            accepted = None
+            acceptance_blockers: list[str] = []
+            if likeness_rc == 1 and likeness_accept_mismatch:
+                accepted, acceptance_blockers = _accepted_likeness_summary(
+                    project,
+                    runner.cwd,
+                    likeness_refs,
+                    likeness_mismatch_labels,
+                    prior_row_counts,
+                )
+            if accepted is None or acceptance_blockers:
+                for blocker in acceptance_blockers:
+                    print(f"verify_project: {blocker}", file=sys.stderr)
+                return 1
+            # Keep the child gate's raw non-zero result observable while
+            # recording that this specific failure no longer blocks delivery.
+            runner.records[-1]["status"] = "accepted-fail"
+            runner.note(
+                "check_likeness acceptance",
+                f"raw floor failure accepted by user: {accepted}; "
+                f"reason: {likeness_accept_mismatch}",
+            )
+        elif likeness_accept_mismatch:
+            print(
+                "verify_project: warning: --likeness-accept-mismatch was not needed; "
+                "the fresh likeness gate passed, so no acceptance decision was recorded",
+                file=sys.stderr,
+            )
 
     requests: list[dict[str, object]] = []
     for index, entry in enumerate(entry_args):
@@ -486,8 +967,8 @@ def _final(
             warm=True,
         ):
             return 1
-        for part in parts:
-            part_step = _step_for_entry(part)
+        for printable in printables:
+            part_step = _step_for_entry(printable)
             if not _run_or_stop(
                 runner,
                 [sys.executable, SCRIPTS_DIR / "export", _path_arg(part_step, runner.cwd), "--stl", "--json"],
@@ -499,20 +980,22 @@ def _final(
                 [
                     sys.executable,
                     SCRIPTS_DIR / "check_mesh",
-                    _path_arg(_stl_for_entry(part), runner.cwd),
+                    _path_arg(_stl_for_entry(printable), runner.cwd),
                     "--bed",
                     f"{bed[0]:g}x{bed[1]:g}x{bed[2]:g}",
                 ],
             ):
                 return 1
             if not skip_thickness:
-                role = part.name.removeprefix(PART_PREFIX).removesuffix(ENTRY_SUFFIX)
+                role = printable.name.removesuffix(ENTRY_SUFFIX)
+                if role.startswith(PART_PREFIX):
+                    role = role.removeprefix(PART_PREFIX)
                 if not _run_or_stop(
                     runner,
                     [
                         sys.executable,
                         SCRIPTS_DIR / "check_thickness",
-                        _path_arg(_stl_for_entry(part), runner.cwd),
+                        _path_arg(_stl_for_entry(printable), runner.cwd),
                         "--nozzle", str(nozzle),
                         "--report",
                         _path_arg(project / "measure" / f"thickness-{role}.md", runner.cwd),
@@ -523,15 +1006,379 @@ def _final(
     return 0
 
 
+# --------------------------------------------------------------------------
+# self-check
+# --------------------------------------------------------------------------
+#
+# Everything this runner refuses, it refuses in argument and manifest
+# validation -- before a single solid is built.  That makes those refusals the
+# cheapest thing in the toolchain to break and the hardest to notice: a gate
+# that quietly stops being required still prints a clean run.  The fixtures
+# below build a paper project in a temporary directory and assert that each
+# refusal still fires, and that it fires for the stated reason.  No geometry,
+# no daemon, no kernel import.
+#
+# Every fixture asserts the REASON as well as the exit status.  A refusal that
+# still happens for a different reason is how one of these stops testing what
+# its name says while continuing to pass.
+
+
+def _sc_project(root: Path, extra: dict[str, str] | None = None) -> Path:
+    """A project directory made only of the files a refusal reads."""
+    project = root / "proj"
+    if project.exists():
+        shutil.rmtree(project)
+    (project / "measure").mkdir(parents=True)
+    (project / "ref").mkdir()
+    (project / "widget.step.py").write_text(
+        "PRINTABLE = True\n\n\ndef gen_step():\n    return None\n", encoding="utf-8")
+    (project / "widget_spec.md").write_text("# spec\n", encoding="utf-8")
+    (project / "measure" / "check_spec.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+    (project / "measure" / "check_landmarks.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+    (project / "ref" / "hero.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+    for rel, body in (extra or {}).items():
+        target = project / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+    return project
+
+
+def _sc_refuses(argv: list[str]) -> tuple[bool, str]:
+    """Run main() and report whether it refused, with the reason it printed.
+
+    A refusal must come from validation, so this also fails a run that merely
+    exits non-zero after starting the pipeline -- that is a broken fixture, not
+    a working guard.
+    """
+    import contextlib
+    import io
+
+    err, out = io.StringIO(), io.StringIO()
+    try:
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(out):
+            code = main(argv)
+    except SystemExit as exc:
+        code = exc.code
+    lines = [line for line in err.getvalue().strip().splitlines() if line]
+    started = "check_layout" in out.getvalue()
+    return (code not in (0, None) and not started), (lines[-1] if lines else "")
+
+
+def self_check() -> int:
+    ok = True
+
+    def fixture(claim: str, argv: list[str], reason: str) -> None:
+        nonlocal ok
+        refused, why = _sc_refuses(argv)
+        hit = refused and reason in why
+        print(f"{'ok  ' if hit else 'FAIL'} {claim}")
+        if not hit:
+            print(f"       wanted a refusal naming {reason!r}, got: {why or '(ran)'}")
+        ok &= hit
+
+    import tempfile
+
+    origin = Path.cwd()
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td).resolve()
+        os.chdir(root)
+        try:
+            img = ["proj", "--exports", "--image-derived",
+                   "--likeness-ref", "hero=ref/hero.png"]
+
+            _sc_project(root)
+            fixture("image-derived final refuses an unclassified power state",
+                    img, "power classification")
+
+            _sc_project(root)
+            fixture("--powered without measure/power.json is refused, not skipped",
+                    img + ["--powered"], "power.json")
+
+            _sc_project(root, {"measure/power.json": '{"schemaVersion": 3}'})
+            fixture("--unpowered cannot talk past an existing power.json",
+                    img + ["--unpowered"], "contradicts")
+
+            # a fetched component with no mount row is a seat nothing measured
+            _sc_project(root, {"ref/servo.step": "ISO-10303-21;\nEND-ISO-10303-21;\n"})
+            fixture("a component STEP under ref/ with no mount declaration blocks final",
+                    img + ["--unpowered"], "mounts.json")
+
+            _sc_project(root, {"catalog/servo.step": "ISO-10303-21;\nEND-ISO-10303-21;\n"})
+            fixture("a component STEP outside ref/ cannot bypass the mount preflight",
+                    img + ["--unpowered"], "Move a component source under ref/")
+
+            _sc_project(root)
+            fixture("the final likeness floor cannot be lowered",
+                    img + ["--unpowered", "--likeness-min", "0.5"], "fixed")
+
+            _sc_project(root)
+            fixture("an accepted mismatch cannot lower the fixed final floor",
+                    img + ["--unpowered", "--likeness-min", "0.5",
+                           "--likeness-accept-mismatch", "single oblique view"],
+                    "fixed")
+
+            _sc_project(root)
+            fixture("a mismatch acceptance without image-derived mode is refused",
+                    ["proj", "--exports", "--likeness-accept-mismatch", "fixture"],
+                    "requires --image-derived")
+
+            _sc_project(root)
+            fixture("a user mismatch acceptance cannot skip the stalled-out condition",
+                    img + ["--unpowered", "--likeness-accept-mismatch", "fixture"],
+                    "stalled out")
+
+            project = _sc_project(root)
+            reference = project / "ref" / "hero.png"
+            history_path = project / "measure" / "likeness-history.jsonl"
+            conflicting_identity = {
+                "reference": str(reference),
+                "reference_resolved": str(project / "ref" / "different.png"),
+            }
+            hit = not _history_reference_matches(
+                conflicting_identity, reference, project=project, cwd=root
+            )
+            print(f"{'ok  ' if hit else 'FAIL'} a canonical reference mismatch "
+                  "cannot fall through to a matching legacy spelling")
+            ok &= hit
+
+            stalled_rows = [
+                {"run": 1, "label": "hero", "reference": str(reference),
+                 "iou": 0.75, "trend": "first", "ok": False,
+                 "failed_because": "floor", "stall_streak": 0},
+                {"run": 2, "label": "hero", "reference": str(reference),
+                 "iou": 0.75, "trend": "stalled", "ok": False,
+                 "failed_because": "floor", "stall_streak": 1},
+                {"run": 3, "label": "hero", "reference": str(reference),
+                 "iou": 0.74, "trend": "regressing", "ok": False,
+                 "failed_because": "regression", "stall_streak": 2},
+                {"run": 4, "label": "hero", "reference": str(reference),
+                 "iou": 0.74, "trend": "stalled", "ok": False,
+                 "failed_because": "floor", "stall_streak": 3},
+            ]
+            for row in stalled_rows:
+                # The raw spelling came from another working directory and is
+                # ambiguous here; the producer-recorded identity is authoritative.
+                row["reference"] = "ref/from-another-cwd.png"
+                row["reference_resolved"] = str(reference)
+            history_path.write_text(
+                "".join(json.dumps(row) + "\n" for row in stalled_rows),
+                encoding="utf-8",
+            )
+            eligible, blockers = _mismatch_acceptance_labels(
+                project, root, [("hero", reference)]
+            )
+            hit = eligible == {"hero"} and not blockers
+            print(f"{'ok  ' if hit else 'FAIL'} canonical reference identity keeps "
+                  "three cross-CWD non-improving rounds eligible")
+            ok &= hit
+
+            summary, blockers = _accepted_likeness_summary(
+                project, root, [("hero", reference)], eligible, {"hero": 4}
+            )
+            hit = summary is None and any("no history row" in blocker
+                                          for blocker in blockers)
+            print(f"{'ok  ' if hit else 'FAIL'} a child failure cannot reuse the "
+                  "last row when no fresh history was written")
+            ok &= hit
+
+            summary, blockers = _accepted_likeness_summary(
+                project, root, [("hero", reference)], eligible, {"hero": 3}
+            )
+            hit = summary == "hero=0.740<0.90" and not blockers
+            print(f"{'ok  ' if hit else 'FAIL'} accepted-fail keeps the raw score "
+                  f"visible  - {summary}")
+            ok &= hit
+
+            stalled_rows[-1]["trend"] = "improving"
+            stalled_rows[-1]["stall_streak"] = 0
+            history_path.write_text(
+                "".join(json.dumps(row) + "\n" for row in stalled_rows),
+                encoding="utf-8",
+            )
+            summary, blockers = _accepted_likeness_summary(
+                project, root, [("hero", reference)], eligible, {"hero": 3}
+            )
+            hit = summary is None and any("moved again" in blocker
+                                          for blocker in blockers)
+            print(f"{'ok  ' if hit else 'FAIL'} a fresh improving row cancels a "
+                  "previously unlocked acceptance")
+            ok &= hit
+
+            eligible, blockers = _mismatch_acceptance_labels(
+                project, root, [("hero", reference)]
+            )
+            hit = not eligible and any("0/3" in blocker for blocker in blockers)
+            print(f"{'ok  ' if hit else 'FAIL'} an improving round resets the "
+                  "acceptance streak")
+            ok &= hit
+
+            stalled_rows[-1].update({
+                "trend": "stalled", "stall_streak": 3,
+                "failed_because": "regression", "ok": False,
+            })
+            history_path.write_text(
+                "".join(json.dumps(row) + "\n" for row in stalled_rows),
+                encoding="utf-8",
+            )
+            eligible, blockers = _mismatch_acceptance_labels(
+                project, root, [("hero", reference)]
+            )
+            summary, final_blockers = _accepted_likeness_summary(
+                project, root, [("hero", reference)], eligible, {"hero": 3}
+            )
+            hit = (eligible == {"hero"} and not blockers and summary is None
+                   and any("regression" in blocker for blocker in final_blockers))
+            print(f"{'ok  ' if hit else 'FAIL'} an unaccepted regression remains "
+                  "blocked after the loop stalls")
+            ok &= hit
+
+            stalled_rows[-1].update({
+                "iou": 0.95, "trend": "improving", "stall_streak": 0,
+                "failed_because": None, "ok": True,
+            })
+            history_path.write_text(
+                "".join(json.dumps(row) + "\n" for row in stalled_rows),
+                encoding="utf-8",
+            )
+            eligible, blockers = _mismatch_acceptance_labels(
+                project, root, [("hero", reference)]
+            )
+            hit = not eligible and not blockers
+            print(f"{'ok  ' if hit else 'FAIL'} an already passing history lets the "
+                  "fresh gate prove the acceptance flag unnecessary")
+            ok &= hit
+
+            report_runner = Runner(cwd=root, dry_run=False, verbose=False)
+            report_runner.records.append(
+                {"command": "check_likeness", "status": "accepted-fail", "seconds": 0.1}
+            )
+            report_path = root / "accepted-report.md"
+            _write_report(
+                report_path, report_runner, mode="final", result=0, elapsed=0.1,
+                bed=DEFAULT_BED,
+            )
+            headline = report_path.read_text(encoding="utf-8")
+            hit = "Result: **PASS (1 accepted failing gate)**" in headline
+            print(f"{'ok  ' if hit else 'FAIL'} report headline exposes an accepted "
+                  "failing gate")
+            ok &= hit
+
+            # the two audits are required precisely because no generic gate can
+            # state a project's own claim
+            project = _sc_project(root)
+            (project / "measure" / "check_landmarks.py").unlink()
+            fixture("a missing landmark audit is a refusal, not a skipped row",
+                    img + ["--unpowered"], "check_landmarks.py")
+
+            _sc_project(root)
+            fixture("a likeness reference without --image-derived is refused",
+                    ["proj", "--exports", "--likeness-ref", "hero=ref/hero.png"],
+                    "--likeness-ref requires --image-derived")
+
+            _sc_project(root)
+            fixture("a regression waiver without --image-derived is refused",
+                    ["proj", "--exports", "--likeness-accept-regression", "fixture"],
+                    "requires --image-derived")
+
+            _sc_project(root)
+            fixture("image-derived cannot skip the thickness gate",
+                    img + ["--unpowered", "--skip-thickness"], "thickness")
+
+            # the two --bed forms are not interchangeable, and the error has to
+            # say so rather than silently taking the first number
+            got = _parse_bed("256x256x256")
+            hit = got == (256.0, 256.0, 256.0)
+            print(f"{'ok  ' if hit else 'FAIL'} --bed parses the WxDxH form  - {got}")
+            ok &= hit
+            try:
+                _parse_bed("220 220")
+                hit = False
+            except Exception:
+                hit = True
+            print(f"{'ok  ' if hit else 'FAIL'} and rejects check_fit's two-number form")
+            ok &= hit
+
+            # PRINTABLE is what separates a review entry from a print target
+            project = _sc_project(root)
+            (project / "part_body.step.py").write_text(
+                "def gen_step():\n    return None\n", encoding="utf-8")
+            (project / "part_view.step.py").write_text(
+                "PRINTABLE = False\n\n\ndef gen_step():\n    return None\n",
+                encoding="utf-8")
+            assembly, parts = _discover_entries(project, None, root)
+            names = sorted(path.name for path in _printable_entries(assembly, parts))
+            hit = names == ["part_body.step.py", "widget.step.py"]
+            print(f"{'ok  ' if hit else 'FAIL'} PRINTABLE = False keeps a review "
+                  f"entry out of the print targets  - {names}")
+            ok &= hit
+
+            project = _sc_project(root, {
+                "README.md": "# Widget\n\n## Assembly\n\n1. Insert the lid into the body.\n",
+                "part_lid.step.py": "def gen_step():\n    return None\n",
+            })
+            fixture("a documented assembly path cannot become a skipped motion gate",
+                    img + ["--unpowered"], "no motion manifest exists")
+
+            project = _sc_project(root)
+            _sc_refuses(img)
+            report = project / "measure" / "verification-pipeline.md"
+            report_text = report.read_text(encoding="utf-8") if report.is_file() else ""
+            hit = "| `preflight  # ERROR:" in report_text and "| refused |" in report_text
+            print(f"{'ok  ' if hit else 'FAIL'} a final preflight refusal is recorded")
+            ok &= hit
+
+            project = _sc_project(root)
+            report = project / "measure" / "verification-pipeline.md"
+            previous = "DELIVERED RUN EVIDENCE\n"
+            report.write_text(previous, encoding="utf-8")
+            _sc_refuses(img)
+            report_text = report.read_text(encoding="utf-8")
+            hit = "| refused |" in report_text and previous.strip() in report_text
+            print(f"{'ok  ' if hit else 'FAIL'} a preflight refusal preserves the prior record")
+            ok &= hit
+
+            project = _sc_project(root)
+            report = project / "measure" / "verification-pipeline.md"
+            report.write_text(previous, encoding="utf-8")
+            _sc_refuses(["proj", "--nozzle", "0"])
+            hit = report.read_text(encoding="utf-8") == previous
+            print(f"{'ok  ' if hit else 'FAIL'} an argument typo cannot rewrite project evidence")
+            ok &= hit
+
+            project = _sc_project(root)
+            _sc_refuses(img + ["--report", "../outside.md"])
+            hit = not (project / "measure" / "verification-pipeline.md").exists()
+            print(f"{'ok  ' if hit else 'FAIL'} an invalid --report path is not redirected")
+            ok &= hit
+
+            project = _sc_project(root)
+            measure = project / "measure"
+            measure.chmod(0o500)
+            try:
+                refused, why = _sc_refuses(img)
+            finally:
+                measure.chmod(0o700)
+            hit = refused and "power classification" in why
+            print(f"{'ok  ' if hit else 'FAIL'} report write failure cannot hide the refusal")
+            ok &= hit
+        finally:
+            os.chdir(origin)
+
+    print("\nall fixtures pass" if ok else "\nself-check FAILED")
+    return 0 if ok else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project", help="project directory containing *.step.py entries")
     parser.add_argument("--assembly", help="combined entry; inferred when exactly one non-part entry exists")
     parser.add_argument("--quick", action="store_true", help="combined-entry preview generation only")
     parser.add_argument("--fresh", action="store_true", help="delete only this project's __cadgen__ cache before running")
-    parser.add_argument("--exports", action="store_true", help="final mode: write GLB/STLs, then check each mesh and wall thickness")
+    parser.add_argument("--exports", action="store_true", help="final mode: write assembly GLB and printable-entry STLs, then check each mesh and wall thickness")
     parser.add_argument("--strict-fit", action="store_true", help="final mode: promote check_fit advisory notes to failures")
     parser.add_argument("--strict-mount", action="store_true", help="final mode: promote check_mount advisory notes to failures")
+    parser.add_argument("--powered", action="store_true", help="final mode: require measure/power.json and run the powered-system gate")
+    parser.add_argument("--unpowered", action="store_true", help="image-derived final: explicitly declare that the product has no functional electrical load")
     parser.add_argument("--motion-manifest", help="motion JSON; defaults to measure/motion.json when present")
     parser.add_argument("--bed", type=_parse_bed, help="printer bed WxDxH (default: project declaration, then 220x220x220)")
     parser.add_argument("--preview-tolerance", type=float, default=DEFAULT_PREVIEW_TOLERANCE, help="quick-mode render mesh tolerance (default: 0.1)")
@@ -546,16 +1393,21 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="LABEL=PATH",
         help="reference image inside the project; repeat for every usable viewpoint",
     )
-    parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair (default: 0.90)")
+    parser.add_argument("--likeness-min", type=float, default=0.90, help="minimum IoU for every likeness pair; final delivery cannot set it below 0.90")
+    parser.add_argument("--likeness-accept-mismatch", metavar="REASON", help="accept a raw sub-0.90 likeness failure after the same view/reference has stalled out; preserves the failing score and records the user reason")
+    parser.add_argument("--likeness-accept-regression", metavar="REASON", help="record why a final score below the best prior run is accepted; passed through to check_likeness")
     parser.add_argument("--search-fov", default="0,25,40", help="comma-separated FOVs for reference-pose search (default: 0,25,40)")
     parser.add_argument("--report", help="final pipeline record path inside project (default: measure/verification-pipeline.md)")
     parser.add_argument("--no-report", action="store_true", help="do not persist the final pipeline record")
     parser.add_argument("--dry-run", action="store_true", help="print the sequential plan without changing files")
     parser.add_argument("--verbose", action="store_true", help="print complete successful inspect JSON responses")
+    parser.add_argument("--self-check", action="store_true", help="run the built-in validation fixtures and exit")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    if "--self-check" in (list(argv) if argv is not None else sys.argv[1:]):
+        return self_check()
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     cwd = Path.cwd().resolve()
@@ -566,12 +1418,69 @@ def main(argv: Sequence[str] | None = None) -> int:
         project.relative_to(cwd)
     except ValueError:
         parser.error(f"project must be inside the command cwd: {project}")
+
+    def refuse(message: str) -> None:
+        """Reject a resolved project's preflight and leave an auditable row.
+
+        Argument parsing can fail before a project is known, but once a valid
+        project is in hand a final run must not disappear from its pipeline
+        record merely because it was cheap enough to fail before geometry.
+        """
+        if not args.quick and not args.no_report and not args.dry_run:
+            final_report = project / "measure" / "verification-pipeline.md"
+            report_is_valid = True
+            if args.report:
+                try:
+                    requested = _resolve_inside_project(args.report, project, cwd)
+                except ValueError:
+                    requested = None
+                    report_is_valid = False
+                if requested is not None:
+                    final_report = requested
+            if report_is_valid:
+                runner = Runner(cwd=cwd, dry_run=False, verbose=bool(args.verbose))
+                runner.records.append({
+                    "command": f"preflight  # ERROR: {message}",
+                    "status": "refused",
+                    "seconds": 0.0,
+                })
+                mode = "image-derived final" if args.image_derived else "final"
+                try:
+                    _write_report(
+                        final_report,
+                        runner,
+                        mode=mode,
+                        result=2,
+                        elapsed=0.0,
+                        bed=args.bed or DEFAULT_BED,
+                        preserve_existing=True,
+                    )
+                except OSError as exc:
+                    print(
+                        f"verify_project: warning: could not write preflight report "
+                        f"{final_report}: {exc}",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(f"[verify_project] wrote preflight failure {final_report}", flush=True)
+        parser.error(message)
+
     if args.preview_tolerance <= 0:
         parser.error("--preview-tolerance must be positive")
     if args.nozzle <= 0:
         parser.error("--nozzle must be positive")
     if not 0 <= args.likeness_min <= 1:
         parser.error("--likeness-min must be between 0 and 1")
+    if args.likeness_accept_mismatch is not None:
+        args.likeness_accept_mismatch = args.likeness_accept_mismatch.strip()
+        if not args.likeness_accept_mismatch:
+            parser.error("--likeness-accept-mismatch requires a non-empty user reason")
+    if args.likeness_min < LIKENESS_FLOOR:
+        parser.error(
+            f"--likeness-min {args.likeness_min:.2f} is below the {LIKENESS_FLOOR:.2f} "
+            "fixed delivery floor. A final --likeness-accept-mismatch decision may "
+            "accept a stalled failing result, but it never lowers this floor"
+        )
     if args.quick and args.exports:
         parser.error("--exports is a final-mode option and cannot be combined with --quick")
     if args.quick and args.strict_fit:
@@ -580,8 +1489,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("image-derived gates are final-mode options and cannot be combined with --quick")
     if args.quick and (args.strict_mount or args.skip_thickness):
         parser.error("--strict-mount/--skip-thickness are final-mode options and cannot be combined with --quick")
+    if args.quick and args.powered:
+        parser.error("--powered is a final-mode option and cannot be combined with --quick")
+    if args.quick and args.unpowered:
+        parser.error("--unpowered is a final-mode option and cannot be combined with --quick")
+    if args.powered and args.unpowered:
+        parser.error("--powered and --unpowered are mutually exclusive")
+    if args.unpowered and not args.image_derived:
+        parser.error("--unpowered is only needed with --image-derived")
     if args.likeness_ref and not args.image_derived:
         parser.error("--likeness-ref requires --image-derived")
+    if args.likeness_accept_mismatch and not args.image_derived:
+        parser.error("--likeness-accept-mismatch requires --image-derived")
+    if args.likeness_accept_regression and not args.image_derived:
+        parser.error("--likeness-accept-regression requires --image-derived")
     if args.image_derived and not args.exports:
         parser.error("--image-derived is a completion gate and requires --exports")
     if args.image_derived and args.skip_thickness:
@@ -592,44 +1513,148 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("--report and --no-report are mutually exclusive")
     try:
         assembly, parts = _discover_entries(project, args.assembly, cwd)
+        printables = _printable_entries(assembly, parts)
         explicit_motion = _resolve_inside_project(args.motion_manifest, project, cwd)
         report_path = _resolve_inside_project(args.report, project, cwd)
         likeness_refs = [
             (label, _resolve_inside_project(raw_path, project, cwd))
             for label, raw_path in args.likeness_ref
         ]
-    except ValueError as exc:
-        parser.error(str(exc))
+    except (OSError, SyntaxError, ValueError) as exc:
+        refuse(str(exc))
+
+    labels = [label for label, _reference in likeness_refs]
+    if len(labels) != len(set(labels)):
+        refuse("--likeness-ref labels must be unique within one final run")
+
+    if args.exports and not printables:
+        refuse(
+            "--exports requires at least one printable entry. Legacy part_* entries "
+            "are printable; logical entries set PRINTABLE = False and a combined "
+            "one-piece print target sets PRINTABLE = True"
+        )
 
     motion_manifest = explicit_motion
     if motion_manifest is None and (project / "measure" / "motion.json").is_file():
         motion_manifest = project / "measure" / "motion.json"
+    assembly_claims = _documented_assembly_claims(project) if not args.quick else []
+    if motion_manifest is None and assembly_claims:
+        refuse(
+            "README/spec documents an assembly action but no motion manifest exists: "
+            f"{assembly_claims[0]} Add measure/motion.json with the insertion/retention "
+            "or assembly_sequence conditions; absence cannot turn a documented path into "
+            "a skipped gate"
+        )
+    if args.powered and not (project / "measure" / "power.json").is_file():
+        refuse(
+            "--powered requires measure/power.json; run "
+            "$electromechanical-integration before final verification"
+        )
+    if args.unpowered and (project / "measure" / "power.json").is_file():
+        refuse(
+            "--unpowered contradicts the existing measure/power.json; use --powered or "
+            "remove a stale manifest"
+        )
+
+    if not args.quick:
+        component_steps, misplaced_steps = _component_steps(project)
+        if misplaced_steps:
+            listed = ", ".join(
+                str(path.relative_to(project)) for path in misplaced_steps[:4]
+            )
+            if len(misplaced_steps) > 4:
+                listed += f", +{len(misplaced_steps) - 4} more"
+            refuse(
+                "resolve bought/foreign or stale STEP files before final verification: "
+                f"{listed}. Move a component source under ref/, or delete a stale exported "
+                "copy; only generated STEP artifacts with sibling .step.py entries belong "
+                "elsewhere. Every component under ref/ must be checksum-pinned and declared "
+                "in measure/mounts.json"
+            )
+        mount_manifest = project / "measure" / "mounts.json"
+        if component_steps and not mount_manifest.is_file():
+            listed = ", ".join(str(path.relative_to(project)) for path in component_steps[:4])
+            if len(component_steps) > 4:
+                listed += f", +{len(component_steps) - 4} more"
+            refuse(
+                f"final verification requires measure/mounts.json: the project carries "
+                f"{len(component_steps)} component STEP(s) ({listed}) and no mount is "
+                "declared, so no gate has seen them. Declare each seated component, "
+                "or move an unseated STEP out of ref/ -- see references/bought-parts.md"
+            )
+        if component_steps:
+            try:
+                declared_steps = _declared_mount_steps(project, mount_manifest)
+            except ValueError as error:
+                refuse(str(error))
+            undeclared = [path for path in component_steps if path.resolve() not in declared_steps]
+            if undeclared:
+                listed = ", ".join(str(path.relative_to(project)) for path in undeclared[:4])
+                if len(undeclared) > 4:
+                    listed += f", +{len(undeclared) - 4} more"
+                refuse(
+                    "measure/mounts.json does not declare every component STEP under ref/: "
+                    f"{listed}. A downloaded part with no mount row is not checked"
+                )
+            checksum_failures = []
+            for path in component_steps:
+                actual = _sha256_file(path)
+                declared_hashes = declared_steps[path.resolve()]
+                if any(
+                    checksum is None or checksum.lower() != actual
+                    for checksum in declared_hashes
+                ):
+                    checksum_failures.append(path)
+            if checksum_failures:
+                listed = ", ".join(
+                    str(path.relative_to(project)) for path in checksum_failures[:4]
+                )
+                if len(checksum_failures) > 4:
+                    listed += f", +{len(checksum_failures) - 4} more"
+                refuse(
+                    "every component STEP mount row needs its current sha256; missing or "
+                    f"mismatched checksum for: {listed}"
+                )
 
     resolved_likeness_refs: list[tuple[str, Path]] = []
     for label, reference in likeness_refs:
         if reference is None or not reference.is_file():
-            parser.error(f"likeness reference not found: {label}={reference}")
+            refuse(f"likeness reference not found: {label}={reference}")
         resolved_likeness_refs.append((label, reference))
 
+    likeness_mismatch_labels: set[str] = set()
     if args.image_derived:
+        if not (args.powered or args.unpowered):
+            refuse(
+                "--image-derived requires an explicit power classification: pass "
+                "--powered for any functional electrical load, otherwise --unpowered"
+            )
         specs = sorted(project.glob("*_spec.md"))
         if len(specs) != 1:
-            parser.error(
+            refuse(
                 f"--image-derived requires exactly one *_spec.md in the project; found {len(specs)}"
             )
         if not resolved_likeness_refs:
-            parser.error("--image-derived requires at least one --likeness-ref LABEL=PATH")
+            refuse("--image-derived requires at least one --likeness-ref LABEL=PATH")
         for audit_name in ("check_spec.py", "check_landmarks.py"):
             audit = project / "measure" / audit_name
             if not audit.is_file():
-                parser.error(
+                refuse(
                     f"--image-derived requires {audit.relative_to(project)}; "
                     "the project-specific claim cannot be checked generically"
                 )
         for tool in ("render_views.py", "check_likeness.py"):
             if not (IMAGE_SCRIPTS_DIR / tool).is_file():
-                parser.error(f"image-derived tool not found: {IMAGE_SCRIPTS_DIR / tool}")
-
+                refuse(f"image-derived tool not found: {IMAGE_SCRIPTS_DIR / tool}")
+        if args.likeness_accept_mismatch:
+            likeness_mismatch_labels, blockers = _mismatch_acceptance_labels(
+                project, cwd, resolved_likeness_refs
+            )
+            if blockers:
+                refuse(
+                    "--likeness-accept-mismatch requires every currently failing "
+                    "view/reference to be stalled out first: " + "; ".join(blockers)
+                )
     bed = args.bed or _declared_bed(project) or DEFAULT_BED
     runner = Runner(cwd=cwd, dry_run=bool(args.dry_run), verbose=bool(args.verbose))
     workflow_started = time.perf_counter()
@@ -668,6 +1693,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             project,
             assembly,
             parts,
+            printables,
             motion_manifest=motion_manifest,
             exports=bool(args.exports),
             strict_fit=bool(args.strict_fit),
@@ -678,6 +1704,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             image_derived=bool(args.image_derived),
             likeness_refs=resolved_likeness_refs,
             likeness_min=float(args.likeness_min),
+            likeness_accept_mismatch=args.likeness_accept_mismatch,
+            likeness_mismatch_labels=likeness_mismatch_labels,
+            likeness_accept_regression=args.likeness_accept_regression,
             search_fov=str(args.search_fov),
         )
         mode = "image-derived final" if args.image_derived else "final"
