@@ -27,7 +27,9 @@ from workshop.workflow.native_run import (
     NativeRunPaths,
     _NativeProgressTracker,
     _design_vault_binding,
+    _playtest_score_history,
     _run_design_vault,
+    _score_trend,
     _native_run_mutation_lock,
     _recoverable_native_turn_backoff_seconds,
     canonical_wish_bytes,
@@ -699,6 +701,42 @@ class NativeHostTest(unittest.TestCase):
             snapshot = Vault.from_packed_bytes((workspace / RUN_VAULT_PATH).read_bytes())
             self.assertEqual(snapshot.sha256, expected)
             self.assertNotEqual(snapshot.sha256, Vault.from_directory(bundled_vault_root()).sha256)
+
+    def test_score_history_reads_only_host_gate_receipts(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            host = Path(temporary).resolve()
+            self.assertEqual(_playtest_score_history(host), [])
+            gates = host / "gates"
+            gates.mkdir()
+
+            def receipt(name, checks):
+                (gates / name).write_text(json.dumps({"evidence": {"checks": checks}}), encoding="utf-8")
+
+            receipt("0003-make.json", {"cad_verification_passed": True})
+            receipt("0004-playtest.json", {"round": 1, "verdict": "block", "score_reads": 3,
+                                            "score_median": {"play": 8.0, "wish_fit": 8.0},
+                                            "score_spread": {"play": 1, "wish_fit": 0},
+                                            "vault_leads_confirmed": 0})
+            receipt("0006-playtest.json", {"round": 2, "verdict": "pass"})
+            receipt("0008-playtest.json", {"round": 3, "verdict": "pass", "score_reads": 3,
+                                            "score_median": {"play": 6.0, "wish_fit": 9.0},
+                                            "score_spread": {"play": 4, "wish_fit": 0},
+                                            "vault_leads_confirmed": 1})
+            history = _playtest_score_history(host)
+            self.assertEqual([item["round"] for item in history], [1, 2, 3])
+            self.assertIsNone(history[1]["score_median"])
+            self.assertEqual(
+                _score_trend(history),
+                {"regression": {"play": -2.0}, "ambiguous": ["play"]},
+            )
+            self.assertEqual(_score_trend(history[:1]), {"regression": {}, "ambiguous": []})
+            self.assertEqual(_score_trend([]), {"regression": {}, "ambiguous": []})
+            (gates / "0010-playtest.json").write_text("{not json", encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "unreadable: 0010-playtest.json"):
+                _playtest_score_history(host)
+            (gates / "0010-playtest.json").write_text(json.dumps({"evidence": {"checks": []}}), encoding="utf-8")
+            with self.assertRaisesRegex(StateConflict, "malformed: 0010-playtest.json"):
+                _playtest_score_history(host)
 
     def test_run_design_vault_is_bound_by_hash_or_absent(self):
         with tempfile.TemporaryDirectory() as temporary:

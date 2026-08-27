@@ -30,7 +30,11 @@ While pursuing the Goal:
 1. **Observe:** Inspect the sealed Invent concept and research, the selected
    Inventor instructions, universal blueprint, current revision workspace,
    deterministic tool policy, and every evidence-linked feedback item from a
-   prior Playtest.
+   prior Playtest. `STAGE.json` also carries `score_history` (every prior
+   round's medians and spreads), `regression` (dimensions the last repair
+   made worse, with the delta), and `ambiguous` (dimensions readers disagreed
+   on). A repair that fixes the cited failure while a regression grows is not
+   an improvement; address the regression in the same round.
 2. **Act:** Use native editing and the materialized `cad`, `image-to-cad`,
    `design-reference`, and `step-parts` skills under `.agents/skills/` to
    create or repair the actual product artifact. Use native subagents for bounded mechanism, CAD, or
@@ -154,7 +158,23 @@ When `STAGE.json` carries `vault_leads`, the `agent-playtest` check's
 A confirmed lead is a risk you observed in this exact revision, so it must
 name the feedback item that carries the repair direction; a dismissed lead
 says in one sentence why the recorded risk does not apply here. Unanswered,
-duplicated, or never-issued lead ids fail the finalizer and the host gate. Never invent
+duplicated, or never-issued lead ids fail the finalizer and the host gate.
+
+When `STAGE.json` carries `score_dimensions`, the same `agent-playtest`
+observations must also carry `reads`: at least `score_minimum_reads`
+independent native readers, each blind to the others, scoring the sealed
+revision 0 to 10 on exactly those dimensions and naming the single concrete
+`one_change` that would raise its weakest score most:
+
+```json
+{"reader": "first-time-owner", "scores": {"wish_fit": 8, "play": 7,
+ "legibility": 6, "build_confidence": 7}, "one_change": "..."}
+```
+
+The host keeps the median and the spread per dimension in the gate receipt.
+A `pass` verdict is refused when any median sits below `score_floor`. A
+spread of 3 or more is a finding about the artifact — readers cannot tell
+whether it has that property — not noise to average away. Never invent
 physical trials, human players, measurements, or results. Every failing check
 must name the concrete product or design area and the repair direction.
 Invalidate Playtest and its downstream evidence; the host returns every

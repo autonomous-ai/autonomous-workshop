@@ -18,6 +18,7 @@ from workshop.match.native import (
 from workshop.playtest.native import (
     NativePlaytestCheck,
     NativePlaytested,
+    score_summary,
     validate_vault_lead_answers,
 )
 from workshop.product import ToyBlueprint
@@ -41,6 +42,45 @@ def _check(answers=None, check_id="agent-playtest"):
 
 def _answer(lead, verdict="dismissed", why="Not exposed here.", feedback_code=None):
     return {"lead": lead["id"], "verdict": verdict, "why": why, "feedback_code": feedback_code}
+
+
+DIMS = ("wish_fit", "play")
+
+
+def _read(reader, wish_fit=8, play=7, one_change="Deepen the recess."):
+    return {"reader": reader, "scores": {"wish_fit": wish_fit, "play": play}, "one_change": one_change}
+
+
+def _scored_checks(reads):
+    return [{"check_id": "agent-playtest", "observations": {"reads": reads}}]
+
+
+# (name, reads, expected summary or error pattern) — shared with the finalizer suite.
+SCORE_CASES = (
+    (
+        "three-agree",
+        _scored_checks([_read("a"), _read("b"), _read("c")]),
+        {"reads": 3, "median": {"wish_fit": 8.0, "play": 7.0}, "spread": {"wish_fit": 0, "play": 0}, "one_change": ["Deepen the recess."] * 3},
+    ),
+    (
+        "even-count-median-and-spread",
+        _scored_checks([_read("a", 2, 4), _read("b", 4, 7), _read("c", 7, 7), _read("d", 9, 9)]),
+        {"reads": 4, "median": {"wish_fit": 5.5, "play": 7.0}, "spread": {"wish_fit": 7, "play": 5}, "one_change": ["Deepen the recess."] * 4},
+    ),
+    ("no-reads-key", [{"check_id": "agent-playtest", "observations": {"ok": True}}], "carry a reads list"),
+    ("no-agent-playtest", [{"check_id": "mechanical-check", "observations": {"reads": []}}], "carry a reads list"),
+    ("too-few", _scored_checks([_read("a"), _read("b")]), "needs 3 to 16"),
+    ("too-many", _scored_checks([_read("r%d" % i) for i in range(17)]), "needs 3 to 16"),
+    ("bad-shape", _scored_checks([{"reader": "a"}, _read("b"), _read("c")]), "exactly reader, scores"),
+    ("blank-reader", _scored_checks([_read(" "), _read("b"), _read("c")]), "distinct non-empty reader"),
+    ("duplicate-reader", _scored_checks([_read("a"), _read("a"), _read("c")]), "distinct non-empty reader"),
+    ("wrong-dimensions", _scored_checks([{"reader": "a", "scores": {"wish_fit": 8}, "one_change": "x"}, _read("b"), _read("c")]), "exactly the issued dimensions"),
+    ("score-out-of-range", _scored_checks([_read("a", 11), _read("b"), _read("c")]), "outside 0..10"),
+    ("score-bool", _scored_checks([_read("a", True), _read("b"), _read("c")]), "outside 0..10"),
+    ("score-float", _scored_checks([_read("a", 7.5), _read("b"), _read("c")]), "outside 0..10"),
+    ("blank-one-change", _scored_checks([_read("a", one_change=" "), _read("b"), _read("c")]), "non-empty one_change"),
+    ("long-one-change", _scored_checks([_read("a", one_change="x" * 1001), _read("b"), _read("c")]), "non-empty one_change"),
+)
 
 
 # (name, leads, checks, feedback, expected result or error pattern) — shared with the
@@ -218,6 +258,48 @@ class NativePlaytestedTest(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(ContractError, expected):
                         validate_vault_lead_answers(leads, checks, feedback)
+
+    def test_score_summary_cases(self):
+        for name, checks, expected in SCORE_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(score_summary(DIMS, checks, minimum_reads=3), expected)
+                else:
+                    with self.assertRaisesRegex(ContractError, expected):
+                        score_summary(DIMS, checks, minimum_reads=3)
+        with self.assertRaisesRegex(ContractError, "unique and non-empty"):
+            score_summary(("a", "a"), SCORE_CASES[0][1], minimum_reads=3)
+
+    def test_contract_scores_and_floors_a_pass(self):
+        with self.assertRaisesRegex(ContractError, "carry a reads list"):
+            self._playtested().assert_scored(DIMS, floor=5, minimum_reads=3)
+        playtested = self._playtested()
+        scored = NativePlaytested(
+            **{
+                **{key: getattr(playtested, key) for key in (
+                    "round", "made_sha256", "product_artifact_sha256", "blueprint_sha256",
+                    "evidence_root", "evidence_manifest", "feedback", "verdict",
+                )},
+                "checks": tuple(
+                    NativePlaytestCheck(
+                        **{
+                            **check.to_dict(),
+                            "observations": {
+                                **check.to_dict()["observations"],
+                                "reads": [_read("a", 4, 7), _read("b", 4, 7), _read("c", 5, 8)],
+                            },
+                        }
+                    )
+                    if check.check_id == "agent-playtest"
+                    else check
+                    for check in playtested.checks
+                ),
+            }
+        )
+        with self.assertRaisesRegex(ContractError, "below the floor of 5: wish_fit"):
+            scored.assert_scored(DIMS, floor=5, minimum_reads=3)
+        summary = scored.assert_scored(DIMS, floor=4, minimum_reads=3)
+        self.assertEqual(summary["median"], {"wish_fit": 4.0, "play": 7.0})
 
     def test_contract_answers_leads_through_its_checks_and_feedback(self):
         playtested = self._playtested()

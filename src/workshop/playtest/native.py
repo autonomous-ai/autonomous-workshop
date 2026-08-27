@@ -154,6 +154,80 @@ def validate_vault_lead_answers(
     return {"answered": len(seen), "confirmed": confirmed, "dismissed": len(seen) - confirmed}
 
 
+SCORE_READ_FIELDS = frozenset(("reader", "scores", "one_change"))
+MAX_SCORE_READS = 16
+MAX_SCORE_ONE_CHANGE = 1_000
+
+
+def _median(values: Sequence[int]) -> float:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return float(ordered[middle])
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def score_summary(
+    dimensions: Sequence[str],
+    checks: Sequence[Mapping[str, Any]],
+    *,
+    minimum_reads: int,
+    maximum: int = 10,
+) -> dict[str, Any]:
+    """Median and spread of the independent reads in the agent-playtest check.
+
+    ``reads`` is a list of ``{"reader", "scores", "one_change"}``: at least
+    ``minimum_reads`` distinctly named readers, each scoring exactly the issued
+    dimensions with integers 0..``maximum``.  Three readers agreeing 8/8/8 and
+    three saying 2/4/7 are different facts about the same revision, so the
+    spread is kept beside the median rather than averaged away.
+    """
+
+    dims = tuple(dimensions)
+    if not dims or len(set(dims)) != len(dims):
+        raise ContractError("score dimensions must be unique and non-empty")
+    reads: Any = None
+    for check in checks:
+        if check.get("check_id") == VAULT_LEAD_CHECK_ID:
+            reads = (check.get("observations") or {}).get("reads")
+    if not isinstance(reads, (list, tuple)):
+        raise ContractError("agent-playtest observations must carry a reads list")
+    if not minimum_reads <= len(reads) <= MAX_SCORE_READS:
+        raise ContractError(
+            "agent-playtest needs %d to %d independent reads" % (minimum_reads, MAX_SCORE_READS)
+        )
+    readers: set[str] = set()
+    per_dimension: dict[str, list[int]] = {dim: [] for dim in dims}
+    changes: list[str] = []
+    for read in reads:
+        if not isinstance(read, Mapping) or set(read) != SCORE_READ_FIELDS:
+            raise ContractError("each read needs exactly reader, scores, and one_change")
+        reader = read["reader"]
+        if not isinstance(reader, str) or not reader.strip() or reader in readers:
+            raise ContractError("each read needs a distinct non-empty reader name")
+        readers.add(reader)
+        scores = read["scores"]
+        if not isinstance(scores, Mapping) or set(scores) != set(dims):
+            raise ContractError("read %r must score exactly the issued dimensions" % reader)
+        for dim in dims:
+            value = scores[dim]
+            if isinstance(value, bool) or type(value) is not int or not 0 <= value <= maximum:
+                raise ContractError(
+                    "read %r scores %s outside 0..%d" % (reader, dim, maximum)
+                )
+            per_dimension[dim].append(value)
+        change = read["one_change"]
+        if not isinstance(change, str) or not change.strip() or len(change) > MAX_SCORE_ONE_CHANGE:
+            raise ContractError("read %r needs a bounded non-empty one_change" % reader)
+        changes.append(change.strip())
+    return {
+        "reads": len(reads),
+        "median": {dim: _median(per_dimension[dim]) for dim in dims},
+        "spread": {dim: max(per_dimension[dim]) - min(per_dimension[dim]) for dim in dims},
+        "one_change": changes,
+    }
+
+
 @dataclass(frozen=True)
 class NativePlaytestCheck:
     """One exact evidence file and its bounded evaluator observation."""
@@ -388,6 +462,24 @@ class NativePlaytested:
         ):
             raise ContractError("native Playtested belongs to different or incomplete inputs")
 
+    def assert_scored(
+        self, dimensions: Sequence[str], *, floor: int, minimum_reads: int
+    ) -> dict[str, Any]:
+        """Host mirror of the run-local read rule; a pass needs every median at the floor."""
+
+        summary = score_summary(
+            dimensions,
+            [check.to_dict() for check in self.checks],
+            minimum_reads=minimum_reads,
+        )
+        if self.verdict == "pass":
+            low = sorted(dim for dim, value in summary["median"].items() if value < floor)
+            if low:
+                raise ContractError(
+                    "passing Playtest medians sit below the floor of %d: %s" % (floor, ", ".join(low))
+                )
+        return summary
+
     def assert_vault_leads_answered(
         self, leads: Sequence[Mapping[str, Any]]
     ) -> dict[str, int]:
@@ -443,6 +535,7 @@ __all__ = [
     "VAULT_LEAD_CHECK_ID",
     "VAULT_LEAD_VERDICTS",
     "validate_vault_lead_answers",
+    "score_summary",
     "PLAYTEST_VERDICTS",
     "NativePlaytestCheck",
     "NativePlaytested",

@@ -66,6 +66,7 @@ from workshop.match.native import (
 )
 from workshop.playtest.native import NativePlaytested
 from workshop.product import ToyBlueprint
+from workshop.product.blueprints import SCORE_AMBIGUOUS_SPREAD
 from workshop.release.contracts import ProductRelease, ReleaseContext
 from workshop.release.native import (
     NATIVE_RELEASE_LEGACY_MANUAL_PATH,
@@ -880,6 +881,64 @@ def _design_vault_binding(checkpoint: AgentRunCheckpoint, vault: Optional[Vault]
     }
 
 
+def _playtest_score_history(host_state_root: Path) -> list[dict[str, Any]]:
+    """Per-round Playtest scores read back from the host's own gate receipts.
+
+    Each Playtest gate receipt the host wrote carries the round, verdict, read
+    count, and the median and spread per dimension.  Rounds sealed before
+    scores existed appear without them.  Receipts are host state; a receipt
+    that cannot be read is a broken host, not a missing round.
+    """
+
+    gates = Path(host_state_root) / "gates"
+    if not gates.is_dir():
+        return []
+    history: list[dict[str, Any]] = []
+    for path in sorted(gates.iterdir()):
+        if not path.name.endswith("-playtest.json") or path.is_symlink():
+            continue
+        try:
+            document = json.loads(path.read_bytes().decode("utf-8"))
+            checks = document["evidence"]["checks"]
+        except (OSError, UnicodeError, ValueError, KeyError, TypeError) as exc:
+            raise StateConflict("Playtest gate receipt is unreadable: %s" % path.name) from exc
+        if not isinstance(checks, Mapping):
+            raise StateConflict("Playtest gate receipt is malformed: %s" % path.name)
+        history.append(
+            {
+                "round": checks.get("round"),
+                "verdict": checks.get("verdict"),
+                "score_reads": checks.get("score_reads"),
+                "score_median": checks.get("score_median"),
+                "score_spread": checks.get("score_spread"),
+                "vault_leads_confirmed": checks.get("vault_leads_confirmed"),
+            }
+        )
+    return history
+
+
+def _score_trend(history: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Deltas between the last two scored rounds and the dimensions readers disagree on."""
+
+    scored = [item for item in history if isinstance(item.get("score_median"), Mapping)]
+    regression: dict[str, float] = {}
+    ambiguous: list[str] = []
+    if scored:
+        last = scored[-1]
+        ambiguous = sorted(
+            dim
+            for dim, spread in (last.get("score_spread") or {}).items()
+            if isinstance(spread, (int, float)) and spread >= SCORE_AMBIGUOUS_SPREAD
+        )
+        if len(scored) >= 2:
+            previous = scored[-2]["score_median"]
+            for dim, value in last["score_median"].items():
+                before = previous.get(dim)
+                if isinstance(before, (int, float)) and isinstance(value, (int, float)) and value < before:
+                    regression[dim] = value - before
+    return {"regression": regression, "ambiguous": ambiguous}
+
+
 def native_stage_prompt(stage: str) -> str:
     """Give the native session a compact pointer, never Wish or host secrets."""
 
@@ -1571,6 +1630,7 @@ def _prepare_stage_input(
                         ),
                     }
                     subject = _stage_subject("make", subject_inputs)
+                    score_history = _playtest_score_history(run.host_state_root)
                     inputs = {
                         **common,
                         "round": checkpoint.round_index,
@@ -1579,6 +1639,8 @@ def _prepare_stage_input(
                             if feedback_artifact is not None
                             else None
                         ),
+                        "score_history": score_history,
+                        **_score_trend(score_history),
                         "host_cad_gate_rejection": cad_gate_rejection,
                         "product_root": "artifacts/make/r%04d/product"
                         % checkpoint.round_index,
@@ -1629,6 +1691,15 @@ def _prepare_stage_input(
                             "host_cad_gate_rejection": cad_gate_rejection,
                             "required_check_ids": list(
                                 blueprint.required_playtest_checks()
+                            ),
+                            **(
+                                {
+                                    "score_dimensions": list(blueprint.score_dimensions()),
+                                    "score_floor": blueprint.score_floor(),
+                                    "score_minimum_reads": blueprint.score_minimum_reads(),
+                                }
+                                if vault is not None
+                                else {}
                             ),
                             "evidence_root": "artifacts/playtest/r%04d/evidence"
                             % checkpoint.round_index,
@@ -2172,6 +2243,18 @@ def _evaluate_playtest_stage(
         vault.leads_for_concept(context["invented"].concept) if vault is not None else []
     )
     answered = playtested.assert_vault_leads_answered(leads)
+    scores: dict[str, Any] = {"score_reads": None, "score_median": None, "score_spread": None}
+    if vault is not None:
+        summary = playtested.assert_scored(
+            blueprint.score_dimensions(),
+            floor=blueprint.score_floor(),
+            minimum_reads=blueprint.score_minimum_reads(),
+        )
+        scores = {
+            "score_reads": summary["reads"],
+            "score_median": summary["median"],
+            "score_spread": summary["spread"],
+        }
     passed = playtested.verdict == "pass"
     transition = "release" if passed else "make"
     if proposal.outcome.proposed_transition != transition:
@@ -2204,8 +2287,10 @@ def _evaluate_playtest_stage(
             ),
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
+            "round": checkpoint.round_index,
             "vault_leads_answered": answered["answered"],
             "vault_leads_confirmed": answered["confirmed"],
+            **scores,
         },
     )
     return StageGateDecision(evidence=evidence, transition=transition), additional
@@ -3127,6 +3212,7 @@ def _native_receipt(
         ),
     }
     needs: list[str] = []
+    rounds = _playtest_score_history(paths.host_state) if paths is not None else []
     if paths is not None:
         if checkpoint.stage == "release" and checkpoint.status == "waiting":
             wait_run = AgentRun.open(
@@ -3251,6 +3337,7 @@ def _native_receipt(
     receipt: dict[str, Any] = {
         "schema_version": 1,
         "kind": "native-agent-run",
+        "rounds": rounds,
         "product_id": checkpoint.product_id,
         "status": checkpoint.status,
         "stage": checkpoint.stage,

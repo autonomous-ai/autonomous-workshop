@@ -14,7 +14,7 @@ from workshop.artifacts import build_artifact_manifest
 from workshop.invent.native import NativeInvented
 from tests.invent.test_native_contract import CONCEPT_VIOLATIONS, v4_concept
 from tests.invent.test_vault import write_vault
-from tests.playtest.test_native_playtested import LEAD_ANSWER_CASES
+from tests.playtest.test_native_playtested import DIMS, LEAD_ANSWER_CASES, SCORE_CASES
 from workshop.invent.vault import Vault
 from workshop.make.native import NativeMade
 from workshop.match.native import (
@@ -732,6 +732,87 @@ class StageProposalToolTest(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(tool.ProposalError, expected):
                         tool._validate_vault_lead_answers(leads, checks, feedback)
+
+    def test_score_rules_match_the_host_mirror(self):
+        spec = importlib.util.spec_from_file_location("stage_proposal_scores_test", TOOL)
+        tool = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tool)
+        for name, checks, expected in SCORE_CASES:
+            with self.subTest(case=name):
+                if isinstance(expected, dict):
+                    self.assertEqual(tool._score_summary(DIMS, checks, minimum_reads=3), expected)
+                else:
+                    with self.assertRaisesRegex(tool.ProposalError, expected):
+                        tool._score_summary(DIMS, checks, minimum_reads=3)
+        with self.assertRaisesRegex(tool.ProposalError, "unique and non-empty"):
+            tool._score_summary(("a", "a"), SCORE_CASES[0][1], minimum_reads=3)
+        tool._assert_scored({}, [], "pass")
+        issued = {"score_dimensions": list(DIMS), "score_floor": 5, "score_minimum_reads": 3}
+        tool._assert_scored(issued, SCORE_CASES[0][1], "pass")
+        low = [{"check_id": "agent-playtest", "observations": {"reads": [
+            {"reader": r, "scores": {"wish_fit": 3, "play": 9}, "one_change": "x"} for r in "abc"]}}]
+        tool._assert_scored(issued, low, "improve")
+        with self.assertRaisesRegex(tool.ProposalError, "below the floor of 5: wish_fit"):
+            tool._assert_scored(issued, low, "pass")
+
+    def test_playtest_scores_are_required_when_issued(self):
+        made = self.create_made()
+        evidence_root = self.run_root / "artifacts/playtest/r0001/evidence"
+        evidence_root.mkdir(parents=True)
+        (evidence_root / "config.json").write_bytes(b'{"seed":1}\n')
+        checks = []
+        for check_id in self.blueprint.required_playtest_checks():
+            evidence_ref = "%s.json" % check_id
+            (evidence_root / evidence_ref).write_bytes(canonical_json({"check": check_id}) + b"\n")
+            checks.append(
+                {
+                    "check_id": check_id,
+                    "passed": True,
+                    "evaluator": "workshop-host",
+                    "evaluator_version": "1.0.0",
+                    "config_ref": "config.json",
+                    "evidence_ref": evidence_ref,
+                    "observed_at": "2026-08-26T00:00:00Z",
+                    "observations": {"ok": True},
+                }
+            )
+        self.write_stage(
+            "playtest",
+            {
+                "made": made.to_dict(),
+                "required_check_ids": list(self.blueprint.required_playtest_checks()),
+                "score_dimensions": list(self.blueprint.score_dimensions()),
+                "score_floor": self.blueprint.score_floor(),
+                "score_minimum_reads": self.blueprint.score_minimum_reads(),
+            },
+            round_index=1,
+        )
+        self.write_json("drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"})
+        completed = self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence", expected=2,
+        )
+        self.assertIn("carry a reads list", completed.stderr)
+        for check in checks:
+            if check["check_id"] == "agent-playtest":
+                check["observations"]["reads"] = [
+                    {
+                        "reader": reader,
+                        "scores": {dim: 7 for dim in self.blueprint.score_dimensions()},
+                        "one_change": "Widen the base ring by 1 mm.",
+                    }
+                    for reader in ("first-time", "optimizing", "adversarial")
+                ]
+        self.write_json("drafts/playtest.json", {"checks": checks, "feedback": [], "verdict": "pass"})
+        self.run_tool(
+            "playtest", "--source", "drafts/playtest.json",
+            "--evidence-root", "artifacts/playtest/r0001/evidence",
+        )
+        document, _ = self.assert_canonical_file("artifacts/playtest/r0001/playtested.json")
+        summary = NativePlaytested.from_mapping(document).assert_scored(
+            self.blueprint.score_dimensions(), floor=5, minimum_reads=3
+        )
+        self.assertEqual(summary["reads"], 3)
 
     def test_playtest_must_answer_issued_vault_leads(self):
         made = self.create_made()

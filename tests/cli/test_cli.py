@@ -220,6 +220,21 @@ class NativeCommandTest(unittest.TestCase):
             stdout.getvalue(),
         )
 
+    def test_status_text_prints_one_line_per_scored_round(self):
+        stdout = StringIO()
+        receipt = native_receipt(status="active", stage="make")
+        receipt["rounds"] = [
+            {"round": 1, "verdict": "block", "score_median": {"play": 8, "wish_fit": 7.5},
+             "score_spread": {"play": 1, "wish_fit": 4}},
+            {"round": 2, "verdict": "pass", "score_median": None, "score_spread": None},
+            "not a mapping",
+        ]
+        with mock.patch("cli.main.native_run_status", return_value=receipt), redirect_stdout(stdout):
+            self.assertEqual(main(("status", "wish-one")), 0)
+        text = stdout.getvalue()
+        self.assertIn("Round 1: block — play 8 wish_fit 7.5 (readers disagree on wish_fit)", text)
+        self.assertIn("Round 2: pass — unscored", text)
+
     def test_status_text_surfaces_actionable_publication_need(self):
         stdout = StringIO()
         receipt = native_receipt(status="waiting", stage="deliver")

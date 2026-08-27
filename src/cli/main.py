@@ -236,6 +236,33 @@ def _print_native_receipt(receipt: Mapping[str, Any], *, verb: str) -> None:
                     last_activity,
                 )
             )
+    rounds = receipt.get("rounds")
+    if isinstance(rounds, (list, tuple)):
+        for entry in rounds:
+            if not isinstance(entry, Mapping):
+                continue
+            median = entry.get("score_median")
+            if isinstance(median, Mapping):
+                spread = entry.get("score_spread") or {}
+                ambiguous = sorted(
+                    dim
+                    for dim, value in spread.items()
+                    if isinstance(value, (int, float)) and value >= 3
+                )
+                scores = " ".join(
+                    "%s %g" % (dim, value) for dim, value in sorted(median.items())
+                )
+                print(
+                    "Round %s: %s — %s%s"
+                    % (
+                        entry.get("round", "?"),
+                        entry.get("verdict", "?"),
+                        scores,
+                        " (readers disagree on %s)" % ", ".join(ambiguous) if ambiguous else "",
+                    )
+                )
+            else:
+                print("Round %s: %s — unscored" % (entry.get("round", "?"), entry.get("verdict", "?")))
     publication = receipt.get("publication")
     publication_reason = None
     if isinstance(publication, Mapping):

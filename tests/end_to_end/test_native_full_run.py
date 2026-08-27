@@ -482,9 +482,23 @@ class _OneSessionProductAgent:
             }
             for lead in inputs.get("vault_leads", [])
         ]
+        base = {1: 8, 2: 6}.get(stage["round"], 7)
+        reads = [
+            {
+                "reader": reader,
+                "scores": {
+                    dimension: min(10, base + offset)
+                    for dimension in inputs.get("score_dimensions", [])
+                },
+                "one_change": "Deepen the waypoint recesses by 0.5 mm.",
+            }
+            for reader, offset in (("first-time", 0), ("optimizing", 0), ("adversarial", 1))
+        ]
         for check in checks:
             if check["check_id"] == "agent-playtest":
                 check["observations"]["vault_leads"] = answers
+                if "score_dimensions" in inputs:
+                    check["observations"]["reads"] = reads
         source = "authored/playtest.json"
         _write_json(
             run_root / source,
@@ -1337,6 +1351,20 @@ class NativeFullRunTest(unittest.TestCase):
             if packet["stage"] == "make"
         ]
         self.assertEqual([packet["round"] for packet in make_packets], [1, 2, 3, 4])
+        self.assertEqual(
+            [len(packet["inputs"]["score_history"]) for packet in make_packets],
+            [0, 1, 2, 3],
+        )
+        self.assertEqual(make_packets[1]["inputs"]["regression"], {})
+        # round 2 scored 6 against round 1's 8: the next Make is told so
+        self.assertEqual(
+            make_packets[2]["inputs"]["regression"],
+            {"wish_fit": -2, "play": -2, "legibility": -2, "build_confidence": -2},
+        )
+        self.assertEqual(
+            [entry["verdict"] for entry in make_packets[3]["inputs"]["score_history"]],
+            ["block", "block", "block"],
+        )
 
     def test_cad_gate_rejections_resume_with_hash_bound_same_stage_feedback(self):
         launcher = _OneSessionProductAgent()
@@ -1850,6 +1878,18 @@ class NativeFullRunTest(unittest.TestCase):
                 playtest_gate["evidence"]["checks"]["vault_leads_answered"], len(leads)
             )
             self.assertEqual(playtest_gate["evidence"]["checks"]["vault_leads_confirmed"], 0)
+            self.assertEqual(playtest_gate["evidence"]["checks"]["score_reads"], 3)
+            self.assertEqual(
+                playtest_gate["evidence"]["checks"]["score_median"],
+                {"wish_fit": 8, "play": 8, "legibility": 8, "build_confidence": 8},
+            )
+            self.assertEqual(
+                playtest_gate["evidence"]["checks"]["score_spread"],
+                {"wish_fit": 1, "play": 1, "legibility": 1, "build_confidence": 1},
+            )
+            self.assertEqual(by_stage["make"]["inputs"]["score_history"], [])
+            self.assertEqual(by_stage["make"]["inputs"]["regression"], {})
+            self.assertEqual(by_stage["make"]["inputs"]["ambiguous"], [])
             self.assertTrue(make_gate["evidence"]["checks"]["cad_verification_passed"])
             self.assertTrue(
                 playtest_gate["evidence"]["checks"]["cad_verification_passed"]
