@@ -291,6 +291,7 @@ class CodexNativeSessionTest(unittest.TestCase):
         model="gpt-5.6-sol",
         effort="high",
         binary=TEST_CODEX_BINARY,
+        timeout_seconds=30,
     ):
         factory = FakePopenFactory(scripts)
         return (
@@ -298,7 +299,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 model=model,
                 reasoning_effort=effort,
                 binary=binary,
-                timeout_seconds=30,
+                timeout_seconds=timeout_seconds,
                 popen_factory=factory,
                 cli_version="0.145.0",
             ),
@@ -1657,6 +1658,16 @@ class CodexNativeSessionTest(unittest.TestCase):
                 timeout_seconds=3_601,
             )
 
+    def test_finalization_marker_allows_bounded_goal_completion_grace(self):
+        self.assertEqual(
+            codex_runtime._CODEX_FINALIZATION_MARKER_GRACE_SECONDS,
+            30.0,
+        )
+        self.assertLess(
+            codex_runtime._CODEX_FINALIZATION_MARKER_GRACE_SECONDS,
+            DEFAULT_CODEX_TIMEOUT_SECONDS,
+        )
+
     def test_completed_turn_is_reaped_after_a_short_natural_exit_grace(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1797,6 +1808,46 @@ class CodexNativeSessionTest(unittest.TestCase):
             )
             self.assertTrue(factory.processes[0].terminated)
 
+    def test_finalization_marker_grace_cannot_extend_turn_timeout(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve() / "run"
+            root.mkdir()
+            marker = root / "agent-outcome.json"
+
+            def finalize():
+                marker.write_text("{}\n", encoding="utf-8")
+
+            launcher, factory = self.launcher(
+                [
+                    {
+                        "stdout": self.start_events(terminal=False),
+                        "stdout_callbacks": {2: finalize},
+                        "hang_until_terminated": True,
+                    }
+                ],
+                timeout_seconds=1,
+            )
+
+            started_at = time.monotonic()
+            with mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_GRACE_SECONDS",
+                2.0,
+            ), mock.patch.object(
+                codex_runtime,
+                "_CODEX_FINALIZATION_MARKER_POLL_SECONDS",
+                0.005,
+            ), self.assertRaises(CodexFinalizedWithoutTerminalError):
+                self.start(
+                    launcher,
+                    root,
+                    finalization_marker=marker,
+                )
+            elapsed = time.monotonic() - started_at
+
+            self.assertLess(elapsed, 1.5)
+            self.assertTrue(factory.processes[0].terminated)
+
     def test_public_terminal_during_marker_grace_preserves_normal_success(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve() / "run"
@@ -1841,7 +1892,11 @@ class CodexNativeSessionTest(unittest.TestCase):
             marker = root / "agent-outcome.json"
             guard = mock.Mock()
             guard.reap.return_value = True
-            watch = codex_runtime._FinalizationMarkerWatch(marker, guard)
+            watch = codex_runtime._FinalizationMarkerWatch(
+                marker,
+                guard,
+                time.monotonic() + 1.0,
+            )
             identity_checked = threading.Event()
             release_identity = threading.Event()
             original_identity = watch._regular_identity

@@ -1212,7 +1212,9 @@ def _make_contract(
         "%s/product.json" % product_root_value,
         "Make product.json",
     )
-    _mapping(product_document, "Make product.json", nonempty=True)
+    product = _mapping(product_document, "Make product.json", nonempty=True)
+    _bounded_text(product.get("title"), "Make product title", 2_000)
+    _bounded_text(product.get("summary"), "Make product summary", 2_000)
     verification_sha256, _, _ = _hash_regular(
         run_root,
         "%s/%s" % (product_root_value, verification_relative.as_posix()),
@@ -1240,7 +1242,7 @@ def _make_contract(
         "product_root": product_root_value,
         "cad_project_path": project_relative.as_posix(),
         "product_manifest": manifest,
-        "product": product_document,
+        "product": product,
         "product_json_sha256": hashlib.sha256(product_bytes).hexdigest(),
         "cad_verification_path": verification_relative.as_posix(),
         "cad_verification_sha256": verification_sha256,

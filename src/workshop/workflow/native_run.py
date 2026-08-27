@@ -148,6 +148,7 @@ _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_BYTES = 256 * 1024
 _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS = 2_000
+_MAX_MAKE_PROPOSAL_REJECTIONS = 32
 _MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
@@ -177,6 +178,24 @@ _PRODUCT_RUN_PDF_VALIDATOR_INPUT = (
 _PRODUCT_RUN_TERMINAL_RELEASE_INPUT = (
     ".agents/skills/autonomous-workshop/references/release-terminal-v1.md"
 )
+_MAKE_PROPOSAL_REJECTION_FEEDBACK = {
+    "make-product-metadata-invalid": (
+        "The host rejected product.json metadata. Add both title and summary "
+        "as non-empty text values of at most 2000 characters, then rerun "
+        "the Make finalizer so made.json, its manifest, and agent-outcome.json "
+        "are regenerated from the repaired bytes."
+    ),
+    "make-artifact-invalid": (
+        "The host could not safely identify the exact Make artifact tree. "
+        "Repair the product files and rerun the Make finalizer so every "
+        "artifact binding and hash is regenerated from the current bytes."
+    ),
+    "make-contract-invalid": (
+        "The host rejected the agent-authored Make contract. Repair the Make "
+        "product and rerun the Make finalizer so made.json and agent-outcome.json "
+        "are regenerated from one internally consistent artifact tree."
+    ),
+}
 
 
 class _FactoryCredentialsUnavailable(Exception):
@@ -213,12 +232,13 @@ class _RecoverableNativeTurn(WorkshopError):
     """Internal typed signal for a checkpoint-bound turn continuation."""
 
 
-@dataclass(frozen=True)
 class _MakeProposalRejected(Exception):
     """A valid Make envelope whose agent-authored candidate failed its contract."""
 
-    failure_code: str
-    feedback: str
+    def __init__(self, failure_code: str, feedback: str) -> None:
+        self.failure_code = failure_code
+        self.feedback = feedback
+        super().__init__(failure_code)
 
 
 @dataclass(frozen=True)
@@ -750,6 +770,480 @@ def _read_cad_gate_rejection(
     if record["rejection_sha256"] != _sha256(_canonical_json_bytes(identity)):
         raise StateConflict("CAD gate rejection hash is invalid")
     return record
+
+
+def _make_proposal_rejection_directory(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    *,
+    create: bool = False,
+) -> Path:
+    if checkpoint.stage != "make":
+        raise TransitionError("Make proposal rejection belongs to another stage")
+    current = run.host_state_root
+    parts = (
+        _MAKE_PROPOSAL_REJECTIONS_DIRECTORY,
+        checkpoint.checkpoint_sha256,
+    )
+    for index, part in enumerate(parts):
+        candidate = current / part
+        try:
+            identity = candidate.lstat()
+        except FileNotFoundError:
+            if not create:
+                return current.joinpath(*parts[index:])
+            try:
+                candidate.mkdir(mode=0o700)
+                identity = candidate.lstat()
+            except OSError as exc:
+                raise StateConflict(
+                    "Make proposal rejection directory is unavailable"
+                ) from exc
+        except OSError as exc:
+            raise StateConflict(
+                "Make proposal rejection directory is unavailable"
+            ) from exc
+        if (
+            stat.S_ISLNK(identity.st_mode)
+            or not stat.S_ISDIR(identity.st_mode)
+            or stat.S_IMODE(identity.st_mode) != 0o700
+        ):
+            raise StateConflict("Make proposal rejection directory must be private")
+        current = candidate
+    return current
+
+
+def _read_stable_private_bytes(
+    path: Path, *, label: str, maximum_bytes: int
+) -> bytes:
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("%s is unavailable" % label) from exc
+    if (
+        stat.S_ISLNK(before.st_mode)
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= maximum_bytes
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("%s is not a stable private file" % label)
+    return content
+
+
+def _make_proposal_rejection_record_path(
+    directory: Path, rejection_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", rejection_sha256) is None:
+        raise StateConflict("Make proposal rejection identity is invalid")
+    return directory / ("rejection-%s.json" % rejection_sha256)
+
+
+def _make_proposal_quarantine_path(
+    directory: Path, proposal_file_sha256: str
+) -> Path:
+    if re.fullmatch(r"[0-9a-f]{64}", proposal_file_sha256) is None:
+        raise StateConflict("quarantined Make proposal identity is invalid")
+    return directory / ("outcome-%s.json" % proposal_file_sha256)
+
+
+def _validate_make_proposal_rejection_record(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    record: Mapping[str, Any],
+    *,
+    directory: Path,
+    seen: frozenset[str] = frozenset(),
+) -> Mapping[str, Any]:
+    expected = {
+        "schema_version",
+        "kind",
+        "product_id",
+        "stage",
+        "round",
+        "rejection_number",
+        "checkpoint_sha256",
+        "subject_sha256",
+        "previous_rejection_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejected_artifacts",
+        "failure_code",
+        "feedback",
+        "rejection_sha256",
+    }
+    digest_fields = (
+        "checkpoint_sha256",
+        "subject_sha256",
+        "rejected_proposal_sha256",
+        "rejected_proposal_file_sha256",
+        "rejected_outcome_sha256",
+        "rejection_sha256",
+    )
+    previous = record.get("previous_rejection_sha256")
+    feedback = record.get("feedback")
+    artifacts = record.get("rejected_artifacts")
+    rejection_number = record.get("rejection_number")
+    rejection_sha256 = record.get("rejection_sha256")
+    failure_code = record.get("failure_code")
+    if (
+        set(record) != expected
+        or record.get("schema_version") != 1
+        or record.get("kind") != _MAKE_PROPOSAL_REJECTION_KIND
+        or record.get("product_id") != checkpoint.product_id
+        or record.get("stage") != "make"
+        or record.get("round") != checkpoint.round_index
+        or type(rejection_number) is not int
+        or not 1 <= rejection_number <= _MAX_MAKE_PROPOSAL_REJECTIONS
+        or record.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or (
+            previous is not None
+            and (
+                not isinstance(previous, str)
+                or re.fullmatch(r"[0-9a-f]{64}", previous) is None
+            )
+        )
+        or any(
+            not isinstance(record.get(name), str)
+            or re.fullmatch(r"[0-9a-f]{64}", record[name]) is None
+            for name in digest_fields
+        )
+        or failure_code not in _MAKE_PROPOSAL_REJECTION_FEEDBACK
+        or not isinstance(feedback, str)
+        or not feedback.strip()
+        or len(feedback) > _MAX_MAKE_PROPOSAL_REJECTION_FEEDBACK_CHARS
+        or any(ord(character) < 32 or ord(character) == 127 for character in feedback)
+        or feedback != _MAKE_PROPOSAL_REJECTION_FEEDBACK.get(failure_code)
+        or not isinstance(artifacts, list)
+    ):
+        raise StateConflict("Make proposal rejection is invalid")
+    try:
+        artifact_values = tuple(
+            AgentArtifact.from_mapping(value) for value in artifacts
+        )
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection artifacts are invalid") from exc
+    if [artifact.to_dict() for artifact in artifact_values] != artifacts:
+        raise StateConflict("Make proposal rejection artifacts are not canonical")
+    identity = {key: record[key] for key in expected - {"rejection_sha256"}}
+    if rejection_sha256 != _sha256(_canonical_json_bytes(identity)):
+        raise StateConflict("Make proposal rejection hash is invalid")
+    if rejection_sha256 in seen:
+        raise StateConflict("Make proposal rejection chain contains a cycle")
+
+    quarantine_path = _make_proposal_quarantine_path(
+        directory, record["rejected_proposal_file_sha256"]
+    )
+    quarantine = _read_stable_private_bytes(
+        quarantine_path,
+        label="quarantined Make proposal",
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+    )
+    if _sha256(quarantine) != record["rejected_proposal_file_sha256"]:
+        raise StateConflict("quarantined Make proposal hash is invalid")
+    try:
+        document = _strict_json_bytes(quarantine, label="quarantined Make proposal")
+        proposal = AgentOutcomeProposal.from_mapping(document)
+    except ContractError as exc:
+        raise StateConflict("quarantined Make proposal is invalid") from exc
+    if (
+        proposal.checkpoint_sha256 != checkpoint.checkpoint_sha256
+        or proposal.subject_sha256 != record["subject_sha256"]
+        or proposal.outcome.stage != "make"
+        or proposal.outcome.status != "ready"
+        or proposal.outcome.proposed_transition != "playtest"
+        or proposal.sha256 != record["rejected_proposal_sha256"]
+        or proposal.outcome.sha256 != record["rejected_outcome_sha256"]
+        or [artifact.to_dict() for artifact in proposal.outcome.artifacts]
+        != artifacts
+    ):
+        raise StateConflict("quarantined Make proposal disagrees with its rejection")
+
+    if previous is None:
+        if rejection_number != 1:
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+    else:
+        if rejection_number <= 1:
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+        previous_content = _read_stable_private_bytes(
+            _make_proposal_rejection_record_path(directory, previous),
+            label="prior Make proposal rejection",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        try:
+            previous_record = _strict_json_bytes(
+                previous_content, label="prior Make proposal rejection"
+            )
+        except ContractError as exc:
+            raise StateConflict("prior Make proposal rejection is invalid") from exc
+        if previous_content != _canonical_json_bytes(previous_record) + b"\n":
+            raise StateConflict("prior Make proposal rejection is not canonical")
+        validated_previous = _validate_make_proposal_rejection_record(
+            run,
+            checkpoint,
+            previous_record,
+            directory=directory,
+            seen=seen | {rejection_sha256},
+        )
+        if (
+            validated_previous["rejection_sha256"] != previous
+            or validated_previous["rejection_number"] != rejection_number - 1
+        ):
+            raise StateConflict("Make proposal rejection predecessor is invalid")
+    return dict(record)
+
+
+def _read_make_proposal_rejection(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> Optional[Mapping[str, Any]]:
+    if checkpoint.stage != "make":
+        return None
+    directory = _make_proposal_rejection_directory(run, checkpoint)
+    head_path = directory / "current.json"
+    if not head_path.exists() and not head_path.is_symlink():
+        return None
+    content = _read_stable_private_bytes(
+        head_path,
+        label="Make proposal rejection head",
+        maximum_bytes=4 * 1024,
+    )
+    try:
+        head = _strict_json_bytes(content, label="Make proposal rejection head")
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection head is invalid") from exc
+    expected = {
+        "schema_version",
+        "kind",
+        "checkpoint_sha256",
+        "rejection_sha256",
+        "head_sha256",
+    }
+    identity = {key: head.get(key) for key in expected - {"head_sha256"}}
+    if (
+        content != _canonical_json_bytes(head) + b"\n"
+        or set(head) != expected
+        or head.get("schema_version") != 1
+        or head.get("kind") != _MAKE_PROPOSAL_REJECTION_HEAD_KIND
+        or head.get("checkpoint_sha256") != checkpoint.checkpoint_sha256
+        or not isinstance(head.get("rejection_sha256"), str)
+        or re.fullmatch(r"[0-9a-f]{64}", head["rejection_sha256"]) is None
+        or head.get("head_sha256") != _sha256(_canonical_json_bytes(identity))
+    ):
+        raise StateConflict("Make proposal rejection head is invalid")
+    record_content = _read_stable_private_bytes(
+        _make_proposal_rejection_record_path(
+            directory, head["rejection_sha256"]
+        ),
+        label="Make proposal rejection",
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+    )
+    try:
+        record = _strict_json_bytes(
+            record_content, label="Make proposal rejection"
+        )
+    except ContractError as exc:
+        raise StateConflict("Make proposal rejection is invalid") from exc
+    if record_content != _canonical_json_bytes(record) + b"\n":
+        raise StateConflict("Make proposal rejection is not canonical")
+    validated = _validate_make_proposal_rejection_record(
+        run, checkpoint, record, directory=directory
+    )
+    if validated["rejection_sha256"] != head["rejection_sha256"]:
+        raise StateConflict("Make proposal rejection head points to another record")
+    return validated
+
+
+def _make_rejection_for_error(error: ContractError) -> _MakeProposalRejected:
+    if isinstance(error, StateConflict) or not isinstance(error, ContractError):
+        raise StateConflict("Make proposal rejection classification is invalid")
+    message = str(error)
+    if message.startswith("Made product title ") or message.startswith(
+        "Made product summary "
+    ):
+        failure_code = "make-product-metadata-invalid"
+        return _MakeProposalRejected(
+            failure_code=failure_code,
+            feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        )
+    if isinstance(error, ArtifactError):
+        failure_code = "make-artifact-invalid"
+        return _MakeProposalRejected(
+            failure_code=failure_code,
+            feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+        )
+    failure_code = "make-contract-invalid"
+    return _MakeProposalRejected(
+        failure_code=failure_code,
+        feedback=_MAKE_PROPOSAL_REJECTION_FEEDBACK[failure_code],
+    )
+
+
+def _current_agent_outcome_bytes(
+    run: AgentRun, proposal: AgentOutcomeProposal
+) -> bytes:
+    document, content = read_bounded_json_artifact(
+        run.run_root,
+        _AGENT_OUTCOME_NAME,
+        maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        label=_AGENT_OUTCOME_NAME,
+    )
+    current = AgentOutcomeProposal.from_mapping(document)
+    if current.to_dict() != proposal.to_dict():
+        raise StateConflict("agent outcome changed while its rejection was recorded")
+    return content
+
+
+def _persist_make_proposal_rejection(
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    proposal: AgentOutcomeProposal,
+    rejection: _MakeProposalRejected,
+) -> Mapping[str, Any]:
+    if checkpoint.stage != "make":
+        raise TransitionError("Make proposal rejection belongs to another stage")
+    if (
+        _MAKE_PROPOSAL_REJECTION_FEEDBACK.get(rejection.failure_code)
+        != rejection.feedback
+    ):
+        raise StateConflict("Make proposal rejection feedback is invalid")
+    proposal_bytes = _current_agent_outcome_bytes(run, proposal)
+    proposal_file_sha256 = _sha256(proposal_bytes)
+    previous = _read_make_proposal_rejection(run, checkpoint)
+    if (
+        previous is not None
+        and previous["rejected_proposal_file_sha256"] == proposal_file_sha256
+        and previous["rejected_proposal_sha256"] == proposal.sha256
+        and previous["subject_sha256"] == proposal.subject_sha256
+    ):
+        return previous
+    if (
+        previous is not None
+        and previous["rejection_number"] >= _MAX_MAKE_PROPOSAL_REJECTIONS
+    ):
+        raise WorkshopError(
+            "Make proposal exhausted its bounded host rejection budget"
+        )
+    directory = _make_proposal_rejection_directory(run, checkpoint, create=True)
+    quarantine_path = _make_proposal_quarantine_path(
+        directory, proposal_file_sha256
+    )
+    if quarantine_path.exists() or quarantine_path.is_symlink():
+        quarantined = _read_stable_private_bytes(
+            quarantine_path,
+            label="quarantined Make proposal",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        if quarantined != proposal_bytes:
+            raise StateConflict("quarantined Make proposal bytes changed")
+    else:
+        _atomic_private_write(quarantine_path, proposal_bytes)
+    identity: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": _MAKE_PROPOSAL_REJECTION_KIND,
+        "product_id": checkpoint.product_id,
+        "stage": "make",
+        "round": checkpoint.round_index,
+        "rejection_number": (
+            previous["rejection_number"] + 1 if previous is not None else 1
+        ),
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "subject_sha256": proposal.subject_sha256,
+        "previous_rejection_sha256": (
+            previous["rejection_sha256"] if previous is not None else None
+        ),
+        "rejected_proposal_sha256": proposal.sha256,
+        "rejected_proposal_file_sha256": proposal_file_sha256,
+        "rejected_outcome_sha256": proposal.outcome.sha256,
+        "rejected_artifacts": [
+            artifact.to_dict() for artifact in proposal.outcome.artifacts
+        ],
+        "failure_code": rejection.failure_code,
+        "feedback": rejection.feedback,
+    }
+    record = {
+        **identity,
+        "rejection_sha256": _sha256(_canonical_json_bytes(identity)),
+    }
+    encoded = _canonical_json_bytes(record) + b"\n"
+    if len(encoded) > _MAX_MAKE_PROPOSAL_REJECTION_BYTES:
+        raise StateConflict("Make proposal rejection exceeded its safe size limit")
+    record_path = _make_proposal_rejection_record_path(
+        directory, record["rejection_sha256"]
+    )
+    if record_path.exists() or record_path.is_symlink():
+        existing = _read_stable_private_bytes(
+            record_path,
+            label="Make proposal rejection",
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+        )
+        if existing != encoded:
+            raise StateConflict("Make proposal rejection identity was reused")
+    else:
+        _atomic_private_write(record_path, encoded)
+
+    head_identity = {
+        "schema_version": 1,
+        "kind": _MAKE_PROPOSAL_REJECTION_HEAD_KIND,
+        "checkpoint_sha256": checkpoint.checkpoint_sha256,
+        "rejection_sha256": record["rejection_sha256"],
+    }
+    head = {
+        **head_identity,
+        "head_sha256": _sha256(_canonical_json_bytes(head_identity)),
+    }
+    _atomic_private_write(
+        directory / "current.json", _canonical_json_bytes(head) + b"\n"
+    )
+    return record
+
+
+def _remove_rejected_agent_outcome(
+    run: AgentRun, rejection: Mapping[str, Any]
+) -> None:
+    path = run.run_root / _AGENT_OUTCOME_NAME
+    if not path.exists() and not path.is_symlink():
+        return
+    try:
+        document, content = read_bounded_json_artifact(
+            run.run_root,
+            _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+            label=_AGENT_OUTCOME_NAME,
+        )
+        proposal = AgentOutcomeProposal.from_mapping(document)
+    except ContractError as exc:
+        raise StateConflict("rejected agent outcome changed before removal") from exc
+    if (
+        _sha256(content) != rejection["rejected_proposal_file_sha256"]
+        or proposal.sha256 != rejection["rejected_proposal_sha256"]
+        or proposal.outcome.sha256 != rejection["rejected_outcome_sha256"]
+    ):
+        raise StateConflict("rejected agent outcome changed before removal")
+    _remove_agent_outcome(run.run_root)
+
+
+def _reconcile_rejected_agent_outcome(
+    run: AgentRun, checkpoint: AgentRunCheckpoint
+) -> None:
+    rejection = _read_make_proposal_rejection(run, checkpoint)
+    if rejection is None or not _agent_outcome_exists(run.run_root):
+        return
+    try:
+        unused_document, content = read_bounded_json_artifact(
+            run.run_root,
+            _AGENT_OUTCOME_NAME,
+            maximum_bytes=_MAX_MAKE_PROPOSAL_REJECTION_BYTES,
+            label=_AGENT_OUTCOME_NAME,
+        )
+    except ContractError:
+        return
+    del unused_document
+    if _sha256(content) == rejection["rejected_proposal_file_sha256"]:
+        _remove_rejected_agent_outcome(run, rejection)
 
 
 def _remove_agent_outcome(run_root: Path) -> None:
@@ -1445,6 +1939,7 @@ def _prepare_stage_input(
     roster = _inventor_roster(checkpoint)
     context: dict[str, Any] = {"roster": roster}
     cad_gate_rejection = _read_cad_gate_rejection(run, checkpoint)
+    make_proposal_rejection = _read_make_proposal_rejection(run, checkpoint)
     normal_transition = {
         "match": "invent",
         "invent": "make",
@@ -1651,6 +2146,12 @@ def _prepare_stage_input(
                             else None
                         ),
                     }
+                    if make_proposal_rejection is not None:
+                        # Omitting this field before the first rejection keeps
+                        # pre-upgrade/frozen Make subjects byte-compatible.
+                        subject_inputs["host_make_proposal_rejection_sha256"] = (
+                            make_proposal_rejection["rejection_sha256"]
+                        )
                     subject = _stage_subject("make", subject_inputs)
                     inputs = {
                         **common,
@@ -1672,6 +2173,10 @@ def _prepare_stage_input(
                             "assembled.stl",
                         ],
                     }
+                    if make_proposal_rejection is not None:
+                        inputs["host_make_proposal_rejection"] = (
+                            make_proposal_rejection
+                        )
                 else:
                     made_artifact = _stage_primary(checkpoint, "make")
                     made = _read_contract(
@@ -2010,19 +2515,30 @@ def _evaluate_make_stage(
     context: Mapping[str, Any],
 ) -> tuple[StageGateDecision, tuple[AgentArtifact, ...]]:
     contract_path = "artifacts/make/r%04d/made.json" % checkpoint.round_index
-    artifact = _ready_contract_artifact(
-        proposal,
-        stage="make",
-        transitions=("playtest",),
-        path=contract_path,
-    )
-    made = _read_contract(
-        run.run_root, artifact, NativeMade, label="native Made contract"
-    )
-    assignment = context["assignment"]
-    invented = context["invented"]
-    made.assert_context(assignment, invented, expected_round=checkpoint.round_index)
-    canonical = made.validate_product_tree(run.run_root)
+    try:
+        artifact = _ready_contract_artifact(
+            proposal,
+            stage="make",
+            transitions=("playtest",),
+            path=contract_path,
+        )
+        made = _read_contract(
+            run.run_root, artifact, NativeMade, label="native Made contract"
+        )
+        assignment = context["assignment"]
+        invented = context["invented"]
+        made.assert_context(
+            assignment, invented, expected_round=checkpoint.round_index
+        )
+        canonical = made.validate_product_tree(run.run_root)
+        additional = _manifest_agent_artifacts(
+            made.product_root, made.product_manifest
+        )
+    except (ArtifactError, ContractError) as error:
+        # This boundary covers only bytes and bindings authored by the Make
+        # proposal. StateConflict is a separate hierarchy and the trusted CAD
+        # verifier is deliberately invoked below, outside this recovery path.
+        raise _make_rejection_for_error(error) from error
     verifier_sha256 = checkpoint.input_sha256s.get(NATIVE_CAD_VERIFIER_PATH)
     if not isinstance(verifier_sha256, str):
         raise StateConflict("native run lacks its trusted CAD verifier binding")
@@ -2031,9 +2547,6 @@ def _evaluate_make_stage(
         run_root=run.run_root,
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
-    )
-    additional = _manifest_agent_artifacts(
-        made.product_root, made.product_manifest
     )
     evidence = StageGateEvidence(
         stage="make",
@@ -3117,6 +3630,12 @@ def _process_agent_outcome_inner(
             _persist_cad_gate_rejection(run, checkpoint, proposal, rejection)
             _remove_agent_outcome(run.run_root)
             return checkpoint
+        except _MakeProposalRejected as rejection:
+            persisted = _persist_make_proposal_rejection(
+                run, checkpoint, proposal, rejection
+            )
+            _remove_rejected_agent_outcome(run, persisted)
+            return checkpoint
     elif checkpoint.stage == "playtest":
         try:
             with wish_run_timing_span(
@@ -3275,6 +3794,11 @@ def _run_native_session(
             raise TransitionError(
                 "legacy Deliver checkpoint must be reconciled before native work"
             )
+        if checkpoint.stage == "make":
+            # A crash may land after the private rejection head is durable but
+            # before its exact unaccepted workspace marker is removed. Reap
+            # only that byte-identical marker before deriving the new subject.
+            _reconcile_rejected_agent_outcome(run, checkpoint)
         with wish_run_timing_span(
             timing_observer,
             product_id=checkpoint.product_id,
@@ -3297,9 +3821,6 @@ def _run_native_session(
                     context=context,
                     timing_observer=timing_observer,
                 )
-            except StateConflict:
-                recovered_progress.observe("failed")
-                _remove_agent_outcome(run.run_root)
             except WorkshopError:
                 recovered_progress.observe("failed")
                 raise

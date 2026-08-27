@@ -48,7 +48,10 @@ MAX_CODEX_SESSION_CHECKPOINT_BYTES = 32 * 1024
 CODEX_SESSION_CHECKPOINT_KIND = "autonomous-workshop-native-codex-session"
 _MAX_TRANSIENT_DIAGNOSTIC_CHARS = 64 * 1024
 _CODEX_TERMINAL_EXIT_GRACE_SECONDS = 0.25
-_CODEX_FINALIZATION_MARKER_GRACE_SECONDS = 5.0
+# A successful finalizer is followed by native Goal completion and the public
+# terminal event.  Keep that handoff bounded, but allow normal agent/tool
+# bookkeeping to finish before treating the marker as a stuck stream.
+_CODEX_FINALIZATION_MARKER_GRACE_SECONDS = 30.0
 _CODEX_FINALIZATION_MARKER_POLL_SECONDS = 0.05
 _CODEX_ACTIVITY_HEARTBEAT_SECONDS = 5.0
 _CODEX_ACTIVITY_DELIVERY_TIMEOUT_SECONDS = 0.25
@@ -1236,9 +1239,11 @@ class _FinalizationMarkerWatch:
         self,
         path: Optional[Path],
         process_guard: _NativeProcessGuard,
+        deadline: float,
     ) -> None:
         self.path = path
         self.process_guard = process_guard
+        self.deadline = deadline
         self._state_lock = threading.Lock()
         self._stop = threading.Event()
         self._turn_completed = threading.Event()
@@ -1290,13 +1295,19 @@ class _FinalizationMarkerWatch:
         identity = self._regular_identity()
         if identity is None:
             return
-        self._resolved.wait(
-            timeout=(
-                _CODEX_FINALIZATION_MARKER_GRACE_SECONDS
-                + _CODEX_FINALIZATION_MARKER_POLL_SECONDS
-                + 0.1
-            )
+        wait_seconds = max(
+            0.0,
+            min(
+                (
+                    _CODEX_FINALIZATION_MARKER_GRACE_SECONDS
+                    + _CODEX_FINALIZATION_MARKER_POLL_SECONDS
+                    + 0.1
+                ),
+                self.deadline - time.monotonic(),
+            ),
         )
+        if not self._resolved.wait(timeout=wait_seconds):
+            self._expire_marker(identity)
 
     def close(self) -> None:
         self._stop.set()
@@ -1337,8 +1348,9 @@ class _FinalizationMarkerWatch:
         if identity is None:
             return
 
-        deadline = (
-            time.monotonic() + _CODEX_FINALIZATION_MARKER_GRACE_SECONDS
+        deadline = min(
+            time.monotonic() + _CODEX_FINALIZATION_MARKER_GRACE_SECONDS,
+            self.deadline,
         )
         while not self._stop.is_set():
             if self._turn_completed.is_set():
@@ -1351,10 +1363,15 @@ class _FinalizationMarkerWatch:
             )
         if self._stop.is_set() or self._turn_completed.is_set():
             return
+        self._expire_marker(identity)
+
+    def _expire_marker(self, identity: tuple[int, int]) -> None:
         if self._regular_identity() != identity:
             self._resolved.set()
             return
         with self._state_lock:
+            if self._resolved.is_set():
+                return
             if self._stop.is_set() or self._turn_completed.is_set():
                 self._resolved.set()
                 return
@@ -1928,6 +1945,7 @@ class CodexNativeSessionLauncher:
                 finalization_watch = _FinalizationMarkerWatch(
                     finalization_marker,
                     process_guard,
+                    deadline,
                 )
                 finalization_watch.start()
                 return self._stream(

@@ -9,7 +9,9 @@ import zlib
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
+from workshop.errors import ContractError
 from workshop.invent.native import NativeInvented
+from workshop.make.contracts import Made
 from workshop.make.native import NativeMade
 from workshop.match.native import (
     InventorRoster,
@@ -472,6 +474,92 @@ class StageProposalToolTest(unittest.TestCase):
             made_bytes,
             "playtest",
         )
+
+    def test_make_rejects_invalid_required_product_metadata_before_outputs(self):
+        product_root, _, _, _ = self.create_product()
+        self.write_stage(
+            "make",
+            {
+                "assignment": self.assignment.to_dict(),
+                "invented": self.invented.to_dict(),
+                "feedback": [],
+            },
+            round_index=1,
+        )
+        invalid_products = (
+            (
+                "aliases do not replace required fields",
+                {
+                    "name": "Moon Nook",
+                    "description": "A tiny lunar observatory.",
+                },
+                "Make product title",
+            ),
+            (
+                "missing title",
+                {"summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "blank title",
+                {"title": " \t\n", "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "oversized title",
+                {"title": "x" * 2_001, "summary": "A tiny lunar observatory."},
+                "Make product title",
+            ),
+            (
+                "missing summary",
+                {"title": "Moon Nook"},
+                "Make product summary",
+            ),
+            (
+                "blank summary",
+                {"title": "Moon Nook", "summary": " \t\n"},
+                "Make product summary",
+            ),
+            (
+                "oversized summary",
+                {"title": "Moon Nook", "summary": "x" * 2_001},
+                "Make product summary",
+            ),
+            (
+                "control character",
+                {"title": "Moon Nook", "summary": "Tiny\u0000 observatory"},
+                "Make product summary",
+            ),
+        )
+
+        for label, product, error_label in invalid_products:
+            with self.subTest(label=label):
+                (product_root / "product.json").write_bytes(canonical_json(product))
+                result = self.run_tool(
+                    "make",
+                    "--product-root",
+                    "artifacts/make/r0001/product",
+                    "--cad-project-path",
+                    "cad/project",
+                    "--cad-verification-path",
+                    "validation/cad-build.json",
+                    expected=2,
+                )
+                self.assertIn(error_label, result.stderr)
+                with self.assertRaisesRegex(
+                    ContractError, error_label.replace("Make ", "Made ")
+                ):
+                    Made(
+                        product_root,
+                        build_artifact_manifest(
+                            product_root, created_at="content-addressed"
+                        ),
+                        product,
+                    )
+                self.assertFalse(
+                    (self.run_root / "artifacts/make/r0001/made.json").exists()
+                )
+                self.assertFalse((self.run_root / "agent-outcome.json").exists())
 
     def test_make_rejects_editor_backup_and_patch_debris(self):
         product_root, _, _, _ = self.create_product()

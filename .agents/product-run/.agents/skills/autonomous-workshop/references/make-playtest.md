@@ -47,7 +47,23 @@ Leave the product tree at the exact `product_root` in `STAGE.json`. It must
 include the required root product metadata, CAD project, assembled STEP/STL
 outputs, and deterministic CAD verification file. Map mechanisms, rules,
 dimensions, materials, tolerances, and limitations to real artifact bytes
-rather than prose assertions. Then run:
+rather than prose assertions.
+
+The root `product.json` must be a JSON object containing at least these exact
+metadata keys (additional product-specific fields are allowed):
+
+```json
+{
+  "title": "Moon Nook",
+  "summary": "A tiny lunar observatory built for tabletop play."
+}
+```
+
+Both `title` and `summary` must be strings with non-whitespace content and no
+more than 2,000 characters. Do not substitute aliases such as `name` or
+`description`; the Make finalizer and trusted host require the exact keys.
+
+Then run:
 
 ```bash
 "$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
