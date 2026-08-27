@@ -15,7 +15,8 @@ deliberately small sanitized projection here under
 `<inventor>-<product-slug>/`.
 A public snapshot contains only:
 
-- `README.md`, `MANUAL.md`, and the exact public `product.json`;
+- `README.md`, the exact printable `MANUAL.pdf`, and the exact public
+  `product.json`;
 - `PUBLICATION.json`, with public URLs, listing price, and content hashes but no
   private IDs, credentials, effect keys, or raw receipts;
 - exact printable component STLs selected from the sealed Made inventory under
