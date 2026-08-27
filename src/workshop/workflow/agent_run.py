@@ -1348,6 +1348,62 @@ class AgentRun:
         by_path = {item["path"]: item for item in payload["sealed_artifacts"]}
         return by_path[paths[0]]["sha256"]
 
+    def assert_predecessor_gate_accepted(
+        self,
+        receipt: DeterministicGateReceipt,
+        *,
+        gate_checkpoint_sha256: str,
+    ) -> None:
+        """Prove that ``receipt`` is the gate which produced current state.
+
+        Persisted gate evidence is useful only when the authoritative
+        checkpoint history accepted that exact receipt.  This deliberately
+        checks the immediate predecessor: a stale gate from an older Make
+        revision cannot authorize compatibility behavior for today's sealed
+        artifact.
+        """
+
+        if not isinstance(receipt, DeterministicGateReceipt):
+            raise ContractError("predecessor gate requires a deterministic receipt")
+        require_sha256(
+            gate_checkpoint_sha256, "predecessor gate checkpoint sha256"
+        )
+        payload = self._load()
+        expected_stage = _FORWARD_TRANSITIONS.get(receipt.stage)
+        history = payload["history"]
+        if expected_stage != payload["stage"] or not history:
+            raise StateConflict("gate is not the accepted predecessor of current state")
+        record = history[-1]
+        expected_fields = {
+            "stage",
+            "status",
+            "outcome_sha256",
+            "artifact_paths",
+            "gate_sha256",
+            "gate_id",
+            "gate_passed",
+            "gate_evidence_sha256",
+            "transition",
+        }
+        artifact_paths = payload["stage_artifacts"].get(receipt.stage)
+        if (
+            not isinstance(record, Mapping)
+            or set(record) != expected_fields
+            or record["stage"] != receipt.stage
+            or record["status"] != "ready"
+            or record["transition"] != expected_stage
+            or record["outcome_sha256"] != receipt.outcome_sha256
+            or record["gate_sha256"] != receipt.sha256
+            or record["gate_id"] != receipt.gate_id
+            or record["gate_passed"] is not True
+            or not receipt.passed
+            or record["gate_evidence_sha256"] != receipt.evidence_sha256
+            or record["artifact_paths"] != artifact_paths
+            or payload["last_outcome_sha256"] != receipt.outcome_sha256
+            or payload["previous_checkpoint_sha256"] != gate_checkpoint_sha256
+        ):
+            raise StateConflict("gate is not the accepted predecessor of current state")
+
     def validate_outcome(self, value: AgentOutcome | Mapping[str, Any]) -> AgentOutcome:
         outcome = value if isinstance(value, AgentOutcome) else AgentOutcome.from_mapping(value)
         payload = self._load()

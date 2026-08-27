@@ -337,6 +337,18 @@ verifier mode, and that it is not print-ready eligible. Historical or
 unstructured receipts continue through the full tier when their product
 metadata does not separately request the lower tier.
 
+Make and Playtest replay evidence are persisted under separate host-owned
+stage paths, so a Playtest timeout or rejection cannot overwrite the accepted
+Make receipt needed by a later resume. A Made revision accepted before the
+two-declaration policy may resolve only the exact historical
+`digitally-verified-pending-physical-playtest` status plus literal false CAD
+claim mismatch, and only when its immediate Make predecessor, checkpoint
+history, exact contract/product hashes, schema-v1 CAD receipt, verifier hash,
+and full command all agree. Playtest then reruns the full verifier, including
+thickness, in isolation. That compatibility receipt remains ineligible for a
+print-ready claim: stronger geometric replay does not erase the legacy
+product's explicit uncertainty about slicing, physical printing, or fit.
+
 ## Manual-first Release and optional publication
 
 Codex prepares `artifacts/release/package` with at least:

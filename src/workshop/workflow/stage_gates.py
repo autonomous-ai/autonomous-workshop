@@ -277,6 +277,21 @@ class StageGateDecision:
             "evidence": self.evidence.to_dict(),
         }
 
+    @classmethod
+    def from_mapping(cls, value: Any) -> "StageGateDecision":
+        expected = {"schema_version", "kind", "transition", "evidence"}
+        if not isinstance(value, Mapping) or set(value) != expected:
+            raise ContractError("stage gate decision fields are invalid")
+        decision = cls(
+            schema_version=value["schema_version"],
+            kind=value["kind"],
+            transition=value["transition"],
+            evidence=StageGateEvidence.from_mapping(value["evidence"]),
+        )
+        if dict(value) != decision.to_dict():
+            raise ContractError("stage gate decision is invalid")
+        return decision
+
 
 def _ready_artifact(
     proposal: AgentOutcomeProposal,

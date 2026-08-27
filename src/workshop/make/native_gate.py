@@ -274,6 +274,10 @@ _NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
 _MISSING_CAD_CLAIM = object()
 
 
+class _LegacyFullTierClaimMismatch(ContractError):
+    """The one pre-tier declaration pair eligible for full replay."""
+
+
 def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
     """Select a gate tier from two agreeing, exact-byte-bound declarations.
 
@@ -329,11 +333,17 @@ def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
         if isinstance(final_pipeline, Mapping):
             claim = final_pipeline.get("print_ready_claim", _MISSING_CAD_CLAIM)
 
-    lower_status = (
-        made.product.get("status") == NATIVE_CAD_NON_PRINT_READY_TIER
-    )
+    product_status = made.product.get("status")
+    lower_status = product_status == NATIVE_CAD_NON_PRINT_READY_TIER
     lower_claim = claim is False
     if lower_status != lower_claim:
+        if (
+            product_status == "digitally-verified-pending-physical-playtest"
+            and claim is False
+        ):
+            raise _LegacyFullTierClaimMismatch(
+                "legacy pending-physical status predates the CAD claim tier"
+            )
         raise ContractError(
             "non-print-ready product status and CAD print_ready_claim must agree"
         )
@@ -627,19 +637,25 @@ class NativeCadGateEvidence:
     stderr: CapturedVerifierStream
     source_tree_unchanged: bool
     verification_tier: str = NATIVE_CAD_FULL_TIER
-    schema_version: int = 2
+    legacy_full_tier_compatibility: bool = False
+    evidence_stage: str = "make"
+    schema_version: int = 3
     kind: str = NATIVE_CAD_GATE_KIND
     verifier_path: str = NATIVE_CAD_VERIFIER_PATH
     verifier_mode: str = NATIVE_CAD_VERIFIER_MODE
     receipt_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 2:
-            raise ContractError("native CAD gate schema_version must be 2")
+        if type(self.schema_version) is not int or self.schema_version != 3:
+            raise ContractError("native CAD gate schema_version must be 3")
         if self.kind != NATIVE_CAD_GATE_KIND:
             raise ContractError("native CAD gate kind is invalid")
         if type(self.passed) is not bool or type(self.source_tree_unchanged) is not bool:
             raise ContractError("native CAD gate booleans are invalid")
+        if type(self.legacy_full_tier_compatibility) is not bool:
+            raise ContractError("native CAD gate compatibility marker is invalid")
+        if self.evidence_stage not in ("make", "playtest"):
+            raise ContractError("native CAD gate evidence stage is invalid")
         if self.passed != (self.failure_code is None):
             raise ContractError("native CAD gate result and failure code disagree")
         if self.failure_code is not None and (
@@ -665,6 +681,11 @@ class NativeCadGateEvidence:
         policy = policy_by_tier.get(self.verification_tier)
         if policy is None or self.verifier_mode != policy.verifier_mode:
             raise ContractError("native CAD gate verification tier is invalid")
+        if (
+            self.legacy_full_tier_compatibility
+            and self.verification_tier != NATIVE_CAD_FULL_TIER
+        ):
+            raise ContractError("legacy compatibility requires the full CAD tier")
         if not isinstance(self.command, tuple) or not self.command or not all(
             isinstance(item, str) and item for item in self.command
         ):
@@ -712,6 +733,10 @@ class NativeCadGateEvidence:
             "verifier_sha256": self.verifier_sha256,
             "verifier_mode": self.verifier_mode,
             "verification_tier": self.verification_tier,
+            "legacy_full_tier_compatibility": (
+                self.legacy_full_tier_compatibility
+            ),
+            "evidence_stage": self.evidence_stage,
             "command": list(self.command),
             "returncode": self.returncode,
             "duration_ms": self.duration_ms,
@@ -734,7 +759,10 @@ class NativeCadGateEvidence:
     def print_ready_eligible(self) -> bool:
         """Whether the deterministic CAD receipt may support print-ready copy."""
 
-        return self.thickness_gate_required
+        return (
+            self.thickness_gate_required
+            and not self.legacy_full_tier_compatibility
+        )
 
 
 class NativeCadGateError(ArtifactError):
@@ -752,10 +780,14 @@ class NativeCadGateError(ArtifactError):
         self.evidence_path = evidence_path
 
 
-def _evidence_path(host_state_root: Path, made: NativeMade) -> Path:
-    parent = host_state_root / "evidence" / "make"
+def _evidence_path(
+    host_state_root: Path, made: NativeMade, evidence_stage: str
+) -> Path:
+    if evidence_stage not in ("make", "playtest"):
+        raise ContractError("native CAD gate evidence stage is invalid")
+    parent = host_state_root / "evidence" / evidence_stage
     current = host_state_root
-    for part in ("evidence", "make"):
+    for part in ("evidence", evidence_stage):
         candidate = current / part
         try:
             identity = candidate.lstat()
@@ -814,6 +846,8 @@ def verify_native_made_cad(
     python_executable: str = sys.executable,
     timeout_seconds: float = DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS,
     max_output_bytes: int = DEFAULT_NATIVE_CAD_OUTPUT_BYTES,
+    legacy_full_tier_validator: Optional[Callable[[], None]] = None,
+    evidence_stage: str = "make",
 ) -> NativeCadGateEvidence:
     """Run the final CAD gate on an isolated copy and persist host evidence.
 
@@ -842,6 +876,12 @@ def verify_native_made_cad(
         or not 1 <= max_output_bytes <= MAX_NATIVE_CAD_OUTPUT_BYTES
     ):
         raise ContractError("native CAD gate output limit is invalid")
+    if legacy_full_tier_validator is not None and not callable(
+        legacy_full_tier_validator
+    ):
+        raise ContractError("legacy full-tier validator must be callable")
+    if evidence_stage not in ("make", "playtest"):
+        raise ContractError("native CAD gate evidence stage is invalid")
 
     root = _canonical_directory(run_root, "native CAD gate run root")
     host_root = _canonical_directory(
@@ -851,10 +891,23 @@ def verify_native_made_cad(
         raise ArtifactError("native CAD gate run and host-state roots must not overlap")
     if stat.S_IMODE(host_root.stat().st_mode) != 0o700:
         raise ArtifactError("native CAD gate host state root permissions must be 0700")
-    evidence_path = _evidence_path(host_root, made)
+    evidence_path = _evidence_path(host_root, made, evidence_stage)
 
     product_root = _validate_exact_product_tree(made, root)
-    gate_policy = _cad_gate_policy(made, product_root)
+    legacy_full_tier_compatibility = False
+    try:
+        gate_policy = _cad_gate_policy(made, product_root)
+    except _LegacyFullTierClaimMismatch:
+        if legacy_full_tier_validator is None:
+            raise
+        # A Playtest may be resuming a Made revision accepted before the
+        # two-declaration tier contract existed.  The caller must prove that
+        # the authoritative checkpoint accepted this exact artifact under the
+        # historical full verifier.  We then rerun that stronger full gate;
+        # this never enables --skip-thickness.
+        legacy_full_tier_validator()
+        gate_policy = _FULL_CAD_GATE_POLICY
+        legacy_full_tier_compatibility = True
     project_relative = _safe_relative(made.cad_project_path, "native Made CAD project")
     project_root = _checked_directory(
         product_root, project_relative, "native Made CAD project"
@@ -971,6 +1024,8 @@ def verify_native_made_cad(
         source_tree_unchanged=source_unchanged,
         verification_tier=gate_policy.tier,
         verifier_mode=gate_policy.verifier_mode,
+        legacy_full_tier_compatibility=legacy_full_tier_compatibility,
+        evidence_stage=evidence_stage,
     )
     _atomic_private_write(evidence_path, _canonical_json(evidence.to_dict()) + b"\n")
     if not evidence.passed:

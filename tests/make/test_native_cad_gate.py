@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from workshop.artifacts import build_artifact_manifest
 from workshop.errors import ArtifactError, ContractError
@@ -222,6 +223,24 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
 
+    def test_playtest_replay_preserves_the_accepted_make_evidence(self):
+        runner = lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)
+        make_evidence = self._verify(runner)
+        make_path = self.host_state_root / "evidence/make/r0001-cad-gate.json"
+        accepted_bytes = make_path.read_bytes()
+
+        playtest_evidence = self._verify(runner, evidence_stage="playtest")
+
+        self.assertEqual(make_path.read_bytes(), accepted_bytes)
+        self.assertEqual(make_evidence.evidence_stage, "make")
+        self.assertEqual(playtest_evidence.evidence_stage, "playtest")
+        playtest_path = (
+            self.host_state_root / "evidence/playtest/r0001-cad-gate.json"
+        )
+        self.assertEqual(
+            json.loads(playtest_path.read_text()), playtest_evidence.to_dict()
+        )
+
     def test_explicit_non_print_ready_pair_skips_only_thickness(self):
         self._rewrite_claim_declarations(
             product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
@@ -247,7 +266,7 @@ class NativeCadGateTest(unittest.TestCase):
         )
         self.assertFalse(evidence.thickness_gate_required)
         self.assertFalse(evidence.print_ready_eligible)
-        self.assertEqual(evidence.schema_version, 2)
+        self.assertEqual(evidence.schema_version, 3)
         self.assertEqual(
             evidence.to_dict()["verification_tier"],
             "digitally-verified-not-print-ready",
@@ -289,6 +308,54 @@ class NativeCadGateTest(unittest.TestCase):
         ):
             self._verify(runner)
         self.assertFalse(called)
+
+    def test_accepted_legacy_full_gate_replays_thickness_without_readiness(self):
+        self._rewrite_claim_declarations(
+            product_status="digitally-verified-pending-physical-playtest",
+            print_ready_claim=False,
+        )
+        accepted = mock.Mock()
+        observed = {}
+
+        def runner(command, **arguments):
+            del arguments
+            observed["command"] = tuple(command)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(
+            runner,
+            legacy_full_tier_validator=accepted,
+            evidence_stage="playtest",
+        )
+
+        accepted.assert_called_once_with()
+        self.assertEqual(
+            observed["command"][3:],
+            ("--fresh", "--exports", "--strict-fit"),
+        )
+        self.assertEqual(evidence.verification_tier, NATIVE_CAD_FULL_TIER)
+        self.assertTrue(evidence.thickness_gate_required)
+        self.assertTrue(evidence.legacy_full_tier_compatibility)
+        self.assertFalse(evidence.print_ready_eligible)
+        self.assertEqual(evidence.evidence_stage, "playtest")
+
+    def test_legacy_validator_cannot_waive_an_arbitrary_claim_mismatch(self):
+        self._rewrite_claim_declarations(
+            product_status="print-ready",
+            print_ready_claim=False,
+        )
+        accepted = mock.Mock()
+
+        with self.assertRaisesRegex(
+            ContractError, "status and CAD print_ready_claim must agree"
+        ):
+            self._verify(
+                lambda *args, **kwargs: VerifierProcessResult.from_bytes(0),
+                legacy_full_tier_validator=accepted,
+                evidence_stage="playtest",
+            )
+
+        accepted.assert_not_called()
 
     def test_only_literal_false_in_strict_receipt_json_can_skip_thickness(self):
         self._rewrite_claim_declarations(

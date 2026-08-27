@@ -430,6 +430,38 @@ class AgentRunTest(unittest.TestCase):
         with self.assertRaisesRegex(ContractError, "fields"):
             AgentOutcome.from_mapping(forged)
 
+    def test_predecessor_gate_must_match_the_accepted_checkpoint_history(self):
+        run = self.create()
+        for stage, transition in (
+            ("wish", "match"),
+            ("match", "invent"),
+            ("invent", "make"),
+        ):
+            self.advance(run, stage, transition)
+        before_make = run.snapshot()
+        outcome = self.outcome(run, "make", "playtest")
+        gate = self.gate(run, outcome)
+        run.apply_outcome(outcome, gate=gate)
+
+        run.assert_predecessor_gate_accepted(
+            gate,
+            gate_checkpoint_sha256=before_make.checkpoint_sha256,
+        )
+
+        forged = DeterministicGateReceipt(
+            stage=gate.stage,
+            gate_id=gate.gate_id,
+            passed=gate.passed,
+            subject_sha256=gate.subject_sha256,
+            outcome_sha256=gate.outcome_sha256,
+            evidence_sha256="f" * 64,
+        )
+        with self.assertRaisesRegex(StateConflict, "accepted predecessor"):
+            run.assert_predecessor_gate_accepted(
+                forged,
+                gate_checkpoint_sha256=before_make.checkpoint_sha256,
+            )
+
     def test_host_gate_can_bind_full_subject_and_seal_a_verified_tree(self):
         run = self.create()
         outcome = self.outcome(run, "wish", "match")

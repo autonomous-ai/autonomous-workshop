@@ -44,6 +44,8 @@ from workshop.integrations.factory import (
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    NATIVE_CAD_GATE_KIND,
+    NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
     verify_native_made_cad,
@@ -131,6 +133,7 @@ _SUBJECT_KIND = "autonomous-workshop.stage-gate-subject"
 _MAX_STAGE_INPUT_BYTES = 512 * 1024
 _MAX_CAD_GATE_REJECTION_BYTES = 64 * 1024
 _MAX_CAD_GATE_DIAGNOSTIC_JSON_BYTES = 8 * 1024
+_MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES = 3 * 1024 * 1024
 _MAX_NATIVE_TURNS = 32
 _RECOVERABLE_BACKOFF_BASE_SECONDS = 1.0
 _RECOVERABLE_BACKOFF_MAX_SECONDS = 30.0
@@ -1854,6 +1857,167 @@ def _evaluate_make_stage(
     return StageGateDecision(evidence=evidence, transition="playtest"), additional
 
 
+def _read_stable_private_json(
+    path: Path, *, label: str, maximum_bytes: int
+) -> Mapping[str, Any]:
+    try:
+        before = path.lstat()
+        content = path.read_bytes()
+        after = path.lstat()
+    except OSError as exc:
+        raise StateConflict("%s is unavailable" % label) from exc
+    if (
+        path.is_symlink()
+        or not stat.S_ISREG(before.st_mode)
+        or stat.S_IMODE(before.st_mode) != 0o600
+        or not 1 <= len(content) <= maximum_bytes
+        or (before.st_dev, before.st_ino, before.st_mtime_ns, before.st_size)
+        != (after.st_dev, after.st_ino, after.st_mtime_ns, after.st_size)
+    ):
+        raise StateConflict("%s is not a stable private file" % label)
+    try:
+        return _strict_json_bytes(content, label=label)
+    except ContractError as exc:
+        raise StateConflict("%s is invalid" % label) from exc
+
+
+def _validate_legacy_full_tier_make_gate(
+    *,
+    run: AgentRun,
+    checkpoint: AgentRunCheckpoint,
+    made_artifact: AgentArtifact,
+    made: NativeMade,
+    expected_verifier_sha256: str,
+) -> None:
+    """Validate the exact historical full-tier gate accepted before Playtest.
+
+    Schema-v1 CAD evidence predates named tiers, but it has only one legal
+    command: the full fresh/export/strict-fit verifier with thickness enabled.
+    This compatibility path is restricted to an immediate, history-bound Make
+    predecessor and never applies while evaluating a new Make proposal.
+    """
+
+    if checkpoint.stage != "playtest" or checkpoint.revision <= 0:
+        raise StateConflict("legacy CAD compatibility requires accepted Make state")
+    bound = checkpoint.stage_artifacts.get("make")
+    if not bound or bound[0] != made_artifact:
+        raise StateConflict("legacy CAD compatibility Made binding is stale")
+
+    gate_path = run.host_state_root / "gates" / (
+        "%04d-make.json" % (checkpoint.revision - 1)
+    )
+    gate_document = _read_stable_private_json(
+        gate_path,
+        label="accepted Make gate",
+        maximum_bytes=_MAX_STAGE_INPUT_BYTES,
+    )
+    try:
+        decision = StageGateDecision.from_mapping(gate_document)
+    except ContractError as exc:
+        raise StateConflict("accepted Make gate is invalid") from exc
+    evidence = decision.evidence
+    legacy_checks = {
+        "made_sha256",
+        "product_artifact_sha256",
+        "product_tree_rehashed",
+        "upstream_bindings_valid",
+        "cad_receipt_sha256",
+        "cad_verifier_sha256",
+        "cad_verification_passed",
+    }
+    checks = evidence.checks
+    if (
+        decision.transition != "playtest"
+        or not evidence.passed
+        or evidence.stage != "make"
+        or evidence.gate_id != "make.sealed-revision-v1"
+        or evidence.validator_version != "1.0.0"
+        or evidence.artifact_path != made_artifact.path
+        or evidence.artifact_sha256 != made_artifact.sha256
+        or set(checks) != legacy_checks
+        or checks["made_sha256"] != made.made_sha256
+        or checks["product_artifact_sha256"]
+        != made.product_manifest.artifact_sha256
+        or checks["product_tree_rehashed"] is not True
+        or checks["upstream_bindings_valid"] is not True
+        or checks["cad_verification_passed"] is not True
+        or checks["cad_verifier_sha256"] != expected_verifier_sha256
+    ):
+        raise StateConflict("accepted Make gate does not match the sealed Made artifact")
+    run.assert_predecessor_gate_accepted(
+        decision.receipt,
+        gate_checkpoint_sha256=evidence.checkpoint_sha256,
+    )
+
+    cad_path = (
+        run.host_state_root
+        / "evidence"
+        / "make"
+        / ("r%04d-cad-gate.json" % made.round)
+    )
+    cad_document = _read_stable_private_json(
+        cad_path,
+        label="accepted legacy CAD gate evidence",
+        maximum_bytes=_MAX_LEGACY_CAD_GATE_EVIDENCE_BYTES,
+    )
+    expected_fields = {
+        "schema_version",
+        "kind",
+        "passed",
+        "failure_code",
+        "made_sha256",
+        "product_artifact_sha256",
+        "cad_project_path",
+        "cad_project_sha256",
+        "verifier_path",
+        "verifier_sha256",
+        "verifier_mode",
+        "command",
+        "returncode",
+        "duration_ms",
+        "timed_out",
+        "stdout",
+        "stderr",
+        "source_tree_unchanged",
+        "receipt_sha256",
+    }
+    receipt_sha256 = cad_document.get("receipt_sha256")
+    identity = {
+        key: value for key, value in cad_document.items() if key != "receipt_sha256"
+    }
+    full_command = [
+        "<python>",
+        NATIVE_CAD_VERIFIER_PATH,
+        "<isolated-cad-project>",
+        "--fresh",
+        "--exports",
+        "--strict-fit",
+    ]
+    if (
+        set(cad_document) != expected_fields
+        or cad_document["schema_version"] != 1
+        or cad_document["kind"] != NATIVE_CAD_GATE_KIND
+        or cad_document["passed"] is not True
+        or cad_document["failure_code"] is not None
+        or cad_document["made_sha256"] != made.made_sha256
+        or cad_document["product_artifact_sha256"]
+        != made.product_manifest.artifact_sha256
+        or cad_document["cad_project_path"] != made.cad_project_path
+        or cad_document["verifier_path"] != NATIVE_CAD_VERIFIER_PATH
+        or cad_document["verifier_sha256"] != expected_verifier_sha256
+        or cad_document["verifier_mode"] != NATIVE_CAD_VERIFIER_MODE
+        or cad_document["command"] != full_command
+        or cad_document["returncode"] != 0
+        or cad_document["timed_out"] is not False
+        or cad_document["source_tree_unchanged"] is not True
+        or not isinstance(cad_document["stdout"], Mapping)
+        or not isinstance(cad_document["stderr"], Mapping)
+        or receipt_sha256 != checks["cad_receipt_sha256"]
+        or receipt_sha256 != _sha256(_canonical_json_bytes(identity))
+    ):
+        raise StateConflict("accepted legacy CAD gate evidence is invalid")
+
+
 def _evaluate_playtest_stage(
     proposal: AgentOutcomeProposal,
     *,
@@ -1889,6 +2053,14 @@ def _evaluate_playtest_stage(
         run_root=run.run_root,
         host_state_root=run.host_state_root,
         expected_verifier_sha256=verifier_sha256,
+        legacy_full_tier_validator=lambda: _validate_legacy_full_tier_make_gate(
+            run=run,
+            checkpoint=checkpoint,
+            made_artifact=_stage_primary(checkpoint, "make"),
+            made=made,
+            expected_verifier_sha256=verifier_sha256,
+        ),
+        evidence_stage="playtest",
     )
     passed = playtested.verdict == "pass"
     transition = "release" if passed else "make"
@@ -1917,6 +2089,9 @@ def _evaluate_playtest_stage(
             "cad_verification_tier": cad_evidence.verification_tier,
             "cad_thickness_gate_required": cad_evidence.thickness_gate_required,
             "cad_print_ready_eligible": cad_evidence.print_ready_eligible,
+            "cad_legacy_full_tier_compatibility": (
+                getattr(cad_evidence, "legacy_full_tier_compatibility", False)
+            ),
             "cad_verification_passed": cad_evidence.passed,
             "verdict": playtested.verdict,
         },
