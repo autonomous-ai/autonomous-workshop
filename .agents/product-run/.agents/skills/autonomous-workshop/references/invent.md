@@ -48,7 +48,7 @@ Make and Playtest can verify them.
 Write one authored JSON source with exactly `concept` and `research`, then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 ```
 

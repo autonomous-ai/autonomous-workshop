@@ -189,27 +189,27 @@ After Codex has authored the current stage's source files or artifact tree, it
 runs that standard-library tool for exactly one stage:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . match --source <match-source.json>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . invent --source <invent-source.json>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . concept --concept-root <concept-root>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
   --product-root <product-root> \
   --cad-project-path <path-inside-product-root> \
   --cad-verification-path <path-inside-product-root>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <evidence-root>
 
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```

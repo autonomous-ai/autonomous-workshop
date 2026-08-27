@@ -54,7 +54,7 @@ dimensions, materials, tolerances, and limitations to real artifact bytes
 rather than prose assertions. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . make \
   --product-root <STAGE product_root> \
   --cad-project-path <path inside product root> \
@@ -120,7 +120,7 @@ sound and only the build fell short, invalidate `playtest` and its downstream
 stages but leave `concept` out. Then run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <STAGE evidence_root>

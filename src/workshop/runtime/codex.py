@@ -63,10 +63,46 @@ _IMMUTABLE_PRODUCT_RUN_PATHS = (
     "STAGE.json",
     "WISH.json",
 )
+
+
+def _workshop_python_launcher() -> Path:
+    """Return a launcher that preserves the active virtual environment.
+
+    Some managed Python distributions report the base interpreter in
+    ``sys.executable`` even when they were entered through a virtual-environment
+    symlink.  Invoking that resolved base path loses the environment's
+    site-packages, including the trusted CAD runtime.  Prefer an exact launcher
+    under ``sys.prefix`` when the prefix is a real virtual environment and the
+    launcher resolves to the running interpreter.
+    """
+
+    running = Path(sys.executable)
+    try:
+        resolved = running.resolve(strict=True)
+    except OSError:
+        return running
+    prefix = Path(sys.prefix)
+    marker = prefix / "pyvenv.cfg"
+    if marker.is_file() and not marker.is_symlink():
+        for name in (
+            "python",
+            "python3",
+            "python%d.%d" % (sys.version_info.major, sys.version_info.minor),
+        ):
+            candidate = prefix / "bin" / name
+            try:
+                if candidate.resolve(strict=True) == resolved:
+                    return candidate
+            except OSError:
+                continue
+    return running
+
+
 _CODEX_RUN_STATIC_ENVIRONMENT_OVERRIDES = (
     ("PYTHONHASHSEED", "0"),
     ("PYTHONDONTWRITEBYTECODE", "1"),
     ("PYTHONNOUSERSITE", "1"),
+    ("WORKSHOP_PYTHON", str(_workshop_python_launcher())),
 )
 _CODEX_NATIVE_FEATURES = ("goals", "multi_agent")
 
@@ -449,7 +485,7 @@ def _python_runtime_permission_identities(
     identity, the same way as every other runtime boundary here.
     """
 
-    executable = Path(sys.executable)
+    executable = _workshop_python_launcher()
     try:
         resolved = executable.resolve(strict=True)
     except OSError as exc:
@@ -457,12 +493,40 @@ def _python_runtime_permission_identities(
             "Workshop Python runtime is unavailable to the Codex sandbox"
         ) from exc
     candidates = {executable, resolved}
-    for name in (
+    # Sandboxed process launch and dynamic loading need traversal through the
+    # interpreter distribution, not merely read access to its executable and
+    # individual library leaves.  Bind both the configured (possibly symlinked)
+    # distribution root and its exact resolved root read-only.  This is still a
+    # narrower boundary than the package-manager prefix and grants no writes.
+    for distribution_root in (executable.parent.parent, resolved.parent.parent):
+        try:
+            distribution_root.resolve(strict=True)
+        except OSError:
+            continue
+        candidates.add(distribution_root)
+    interpreter_names = (
         "python",
         "python3",
         "python%d.%d" % (sys.version_info.major, sys.version_info.minor),
-    ):
+    )
+    for name in interpreter_names:
         candidate = executable.parent / name
+        try:
+            if candidate.resolve(strict=True) == resolved:
+                candidates.add(candidate)
+        except OSError:
+            continue
+    # Product-run instructions intentionally invoke the portable ``python``
+    # command instead of an installation-specific absolute path.  Package
+    # managers commonly expose that command through a PATH entry outside the
+    # interpreter's resolved installation directory (Homebrew is one example).
+    # Bind only launchers that currently resolve to this exact trusted
+    # interpreter; an unrelated PATH Python receives no grant.
+    for name in interpreter_names:
+        selected = shutil.which(name)
+        if not selected:
+            continue
+        candidate = Path(selected)
         try:
             if candidate.resolve(strict=True) == resolved:
                 candidates.add(candidate)

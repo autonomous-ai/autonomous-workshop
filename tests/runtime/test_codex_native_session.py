@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -52,12 +53,29 @@ def permission_arguments(root):
     executable = Path(sys.executable)
     resolved = executable.resolve(strict=True)
     runtime_paths = {executable, resolved}
-    for name in (
+    for distribution_root in (executable.parent.parent, resolved.parent.parent):
+        try:
+            distribution_root.resolve(strict=True)
+        except OSError:
+            continue
+        runtime_paths.add(distribution_root)
+    interpreter_names = (
         "python",
         "python3",
         "python%d.%d" % (sys.version_info.major, sys.version_info.minor),
-    ):
+    )
+    for name in interpreter_names:
         candidate = executable.parent / name
+        try:
+            if candidate.resolve(strict=True) == resolved:
+                runtime_paths.add(candidate)
+        except OSError:
+            pass
+    for name in interpreter_names:
+        selected = shutil.which(name)
+        if not selected:
+            continue
+        candidate = Path(selected)
         try:
             if candidate.resolve(strict=True) == resolved:
                 runtime_paths.add(candidate)
@@ -351,6 +369,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                 "FACTORY_USERNAME": "must-not-reach-codex",
             }
             with mock.patch.dict(os.environ, parent_environment, clear=True):
+                expected_permission_arguments = permission_arguments(root)
                 outcome = self.start(
                     launcher, root, host_state_root=state_root
                 )
@@ -377,7 +396,7 @@ class CodexNativeSessionTest(unittest.TestCase):
                     "--json",
                     "--config",
                     'model_reasoning_effort="high"',
-                    *permission_arguments(root),
+                    *expected_permission_arguments,
                     "-C",
                     str(root),
                     "--model",
@@ -403,6 +422,10 @@ class CodexNativeSessionTest(unittest.TestCase):
             self.assertEqual(call["env"]["PYTHONHASHSEED"], "0")
             self.assertEqual(call["env"]["PYTHONDONTWRITEBYTECODE"], "1")
             self.assertEqual(call["env"]["PYTHONNOUSERSITE"], "1")
+            self.assertEqual(
+                call["env"]["WORKSHOP_PYTHON"],
+                str(codex_runtime._workshop_python_launcher()),
+            )
             self.assertEqual(stat.S_IMODE((root / ".tmp").stat().st_mode), 0o700)
             self.assertNotIn(str(state_root), command)
             self.assertEqual(call["env"]["OPENAI_API_KEY"], "codex-auth")
@@ -760,6 +783,34 @@ class CodexNativeSessionTest(unittest.TestCase):
                         self.resume(launcher, root)
 
             self.assertEqual(len(factory.calls), call_count)
+
+    def test_python_runtime_grants_path_launcher_for_exact_interpreter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            launcher = Path(temporary) / "python3"
+            launcher.symlink_to(Path(sys.executable).resolve(strict=True))
+
+            def selected(name):
+                return str(launcher) if name == "python3" else None
+
+            with mock.patch.object(
+                codex_runtime.shutil, "which", side_effect=selected
+            ):
+                identities = codex_runtime._python_runtime_permission_identities()
+
+            matching = [
+                identity for identity in identities if identity.path == str(launcher)
+            ]
+            self.assertEqual(len(matching), 1)
+            self.assertEqual(
+                matching[0].resolved_path,
+                str(Path(sys.executable).resolve(strict=True)),
+            )
+            granted = {identity.path for identity in identities}
+            self.assertIn(str(Path(sys.executable).parent.parent), granted)
+            self.assertIn(
+                str(Path(sys.executable).resolve(strict=True).parent.parent),
+                granted,
+            )
 
     def test_rotated_inherited_secret_does_not_change_runtime_policy_hash(self):
         with tempfile.TemporaryDirectory() as temporary:

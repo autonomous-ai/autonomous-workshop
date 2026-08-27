@@ -119,7 +119,7 @@ After the current stage's authored source or artifact tree satisfies its Goal,
 run the materialized finalizer:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . <current-stage> <stage-specific-arguments>
 ```
 

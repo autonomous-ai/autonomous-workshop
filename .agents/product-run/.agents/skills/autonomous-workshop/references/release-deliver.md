@@ -62,7 +62,7 @@ exact `MANUAL.md` remain authoritative sealed files in the uploaded project.
 Run:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . release \
   --package-root artifacts/release/package
 ```

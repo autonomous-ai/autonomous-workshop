@@ -57,7 +57,7 @@ observations. `self-report` and `trust-me` are not evaluators.
 The session then runs:
 
 ```bash
-python .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
+"$WORKSHOP_PYTHON" .agents/skills/autonomous-workshop/scripts/stage_proposal.py \
   --run-root . playtest \
   --source <playtest-source.json> \
   --evidence-root <STAGE evidence_root>
