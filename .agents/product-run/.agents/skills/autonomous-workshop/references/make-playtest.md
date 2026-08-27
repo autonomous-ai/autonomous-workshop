@@ -62,6 +62,19 @@ the host. The host copies the exact tree into an isolated verifier, reruns the
 trusted CAD gate, compares bytes, and seals the accepted revision. Narrative
 or model confidence never overrides a failed or absent measurement.
 
+When the deliverable is intentionally digital/mesh-only and is not eligible
+for a print-ready claim, declare that limitation in both sealed inputs: set
+root `product.json.status` to exactly
+`digitally-verified-not-print-ready` and set the declared CAD verification
+JSON's `final_pipeline.print_ready_claim` to the literal boolean `false`.
+Only that agreeing pair authorizes the host's lower tier, which skips wall
+thickness while retaining fresh generation, fit, local spec, mount, motion,
+kernel, interference, export, and mesh gates. Never use the status alone,
+spell `false` as a string, or describe a lower-tier result as print-ready in
+Playtest evidence, Release facts, the manual, or product copy. Omit the lower
+tier declarations for a print-ready-eligible artifact; the host then requires
+the wall-thickness gate.
+
 ## Playtest Goal and independent evidence loop
 
 Create one native Codex Goal for the current Playtest attempt. Its objective is

@@ -103,7 +103,13 @@ project README/spec, which otherwise overrides the 220 x 220 x 220 default.
 Pass `--strict-fit` when a project's advisory disconnected-body and local-audit
 notes are also meant to fail the run; legitimate print plates may leave it off.
 Pass `--skip-thickness` only for an explicit mesh-only delivery; doing so makes
-the resulting artifacts ineligible for a print-ready claim.
+the resulting artifacts ineligible for a print-ready claim. In an Autonomous
+Workshop Make handoff, the host accepts that lower tier only when the sealed
+root product status is exactly `digitally-verified-not-print-ready` and the
+hash-bound CAD verification JSON independently records the literal boolean
+`final_pipeline.print_ready_claim: false`. The flag changes only the
+per-part thickness phase; all earlier generation, fit, spec, motion, kernel,
+interference, export, and mesh gates still run.
 
 ## Generated vs imported STEP
 

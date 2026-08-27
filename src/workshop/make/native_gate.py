@@ -33,6 +33,11 @@ from workshop.runtime.execution import minimal_tool_environment
 NATIVE_CAD_GATE_KIND = "autonomous-workshop.native-cad-gate-evidence"
 NATIVE_CAD_VERIFIER_PATH = ".agents/skills/cad/scripts/verify_project"
 NATIVE_CAD_VERIFIER_MODE = "final-fresh-exports-strict-fit"
+NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE = (
+    "final-fresh-exports-strict-fit-skip-thickness-not-print-ready"
+)
+NATIVE_CAD_FULL_TIER = "full-with-thickness"
+NATIVE_CAD_NON_PRINT_READY_TIER = "digitally-verified-not-print-ready"
 DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS = 1_800.0
 DEFAULT_NATIVE_CAD_OUTPUT_BYTES = 64 * 1024
 MAX_NATIVE_CAD_OUTPUT_BYTES = 1024 * 1024
@@ -51,6 +56,19 @@ def _canonical_json(value: Any) -> bytes:
         ).encode("utf-8")
     except (TypeError, ValueError, UnicodeError) as exc:
         raise ContractError("native CAD gate values must be finite JSON") from exc
+
+
+def _strict_object(pairs: Sequence[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError("non-finite JSON constant %s" % value)
 
 
 def _is_within(path: Path, root: Path) -> bool:
@@ -235,6 +253,93 @@ def _cad_entries(made: NativeMade) -> tuple[ArtifactEntry, ...]:
     if paths != sorted(paths) or len(paths) != len(set(paths)):
         raise ArtifactError("native Made CAD project inventory is not canonical")
     return selected
+
+
+@dataclass(frozen=True)
+class _CadGatePolicy:
+    tier: str
+    verifier_mode: str
+    extra_arguments: tuple[str, ...] = ()
+
+
+_FULL_CAD_GATE_POLICY = _CadGatePolicy(
+    tier=NATIVE_CAD_FULL_TIER,
+    verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+)
+_NON_PRINT_READY_CAD_GATE_POLICY = _CadGatePolicy(
+    tier=NATIVE_CAD_NON_PRINT_READY_TIER,
+    verifier_mode=NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
+    extra_arguments=("--skip-thickness",),
+)
+_MISSING_CAD_CLAIM = object()
+
+
+def _cad_gate_policy(made: NativeMade, product_root: Path) -> _CadGatePolicy:
+    """Select a gate tier from two agreeing, exact-byte-bound declarations.
+
+    Free-form status alone never weakens the gate.  The lower tier requires the
+    canonical product status *and* a literal false ``print_ready_claim`` in the
+    declared, hash-bound CAD receipt.  A false receipt claim without the status
+    is rejected so a thickness-skipped result cannot coexist with product
+    metadata that may be interpreted as print-ready.
+
+    Historical receipts without this structured claim retain the full gate
+    unless their product status separately requests the lower tier, which is a
+    mismatch rather than a waiver.
+    """
+
+    verification_entry = next(
+        (
+            entry
+            for entry in made.product_manifest.entries
+            if entry.path == made.cad_verification_path
+        ),
+        None,
+    )
+    if verification_entry is None:  # pragma: no cover - NativeMade guards this
+        raise ArtifactError("native Made manifest lacks its CAD verification receipt")
+    relative = _safe_relative(
+        made.cad_verification_path, "native Made CAD verification path"
+    )
+    content, identity = _read_regular(
+        product_root.joinpath(*relative.parts),
+        "native Made CAD verification",
+        verification_entry.bytes,
+    )
+    if (
+        len(content) != verification_entry.bytes
+        or hashlib.sha256(content).hexdigest() != verification_entry.sha256
+        or bool(identity.st_mode & stat.S_IXUSR) != verification_entry.executable
+    ):
+        raise ArtifactError(
+            "native Made CAD verification differs from its manifest"
+        )
+
+    claim: Any = _MISSING_CAD_CLAIM
+    try:
+        document = json.loads(
+            content.decode("utf-8"),
+            object_pairs_hook=_strict_object,
+            parse_constant=_reject_json_constant,
+        )
+    except (UnicodeError, ValueError, RecursionError, json.JSONDecodeError):
+        document = None
+    if isinstance(document, Mapping):
+        final_pipeline = document.get("final_pipeline")
+        if isinstance(final_pipeline, Mapping):
+            claim = final_pipeline.get("print_ready_claim", _MISSING_CAD_CLAIM)
+
+    lower_status = (
+        made.product.get("status") == NATIVE_CAD_NON_PRINT_READY_TIER
+    )
+    lower_claim = claim is False
+    if lower_status != lower_claim:
+        raise ContractError(
+            "non-print-ready product status and CAD print_ready_claim must agree"
+        )
+    if lower_status:
+        return _NON_PRINT_READY_CAD_GATE_POLICY
+    return _FULL_CAD_GATE_POLICY
 
 
 def _entries_sha256(entries: Sequence[ArtifactEntry]) -> str:
@@ -521,15 +626,16 @@ class NativeCadGateEvidence:
     stdout: CapturedVerifierStream
     stderr: CapturedVerifierStream
     source_tree_unchanged: bool
-    schema_version: int = 1
+    verification_tier: str = NATIVE_CAD_FULL_TIER
+    schema_version: int = 2
     kind: str = NATIVE_CAD_GATE_KIND
     verifier_path: str = NATIVE_CAD_VERIFIER_PATH
     verifier_mode: str = NATIVE_CAD_VERIFIER_MODE
     receipt_sha256: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if type(self.schema_version) is not int or self.schema_version != 1:
-            raise ContractError("native CAD gate schema_version must be 1")
+        if type(self.schema_version) is not int or self.schema_version != 2:
+            raise ContractError("native CAD gate schema_version must be 2")
         if self.kind != NATIVE_CAD_GATE_KIND:
             raise ContractError("native CAD gate kind is invalid")
         if type(self.passed) is not bool or type(self.source_tree_unchanged) is not bool:
@@ -552,12 +658,28 @@ class NativeCadGateEvidence:
         _safe_relative(self.cad_project_path, "native CAD gate project path")
         if self.verifier_path != NATIVE_CAD_VERIFIER_PATH:
             raise ContractError("native CAD gate verifier path is invalid")
-        if self.verifier_mode != NATIVE_CAD_VERIFIER_MODE:
-            raise ContractError("native CAD gate verifier mode is invalid")
+        policy_by_tier = {
+            NATIVE_CAD_FULL_TIER: _FULL_CAD_GATE_POLICY,
+            NATIVE_CAD_NON_PRINT_READY_TIER: _NON_PRINT_READY_CAD_GATE_POLICY,
+        }
+        policy = policy_by_tier.get(self.verification_tier)
+        if policy is None or self.verifier_mode != policy.verifier_mode:
+            raise ContractError("native CAD gate verification tier is invalid")
         if not isinstance(self.command, tuple) or not self.command or not all(
             isinstance(item, str) and item for item in self.command
         ):
             raise ContractError("native CAD gate command is invalid")
+        expected_command = (
+            "<python>",
+            NATIVE_CAD_VERIFIER_PATH,
+            "<isolated-cad-project>",
+            "--fresh",
+            "--exports",
+            "--strict-fit",
+            *policy.extra_arguments,
+        )
+        if self.command != expected_command:
+            raise ContractError("native CAD gate command differs from its tier")
         if (
             type(self.returncode) is not int
             or type(self.duration_ms) is not int
@@ -589,6 +711,7 @@ class NativeCadGateEvidence:
             "verifier_path": self.verifier_path,
             "verifier_sha256": self.verifier_sha256,
             "verifier_mode": self.verifier_mode,
+            "verification_tier": self.verification_tier,
             "command": list(self.command),
             "returncode": self.returncode,
             "duration_ms": self.duration_ms,
@@ -602,6 +725,16 @@ class NativeCadGateEvidence:
         value = self._identity_dict()
         value["receipt_sha256"] = self.receipt_sha256
         return value
+
+    @property
+    def thickness_gate_required(self) -> bool:
+        return self.verification_tier == NATIVE_CAD_FULL_TIER
+
+    @property
+    def print_ready_eligible(self) -> bool:
+        """Whether the deterministic CAD receipt may support print-ready copy."""
+
+        return self.thickness_gate_required
 
 
 class NativeCadGateError(ArtifactError):
@@ -721,6 +854,7 @@ def verify_native_made_cad(
     evidence_path = _evidence_path(host_root, made)
 
     product_root = _validate_exact_product_tree(made, root)
+    gate_policy = _cad_gate_policy(made, product_root)
     project_relative = _safe_relative(made.cad_project_path, "native Made CAD project")
     project_root = _checked_directory(
         product_root, project_relative, "native Made CAD project"
@@ -756,6 +890,7 @@ def verify_native_made_cad(
         "--fresh",
         "--exports",
         "--strict-fit",
+        *gate_policy.extra_arguments,
     )
     selected_runner = runner or run_bounded_verifier
     result: Optional[VerifierProcessResult] = None
@@ -774,6 +909,7 @@ def verify_native_made_cad(
             "--fresh",
             "--exports",
             "--strict-fit",
+            *gate_policy.extra_arguments,
         )
         environment = dict(minimal_tool_environment())
         environment["TMPDIR"] = str(temporary_root)
@@ -833,6 +969,8 @@ def verify_native_made_cad(
         stdout=result.stdout,
         stderr=result.stderr,
         source_tree_unchanged=source_unchanged,
+        verification_tier=gate_policy.tier,
+        verifier_mode=gate_policy.verifier_mode,
     )
     _atomic_private_write(evidence_path, _canonical_json(evidence.to_dict()) + b"\n")
     if not evidence.passed:
@@ -845,6 +983,9 @@ __all__ = [
     "DEFAULT_NATIVE_CAD_OUTPUT_BYTES",
     "DEFAULT_NATIVE_CAD_TIMEOUT_SECONDS",
     "NATIVE_CAD_GATE_KIND",
+    "NATIVE_CAD_FULL_TIER",
+    "NATIVE_CAD_NON_PRINT_READY_TIER",
+    "NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_MODE",
     "NATIVE_CAD_VERIFIER_PATH",
     "NativeCadGateError",

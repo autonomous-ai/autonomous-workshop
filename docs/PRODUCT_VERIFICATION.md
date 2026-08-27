@@ -40,7 +40,11 @@ It may support bounded claims about exact digital geometry, CAD/kernel checks,
 seeded simulations, slicer predictions, and render inspection according to the
 underlying evidence class. It does **not** prove that the product was printed or
 built, that physical parts fit, that it is durable, or that a person enjoyed or
-even handled it.
+even handled it. The level also does not by itself mean that an artifact is
+print-ready. A lower-tier CAD receipt explicitly marked
+`digitally-verified-not-print-ready` omits wall-thickness evidence while
+retaining the other deterministic CAD gates; it cannot support print-ready
+copy.
 
 The public manifest fixes its scope to:
 

@@ -2,21 +2,29 @@ import hashlib
 import json
 import os
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 from workshop.artifacts import build_artifact_manifest
-from workshop.errors import ArtifactError
+from workshop.errors import ArtifactError, ContractError
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_NON_PRINT_READY_TIER,
+    NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE,
+    NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     NativeCadGateError,
     VerifierProcessResult,
     run_bounded_verifier,
     verify_native_made_cad,
 )
+
+
+_MISSING = object()
 
 
 def _sha(value):
@@ -91,6 +99,55 @@ class NativeCadGateTest(unittest.TestCase):
     def verifier_sha256(self):
         return _sha(self.verifier_bytes)
 
+    def _rewrite_claim_declarations(
+        self,
+        *,
+        product_status=_MISSING,
+        print_ready_claim=_MISSING,
+        raw_verification=None,
+    ):
+        product = json.loads((self.product_root / "product.json").read_text())
+        product.pop("status", None)
+        if product_status is not _MISSING:
+            product["status"] = product_status
+        product_bytes = (
+            json.dumps(product, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        if raw_verification is None:
+            verification = {"ok": True, "validator": "cad-final"}
+            if print_ready_claim is not _MISSING:
+                verification["final_pipeline"] = {
+                    "print_ready_claim": print_ready_claim
+                }
+            verification_bytes = (
+                json.dumps(verification, sort_keys=True, separators=(",", ":"))
+                + "\n"
+            ).encode("utf-8")
+        else:
+            verification_bytes = raw_verification
+        (self.product_root / "product.json").write_bytes(product_bytes)
+        (self.product_root / "validation/cad-build.json").write_bytes(
+            verification_bytes
+        )
+        previous = self.made
+        self.made = NativeMade(
+            round=previous.round,
+            wish_sha256=previous.wish_sha256,
+            assignment_sha256=previous.assignment_sha256,
+            taste_sha256=previous.taste_sha256,
+            blueprint_sha256=previous.blueprint_sha256,
+            invented_sha256=previous.invented_sha256,
+            product_root=previous.product_root,
+            cad_project_path=previous.cad_project_path,
+            product_manifest=build_artifact_manifest(
+                self.product_root, created_at="content-addressed"
+            ),
+            product=product,
+            product_json_sha256=_sha(product_bytes),
+            cad_verification_path=previous.cad_verification_path,
+            cad_verification_sha256=_sha(verification_bytes),
+        )
+
     def _verify(self, runner, **overrides):
         arguments = {
             "run_root": self.run_root,
@@ -164,6 +221,103 @@ class NativeCadGateTest(unittest.TestCase):
         payload = json.loads(evidence_path.read_text())
         self.assertEqual(payload, evidence.to_dict())
         self.assertEqual(stat.S_IMODE(evidence_path.stat().st_mode), 0o600)
+
+    def test_explicit_non_print_ready_pair_skips_only_thickness(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
+            print_ready_claim=False,
+        )
+        observed = {}
+
+        def runner(command, **arguments):
+            observed["command"] = tuple(command)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+
+        self.assertEqual(
+            observed["command"][3:],
+            ("--fresh", "--exports", "--strict-fit", "--skip-thickness"),
+        )
+        self.assertEqual(
+            evidence.verifier_mode, NATIVE_CAD_NON_PRINT_READY_VERIFIER_MODE
+        )
+        self.assertEqual(
+            evidence.verification_tier, NATIVE_CAD_NON_PRINT_READY_TIER
+        )
+        self.assertFalse(evidence.thickness_gate_required)
+        self.assertFalse(evidence.print_ready_eligible)
+        self.assertEqual(evidence.schema_version, 2)
+        self.assertEqual(
+            evidence.to_dict()["verification_tier"],
+            "digitally-verified-not-print-ready",
+        )
+
+    def test_status_alone_cannot_weaken_the_cad_gate(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_NON_PRINT_READY_TIER
+        )
+        called = False
+
+        def runner(command, **arguments):
+            nonlocal called
+            del command, arguments
+            called = True
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaisesRegex(
+            ContractError, "status and CAD print_ready_claim must agree"
+        ):
+            self._verify(runner)
+        self.assertFalse(called)
+
+    def test_receipt_claim_alone_cannot_hide_a_print_ready_status(self):
+        self._rewrite_claim_declarations(
+            product_status="print-ready",
+            print_ready_claim=False,
+        )
+        called = False
+
+        def runner(command, **arguments):
+            nonlocal called
+            del command, arguments
+            called = True
+            return VerifierProcessResult.from_bytes(0)
+
+        with self.assertRaisesRegex(
+            ContractError, "status and CAD print_ready_claim must agree"
+        ):
+            self._verify(runner)
+        self.assertFalse(called)
+
+    def test_only_literal_false_in_strict_receipt_json_can_skip_thickness(self):
+        self._rewrite_claim_declarations(
+            product_status=NATIVE_CAD_NON_PRINT_READY_TIER,
+            print_ready_claim="false",
+        )
+        with self.assertRaisesRegex(ContractError, "must agree"):
+            self._verify(
+                lambda *args, **kwargs: VerifierProcessResult.from_bytes(0)
+            )
+
+    def test_explicit_true_claim_keeps_the_full_thickness_gate(self):
+        self._rewrite_claim_declarations(print_ready_claim=True)
+        observed = {}
+
+        def runner(command, **arguments):
+            del arguments
+            observed["command"] = tuple(command)
+            return VerifierProcessResult.from_bytes(0)
+
+        evidence = self._verify(runner)
+
+        self.assertEqual(
+            observed["command"][3:], ("--fresh", "--exports", "--strict-fit")
+        )
+        self.assertEqual(evidence.verifier_mode, NATIVE_CAD_VERIFIER_MODE)
+        self.assertEqual(evidence.verification_tier, NATIVE_CAD_FULL_TIER)
+        self.assertTrue(evidence.thickness_gate_required)
+        self.assertTrue(evidence.print_ready_eligible)
 
     def test_nonzero_and_bounded_output_write_failed_host_evidence(self):
         def runner(command, **arguments):
@@ -370,6 +524,70 @@ class NativeCadGateTest(unittest.TestCase):
         self.assertTrue(result.stdout.truncated)
         self.assertEqual(result.stderr.content, b"b" * 32)
         self.assertEqual(result.stderr.total_bytes, 70)
+
+
+class VerifyProjectTierPlanTest(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name).resolve()
+        self.project = self.root / "cad-project"
+        measure = self.project / "measure"
+        measure.mkdir(parents=True)
+        (self.project / "assembly.step.py").write_text("def gen_step(): pass\n")
+        (self.project / "part_token.step.py").write_text("def gen_step(): pass\n")
+        (measure / "check_fit.py").write_text("raise SystemExit(0)\n")
+        (measure / "check_spec.py").write_text("raise SystemExit(0)\n")
+        (measure / "check_landmarks.py").write_text("raise SystemExit(0)\n")
+        (measure / "mounts.json").write_text("{}\n")
+        (measure / "motion.json").write_text("{}\n")
+        self.verifier = (
+            Path(__file__).resolve().parents[2]
+            / "src/workshop/make/skills/cad/scripts/verify_project"
+        )
+
+    def _plan(self, *extra):
+        completed = subprocess.run(
+            (
+                sys.executable,
+                str(self.verifier),
+                str(self.project),
+                "--fresh",
+                "--exports",
+                "--strict-fit",
+                "--dry-run",
+                *extra,
+            ),
+            cwd=self.root,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        return completed.stdout
+
+    def test_non_print_ready_plan_retains_every_other_deterministic_gate(self):
+        output = self._plan("--skip-thickness")
+
+        for required in (
+            "check_layout",
+            "gen",
+            "check_fit",
+            "check_spec.py",
+            "check_landmarks.py",
+            "check_mount",
+            "check_motion",
+            "inspect batch",
+            "export",
+            "check_mesh",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, output)
+        self.assertNotIn("check_thickness", output)
+
+    def test_full_plan_still_requires_thickness(self):
+        self.assertIn("check_thickness", self._plan())
 
 
 if __name__ == "__main__":

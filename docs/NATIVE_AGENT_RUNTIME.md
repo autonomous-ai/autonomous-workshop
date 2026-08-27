@@ -322,6 +322,21 @@ product bytes and reruns deterministic CAD checks before advancing. No image
 provider, separate drawing effect, or second model credential sits between
 Invent and Make.
 
+The host CAD gate has two claim-bound tiers. Its default/full tier reruns the
+materialized verifier with fresh generation, exports, strict fit, mesh, and
+wall-thickness checks. A Made revision may use the lower
+`digitally-verified-not-print-ready` tier only when two independently sealed
+declarations agree: root `product.json.status` has that exact value and the
+declared CAD-verification JSON contains the literal boolean
+`final_pipeline.print_ready_claim: false`. Either declaration alone is a
+contract mismatch and cannot waive a check. The lower tier adds only
+`--skip-thickness`; generation, layout, fit, local spec audits, mount, motion,
+kernel validation, interference, exports, and mesh checks remain gates. The
+host receipt and stage-gate evidence record the lower tier, the distinct
+verifier mode, and that it is not print-ready eligible. Historical or
+unstructured receipts continue through the full tier when their product
+metadata does not separately request the lower tier.
+
 ## Manual-first Release and optional publication
 
 Codex prepares `artifacts/release/package` with at least:

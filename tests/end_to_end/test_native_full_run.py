@@ -20,6 +20,8 @@ from workshop.errors import ArtifactError
 from workshop.invent.native import NativeInvented
 from workshop.make.native import NativeMade
 from workshop.make.native_gate import (
+    NATIVE_CAD_FULL_TIER,
+    NATIVE_CAD_VERIFIER_MODE,
     NATIVE_CAD_VERIFIER_PATH,
     CapturedVerifierStream,
     NativeCadGateError,
@@ -671,6 +673,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -779,6 +785,10 @@ class NativeFullRunTest(unittest.TestCase):
                 passed=True,
                 receipt_sha256=_sha256(made.made_sha256.encode("ascii")),
                 verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -1039,6 +1049,10 @@ class NativeFullRunTest(unittest.TestCase):
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
                 verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -1234,6 +1248,10 @@ class NativeFullRunTest(unittest.TestCase):
                     (made.made_sha256 + str(len(cad_calls))).encode("ascii")
                 ),
                 verifier_sha256=arguments["expected_verifier_sha256"],
+                verifier_mode=NATIVE_CAD_VERIFIER_MODE,
+                verification_tier=NATIVE_CAD_FULL_TIER,
+                thickness_gate_required=True,
+                print_ready_eligible=True,
             )
 
         with tempfile.TemporaryDirectory() as temporary:
